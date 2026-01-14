@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patterns with Shapes - Worksheet</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 20px;
+                width: 100% !important;
+                height: 100% !important;
+            background-color: #f0f8ff; /* Light blue background for the page */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .worksheet-container {
+            width: 8in;
+            max-width: 8in;
+            min-width: 8in;
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            padding: 0.5in 0.4in 0.5in 0.4in;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: none;
+            gap: 60px;
+        }
+
+        .header-label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2176ae;
+            margin: 0 8px 0 0;
+            letter-spacing: 0.5px;
+        }
+
+        .header-line {
+            display: inline-block;
+            border-bottom: 2px solid #3498db;
+            width: 180px;
+            height: 1.2em;
+            vertical-align: bottom;
+            margin-left: 6px;
+        }
+
+        .header-input { display: none; }
+
+        .worksheet-title {
+            text-align: center;
+            font-size: 28px; /* Increased from 24px for main title */
+            color: #e8600f; /* A vibrant color similar to image title */
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .worksheet-subtitle {
+            text-align: center;
+            font-size: 20px; /* Slightly smaller for subtitle */
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .worksheet-instructions {
+            text-align: center;
+            font-size: 18px; /* Problem text size 20px, instructions can be 18px */
+            color: #333;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .example-problem {
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .example-problem h3 {
+            margin-top: 0;
+            color: #3498db;
+            font-size: 20px;
+        }
+        .example-problem .shapes-sequence, .example-problem .answer-slots {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Gap between shapes/slots */
+        }
+
+
+        .problem-box {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            margin-bottom: 8px;
+            border: 1px dashed #bdc3c7;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .problem-number-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        /* Colors for problem numbers based on image */
+        .pn-1 { background-color: #8080D8; } /* Bluish-purple */
+        .pn-2 { background-color: #65CDBF; } /* Greenish-teal */
+        .pn-3 { background-color: #FF7F7F; } /* Pinkish-red */
+        .pn-4 { background-color: #C080D7; } /* Purplish-pink */
+        .pn-5 { background-color: #FFC34C; } /* Yellowish-orange */
+
+
+        .shapes-sequence {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between shapes */
+            flex-wrap: nowrap; /* Prevent wrapping */
+            overflow: hidden;
+        }
+
+        .shape-svg {
+            width: 40px;
+            height: 40px;
+            stroke: black;
+            stroke-width: 2; /* Slightly thicker stroke for better visibility */
+            fill: none; /* Remove fill */
+        }
+
+        /* Remove color classes since we're not using them anymore */
+        .shape-green, .shape-blue, .shape-orange, .shape-red, .shape-purple {
+            display: none;
+        }
+
+        .shape-pink { fill: #fd79a8; }
+
+        .answer-slots {
+            display: flex;
+            margin-left: 15px; /* Space after the sequence */
+            gap: 8px; /* Space between answer slots */
+        }
+
+        .answer-slot {
+            width: 44px; /* Slightly larger to accommodate shape + border */
+            height: 44px;
+            background-color: #ffffff;
+            border: 2px solid #FFB6C1; /* lightpink */
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Styling for revealed answers */
+        .answer-slot.correct .shape-svg {
+             /* No specific border change needed if shape fills slot */
+        }
+
+        .interactive-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #3498db;
+            text-align: center;
+        }
+
+        .action-button {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .check-answers-btn {
+            background-color: #3498db;
+        }
+        .check-answers-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .generate-new-btn {
+            background-color: #2ECC71;
+        }
+        .generate-new-btn:hover {
+            background-color: #27AE60;
+        }
+        
+        .grading-feedback {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .grade-icon {
+            font-size: 24px; /* Larger icon */
+            margin-right: 8px;
+        }
+        .grade-A-plus { color: #2ecc71; } /* Green */
+        .grade-A { color: #27ae60; }    /* Darker Green */
+        .grade-B { color: #3498db; }    /* Blue */
+        .grade-C { color: #f1c40f; }    /* Yellow */
+        .grade-D { color: #e67e22; }    /* Orange */
+        .grade-F { color: #e74c3c; }    /* Red */
+
+
+        
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+            body {
+                padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+                background-color: #ffffff;
+                margin: 0;
+            }
+            .worksheet-container {
+                box-shadow: none;
+                border: none;
+                width: 8in !important;
+                max-width: 8in !important;
+                min-width: 8in !important;
+                padding: 0.3in 0.2in 0.3in 0.2in !important;
+                margin: 0 auto !important;
+            }
+            .interactive-section, .header-input { display: none !important; }
+            .header-line { border-bottom: 2px solid #3498db !important; }
+            .header-section { gap: 60px !important; }
+            .header-section { /* For print, make name/date static looking */
+                justify-content: space-between; /* Adjust for cleaner print */
+            }
+            .header-input::placeholder {
+                color: transparent; /* Hide placeholder text */
+            }
+            .problem-box {
+                page-break-inside: avoid; /* Try to keep problems from splitting across pages */
+                flex-wrap: nowrap !important;
+                overflow: hidden !important;
+            }
+            .shapes-sequence {
+                flex-wrap: nowrap !important;
+                overflow: hidden !important;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <div class="header-section">
+            <div>
+                <span class="header-label">Name:</span><span class="header-line"></span>
+            </div>
+            <div>
+                <span class="header-label">Date:</span><span class="header-line"></span>
+            </div>
+        </div>
+
+        <h1 class="worksheet-title">Recognize Patterns with Shapes</h1>
+        <p class="worksheet-instructions">Complete each pattern. Draw the missing elements!</p>
+
+        <div class="example-problem" style="border: 2px solid #3498db; border-radius: 10px; padding: 15px; margin-bottom: 25px; background: #f8f9fa;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="color: #3498db; font-weight: bold; font-size: 20px; font-family: 'Comic Sans MS', cursive, sans-serif;">Example:</span>
+                <span style="color: #3498db; font-size: 17px; font-family: 'Comic Sans MS', cursive, sans-serif;">
+                    Look at the pattern:  Triangle, Square, Triangle, Square...<br>
+                    Draw the missing shapes in the pink boxes!
+                </span>
+            </div>
+            <div class="shapes-sequence" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                <!-- Triangle -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                <!-- Square -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                <!-- Triangle -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                <!-- Square -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                <!-- Triangle -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                <!-- Square -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                <!-- Triangle -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                <!-- Answer Slot with Square -->
+                <div class="answer-slot">
+                    <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                </div>
+                <!-- Triangle -->
+                <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                <!-- Answer Slot with Square -->
+                <div class="answer-slot">
+                    <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Problems will be dynamically generated here by JS or hardcoded -->
+        <div id="problems-container">
+            <!-- Problem 1 -->
+            <div class="problem-box" id="problem-1">
+                <div class="problem-number-container pn-1">1</div>
+                <div class="shapes-sequence">
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                </div>
+                <div class="answer-slots">
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                </div>
+            </div>
+
+            <!-- Problem 2 -->
+            <div class="problem-box" id="problem-2">
+                <div class="problem-number-container pn-2">2</div>
+                <div class="shapes-sequence">
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                </div>
+                <div class="answer-slots">
+                    <div class="answer-slot"></div>
+                </div>
+            </div>
+
+            <!-- Problem 3 -->
+            <div class="problem-box" id="problem-3">
+                <div class="problem-number-container pn-3">3</div>
+                <div class="shapes-sequence">
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Circle --> <svg viewBox="0 0 50 50" class="shape-svg"><circle cx="25" cy="25" r="20"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                </div>
+                <div class="answer-slots">
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                </div>
+            </div>
+
+            <!-- Problem 4 -->
+            <div class="problem-box" id="problem-4">
+                <div class="problem-number-container pn-4">4</div>
+                <div class="shapes-sequence">
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Square --> <svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>
+                    <!-- Diamond --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>
+                </div>
+                <div class="answer-slots">
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                </div>
+            </div>
+
+            <!-- Problem 5 -->
+            <div class="problem-box" id="problem-5">
+                <div class="problem-number-container pn-5">5</div>
+                <div class="shapes-sequence">
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Circle --> <svg viewBox="0 0 50 50" class="shape-svg"><circle cx="25" cy="25" r="20"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                    <!-- Circle --> <svg viewBox="0 0 50 50" class="shape-svg"><circle cx="25" cy="25" r="20"/></svg>
+                    <!-- Triangle --> <svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>
+                </div>
+                <div class="answer-slots">
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                    <div class="answer-slot"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="interactive-section">
+            <button id="check-answers-btn" class="action-button check-answers-btn">Check Answers</button>
+            <button id="generate-new-btn" class="action-button generate-new-btn">Generate New Worksheet</button>
+            <div id="grading-feedback" class="grading-feedback">
+                <!-- Feedback will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SvgShapes = {
+            triangle: () => `<svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,5 45,45 5,45 Z"/></svg>`,
+            diamond: () => `<svg viewBox="0 0 50 50" class="shape-svg"><polygon points="25,2 48,25 25,48 2,25 Z"/></svg>`,
+            square: () => `<svg viewBox="0 0 50 50" class="shape-svg"><rect x="5" y="5" width="40" height="40" rx="3"/></svg>`,
+            circle: () => `<svg viewBox="0 0 50 50" class="shape-svg"><circle cx="25" cy="25" r="20"/></svg>`,
+            heart: () => `<svg viewBox="0 0 50 50" class="shape-svg"><path d="M25 44 L10 28 Q5 20 13 13 Q20 7 25 14 Q30 7 37 13 Q45 20 40 28 Z"/></svg>`
+        };
+
+        const shapes = ['triangle', 'diamond', 'square', 'circle', 'heart'];
+
+        function generateConsistentPattern(maxLength = 16) {
+            // Choose 2-4 unique shapes
+            const numUniqueShapes = Math.floor(Math.random() * 3) + 2; // 2-4
+            const availableShapes = [...shapes];
+            const chosenShapes = [];
+            while (chosenShapes.length < numUniqueShapes) {
+                const idx = Math.floor(Math.random() * availableShapes.length);
+                chosenShapes.push(availableShapes.splice(idx, 1)[0]);
+            }
+            // Create a repeating pattern
+            const pattern = [];
+            for (let i = 0; i < maxLength; i++) {
+                pattern.push({ shape: chosenShapes[i % numUniqueShapes] });
+            }
+            return pattern;
+        }
+
+        function generateNewWorksheet() {
+            const problemsContainer = document.getElementById('problems-container');
+            problemsContainer.innerHTML = '';
+
+            // Set the maximum number of shapes per row (adjust if needed for your layout)
+            const maxShapesPerRow = 14;
+
+            for (let i = 1; i <= 5; i++) {
+                const pattern = generateConsistentPattern(maxShapesPerRow);
+                // Set the number of answer slots: min 3, max 4
+                const numAnswers = Math.floor(Math.random() * 2) + 3; // 3 or 4 answer slots
+                const patternLength = pattern.length;
+                
+                // Generate valid positions for answer slots (no more than 2 consecutive)
+                let answerPositions = new Set();
+                let attempts = 0;
+                while (answerPositions.size < numAnswers && attempts < 100) {
+                    const pos = Math.floor(Math.random() * (patternLength - 2)) + 1; // Avoid first and last positions
+                    // Check for consecutive slots
+                    if (
+                        !answerPositions.has(pos) &&
+                        !(answerPositions.has(pos - 1) && answerPositions.has(pos - 2)) &&
+                        !(answerPositions.has(pos + 1) && answerPositions.has(pos + 2)) &&
+                        !(answerPositions.has(pos - 1) && answerPositions.has(pos + 1))
+                    ) {
+                        answerPositions.add(pos);
+                    }
+                    attempts++;
+                }
+                // If not enough unique, non-consecutive positions, fill remaining with non-adjacent
+                if (answerPositions.size < numAnswers) {
+                    for (let pos = 1; pos < patternLength - 1 && answerPositions.size < numAnswers; pos++) {
+                        if (
+                            !answerPositions.has(pos) &&
+                            !(answerPositions.has(pos - 1) && answerPositions.has(pos - 2)) &&
+                            !(answerPositions.has(pos + 1) && answerPositions.has(pos + 2)) &&
+                            !(answerPositions.has(pos - 1) && answerPositions.has(pos + 1))
+                        ) {
+                            answerPositions.add(pos);
+                        }
+                    }
+                }
+                
+                const problemDiv = document.createElement('div');
+                problemDiv.className = 'problem-box';
+                problemDiv.id = `problem-${i}`;
+
+                const numberDiv = document.createElement('div');
+                numberDiv.className = `problem-number-container pn-${i}`;
+                numberDiv.textContent = i;
+
+                const sequenceDiv = document.createElement('div');
+                sequenceDiv.className = 'shapes-sequence';
+                
+                // Store solutions for the answer slots
+                const solutions = [];
+                
+                // Add shapes to sequence
+                pattern.forEach((item, index) => {
+                    if (answerPositions.has(index)) {
+                        // Create answer slot
+                        const slot = document.createElement('div');
+                        slot.className = 'answer-slot';
+                        sequenceDiv.appendChild(slot);
+                        solutions.push(item);
+                    } else {
+                        // Add shape
+                        sequenceDiv.innerHTML += SvgShapes[item.shape]();
+                    }
+                });
+
+                problemDiv.appendChild(numberDiv);
+                problemDiv.appendChild(sequenceDiv);
+                problemsContainer.appendChild(problemDiv);
+
+                // Store the solutions
+                problemSolutions[`problem-${i}`] = solutions;
+            }
+        }
+
+        const problemSolutions = {};
+
+        document.getElementById('check-answers-btn').addEventListener('click', function() {
+            for (const problemId in problemSolutions) {
+                const problemDiv = document.getElementById(problemId);
+                if (problemDiv) {
+                    const slots = problemDiv.querySelectorAll('.answer-slot');
+                    const solutions = problemSolutions[problemId];
+                    solutions.forEach((sol, index) => {
+                        if (slots[index]) {
+                            slots[index].innerHTML = SvgShapes[sol.shape]();
+                            slots[index].classList.add('correct');
+                        }
+                    });
+                }
+            }
+            const feedbackDiv = document.getElementById('grading-feedback');
+            feedbackDiv.innerHTML = '<span class="grade-icon grade-A">🌟</span> Solutions Revealed! Compare your drawings and keep practicing!';
+            this.disabled = true;
+        });
+
+        document.getElementById('generate-new-btn').addEventListener('click', function() {
+            // Reset the check answers button
+            const checkButton = document.getElementById('check-answers-btn');
+            checkButton.disabled = false;
+            
+            // Clear feedback
+            document.getElementById('grading-feedback').innerHTML = '';
+            
+            // Generate new worksheet
+            generateNewWorksheet();
+        });
+
+        // Generate initial worksheet
+        generateNewWorksheet();
+    </script>
+</body>
+</html>

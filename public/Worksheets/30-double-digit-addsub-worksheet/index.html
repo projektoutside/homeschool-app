@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Double Digit Addition & Subtraction Problems</title>
+  <style>
+    /* ============== PRINT & PAGE SETTINGS ============== */
+    @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Hide interactive elements during print */
+      .button-container,
+      .generate-btn,
+      .check-btn,
+            .print-btn,
+      .static-btn,
+      .save-btn {
+        display: none !important;
+      }
+
+      /* Hide placeholder text in print */
+      input::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+      }
+
+      body {
+        margin: 0 !important;
+        padding: 0.25in !important;
+                width: 100% !important;
+                height: 100% !important;
+      }
+
+      .problems-grid {
+        page-break-inside: avoid !important;
+      }
+
+      .grade-display {
+        position: fixed !important;
+        bottom: 0.6in !important;
+        left: 0;
+        right: 0;
+        margin: 0 auto !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+    }
+
+    /* ============== BASE LAYOUT & FONTS ============== */
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      color: #3498db;
+      padding: 20px;
+                width: 100% !important;
+                height: 100% !important;
+      background-color: white;
+      width: 8.5in;
+      margin: 0 auto;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 11in;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 0.2in;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin: 0 0 15px 0;
+      color: #3498db;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    .header .input-row {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 10px 0;
+    }
+
+    .header p {
+      font-size: 16px;
+      margin: 3px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .header input {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      border: none;
+      border-bottom: 1px solid #3498db;
+      outline: none;
+      width: 180px;
+      padding: 2px 4px;
+      margin: 0 5px;
+    }
+
+    .header input:focus {
+      border-bottom: 2px solid #3498db;
+    }
+
+    .example-box {
+      text-align: start;
+      margin-bottom: 0.2in;
+      padding: 8px;
+      padding-left: 15px;
+      padding-right: 15px;
+      border: 2px solid #3498db;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      width: 7.0in;
+    }
+
+    .example-box h3 {
+      margin: 0 0 5px 0;
+      color: #5dbce9;
+    }
+
+    .example-box p {
+      margin: 3px 0;
+      color: #5dbce9;
+    }
+
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(5, auto);
+      gap: 0.2in;
+      margin: 0.2in auto;
+                page-break-inside: avoid !important;
+      max-width: 7.5in;
+      width: 100%;
+    }
+
+    .problem {
+      border: 1px solid #ccc;
+      padding: 0.1in 0.1in 0.05in 0.1in;
+      text-align: right;
+      font-size: 20px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      width: 1in;
+      height: 1.3in;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: relative;
+      box-sizing: border-box;
+      transition: background-color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* Green/Red color codes for correct/incorrect */
+    .problem.correct {
+      background-color: #d4edda;
+    }
+    .problem.incorrect {
+      background-color: #f8d7da;
+    }
+
+    .problem::before {
+      content: attr(data-number);
+      position: absolute;
+      top: -6px;
+      left: -2px;
+      background: white;
+      color: #999;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #eee;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    .problem.correct::before {
+      border-color: #28a745;
+      color: #28a745;
+    }
+    .problem.incorrect::before {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .math-expression {
+      display: grid;
+      gap: 0.07in;
+      width: 100%;
+      text-align: right;
+      margin-top: 0.05in;
+    }
+
+    .number, .operator {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 20px;
+      line-height: 1;
+      white-space: pre;
+      color: #3498db;
+    }
+
+    .operator {
+      border-bottom: 2px solid #3498db;
+      margin-bottom: 0;
+    }
+
+    .problem input[type="number"] {
+      width: 70px;
+      height: 40px;
+      font-size: 20px;
+      margin-top: 7px;
+      margin-right: -10px;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .problem input[type="number"]::-webkit-outer-spin-button,
+    .problem input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Buttons container */
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background-color 0.2s ease;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .generate-btn {
+      background-color: #2ECC71;
+    }
+    .generate-btn:hover {
+      background-color: #27AE60;
+    }
+
+    .check-btn {
+      background-color: #3498DB;
+    }
+    .check-btn:hover {
+      background-color: #2980B9;
+    }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+    .static-btn {
+      background-color: #9B59B6;
+    }
+    .static-btn:hover {
+      background-color: #8E44AD;
+    }
+
+    .save-btn {
+      background-color: #E67E22;
+    }
+    .save-btn:hover {
+      background-color: #D35400;
+    }
+
+    .grade-display {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #3498db;
+      text-align: center;
+    }
+
+    .grade-display.correct {
+      color: #2ECC71;
+    }
+    .grade-display.incorrect {
+      color: #E74C3C;
+    }
+
+    .correct-answer {
+        position: absolute;
+        top: 20px;
+        left: 30%;
+        transform: translateX(-50%);
+        color: #dc3545;
+        font-size: 16px;
+        font-weight: bold;
+        z-index: 2;
+    }
+
+    .worksheet-number {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 12px;
+        color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="worksheetNumber" class="worksheet-number"></div>
+  <div class="header">
+    <h1>Double Digit Addition & Subtraction Worksheet</h1>
+    <div class="input-row">
+      <p>Name: <input type="text" id="studentName" placeholder="Enter your name"></p>
+      <p>Date: <input type="text" id="date" placeholder="MM/DD/YYYY"></p>
+    </div>
+  </div>
+
+  <div class="example-box">
+    <h3>Examples:</h3>
+    <p>Addition: 23 + 45 = 68</p>
+    <p>Subtraction: 45 - 23 = 22</p>
+  </div>
+
+  <div class="problems-grid" id="problemsGrid"></div>
+
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateProblems()">Generate New Problems</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+    <button class="btn static-btn" onclick="generateStaticProblems()">Generate Static Problems</button>
+    <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+  </div>
+
+  <div class="grade-display" id="gradeDisplay"></div>
+
+  <script>
+    function generateWorksheetNumber() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const year = now.getFullYear();
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `WS-${month}${day}${year}-${random}`;
+    }
+
+    function generateRandomDoubleDigit() {
+      return Math.floor(Math.random() * 90) + 10; // Generates numbers from 10 to 99
+    }
+
+    function generateProblems() {
+      // Update worksheet number
+      document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+
+      const grid = document.getElementById('problemsGrid');
+      grid.innerHTML = '';
+      
+      for (let i = 1; i <= 30; i++) {
+        const isAddition = Math.random() < 0.5; // 50% chance for addition or subtraction
+        let num1, num2, answer;
+        
+        if (isAddition) {
+          num1 = generateRandomDoubleDigit();
+          num2 = generateRandomDoubleDigit();
+          answer = num1 + num2;
+        } else {
+          num1 = generateRandomDoubleDigit();
+          num2 = generateRandomDoubleDigit();
+          // Ensure positive result for subtraction
+          if (num1 < num2) {
+            [num1, num2] = [num2, num1];
+          }
+          answer = num1 - num2;
+        }
+        
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem';
+        problemDiv.setAttribute('data-number', i);
+        problemDiv.setAttribute('data-answer', answer);
+        
+        problemDiv.innerHTML = `
+          <div class="math-expression">
+            <div class="number">${num1}</div>
+            <div class="operator">${isAddition ? '+' : '-'} ${num2}</div>
+            <input type="number" placeholder="?" min="0" max="999">
+          </div>
+        `;
+        
+        grid.appendChild(problemDiv);
+      }
+      
+      document.getElementById('gradeDisplay').textContent = '';
+    }
+
+    function generateStaticProblems() {
+      const grid = document.getElementById('problemsGrid');
+      grid.innerHTML = '';
+      
+      // Using a fixed seed for consistent problems
+      const problems = [
+        // Addition problems
+        [12, 34, '+'], [23, 45, '+'], [34, 56, '+'], [45, 67, '+'], [56, 78, '+'],
+        [67, 89, '+'], [78, 12, '+'], [89, 23, '+'], [12, 45, '+'], [23, 56, '+'],
+        [34, 67, '+'], [45, 78, '+'], [56, 89, '+'], [67, 12, '+'], [78, 23, '+'],
+        // Subtraction problems
+        [89, 34, '-'], [78, 45, '-'], [67, 56, '-'], [56, 45, '-'], [45, 34, '-'],
+        [89, 23, '-'], [78, 34, '-'], [67, 45, '-'], [56, 34, '-'], [45, 23, '-'],
+        [89, 12, '-'], [78, 23, '-'], [67, 34, '-'], [56, 23, '-'], [45, 12, '-']
+      ];
+      
+      problems.forEach(([num1, num2, operator], index) => {
+        const answer = operator === '+' ? num1 + num2 : num1 - num2;
+        
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem';
+        problemDiv.setAttribute('data-number', index + 1);
+        problemDiv.setAttribute('data-answer', answer);
+        
+        problemDiv.innerHTML = `
+          <div class="math-expression">
+            <div class="number">${num1}</div>
+            <div class="operator">${operator} ${num2}</div>
+            <input type="number" placeholder="?" min="0" max="999">
+          </div>
+        `;
+        
+        grid.appendChild(problemDiv);
+      });
+      
+      document.getElementById('gradeDisplay').textContent = '';
+    }
+
+    function checkAnswers() {
+      const problems = document.querySelectorAll('.problem');
+      let correctCount = 0;
+      
+      problems.forEach(problem => {
+        const input = problem.querySelector('input');
+        const answer = parseInt(problem.getAttribute('data-answer'));
+        const userAnswer = parseInt(input.value) || 0;
+
+        // Remove any existing correct answer display
+        const existingCorrectAnswer = problem.querySelector('.correct-answer');
+        if (existingCorrectAnswer) {
+            existingCorrectAnswer.remove();
+        }
+        
+        if (userAnswer === answer) {
+          problem.classList.add('correct');
+          problem.classList.remove('incorrect');
+          correctCount++;
+        } else {
+          problem.classList.add('incorrect');
+          problem.classList.remove('correct');
+          // Add the correct answer display
+          const correctAnswerDiv = document.createElement('div');
+          correctAnswerDiv.className = 'correct-answer';
+          correctAnswerDiv.textContent = answer;
+          problem.appendChild(correctAnswerDiv);
+        }
+      });
+      
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      const percentage = Math.round((correctCount / problems.length) * 100);
+      gradeDisplay.textContent = `Score: ${correctCount}/${problems.length} (${percentage}%)`;
+      gradeDisplay.className = `grade-display ${percentage >= 70 ? 'correct' : 'incorrect'}`;
+    }
+
+    function saveWorksheet() {
+      const studentName = document.getElementById('studentName').value || 'Anonymous';
+      const date = document.getElementById('date').value || new Date().toLocaleDateString();
+      
+      // Set the values for printing
+      document.getElementById('studentName').value = studentName;
+      document.getElementById('date').value = date;
+      
+      // Trigger print
+      window.print();
+    }
+
+    // Generate problems when the page loads
+    generateProblems();
+  </script>
+</body>
+</html> 

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Step Math Problems - Easy</title>
+  <style>
+    /* ============== PRINT SETTINGS ============== */
+    @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+      }
+      .generate-btn, .check-btn, .print-btn, .button-container {
+        display: none !important;
+      }
+      input::placeholder {
+        color: transparent;
+      }
+      .header input {
+        border-bottom: 1px solid #000;
+      }
+      .problem {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-shadow: none !important;
+      }
+    }
+
+    /* ============== BASE STYLES ============== */
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      width: 8.5in;
+      margin: 0 auto;
+      padding: 0.4in;
+                width: 100% !important;
+                height: 100% !important;
+      box-sizing: border-box;
+      color: #3498db;
+      background: white;
+    }
+
+    /* ============== WORKSHEET ID ============== */
+    .worksheet-number {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    /* ============== HEADER ============== */
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin: 0 0 6px 0;
+      color: #3498db;
+    }
+
+    .header p {
+      font-size: 14px;
+      margin: 3px 0;
+    }
+
+    .header input {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 14px;
+      border: none;
+      border-bottom: 1px solid #3498db;
+      outline: none;
+      width: 180px;
+      padding: 1px 3px;
+      margin: 0 3px;
+    }
+
+    .header input:focus {
+      border-bottom: 2px solid #3498db;
+    }
+
+    /* ============== EXAMPLE BOX ============== */
+    .example-box {
+      background: #f8f9fa;
+      border: 2px solid #3498db;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 0 auto 12px auto;
+      max-width: 6.5in;
+      text-align: center;
+    }
+
+    .example-box h3 {
+      margin: 0 0 5px 0;
+      color: #3498db;
+      font-size: 18px;
+    }
+
+    .example-box p {
+      margin: 2px 0;
+      font-size: 14px;
+      color: #3498db;
+    }
+
+    /* ============== PROBLEMS GRID ============== */
+    .problems {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 12px auto;
+      max-width: 7.0in;
+    }
+
+    .problem {
+      position: relative;
+      border: 1px solid #ccc;
+      padding: 8px;
+      box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      text-align: center;
+      background: #f9f9f9;
+      font-size: 16px;
+      color: #3498db;
+      min-height: 85px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .problem::before {
+      content: attr(data-number);
+      position: absolute;
+      top: -5px;
+      left: -1px;
+      background: white;
+      color: #999;
+      font-size: 8px;
+      padding: 1px 3px;
+      border-radius: 2px;
+      border: 1px solid #eee;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    .problem.correct {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+
+    .problem.incorrect {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+
+    .problem.correct::before {
+      border-color: #28a745;
+      color: #28a745;
+    }
+
+    .problem.incorrect::before {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .math-expression {
+      font-size: 15px;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .answer-input {
+      width: 45px;
+      height: 28px;
+      font-size: 16px;
+      text-align: center;
+      border: 2px solid #fdc9ec;
+      border-radius: 3px;
+      color: black;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin-top: 3px;
+    }
+
+    .answer-input::-webkit-inner-spin-button,
+    .answer-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .correct-answer {
+      font-size: 11px;
+      color: #27ae60;
+      font-weight: bold;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .correct-answer.show {
+      display: block;
+    }
+
+    /* ============== BUTTONS ============== */
+    .button-container {
+      text-align: center;
+      margin: 15px 0 10px 0;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0 8px;
+    }
+
+    .generate-btn {
+      background-color: #2ecc71;
+    }
+
+    .generate-btn:hover {
+      background-color: #27ae60;
+    }
+
+    .check-btn {
+      background-color: #3498db;
+    }
+
+    .check-btn:hover {
+      background-color: #2980b9;
+    }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+    /* ============== GRADE DISPLAY ============== */
+    .grade-display {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      margin: 12px 0 8px 0;
+      height: 28px;
+    }
+
+    .grade-emoji {
+      font-size: 22px;
+      margin-right: 8px;
+      display: inline-block;
+      animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .grade-text {
+      display: inline-block;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes slideIn {
+      0% { transform: translateY(-20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Grade Colors */
+    .grade-a-plus { color: #2ecc71; }
+    .grade-b { color: #3498db; }
+    .grade-c { color: #f1c40f; }
+    .grade-d { color: #e67e22; }
+    .grade-f { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <div id="worksheetNumber" class="worksheet-number"></div>
+  
+  <div class="header">
+    <h1>Two-Step Math Problems - Easy</h1>
+    <p>Name: <input type="text" id="student-name" placeholder="Enter name"> 
+       Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+  </div>
+  
+  <div class="example-box">
+    <h3>Example:</h3>
+    <p>(2 + 3) × 4 = <strong>20</strong></p>
+    <p>8 - (6 ÷ 2) = <strong>5</strong></p>
+    <p>Solve inside the parentheses first, then finish the problem!</p>
+  </div>
+  
+  <div class="problems" id="problems"></div>
+  
+  <div class="grade-display" id="gradeDisplay"></div>
+  
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+  </div>
+
+  <script>
+    // Global variable to store current problems
+    let currentProblems = [];
+
+    // Worksheet ID Generation
+    function generateWorksheetNumber() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const year = now.getFullYear();
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `WS-EASY-${month}${day}${year}-${random}`;
+    }
+
+    // Standard Grade Calculation
+    function calculateGrade(correctCount, totalProblems) {
+      const percentage = (correctCount / totalProblems) * 100;
+      if (percentage >= 97) return 'A+';
+      if (percentage >= 93) return 'A';
+      if (percentage >= 90) return 'A-';
+      if (percentage >= 87) return 'B+';
+      if (percentage >= 83) return 'B';
+      if (percentage >= 80) return 'B-';
+      if (percentage >= 77) return 'C+';
+      if (percentage >= 73) return 'C';
+      if (percentage >= 70) return 'C-';
+      if (percentage >= 67) return 'D+';
+      if (percentage >= 63) return 'D';
+      if (percentage >= 60) return 'D-';
+      return 'F';
+    }
+
+    function getGradeEmoji(grade) {
+      switch(grade) {
+        case 'A+': return '🏆';
+        case 'A': return '🌟';
+        case 'A-': return '⭐';
+        case 'B+': return '😊';
+        case 'B': return '👍';
+        case 'B-': return '👌';
+        case 'C+': return '🙂';
+        case 'C': return '😐';
+        case 'C-': return '😕';
+        case 'D+': return '😟';
+        case 'D': return '😥';
+        case 'D-': return '��';
+        default: return '😢';
+      }
+    }
+
+    function getGradeClass(grade) {
+      if (grade.startsWith('A')) return 'grade-a-plus';
+      if (grade.startsWith('B')) return 'grade-b';
+      if (grade.startsWith('C')) return 'grade-c';
+      if (grade.startsWith('D')) return 'grade-d';
+      return 'grade-f';
+    }
+
+    // Random number generator
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Generate Easy Two-Step Problems (single digits)
+    function generateEasyProblem() {
+      const templates = [
+        // Addition/Subtraction in parentheses first
+        () => {
+          const a = randomInt(1, 6);
+          const b = randomInt(1, 5);
+          const c = randomInt(2, 4);
+          const inner = a + b;
+          return { 
+            expression: `(${a} + ${b}) × ${c}`,
+            answer: inner * c
+          };
+        },
+        () => {
+          const a = randomInt(6, 9);
+          const b = randomInt(1, 4);
+          const c = randomInt(1, 3);
+          const inner = a - b;
+          return { 
+            expression: `(${a} - ${b}) + ${c}`,
+            answer: inner + c
+          };
+        },
+        () => {
+          const a = randomInt(8, 9);
+          const b = randomInt(2, 4);
+          const c = randomInt(1, 3);
+          const inner = a - b;
+          return { 
+            expression: `(${a} - ${b}) - ${c}`,
+            answer: inner - c
+          };
+        },
+        // Multiplication in parentheses first
+        () => {
+          const a = randomInt(2, 4);
+          const b = randomInt(2, 3);
+          const c = randomInt(1, 5);
+          const inner = a * b;
+          return { 
+            expression: `(${a} × ${b}) + ${c}`,
+            answer: inner + c
+          };
+        },
+        () => {
+          const a = randomInt(2, 4);
+          const b = randomInt(2, 3);
+          const c = randomInt(1, 4);
+          const inner = a * b;
+          return { 
+            expression: `(${a} × ${b}) - ${c}`,
+            answer: inner - c
+          };
+        },
+        // Division in parentheses first (easy divisions)
+        () => {
+          const b = randomInt(2, 3);
+          const quotient = randomInt(2, 4);
+          const a = b * quotient;
+          const c = randomInt(1, 4);
+          return { 
+            expression: `(${a} ÷ ${b}) + ${c}`,
+            answer: quotient + c
+          };
+        },
+        () => {
+          const b = randomInt(2, 3);
+          const quotient = randomInt(3, 5);
+          const a = b * quotient;
+          const c = randomInt(1, 3);
+          return { 
+            expression: `(${a} ÷ ${b}) - ${c}`,
+            answer: quotient - c
+          };
+        },
+        // Second operation first
+        () => {
+          const a = randomInt(1, 4);
+          const b = randomInt(2, 3);
+          const c = randomInt(2, 3);
+          const inner = b * c;
+          return { 
+            expression: `${a} + (${b} × ${c})`,
+            answer: a + inner
+          };
+        },
+        () => {
+          const a = randomInt(8, 15);
+          const b = randomInt(2, 3);
+          const c = randomInt(2, 3);
+          const inner = b * c;
+          return { 
+            expression: `${a} - (${b} × ${c})`,
+            answer: a - inner
+          };
+        }
+      ];
+
+      const template = templates[randomInt(0, templates.length - 1)];
+      const problem = template();
+      
+      // Ensure positive answers
+      if (problem.answer <= 0 || problem.answer > 25) {
+        return generateEasyProblem();
+      }
+      
+      return problem;
+    }
+
+    // Main generation function
+    function generateNewWorksheet() {
+      // Update worksheet number
+      document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+      
+      // Clear previous problems
+      currentProblems = [];
+      const problemsContainer = document.querySelector('.problems');
+      problemsContainer.innerHTML = '';
+      
+      // Generate 15 problems (3x5 grid)
+      for (let i = 0; i < 15; i++) {
+        const problem = generateEasyProblem();
+        currentProblems.push(problem);
+        
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem';
+        problemDiv.setAttribute('data-number', '#' + (i + 1));
+        
+        problemDiv.innerHTML = `
+          <div class="math-expression">${problem.expression} =</div>
+          <input type="number" class="answer-input" id="answer-${i}">
+          <div class="correct-answer">Answer: ${problem.answer}</div>
+        `;
+        
+        problemsContainer.appendChild(problemDiv);
+      }
+      
+      // Clear grade display
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      if (gradeDisplay) {
+        gradeDisplay.innerHTML = '';
+    }
+    }
+
+    // Answer checking function
+    function checkAnswers() {
+      let correctCount = 0;
+      const totalProblems = currentProblems.length;
+      
+      // Check each answer
+      document.querySelectorAll('.problem').forEach((problem, index) => {
+        const answerInput = problem.querySelector('.answer-input');
+        const correctAnswerDiv = problem.querySelector('.correct-answer');
+        const userAnswer = parseInt(answerInput.value, 10);
+        const correctAnswer = currentProblems[index].answer;
+        
+        // Show correct answer
+        correctAnswerDiv.classList.add('show');
+        
+        // Check if correct
+        problem.classList.remove('correct', 'incorrect');
+        if (!isNaN(userAnswer) && userAnswer === correctAnswer) {
+            correctCount++;
+            problem.classList.add('correct');
+        } else if (answerInput.value !== '') {
+            problem.classList.add('incorrect');
+          }
+      });
+      
+      // Display grade
+      const grade = calculateGrade(correctCount, totalProblems);
+      const gradeClass = getGradeClass(grade);
+      const emoji = getGradeEmoji(grade);
+      const percentage = (correctCount / totalProblems) * 100;
+      
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      gradeDisplay.innerHTML = `
+        <span class="grade-emoji ${gradeClass}">${emoji}</span>
+        <span class="grade-text ${gradeClass}">
+          Grade: ${grade} (${correctCount}/${totalProblems} - ${percentage.toFixed(1)}%)
+        </span>
+      `;
+    }
+
+    // Auto-load on page load
+    window.onload = generateNewWorksheet;
+  </script>
+</body>
+</html> 

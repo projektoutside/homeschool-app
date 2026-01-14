@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fill in the Missing Answers – May 2025 Calendar</title>
+  <style>
+    /* ========= PRINT & PAGE SETTINGS ========= */
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+        -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+      }
+      /* hide interactive bits */
+      .button-container { display: none !important; }
+      input::placeholder { color: transparent !important; opacity: 0 !important; }
+      .answer-input { background:white !important; }
+    }
+
+    /* ========= BASE LAYOUT ========= */
+    body {
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      color: #3498db;
+      background: white;
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0 auto;
+      padding: 20px;
+                width: 100% !important;
+                height: 100% !important;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ========= HEADER ========= */
+    .header {
+      text-align: center;
+      margin-bottom: 0.3in;
+    }
+    .header h1 {
+      font-size: 24px;
+      margin: 0 0 15px 0;
+      color: #3498db;
+    }
+    .month-year-display {
+      font-size: 36px;
+      font-weight: bold;
+      color: #3498db;
+      margin: 10px 0 20px 0;
+      text-transform: uppercase;
+    }
+    .input-row {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .input-row p {
+      margin: 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+    .input-row input {
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      font-size: 16px;
+      border: none;
+      border-bottom: 1px solid #3498db;
+      outline: none;
+      margin-left: 6px;
+      width: 160px;
+    }
+    .input-row input:focus { border-bottom: 2px solid #3498db; }
+
+    /* ========= CALENDAR LAYOUT ========= */
+    .calendar-wrapper {
+      width: 100%;
+      max-width: 7.5in;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    /* weekday heading row */
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.05in;
+    }
+    .weekday {
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      padding: 4px 2px;
+      border-radius: 6px;
+      background: #eaf4fd;
+      border: 2px solid #3498db;
+    }
+    /* dates grid */
+    .dates {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: 1.1in;
+      gap: 0.05in;
+    }
+    .day-box {
+      border: 2px solid #fdc9ec;
+      border-radius: 6px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 6px;
+      position: relative;
+      font-size: 18px;
+    }
+    .day-number {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    /* answer input styling */
+    .answer-input {
+      width: 85%;
+      min-width: 40px;
+      max-width: 120px;
+      height: 32px;
+      font-size: 20px;
+      text-align: center;
+      background: #fdc9ec;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      appearance: textfield;
+      -moz-appearance: textfield;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+    .answer-input::-webkit-outer-spin-button,
+    .answer-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* revealed answers */
+    .correct-answer { color: #e74c3c; font-weight: bold; }
+
+    /* ========= BUTTONS ========= */
+    .button-container {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      width: 100%;
+    }
+    .btn {
+      font-family: "Comic Sans MS", cursive, sans-serif;
+      font-size: 16px;
+      color: #fff;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .generate-btn { background: #2ecc71; }
+    .generate-btn:hover { background: #27ae60; }
+    .check-btn { background: #3498db; }
+    .check-btn:hover { background: #2980b9; }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Fill in the Missing Answers</h1>
+    <div class="month-year-display" id="monthYearDisplay"></div>
+    <div class="input-row">
+      <p>Student Name: <input type="text" placeholder="Enter your name" /></p>
+      <p>Date: <input type="text" placeholder="MM/DD/YYYY" /></p>
+      <p>Subject: <input type="text" value="Calendar Patterns" /></p>
+    </div>
+  </div>
+
+  <div class="calendar-wrapper" id="calendarWrapper"></div>
+
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+  </div>
+
+  <script>
+    // Get current month (0-11) and current year
+    const currentDate = new Date();
+    const month = currentDate.getMonth(); // This will be 0-11
+    const year = currentDate.getFullYear(); // This will be the current year
+    const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // Update the title and month-year display
+    function updateMonthYearDisplay() {
+      const monthYearText = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+      document.title = `Fill in the Missing Answers – ${monthYearText} Calendar`;
+      document.getElementById('monthYearDisplay').textContent = monthYearText;
+    }
+    
+    // Initial update
+    updateMonthYearDisplay();
+
+    let blanks = { weekday: [], dates: [] }; // store blank indices for current worksheet
+
+    // ---------- MAIN GENERATOR ---------- //
+    function generateWorksheet() {
+      const wrapper = document.getElementById("calendarWrapper");
+      wrapper.innerHTML = "";
+
+      // Update month-year display
+      updateMonthYearDisplay();
+
+      // build weekday header row with possible blanks
+      const weekdaysRow = document.createElement("div");
+      weekdaysRow.className = "weekdays";
+
+      blanks.weekday = getRandomSample(weekdayNames.length, 2); // leave 2 weekdays blank
+
+      weekdayNames.forEach((name, idx) => {
+        const cell = document.createElement("div");
+        cell.className = "weekday";
+        if (blanks.weekday.includes(idx)) {
+          // blank
+          const inp = createAnswerInput(name.toLowerCase());
+          cell.appendChild(inp);
+        } else {
+          cell.textContent = name;
+        }
+        weekdaysRow.appendChild(cell);
+      });
+      wrapper.appendChild(weekdaysRow);
+
+      // build dates grid
+      const datesGrid = document.createElement("div");
+      datesGrid.className = "dates";
+
+      // find the day index of May 1, 2025
+      const firstDayIdx = new Date(year, month, 1).getDay();
+      const daysInMonth = 31;
+      const totalCells = Math.ceil((firstDayIdx + daysInMonth) / 7) * 7;
+
+      blanks.dates = getRandomSample(daysInMonth, 8); // leave 8 random dates blank
+
+      for (let cellIdx = 0; cellIdx < totalCells; cellIdx++) {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "day-box";
+
+        const dateNumber = cellIdx - firstDayIdx + 1;
+        if (dateNumber < 1 || dateNumber > daysInMonth) {
+          // cell outside this month
+          datesGrid.appendChild(dayDiv);
+          continue;
+        }
+
+        const dayNumSpan = document.createElement("span");
+        dayNumSpan.className = "day-number";
+        dayDiv.appendChild(dayNumSpan);
+
+        if (blanks.dates.includes(dateNumber)) {
+          // blank date number
+          const inp = createAnswerInput(dateNumber);
+          dayDiv.appendChild(inp);
+        } else {
+          dayNumSpan.textContent = dateNumber;
+        }
+
+        datesGrid.appendChild(dayDiv);
+      }
+      wrapper.appendChild(datesGrid);
+    }
+
+    // ---------- HELPERS ---------- //
+    function createAnswerInput(correctValue) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "answer-input";
+      input.dataset.answer = correctValue;
+      return input;
+    }
+
+    function getRandomSample(maxInclusive, sampleSize) {
+      const arr = [];
+      while (arr.length < sampleSize) {
+        const val = Math.floor(Math.random() * maxInclusive) + 1; // 1‑based for days
+        if (!arr.includes(val)) arr.push(val);
+      }
+      return arr;
+    }
+
+    function checkAnswers() {
+      const inputs = document.querySelectorAll(".answer-input");
+      inputs.forEach(inp => {
+        if (inp.dataset.revealed === "true") return; // skip already revealed
+        const correct = inp.dataset.answer;
+        inp.style.display = "none"; // hide input field
+        const ansSpan = document.createElement("span");
+        ansSpan.textContent = correct;
+        ansSpan.className = "correct-answer";
+        inp.parentNode.appendChild(ansSpan);
+        inp.dataset.revealed = "true";
+      });
+    }
+
+    // initial generate
+    generateWorksheet();
+  </script>
+</body>
+</html>

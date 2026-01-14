@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Last 15 U.S. Presidents Vocabulary</title>
+    <style>
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+            .button-container {
+                display: none !important;
+            }
+
+            input::placeholder {
+                color: transparent !important;
+            }
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: white;
+            width: 8.5in;
+            height: 11in;
+            padding: 0.5in;
+                width: 100% !important;
+                height: 100% !important;
+            margin: 0 auto;
+            box-sizing: border-box;
+            color: #3498db;
+        }
+
+        .worksheet-number {
+            font-size: 12px;
+            color: #666;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            margin: 2px 0;
+        }
+
+        .header input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 14px;
+            border: none;
+            border-bottom: 1px solid #3498db;
+            outline: none;
+            width: 160px;
+            padding: 2px 5px;
+            margin: 0 5px;
+        }
+
+        .word-bank {
+            border: 2px solid #3498db;
+            padding: 2px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            max-width: 7.5in;
+        }
+
+        .word-bank-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .problems {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .problem {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+
+        .problem input {
+            font-size: 16px;
+            background: #fdc9ec;
+            border: 2px solid lightpink;
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive;
+            width: 140px;
+            padding: 2px;
+            margin-left: 5px;
+        }
+
+        .correct-answer {
+            display: block;
+            margin-top: 5px;
+            color: red;
+            font-size: 14px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 5px;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .check-btn {
+            background-color: #3498db;
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        .random-btn {
+            background-color: #9b59b6;
+        }
+
+        .random-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .order-btn {
+            background-color: #e67e22;
+        }
+
+        .order-btn:hover {
+            background-color: #d35400;
+        }
+        
+        .word-bank-btn {
+            background-color: #1abc9c;
+        }
+
+        .word-bank-btn:hover {
+            background-color: #16a085;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="worksheetNumber" class="worksheet-number"></div>
+    <div class="header">
+        <h1>Last 15 U.S. Presidents Vocabulary</h1>
+        <p>Name: <input type="text" placeholder="Enter name">
+            Date: <input type="text" placeholder="Enter date"></p>
+    </div>
+
+    <div class="word-bank">
+        <div class="word-bank-title">Word Bank</div>
+        <div class="word-grid">
+            <div>Joe Biden</div>
+            <div>Donald Trump</div>
+            <div>Barack Obama</div>
+            <div>George W. Bush</div>
+            <div>Bill Clinton</div>
+            <div>George H. W. Bush</div>
+            <div>Ronald Reagan</div>
+            <div>Jimmy Carter</div>
+            <div>Gerald Ford</div>
+            <div>Richard Nixon</div>
+            <div>Lyndon B. Johnson</div>
+            <div>John F. Kennedy</div>
+            <div>Dwight Eisenhower</div>
+            <div>Harry Truman</div>
+            <div>Franklin D. Roosevelt</div>
+        </div>
+    </div>
+
+    <div class="problems" id="problems"></div>
+
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="window.location.reload()">Generate New Worksheet</button>
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+        <button class="btn random-btn" onclick="shuffleProblems()">Random</button>
+        <button class="btn order-btn" onclick="orderProblems()">Order</button>
+        <button class="btn word-bank-btn" onclick="shuffleWordBank()">Word Bank Random</button>
+    </div>
+
+    <script>
+        const problemsList = [{
+                number: 46,
+                years: '2021–2025',
+                name: 'Joe Biden'
+            },
+            {
+                number: 45,
+                years: '2017–2021',
+                name: 'Donald Trump'
+            },
+            {
+                number: 44,
+                years: '2009–2017',
+                name: 'Barack Obama'
+            },
+            {
+                number: 43,
+                years: '2001–2009',
+                name: 'George W. Bush'
+            },
+            {
+                number: 42,
+                years: '1993–2001',
+                name: 'Bill Clinton'
+            },
+            {
+                number: 41,
+                years: '1989–1993',
+                name: 'George H. W. Bush'
+            },
+            {
+                number: 40,
+                years: '1981–1989',
+                name: 'Ronald Reagan'
+            },
+            {
+                number: 39,
+                years: '1977–1981',
+                name: 'Jimmy Carter'
+            },
+            {
+                number: 38,
+                years: '1974–1977',
+                name: 'Gerald Ford'
+            },
+            {
+                number: 37,
+                years: '1969–1974',
+                name: 'Richard Nixon'
+            },
+            {
+                number: 36,
+                years: '1963–1969',
+                name: 'Lyndon B. Johnson'
+            },
+            {
+                number: 35,
+                years: '1961–1963',
+                name: 'John F. Kennedy'
+            },
+            {
+                number: 34,
+                years: '1953–1961',
+                name: 'Dwight Eisenhower'
+            },
+            {
+                number: 33,
+                years: '1945–1953',
+                name: 'Harry Truman'
+            },
+            {
+                number: 32,
+                years: '1933–1945',
+                name: 'Franklin D. Roosevelt'
+            }
+        ];
+
+        function renderProblems(list) {
+            const container = document.getElementById('problems');
+            container.innerHTML = '';
+            list.forEach((prob, i) => {
+                const div = document.createElement('div');
+                div.className = 'problem';
+                div.dataset.name = prob.name;
+                div.innerHTML = `#${i + 1}: I am the ${prob.number}th president. I served for ${prob.years}. My name is <input type="text">`;
+                container.appendChild(div);
+            });
+        }
+
+        function checkAnswers() {
+            document.querySelectorAll('.problem').forEach(div => {
+                if (!div.querySelector('.correct-answer')) {
+                    const correct = div.dataset.name;
+                    const span = document.createElement('span');
+                    span.className = 'correct-answer';
+                    span.textContent = `Correct: ${correct}`;
+                    div.appendChild(span);
+                }
+            });
+        }
+
+        function shuffleProblems() {
+            const shuffled = [...problemsList].sort(() => Math.random() - 0.5);
+            renderProblems(shuffled);
+        }
+
+        function orderProblems() {
+            const ordered = [...problemsList].sort((a, b) => b.number - a.number);
+            renderProblems(ordered);
+        }
+
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${month}${day}${year}-${random}`;
+        }
+        
+        function shuffleWordBank() {
+            const wordBank = document.querySelector('.word-grid');
+            const words = Array.from(wordBank.children);
+            
+            // Create a shuffled array of the word elements
+            const shuffled = [...words];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
+            }
+            
+            // Clear the word bank
+            wordBank.innerHTML = '';
+            
+            // Add the words back in the shuffled order
+            shuffled.forEach(word => {
+                wordBank.appendChild(word);
+            });
+        }
+
+        document.getElementById("worksheetNumber").textContent = generateWorksheetNumber();
+        renderProblems(problemsList);
+    </script>
+</body>
+
+</html>

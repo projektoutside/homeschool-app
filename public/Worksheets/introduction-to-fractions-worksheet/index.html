@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction to Fractions Worksheet</title>
+    <style>
+        /* ============== PRINT SETTINGS ============== */
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+            .generate-btn, .check-btn, .print-btn, .button-container {
+                display: none !important;
+            }
+            input::placeholder {
+                color: transparent;
+            }
+            .header input {
+                border-bottom: 1px solid #000;
+            }
+            body {
+                padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0;
+            }
+            
+            /* ============== PRINT VISIBILITY FOR VISUAL ELEMENTS ============== */
+            .circle {
+                border: 2px solid #000 !important; /* Ensure borders print */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .circle::before, .circle::after, .circle:before {
+                background: #000 !important; /* Ensure division lines print */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .rectangle {
+                border: 2px solid #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .rect-section {
+                border-right: 1px solid #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .rect-section.filled {
+                background-color: #ccc !important; /* Use gray for print visibility */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            /* Print-friendly filled sections */
+            .circle.half-filled {
+                background: linear-gradient(90deg, #ccc 50%, white 50%) !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            
+            .circle.third-filled {
+                background: conic-gradient(#ccc 120deg, white 120deg) !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            
+            .circle.two-thirds-filled {
+                background: conic-gradient(#ccc 240deg, white 240deg) !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            
+            .circle.quarter-filled {
+                background: conic-gradient(#ccc 90deg, white 90deg) !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            
+            .circle.three-quarters-filled {
+                background: conic-gradient(#ccc 270deg, white 270deg) !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            
+            .circle.fully-filled {
+                background: #ccc !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+        }
+
+        /* ============== BASE STYLES ============== */
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            width: 8.5in;
+            margin: 0 auto;
+            padding: 0.4in 0.5in;
+                width: 100% !important;
+                height: 100% !important;
+            box-sizing: border-box;
+            color: #3498db;
+            font-size: 14px;
+        }
+
+        /* ============== WORKSHEET ID ============== */
+        .worksheet-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* ============== HEADER ============== */
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0 0 8px 0;
+            color: #3498db;
+        }
+
+        .header p {
+            font-size: 14px;
+            margin: 3px 0;
+        }
+
+        .header input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 14px;
+            border: none;
+            border-bottom: 1px solid #3498db;
+            outline: none;
+            width: 150px;
+            padding: 2px 5px;
+            margin: 0 5px;
+        }
+
+        .header input:focus {
+            border-bottom: 2px solid #3498db;
+        }
+
+        /* ============== BUTTONS ============== */
+        .button-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0 8px;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .check-btn {
+            background-color: #3498db;
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        /* ============== GRADE DISPLAY ============== */
+        .grade-display {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            height: 30px;
+        }
+
+        .grade-emoji {
+            font-size: 24px;
+            margin-right: 8px;
+            display: inline-block;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .grade-text {
+            display: inline-block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Grade Colors */
+        .grade-a-plus { color: #2ecc71; }
+        .grade-b { color: #3498db; }
+        .grade-c { color: #f1c40f; }
+        .grade-d { color: #e67e22; }
+        .grade-f { color: #e74c3c; }
+
+        /* ============== PROBLEM LAYOUT ============== */
+        .problems {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 15px auto;
+            max-width: 7.5in;
+        }
+
+        .problem {
+            position: relative;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            text-align: center;
+            background: #f9f9f9;
+            font-size: 14px;
+            color: #3498db;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .problem::before {
+            content: attr(data-number);
+            position: absolute;
+            top: -5px;
+            left: -2px;
+            background: white;
+            color: #999;
+            font-size: 8px;
+            padding: 1px 3px;
+            border-radius: 2px;
+            border: 1px solid #eee;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        .problem.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .problem.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .problem.correct::before {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .problem.incorrect::before {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        /* ============== FRACTION VISUALS ============== */
+        .fraction-visual {
+            margin: 8px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 45px;
+            flex-wrap: wrap;
+        }
+
+        /* Circle Fractions */
+        .circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #3498db;
+            position: relative;
+            margin: 3px;
+            background: white;
+            overflow: hidden;
+        }
+
+        /* Half circle - simple vertical line down the middle */
+        .circle.half-filled {
+            background: linear-gradient(90deg, #ff6b6b 50%, white 50%);
+        }
+
+        .circle.half-filled::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        /* Third circle - three clear lines radiating from center */
+        .circle.third-filled {
+            background: conic-gradient(#ff6b6b 120deg, white 120deg);
+        }
+
+        /* Create three radiating lines for thirds */
+        .circle.third-filled::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            z-index: 2;
+        }
+
+        .circle.third-filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(120deg);
+            z-index: 2;
+        }
+
+        /* Add third line using a new approach */
+        .circle.third-filled {
+            position: relative;
+        }
+
+        .circle.third-filled:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(240deg);
+            z-index: 2;
+        }
+
+        /* Two-thirds circle - same three radiating lines */
+        .circle.two-thirds-filled {
+            background: conic-gradient(#ff6b6b 240deg, white 240deg);
+            position: relative;
+        }
+
+        .circle.two-thirds-filled::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            z-index: 2;
+        }
+
+        .circle.two-thirds-filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(120deg);
+            z-index: 2;
+        }
+
+        .circle.two-thirds-filled:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(240deg);
+            z-index: 2;
+        }
+
+        /* Quarter circle - simple cross (+ shape) */
+        .circle.quarter-filled {
+            background: conic-gradient(#ff6b6b 90deg, white 90deg);
+        }
+
+        .circle.quarter-filled::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        .circle.quarter-filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #2c3e50;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* Three-quarters circle - same cross lines */
+        .circle.three-quarters-filled {
+            background: conic-gradient(#ff6b6b 270deg, white 270deg);
+        }
+
+        .circle.three-quarters-filled::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        .circle.three-quarters-filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #2c3e50;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* Fully filled circle - add appropriate division lines based on common usage */
+        .circle.fully-filled {
+            background: #ff6b6b;
+        }
+
+        /* For fully filled, show quarter divisions by default */
+        .circle.fully-filled::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        .circle.fully-filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #2c3e50;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* ============== EMPTY CIRCLES WITH DIVISION LINES ============== */
+        
+        /* Empty halves - show vertical division line */
+        .circle.empty-halves {
+            background: white;
+        }
+
+        .circle.empty-halves::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        /* Empty thirds - show three radiating lines */
+        .circle.empty-thirds {
+            background: white;
+            position: relative;
+        }
+
+        .circle.empty-thirds::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            z-index: 2;
+        }
+
+        .circle.empty-thirds::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(120deg);
+            z-index: 2;
+        }
+
+        .circle.empty-thirds:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 50%;
+            background: #2c3e50;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(240deg);
+            z-index: 2;
+        }
+
+        /* Empty quarters - show cross lines */
+        .circle.empty-quarters {
+            background: white;
+        }
+
+        .circle.empty-quarters::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: #2c3e50;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        .circle.empty-quarters::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #2c3e50;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        /* Rectangle Fractions */
+        .rectangle {
+            width: 60px;
+            height: 30px;
+            border: 2px solid #3498db;
+            display: flex;
+            margin: 3px;
+            background: white;
+        }
+
+        .rect-section {
+            flex: 1;
+            border-right: 1px solid #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rect-section:last-child {
+            border-right: none;
+        }
+
+        .rect-section.filled {
+            background-color: #ff9f43;
+        }
+
+        /* Input Fields */
+        .fraction-input {
+            display: inline-block;
+            margin: 6px 3px;
+            vertical-align: middle;
+        }
+
+        .fraction-input input {
+            width: 28px;
+            font-size: 14px;
+            text-align: center;
+            border: 2px solid #fdc9ec;
+            border-radius: 3px;
+            color: black;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            padding: 2px;
+        }
+
+        .fraction-input input::-webkit-inner-spin-button,
+        .fraction-input input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .fraction-bar {
+            display: block;
+            width: 28px;
+            height: 2px;
+            background: #3498db;
+            margin: 1px auto;
+        }
+
+        .problem-text {
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: #2c3e50;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        .correct-answer {
+            position: absolute;
+            top: 12px;
+            right: 8px;
+            color: #dc3545;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .answer-choices {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            margin: 6px 0;
+        }
+
+        .answer-choices label {
+            font-size: 12px;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 2px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            width: 60px;
+            text-align: center;
+        }
+
+        .answer-choices input[type="radio"] {
+            margin-right: 4px;
+        }
+
+        .large-fraction {
+            font-size: 16px;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .compare-section {
+            font-size: 14px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .compare-section select {
+            font-size: 14px;
+            padding: 2px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="worksheetNumber" class="worksheet-number"></div>
+    
+    <div class="header">
+        <h1>Introduction to Fractions</h1>
+        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> 
+           Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+    </div>
+
+    <div class="problems">
+        <!-- Problems will be dynamically generated here -->
+    </div>
+
+    <div class="grade-display" id="gradeDisplay"></div>
+
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+    </div>
+
+    <script>
+        let currentProblems = [];
+
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${month}${day}${year}-${random}`;
+        }
+
+        function calculateGrade(correctCount, totalProblems) {
+            const percentage = (correctCount / totalProblems) * 100;
+            if (percentage >= 97) return 'A+';
+            if (percentage >= 93) return 'A';
+            if (percentage >= 90) return 'A-';
+            if (percentage >= 87) return 'B+';
+            if (percentage >= 83) return 'B';
+            if (percentage >= 80) return 'B-';
+            if (percentage >= 77) return 'C+';
+            if (percentage >= 73) return 'C';
+            if (percentage >= 70) return 'C-';
+            if (percentage >= 67) return 'D+';
+            if (percentage >= 63) return 'D';
+            if (percentage >= 60) return 'D-';
+            return 'F';
+        }
+
+        function getGradeEmoji(grade) {
+            switch(grade) {
+                case 'A+': return '🏆';
+                case 'A': return '🌟';
+                case 'A-': return '⭐';
+                case 'B+': return '😊';
+                case 'B': return '👍';
+                case 'B-': return '👌';
+                case 'C+': return '🙂';
+                case 'C': return '😐';
+                case 'C-': return '😕';
+                case 'D+': return '😟';
+                case 'D': return '😥';
+                case 'D-': return '😓';
+                default: return '😢';
+            }
+        }
+
+        function getGradeClass(grade) {
+            if (grade.startsWith('A')) return 'grade-a-plus';
+            if (grade.startsWith('B')) return 'grade-b';
+            if (grade.startsWith('C')) return 'grade-c';
+            if (grade.startsWith('D')) return 'grade-d';
+            return 'grade-f';
+        }
+
+        // Create visual representations for different fractions
+        function createVisualFraction(numerator, denominator, type = 'circle') {
+            // VALIDATION RULES - Prevent invalid fractions
+            if (typeof numerator !== 'number' || typeof denominator !== 'number') {
+                console.error('Invalid fraction: numerator and denominator must be numbers');
+                return '<div class="circle"></div>'; // Return empty circle as fallback
+            }
+            
+            if (denominator <= 0) {
+                console.error('Invalid fraction: denominator must be positive');
+                return '<div class="circle"></div>';
+            }
+            
+            if (numerator < 0) {
+                console.error('Invalid fraction: numerator must be non-negative');
+                return '<div class="circle"></div>';
+            }
+            
+            if (numerator > denominator) {
+                console.error('Invalid fraction: numerator cannot be greater than denominator for this worksheet');
+                numerator = denominator; // Cap at whole number
+            }
+            
+            // VISUAL CONSISTENCY RULES
+            if (type === 'circle') {
+                let className = 'circle';
+                
+                // Only allow denominators that we can visually represent clearly
+                if (denominator === 2) {
+                    if (numerator === 1) className += ' half-filled';
+                    else if (numerator === 2) className += ' fully-filled';
+                    else className += ' empty-halves'; // 0/2 - show division lines
+                } else if (denominator === 3) {
+                    if (numerator === 1) className += ' third-filled';
+                    else if (numerator === 2) className += ' two-thirds-filled';
+                    else if (numerator === 3) className += ' fully-filled';
+                    else className += ' empty-thirds'; // 0/3 - show division lines
+                } else if (denominator === 4) {
+                    if (numerator === 1) className += ' quarter-filled';
+                    else if (numerator === 2) className += ' half-filled'; // 2/4 = 1/2 visually
+                    else if (numerator === 3) className += ' three-quarters-filled';
+                    else if (numerator === 4) className += ' fully-filled';
+                    else className += ' empty-quarters'; // 0/4 - show division lines
+                } else {
+                    // For denominators we can't represent visually, default to basic representation
+                    console.warn(`Visual representation for denominator ${denominator} not implemented. Using basic fill.`);
+                    if (numerator === denominator) className += ' fully-filled';
+                    else if (numerator === 0) className += ' empty-quarters'; // Default empty with quarter lines
+                }
+                
+                return `<div class="${className}"></div>`;
+                
+            } else if (type === 'rectangle') {
+                // Rectangle fractions - ensure denominator makes sense for visual representation
+                if (denominator > 6) {
+                    console.warn(`Rectangle with ${denominator} sections may be too small. Consider using fewer sections.`);
+                    denominator = Math.min(denominator, 6); // Cap at 6 for visibility
+                }
+                
+                let sections = '';
+                for (let i = 1; i <= denominator; i++) {
+                    const filled = i <= numerator ? 'filled' : '';
+                    sections += `<div class="rect-section ${filled}"></div>`;
+                }
+                return `<div class="rectangle">${sections}</div>`;
+            }
+            
+            return '<div class="circle"></div>'; // Fallback
+        }
+
+        function generateNewWorksheet() {
+            // Update worksheet number
+            document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+            
+            // Clear previous problems
+            currentProblems = [];
+            const problemsContainer = document.querySelector('.problems');
+            problemsContainer.innerHTML = '';
+            
+            // PROBLEM VARIETY SYSTEM - Ensure no duplicates and good distribution
+            const problemBank = {
+                // Visual to Fraction problems (4 types: circles/rectangles with halves/thirds/quarters)
+                visualToFraction: [
+                    { num: 1, den: 2, type: 'circle' },
+                    { num: 1, den: 2, type: 'rectangle' },
+                    { num: 1, den: 3, type: 'circle' },
+                    { num: 2, den: 3, type: 'rectangle' },
+                    { num: 1, den: 4, type: 'circle' },
+                    { num: 3, den: 4, type: 'rectangle' },
+                    { num: 2, den: 4, type: 'circle' }, // Shows as half visually
+                    { num: 0, den: 2, type: 'circle' }, // Empty halves
+                    { num: 0, den: 3, type: 'circle' }, // Empty thirds
+                    { num: 0, den: 4, type: 'circle' }, // Empty quarters
+                ],
+                
+                // Multiple choice problems (different fractions)
+                multipleChoice: [
+                    { num: 1, den: 2 },
+                    { num: 1, den: 3 },
+                    { num: 2, den: 3 },
+                    { num: 1, den: 4 },
+                    { num: 3, den: 4 },
+                    { num: 0, den: 2 }, // Empty half
+                    { num: 0, den: 3 }, // Empty third
+                ],
+                
+                // Write fraction problems
+                writeFraction: [
+                    { num: 2, den: 4 }, // 2/4 (equivalent to 1/2)
+                    { num: 3, den: 3 }, // 3/3 (whole)
+                    { num: 1, den: 3 },
+                    { num: 2, den: 2 }, // 2/2 (whole)
+                    { num: 4, den: 4 }, // 4/4 (whole)
+                ],
+                
+                // Whole or part problems
+                wholeOrPart: [
+                    { num: 2, den: 2 }, // Whole
+                    { num: 3, den: 3 }, // Whole
+                    { num: 4, den: 4 }, // Whole
+                    { num: 1, den: 2 }, // Part
+                    { num: 1, den: 3 }, // Part
+                    { num: 2, den: 3 }, // Part
+                ],
+                
+                // Count sections problems
+                countSections: [
+                    { sections: 2 },
+                    { sections: 3 },
+                    { sections: 4 },
+                ]
+            };
+            
+            // SELECTION ALGORITHM - Ensure variety and no duplicates
+            const selectedProblems = [];
+            
+            // Step 1: Ensure we have at least 2 of each major problem type
+            const problemTypes = ['visualToFraction', 'multipleChoice', 'writeFraction', 'wholeOrPart', 'countSections'];
+            const minPerType = { visualToFraction: 4, multipleChoice: 3, writeFraction: 2, wholeOrPart: 2, countSections: 1 };
+            
+            // Step 2: Select problems ensuring variety
+            problemTypes.forEach(type => {
+                const available = [...problemBank[type]]; // Copy array
+                const needed = minPerType[type];
+                
+                for (let i = 0; i < needed && available.length > 0; i++) {
+                    const randomIndex = Math.floor(Math.random() * available.length);
+                    const selected = available.splice(randomIndex, 1)[0]; // Remove from available
+                    
+                    let problemObj;
+                    switch (type) {
+                        case 'visualToFraction':
+                            problemObj = createVisualToFraction(selected.num, selected.den, selected.type);
+                            break;
+                        case 'multipleChoice':
+                            problemObj = createMultipleChoiceVisual(selected.num, selected.den);
+                            break;
+                        case 'writeFraction':
+                            problemObj = createWriteFraction(selected.num, selected.den);
+                            break;
+                        case 'wholeOrPart':
+                            problemObj = createWholeOrPart(selected.num, selected.den);
+                            break;
+                        case 'countSections':
+                            problemObj = createCountSections(selected.sections);
+                            break;
+                    }
+                    
+                    // Add unique identifier to prevent duplicates
+                    problemObj.uniqueId = `${type}-${selected.num || selected.sections}-${selected.den || 'count'}-${selected.type || 'default'}`;
+                    selectedProblems.push(problemObj);
+                }
+            });
+            
+            // Step 3: Shuffle the problems to randomize layout
+            for (let i = selectedProblems.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [selectedProblems[i], selectedProblems[j]] = [selectedProblems[j], selectedProblems[i]];
+            }
+            
+            // Step 4: Ensure we have exactly 12 problems
+            while (selectedProblems.length < 12) {
+                // Add more variety from remaining problems
+                const remainingTypes = problemTypes.filter(type => problemBank[type].length > 0);
+                if (remainingTypes.length > 0) {
+                    const randomType = remainingTypes[Math.floor(Math.random() * remainingTypes.length)];
+                    const available = problemBank[randomType];
+                    
+                    if (available.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * available.length);
+                        const selected = available.splice(randomIndex, 1)[0];
+                        
+                        let problemObj;
+                        switch (randomType) {
+                            case 'visualToFraction':
+                                problemObj = createVisualToFraction(selected.num, selected.den, selected.type);
+                                break;
+                            case 'multipleChoice':
+                                problemObj = createMultipleChoiceVisual(selected.num, selected.den);
+                                break;
+                            case 'writeFraction':
+                                problemObj = createWriteFraction(selected.num, selected.den);
+                                break;
+                            case 'wholeOrPart':
+                                problemObj = createWholeOrPart(selected.num, selected.den);
+                                break;
+                            case 'countSections':
+                                problemObj = createCountSections(selected.sections);
+                                break;
+                        }
+                        
+                        problemObj.uniqueId = `${randomType}-${selected.num || selected.sections}-${selected.den || 'count'}-${selected.type || 'default'}`;
+                        selectedProblems.push(problemObj);
+                    }
+                } else {
+                    break; // No more unique problems available
+                }
+            }
+            
+            // Step 5: Final check to ensure exactly 12 problems
+            selectedProblems.splice(12); // Trim to exactly 12 if over
+            
+            // Step 6: Create HTML elements
+            selectedProblems.forEach((problem, index) => {
+                currentProblems.push(problem);
+                
+                const problemDiv = document.createElement('div');
+                problemDiv.className = 'problem';
+                problemDiv.id = `problem-${index}`;
+                problemDiv.setAttribute('data-number', '#' + (index + 1));
+                problemDiv.innerHTML = problem.html;
+                
+                problemsContainer.appendChild(problemDiv);
+            });
+
+            // Clear grade display
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            if (gradeDisplay) {
+                gradeDisplay.innerHTML = '';
+            }
+            
+            console.log(`Generated ${selectedProblems.length} unique problems with variety distribution`);
+        }
+
+        function createVisualToFraction(numerator, denominator, visualType) {
+            const visual = createVisualFraction(numerator, denominator, visualType);
+            
+            return {
+                type: 'visual_to_fraction',
+                numerator,
+                denominator,
+                html: `
+                    <div class="problem-text">What fraction is shaded?</div>
+                    <div class="fraction-visual">${visual}</div>
+                    <div class="fraction-input">
+                        <input type="number" id="num-${currentProblems.length}" min="0" max="10" placeholder="?">
+                        <div class="fraction-bar"></div>
+                        <input type="number" id="den-${currentProblems.length}" min="1" max="10" placeholder="?">
+                    </div>
+                `,
+                answer: { numerator, denominator }
+            };
+        }
+
+        function createMultipleChoiceVisual(targetNum, targetDen) {
+            const visual = createVisualFraction(targetNum, targetDen, 'circle');
+            
+            // Create answer choices that are LOGICALLY CONSISTENT with the visual
+            const correctAnswer = `${targetNum}/${targetDen}`;
+            let choices = [correctAnswer];
+            
+            // Generate wrong answers that use the SAME DENOMINATOR (same visual division)
+            for (let num = 0; num <= targetDen; num++) {
+                if (num !== targetNum && num <= targetDen) {
+                    const choice = `${num}/${targetDen}`;
+                    if (!choices.includes(choice)) {
+                        choices.push(choice);
+                    }
+                }
+            }
+            
+            // If we need more choices and have space, add one with different denominator
+            // but only if it makes visual sense (like 1/2 vs 2/4 - equivalent fractions)
+            if (choices.length < 4) {
+                if (targetDen === 2 && !choices.includes('2/4')) {
+                    // For halves, we can include quarters as they're visually related
+                    choices.push('1/4');
+                } else if (targetDen === 4 && !choices.includes('1/2')) {
+                    // For quarters, we can include halves as they're visually related
+                    choices.push('1/2');
+                } else if (targetDen === 3) {
+                    // For thirds, stick to thirds only as they're unique
+                    // Add one more logical third if available
+                    for (let num = 0; num <= 3; num++) {
+                        const choice = `${num}/3`;
+                        if (!choices.includes(choice) && choices.length < 4) {
+                            choices.push(choice);
+                        }
+                    }
+                }
+            }
+            
+            // Ensure we have exactly 3-4 choices and remove any invalid ones
+            choices = choices.filter(choice => {
+                const [num, den] = choice.split('/').map(Number);
+                return num >= 0 && num <= den && den > 0;
+            }).slice(0, 4);
+            
+            // If we still don't have enough choices, add more logical ones
+            while (choices.length < 3) {
+                const randomNum = Math.floor(Math.random() * (targetDen + 1));
+                const choice = `${randomNum}/${targetDen}`;
+                if (!choices.includes(choice)) {
+                    choices.push(choice);
+                }
+            }
+            
+            // Shuffle choices but keep them logical
+            const correctIndex = choices.indexOf(correctAnswer);
+            choices.splice(correctIndex, 1); // Remove correct answer
+            
+            // Shuffle wrong answers
+            for (let i = choices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [choices[i], choices[j]] = [choices[j], choices[i]];
+            }
+            
+            // Insert correct answer at random position
+            const randomPosition = Math.floor(Math.random() * (choices.length + 1));
+            choices.splice(randomPosition, 0, correctAnswer);
+            
+            // Take only first 3 choices to save space
+            choices = choices.slice(0, 3);
+            
+            return {
+                type: 'multiple_choice',
+                html: `
+                    <div class="problem-text">What fraction is shown?</div>
+                    <div class="fraction-visual">${visual}</div>
+                    <div class="answer-choices">
+                        ${choices.map(choice => 
+                            `<label><input type="radio" name="choice-${currentProblems.length}" value="${choice}"> ${choice}</label>`
+                        ).join('')}
+                    </div>
+                `,
+                answer: correctAnswer
+            };
+        }
+
+        function createWriteFraction(numerator, denominator) {
+            const visual = createVisualFraction(numerator, denominator, 'rectangle');
+            
+            return {
+                type: 'write_fraction',
+                numerator,
+                denominator,
+                html: `
+                    <div class="problem-text">Write the fraction:</div>
+                    <div class="fraction-visual">${visual}</div>
+                    <div class="fraction-input">
+                        <input type="number" id="write-num-${currentProblems.length}" min="0" max="10" placeholder="?">
+                        <div class="fraction-bar"></div>
+                        <input type="number" id="write-den-${currentProblems.length}" min="1" max="10" placeholder="?">
+                    </div>
+                `,
+                answer: { numerator, denominator }
+            };
+        }
+
+        function createWholeOrPart(numerator, denominator) {
+            const visual = createVisualFraction(numerator, denominator, 'circle');
+            
+            return {
+                type: 'whole_or_part',
+                html: `
+                    <div class="problem-text">Is this a whole or part?</div>
+                    <div class="fraction-visual">${visual}</div>
+                    <div class="answer-choices">
+                        <label><input type="radio" name="whole-part-${currentProblems.length}" value="whole"> Whole</label>
+                        <label><input type="radio" name="whole-part-${currentProblems.length}" value="part"> Part</label>
+                    </div>
+                `,
+                answer: numerator === denominator ? 'whole' : 'part'
+            };
+        }
+
+        function createCountSections(sections) {
+            const visual = createVisualFraction(0, sections, 'circle'); // Show empty circle with all sections
+            
+            return {
+                type: 'count_sections',
+                html: `
+                    <div class="problem-text">How many sections total?</div>
+                    <div class="fraction-visual">${visual}</div>
+                    <div style="margin: 8px 0;">
+                        <input type="number" id="count-${currentProblems.length}" min="1" max="10" placeholder="?" style="width: 40px; text-align: center; font-size: 14px; padding: 4px; border: 2px solid #fdc9ec; border-radius: 3px;">
+                    </div>
+                `,
+                answer: sections
+            };
+        }
+
+        function checkAnswers() {
+            let correctCount = 0;
+            const totalProblems = currentProblems.length;
+            
+            document.querySelectorAll('.problem').forEach((problem, index) => {
+                const problemData = currentProblems[index];
+                let isCorrect = false;
+
+                // Remove any existing correct answer display
+                const existingCorrectAnswer = problem.querySelector('.correct-answer');
+                if (existingCorrectAnswer) {
+                    existingCorrectAnswer.remove();
+                }
+
+                switch (problemData.type) {
+                    case 'visual_to_fraction':
+                        const numInput = document.getElementById(`num-${index}`);
+                        const denInput = document.getElementById(`den-${index}`);
+                        if (numInput && denInput) {
+                            const userNum = parseInt(numInput.value);
+                            const userDen = parseInt(denInput.value);
+                            isCorrect = userNum === problemData.answer.numerator && 
+                                       userDen === problemData.answer.denominator;
+                            if (!isCorrect) {
+                                const correctAnswerDiv = document.createElement('div');
+                                correctAnswerDiv.className = 'correct-answer';
+                                correctAnswerDiv.textContent = `${problemData.answer.numerator}/${problemData.answer.denominator}`;
+                                problem.appendChild(correctAnswerDiv);
+                            }
+                        }
+                        break;
+
+                    case 'multiple_choice':
+                        const radioInput = document.querySelector(`input[name="choice-${index}"]:checked`);
+                        if (radioInput) {
+                            isCorrect = radioInput.value === problemData.answer;
+                            if (!isCorrect) {
+                                const correctAnswerDiv = document.createElement('div');
+                                correctAnswerDiv.className = 'correct-answer';
+                                correctAnswerDiv.textContent = problemData.answer;
+                                problem.appendChild(correctAnswerDiv);
+                            }
+                        }
+                        break;
+
+                    case 'write_fraction':
+                        const writeNumInput = document.getElementById(`write-num-${index}`);
+                        const writeDenInput = document.getElementById(`write-den-${index}`);
+                        if (writeNumInput && writeDenInput) {
+                            const userNum = parseInt(writeNumInput.value);
+                            const userDen = parseInt(writeDenInput.value);
+                            isCorrect = userNum === problemData.answer.numerator && 
+                                       userDen === problemData.answer.denominator;
+                            if (!isCorrect) {
+                                const correctAnswerDiv = document.createElement('div');
+                                correctAnswerDiv.className = 'correct-answer';
+                                correctAnswerDiv.textContent = `${problemData.answer.numerator}/${problemData.answer.denominator}`;
+                                problem.appendChild(correctAnswerDiv);
+                            }
+                        }
+                        break;
+
+                    case 'whole_or_part':
+                        const wholePartInput = document.querySelector(`input[name="whole-part-${index}"]:checked`);
+                        if (wholePartInput) {
+                            isCorrect = wholePartInput.value === problemData.answer;
+                            if (!isCorrect) {
+                                const correctAnswerDiv = document.createElement('div');
+                                correctAnswerDiv.className = 'correct-answer';
+                                correctAnswerDiv.textContent = problemData.answer;
+                                problem.appendChild(correctAnswerDiv);
+                            }
+                        }
+                        break;
+
+                    case 'count_sections':
+                        const countInput = document.getElementById(`count-${index}`);
+                        if (countInput) {
+                            const userCount = parseInt(countInput.value);
+                            isCorrect = userCount === problemData.answer;
+                            if (!isCorrect) {
+                                const correctAnswerDiv = document.createElement('div');
+                                correctAnswerDiv.className = 'correct-answer';
+                                correctAnswerDiv.textContent = problemData.answer;
+                                problem.appendChild(correctAnswerDiv);
+                            }
+                        }
+                        break;
+                }
+
+                if (isCorrect) {
+                    correctCount++;
+                    problem.classList.remove('incorrect');
+                    problem.classList.add('correct');
+                } else {
+                    problem.classList.remove('correct');
+                    problem.classList.add('incorrect');
+                }
+            });
+
+            // Display grade
+            const grade = calculateGrade(correctCount, totalProblems);
+            const gradeClass = getGradeClass(grade);
+            const emoji = getGradeEmoji(grade);
+            const percentage = (correctCount / totalProblems) * 100;
+            
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            gradeDisplay.innerHTML = `
+                <span class="grade-emoji ${gradeClass}">${emoji}</span>
+                <span class="grade-text ${gradeClass}">
+                    Grade: ${grade} (${correctCount}/${totalProblems} - ${percentage.toFixed(1)}%)
+                </span>
+            `;
+        }
+
+        // Auto-load on page load
+        window.onload = generateNewWorksheet;
+    </script>
+</body>
+</html> 

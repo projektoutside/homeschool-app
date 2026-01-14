@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unique Number Patterns Worksheet</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0;
+      padding: 20px;
+                width: 100% !important;
+                height: 100% !important;
+      background-color: #f0f8ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .worksheet-container {
+      width: 8in;
+      max-width: 8in;
+      min-width: 8in;
+      background-color: #ffffff;
+      border: 1px solid #dee2e6;
+      padding: 0.5in 0.4in 0.5in 0.4in;
+      margin: 0 auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .header-section {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: none;
+      gap: 60px;
+    }
+    .header-label {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2176ae;
+      margin: 0 8px 0 0;
+      letter-spacing: 0.5px;
+    }
+    .header-line {
+      display: inline-block;
+      border-bottom: 2px solid #3498db;
+      width: 180px;
+      height: 1.2em;
+      vertical-align: bottom;
+      margin-left: 6px;
+    }
+    .header-input { display: none; }
+    .worksheet-title {
+      text-align: center;
+      font-size: 28px;
+      color: #3498db;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .worksheet-instructions {
+      text-align: center;
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 25px;
+      font-weight: bold;
+    }
+    .example-problem {
+      background-color: #f8f9fa;
+      border: 2px solid #3498db;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 25px;
+    }
+    .problem-box {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      margin-bottom: 8px;
+      border: 1px dashed #bdc3c7;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+    .problem-number-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+    .pn-1 { background-color: #8080D8; }
+    .pn-2 { background-color: #65CDBF; }
+    .pn-3 { background-color: #FF7F7F; }
+    .pn-4 { background-color: #C080D7; }
+    .pn-5 { background-color: #FFC34C; }
+    .pn-6 { background-color: #7ed957; }
+    .pn-7 { background-color: #f97d02; }
+    .pn-8 { background-color: #00b894; }
+    .pattern-sequence {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+    .pattern-sequence span,
+    .pattern-sequence input {
+      font-size: 20px;
+      width: 44px;
+      height: 44px;
+      text-align: center;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      background: white;
+    }
+    .pattern-sequence input {
+      border: 2px solid #fdc9ec;
+      background: #fff;
+    }
+    .pattern-sequence input:read-only {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    .interactive-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #3498db;
+      text-align: center;
+    }
+    .action-button {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      margin: 0 10px;
+      transition: background-color 0.3s ease;
+    }
+    .check-answers-btn {
+      background-color: #3498db;
+    }
+    .check-answers-btn:hover {
+      background-color: #2980b9;
+    }
+    .generate-new-btn {
+      background-color: #2ECC71;
+    }
+    .generate-new-btn:hover {
+      background-color: #27AE60;
+    }
+    .grading-feedback {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .grade-icon {
+      font-size: 24px;
+      margin-right: 8px;
+    }
+    .grade-A-plus { color: #2ecc71; }
+    .grade-A { color: #27ae60; }
+    .grade-B { color: #3498db; }
+    .grade-C { color: #f1c40f; }
+    .grade-D { color: #e67e22; }
+    .grade-F { color: #e74c3c; }
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+      body {
+        padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+        background-color: #ffffff;
+        margin: 0;
+      }
+      .worksheet-container {
+        box-shadow: none;
+        border: none;
+        width: 8in !important;
+        max-width: 8in !important;
+        min-width: 8in !important;
+        padding: 0.3in 0.2in 0.3in 0.2in !important;
+        margin: 0 auto !important;
+      }
+      .interactive-section, .header-input { display: none !important; }
+      .header-line { border-bottom: 2px solid #3498db !important; }
+      .header-section { gap: 60px !important; }
+      .header-section { justify-content: space-between; }
+      .header-input::placeholder { color: transparent; }
+      .problem-box {
+        page-break-inside: avoid;
+        flex-wrap: nowrap !important;
+        overflow: hidden !important;
+      }
+      .pattern-sequence {
+        flex-wrap: nowrap !important;
+        overflow: hidden !important;
+      }
+      .pattern-sequence input::placeholder {
+        color: transparent !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="worksheet-container">
+    <div class="header-section">
+      <div>
+        <span class="header-label">Name:</span><span class="header-line"></span>
+      </div>
+      <div>
+        <span class="header-label">Date:</span><span class="header-line"></span>
+      </div>
+    </div>
+    <h1 class="worksheet-title">Unique Number Patterns</h1>
+    <p class="worksheet-instructions">Look at the number patterns. Write the next number(s):</p>
+    <div class="example-problem" style="border: 2px solid #3498db; border-radius: 10px; padding: 15px; margin-bottom: 25px; background: #f8f9fa;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <span style="color: #3498db; font-weight: bold; font-size: 20px; font-family: 'Comic Sans MS', cursive, sans-serif;">Example:</span>
+        <span style="color: #3498db; font-size: 17px; font-family: 'Comic Sans MS', cursive, sans-serif;">
+          Look at the pattern: 1, 2, 1, 2, <u>?</u>, 2<br>
+          The pattern is ABAB... The missing number is <strong>1</strong>!
+        </span>
+      </div>
+      <div class="pattern-sequence" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+        <span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><input value="1" readonly title="Example missing number" placeholder="?" style="border:2px solid #fdc9ec;background:#fff;width:44px;height:44px;text-align:center;border-radius:4px;"/><span>2</span>
+      </div>
+    </div>
+    <div id="problems-container"></div>
+    <div class="interactive-section">
+      <button id="check-answers-btn" class="action-button check-answers-btn">Check Answers</button>
+      <button id="generate-new-btn" class="action-button generate-new-btn">Generate New Worksheet</button>
+      <div id="grading-feedback" class="grading-feedback"></div>
+    </div>
+  </div>
+  <script>
+    let currentProblems = [];
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    function generateUniquePattern() {
+      const types = ['AB', 'AAB', 'ABB', 'ABC', 'palindrome', 'block'];
+      const type = types[getRandomInt(0, types.length - 1)];
+      let sequence = [];
+      let emptyPositions = [];
+      let base = [];
+      let length = 10;
+
+      // Ensure numbers are more distinct and within a reasonable range
+      function getDistinctNumber(existing) {
+        let num;
+        do {
+          num = getRandomInt(1, 7); // Reduced range to 1-7 for easier patterns
+        } while (existing.includes(num));
+        return num;
+      }
+
+      // Validate that sequence has at least 2 different numbers
+      function validateSequence(seq) {
+        const uniqueNumbers = new Set(seq);
+        return uniqueNumbers.size >= 2;
+      }
+
+      // Generate pattern and validate it has at least 2 different numbers
+      do {
+        sequence = [];
+        switch(type) {
+          case 'AB':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]])];
+            for (let i = 0; i < length; i++) sequence.push(base[i % 2]);
+            break;
+          case 'AAB':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]])];
+            for (let i = 0; i < length; i++) sequence.push(base[i % 3 === 2 ? 1 : 0]);
+            break;
+          case 'ABB':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]])];
+            for (let i = 0; i < length; i++) sequence.push(base[i % 3 === 0 ? 0 : 1]);
+            break;
+          case 'ABC':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]]), getDistinctNumber([base[0], base[1]])];
+            for (let i = 0; i < length; i++) sequence.push(base[i % 3]);
+            break;
+          case 'palindrome':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]]), getDistinctNumber([base[0], base[1]])];
+            sequence = [base[0], base[1], base[2], base[1], base[0], base[1], base[2], base[1], base[0], base[1]];
+            break;
+          case 'block':
+            base = [getDistinctNumber([]), getDistinctNumber([base[0]]), getDistinctNumber([base[0], base[1]])];
+            for (let i = 0; i < length; i++) sequence.push(base[Math.floor(i / 2) % 3]);
+            break;
+        }
+      } while (!validateSequence(sequence));
+
+      // Ensure empty positions are not too close to each other and not at the start/end
+      while (emptyPositions.length < 2) {
+        let pos = getRandomInt(2, sequence.length - 3); // Avoid first and last two positions
+        if (!emptyPositions.includes(pos) && 
+            (emptyPositions.length === 0 || Math.abs(pos - emptyPositions[0]) > 2)) {
+          emptyPositions.push(pos);
+        }
+      }
+      emptyPositions.sort((a, b) => a - b);
+      return { sequence, emptyPositions, type };
+    }
+    function generateNewWorksheet() {
+      currentProblems = [];
+      const problemsContainer = document.getElementById('problems-container');
+      problemsContainer.innerHTML = '';
+      for (let i = 1; i <= 8; i++) {
+        const pattern = generateUniquePattern();
+        // Always use 10 numbers in the pattern
+        pattern.sequence = pattern.sequence.slice(0, 10);
+        // Place exactly 2 empty positions, never adjacent
+        let emptyPositions = [];
+        while (emptyPositions.length < 2) {
+          let pos = getRandomInt(0, 9);
+          if (
+            !emptyPositions.includes(pos) &&
+            (emptyPositions.length === 0 || Math.abs(pos - emptyPositions[0]) > 1)
+          ) {
+            emptyPositions.push(pos);
+          }
+        }
+        emptyPositions.sort((a, b) => a - b);
+        pattern.emptyPositions = emptyPositions;
+        currentProblems.push(pattern);
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem-box';
+        problemDiv.id = `problem-${i}`;
+        const numberDiv = document.createElement('div');
+        numberDiv.className = `problem-number-container pn-${i}`;
+        numberDiv.textContent = i;
+        const sequenceDiv = document.createElement('div');
+        sequenceDiv.className = 'pattern-sequence';
+        pattern.sequence.forEach((num, idx) => {
+          if (pattern.emptyPositions.includes(idx)) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.dataset.answer = num;
+            input.title = 'Enter the missing number';
+            input.placeholder = '?';
+            sequenceDiv.appendChild(input);
+          } else {
+            const span = document.createElement('span');
+            span.textContent = num;
+            sequenceDiv.appendChild(span);
+          }
+        });
+        problemDiv.appendChild(numberDiv);
+        problemDiv.appendChild(sequenceDiv);
+        problemsContainer.appendChild(problemDiv);
+      }
+    }
+    function checkAnswers() {
+      const inputs = document.querySelectorAll('.pattern-sequence input');
+      inputs.forEach(input => {
+        const userAnswer = parseInt(input.value);
+        const correctAnswer = parseInt(input.dataset.answer);
+        if (!isNaN(userAnswer) && userAnswer === correctAnswer) {
+          input.style.borderColor = '#2ecc71';
+          input.style.backgroundColor = '#e8f8f5';
+        } else {
+          input.style.borderColor = '#e74c3c';
+          input.style.backgroundColor = '#fdedec';
+          input.value = isNaN(correctAnswer) ? '' : correctAnswer;
+          input.style.color = '#e74c3c';
+          input.style.fontWeight = 'bold';
+          input.readOnly = true;
+        }
+      });
+    }
+    document.getElementById('check-answers-btn').addEventListener('click', checkAnswers);
+    document.getElementById('generate-new-btn').addEventListener('click', function() {
+      document.getElementById('grading-feedback').innerHTML = '';
+      generateNewWorksheet();
+    });
+    generateNewWorksheet();
+  </script>
+</body>
+</html> 

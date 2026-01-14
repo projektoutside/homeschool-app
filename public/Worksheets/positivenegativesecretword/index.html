@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Decode the Secret Word – Solve Positive & Negative Numbers!</title>
+  <style>
+    /* ======= PRINT SETTINGS ======= */
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      /* Hide elements that should not be printed */
+      .button-container,
+      .generate-btn,
+      .check-btn,
+      .static-btn,
+      .save-btn,
+      .custom-word-container,
+      .scramble-btn,
+      .grade-display {
+        display: none !important;
+      }
+      /* Hide scrambled letters box only if it's after the secret word banner */
+      .banner ~ .scrambled-letters {
+        display: none !important;
+      }
+      input::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+      }
+      body {
+        margin: 0 !important;
+        padding: 0.25in !important;
+                width: 100% !important;
+                height: 100% !important;
+      }
+      /* Ensure proper spacing */
+      .banner {
+        margin-bottom: 0 !important;
+      }
+      /* Ensure proper color printing */
+      .banner,
+      .scrambled-letters {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      .number-line {
+        height: 2px !important;
+        background: #3498db !important;
+        position: relative !important;
+        margin: 20px 60px !important;
+        display: block !important; /* This is fine for the line itself */
+        -webkit-print-color-adjust: exact !important; /* Ensure line background color prints */
+        print-color-adjust: exact !important;         /* Ensure line background color prints */
+      }
+      .number-line::before,
+      .number-line::after {
+        /* display: block !important; */ /* REMOVED this line */
+        border-style: solid !important;
+        content: '' !important;
+        position: absolute !important; 
+        width: 0 !important;          
+        height: 0 !important;         
+        -webkit-print-color-adjust: exact !important; /* ADDED: Explicit color adjust for pseudo-element borders */
+        print-color-adjust: exact !important;         /* ADDED: Explicit color adjust for pseudo-element borders */
+      }
+      .number-line::before {
+        border-width: 7px 14px 7px 0 !important;
+        border-color: transparent #3498db transparent transparent !important;
+        left: -12px !important;
+        top: -6px !important;
+      }
+      .number-line::after {
+        border-width: 7px 0 7px 14px !important;
+        border-color: transparent transparent transparent #3498db !important;
+        right: -12px !important;
+        top: -6px !important;
+      }
+      .number-line-container {
+        background-color: #f8f9fa !important;
+        border: 2px solid #3498db !important;
+        -webkit-print-color-adjust: exact !important; /* Ensure container colors print */
+        print-color-adjust: exact !important;         /* Ensure container colors print */
+      }
+      /* Ensure tick marks and numbers also print their colors */
+      .tick {
+        background: #3498db !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .tick-number {
+        color: #3498db !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    /* ======= BASE ======= */
+    body{
+      font-family:'Comic Sans MS',cursive,sans-serif; color:#3498db; background:#fff;
+      width:8.5in; margin:0 auto; padding:20px;
+                width: 100% !important;
+                height: 100% !important; box-sizing:border-box; min-height:11in;
+      display:flex; flex-direction:column; align-items:center;
+    }
+
+    .header{text-align:center;margin-bottom:0.2in;}
+    .header h1{font-size:26px;margin:0 0 6px;}
+    .header .input-row{display:flex;justify-content:center;gap:22px;}
+    .header p{margin:0;font-size:16px;display:flex;align-items:center;}
+    .header input{font-family:'Comic Sans MS',cursive,sans-serif;font-size:16px;border:none;border-bottom:1px solid #3498db;outline:none;width:180px;padding:2px 4px;}
+    .header input:focus{border-bottom:2px solid #3498db;}
+
+    /* ======= ALPHABET KEY ======= */
+    .alpha-key{margin:0.15in auto 0; padding:8px 10px; border:2px dashed #2ecc71; border-radius:8px; background:#f8fff8; width:7.2in; text-align:center; font-size:15px; line-height:1.8; color:#27ae60;}
+
+    /* ======= INSTRUCTIONS ======= */
+    .instructions{width:7.2in; margin:0.18in auto 0; font-size:16px; color:#3498db;}
+
+    /* ======= PROBLEM GRID ======= */
+    .problems-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.25in;margin:0.3in auto;
+                page-break-inside: avoid !important;width:100%;max-width:7.5in;}
+    .problem{border:1px solid #ccc;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1);height:1.1in;padding:0.08in;display:flex;flex-direction:column;justify-content:space-between;align-items:center;transition:background 0.3s ease;position:relative;}
+    .problem.correct{background:#d4edda;} .problem.incorrect{background:#f8d7da;}
+    .problem::before{content:attr(data-number);position:absolute;top:-6px;left:-2px;background:#fff;border:1px solid #eee;border-radius:3px;font-size:9px;padding:1px 4px;color:#999;}
+    .problem.correct::before{border-color:#28a745;color:#28a745;} .problem.incorrect::before{border-color:#dc3545;color:#dc3545;}
+    .equation{font-size:20px;color:#3498db;margin-top:6px;}
+    .answer-area {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 18px;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+    }
+
+    .answer-label {
+      display: inline-block;
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    .pink-box {
+      width: 72px;
+      height: 40px;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      background: #ffe9f6;
+      text-align: center;
+      font-size: 20px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pink-box input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 20px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      color: #3498db;
+      padding: 0;
+    }
+
+    /* Style for the correct answer display */
+    .correct-answer {
+      position: static;
+      margin-left: 8px;
+      color: #dc3545;
+      font-size: 28px;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+    }
+
+    .pink-box::-webkit-outer-spin-button,.pink-box::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+    /* ======= SECRET WORD BANNER ======= */
+    .banner{
+      width: 7.2in;
+      border: 2px dotted #3498db;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 0.2in auto 0;
+      text-align: center;
+      font-size: 20px;
+      color: #3498db;
+      min-height: 38px;
+      position: relative;
+    }
+    .banner .underscore-container {
+      display: inline-block;
+      position: relative;
+      margin: 0 6px;
+    }
+    .banner .underscore {
+      font-size: 20px;
+      color: #3498db;
+      text-decoration: none;
+      border-bottom: 2px solid #3498db;
+      padding: 0 3px;
+      min-width: 18px;
+      display: inline-block;
+      background: none;
+    }
+    .banner .underscore-text {
+      opacity: 0;
+    }
+    .banner .number {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #999;
+    }
+
+    /* Add styling for the custom word display */
+    .custom-word-display {
+      width: 7.2in;
+      border: 2px dotted #9b59b6;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 0.2in auto 0;
+      text-align: center;
+      font-size: 18px;
+      color: #9b59b6;
+      min-height: 38px;
+      display: none;
+    }
+
+    /* Scrambled letters box */
+    .scrambled-letters {
+      width: 7.2in;
+      border: 2px dotted #2ecc71;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 0.2in auto 0;
+      text-align: center;
+      font-size: 20px;
+      color: #2ecc71;
+      min-height: 38px;
+      position: relative;
+      display: none;
+    }
+    .scrambled-letters .underscore-container {
+      display: inline-block;
+      position: relative;
+      margin: 0 6px;
+    }
+    .scrambled-letters .underscore {
+      font-size: 20px;
+      color: #2ecc71;
+      text-decoration: none;
+      border-bottom: 2px solid #2ecc71;
+      padding: 0 3px;
+      min-width: 18px;
+      display: inline-block;
+    }
+    .scrambled-letters .number {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #999;
+    }
+
+    /* ======= BUTTONS & GRADE ======= */
+    .button-container{display:flex;gap:12px;margin-top:20px;justify-content:center;flex-wrap:wrap;}
+    .btn{padding:12px 24px;font-size:16px;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Comic Sans MS',cursive,sans-serif;transition:background 0.2s ease;}
+    .generate-btn{background:#2ecc71;} .generate-btn:hover{background:#27ae60;}
+    .check-btn{background:#3498db;} .check-btn:hover{background:#2980b9;}
+    .static-btn{background:#9b59b6;} .static-btn:hover{background:#8e44ad;}
+    .save-btn{background:#e67e22;} .save-btn:hover{background:#d35400;}
+    .grade-display{margin-top:18px;font-size:18px;text-align:center;width:100%;}
+    .grade-display.correct{color:#2ecc71;} .grade-display.incorrect{color:#e74c3c;}
+    
+    /* Custom word input styles */
+    .custom-word-container {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+    }
+    .custom-word-input {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      padding: 8px 12px;
+      border: 2px solid #3498db;
+      border-radius: 6px;
+      outline: none;
+      width: 200px;
+    }
+    .custom-word-input:focus {
+      border-color: #2980b9;
+    }
+    .custom-word-input::placeholder {
+      font-size: 14px;
+    }
+    .custom-word-btn {
+      background: #9b59b6;
+      padding: 8px 16px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background 0.2s ease;
+    }
+    .custom-word-btn:hover {
+      background: #8e44ad;
+    }
+    .scramble-btn {
+      background: #e74c3c;
+      padding: 8px 16px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background 0.2s ease;
+      margin-top: 10px;
+    }
+    .scramble-btn:hover {
+      background: #c0392b;
+    }
+
+    /* Number line styles */
+    .number-line-container {
+      margin: 0 auto 0.3in auto;
+      width: 7.2in;
+      position: relative;
+      padding: 15px 0 30px 0;
+      background-color: #f8f9fa;
+      border: 2px solid #3498db;
+      border-radius: 8px;
+    }
+
+    .number-line {
+      height: 2px;
+      background: #3498db;
+      position: relative;
+      margin: 20px 60px;
+    }
+
+    .number-line::before,
+    .number-line::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+
+    .number-line::before {
+      left: -12px;
+      top: -6px;
+      border-width: 7px 14px 7px 0;
+      border-color: transparent #3498db transparent transparent;
+    }
+
+    .number-line::after {
+      right: -12px;
+      top: -6px;
+      border-width: 7px 0 7px 14px;
+      border-color: transparent transparent transparent #3498db;
+    }
+
+    .tick-marks {
+      position: absolute;
+      width: calc(100% - 120px);
+      top: 50%;
+      left: 60px;
+      display: flex;
+      justify-content: space-between;
+      transform: translateY(-50%);
+    }
+
+    .tick {
+      position: relative;
+      text-align: center;
+      width: 2px;
+      height: 14px;
+      background: #3498db;
+    }
+
+    .tick-number {
+      color: #3498db;
+      font-size: 16px;
+      font-weight: bold;
+      position: absolute;
+      width: 30px;
+      text-align: center;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Decode the Secret Word – Solve Positive & Negative Numbers!</h1>
+    <div class="input-row">
+      <p>Name: <input type="text" id="studentName" placeholder="Enter your name"></p>
+      <p>Date: <input type="text" id="date" placeholder="MM/DD/YYYY"></p>
+    </div>
+  </div>
+
+  <!-- Alphabet reference key -->
+  <div class="alpha-key" id="alphaKey"></div>
+
+  <!-- Short instructions -->
+  <div class="instructions">
+    Solve each equation. Write the value of <strong>x</strong> (-13 to 13) in the pink box.<br>
+    Then match the number to its letter using the key below to discover the secret word!
+  </div>
+
+  <!-- Number line -->
+  <div class="number-line-container">
+    <div class="instruction" style="text-align: center; margin-bottom: 10px; color: #3498db;">Use the number line to help solve the problems.</div>
+    <div class="number-line"></div>
+    <div class="tick-marks">
+      <div class="tick"><span class="tick-number">-5</span></div>
+      <div class="tick"><span class="tick-number">-4</span></div>
+      <div class="tick"><span class="tick-number">-3</span></div>
+      <div class="tick"><span class="tick-number">-2</span></div>
+      <div class="tick"><span class="tick-number">-1</span></div>
+      <div class="tick"><span class="tick-number">0</span></div>
+      <div class="tick"><span class="tick-number">1</span></div>
+      <div class="tick"><span class="tick-number">2</span></div>
+      <div class="tick"><span class="tick-number">3</span></div>
+      <div class="tick"><span class="tick-number">4</span></div>
+      <div class="tick"><span class="tick-number">5</span></div>
+    </div>
+  </div>
+
+  <!-- Problems grid -->
+  <div class="problems-grid" id="problemsGrid"></div>
+
+  <!-- Secret word banner -->
+  <div class="scrambled-letters" id="scrambledLetters"></div>
+  <div class="banner" id="secretBanner">Secret Word: ________</div>
+  <div class="custom-word-display" id="customWordDisplay"></div>
+
+  <!-- Buttons -->
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+  </div>
+
+  <div class="custom-word-container">
+    <input type="text" id="customWord" class="custom-word-input" placeholder="Secret Word (max 12 letters)" maxlength="12">
+    <button class="custom-word-btn" onclick="generateCustomWorksheet()">Generate Custom Worksheet</button>
+  </div>
+
+  <div style="text-align: center; margin-top: 10px;">
+    <button class="scramble-btn" onclick="scrambleWorksheet()">Scramble</button>
+  </div>
+
+  <div class="grade-display" id="gradeDisplay"></div>
+
+<script>
+  /* ===== Helpers ===== */
+  const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  // Map: A=-13, B=-12, ..., M=0, ..., Z=13
+  const letterToValue = {};
+  const valueToLetter = {};
+  for (let i = 0; i < 26; i++) {
+    const val = i - 13;
+    letterToValue[alpha[i]] = val;
+    valueToLetter[val] = alpha[i];
+  }
+  const alphaKeyDiv = document.getElementById('alphaKey');
+  alphaKeyDiv.textContent = alpha.split('').map((l, i) => `${l}=${i-13}`).join('   ');
+
+  const secretWords=["NOOB","PLAY","CODE","OBBY","BUILD","RACE","LUCKY","STARS","BLOX","BOOST"];
+
+  function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
+  function makeEquation(val) {
+    // Always generate an equation that evaluates to val
+    // Randomly choose op, then generate a and b so that a op b = val
+    let op = Math.random() < 0.5 ? '+' : '-';
+    let a, b;
+    if (op === '+') {
+      // a + b = val => pick a, b = val - a
+      a = rand(-13, 13);
+      b = val - a;
+      // Ensure b is in range
+      if (b < -13 || b > 13) {
+        b = rand(-13, 13);
+        a = val - b;
+      }
+    } else {
+      // a - b = val => pick b, a = val + b
+      b = rand(-13, 13);
+      a = val + b;
+      // Ensure a is in range
+      if (a < -13 || a > 13) {
+        a = rand(-13, 13);
+        b = a - val;
+      }
+    }
+    // Format numbers with parentheses for negative values
+    const formatNum = (n) => n < 0 ? `(${n})` : n;
+    return { text: `${formatNum(a)} ${op} ${formatNum(b)} =`, answer: val };
+  }
+
+  let currentSecret="";
+
+  function generateWorksheet(){
+    // Hide the scrambled letters box when generating a new worksheet
+    document.getElementById('scrambledLetters').style.display = 'none';
+    document.getElementById('customWordDisplay').style.display = 'none';
+    const grid=document.getElementById('problemsGrid');
+    grid.innerHTML='';
+    currentSecret=secretWords[rand(0,secretWords.length-1)];
+    
+    // Update banner with consistent styling
+    const banner=document.getElementById('secretBanner');
+    banner.innerHTML='Secret Word: ' + currentSecret.split('').map((_,i)=>`
+      <span class="underscore-container">
+        <span class="underscore"><span class="underscore-text">_</span></span>
+        <span class="number">${i+1}</span>
+      </span>
+    `).join('');
+
+    currentSecret.split('').forEach((ch,idx)=>{
+      const val = letterToValue[ch];
+      const {text,answer}=makeEquation(val);
+      const box=document.createElement('div');
+      box.className='problem';
+      box.setAttribute('data-number',idx+1);
+      box.setAttribute('data-answer',answer);
+      box.innerHTML=`<div class="equation">${text}</div>
+                     <div class="answer-area">
+                       <div class="pink-box">
+                         <input type="number" step="1" min="-13" max="13">
+                       </div>
+                     </div>`;
+      grid.appendChild(box);
+    });
+    document.getElementById('gradeDisplay').textContent='';
+     // Clear problem feedback
+    document.querySelectorAll('.problem').forEach(p => {
+        p.classList.remove('correct', 'incorrect');
+        const existingAnswer = p.querySelector('.correct-answer');
+        if (existingAnswer) existingAnswer.remove();
+    });
+  }
+
+  function checkAnswers(){
+    const probs=document.querySelectorAll('.problem');
+    let correct=0; let letters="";
+    probs.forEach((p,i)=>{
+      const inp=p.querySelector('input');
+      const val=parseInt(inp.value);
+      const ans=parseInt(p.getAttribute('data-answer'));
+      if(val===ans){
+        correct++;
+        p.classList.add('correct');
+        p.classList.remove('incorrect');
+        // Remove any existing correct answer display if present
+        const existingAnswer = p.querySelector('.correct-answer');
+        if (existingAnswer) {
+          existingAnswer.remove();
+        }
+        letters+=valueToLetter[val] || '_';
+      } else {
+        p.classList.add('incorrect');
+        p.classList.remove('correct');
+        // Show correct answer in red
+        // Remove any existing correct answer display before adding a new one
+        const existingAnswer = p.querySelector('.correct-answer');
+        if (existingAnswer) {
+          existingAnswer.remove();
+        }
+        const correctAnswer = document.createElement('div');
+        correctAnswer.className = 'correct-answer';
+        correctAnswer.textContent = ans;
+        // Insert after the pink-box div
+        const pinkBox = p.querySelector('.pink-box');
+        pinkBox.insertAdjacentElement('afterend', correctAnswer);
+        letters+='_';
+      }
+    });
+    
+    // Update the secret word banner with color-coded letters
+    const banner = document.getElementById('secretBanner');
+    banner.innerHTML = 'Secret Word: ' + letters.split('').map((letter, i) => {
+      const problemElement = Array.from(probs).find(p => parseInt(p.getAttribute('data-number')) === (i + 1));
+      const isProblemCorrect = problemElement ? problemElement.classList.contains('correct') : false;
+      
+      const letterToShow = isProblemCorrect ? currentSecret[i] : '_';
+      const color = isProblemCorrect ? '#3498db' : '#dc3545'; // Blue for correct, red for incorrect/unanswered
+
+      return `
+        <span class="underscore-container">
+          <span class="underscore" style="color: ${color}; border-bottom-color: ${color};">
+            <span class="underscore-text" style="opacity: 1;">${letterToShow}</span>
+          </span>
+          <span class="number">${i+1}</span>
+        </span>
+      `;
+    }).join('');
+
+    // Show the custom word display if a custom word was used or for reference
+    const customWordDisplay = document.getElementById('customWordDisplay');
+    customWordDisplay.style.display = 'block';
+    customWordDisplay.textContent = `Correct Secret Word: ${currentSecret}`;
+    
+    const perc=Math.round((correct/probs.length)*100);
+    const gradeDisp=document.getElementById('gradeDisplay');
+    gradeDisp.textContent=`Score: ${correct}/${probs.length} (${perc}%)`;
+    gradeDisp.className='grade-display '+(perc>=70?'correct':'incorrect');
+  }
+
+  function generateCustomWorksheet() {
+    // Hide the scrambled letters box when generating a new worksheet
+    document.getElementById('scrambledLetters').style.display = 'none';
+    document.getElementById('customWordDisplay').style.display = 'none';
+    const customWord = document.getElementById('customWord').value.toUpperCase();
+    if (!customWord) {
+      alert('Please enter a custom secret word!');
+      return;
+    }
+    
+    if (!/^[A-Z]+$/.test(customWord)) {
+      alert('Please enter only letters (A-Z)!');
+      return;
+    }
+
+    if (customWord.length > 12) {
+      alert('Please enter a word with 12 letters or less!');
+      return;
+    }
+
+    const grid = document.getElementById('problemsGrid');
+    grid.innerHTML = '';
+    currentSecret = customWord;
+    
+    // Update banner with consistent styling
+    const banner = document.getElementById('secretBanner');
+    banner.innerHTML = 'Secret Word: ' + currentSecret.split('').map((_, i) => `
+      <span class="underscore-container">
+        <span class="underscore"><span class="underscore-text">_</span></span>
+        <span class="number">${i + 1}</span>
+      </span>
+    `).join('');
+
+    currentSecret.split('').forEach((ch, idx) => {
+      const val = letterToValue[ch];
+      const {text, answer} = makeEquation(val);
+      const box = document.createElement('div');
+      box.className = 'problem';
+      box.setAttribute('data-number', idx + 1);
+      box.setAttribute('data-answer', answer);
+      box.innerHTML = `<div class="equation">${text}</div>
+                      <div class="answer-area">
+                        <div class="pink-box">
+                          <input type="number" step="1" min="-13" max="13">
+                        </div>
+                      </div>`;
+      grid.appendChild(box);
+    });
+    
+    document.getElementById('gradeDisplay').textContent = '';
+     // Clear problem feedback
+    document.querySelectorAll('.problem').forEach(p => {
+        p.classList.remove('correct', 'incorrect');
+        const existingAnswer = p.querySelector('.correct-answer');
+        if (existingAnswer) existingAnswer.remove();
+    });
+  }
+
+  function scrambleWorksheet() {
+    // Show the scrambled letters box
+    const scrambledBox = document.getElementById('scrambledLetters');
+    scrambledBox.style.display = 'block';
+    document.getElementById('customWordDisplay').style.display = 'none';
+    
+    const scrambledDisplayLetters = currentSecret.split('').sort(() => 0.5 - Math.random()).join('');
+
+    scrambledBox.innerHTML = 'Scrambled Letters: ' + scrambledDisplayLetters.split('').map((letter, i) => `
+      <span class="underscore-container" style="margin: 0 2px;">
+        <span class="underscore" style="width: 25px; height: 25px; text-align: center; border-bottom: 2px solid #2ecc71; color: #2ecc71; font-size: 20px; display:inline-flex; align-items:center; justify-content:center;"></span>
+        <span class="number" style="color: #999; font-size: 10px; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);">${i + 1}</span>
+      </span>
+    `).join('');
+
+    const banner = document.getElementById('secretBanner');
+    banner.innerHTML = 'Secret Word: ' + currentSecret.split('').map((_,i) => `
+      <span class="underscore-container">
+        <span class="underscore"><span class="underscore-text">_</span></span>
+      </span>
+    `).join('');
+
+    const problems = Array.from(document.querySelectorAll('.problem'));
+    const problemsData = problems.map((problem, index) => ({ 
+      element: problem,
+      answer: parseInt(problem.getAttribute('data-answer')),
+      equation: problem.querySelector('.equation').textContent,
+      originalIndex: index 
+    }));
+
+    for (let i = problemsData.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [problemsData[i], problemsData[j]] = [problemsData[j], problemsData[i]];
+    }
+
+    const grid = document.getElementById('problemsGrid');
+    grid.innerHTML = '';
+
+    problemsData.forEach((data, newIndex) => {
+      const box = document.createElement('div');
+      box.className = 'problem';
+      box.setAttribute('data-number', newIndex + 1); 
+      box.setAttribute('data-answer', data.answer); 
+      box.innerHTML = `<div class="equation">${data.equation}</div>
+                      <div class="answer-area">
+                        <div class="pink-box">
+                          <input type="number" step="1" min="-13" max="13" placeholder="">
+                        </div>
+                      </div>`;
+      grid.appendChild(box);
+    });
+
+    document.getElementById('gradeDisplay').textContent = '';
+    document.querySelectorAll('.problem input').forEach(input => input.value = '');
+    document.querySelectorAll('.problem').forEach(p => {
+        p.classList.remove('correct', 'incorrect');
+        const existingAnswer = p.querySelector('.correct-answer');
+        if (existingAnswer) existingAnswer.remove();
+    });
+  }
+
+
+  generateWorksheet();
+</script>
+</body>
+</html>

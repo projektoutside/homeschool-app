@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extra Easy Math Worksheet: Missing Addends</title>
+    <style>
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+            .generate-btn, .static-btn, .save-btn {
+                display: none;
+            }
+            .header input::placeholder {
+                color: transparent;
+            }
+            input::placeholder {
+                color: transparent;
+            }
+            .header input {
+                border-bottom: 1px solid #000;
+            }
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+                width: 100% !important;
+                height: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .header p {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .header input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            border: none;
+            border-bottom: 1px solid #000;
+            outline: none;
+            width: 200px;
+            padding: 2px 5px;
+            margin: 0 5px;
+        }
+
+        .header input:focus {
+            border-bottom: 2px solid #3498db;
+        }
+
+        .problems {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .problem {
+            position: relative;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            text-align: center;
+            background: #f9f9f9;
+            font-size: 18px;
+            color: #3498db;
+        }
+
+        .problem::before {
+            content: attr(data-number);
+            position: absolute;
+            top: -6px;
+            left: -2px;
+            background: white;
+            color: #999;
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            border: 1px solid #eee;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        .problem.correct::before {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .problem.incorrect::before {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .problem.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .problem.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .answer-input {
+            width: 40px;
+            font-size: 18px;
+            text-align: center;
+            border: 2px solid #fdc9ec;
+            border-radius: 4px;
+            color: black;
+        }
+
+        .answer-input::-webkit-inner-spin-button,
+        .answer-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .art {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .art img {
+            width: 50px;
+            height: auto;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0 10px;
+        }
+
+        .generate-btn {
+            background-color: #2ECC71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27AE60;
+        }
+
+        .check-btn {
+            background-color: #3498db;
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        .static-btn {
+            background-color: #8E44AD;
+        }
+
+        .static-btn:hover {
+            background-color: #6C3483;
+        }
+
+        .save-btn {
+            background-color: #f1c40f;
+        }
+
+        .save-btn:hover {
+            background-color: #f39c12;
+        }
+
+        .grade-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            height: 36px;
+        }
+
+        .grade-emoji {
+            font-size: 28px;
+            margin-right: 10px;
+            display: inline-block;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .grade-text {
+            display: inline-block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .grade-a-plus { color: #2ecc71; }
+        .grade-b { color: #3498db; }
+        .grade-c { color: #f1c40f; }
+        .grade-d { color: #e67e22; }
+        .grade-f { color: #e74c3c; }
+
+        .correct-answer {
+            position: absolute;
+            top: 12px;
+            left: 90%;
+            transform: translateX(-50%);
+            color: #dc3545;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .worksheet-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+    <script>
+        let currentProblems = [];
+
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${month}${day}${year}-${random}`;
+        }
+
+        function generateEasyProblems() {
+            // Update worksheet number
+            document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+
+            currentProblems = [];
+            const problemsContainer = document.querySelector('.problems');
+            problemsContainer.innerHTML = '';
+            const usedProblems = new Set();
+            const totalProblems = 24;
+
+            while (usedProblems.size < totalProblems) {
+                // Generate two addends first, ensuring they're positive
+                const num1 = Math.floor(Math.random() * 5) + 1; // 1-5
+                const num2 = Math.floor(Math.random() * 5) + 1; // 1-5
+                const result = num1 + num2; // Sum will be 2-10
+
+                const problemKey = `${num1}+${num2}`;
+
+                if (!usedProblems.has(problemKey)) {
+                    usedProblems.add(problemKey);
+                    const hideFirst = Math.random() < 0.5;
+                    const problemObj = {
+                        num1,
+                        num2,
+                        result,
+                        hiddenFirst: hideFirst,
+                        answer: hideFirst ? num1 : num2
+                    };
+                    currentProblems.push(problemObj);
+                    
+                    const problemDiv = document.createElement('div');
+                    problemDiv.className = 'problem';
+                    problemDiv.id = `problem-${currentProblems.length - 1}`;
+                    problemDiv.setAttribute('data-number', '#' + (currentProblems.length));
+                    
+                    if (hideFirst) {
+                        problemDiv.innerHTML = `<input type="number" class="answer-input" id="answer-${currentProblems.length - 1}"> + ${num2} = ${result}`;
+                    } else {
+                        problemDiv.innerHTML = `${num1} + <input type="number" class="answer-input" id="answer-${currentProblems.length - 1}"> = ${result}`;
+                    }
+                    
+                    problemsContainer.appendChild(problemDiv);
+                }
+            }
+
+            // Clear grade display if it exists
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            if (gradeDisplay) {
+                gradeDisplay.innerHTML = '';
+            }
+        }
+
+        function checkAnswers() {
+            let correctCount = 0;
+            document.querySelectorAll('.problem').forEach((problem, index) => {
+                const userAnswer = parseInt(document.getElementById(`answer-${index}`).value);
+
+                // Remove any existing correct answer display
+                const existingCorrectAnswer = problem.querySelector('.correct-answer');
+                if (existingCorrectAnswer) {
+                    existingCorrectAnswer.remove();
+                }
+
+                if (!isNaN(userAnswer) && userAnswer === currentProblems[index].answer) {
+                    correctCount++;
+                    problem.classList.remove('incorrect');
+                    problem.classList.add('correct');
+                } else {
+                    problem.classList.remove('correct');
+                    problem.classList.add('incorrect');
+                    // Add the correct answer display
+                    const correctAnswerDiv = document.createElement('div');
+                    correctAnswerDiv.className = 'correct-answer';
+                    correctAnswerDiv.textContent = currentProblems[index].answer;
+                    problem.appendChild(correctAnswerDiv);
+                }
+            });
+
+            const grade = calculateGrade(correctCount);
+            const gradeClass = getGradeClass(grade);
+            const emoji = getGradeEmoji(grade);
+            const percentage = (correctCount / 24) * 100;
+            
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            gradeDisplay.innerHTML = `
+                <span class="grade-emoji ${gradeClass}">${emoji}</span>
+                <span class="grade-text ${gradeClass}">
+                    Grade: ${grade} (${correctCount}/24 - ${percentage.toFixed(1)}%)
+                </span>
+            `;
+        }
+
+        function calculateGrade(correctCount) {
+            const percentage = (correctCount / 24) * 100;
+            if (percentage >= 97) return 'A+';
+            if (percentage >= 93) return 'A';
+            if (percentage >= 90) return 'A-';
+            if (percentage >= 87) return 'B+';
+            if (percentage >= 83) return 'B';
+            if (percentage >= 80) return 'B-';
+            if (percentage >= 77) return 'C+';
+            if (percentage >= 73) return 'C';
+            if (percentage >= 70) return 'C-';
+            if (percentage >= 67) return 'D+';
+            if (percentage >= 63) return 'D';
+            if (percentage >= 60) return 'D-';
+            return 'F';
+        }
+
+        function getGradeEmoji(grade) {
+            switch(grade) {
+                case 'A+': return '🏆';
+                case 'A': return '🌟';
+                case 'A-': return '⭐';
+                case 'B+': return '😊';
+                case 'B': return '👍';
+                case 'B-': return '👌';
+                case 'C+': return '🙂';
+                case 'C': return '😐';
+                case 'C-': return '😕';
+                case 'D+': return '😟';
+                case 'D': return '😥';
+                case 'D-': return '😓';
+                default: return '😢';
+            }
+        }
+
+        function getGradeClass(grade) {
+            if (grade.startsWith('A')) return 'grade-a-plus';
+            if (grade.startsWith('B')) return 'grade-b';
+            if (grade.startsWith('C')) return 'grade-c';
+            if (grade.startsWith('D')) return 'grade-d';
+            return 'grade-f';
+        }
+
+        function createStaticWorksheet() {
+            // Clone the current document
+            const staticDoc = document.documentElement.cloneNode(true);
+            
+            // Remove both Generate New Worksheet and Create Static Worksheet buttons
+            const buttonContainer = staticDoc.querySelector('.button-container');
+            buttonContainer.innerHTML = `
+                <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+                <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+            `;
+
+            // Remove the generateNewWorksheet function and onload call
+            const scriptElement = staticDoc.querySelector('script');
+            
+            // Create new script content with only necessary functions
+            const newScript = `
+                let currentProblems = ${JSON.stringify(currentProblems)};
+
+                function saveWorksheet() {
+                    // Get all current answers and store them in the input values
+                    const inputs = document.querySelectorAll('.answer-input, .header input');
+                    inputs.forEach(input => {
+                        input.setAttribute('value', input.value || '');
+                    });
+
+                    // Get the current grade display if it exists
+                    const gradeDisplay = document.getElementById('gradeDisplay');
+                    if (gradeDisplay) {
+                        // Preserve the grade display state
+                        gradeDisplay.setAttribute('data-content', gradeDisplay.innerHTML);
+                    }
+
+                    // Get the current state of the document
+                    const content = document.documentElement.outerHTML;
+
+                    // Create blob and download link
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'worksheet.html';
+                    
+                    // Trigger download
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Cleanup
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }
+
+                ${checkAnswers.toString()}
+                ${calculateGrade.toString()}
+                ${getGradeEmoji.toString()}
+                ${getGradeClass.toString()}
+            `;
+            
+            scriptElement.textContent = newScript;
+
+            // Create and download the static file
+            const blob = new Blob([staticDoc.outerHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Generate random 3-digit number
+            const randomNum = Math.floor(Math.random() * 900 + 100); // Generates number between 100-999
+            
+            // Format date as MMDD
+            const date = new Date();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            // Create filename in format math_WS-MMDD-XXX.html
+            const filename = `math_WS-${month}${day}-${randomNum}.html`;
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        window.onload = generateEasyProblems;
+    </script>
+</head>
+
+<body>
+    <div id="worksheetNumber" class="worksheet-number"></div>
+    <div class="header">
+        <h1>Extra Easy Addition Worksheet: Missing Addends</h1>
+        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+    </div>
+
+    <div class="problems">
+        <!-- Problems will be dynamically generated here -->
+    </div>
+
+    <div class="grade-display" id="gradeDisplay"></div>
+
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="generateEasyProblems()">Generate New Worksheet</button>
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+        <button class="btn static-btn" onclick="createStaticWorksheet()">Create Static Worksheet</button>
+    </div>
+
+    <div class="footer">
+        Remember: Practice makes perfect! 
+    </div>
+
+    <div class="art">
+        <img src="https://example.com/sun.png" alt="Cheerful sun">
+        <img src="https://example.com/flowers.png" alt="Flowers">
+    </div>
+</body>
+
+</html>

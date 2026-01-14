@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Addition with 10's</title>
+  <style>
+    /* ============== PRINT & PAGE SETTINGS ============== */
+    @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Hide interactive elements during print */
+      .button-container,
+      .generate-btn,
+      .check-btn,
+            .print-btn,
+      .static-btn,
+      .save-btn {
+        display: none !important;
+      }
+
+      /* Hide placeholder text in print */
+      input::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+      }
+
+      body {
+        margin: 0 !important;
+        padding: 0.25in !important;
+                width: 100% !important;
+                height: 100% !important;
+      }
+
+      .problems-grid {
+        page-break-inside: avoid !important;
+      }
+
+      .grade-display {
+        position: fixed !important;
+        bottom: 0.6in !important;
+        left: 0;
+        right: 0;
+        margin: 0 auto !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+    }
+
+    /* ============== BASE LAYOUT & FONTS ============== */
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      color: #3498db;
+      padding: 20px;
+                width: 100% !important;
+                height: 100% !important;
+      background-color: white;
+      width: 8.5in;
+      margin: 0 auto;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 11in;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 0.2in;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin: 0 0 5px 0;
+    }
+
+    .header p {
+      font-size: 16px;
+      margin: 3px 0;
+    }
+
+    .header input {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      border: none;
+      border-bottom: 1px solid #3498db;
+      outline: none;
+      width: 180px;
+      padding: 2px 4px;
+      margin: 0 5px;
+    }
+
+    .header input:focus {
+      border-bottom: 2px solid #3498db;
+    }
+
+    .example-box {
+      text-align: start;
+      margin-bottom: 0.2in;
+      padding: 8px;
+      padding-left: 15px;
+      padding-right: 15px;
+      border: 2px solid #3498db;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      width: 7.0in;
+    }
+
+    .example-box h3 {
+      margin: 0 0 5px 0;
+      color: #5dbce9;
+    }
+
+    .example-box p {
+      margin: 3px 0;
+      color: #5dbce9;
+    }
+
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(5, auto);
+      gap: 0.2in;
+      margin: 0.2in auto;
+                page-break-inside: avoid !important;
+      max-width: 7.5in;
+      width: 100%;
+    }
+
+    .problem {
+      border: 1px solid #ccc;
+      padding: 0.1in 0.1in 0.05in 0.1in;
+      text-align: right;
+      font-size: 20px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      width: 1in;
+      height: 1.3in;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: relative;
+      box-sizing: border-box;
+      transition: background-color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* Green/Red color codes for correct/incorrect */
+    .problem.correct {
+      background-color: #d4edda;
+    }
+    .problem.incorrect {
+      background-color: #f8d7da;
+    }
+
+    .problem::before {
+      content: attr(data-number);
+      position: absolute;
+      top: -6px;
+      left: -2px;
+      background: white;
+      color: #999;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #eee;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    .problem.correct::before {
+      border-color: #28a745;
+      color: #28a745;
+    }
+    .problem.incorrect::before {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .math-expression {
+      display: grid;
+      gap: 0.07in;
+      width: 100%;
+      text-align: right;
+      margin-top: 0.05in;
+    }
+
+    .number, .operator {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 20px;
+      line-height: 1;
+      white-space: pre;
+      color: #3498db;
+    }
+
+    .operator {
+      border-bottom: 2px solid #3498db;
+      margin-bottom: 0;
+    }
+
+    .problem input[type="number"] {
+      width: 70px;
+      height: 40px;
+      font-size: 20px;
+      margin-top: 7px;
+      margin-right: -10px;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .problem input[type="number"]::-webkit-outer-spin-button,
+    .problem input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Buttons container */
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background-color 0.2s ease;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .generate-btn {
+      background-color: #2ECC71;
+    }
+    .generate-btn:hover {
+      background-color: #27AE60;
+    }
+
+    .check-btn {
+      background-color: #3498DB;
+    }
+    .check-btn:hover {
+      background-color: #2980B9;
+    }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+    .static-btn {
+      background-color: #9B59B6;
+    }
+    .static-btn:hover {
+      background-color: #8E44AD;
+    }
+
+    .save-btn {
+      background-color: #f1c40f;
+      color: #000;
+    }
+    .save-btn:hover {
+      background-color: #f39c12;
+      color: #fff;
+    }
+
+    .grade-display {
+      position: relative;
+      width: 100%;
+      text-align: center;
+      margin: 0.3in auto 0;
+      padding: 10px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 18px;
+      display: inline-block;
+    }
+
+    .grade-emoji {
+      font-size: 50px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
+    .grade-text {
+      font-size: 24px;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+
+    .grade-A { color: #28a745; }
+    .grade-B { color: #17a2b8; }
+    .grade-C { color: #ffc107; }
+    .grade-D { color: #fd7e14; }
+    .grade-F { color: #dc3545; }
+
+    .correct-answer {
+      position: absolute;
+      top: 20px;
+      left: 30%;
+      transform: translateX(-50%);
+      color: #dc3545;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 2;
+    }
+
+    .worksheet-number {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="worksheetNumber" class="worksheet-number"></div>
+  <div class="header">
+    <h1>Addition with 10's!</h1>
+    <p>Name: <input type="text" id="student-name" placeholder="Enter your name">
+      Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+  </div>
+
+  <div class="example-box">
+    <h3>Example:</h3>
+    <p id="example">20 + 30 = 50</p>
+    <p>To add numbers ending in 0, just add the tens and add a 0 at the end!</p>
+  </div>
+
+  <div class="problems-grid" id="problems"></div>
+
+  <div class="grade-display" id="gradeDisplay"></div>
+  <p id="score" style="text-align:center;"></p>
+
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+    <button class="btn static-btn" onclick="createStaticWorksheet()">Create Static Worksheet</button>
+    <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+  </div>
+
+  <script>
+    let currentProblems = [];
+    let usedProblems = new Set();
+    let isStatic = false;
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateExample() {
+      const num1 = getRandomInt(1, 5) * 10;
+      const num2 = getRandomInt(1, 4) * 10;
+      return `${num1} + ${num2} = ${num1 + num2}`;
+    }
+
+    function generateProblem() {
+      let num1, num2, problemKey;
+      let attempts = 0;
+      const maxAttempts = 50;
+
+      do {
+        // Generate num1 between 10 and 90 (multiples of 10)
+        num1 = getRandomInt(1, 9) * 10;
+        // Generate num2 between 10 and 90 (multiples of 10)
+        num2 = getRandomInt(1, 9) * 10;
+        // Ensure num1 is always less than or equal to num2 to prevent duplicates like 10+20 and 20+10
+        if (num1 > num2) {
+          [num1, num2] = [num2, num1];
+        }
+        problemKey = `${num1}+${num2}`;
+        attempts++;
+        if (attempts >= maxAttempts) {
+          usedProblems.clear();
+          attempts = 0;
+        }
+      } while (usedProblems.has(problemKey));
+
+      usedProblems.add(problemKey);
+      return {
+        num1: num1,
+        num2: num2,
+        answer: num1 + num2
+      };
+    }
+
+    function generateWorksheetNumber() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const year = now.getFullYear();
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `WS-${month}${day}${year}-${random}`;
+    }
+
+    function generateNewWorksheet() {
+      // Update worksheet number
+      document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+
+      currentProblems = [];
+      usedProblems.clear();
+      isStatic = false;
+
+      document.getElementById('example').textContent = generateExample();
+
+      const problemsContainer = document.getElementById('problems');
+      problemsContainer.innerHTML = '';
+
+      for (let i = 0; i < 30; i++) {
+        const problem = generateProblem();
+        currentProblems.push(problem);
+
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem';
+        problemDiv.id = `problem-${i}`;
+        problemDiv.setAttribute('data-number', `#${i + 1}`);
+
+        problemDiv.innerHTML = `
+          <div class="math-expression">
+            <div class="number">${String(problem.num1).padStart(2, ' ')}</div>
+            <div class="operator">+${String(problem.num2).padStart(2, ' ')}</div>
+          </div>
+          <input type="number" class="answer-input" id="answer-${i}">
+        `;
+        problemsContainer.appendChild(problemDiv);
+      }
+
+      clearGrade();
+      clearAnswerStyles();
+    }
+
+    function calculateGrade(score) {
+      const percentage = (score / 30) * 100;
+      if (percentage >= 90) return 'A';
+      if (percentage >= 80) return 'B';
+      if (percentage >= 70) return 'C';
+      if (percentage >= 60) return 'D';
+      return 'F';
+    }
+
+    function clearGrade() {
+      document.getElementById('gradeDisplay').innerHTML = '';
+    }
+
+    function clearAnswerStyles() {
+      document.querySelectorAll('.problem').forEach(problem => {
+        problem.classList.remove('correct', 'incorrect');
+      });
+    }
+
+    function getGradeEmoji(grade) {
+      switch (grade) {
+        case 'A': return '🌟';
+        case 'B': return '😊';
+        case 'C': return '🙂';
+        case 'D': return '😐';
+        default:  return '😢';
+      }
+    }
+
+    function checkAnswers() {
+      let score = 0;
+      const problems = document.querySelectorAll('.problem');
+
+      problems.forEach((problemDiv) => {
+        const answerInput = problemDiv.querySelector('.answer-input');
+        const mathExpression = problemDiv.querySelector('.math-expression');
+        const numbers = mathExpression.querySelectorAll('div');
+        const num1 = parseInt(numbers[0].textContent);
+        const num2 = parseInt(numbers[1].textContent.replace('+', ''));
+        const correctAnswer = num1 + num2;
+
+        // Remove any existing correct answer display
+        const existingCorrectAnswer = problemDiv.querySelector('.correct-answer');
+        if (existingCorrectAnswer) {
+          existingCorrectAnswer.remove();
+        }
+
+        problemDiv.classList.remove('correct', 'incorrect');
+
+        if (parseInt(answerInput.value) === correctAnswer) {
+          score++;
+          problemDiv.classList.add('correct');
+        } else {
+          problemDiv.classList.add('incorrect');
+          // Add the correct answer display
+          const correctAnswerDiv = document.createElement('div');
+          correctAnswerDiv.className = 'correct-answer';
+          correctAnswerDiv.textContent = correctAnswer;
+          problemDiv.appendChild(correctAnswerDiv);
+        }
+      });
+
+      const total = problems.length;
+      const percentage = (score / total) * 100;
+      const grade = calculateGrade(score);
+      const emoji = getGradeEmoji(grade);
+      const gradeClass = `grade-${grade}`;
+
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      gradeDisplay.innerHTML = `
+        <span class="grade-emoji ${gradeClass}">${emoji}</span>
+        <span class="grade-text ${gradeClass}">
+          Grade: ${grade} (${score}/${total} - ${percentage.toFixed(1)}%)
+        </span>
+      `;
+    }
+
+    function saveWorksheet() {
+      const inputs = document.querySelectorAll('.answer-input, .header input');
+      inputs.forEach(input => {
+        input.setAttribute('value', input.value || '');
+      });
+
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      if (gradeDisplay) {
+        gradeDisplay.setAttribute('data-content', gradeDisplay.innerHTML);
+      }
+
+      const content = document.documentElement.outerHTML;
+      const blob = new Blob([content], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      const date = new Date();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+
+      const filename = `math_Addition10s-${month}${day}-${randomNum}.html`;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    }
+
+    function createStaticWorksheet() {
+      const staticDoc = document.documentElement.cloneNode(true);
+
+      const buttonContainer = staticDoc.querySelector('.button-container');
+      buttonContainer.innerHTML = `
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+      `;
+
+      const scriptContent = `
+        let currentProblems = ${JSON.stringify(currentProblems)};
+        let isStatic = true;
+        ${checkAnswers.toString()}
+        ${calculateGrade.toString()}
+        ${clearGrade.toString()}
+        ${clearAnswerStyles.toString()}
+        ${getGradeEmoji.toString()}
+        ${saveWorksheet.toString()}
+      `;
+      const scriptElement = staticDoc.querySelector('script');
+      scriptElement.textContent = scriptContent;
+
+      const blob = new Blob([staticDoc.outerHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      const date = new Date();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const filename = `math_Addition10s-Static-${month}${day}-${randomNum}.html`;
+
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    window.onload = generateNewWorksheet;
+  </script>
+</body>
+</html> 

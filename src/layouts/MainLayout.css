@@ -1,0 +1,146 @@
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 280px;
+    background-color: var(--color-surface);
+    border-right: var(--border-width) solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 50;
+    transition: transform var(--transition-normal);
+}
+
+.sidebar-header {
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.logo-text {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-links {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.nav-item {
+    display: block;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+}
+
+.nav-item:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    /* Tint of primary */
+    color: var(--color-primary);
+}
+
+.nav-item.active {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+/* Mobile Header */
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background-color: var(--color-surface-glass);
+    backdrop-filter: blur(10px);
+    padding: 0 var(--spacing-md);
+    align-items: center;
+    gap: var(--spacing-md);
+    border-bottom: var(--border-width) solid var(--border-color);
+    z-index: 40;
+}
+
+.menu-btn,
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-main);
+    padding: var(--spacing-xs);
+}
+
+.close-btn {
+    display: none;
+    /* Only show on mobile sidebar */
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    /* Width of sidebar */
+    padding: var(--spacing-xl);
+    max-width: 1400px;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 45;
+    backdrop-filter: blur(2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .mobile-header {
+        display: flex;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding-top: 80px;
+        /* Header height + padding */
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+
+    .close-btn {
+        display: block;
+    }
+
+    .overlay {
+        display: block;
+        /* Show overlay when sidebar is open */
+    }
+}

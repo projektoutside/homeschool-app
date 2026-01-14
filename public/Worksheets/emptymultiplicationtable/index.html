@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplication Table Worksheet</title>
+    <style>
+        /* General Page Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Sans+MS&display=swap');
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+            background-color: #f0f0f0; /* Light gray background for the page */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align worksheet to top */
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .worksheet-container {
+            width: 8.5in;
+            height: 11in; /* Fixed height for one page */
+            background-color: white;
+            padding: 0.4in 0.5in; /* Slightly less top/bottom padding */
+            box-sizing: border-box;
+            margin: 20px 0; /* Margin for screen view */
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent content spill, helps ensure it fits */
+        }
+
+        /* Worksheet Title */
+        .worksheet-title {
+            font-size: 24px;
+            color: #3498db; /* Blue title */
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px; /* Reduced margin */
+        }
+
+        /* Header Section */
+        .worksheet-header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 10px; /* Reduced margin */
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-item label {
+            margin-right: 8px;
+            font-size: 16px; /* Consistent with input field font */
+            font-weight: bold;
+        }
+
+        .worksheet-header input[type="text"], .worksheet-header .subject-text {
+            border: none;
+            border-bottom: 2px solid #3498db;
+            padding: 6px 4px; /* Reduced padding */
+            font-size: 16px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            outline: none;
+        }
+        .worksheet-header input[name="student-name"]{ width: 180px; } /* Adjusted width */
+        .worksheet-header input[name="date"]{ width: 100px; } /* Adjusted width */
+
+        .subject-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #3498db;
+            padding: 6px 4px; /* Reduced padding */
+        }
+
+        /* Example Box */
+        .example-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px; /* Reduced padding */
+            margin-bottom: 10px; /* Reduced margin */
+            font-size: 18px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-align: center;
+        }
+        .example-box strong {
+            color: #3498db;
+        }
+        .example-box .operator {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        /* Multiplication Table Styling */
+        .multiplication-table-container {
+            flex-grow: 1; /* Allow table to take available space */
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Center table if it's smaller than container */
+            overflow: hidden; /* Hide scrollbars if table slightly overflows due to rounding */
+        }
+
+        #multiplicationTable {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 100%; /* Ensure it doesn't exceed container */
+            height: auto; /* Adjust height based on content */
+            table-layout: fixed; /* Equal column widths */
+        }
+
+        #multiplicationTable th, #multiplicationTable td {
+            border: 1px solid #b0bec5; /* Softer grey border for cells */
+            text-align: center;
+            /* Approximate height/width for 13x13 grid on 7.5x~8in area */
+            /* height dynamically set by content and table layout */
+            padding: 1px; /* Minimal padding */
+        }
+
+        #multiplicationTable th {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 18px; /* Slightly smaller for headers to fit */
+            color: #3498db; /* Blue text for headers */
+            font-weight: bold;
+            background-color: #FFCDD2; /* Light salmon pink for headers */
+            padding: 4px 2px; /* Padding for header text */
+            min-width: 40px; /* Minimum width for readability */
+        }
+        
+        #multiplicationTable th.corner-header {
+            background-color: #FFAB91; /* Darker salmon for 'X' corner */
+            font-size: 20px;
+        }
+
+        #multiplicationTable td {
+            height: 45px; /* Fixed height for data cells to ensure fit */
+             /* Vertically align content in cell */
+        }
+
+        .answer-input {
+            background: white;
+            border: 1px solid #ccc; /* Light gray border */
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 20px;
+            color: black;
+            width: 90%;
+            height: 38px;
+            padding: 0;
+            text-align: center;
+            box-sizing: border-box;
+            -moz-appearance: textfield; /* Remove spinners Firefox */
+            line-height: 38px; /* Vertically center text in input */
+        }
+        .answer-input::-webkit-inner-spin-button,
+        .answer-input::-webkit-outer-spin-button {
+            -webkit-appearance: none; /* Remove spinners Chrome, Safari, Edge, Opera */
+            margin: 0;
+        }
+
+        /* Answer Styling by JS */
+        .correct-answer {
+            border: 2px solid #28a745 !important; /* Green border for correct */
+            background-color: #e9f7ef !important; /* Light green background */
+        }
+        .incorrect-answer {
+            border: 2px solid #dc3545 !important; /* Red border for incorrect */
+            background-color: #fdecea !important; /* Light red background */
+        }
+
+        /* Grading Section */
+        .grading-section {
+            text-align: center;
+            /* margin-top: auto; Pushed by flex-grow of table container */
+            padding-top: 8px; /* Reduced space */
+            font-size: 16px; /* Slightly smaller to save space */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-weight: bold;
+            margin-bottom: 5px; /* Space before buttons */
+        }
+        .grade-icon {
+            font-size: 22px; /* Adjusted size */
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        /* Interactive Buttons */
+        .interactive-buttons {
+            text-align: center;
+            /* margin-top: 10px; No extra margin, grading section provides some */
+            padding-bottom: 5px;
+        }
+        .interactive-buttons button {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            color: white;
+            padding: 8px 15px; /* Reduced padding */
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: background-color 0.3s ease;
+        }
+        .check-button {
+            background-color: #3498db; /* Blue */
+        }
+        .check-button:hover {
+            background-color: #2980b9;
+        }
+        .print-button { background-color: #e67e22; }
+        .print-button:hover { background-color: #d35400; }
+        .generate-button {
+            background-color: #2ECC71; /* Green */
+        }
+        .generate-button:hover {
+            background-color: #27AE60;
+        }
+
+        /* Print Styles */
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+            body {
+                background-color: white;
+                margin: 0;
+                padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+                display: block;
+                font-family: 'Comic Sans MS', cursive, sans-serif !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .worksheet-container {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0.4in 0.5in;
+                box-shadow: none;
+                page-break-inside: avoid;
+                display: flex;
+                flex-direction: column;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .worksheet-header input[type="text"], .worksheet-header .subject-text {
+                 border-bottom: 2px solid #3498db !important;
+            }
+            #multiplicationTable th {
+                background-color: #FFCDD2 !important;
+                color: #3498db !important;
+            }
+            #multiplicationTable th.corner-header {
+                 background-color: #FFAB91 !important;
+            }
+            .answer-input {
+                background: white !important;
+                border: 1px solid #ccc !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .correct-answer {
+                border: 1px solid #28a745 !important;
+                background-color: white !important;
+            }
+            .incorrect-answer {
+                border: 1px solid #dc3545 !important;
+                background-color: white !important;
+            }
+            .worksheet-title { color: #3498db !important; }
+            .example-box strong, .example-box .operator { color: #3498db !important; }
+            .example-box { background: #f8f9fa !important; border: 2px solid #3498db !important; }
+            #multiplicationTable td {
+                height: auto !important;
+            }
+            .answer-input {
+                height: 30px !important;
+                line-height: 30px !important;
+                font-size: 18px !important;
+            }
+            #multiplicationTable th {
+                font-size: 16px !important;
+                padding: 2px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <h1 class="worksheet-title">Multiplication Table Fun!</h1>
+
+        <header class="worksheet-header">
+            <div class="header-item">
+                <label for="student-name">Student Name:</label>
+                <input type="text" id="student-name" name="student-name">
+            </div>
+            <div class="header-item">
+                <label for="date">Date:</label>
+                <input type="text" id="date" name="date">
+            </div>
+            <div class="header-item">
+                <label>Subject:</label>
+                <span class="subject-text">Multiplication Table</span>
+            </div>
+        </header>
+
+        <div class="example-box">
+            Fill in the table! For example, where row <strong>2</strong> meets column <strong>3</strong>, the answer is <strong>2</strong> <span class="operator">×</span> <strong>3</strong> <span class="operator">=</span> <strong>6</strong>.
+        </div>
+
+        <div class="multiplication-table-container">
+            <table id="multiplicationTable">
+                <thead>
+                    <tr>
+                        <th class="table-header corner-header">X</th>
+                        <th class="table-header">1</th>
+                        <th class="table-header">2</th>
+                        <th class="table-header">3</th>
+                        <th class="table-header">4</th>
+                        <th class="table-header">5</th>
+                        <th class="-header">6</th>
+                        <th class="table-header">7</th>
+                        <th class="table-header">8</th>
+                        <th class="table-header">9</th>
+                        <th class="table-header">10</th>
+                        <th class="table-header">11</th>
+                        <th class="table-header">12</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <th class="table-header">1</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="1"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="2"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="3"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="4"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="5"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="6"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="7"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="8"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="9"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="10"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="11"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <th class="table-header">2</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="2"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="4"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="6"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="8"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="10"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="14"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="16"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="18"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="20"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="22"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <th class="table-header">3</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="3"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="6"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="9"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="15"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="18"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="21"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="27"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="30"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="33"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="36"></td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <th class="table-header">4</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="4"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="8"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="16"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="20"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="28"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="32"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="36"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="40"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="44"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="48"></td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <th class="table-header">5</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="5"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="10"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="15"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="20"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="25"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="30"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="35"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="40"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="45"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="50"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="55"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="60"></td>
+                    </tr>
+                    <!-- Row 6 -->
+                    <tr>
+                        <th class="table-header">6</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="6"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="18"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="30"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="36"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="42"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="48"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="54"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="60"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="66"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="72"></td>
+                    </tr>
+                    <!-- Row 7 -->
+                    <tr>
+                        <th class="table-header">7</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="7"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="14"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="21"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="28"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="35"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="42"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="49"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="56"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="63"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="70"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="77"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="84"></td>
+                    </tr>
+                    <!-- Row 8 -->
+                    <tr>
+                        <th class="table-header">8</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="8"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="16"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="32"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="40"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="48"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="56"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="64"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="72"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="80"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="88"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="96"></td>
+                    </tr>
+                    <!-- Row 9 -->
+                    <tr>
+                        <th class="table-header">9</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="9"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="18"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="27"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="36"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="45"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="54"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="63"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="72"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="81"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="90"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="99"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="108"></td>
+                    </tr>
+                    <!-- Row 10 -->
+                    <tr>
+                        <th class="table-header">10</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="10"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="20"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="30"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="40"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="50"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="60"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="70"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="80"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="90"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="100"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="110"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="120"></td>
+                    </tr>
+                    <!-- Row 11 -->
+                    <tr>
+                        <th class="table-header">11</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="11"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="22"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="33"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="44"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="55"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="66"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="77"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="88"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="99"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="110"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="121"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="132"></td>
+                    </tr>
+                    <!-- Row 12 -->
+                    <tr>
+                        <th class="table-header">12</th>
+                        <td><input type="number" class="answer-input" data-correct-answer="12"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="24"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="36"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="48"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="60"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="72"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="84"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="96"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="108"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="120"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="132"></td>
+                        <td><input type="number" class="answer-input" data-correct-answer="144"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grading-section" id="gradingSection">
+            Grade: -
+        </div>
+
+        <div class="interactive-buttons no-print">
+            <button class="check-button">Check Answers</button>
+            <button class="print-button" onclick="window.print()">Print</button>
+            <button class="generate-button">Clear Table</button> 
+        </div>
+    </div>
+
+    <script>
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('#multiplicationTable .answer-input');
+            let correctCount = 0;
+            let attemptedCount = 0; // Count only non-empty inputs for certain grading logic
+            let totalQuestions = inputs.length;
+
+            inputs.forEach(input => {
+                input.classList.remove('correct-answer', 'incorrect-answer');
+                const userAnswer = input.value; // Keep as string for empty check
+                const correctAnswer = input.dataset.correctAnswer;
+
+                if (userAnswer === '') {
+                    // Do not mark empty as incorrect immediately unless checking all
+                    // For now, let's mark empty cells as neutral or specifically style them if needed
+                    // For grading, an empty answer is an incorrect answer
+                } else {
+                    attemptedCount++;
+                    if (parseInt(userAnswer) === parseInt(correctAnswer)) {
+                        input.classList.add('correct-answer');
+                        correctCount++;
+                    } else {
+                        input.classList.add('incorrect-answer');
+                    }
+                }
+            });
+            
+            // Grade based on all questions, not just attempted ones
+            displayGrade(correctCount, totalQuestions); 
+        }
+
+        function displayGrade(correctCount, totalQuestions) {
+            const gradeSection = document.getElementById('gradingSection');
+            if (totalQuestions === 0) {
+                gradeSection.innerHTML = 'No questions to grade.';
+                return;
+            }
+
+            const percentage = (correctCount / totalQuestions) * 100;
+            let letterGrade = '';
+            let icon = '';
+            let iconColor = '';
+
+            if (percentage >= 98) { letterGrade = 'A+'; icon = '🏆'; iconColor = '#2ecc71'; }
+            else if (percentage >= 90) { letterGrade = 'A'; icon = '🌟'; iconColor = '#27ae60'; }
+            else if (percentage >= 80) { letterGrade = 'B'; icon = '👍'; iconColor = '#3498db'; }
+            else if (percentage >= 70) { letterGrade = 'C'; icon = '😐'; iconColor = '#f1c40f'; }
+            else if (percentage >= 60) { letterGrade = 'D'; icon = '😟'; iconColor = '#e67e22'; }
+            else { letterGrade = 'F'; icon = '😢'; iconColor = '#e74c3c'; }
+
+            gradeSection.innerHTML = `
+                <span class="grade-icon" style="color: ${iconColor};">${icon}</span>
+                Grade: ${percentage.toFixed(0)}% (${letterGrade})
+            `;
+        }
+
+        function clearTableAndGrade() {
+            const inputs = document.querySelectorAll('#multiplicationTable .answer-input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('correct-answer', 'incorrect-answer');
+            });
+            document.getElementById('gradingSection').innerHTML = 'Grade: -';
+            // Optionally clear name and date
+            // document.getElementById('student-name').value = '';
+            // document.getElementById('date').value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.check-button').addEventListener('click', checkAnswers);
+            document.querySelector('.generate-button').addEventListener('click', clearTableAndGrade);
+            
+            // Initial grade display
+            document.getElementById('gradingSection').innerHTML = 'Grade: -';
+
+            // Minor correction for a class name in HTML (typo: class="-header" corrected to class="table-header")
+            const faultyHeader = document.querySelector('th[class="-header"]');
+            if(faultyHeader) {
+                faultyHeader.className = "table-header";
+            }
+        });
+
+        // "Generate New Worksheet" button is labeled "Clear Table" for this context
+        // The filename for export is not handled by this static HTML, but if it were:
+        // function exportWorksheet() {
+        //     const subject = "MultiplicationTable";
+        //     const date = new Date();
+        //     const MMDD = (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0');
+        //     const code = Math.random().toString(36).substring(2, 6).toUpperCase(); // Simple random code
+        //     const filename = `worksheet_${subject}-${MMDD}-${code}.html`;
+        //     // Logic to save the current HTML content would go here.
+        //     // For a static file, this would typically involve server-side or more complex client-side libraries.
+        //     // A simple approach:
+        //     // const staticHTML = document.documentElement.outerHTML;
+        //     // const link = document.createElement('a');
+        //     // link.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(staticHTML);
+        //     // link.download = filename;
+        //     // link.click();
+        //     // console.log("Worksheet would be saved as: " + filename);
+        // }
+        // document.querySelector('.generate-button').addEventListener('click', exportWorksheet); // If it were for saving.
+        // For now, "Generate New Worksheet" will just clear the table.
+    </script>
+</body>
+</html>

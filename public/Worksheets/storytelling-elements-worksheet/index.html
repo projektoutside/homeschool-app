@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storytelling Elements Worksheet</title>
+    <style>
+        /* ============== PRINT SETTINGS ============== */
+        
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+            .generate-btn, .check-btn, .print-btn, .button-container {
+                display: none !important;
+            }
+            input::placeholder {
+                color: transparent;
+            }
+            .header input {
+                border-bottom: 1px solid #000;
+            }
+            body {
+                padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0;
+            }
+            
+            /* Ensure story box and elements print properly */
+            .story-box {
+                border: 2px solid #000 !important;
+                background-color: #f8f8f8 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .question-section {
+                border: 1px solid #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+
+        /* ============== BASE STYLES ============== */
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            width: 8.5in;
+            margin: 0 auto;
+            padding: 0.3in 0.4in;
+                width: 100% !important;
+                height: 100% !important;
+            box-sizing: border-box;
+            color: #3498db;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        /* ============== WORKSHEET ID ============== */
+        .worksheet-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* ============== HEADER ============== */
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin: 0 0 4px 0;
+            color: #3498db;
+        }
+
+        .header .subtitle {
+            font-size: 12px;
+            color: #2c3e50;
+            margin: 2px 0 6px 0;
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 11px;
+            margin: 2px 0;
+        }
+
+        .header input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 11px;
+            border: none;
+            border-bottom: 1px solid #3498db;
+            outline: none;
+            width: 100px;
+            padding: 2px 5px;
+            margin: 0 5px;
+        }
+
+        .header input:focus {
+            border-bottom: 2px solid #3498db;
+        }
+
+        /* ============== STORY SECTION ============== */
+        .story-section {
+            margin: 8px 0;
+        }
+
+        .story-title {
+            text-align: center;
+            font-size: 16px;
+            color: #2ecc71;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .story-box {
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #2c3e50;
+        }
+
+        /* ============== QUESTIONS SECTION ============== */
+        .questions-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .question-section {
+            background-color: #fdfdfd;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px;
+            margin-bottom: 4px;
+        }
+
+        .question-section.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .question-number {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            line-height: 18px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        .question-text {
+            font-size: 10px;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .answer-space {
+            min-height: 20px;
+            border-bottom: 1px dotted #bbb;
+            margin: 2px 0;
+            font-size: 10px;
+        }
+
+        .answer-space.large {
+            min-height: 28px;
+        }
+
+        .answer-space.extra-large {
+            min-height: 35px;
+        }
+
+        /* ============== SPECIAL ELEMENTS ============== */
+        .story-elements-guide {
+            background-color: #e8f5e8;
+            border: 1px solid #2ecc71;
+            border-radius: 3px;
+            padding: 5px;
+            margin: 6px 0;
+            font-size: 9px;
+        }
+
+        .guide-title {
+            color: #2ecc71;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .guide-list {
+            color: #27ae60;
+            margin: 0;
+            padding-left: 10px;
+        }
+
+        /* ============== BUTTONS ============== */
+        .button-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0 6px;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        /* ============== CHARACTER ICONS ============== */
+        .character-hint {
+            color: #e74c3c;
+            font-size: 8px;
+            font-style: italic;
+        }
+
+        .plot-structure {
+            display: flex;
+            justify-content: space-around;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 3px;
+            padding: 3px;
+            margin: 3px 0;
+            font-size: 8px;
+        }
+
+        .plot-part {
+            text-align: center;
+            color: #856404;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="worksheetNumber" class="worksheet-number"></div>
+    
+    <div class="header">
+        <h1>📚 Storytelling Elements 📚</h1>
+        <p class="subtitle">Learn About Characters, Setting, and Plot!</p>
+        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> 
+           Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+    </div>
+
+    <div class="story-section">
+        <div class="story-title">🌟 "The Magic Paintbrush Mystery" 🌟</div>
+        
+        <div class="story-box">
+            Maya loved to draw more than anything in the world. Every day after school, she would sit in her grandmother's attic and create colorful pictures with her old paintbrush set. The attic was filled with dusty books, old furniture, and mysterious boxes that her grandmother had collected over many years.
+            <br><br>
+            One rainy Thursday afternoon, Maya discovered something incredible. While searching through a forgotten wooden chest, she found a shimmering silver paintbrush that seemed to glow with its own light. "How strange," Maya whispered to herself as she picked it up.
+            <br><br>
+            When Maya dipped the magical paintbrush in her watercolors and painted a bright yellow butterfly on her paper, something amazing happened – the butterfly suddenly fluttered its wings and flew right off the page! Maya gasped in surprise and excitement. She quickly painted a red apple, and it appeared on her desk, real enough to eat.
+            <br><br>
+            But then Maya made a mistake. She accidentally painted a grumpy storm cloud, and suddenly the sunny attic became dark and windy. Rain began pouring through the windows, soaking her grandmother's precious books! Maya realized she needed to fix this problem quickly.
+            <br><br>
+            Thinking fast, Maya painted a bright golden sun to chase away the storm cloud. The rain stopped, the winds calmed, and warm sunlight filled the attic once again. Maya carefully put the magic paintbrush back in the chest, deciding that some magic is too powerful for everyday use. From that day on, she appreciated her regular paintbrushes even more, knowing that the real magic was in her imagination and creativity.
+        </div>
+    </div>
+
+    <div class="story-elements-guide">
+        <div class="guide-title">📖 Story Elements Reminder:</div>
+        <ul class="guide-list">
+            <li><strong>Characters:</strong> Who is in the story?</li>
+            <li><strong>Setting:</strong> When and where does it happen?</li>
+            <li><strong>Plot:</strong> What happens? (beginning → middle → end)</li>
+            <li><strong>Conflict:</strong> What problem occurs?</li>
+            <li><strong>Resolution:</strong> How is the problem solved?</li>
+        </ul>
+    </div>
+
+    <div class="questions-container">
+        <!-- Question 1 -->
+        <div class="question-section">
+            <span class="question-number">1</span>
+            <div class="question-text">Who is the main character?</div>
+            <div class="answer-space"></div>
+            <div class="character-hint">💡 Hint: Who does the story follow?</div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="question-section">
+            <span class="question-number">2</span>
+            <div class="question-text">Where does the story take place?</div>
+            <div class="answer-space"></div>
+            <div class="character-hint">💡 Hint: Look for the location!</div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="question-section full-width">
+            <span class="question-number">3</span>
+            <div class="question-text">What happens at the BEGINNING of the story?</div>
+            <div class="plot-structure">
+                <div class="plot-part">📖 BEGINNING</div>
+                <div class="plot-part">🎯 MIDDLE</div>
+                <div class="plot-part">🏁 END</div>
+            </div>
+            <div class="answer-space large"></div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="question-section full-width">
+            <span class="question-number">4</span>
+            <div class="question-text">What magical thing happens in the MIDDLE of the story?</div>
+            <div class="answer-space large"></div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="question-section">
+            <span class="question-number">5</span>
+            <div class="question-text">What problem occurs in the story?</div>
+            <div class="answer-space large"></div>
+            <div class="character-hint">⚡ This is the conflict!</div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="question-section">
+            <span class="question-number">6</span>
+            <div class="question-text">How does Maya solve the problem?</div>
+            <div class="answer-space large"></div>
+            <div class="character-hint">🔧 This is the resolution!</div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="question-section full-width">
+            <span class="question-number">7</span>
+            <div class="question-text">How does the story END? What does Maya decide?</div>
+            <div class="answer-space large"></div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="question-section full-width">
+            <span class="question-number">8</span>
+            <div class="question-text">Write a ONE-SENTENCE summary of the entire story:</div>
+            <div class="answer-space extra-large"></div>
+        </div>
+
+        <!-- Question 9 -->
+        <div class="question-section">
+            <span class="question-number">9</span>
+            <div class="question-text">What did Maya learn?</div>
+            <div class="answer-space large"></div>
+            <div class="character-hint">🧠 How did she change?</div>
+        </div>
+
+        <!-- Question 10 -->
+        <div class="question-section">
+            <span class="question-number">10</span>
+            <div class="question-text">What would YOU paint if you had the magic paintbrush?</div>
+            <div class="answer-space large"></div>
+            <div class="character-hint">🎨 Be creative!</div>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Story</button>
+    </div>
+
+    <script>
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${month}${day}${year}-${random}`;
+        }
+
+        function generateNewWorksheet() {
+            // For now, just refresh the worksheet number
+            // In the future, we could add multiple stories
+            document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+            
+            // Clear any written answers
+            const answerSpaces = document.querySelectorAll('.answer-space');
+            answerSpaces.forEach(space => {
+                if (space.querySelector('input')) {
+                    space.querySelector('input').value = '';
+                }
+            });
+            
+            // Clear name and date fields
+            const nameField = document.getElementById('student-name');
+            const dateField = document.getElementById('worksheet-date');
+            if (nameField) nameField.value = '';
+            if (dateField) dateField.value = '';
+            
+            console.log('New worksheet generated with fresh ID');
+        }
+
+        // Auto-load worksheet number on page load
+        window.onload = function() {
+            document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction to Fractions Worksheet</title>
+    <!-- CSS STYLES HERE -->
+    <style>
+        /* ============== PRINT SETTINGS ============== */
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+            /* Hide interactive elements for printing */
+            .generate-btn, .check-btn, .print-btn, .button-container {
+                display: none !important;
+            }
+            input::placeholder {
+                color: transparent; /* Hide placeholder text for print */
+            }
+            .header input {
+                border-bottom: 1px solid #000; /* Darker border for print legibility */
+            }
+            /* Adjust explanation box for print aesthetics */
+            .explanation-box {
+                box-shadow: none; /* Remove shadow for print */
+                background-color: transparent; /* No background fill for print */
+                border: 2px dashed #000; /* A dashed border for visual clarity on print */
+            }
+            /* Ensure the correct answer display is visible when printed */
+            .correct-answer-display {
+                display: block !important;
+            }
+        }
+
+        /* ============== BASE STYLES ============== */
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* Primary Font */
+            width: 8.5in; /* Page Dimensions */
+            margin: 0 auto;
+            padding: 0.5in;
+                width: 100% !important;
+                height: 100% !important; /* Margins */
+            box-sizing: border-box; /* Include padding in width/height */
+            color: #3498db; /* Main text color - Primary Blue */
+            background-color: white; /* Mandatory Background */
+        }
+
+        /* ============== WORKSHEET ID ============== */
+        .worksheet-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px; /* Small Text */
+            color: #666; /* Light Gray */
+        }
+
+        /* ============== HEADER ============== */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px; /* Title */
+            margin: 0 0 10px 0;
+            color: #3498db; /* Primary Blue */
+        }
+
+        .header p {
+            font-size: 16px; /* Body Text */
+            margin: 5px 0;
+        }
+
+        .header input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px; /* Body Text */
+            border: none;
+            border-bottom: 1px solid #3498db; /* Primary Blue */
+            outline: none;
+            width: 200px;
+            padding: 2px 5px;
+            margin: 0 5px;
+        }
+
+        .header input:focus {
+            border-bottom: 2px solid #3498db; /* Primary Blue */
+        }
+
+        /* ============== EXPLANATION BOX ============== */
+        .explanation-box {
+            border: 2px solid #3498db; /* Primary Blue */
+            padding: 8px 15px; /* Reduced vertical padding for compactness */
+            margin: 0 auto 20px auto; /* Reduced bottom margin to save space */
+            max-width: 7.5in; /* Content Area */
+            border-radius: 8px;
+            background-color: #eaf6fd; /* A lighter shade of primary blue for background */
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .explanation-box h2 {
+            font-size: 20px; /* Math Problems size as a section header */
+            color: #3498db;
+            margin-top: 0;
+            margin-bottom: 5px; /* Reduced margin */
+        }
+
+        .explanation-box p {
+            font-size: 14px; /* Slightly smaller text for compactness */
+            color: #3498db;
+            margin-bottom: 5px; /* Reduced margin */
+            line-height: 1.4; /* Slightly tighter line height */
+        }
+        .explanation-box p:last-of-type {
+            margin-bottom: 0; /* Remove bottom margin for the last paragraph */
+        }
+
+        .explanation-example {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px; /* Slightly smaller font for example text */
+            color: #3498db;
+            font-weight: bold;
+            margin: 8px 0; /* Reduced vertical margin */
+        }
+
+        .explanation-example .fraction-image {
+            width: 80px; /* Smaller example image */
+            height: 30px; /* Smaller example image */
+            margin-right: 10px; /* Reduced margin */
+            margin-left: 10px; /* Reduced margin */
+            border: 1px solid #ccc; /* Add border to example image as problems have it */
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1); /* Match problem styling, smaller shadow */
+            border-radius: 4px; /* Match problem styling, slightly smaller radius */
+        }
+        
+        .explanation-example input {
+            font-size: 18px; /* Matches example text font size */
+            border: 2px solid #3498db; /* Primary Blue */
+            border-radius: 4px;
+            width: 60px; /* Smaller width for input */
+            text-align: center;
+            padding: 3px 0; /* Reduced padding */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: black;
+            background-color: #f0f8ff; /* A very light blue for readonly input */
+            outline: none; 
+            cursor: default; /* Indicate it's not editable */
+        }
+        /* Ensure placeholder for example input is visible for consistency */
+        .explanation-example input::placeholder {
+            color: #999;
+        }
+
+        /* ============== BUTTONS ============== */
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px; /* Body Text */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0 10px;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71; /* Success Green */
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .check-btn {
+            background-color: #3498db; /* Primary Blue */
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        /* ============== GRADE DISPLAY ============== */
+        .grade-display {
+            font-size: 24px; /* Subtitle */
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            height: 36px; /* Ensure space even when empty */
+        }
+
+        .grade-emoji {
+            font-size: 28px; /* Title (for emoji consistency) */
+            margin-right: 10px;
+            display: inline-block;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .grade-text {
+            display: inline-block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Grade Colors */
+        .grade-a-plus { color: #2ecc71; } /* Success Green */
+        .grade-b { color: #3498db; }     /* Primary Blue */
+        .grade-c { color: #f1c40f; }
+        .grade-d { color: #e67e22; }
+        .grade-f { color: #e74c3c; }     /* Error Red */
+
+        /* ============== GRID LAYOUT ============== */
+        .problems {
+            display: grid;
+            gap: 20px; /* Space between problems */
+            margin: 20px auto;
+            max-width: 7.5in; /* Content Area Max Width */
+            grid-template-columns: repeat(4, 1fr); /* 4x3 grid for 12 problems */
+        }
+
+        .problem {
+            position: relative;
+            border: 1px solid #ccc; /* Border from guideline */
+            padding: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            text-align: center;
+            background: #f9f9f9;
+            font-size: 20px; /* Math Problems */
+            color: #3498db; /* Primary Blue */
+        }
+
+        .problem::before {
+            content: attr(data-number);
+            position: absolute;
+            top: -6px;
+            left: -2px;
+            background: white;
+            color: #999; /* Specific color from README */
+            font-size: 9px; /* Smaller than Small Text (12px) for subtle numbering */
+            padding: 1px 4px;
+            border-radius: 3px;
+            border: 1px solid #eee;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        .problem.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .problem.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .problem.correct::before {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .problem.incorrect::before {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        /* ============== INPUT FIELD STANDARDS ============== */
+        .answer-input {
+            width: 70px;
+            font-size: 20px; /* Math Problems */
+            text-align: center;
+            border: 2px solid #3498db; /* Primary Blue for consistent theme */
+            border-radius: 4px;
+            color: black;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin-top: 10px;
+            padding: 5px 0; /* Add some padding for better typing experience */
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #2980b9; /* Darker blue on focus */
+        }
+
+        .answer-input::-webkit-inner-spin-button,
+        .answer-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .fraction-display {
+            margin-bottom: 10px;
+        }
+
+        .fraction-image {
+            width: 100%; /* Make SVG fill problem div */
+            height: auto;
+            max-width: 150px; /* Max size for the image, prevents distortion */
+            margin: 0 auto 10px auto;
+            display: block;
+        }
+
+        /* Style for displaying the correct answer */
+        .correct-answer-display {
+            font-size: 18px; /* Slightly smaller than problem text, but clear */
+            font-weight: bold;
+            color: #e74c3c; /* Error Red */
+            margin-top: 8px; /* Space below the input field */
+            margin-bottom: 0; /* Remove default paragraph margin */
+            /* Hide by default, only shown by JS for incorrect answers */
+            display: none; 
+        }
+        /* Make correct answer visible if problem is incorrect (and JS adds it) */
+        .problem.incorrect .correct-answer-display {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. WORKSHEET ID (TOP-LEFT) -->
+    <div id="worksheetNumber" class="worksheet-number"></div>
+    
+    <!-- 2. HEADER SECTION -->
+    <div class="header">
+        <h1>Introduction to Fractions</h1>
+        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> 
+           Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+    </div>
+
+    <!-- Explanation Box -->
+    <div class="explanation-box">
+        <h2>How to solve these problems:</h2>
+        <p>Look at the shaded part of the rectangle. Count how many parts are shaded (this is the <b>top number</b>, or numerator) and how many <b>total parts</b> there are (this is the bottom number, or denominator).</p>
+        <div class="explanation-example">
+            <span>Example:</span>
+            <div id="exampleFractionSVG"></div>
+            <span>Answer: <input type="text" value="1/2" readonly></span>
+        </div>
+        <p>Type your answer as a fraction, like "1/2", into the box below each problem. Good luck!</p>
+    </div>
+    
+    <!-- 3. PROBLEMS CONTAINER -->
+    <div class="problems">
+        <!-- Dynamic problem generation here -->
+    </div>
+    
+    <!-- 4. GRADE DISPLAY -->
+    <div class="grade-display" id="gradeDisplay"></div>
+    
+    <!-- 5. BUTTON CONTAINER -->
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+    </div>
+    
+    <!-- JAVASCRIPT HERE -->
+    <script>
+        // Global variable to store current problems
+        let currentProblems = [];
+        const NUM_PROBLEMS = 12; // Standard for 4x3 grid
+
+        /**
+         * Creates an SVG string representation of a fraction using shaded rectangles
+         * with black outlines for all segments.
+         * @param {number} num - The numerator.
+         * @param {number} den - The denominator.
+         * @param {number} [svgWidth=120] - Width for the SVG (optional, defaults to 120).
+         * @param {number} [svgHeight=40] - Height for the SVG (optional, defaults to 40).
+         * @returns {string} The SVG string.
+         */
+        function createFractionSVG(num, den, svgWidth = 120, svgHeight = 40) {
+            const segmentWidth = svgWidth / den; // Width of each segment
+
+            // Use preserveAspectRatio to maintain aspect ratio on different display sizes
+            let svg = `<svg class="fraction-image" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`;
+            
+            // Draw each segment with a black stroke
+            for (let i = 0; i < den; i++) {
+                const isShaded = i < num;
+                const fill = isShaded ? '#3498db' : '#f0f0f0'; // Primary blue for shaded, light gray for unshaded
+                // Each rect will have a black stroke, creating visible divisions
+                svg += `<rect x="${i * segmentWidth}" y="0" width="${segmentWidth}" height="${svgHeight}" fill="${fill}" stroke="black" stroke-width="1"/>`;
+            }
+            
+            svg += `</svg>`;
+            return svg;
+        }
+
+        /**
+         * Generates a unique worksheet ID.
+         * @returns {string} The formatted worksheet ID.
+         */
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${month}${day}${year}-${random}`;
+        }
+
+        /**
+         * Calculates the letter grade based on correct answers and total problems.
+         * @param {number} correctCount - Number of correct answers.
+         * @param {number} totalProblems - Total number of problems.
+         * @returns {string} The letter grade (e.g., 'A+', 'B', 'F').
+         */
+        function calculateGrade(correctCount, totalProblems) {
+            const percentage = (correctCount / totalProblems) * 100;
+            if (percentage >= 97) return 'A+';
+            if (percentage >= 93) return 'A';
+            if (percentage >= 90) return 'A-';
+            if (percentage >= 87) return 'B+';
+            if (percentage >= 83) return 'B';
+            if (percentage >= 80) return 'B-';
+            if (percentage >= 77) return 'C+';
+            if (percentage >= 73) return 'C';
+            if (percentage >= 70) return 'C-';
+            if (percentage >= 67) return 'D+';
+            if (percentage >= 63) return 'D';
+            if (percentage >= 60) return 'D-';
+            return 'F';
+        }
+
+        /**
+         * Returns an emoji corresponding to a given grade.
+         * @param {string} grade - The letter grade.
+         * @returns {string} An emoji character.
+         */
+        function getGradeEmoji(grade) {
+            switch(grade) {
+                case 'A+': return '🏆';
+                case 'A': return '🌟';
+                case 'A-': return '⭐';
+                case 'B+': return '😊';
+                case 'B': return '👍';
+                case 'B-': return '👌';
+                case 'C+': return '🙂';
+                case 'C': return '😐';
+                case 'C-': return '😕';
+                case 'D+': return '😟';
+                case 'D': return '😥';
+                case 'D-': return '😓';
+                default: return '😢';
+            }
+        }
+
+        /**
+         * Returns the CSS class for a given grade for color styling.
+         * @param {string} grade - The letter grade.
+         * @returns {string} The CSS class name.
+         */
+        function getGradeClass(grade) {
+            if (grade.startsWith('A')) return 'grade-a-plus';
+            if (grade.startsWith('B')) return 'grade-b';
+            if (grade.startsWith('C')) return 'grade-c';
+            if (grade.startsWith('D')) return 'grade-d';
+            return 'grade-f';
+        }
+
+        /**
+         * Main generation function (REQUIRED).
+         * Generates a new set of fraction problems and displays them.
+         */
+        function generateNewWorksheet() {
+            // Update worksheet number
+            document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+            
+            // Clear previous problems and reset state
+            currentProblems = [];
+            const problemsContainer = document.querySelector('.problems');
+            problemsContainer.innerHTML = '';
+            
+            // Define possible denominators for introductory fractions (from 2 to 8, excluding 7 for simplicity)
+            const denominators = [2, 3, 4, 5, 6, 8]; 
+            const generatedProblemSet = new Set(); // To avoid duplicate problems on a single worksheet
+
+            // Generate NUM_PROBLEMS unique fraction problems
+            while (currentProblems.length < NUM_PROBLEMS) {
+                const den = denominators[Math.floor(Math.random() * denominators.length)];
+                const num = Math.floor(Math.random() * (den - 1)) + 1; // Numerator from 1 to den-1 (e.g., 1/2, 1/3, 2/3, 1/4, 3/4)
+                const problemKey = `${num}/${den}`; // Unique identifier for the fraction (e.g., "1/2")
+
+                // Ensure no duplicate problems on the same worksheet
+                if (generatedProblemSet.has(problemKey)) {
+                    continue;
+                }
+                generatedProblemSet.add(problemKey);
+
+                currentProblems.push({ numerator: num, denominator: den, answer: problemKey });
+            }
+
+            // Create and append HTML for each problem
+            currentProblems.forEach((problem, index) => {
+                const problemDiv = document.createElement('div');
+                problemDiv.classList.add('problem');
+                // Add problem number as data attribute for CSS
+                problemDiv.setAttribute('data-number', '#' + (index + 1));
+                
+                // For problem SVGs, use default size (120x40)
+                const svgHtml = createFractionSVG(problem.numerator, problem.denominator);
+
+                problemDiv.innerHTML = `
+                    <div class="fraction-display">${svgHtml}</div>
+                    <p>What fraction is shaded?</p>
+                    <input type="text" class="answer-input" placeholder="e.g., 1/2">
+                    <p class="correct-answer-display"></p> <!-- Placeholder for correct answer display -->
+                `;
+                problemsContainer.appendChild(problemDiv);
+            });
+            
+            // Clear grade display
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            if (gradeDisplay) {
+                gradeDisplay.innerHTML = '';
+            }
+
+            // Clear name/date inputs (optional, but good for new worksheet)
+            document.getElementById('student-name').value = '';
+            document.getElementById('worksheet-date').value = '';
+
+            // Ensure all input fields are cleared and previous correct/incorrect states are removed
+            document.querySelectorAll('.problem').forEach(problemDiv => {
+                const inputElement = problemDiv.querySelector('.answer-input');
+                inputElement.value = '';
+                problemDiv.classList.remove('correct', 'incorrect');
+                // Also clear any previously displayed correct answers
+                const correctAnswerDisplay = problemDiv.querySelector('.correct-answer-display');
+                if (correctAnswerDisplay) {
+                    correctAnswerDisplay.textContent = ''; // Clear text
+                    correctAnswerDisplay.style.display = 'none'; // Hide it
+                }
+            });
+        }
+
+        /**
+         * Answer checking function (REQUIRED).
+         * Checks the user's answers against the correct answers and displays the grade.
+         */
+        function checkAnswers() {
+            let correctCount = 0;
+            const totalProblems = currentProblems.length;
+            
+            // Iterate through each problem on the worksheet
+            document.querySelectorAll('.problem').forEach((problemDiv, index) => {
+                const inputElement = problemDiv.querySelector('.answer-input');
+                const correctAnswerDisplay = problemDiv.querySelector('.correct-answer-display');
+
+                // Clear previous correct answer display for this problem
+                correctAnswerDisplay.textContent = '';
+                correctAnswerDisplay.style.display = 'none';
+
+                // Trim whitespace and convert to lowercase for case-insensitive comparison
+                const userAnswer = inputElement.value.trim().toLowerCase(); 
+                const correctAnswer = currentProblems[index].answer;
+                
+                // Compare user's answer with the correct answer
+                if (userAnswer === correctAnswer) {
+                    correctCount++;
+                    problemDiv.classList.remove('incorrect');
+                    problemDiv.classList.add('correct'); // Apply correct styling
+                } else {
+                    problemDiv.classList.remove('correct');
+                    problemDiv.classList.add('incorrect'); // Apply incorrect styling
+
+                    // Display correct answer in red
+                    correctAnswerDisplay.textContent = `Answer: ${correctAnswer}`;
+                    correctAnswerDisplay.style.display = 'block'; // Make it visible
+                }
+            });
+            
+            // Calculate and display the final grade
+            const grade = calculateGrade(correctCount, totalProblems);
+            const gradeClass = getGradeClass(grade);
+            const emoji = getGradeEmoji(grade);
+            const percentage = (correctCount / totalProblems) * 100;
+            
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            gradeDisplay.innerHTML = `
+                <span class="grade-emoji ${gradeClass}">${emoji}</span>
+                <span class="grade-text ${gradeClass}">
+                    Grade: ${grade} (${correctCount}/${totalProblems} - ${percentage.toFixed(1)}%)
+                </span>
+            `;
+        }
+
+        // Auto-load on page load (REQUIRED)
+        window.onload = function() {
+            generateNewWorksheet();
+            // Generate the example fraction for the explanation box on load
+            // For example SVG, pass smaller dimensions (80x30)
+            document.getElementById('exampleFractionSVG').innerHTML = createFractionSVG(1, 2, 80, 30);
+        };
+    </script>
+</body>
+</html>

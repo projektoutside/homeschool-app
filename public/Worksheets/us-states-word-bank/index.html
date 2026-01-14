@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>U.S. States Word Bank</title>
+  <style>
+    /* ============== PRINT SETTINGS ============== */
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+      }
+      .button-container {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        padding: 0.3in;
+                width: 100% !important;
+                height: 100% !important;
+      }
+    }
+
+    /* ============== BASE STYLES ============== */
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0;
+      padding: 0.3in;
+                width: 100% !important;
+                height: 100% !important;
+      background: #ffffff;
+      width: 8.5in;
+      margin: 0 auto;
+      box-sizing: border-box;
+      color: #3498db;
+    }
+
+    .container {
+      max-width: 100%;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #3498db;
+    }
+
+    /* ============== WORD BANK GRID ============== */
+    .word-bank {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px 8px;
+      text-align: left;
+      margin: 0 auto 12px auto;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    .state-item {
+      padding: 6px 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background: #f8f9fa;
+      min-height: 55px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .state-name {
+      font-weight: bold;
+      color: #2c3e50;
+      font-size: 16px;
+      margin-bottom: 2px;
+      line-height: 1.1;
+    }
+
+    .state-abbrev {
+      color: #e74c3c;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 2px;
+      line-height: 1.1;
+    }
+
+    .state-capital {
+      color: #27ae60;
+      font-size: 13px;
+      font-style: italic;
+      line-height: 1.1;
+    }
+
+    /* Hidden states for button functionality */
+    .hide-name .state-name { display: none; }
+    .hide-abbrev .state-abbrev { display: none; }
+    .hide-capital .state-capital { display: none; }
+
+    /* ============== BUTTONS ============== */
+    .button-container {
+      text-align: center;
+      margin: 8px 0;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      font-size: 13px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0 3px 3px 3px;
+      min-width: 110px;
+    }
+
+    .btn-random { background-color: #e74c3c; }
+    .btn-random:hover { background-color: #c0392b; }
+
+    .btn-order { background-color: #3498db; }
+    .btn-order:hover { background-color: #2980b9; }
+
+    .btn-toggle { background-color: #f39c12; }
+    .btn-toggle:hover { background-color: #d68910; }
+
+    .btn-toggle.active { 
+      background-color: #27ae60; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .btn-toggle.active:hover { background-color: #229954; }
+
+    /* ============== RESPONSIVE PRINT ADJUSTMENTS ============== */
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print {
+      h1 { 
+        font-size: 26px; 
+        margin-bottom: 8px; 
+      }
+      .word-bank {
+        font-size: 14px;
+        gap: 4px 6px;
+        margin-bottom: 0;
+      }
+      .state-item {
+        min-height: 48px;
+        padding: 4px 6px;
+      }
+      .state-name { 
+        font-size: 14px; 
+        margin-bottom: 1px;
+      }
+      .state-abbrev { 
+        font-size: 12px; 
+        margin-bottom: 1px;
+      }
+      .state-capital { 
+        font-size: 11px; 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Word Bank – All 50 U.S. States</h1>
+    
+    <div class="word-bank" id="wordBank"></div>
+    
+    <div class="button-container">
+      <button class="btn btn-random" onclick="randomizeStates()">Random</button>
+      <button class="btn btn-order" onclick="alphabetizeStates()">Order</button>
+      <button class="btn btn-toggle" id="toggleName" onclick="toggleStateName()">Remove State Name</button>
+      <button class="btn btn-toggle" id="toggleAbbrev" onclick="toggleAbbreviations()">Remove Abbreviations</button>
+      <button class="btn btn-toggle" id="toggleCapital" onclick="toggleCapitals()">Remove State Capital</button>
+    </div>
+  </div>
+
+  <script>
+    // Complete US States data with abbreviations and capitals
+    const statesData = [
+      { name: "Alabama", abbrev: "AL", capital: "Montgomery" },
+      { name: "Alaska", abbrev: "AK", capital: "Juneau" },
+      { name: "Arizona", abbrev: "AZ", capital: "Phoenix" },
+      { name: "Arkansas", abbrev: "AR", capital: "Little Rock" },
+      { name: "California", abbrev: "CA", capital: "Sacramento" },
+      { name: "Colorado", abbrev: "CO", capital: "Denver" },
+      { name: "Connecticut", abbrev: "CT", capital: "Hartford" },
+      { name: "Delaware", abbrev: "DE", capital: "Dover" },
+      { name: "Florida", abbrev: "FL", capital: "Tallahassee" },
+      { name: "Georgia", abbrev: "GA", capital: "Atlanta" },
+      { name: "Hawaii", abbrev: "HI", capital: "Honolulu" },
+      { name: "Idaho", abbrev: "ID", capital: "Boise" },
+      { name: "Illinois", abbrev: "IL", capital: "Springfield" },
+      { name: "Indiana", abbrev: "IN", capital: "Indianapolis" },
+      { name: "Iowa", abbrev: "IA", capital: "Des Moines" },
+      { name: "Kansas", abbrev: "KS", capital: "Topeka" },
+      { name: "Kentucky", abbrev: "KY", capital: "Frankfort" },
+      { name: "Louisiana", abbrev: "LA", capital: "Baton Rouge" },
+      { name: "Maine", abbrev: "ME", capital: "Augusta" },
+      { name: "Maryland", abbrev: "MD", capital: "Annapolis" },
+      { name: "Massachusetts", abbrev: "MA", capital: "Boston" },
+      { name: "Michigan", abbrev: "MI", capital: "Lansing" },
+      { name: "Minnesota", abbrev: "MN", capital: "Saint Paul" },
+      { name: "Mississippi", abbrev: "MS", capital: "Jackson" },
+      { name: "Missouri", abbrev: "MO", capital: "Jefferson City" },
+      { name: "Montana", abbrev: "MT", capital: "Helena" },
+      { name: "Nebraska", abbrev: "NE", capital: "Lincoln" },
+      { name: "Nevada", abbrev: "NV", capital: "Carson City" },
+      { name: "New Hampshire", abbrev: "NH", capital: "Concord" },
+      { name: "New Jersey", abbrev: "NJ", capital: "Trenton" },
+      { name: "New Mexico", abbrev: "NM", capital: "Santa Fe" },
+      { name: "New York", abbrev: "NY", capital: "Albany" },
+      { name: "North Carolina", abbrev: "NC", capital: "Raleigh" },
+      { name: "North Dakota", abbrev: "ND", capital: "Bismarck" },
+      { name: "Ohio", abbrev: "OH", capital: "Columbus" },
+      { name: "Oklahoma", abbrev: "OK", capital: "Oklahoma City" },
+      { name: "Oregon", abbrev: "OR", capital: "Salem" },
+      { name: "Pennsylvania", abbrev: "PA", capital: "Harrisburg" },
+      { name: "Rhode Island", abbrev: "RI", capital: "Providence" },
+      { name: "South Carolina", abbrev: "SC", capital: "Columbia" },
+      { name: "South Dakota", abbrev: "SD", capital: "Pierre" },
+      { name: "Tennessee", abbrev: "TN", capital: "Nashville" },
+      { name: "Texas", abbrev: "TX", capital: "Austin" },
+      { name: "Utah", abbrev: "UT", capital: "Salt Lake City" },
+      { name: "Vermont", abbrev: "VT", capital: "Montpelier" },
+      { name: "Virginia", abbrev: "VA", capital: "Richmond" },
+      { name: "Washington", abbrev: "WA", capital: "Olympia" },
+      { name: "West Virginia", abbrev: "WV", capital: "Charleston" },
+      { name: "Wisconsin", abbrev: "WI", capital: "Madison" },
+      { name: "Wyoming", abbrev: "WY", capital: "Cheyenne" }
+    ];
+
+    // Current states array (will be modified by functions)
+    let currentStates = [...statesData];
+
+    // Toggle states
+    let hideNames = false;
+    let hideAbbrev = false;
+    let hideCapitals = false;
+
+    // Render the word bank
+    function renderWordBank() {
+      const wordBank = document.getElementById('wordBank');
+      wordBank.innerHTML = '';
+      
+      // Apply hide classes based on toggle states
+      wordBank.className = 'word-bank';
+      if (hideNames) wordBank.classList.add('hide-name');
+      if (hideAbbrev) wordBank.classList.add('hide-abbrev');
+      if (hideCapitals) wordBank.classList.add('hide-capital');
+      
+      currentStates.forEach(state => {
+        const stateDiv = document.createElement('div');
+        stateDiv.className = 'state-item';
+        stateDiv.innerHTML = `
+          <div class="state-name">${state.name}</div>
+          <div class="state-abbrev">${state.abbrev}</div>
+          <div class="state-capital">${state.capital}</div>
+        `;
+        wordBank.appendChild(stateDiv);
+      });
+    }
+
+    // Randomize states order
+    function randomizeStates() {
+      currentStates = [...statesData].sort(() => Math.random() - 0.5);
+      renderWordBank();
+    }
+
+    // Alphabetize states
+    function alphabetizeStates() {
+      currentStates = [...statesData].sort((a, b) => a.name.localeCompare(b.name));
+      renderWordBank();
+    }
+
+    // Toggle state names visibility
+    function toggleStateName() {
+      hideNames = !hideNames;
+      const btn = document.getElementById('toggleName');
+      btn.textContent = hideNames ? 'Show State Name' : 'Remove State Name';
+      btn.classList.toggle('active', hideNames);
+      renderWordBank();
+    }
+
+    // Toggle abbreviations visibility
+    function toggleAbbreviations() {
+      hideAbbrev = !hideAbbrev;
+      const btn = document.getElementById('toggleAbbrev');
+      btn.textContent = hideAbbrev ? 'Show Abbreviations' : 'Remove Abbreviations';
+      btn.classList.toggle('active', hideAbbrev);
+      renderWordBank();
+    }
+
+    // Toggle capitals visibility
+    function toggleCapitals() {
+      hideCapitals = !hideCapitals;
+      const btn = document.getElementById('toggleCapital');
+      btn.textContent = hideCapitals ? 'Show State Capital' : 'Remove State Capital';
+      btn.classList.toggle('active', hideCapitals);
+      renderWordBank();
+    }
+
+    // Initialize the page
+    window.onload = function() {
+      alphabetizeStates(); // Start with alphabetical order
+    };
+  </script>
+</body>
+</html>

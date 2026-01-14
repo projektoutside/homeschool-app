@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adding and Subtracting Negative Numbers</title>
+    <style>
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .button-container,
+            .generate-btn,
+            .check-btn,
+            .print-btn {
+                display: none !important;
+            }
+            input::placeholder {
+                color: transparent !important;
+                opacity: 0 !important;
+            }
+            body {
+                margin: 0 !important;
+                padding: 0.25in !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .number-line,
+            .number-line::before,
+            .number-line::after,
+            .tick::before,
+            .tick-number {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .number-line-container {
+                background-color: #f8f9fa !important;
+                border-color: #3498db !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #3498db;
+            padding: 20px;
+            background-color: white;
+            width: 8.5in;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 0.2in;
+            width: 7.5in;
+        }
+
+        .header h1 {
+            color: #3498db;
+            font-size: 24px;
+            margin: 0 0 15px 0;
+        }
+
+        .student-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.2in;
+            width: 100%;
+        }
+
+        .info-field {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .info-field input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            border: none;
+            border-bottom: 1px solid #3498db;
+            outline: none;
+            width: 180px;
+            padding: 2px 4px;
+        }
+
+        .info-field input:focus {
+            border-bottom: 2px solid #3498db;
+        }
+
+        .instruction {
+            color: #3498db;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .example-box {
+            margin: 0 auto 0.3in auto;
+            width: 7.5in;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+        }
+
+        .example-title {
+            color: #3498db;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .example-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            margin: 10px 0;
+        }
+
+        .example-section {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 1px dashed #3498db;
+            border-radius: 6px;
+            background-color: white;
+        }
+
+        .example-text {
+            color: #2980b9;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .example-highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .example-emoji {
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        .number-line-container {
+            margin: 0 auto 0.3in auto;
+            width: 7.5in;
+            position: relative;
+            padding: 15px 0 30px 0;
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+        }
+
+        .number-line {
+            height: 2px;
+            background: #3498db;
+            position: relative;
+            margin: 20px 60px;
+        }
+
+        .number-line::before,
+        .number-line::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .number-line::before {
+            left: -12px;
+            top: -6px;
+            border-width: 7px 14px 7px 0;
+            border-color: transparent #3498db transparent transparent;
+        }
+
+        .number-line::after {
+            right: -12px;
+            top: -6px;
+            border-width: 7px 0 7px 14px;
+            border-color: transparent transparent transparent #3498db;
+        }
+
+        .tick-marks {
+            position: absolute;
+            width: calc(100% - 120px);
+            top: 50%;
+            left: 60px;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+        }
+
+        .tick {
+            position: relative;
+            text-align: center;
+            width: 2px;
+            height: 14px;
+            background: #3498db;
+        }
+
+        .tick::before {
+            display: none;
+        }
+
+        .tick-number {
+            color: #3498db;
+            font-size: 16px;
+            font-weight: bold;
+            position: absolute;
+            width: 30px;
+            text-align: center;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 20px;
+        }
+
+        .problems-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.3in;
+            margin: 0 auto;
+            width: 7.5in;
+        }
+
+        .problem {
+            font-size: 22px;
+            color: #3498db;
+            padding: 12px 15px;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+
+        .problem span.answer {
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 8px;
+            display: none;
+        }
+
+        .problem.incorrect span.answer {
+            color: #c0392b;
+        }
+
+        .problem input {
+            width: 65px;
+            min-width: 65px;
+            height: 32px;
+            font-size: 22px;
+            text-align: center;
+            border: 2px solid #fdc9ec;
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #3498db;
+            margin-left: auto;
+        }
+
+        .problem input::-webkit-outer-spin-button,
+        .problem input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .problem input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .problem.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .problem.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .button-container {
+            margin-top: 0.3in;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            transition: background-color 0.2s ease;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .check-btn {
+            background-color: #3498db;
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e74c3c;
+        }
+
+        .print-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .worksheet-container {
+            position: relative;
+        }
+
+        .worksheet-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <div id="worksheetNumber" class="worksheet-number"></div>
+        <div class="header">
+            <h1>Adding and Subtracting Negative Numbers</h1>
+            <div class="student-info">
+                <div class="info-field">
+                    <label>Name:</label>
+                    <input type="text" placeholder="Write your name">
+                </div>
+                <div class="info-field">
+                    <label>Date:</label>
+                    <input type="text" placeholder="Write the date">
+                </div>
+            </div>
+        </div>
+
+        <div class="example-box">
+            <div class="example-title">Understanding Positive and Negative Numbers</div>
+            <div class="example-content">
+                <div class="example-section">
+                    <div class="example-emoji">🌡️</div>
+                    <div class="example-text">Think of a thermometer:</div>
+                    <div class="example-text"><span class="example-highlight">Above zero</span> = Positive numbers</div>
+                    <div class="example-text"><span class="example-highlight">Below zero</span> = Negative numbers</div>
+                </div>
+                <div class="example-section">
+                    <div class="example-emoji">🏊‍♂️</div>
+                    <div class="example-text">Like swimming in a pool:</div>
+                    <div class="example-text"><span class="example-highlight">Above water</span> = +3 feet up</div>
+                    <div class="example-text"><span class="example-highlight">Under water</span> = -3 feet down</div>
+                </div>
+                <div class="example-section">
+                    <div class="example-emoji">🎯</div>
+                    <div class="example-text">Adding & Subtracting:</div>
+                    <div class="example-text">Going <span class="example-highlight">right</span> = Adding (+)</div>
+                    <div class="example-text">Going <span class="example-highlight">left</span> = Subtracting (-)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="number-line-container">
+            <div class="instruction">Use the number line to complete the sums.</div>
+            <div class="number-line"></div>
+            <div class="tick-marks">
+                <div class="tick">
+                    <span class="tick-number">-5</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">-4</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">-3</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">-2</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">-1</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">0</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">1</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">2</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">3</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">4</span>
+                </div>
+                <div class="tick">
+                    <span class="tick-number">5</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="problems-container">
+            <div class="problem" data-number="1">
+                4 - 6 = <span class="answer"></span><input type="number" data-answer="-2" placeholder="?">
+            </div>
+            <div class="problem" data-number="2">
+                2 - 5 = <span class="answer"></span><input type="number" data-answer="-3" placeholder="?">
+            </div>
+            <div class="problem" data-number="3">
+                -5 + 10 = <span class="answer"></span><input type="number" data-answer="5" placeholder="?">
+            </div>
+            <div class="problem" data-number="4">
+                5 - 2 = <span class="answer"></span><input type="number" data-answer="3" placeholder="?">
+            </div>
+            <div class="problem" data-number="5">
+                -3 + 5 = <span class="answer"></span><input type="number" data-answer="2" placeholder="?">
+            </div>
+            <div class="problem" data-number="6">
+                -5 + 4 = <span class="answer"></span><input type="number" data-answer="-1" placeholder="?">
+            </div>
+            <div class="problem" data-number="7">
+                -5 - 9 = <span class="answer"></span><input type="number" data-answer="-14" placeholder="?">
+            </div>
+            <div class="problem" data-number="8">
+                -4 - 4 = <span class="answer"></span><input type="number" data-answer="-8" placeholder="?">
+            </div>
+            <div class="problem" data-number="9">
+                3 - (-2) = <span class="answer"></span><input type="number" data-answer="5" placeholder="?">
+            </div>
+            <div class="problem" data-number="10">
+                -1 + (-3) = <span class="answer"></span><input type="number" data-answer="-4" placeholder="?">
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button class="btn generate-btn" onclick="generateNewWorksheet()">Create New Worksheet</button>
+            <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+            <button class="btn print-btn" onclick="window.print()">Print Worksheet</button>
+        </div>
+    </div>
+
+    <script>
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `${month}.${day}.${year}-${random}`;
+        }
+
+        function generateNewWorksheet() {
+            // Generate new worksheet number
+            const newWorksheetNumber = generateWorksheetNumber();
+            document.getElementById('worksheetNumber').textContent = newWorksheetNumber;
+            
+            const problems = [
+                { type: 'sub', range: [-5, 5] },
+                { type: 'add', range: [-5, 5] },
+                { type: 'mixed', range: [-5, 5] }
+            ];
+
+            // Generate and store new problems
+            const generatedProblems = [];
+            const problemElements = document.querySelectorAll('.problem');
+            problemElements.forEach((problem, index) => {
+                const newProblem = generateProblem(problems[index % problems.length]);
+                generatedProblems.push(newProblem);
+                problem.innerHTML = `${newProblem.expression} = <span class="answer"></span><input type="number" data-answer="${newProblem.answer}" placeholder="?">`;
+                problem.classList.remove('correct', 'incorrect');
+            });
+
+            // Store the current state
+            localStorage.setItem('positiveNegativeWorksheetState', JSON.stringify({
+                worksheetNumber: newWorksheetNumber,
+                problems: generatedProblems
+            }));
+        }
+
+        function generateProblem(config) {
+            const range = config.range;
+            const num1 = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+            const num2 = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+            let expression, answer;
+
+            switch(config.type) {
+                case 'add':
+                    expression = `${formatNumber(num1)} + ${formatNumber(num2)}`;
+                    answer = num1 + num2;
+                    break;
+                case 'sub':
+                    expression = `${formatNumber(num1)} - ${formatNumber(num2)}`;
+                    answer = num1 - num2;
+                    break;
+                case 'mixed':
+                    if (Math.random() < 0.5) {
+                        expression = `${formatNumber(num1)} + ${formatNumber(num2)}`;
+                        answer = num1 + num2;
+                    } else {
+                        expression = `${formatNumber(num1)} - ${formatNumber(num2)}`;
+                        answer = num1 - num2;
+                    }
+                    break;
+            }
+
+            return { expression, answer };
+        }
+
+        function formatNumber(num) {
+            return num < 0 ? `(${num})` : num.toString();
+        }
+
+        function loadWorksheet() {
+            const savedState = localStorage.getItem('positiveNegativeWorksheetState');
+            const problemElements = document.querySelectorAll('.problem');
+            
+            if (savedState) {
+                // Restore saved state
+                const state = JSON.parse(savedState);
+                document.getElementById('worksheetNumber').textContent = state.worksheetNumber;
+                
+                state.problems.forEach((problem, index) => {
+                    problemElements[index].innerHTML = `${problem.expression} = <span class="answer"></span><input type="number" data-answer="${problem.answer}" placeholder="?">`;
+                    problemElements[index].classList.remove('correct', 'incorrect');
+                });
+            } else {
+                // Generate new worksheet if no saved state exists
+                generateNewWorksheet();
+            }
+        }
+
+        function checkAnswers() {
+            const problems = document.querySelectorAll('.problem');
+            problems.forEach(problem => {
+                const input = problem.querySelector('input');
+                const answerSpan = problem.querySelector('.answer');
+                const correctAnswer = parseInt(input.dataset.answer);
+                const userAnswer = parseInt(input.value);
+                
+                answerSpan.textContent = correctAnswer;
+                answerSpan.style.display = 'inline';
+                
+                if (userAnswer === correctAnswer) {
+                    problem.classList.add('correct');
+                    problem.classList.remove('incorrect');
+                } else {
+                    problem.classList.add('incorrect');
+                    problem.classList.remove('correct');
+                }
+            });
+        }
+
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkAnswers();
+                }
+            });
+        });
+
+        // Initialize worksheet on page load
+        loadWorksheet();
+    </script>
+</body>
+</html> 

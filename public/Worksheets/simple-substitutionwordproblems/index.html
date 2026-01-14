@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Solve for x – Word‑Problem Substitution</title>
+  <style>
+    /* ==== PRINT & PAGE SETTINGS ==== */
+    
+        .print-btn {
+            background-color: #e67e22;
+        }
+
+        .print-btn:hover {
+            background-color: #d35400;
+        }
+
+        @media print{
+      @page {
+                size: 8.5in 11in;
+                margin: 0.25in;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+      .button-container,.generate-btn,.check-btn,
+            .print-btn,.static-btn,.save-btn{display:none!important;}
+      input::placeholder{color:transparent!important;opacity:0!important;}
+      body{margin:0!important;padding:0.25in!important;
+                width: 100% !important;
+                height: 100% !important;}
+    }
+
+    /* ==== BASE STYLES ==== */
+    body{
+      font-family:'Comic Sans MS',cursive,sans-serif;color:#3498db;background:#fff;
+      width:8.5in;margin:0 auto;min-height:11in;padding:20px;
+                width: 100% !important;
+                height: 100% !important;box-sizing:border-box;
+      display:flex;flex-direction:column;align-items:center;
+    }
+    .header{text-align:center;margin-bottom:0.3in;}
+    .header h1{font-size:25px;margin:0 0 10px;}
+    .header .input-row{display:flex;justify-content:center;gap:20px;}
+    .header p{font-size:16px;margin:0;display:flex;align-items:center;}
+    .header input{
+      font-family:'Comic Sans MS',cursive,sans-serif;font-size:16px;border:none;border-bottom:1px solid #3498db;
+      outline:none;width:180px;padding:2px 4px;margin:0 5px;
+    }
+    .header input:focus{border-bottom:2px solid #3498db;}
+
+    .example-box{
+      text-align:start;width:7.1in;background:#f8f9fa;border:2px solid #3498db;border-radius:8px;padding:10px 18px;margin-bottom:0.25in;
+    }
+    .example-box h3{margin:0 0 5px;color:#5dbce9;}
+    .example-box p{margin:4px 0;color:#5dbce9;}
+
+    .problems-wrapper{width:7.1in;display:flex;flex-direction:column;gap:0.25in;}
+    .word-problem{
+      font-size:16px;color:#3498db;line-height:1.3;position:relative;
+    }
+    .answer-line{
+      margin-top:6px;font-size:20px;display:flex;align-items:center;gap:10px;
+    }
+    .answer-input{
+      width:80px;height:42px;font-size:20px;border:2px solid #fdc9ec;border-radius:5px;text-align:center;
+      font-family:'Comic Sans MS',cursive,sans-serif;background:#fff7fc;
+    }
+    .correct-answer{
+      color:#2ecc71;font-size:18px;font-weight:bold;display:none;
+    }
+    .word-problem.incorrect .correct-answer{
+      display:inline;
+    }
+
+    /* ==== BUTTONS & GRADE ==== */
+    .button-container{display:flex;gap:10px;margin-top:20px;justify-content:center;}
+    .btn{
+      padding:12px 24px;font-size:16px;color:#fff;border:none;border-radius:6px;cursor:pointer;
+      font-family:'Comic Sans MS',cursive,sans-serif;transition:background 0.2s ease;
+    }
+    .generate-btn{background:#2ecc71;} .generate-btn:hover{background:#27ae60;}
+    .check-btn{background:#3498db;} .check-btn:hover{background:#2980b9;}
+    .static-btn{background:#9b59b6;} .static-btn:hover{background:#8e44ad;}
+    .save-btn{background:#e67e22;} .save-btn:hover{background:#d35400;}
+
+    .grade-display{text-align:center;margin-top:18px;font-size:20px;}
+    .grade-display.correct{color:#2ecc71;} .grade-display.incorrect{color:#e74c3c;}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Word‑Problem Substitution – Solve for <em>x</em></h1>
+    <div class="input-row">
+      <p>Name: <input type="text" id="studentName" placeholder="Enter your name"></p>
+      <p>Date: <input type="text" id="date" placeholder="MM/DD/YYYY"></p>
+    </div>
+  </div>
+
+  <div class="example-box">
+    <h3>Example:</h3>
+    <p>In Roblox, Alex had <strong>x</strong> coins. He earned 5 more and now has 12 coins. 12 − 5 = 7, so <strong>x = 7</strong>.</p>
+  </div>
+
+  <div class="problems-wrapper" id="problemsWrapper"></div>
+
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+    <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+  </div>
+
+  <div class="grade-display" id="gradeDisplay"></div>
+
+<script>
+  const templates=[
+    // Roblox themed
+    {
+      text:"{name} had <strong>x</strong> Robux. After buying a game pass for {num1} Robux, {name} has {num2} Robux left. How much Robux did {name} start with?",
+      op:'minus'
+    },
+    {
+      text:"In a Roblox pet simulator, you collected <strong>x</strong> gems yesterday. Today you earned {num1} more gems, reaching {num2} gems in total. How many gems did you have yesterday?",
+      op:'plus'
+    },
+    // Real‑life
+    {
+      text:"A jar contained <strong>x</strong> cookies. You ate {num1} cookies and now there are {num2} cookies left. How many cookies were in the jar at first?",
+      op:'minus'
+    },
+    {
+      text:"You had <strong>x</strong> stickers. Your friend gave you {num1} more stickers, so now you have {num2} stickers. How many stickers did you have to begin with?",
+      op:'plus'
+    },
+    // New problems
+    {
+      text:"{name} collected <strong>x</strong> trading cards. After trading {num1} cards with a friend, {name} has {num2} cards left. How many cards did {name} start with?",
+      op:'minus'
+    },
+    {
+      text:"In a video game, you need <strong>x</strong> points to unlock a new level. You already have {num1} points and need {num2} more. How many total points are needed?",
+      op:'plus'
+    }
+  ];
+
+  let currentProblems=[];
+
+  const rnd=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+
+  function buildProblem(index){
+    const tpl=templates[index];
+    if(tpl.op==='plus'){
+      const add=rnd(3,12);
+      const x=rnd(1,15);
+      const total=x+add;
+      const text=tpl.text.replace(/{num1}/g,add).replace(/{num2}/g,total).replace(/{name}/g,randomName());
+      return{html:text,answer:x};
+    }else{ // minus
+      const sub=rnd(3,12);
+      const x=rnd(sub+1,20); // Ensure x is always greater than sub to prevent negatives
+      const left=x-sub;
+      const text=tpl.text.replace(/{num1}/g,sub).replace(/{num2}/g,left).replace(/{name}/g,randomName());
+      return{html:text,answer:x};
+    }
+  }
+
+  const names=['Alex','Sam','Jamie','Riley','Casey','Jordan','Taylor','Morgan'];
+  function randomName(){return names[rnd(0,names.length-1)];}
+
+  function generateWorksheet(){
+    currentProblems=[];
+    const wrap=document.getElementById('problemsWrapper');
+    wrap.innerHTML='';
+    for(let i=0;i<6;i++){
+      const prob=buildProblem(i);
+      currentProblems.push(prob);
+      const div=document.createElement('div');
+      div.className='word-problem';
+      div.setAttribute('data-answer',prob.answer);
+      div.innerHTML=`<span>${i+1}. ${prob.html}</span><div class="answer-line">x = <input type="number" class="answer-input" step="1"></div>`;
+      wrap.appendChild(div);
+    }
+    document.getElementById('gradeDisplay').textContent='';
+  }
+
+  function checkAnswers(){
+    const problems=document.querySelectorAll('.word-problem');
+    let correct=0;
+    problems.forEach((p,i)=>{
+      const ans=parseInt(p.getAttribute('data-answer'));
+      const inp=p.querySelector('input');
+      const val=parseInt(inp.value);
+      const correctAnswerSpan=p.querySelector('.correct-answer');
+      if(!correctAnswerSpan){
+        const span=document.createElement('span');
+        span.className='correct-answer';
+        span.textContent=`(Correct answer: ${ans})`;
+        p.querySelector('.answer-line').appendChild(span);
+      }
+      if(val===ans){
+        p.classList.add('correct');p.classList.remove('incorrect');correct++;
+      }else{
+        p.classList.add('incorrect');p.classList.remove('correct');
+      }
+    });
+    const perc=Math.round((correct/problems.length)*100);
+    const gradeDisplay=document.getElementById('gradeDisplay');
+    gradeDisplay.textContent=`Score: ${correct}/${problems.length} (${perc}%)`;
+    gradeDisplay.className='grade-display '+(perc>=75?'correct':'incorrect');
+  }
+
+  // Convert current dynamic worksheet to static printable copy
+  function staticWorksheet(){
+    const clone=document.documentElement.cloneNode(true);
+    const btnContainer=clone.querySelector('.button-container');
+    if(btnContainer)btnContainer.remove();
+    const inputs=clone.querySelectorAll('input');
+    inputs.forEach(inp=>{inp.setAttribute('readonly',true);});
+    const blob=new Blob([clone.outerHTML],{type:'text/html'});
+    downloadBlob(blob,'substitution_wordproblems_static.html');
+  }
+
+  function saveWorksheet(){window.print();}
+
+  function downloadBlob(blob,filename){
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download=filename;
+    document.body.appendChild(link);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    link.remove();
+  }
+
+  // initial
+  generateWorksheet();
+</script>
+</body>
+</html>

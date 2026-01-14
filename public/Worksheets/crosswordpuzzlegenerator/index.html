@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crossword Puzzle Generator</title>
+    <style>
+        /* General Page Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Sans+MS&display=swap');
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .generator-ui {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 8.5in; /* Consistent with worksheet */
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .generator-ui h2 {
+            margin-top: 0;
+            color: #3498db;
+            text-align: center;
+        }
+
+        .word-input-area {
+            margin-bottom: 15px;
+            max-height: 200px; /* Limit height for many words */
+            overflow-y: auto; /* Add scroll if too many words */
+        }
+
+        .word-entry {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .word-entry input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px; /* Input font */
+        }
+        .word-entry input.word-field { min-width: 150px; flex-basis: 30%;}
+        .word-entry input.definition-field { flex-basis: 60%; }
+
+        .word-entry button {
+            padding: 8px 10px;
+            font-size: 14px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .word-entry button:hover { background-color: #c0392b; }
+
+        .generator-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 10px;
+        }
+        .generator-controls button {
+            padding: 10px 15px;
+            font-size: 16px; /* Button font */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            color: white;
+        }
+        #add-word-btn { background-color: #2ecc71; }
+        #add-word-btn:hover { background-color: #27ae60; }
+        #generate-crossword-btn { background-color: #3498db; }
+        #generate-crossword-btn:hover { background-color: #2980b9; }
+        
+        .toggle-word-bank {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px; /* Font for toggle label */
+            color: #3498db;
+        }
+        .toggle-word-bank svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 5px;
+            fill: #3498db;
+        }
+
+        .worksheet-container {
+            width: 8.5in;
+            height: 11in; /* Fixed height for one page */
+            background-color: white;
+            padding: 0.4in; /* Uniform padding */
+            box-sizing: border-box;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            display: none; /* Hidden initially, shown after generation */
+            flex-direction: column;
+            overflow: hidden; /* Prevent content from making page longer */
+        }
+
+        .worksheet-title {
+            font-size: 24px; /* Title font size */
+            color: #3498db;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px; /* Reduced margin */
+        }
+
+        .worksheet-header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 10px; /* Reduced margin */
+            flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0; /* Header should not shrink */
+        }
+        .header-item { display: flex; align-items: center; }
+        .header-item label { margin-right: 8px; font-size: 16px; font-weight: bold; }
+        .worksheet-header input[type="text"] {
+            border: none; border-bottom: 2px solid #3498db; padding: 8px 5px;
+            font-size: 16px; font-family: 'Comic Sans MS', cursive, sans-serif; outline: none;
+        }
+        .worksheet-header input[name="student-name"]{ width: 180px; }
+        .worksheet-header input[name="date"]{ width: 100px; }
+        .subject-text { font-size: 16px; font-weight: bold; color: #333; border-bottom: 2px solid #3498db; padding: 8px 5px;}
+
+        /* Grid Area - takes up most of the space */
+        #crossword-grid-section {
+            flex-grow: 1; /* Allow grid to take available vertical space */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto; /* Scroll if grid is larger than allocated space */
+            margin-bottom: 10px; /* Space before clues */
+            min-height: 200px; /* Minimum height for the grid area */
+        }
+
+        #crossword-grid {
+            border-collapse: collapse;
+            /* Grid lines will come from inputs or empty-cell styling if any */
+        }
+
+        #crossword-grid td {
+            border: none;
+            background-color: transparent;
+            width: 36px; /* Increased cell size */
+            height: 36px; /* Increased cell size */
+            text-align: center;
+            vertical-align: middle;
+            position: relative;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            box-sizing: border-box;
+        }
+
+        #crossword-grid td.empty-cell {
+            /* Explicitly ensure empty cells are invisible, though default TD style should cover this */
+            /* border: 1px dashed #eee; /* Optional: very faint border for layout debugging */
+        }
+
+        #crossword-grid td input {
+            width: 100%;
+            height: 100%;
+            border: 2px solid lightpink;
+            text-align: center;
+            font-size: 24px; /* Slightly larger input font */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-transform: uppercase;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: white;
+            border-radius: 4px;
+            outline: none;
+            color: black;
+        }
+        #crossword-grid td input.correct-answer {
+            border: 2px solid #28a745 !important; background-color: #e9f7ef !important;
+        }
+        #crossword-grid td input.incorrect-answer {
+            border: 2px solid #dc3545 !important; background-color: #fdecea !important;
+        }
+
+        #crossword-grid td .word-number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 11px; /* Slightly smaller for balance */
+            color: #1565c0;
+            font-weight: bold;
+            border-radius: 3px;
+            padding: 0 2px;
+            box-shadow: 0 1px 2px rgba(21,101,192,0.08);
+            z-index: 2;
+            line-height: 1.1;
+        }
+        
+        /* Clues and Word Bank Area - now at the bottom */
+        #clues-and-bank-section {
+            display: flex;
+            gap: 15px;
+            font-size: 12px; /* Slightly smaller base font for clues */
+            line-height: 1.2;
+            max-height: 200px; /* Max height for this bottom panel, with scroll */
+            overflow-y: auto;
+            flex-shrink: 0; /* Prevent this section from shrinking too much */
+            border-top: 1px solid #eee; /* Separator line */
+            padding-top: 10px;
+            margin-bottom: 5px;
+        }
+        #clues-container { flex: 2; /* Clues take more space */ }
+        #word-bank-container { flex: 1; }
+
+        #clues-and-bank-section h3 {
+            font-size: 16px; /* Clue title font size */
+            color: #3498db;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        #clues-and-bank-section ol { /* For clues */
+            padding-left: 5px; 
+            margin-top: 0;
+            margin-bottom: 8px;
+            list-style-type: none; /* Remove default OL numbering */
+        }
+         #clues-and-bank-section ul { /* For word bank */
+            padding-left: 15px; /* Slightly less padding */
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        #clues-and-bank-section li {
+            margin-bottom: 1px; /* Tighter spacing */
+        }
+
+        #word-bank-container.hidden {
+            display: none;
+        }
+        #word-bank-list li {
+            color: #3498db; 
+            font-weight: bold;
+        }
+
+        .interactive-buttons { text-align: center; margin-top: 5px; padding-bottom: 0; flex-shrink: 0;}
+        .interactive-buttons button {
+            font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 16px; color: white;
+            padding: 8px 15px; /* Slightly smaller buttons */
+            border-radius: 5px; border: none; cursor: pointer; margin: 0 8px;
+            transition: background-color 0.3s ease;
+        }
+        .check-button { background-color: #3498db; }
+        .check-button:hover { background-color: #2980b9; }
+        .print-button { background-color: #e67e22; }
+        .print-button:hover { background-color: #d35400; }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body { 
+                padding: 0; 
+                background-color: white; 
+                display: block; 
+            }
+            .generator-ui, .no-print { 
+                display: none !important; 
+            }
+            .worksheet-container {
+                display: flex !important; 
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                height: 10.2in;
+                padding: 0.4in; 
+                overflow: hidden !important;
+            }
+        }
+
+        /* Add a style for showing the correct answer */
+        #crossword-grid td input.show-correct {
+            background-color: #e0f7fa !important;
+            color: #00796b !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="generator-ui">
+        <h2>Crossword Puzzle Generator</h2>
+        <div class="word-input-area" id="word-input-container">
+            <!-- Word entries will be added here -->
+        </div>
+        <div class="generator-controls">
+            <button id="add-word-btn">Add Word/Definition</button>
+            <div class="toggle-word-bank" id="toggle-word-bank-visibility" title="Toggle Word Bank Visibility">
+                <svg viewBox="0 0 24 24" id="eye-icon-open">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                <svg viewBox="0 0 24 24" id="eye-icon-closed" style="display:none;">
+                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75C21.27 9.11 17 6 12 6c-1.74 0-3.36.52-4.78 1.35l1.97 1.97c.57-.23 1.18-.36 1.81-.36zm-2.92 1.45L7.5 6.87C6.09 7.94 4.86 9.36 4 11.07c1.73 4.39 6 7.5 11 7.5 1.55 0 2.99-.41 4.28-1.08l-2.32-2.32C14.26 15.87 13.65 16 13 16c-2.76 0-5-2.24-5-5 0-.65.13-1.26.36-1.83l-1.28-1.27zM1 12c1.73-4.39 6-7.5 11-7.5.79 0 1.55.12 2.28.33l-1.42 1.42C13.26 6.13 12.65 6 12 6 7 6 2.73 9.11 1 12.93 2.36 14.06 4.17 15.26 6.07 16.02l-2.15 2.15C1.46 16.53 0 14.16 0 12c0-1.07.31-2.09.86-3.01L3.7 11.83C3.23 11.36 3 10.71 3 10c0-2.76 2.24-5 5-5 .71 0 1.36.15 1.97.36L12.3 3.7C7.89 4.13 4.39 7.26 2.86 11.43 2.3 11.06 1.66 11 1 11V1zm18.14 8.01C21.69 19.91 21 19 21 19v-1c.66 0 1.3-.06 1.86-.14L19.7 14.3c-1.41.62-2.96 1.03-4.58 1.03-4.14 0-7.62-2.55-9.46-6.13l-2.47-2.47C1.26 8.36.74 9.69.43 11.13c-.52 2.36.21 4.8.86 7.14C2.64 22.06 6.32 24 12 24c2.75 0 5.3-.84 7.43-2.32l2.71 2.71.71-.71-2.71-2.71z"/>
+                </svg>
+                <span id="word-bank-toggle-label">Hide Word Bank</span>
+            </div>
+            <button id="generate-crossword-btn">Generate Crossword</button>
+        </div>
+    </div>
+
+    <div class="worksheet-container" id="worksheetOutput">
+        <h1 class="worksheet-title">Crossword Puzzle</h1>
+
+        <header class="worksheet-header">
+            <div class="header-item">
+                <label for="student-name">Student Name:</label>
+                <input type="text" id="student-name" name="student-name">
+            </div>
+            <div class="header-item">
+                <label for="date">Date:</label>
+                <input type="text" id="date" name="date">
+            </div>
+        </header>
+        
+        <div id="crossword-grid-section">
+             <table id="crossword-grid"></table>
+        </div>
+       
+        <div id="clues-and-bank-section">
+            <div id="clues-container">
+                <h3>Across</h3>
+                <ol id="across-clues"></ol>
+                <h3>Down</h3>
+                <ol id="down-clues"></ol>
+            </div>
+            <div id="word-bank-container">
+                <h3>Word Bank</h3>
+                <ul id="word-bank-list"></ul>
+            </div>
+        </div>
+
+        <div class="interactive-buttons no-print">
+            <button class="check-button">Check Answers</button>
+            <button class="print-button" onclick="window.print()">Print</button>
+        </div>
+        <div id="gradingSection"></div>
+    </div>
+
+    <script>
+        const GRID_DIMENSION = 15; // Reduced from 25 for better puzzle density
+        const MAX_ATTEMPTS = 200; // Increased attempts for better word placement
+        const MAX_RETRIES = 3; // Number of times to retry the entire puzzle generation
+
+        function generateCrosswordLayout(wordsWithDefs) {
+            if (!wordsWithDefs || wordsWithDefs.length === 0) return null;
+
+            // Input validation and word processing
+            let words = wordsWithDefs.map(item => ({
+                text: item.word.toUpperCase().replace(/[^A-Z]/g, ''),
+                definition: item.definition.trim(),
+                original: item.word.trim(),
+                length: item.word.toUpperCase().replace(/[^A-Z]/g, '').length
+            })).filter(w => w.text.length > 0 && w.text.length <= GRID_DIMENSION);
+
+            if (words.length === 0) {
+                console.warn("No valid words to place in the crossword");
+                return null;
+            }
+
+            // Sort words by length (longest first) and then alphabetically
+            words.sort((a, b) => {
+                if (b.length !== a.length) return b.length - a.length;
+                return a.text.localeCompare(b.text);
+            });
+
+            // Try multiple times to place all words
+            for (let retry = 0; retry < MAX_RETRIES; retry++) {
+                let grid = Array(GRID_DIMENSION).fill(null).map(() => Array(GRID_DIMENSION).fill(null));
+                let placedWords = [];
+                let attempts = 0;
+
+                // Place first word
+                const firstWord = words[0];
+                const startX = Math.floor((GRID_DIMENSION - firstWord.length) / 2);
+                const startY = Math.floor(GRID_DIMENSION / 2);
+
+                if (canPlaceWord(firstWord.text, startX, startY, 'across', grid)) {
+                    addWordToGrid(firstWord, startX, startY, 'across', grid, placedWords);
+                } else {
+                    const vStartX = Math.floor(GRID_DIMENSION / 2);
+                    const vStartY = Math.floor((GRID_DIMENSION - firstWord.length) / 2);
+                    if (canPlaceWord(firstWord.text, vStartX, vStartY, 'down', grid)) {
+                        addWordToGrid(firstWord, vStartX, vStartY, 'down', grid, placedWords);
+                    } else {
+                        continue; // Try again with a new grid
+                    }
+                }
+
+                // Place remaining words
+                let allWordsPlaced = true;
+                for (let i = 1; i < words.length; i++) {
+                    const wordToPlace = words[i];
+                    let bestPlacement = null;
+                    let maxIntersections = -1;
+                    attempts = 0;
+
+                    // Try different starting positions for each word
+                    const possibleStarts = generatePossibleStartPositions(wordToPlace.length);
+                    
+                    while (attempts < MAX_ATTEMPTS && !bestPlacement) {
+                        for (const startPos of possibleStarts) {
+                            for (const placed of placedWords) {
+                                for (let j = 0; j < wordToPlace.text.length; j++) {
+                                    const charInNew = wordToPlace.text[j];
+                                    for (let k = 0; k < placed.text.length; k++) {
+                                        if (charInNew === placed.text[k]) {
+                                            let newX, newY, newDirection;
+                                            if (placed.direction === 'across') {
+                                                newDirection = 'down';
+                                                newX = placed.x + k;
+                                                newY = placed.y - j;
+                                            } else {
+                                                newDirection = 'across';
+                                                newX = placed.x - j;
+                                                newY = placed.y + k;
+                                            }
+
+                                            // Try both directions at each position
+                                            if (canPlaceWord(wordToPlace.text, newX, newY, newDirection, grid)) {
+                                                const intersections = countIntersections(wordToPlace.text, newX, newY, newDirection, grid);
+                                                if (intersections > maxIntersections) {
+                                                    maxIntersections = intersections;
+                                                    bestPlacement = { word: wordToPlace, x: newX, y: newY, direction: newDirection };
+                                                }
+                                            }
+
+                                            // Try the opposite direction
+                                            const oppositeDirection = newDirection === 'across' ? 'down' : 'across';
+                                            if (canPlaceWord(wordToPlace.text, newX, newY, oppositeDirection, grid)) {
+                                                const intersections = countIntersections(wordToPlace.text, newX, newY, oppositeDirection, grid);
+                                                if (intersections > maxIntersections) {
+                                                    maxIntersections = intersections;
+                                                    bestPlacement = { word: wordToPlace, x: newX, y: newY, direction: oppositeDirection };
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        attempts++;
+                    }
+
+                    if (bestPlacement) {
+                        addWordToGrid(bestPlacement.word, bestPlacement.x, bestPlacement.y, bestPlacement.direction, grid, placedWords);
+                    } else {
+                        allWordsPlaced = false;
+                        break;
+                    }
+                }
+
+                if (allWordsPlaced) {
+                    return finalizeGrid(grid, placedWords);
+                }
+            }
+
+            console.warn("Could not place all words after multiple attempts");
+            return null;
+        }
+
+        function generatePossibleStartPositions(wordLength) {
+            const positions = [];
+            const maxPos = GRID_DIMENSION - wordLength;
+            
+            // Generate positions in a spiral pattern from the center
+            const center = Math.floor(GRID_DIMENSION / 2);
+            for (let radius = 0; radius <= center; radius++) {
+                for (let x = center - radius; x <= center + radius; x++) {
+                    for (let y = center - radius; y <= center + radius; y++) {
+                        if (x >= 0 && x <= maxPos && y >= 0 && y <= maxPos) {
+                            positions.push({ x, y });
+                        }
+                    }
+                }
+            }
+            
+            return positions;
+        }
+
+        function countIntersections(word, x, y, direction, grid) {
+            let intersections = 0;
+            for (let i = 0; i < word.length; i++) {
+                const curX = direction === 'across' ? x + i : x;
+                const curY = direction === 'across' ? y : y + i;
+                if (grid[curY][curX] && grid[curY][curX].char === word[i]) {
+                    intersections++;
+                }
+            }
+            return intersections;
+        }
+
+        function canPlaceWord(wordText, x, y, direction, grid) {
+            if (x < 0 || y < 0) return false; 
+
+            for (let i = 0; i < wordText.length; i++) {
+                let curX = x, curY = y;
+                if (direction === 'across') {
+                    curX += i;
+                    if (curX >= GRID_DIMENSION) return false; 
+                    if (grid[curY][curX] && grid[curY][curX].char !== wordText[i]) return false; 
+                    if (!grid[curY][curX]) { 
+                        if (i === 0 && curX > 0 && grid[curY][curX - 1] && grid[curY][curX-1].char) return false; 
+                        if (i === wordText.length - 1 && curX < GRID_DIMENSION - 1 && grid[curY][curX + 1] && grid[curY][curX+1].char) return false; 
+                        if (curY > 0 && grid[curY-1][curX] && grid[curY-1][curX].char) return false; 
+                        if (curY < GRID_DIMENSION -1 && grid[curY+1][curX] && grid[curY+1][curX].char) return false; 
+                    }
+                } else { 
+                    curY += i;
+                    if (curY >= GRID_DIMENSION) return false; 
+                    if (grid[curY][curX] && grid[curY][curX].char !== wordText[i]) return false;
+                     if (!grid[curY][curX]) {
+                        if (i === 0 && curY > 0 && grid[curY-1][curX] && grid[curY-1][curX].char) return false;
+                        if (i === wordText.length - 1 && curY < GRID_DIMENSION -1 && grid[curY+1][curX] && grid[curY+1][curX].char) return false;
+                        if (curX > 0 && grid[curY][curX-1] && grid[curY][curX-1].char) return false;
+                        if (curX < GRID_DIMENSION -1 && grid[curY][curX+1] && grid[curY][curX+1].char) return false;
+                     }
+                }
+            }
+            return true;
+        }
+
+        function addWordToGrid(wordObj, x, y, direction, grid, placedWordsList) {
+            const wordInfo = { ...wordObj, x, y, direction, cells: [] }; 
+            for (let i = 0; i < wordObj.text.length; i++) {
+                let curX = x, curY = y;
+                if (direction === 'across') curX += i; else curY += i;
+                
+                if (!grid[curY][curX]) grid[curY][curX] = { char: wordObj.text[i] };
+                else grid[curY][curX].char = wordObj.text[i]; 
+                
+                wordInfo.cells.push({x: curX, y: curY}); 
+            }
+            placedWordsList.push(wordInfo);
+        }
+
+        function finalizeGrid(grid, placedWords) {
+            if (placedWords.length === 0) return { finalGrid: [], placedWords: [], acrossClues: [], downClues: [] };
+
+            let minX = GRID_DIMENSION, minY = GRID_DIMENSION, maxX = -1, maxY = -1;
+            placedWords.forEach(pw => {
+                pw.cells.forEach(cell => {
+                    minX = Math.min(minX, cell.x);
+                    minY = Math.min(minY, cell.y);
+                    maxX = Math.max(maxX, cell.x);
+                    maxY = Math.max(maxY, cell.y);
+                });
+            });
+            
+            if (maxX < minX || maxY < minY) return { finalGrid: [], placedWords: [], acrossClues: [], downClues: [] }; 
+
+            const finalGridHeight = maxY - minY + 1;
+            const finalGridWidth = maxX - minX + 1;
+            let finalGrid = Array(finalGridHeight).fill(null).map(() => Array(finalGridWidth).fill(null));
+
+            placedWords.forEach(pw => { 
+                pw.startX = pw.x - minX; 
+                pw.startY = pw.y - minY;
+                
+                pw.cells.forEach(cell => { 
+                    const adjX = cell.x - minX;
+                    const adjY = cell.y - minY;
+                    if (!finalGrid[adjY][adjX]) finalGrid[adjY][adjX] = {};
+                    finalGrid[adjY][adjX].char = grid[cell.y][cell.x].char;
+                });
+            });
+            
+            let currentNumber = 1;
+            placedWords.sort((a, b) => (a.startY === b.startY) ? a.startX - b.startX : a.startY - b.startY); 
+
+            placedWords.forEach(pw => {
+                const x = pw.startX;
+                const y = pw.startY;
+                let needsNumber = false;
+
+                if (pw.direction === 'across') {
+                    if (x === 0 || !finalGrid[y][x-1] || !finalGrid[y][x-1].char ) needsNumber = true;
+                } else { 
+                    if (y === 0 || !finalGrid[y-1] || !finalGrid[y-1][x] || !finalGrid[y-1][x].char ) needsNumber = true;
+                }
+                
+                // Ensure finalGrid[y][x] exists before trying to access its .number property or assign to it.
+                if (!finalGrid[y]) finalGrid[y] = []; // Should not happen if logic is correct, but defensive
+                if (!finalGrid[y][x]) finalGrid[y][x] = {}; // Crucial fix for start-of-grid numbering
+
+                if(finalGrid[y][x].number){ // If already numbered by intersecting word
+                     pw.number = finalGrid[y][x].number;
+                } else if (needsNumber) {
+                    pw.number = currentNumber;
+                    finalGrid[y][x].number = currentNumber; // Assign to the cell in finalGrid too
+                    currentNumber++;
+                }
+            });
+            
+            let acrossClues = [];
+            let downClues = [];
+            const addedClues = new Set(); 
+
+            placedWords.filter(pw => pw.number) 
+                       .sort((a,b)=>a.number - b.number) 
+                       .forEach(pw => {
+                const clueKey = `${pw.number}-${pw.direction}`; 
+                if(!addedClues.has(clueKey)){
+                    const clue = { number: pw.number, text: `${pw.number}. ${pw.definition}`, originalWord: pw.original };
+                    if (pw.direction === 'across') acrossClues.push(clue);
+                    else downClues.push(clue);
+                    addedClues.add(clueKey);
+                }
+            });
+            
+            return { finalGrid, placedWords: placedWords.filter(pw => pw.number), acrossClues, downClues };
+        }
+
+        // --- UI and Rendering ---
+        const wordInputContainer = document.getElementById('word-input-container');
+        const addWordBtn = document.getElementById('add-word-btn');
+        const generateCrosswordBtn = document.getElementById('generate-crossword-btn');
+        const worksheetOutput = document.getElementById('worksheetOutput');
+        const crosswordGridEl = document.getElementById('crossword-grid');
+        const acrossCluesEl = document.getElementById('across-clues');
+        const downCluesEl = document.getElementById('down-clues');
+        const wordBankListEl = document.getElementById('word-bank-list');
+        const wordBankContainer = document.getElementById('word-bank-container');
+        const toggleWordBankBtn = document.getElementById('toggle-word-bank-visibility');
+        const eyeIconOpen = document.getElementById('eye-icon-open');
+        const eyeIconClosed = document.getElementById('eye-icon-closed');
+        const wordBankToggleLabel = document.getElementById('word-bank-toggle-label');
+        const checkAnswersBtn = document.querySelector('.check-button');
+
+        let isWordBankVisible = true;
+
+        // Enhanced input validation for word entries
+        function validateWordEntry(word, definition) {
+            if (!word || !definition) {
+                return { valid: false, message: "Both word and definition are required." };
+            }
+            if (word.length > GRID_DIMENSION) {
+                return { valid: false, message: `Word must be ${GRID_DIMENSION} characters or less.` };
+            }
+            if (!/^[a-zA-Z\s]+$/.test(word)) {
+                return { valid: false, message: "Word can only contain letters and spaces." };
+            }
+            return { valid: true };
+        }
+
+        // Enhanced word entry addition
+        function addWordEntryHTML(word = '', definition = '') {
+            const entryDiv = document.createElement('div');
+            entryDiv.classList.add('word-entry');
+            
+            const wordInput = document.createElement('input');
+            wordInput.type = 'text';
+            wordInput.placeholder = 'Word';
+            wordInput.value = word;
+            wordInput.classList.add('word-field');
+            wordInput.maxLength = GRID_DIMENSION;
+
+            const defInput = document.createElement('input');
+            defInput.type = 'text';
+            defInput.placeholder = 'Definition/Clue';
+            defInput.value = definition;
+            defInput.classList.add('definition-field');
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.type = 'button';
+            removeBtn.onclick = () => entryDiv.remove();
+
+            // Add input validation
+            wordInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+            });
+
+            entryDiv.appendChild(wordInput);
+            entryDiv.appendChild(defInput);
+            entryDiv.appendChild(removeBtn);
+            wordInputContainer.appendChild(entryDiv);
+        }
+
+        // Enhanced generate button click handler
+        generateCrosswordBtn.addEventListener('click', () => {
+            let wordEntriesData = [];
+            const entryDivs = wordInputContainer.querySelectorAll('.word-entry');
+            
+            entryDivs.forEach(div => {
+                const word = div.querySelector('.word-field').value.trim();
+                const definition = div.querySelector('.definition-field').value.trim();
+                const validation = validateWordEntry(word, definition);
+                
+                if (!validation.valid) {
+                    alert(validation.message);
+                    return;
+                }
+                
+                if (word && definition) {
+                    wordEntriesData.push({ word, definition });
+                }
+            });
+
+            if (wordEntriesData.length === 0) {
+                alert("Please add some valid words and definitions first!");
+                return;
+            }
+
+            const layout = generateCrosswordLayout(wordEntriesData);
+
+            if (!layout || layout.placedWords.length === 0) {
+                alert("Could not generate a crossword with the given words. Please try different words or add more words for better intersections.");
+                worksheetOutput.style.display = 'none';
+                return;
+            }
+            
+            renderCrosswordToPage(layout);
+            worksheetOutput.style.display = 'flex';
+        });
+
+        function renderCrosswordToPage(layout) {
+            const { finalGrid, acrossClues, downClues, placedWords } = layout;
+            crosswordGridEl.innerHTML = ''; 
+            acrossCluesEl.innerHTML = '';   
+            downCluesEl.innerHTML = '';
+            wordBankListEl.innerHTML = '';
+
+            if(!finalGrid || finalGrid.length === 0) {
+                console.error("Render: finalGrid is empty or null. Cannot render puzzle.");
+                return;
+            }
+
+            finalGrid.forEach((row) => {
+                const tr = crosswordGridEl.insertRow();
+                row.forEach((cellData) => {
+                    const td = tr.insertCell();
+                    if (cellData && cellData.char) { 
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = 1;
+                        input.dataset.correctChar = cellData.char;
+                        td.appendChild(input);
+                        if (cellData.number) { 
+                            const numSpan = document.createElement('span');
+                            numSpan.classList.add('word-number');
+                            numSpan.textContent = cellData.number;
+                            td.appendChild(numSpan);
+                        }
+                    } else { 
+                        td.classList.add('empty-cell'); 
+                    }
+                });
+            });
+
+            acrossClues.forEach(clue => {
+                const li = document.createElement('li');
+                li.textContent = clue.text; 
+                acrossCluesEl.appendChild(li);
+            });
+            downClues.forEach(clue => {
+                const li = document.createElement('li');
+                li.textContent = clue.text; 
+                downCluesEl.appendChild(li);
+            });
+
+            const wordsForBank = new Set(placedWords.map(pw => pw.originalWord || pw.original));
+            Array.from(wordsForBank).sort().forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                wordBankListEl.appendChild(li);
+            });
+            wordBankContainer.classList.toggle('hidden', !isWordBankVisible); 
+        }
+        
+        let answersShown = false;
+        checkAnswersBtn.addEventListener('click', () => {
+            const inputs = crosswordGridEl.querySelectorAll('input[type="text"]');
+            if(inputs.length === 0) {
+                return;
+            }
+            if (!answersShown) {
+                let correctCount = 0;
+                inputs.forEach(input => {
+                    input.classList.remove('correct-answer', 'incorrect-answer', 'show-correct');
+                    input.dataset.userValue = input.value; // Store user's input
+                    const userAnswer = input.value.toUpperCase();
+                    const correctAnswer = input.dataset.correctChar;
+                    if (userAnswer) {
+                        if (userAnswer === correctAnswer) {
+                            input.classList.add('correct-answer');
+                            correctCount++;
+                        } else {
+                            input.classList.add('incorrect-answer', 'show-correct');
+                            input.value = correctAnswer;
+                        }
+                    } else if (correctAnswer && userAnswer === '') {
+                        input.classList.add('incorrect-answer', 'show-correct');
+                        input.value = correctAnswer;
+                    }
+                });
+                displayGrade(correctCount, inputs.length);
+                answersShown = true;
+                checkAnswersBtn.textContent = 'Hide Answers';
+            } else {
+                // Restore user input and remove highlights
+                inputs.forEach(input => {
+                    input.classList.remove('correct-answer', 'incorrect-answer', 'show-correct');
+                    if (input.dataset.userValue !== undefined) {
+                        input.value = input.dataset.userValue;
+                    }
+                });
+                // Optionally clear the grade display
+                const gradingSection = document.getElementById('gradingSection');
+                if (gradingSection) gradingSection.innerHTML = '';
+                answersShown = false;
+                checkAnswersBtn.textContent = 'Check Answers';
+            }
+        });
+
+        function displayGrade(correctCount, totalFillableCells) {
+             if (totalFillableCells === 0) {
+                return;
+            }
+            const percentage = (correctCount / totalFillableCells) * 100;
+            let letterGrade = '', icon = '', iconColor = '';
+
+            if (percentage >= 98) { letterGrade = 'A+'; icon = '🏆'; iconColor = '#2ecc71'; }
+            else if (percentage >= 90) { letterGrade = 'A'; icon = '🌟'; iconColor = '#27ae60'; }
+            else if (percentage >= 80) { letterGrade = 'B'; icon = '👍'; iconColor = '#3498db'; }
+            else if (percentage >= 70) { letterGrade = 'C'; icon = '😐'; iconColor = '#f1c40f'; }
+            else if (percentage >= 60) { letterGrade = 'D'; icon = '😟'; iconColor = '#e67e22'; }
+            else { letterGrade = 'F'; icon = '😢'; iconColor = '#e74c3c'; }
+
+            gradingSection.innerHTML = `
+                <span class="grade-icon" style="color: ${iconColor};">${icon}</span>
+                Grade: ${percentage.toFixed(0)}% (${letterGrade})
+            `;
+        }
+
+        // Restore event listeners
+        addWordBtn.addEventListener('click', () => addWordEntryHTML());
+
+        toggleWordBankBtn.addEventListener('click', () => {
+            isWordBankVisible = !isWordBankVisible;
+            wordBankContainer.classList.toggle('hidden', !isWordBankVisible);
+            eyeIconOpen.style.display = isWordBankVisible ? 'block' : 'none';
+            eyeIconClosed.style.display = isWordBankVisible ? 'none' : 'block';
+            wordBankToggleLabel.textContent = isWordBankVisible ? 'Hide Word Bank' : 'Show Word Bank';
+        });
+
+        // Add keyboard navigation for input fields
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text' && e.target.closest('#crossword-grid')) {
+                const currentInput = e.target;
+                const currentCell = currentInput.closest('td');
+                const currentRow = currentCell.parentElement;
+                const currentCol = Array.from(currentRow.children).indexOf(currentCell);
+                
+                let nextInput;
+                switch(e.key) {
+                    case 'ArrowRight':
+                        nextInput = currentRow.children[currentCol + 1]?.querySelector('input');
+                        break;
+                    case 'ArrowLeft':
+                        nextInput = currentRow.children[currentCol - 1]?.querySelector('input');
+                        break;
+                    case 'ArrowUp':
+                        nextInput = currentRow.previousElementSibling?.children[currentCol]?.querySelector('input');
+                        break;
+                    case 'ArrowDown':
+                        nextInput = currentRow.nextElementSibling?.children[currentCol]?.querySelector('input');
+                        break;
+                }
+                
+                if (nextInput) {
+                    e.preventDefault();
+                    nextInput.focus();
+                }
+            }
+        });
+
+        // Add auto-capitalization for input fields
+        document.addEventListener('input', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text' && e.target.closest('#crossword-grid')) {
+                e.target.value = e.target.value.toUpperCase();
+            }
+        });
+
+        // Initialize with sample words
+        addWordEntryHTML('', '');
+    </script></body>
+</html>    </script></body>

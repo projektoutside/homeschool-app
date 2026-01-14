@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counting Odd Numbers Worksheet</title>
+    <style>
+        /* General Page Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Sans+MS&display=swap');
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+                width: 100% !important;
+                height: 100% !important;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .worksheet-container {
+            width: 8.5in;
+            height: 11in;
+            background-color: white;
+            padding: 0.5in;
+            box-sizing: border-box;
+            margin: 20px 0;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Worksheet Title */
+        .worksheet-title {
+            font-size: 24px;
+            color: #3498db;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* Header Section */
+        .worksheet-header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-item label {
+            margin-right: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .worksheet-header input[type="text"],
+        .worksheet-header .subject-text {
+            border: none;
+            border-bottom: 2px solid #3498db;
+            padding: 6px 4px;
+            font-size: 16px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            outline: none;
+        }
+        .worksheet-header input[name="student-name"] { width: 180px; }
+        .worksheet-header input[name="date"] { width: 100px; }
+
+        .subject-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #3498db;
+            padding: 6px 4px;
+        }
+
+        /* Example Box */
+        .example-box {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+        }
+        .example-box strong,
+        .example-box .operator {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .example-box .placeholder {
+            display: inline-block;
+            width: 30px;
+            border-bottom: 2px solid #333;
+            margin: 0 3px;
+            height: 18px;
+            vertical-align: bottom;
+        }
+
+        /* Counting Sequence Grid */
+        .counting-sequence-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 10px;
+            flex-grow: 1;
+            align-content: stretch;
+            margin-bottom: 15px;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .sequence-box {
+            border: 1.5px solid #b0bec5;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            background: none;
+        }
+
+        .filled-number {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 24px;
+            color: #3498db;
+            font-weight: bold;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .answer-input {
+            background: white;
+            border: 2px solid #ffb6c1;
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 24px;
+            color: black;
+            width: 90%;
+            height: 90%;
+            padding: 0;
+            text-align: center;
+            box-sizing: border-box;
+            appearance: textfield;
+            display: block;
+            margin: 0 auto;
+        }
+        .answer-input::-webkit-inner-spin-button,
+        .answer-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Answer Styling by JS */
+        .correct-answer {
+            border: 2px solid #28a745 !important;
+            background-color: #e9f7ef !important;
+        }
+        .incorrect-answer {
+            border: 2px solid #dc3545 !important;
+            background-color: #fdecea !important;
+        }
+
+        /* Grading Section */
+        .grading-section {
+            text-align: center;
+            padding-top: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .grade-icon {
+            font-size: 22px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        /* Interactive Buttons */
+        .interactive-buttons {
+            text-align: center;
+            padding-bottom: 5px;
+        }
+        .interactive-buttons button {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: background-color 0.3s ease;
+        }
+        .check-button { background-color: #3498db; }
+        .check-button:hover { background-color: #2980b9; }
+        .print-button { background-color: #e67e22; }
+        .print-button:hover { background-color: #d35400; }
+        .generate-button { background-color: #2ECC71; }
+        .generate-button:hover { background-color: #27AE60; }
+
+        /* Print Styles */
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body { background-color: white; margin: 0; padding: 0;
+                width: 100% !important;
+                height: 100% !important; display: block; }
+            .worksheet-container { width: 100%; height: 100%; margin: 0; padding: 0.5in; box-shadow: none; }
+            .no-print { display: none !important; }
+            .worksheet-header input[type="text"],
+            .worksheet-header .subject-text { border-bottom: 2px solid #3498db !important; }
+            .example-box { background: #f8f9fa !important; border: 2px solid #3498db !important; }
+            .example-box strong,
+            .example-box .operator { color: #3498db !important; }
+            .example-box .placeholder { border-bottom: 2px solid #333 !important; }
+
+            .counting-sequence-container {
+                grid-template-columns: repeat(5, 1fr) !important;
+                grid-template-rows: repeat(10, 1fr) !important;
+                gap: 8px !important;
+            }
+            .sequence-box { padding: 0 !important; }
+            .filled-number, .answer-input { font-size: 20px !important; }
+            .correct-answer, .incorrect-answer { background-color: white !important; }
+            .worksheet-title { color: #3498db !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <h1 class="worksheet-title">Counting Odd Numbers Adventure!</h1>
+
+        <header class="worksheet-header">
+            <div class="header-item">
+                <label for="student-name">Student Name:</label>
+                <input type="text" id="student-name" name="student-name">
+            </div>
+            <div class="header-item">
+                <label for="date">Date:</label>
+                <input type="text" id="date" name="date">
+            </div>
+            <div class="header-item">
+                <label>Subject:</label>
+                <span class="subject-text">Counting Odd Numbers</span>
+            </div>
+        </header>
+
+        <div class="example-box">
+            Fill in the missing numbers! We are counting odd numbers.
+            Example: <strong>1</strong>, <strong>3</strong>, <span class="placeholder"></span>, <strong>7</strong>. The missing number is <strong>5</strong>.
+        </div>
+
+        <main class="counting-sequence-container" id="countingSequenceContainer">
+            <!-- Counting sequence boxes will be generated here by JavaScript -->
+        </main>
+
+        <div class="grading-section" id="gradingSection"></div>
+
+        <div class="interactive-buttons no-print">
+            <button class="check-button">Check Answers</button>
+            <button class="generate-button">Generate New Worksheet</button>
+            <button class="print-button" onclick="window.print()">Print</button>
+        </div>
+    </div>
+
+    <script>
+        const totalBoxes = 50; // Numbers from 1 to 99, counting odd numbers
+        const prefillCount = 20;
+        const emptyInputCount = totalBoxes - prefillCount; // 30 inputs for students
+
+        function generateWorksheet() {
+            const sequenceContainer = document.getElementById('countingSequenceContainer');
+            sequenceContainer.innerHTML = '';
+
+            const rows = 10;
+            const cols = 5;
+            const totalBoxes = rows * cols;
+
+            // Determine which positions will be blank inputs
+            let filledPositions = new Array(totalBoxes).fill(false);
+            const emptyBoxesPerRow = emptyInputCount / rows;
+            for (let row = 0; row < rows; row++) {
+                const emptyBoxesInThisRow = Math.floor(emptyBoxesPerRow);
+                const extraEmptyBox = row < (emptyInputCount % rows) ? 1 : 0;
+                const totalEmptyInRow = emptyBoxesInThisRow + extraEmptyBox;
+                const rowStart = row * cols;
+                const rowPositions = Array.from({ length: cols }, (_, i) => rowStart + i);
+                for (let i = rowPositions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [rowPositions[i], rowPositions[j]] = [rowPositions[j], rowPositions[i]];
+                }
+                for (let i = 0; i < totalEmptyInRow; i++) {
+                    filledPositions[rowPositions[i]] = true;
+                }
+            }
+
+            // Create the boxes
+            for (let i = 0; i < totalBoxes; i++) {
+                const correctValue = (i * 2) + 1; // Odd numbers
+                const box = document.createElement('div');
+                box.classList.add('sequence-box');
+                if (!filledPositions[i]) {
+                    const filledSpan = document.createElement('span');
+                    filledSpan.classList.add('filled-number');
+                    filledSpan.textContent = correctValue;
+                    box.appendChild(filledSpan);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.classList.add('answer-input');
+                    input.dataset.correctAnswer = correctValue;
+                    input.addEventListener('input', function () {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    });
+                    box.appendChild(input);
+                }
+                sequenceContainer.appendChild(box);
+            }
+            document.getElementById('gradingSection').textContent = 'Grade: -';
+        }
+
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('.answer-input');
+            let correctCount = 0;
+
+            inputs.forEach(input => {
+                input.classList.remove('correct-answer', 'incorrect-answer');
+                const userAnswer = input.value.trim();
+                const correctAnswer = input.dataset.correctAnswer;
+
+                if (userAnswer === '') {
+                    input.classList.add('incorrect-answer');
+                } else if (parseInt(userAnswer, 10) === parseInt(correctAnswer, 10)) {
+                    input.classList.add('correct-answer');
+                    correctCount++;
+                } else {
+                    input.classList.add('incorrect-answer');
+                }
+            });
+
+            displayGrade(correctCount, emptyInputCount);
+        }
+
+        function displayGrade(correctCount, totalQuestions) {
+            const gradeSection = document.getElementById('gradingSection');
+            if (totalQuestions === 0) {
+                gradeSection.textContent = 'No questions to grade.';
+                return;
+            }
+
+            const percentage = (correctCount / totalQuestions) * 100;
+            let letterGrade = '';
+            let icon = '';
+            let iconColor = '';
+
+            if (percentage >= 98) { letterGrade = 'A+'; icon = '🏆'; iconColor = '#2ecc71'; }
+            else if (percentage >= 90) { letterGrade = 'A'; icon = '🌟'; iconColor = '#27ae60'; }
+            else if (percentage >= 80) { letterGrade = 'B'; icon = '👍'; iconColor = '#3498db'; }
+            else if (percentage >= 70) { letterGrade = 'C'; icon = '😐'; iconColor = '#f1c40f'; }
+            else if (percentage >= 60) { letterGrade = 'D'; icon = '😟'; iconColor = '#e67e22'; }
+            else { letterGrade = 'F'; icon = '😢'; iconColor = '#e74c3c'; }
+
+            gradeSection.innerHTML = `<span class="grade-icon" style="color:${iconColor};">${icon}</span> Grade: ${percentage.toFixed(0)}% (${letterGrade})`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateWorksheet();
+            document.querySelector('.check-button').addEventListener('click', checkAnswers);
+            document.querySelector('.generate-button').addEventListener('click', generateWorksheet);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction to Decimal Numbers</title>
+    <style>
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .button-container,
+            .generate-btn,
+            .check-btn,
+            .print-btn {
+                display: none !important;
+            }
+            input::placeholder {
+                color: transparent !important;
+                opacity: 0 !important;
+            }
+            body {
+                margin: 0 !important;
+                padding: 0.25in !important;
+            }
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #3498db;
+            padding: 20px;
+            background-color: white;
+            width: 8.5in;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .worksheet-container {
+            position: relative;
+        }
+
+        .worksheet-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 0.2in;
+            width: 7.5in;
+        }
+
+        .header h1 {
+            color: #3498db;
+            font-size: 24px;
+            margin: 0 0 15px 0;
+        }
+
+        .student-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .info-field {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .info-field input {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 16px;
+            border: none;
+            border-bottom: 1px solid #3498db;
+            outline: none;
+            width: 180px;
+            padding: 2px 4px;
+        }
+
+        .info-field input:focus {
+            border-bottom: 2px solid #3498db;
+        }
+
+        .instruction {
+            color: #3498db;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .example-box {
+            margin: 0 auto 0.3in auto;
+            width: 7.5in;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+        }
+
+        .example-title {
+            color: #3498db;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .example-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            margin: 10px 0;
+        }
+
+        .example-section {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 1px dashed #3498db;
+            border-radius: 6px;
+            background-color: white;
+        }
+
+        .example-text {
+            color: #2980b9;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .example-highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .example-emoji {
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        .decimal-guide {
+            margin: 0 auto 0.3in auto;
+            width: 7.5in;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .decimal-example {
+            font-size: 24px;
+            color: #3498db;
+            margin: 5px 0;
+        }
+
+        .decimal-parts {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .decimal-part {
+            padding: 5px 10px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .problems-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.3in;
+            margin: 0 auto;
+            width: 7.5in;
+        }
+
+        .problem {
+            font-size: 22px;
+            color: #3498db;
+            padding: 12px 15px;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+
+        .problem span.answer {
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 8px;
+            display: none;
+        }
+
+        .problem.incorrect span.answer {
+            color: #c0392b;
+        }
+
+        .problem input {
+            width: 80px;
+            min-width: 80px;
+            height: 32px;
+            font-size: 22px;
+            text-align: center;
+            border: 2px solid #fdc9ec;
+            border-radius: 4px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #3498db;
+            margin-left: auto;
+        }
+
+        .problem input::-webkit-outer-spin-button,
+        .problem input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .problem input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .problem.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .problem.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .button-container {
+            margin-top: 0.3in;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            transition: background-color 0.2s ease;
+        }
+
+        .generate-btn {
+            background-color: #2ecc71;
+        }
+
+        .generate-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .check-btn {
+            background-color: #3498db;
+        }
+
+        .check-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .print-btn {
+            background-color: #e74c3c;
+        }
+
+        .print-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="worksheet-container">
+        <div id="worksheetNumber" class="worksheet-number"></div>
+        <div class="header">
+            <h1>Introduction to Decimal Numbers</h1>
+            <div class="student-info">
+                <div class="info-field">
+                    <label>Name:</label>
+                    <input type="text" placeholder="Write your name">
+                </div>
+                <div class="info-field">
+                    <label>Date:</label>
+                    <input type="text" placeholder="Write the date">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="example-box">
+        <div class="example-title">Understanding Decimal Numbers</div>
+        <div class="example-content">
+            <div class="example-section">
+                <div class="example-emoji">🍕</div>
+                <div class="example-text">Think of a pizza:</div>
+                <div class="example-text"><span class="example-highlight">1 whole</span> = 1.0</div>
+                <div class="example-text"><span class="example-highlight">Half</span> = 0.5</div>
+            </div>
+            <div class="example-section">
+                <div class="example-emoji">💰</div>
+                <div class="example-text">Like money:</div>
+                <div class="example-text"><span class="example-highlight">$1.25</span> = 1 dollar and 25 cents</div>
+                <div class="example-text"><span class="example-highlight">$0.50</span> = 50 cents</div>
+            </div>
+            <div class="example-section">
+                <div class="example-emoji">📏</div>
+                <div class="example-text">Measuring:</div>
+                <div class="example-text"><span class="example-highlight">2.5</span> = 2 and a half</div>
+                <div class="example-text"><span class="example-highlight">0.1</span> = one tenth</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="decimal-guide">
+        <div class="instruction">Learn about decimal numbers and solve the problems below!</div>
+        <div class="decimal-example">2.45</div>
+        <div class="decimal-parts">
+            <div class="decimal-part">2 = Whole Number</div>
+            <div class="decimal-part">4 = Tenths</div>
+            <div class="decimal-part">5 = Hundredths</div>
+        </div>
+    </div>
+
+    <div class="problems-container">
+        <div class="problem" data-number="1">
+            1.2 + 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+        </div>
+        <div class="problem" data-number="2">
+            2.5 - 1.2 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3" placeholder="?">
+        </div>
+        <div class="problem" data-number="3">
+            0.7 + 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+        </div>
+        <div class="problem" data-number="4">
+            3.0 - 0.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.5" placeholder="?">
+        </div>
+        <div class="problem" data-number="5">
+            0.4 + 0.6 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.0" placeholder="?">
+        </div>
+        <div class="problem" data-number="6">
+            1.8 - 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+        </div>
+        <div class="problem" data-number="7">
+            2.1 + 0.9 = <span class="answer"></span><input type="number" step="0.1" data-answer="3.0" placeholder="?">
+        </div>
+        <div class="problem" data-number="8">
+            1.6 - 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="0.8" placeholder="?">
+        </div>
+        <div class="problem" data-number="9">
+            0.5 + 1.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.0" placeholder="?">
+        </div>
+        <div class="problem" data-number="10">
+            2.4 - 1.1 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3" placeholder="?">
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button class="btn generate-btn" onclick="generateNewWorksheet()">Create New Worksheet</button>
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn print-btn" onclick="window.print()">Print Worksheet</button>
+    </div>
+
+    <script>
+        function generateWorksheetNumber() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `${month}.${day}.${year}-${random}`;
+        }
+
+        function generateNewWorksheet() {
+            // Generate new worksheet number
+            const newWorksheetNumber = generateWorksheetNumber();
+            document.getElementById('worksheetNumber').textContent = newWorksheetNumber;
+
+            // Generate and store new problems
+            const problems = [];
+            const problemElements = document.querySelectorAll('.problem');
+            problemElements.forEach(problem => {
+                const newProblem = generateProblem();
+                problems.push(newProblem);
+                problem.innerHTML = `${newProblem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${newProblem.answer}" placeholder="?">`;
+                problem.classList.remove('correct', 'incorrect');
+            });
+
+            // Store the current state
+            localStorage.setItem('decimalWorksheetState', JSON.stringify({
+                worksheetNumber: newWorksheetNumber,
+                problems: problems
+            }));
+        }
+
+        function generateProblem() {
+            // Generate numbers with one decimal place, ensuring no negative results
+            const operation = Math.random() < 0.5 ? '+' : '-';
+            let num1, num2, answer;
+            
+            if (operation === '+') {
+                num1 = Math.round(Math.random() * 20) / 10; // 0.0 to 2.0
+                num2 = Math.round(Math.random() * 20) / 10; // 0.0 to 2.0
+                answer = Math.round((num1 + num2) * 10) / 10;
+            } else {
+                // For subtraction, ensure num1 > num2 to avoid negative results
+                num1 = Math.round((Math.random() * 20 + 10)) / 10; // 1.0 to 3.0
+                num2 = Math.round(Math.random() * (num1 * 10)) / 10; // 0.0 to num1
+                answer = Math.round((num1 - num2) * 10) / 10;
+            }
+
+            return {
+                expression: `${num1} ${operation} ${num2}`,
+                answer: answer
+            };
+        }
+
+        function loadWorksheet() {
+            const savedState = localStorage.getItem('decimalWorksheetState');
+            const problemElements = document.querySelectorAll('.problem');
+            
+            if (savedState) {
+                // Restore saved state
+                const state = JSON.parse(savedState);
+                document.getElementById('worksheetNumber').textContent = state.worksheetNumber;
+                
+                state.problems.forEach((problem, index) => {
+                    problemElements[index].innerHTML = `${problem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${problem.answer}" placeholder="?">`;
+                    problemElements[index].classList.remove('correct', 'incorrect');
+                });
+            } else {
+                // Generate new worksheet if no saved state exists
+                generateNewWorksheet();
+            }
+        }
+
+        function checkAnswers() {
+            const problems = document.querySelectorAll('.problem');
+            problems.forEach(problem => {
+                const input = problem.querySelector('input');
+                const answerSpan = problem.querySelector('.answer');
+                const correctAnswer = parseFloat(input.dataset.answer);
+                const userAnswer = parseFloat(input.value);
+                
+                answerSpan.textContent = correctAnswer;
+                answerSpan.style.display = 'inline';
+                
+                if (Math.abs(userAnswer - correctAnswer) < 0.01) {
+                    problem.classList.add('correct');
+                    problem.classList.remove('incorrect');
+                } else {
+                    problem.classList.add('incorrect');
+                    problem.classList.remove('correct');
+                }
+            });
+        }
+
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkAnswers();
+                }
+            });
+        });
+
+        // Initialize worksheet on page load
+        loadWorksheet();
+    </script>
+</body>
+</html> 

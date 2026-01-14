@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Single Digit Division Practice</title>
+  <style>
+    @media print {
+      @page {
+        size: 8.5in 11in;
+        margin: 0.25in;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
+      .button-container,
+      .generate-btn,
+      .check-btn,
+      .static-btn,
+      .save-btn,
+      .print-btn {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+      }
+
+      body {
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      .problems-grid {
+        margin: 0 auto !important;
+        gap: 0.2in !important;
+        page-break-inside: avoid !important;
+      }
+
+      .word-problems {
+        page-break-inside: avoid !important;
+        margin-top: 0.2in !important;
+      }
+
+      .grade-display {
+        display: none !important;
+      }
+
+      .header input::placeholder {
+        color: transparent;
+      }
+
+      input::placeholder {
+        color: transparent;
+      }
+
+      .header input {
+        border-bottom: 1px solid #695f5f;
+      }
+    }
+
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      width: 8.5in;
+      height: 9.5in;
+      margin: 0 auto;
+      padding: 0.5in;
+      box-sizing: border-box;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 0.3in;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin: 0 0 10px 0;
+    }
+
+    .header p {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .header input {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      border: none;
+      border-bottom: 1px solid #3498db;
+      outline: none;
+      width: 200px;
+      padding: 2px 5px;
+      margin: 0 5px;
+    }
+
+    .header input:focus {
+      border-bottom: 2px solid #3498db;
+    }
+
+    .example-box {
+      border: 2px dashed #2ECC71;
+      padding: 0.2in;
+      margin: 0.2in auto;
+      border-radius: 10px;
+      font-size: 16px;
+      max-width: 6.5in;
+    }
+
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(2, auto);
+      gap: 0.2in;
+      margin: 0.25in auto;
+      max-width: 7.5in;
+      width: 100%;
+    }
+
+    .problem {
+      position: relative;
+      border: 1px solid #ccc;
+      padding: 0.12in 0.12in 0.08in 0.12in;
+      text-align: right;
+      font-size: 20px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      width: 1in;
+      height: 1.3in;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      transition: background-color 0.3s ease;
+    }
+
+    .problem::before {
+      content: attr(data-number);
+      position: absolute;
+      top: -6px;
+      left: -2px;
+      background: white;
+      color: #999;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #eee;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    .problem.correct::before {
+      border-color: #28a745;
+      color: #28a745;
+    }
+
+    .problem.incorrect::before {
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .math-expression {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.08in;
+      width: 100%;
+      text-align: right;
+    }
+
+    .number {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 20px;
+      line-height: 1;
+      white-space: pre;
+      padding: 0.05in 0;
+      color: #3498db;
+    }
+
+    .operator {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 20px;
+      line-height: 1;
+      border-bottom: 2px solid #3498db;
+      padding: 0.05in 0;
+      margin-bottom: 0;
+      color: #3498db;
+    }
+
+    .problem input[type="number"] {
+      width: 70px;
+      height: 40px;
+      font-size: 20px;
+      margin-top: 4.5px;
+      margin-right: -5px;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .word-problem input[type="number"] {
+      width: 70px;
+      height: 40px;
+      font-size: 20px;
+      margin-top: 4.5px;
+      margin-right: -5px;
+      border: 2px solid #fdc9ec;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .word-problems {
+      margin-top: 0.3in;
+      font-size: 16px;
+    }
+
+    .word-problem {
+      margin-bottom: 0.2in;
+    }
+
+    .button-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0 10px;
+    }
+
+    .generate-btn {
+      background-color: #2ECC71;
+    }
+
+    .generate-btn:hover {
+      background-color: #27AE60;
+    }
+
+    .check-btn {
+      background-color: #3498db;
+    }
+
+    .check-btn:hover {
+      background-color: #2980b9;
+    }
+
+    .static-btn {
+      background-color: #8E44AD;
+    }
+
+    .static-btn:hover {
+      background-color: #6C3483;
+    }
+
+    .save-btn {
+      background-color: #f1c40f;
+    }
+
+    .save-btn:hover {
+      background-color: #f39c12;
+    }
+
+    .print-btn {
+      background-color: #e67e22;
+    }
+
+    .print-btn:hover {
+      background-color: #d35400;
+    }
+
+    .grade-display {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+      height: 36px;
+    }
+
+    .grade-emoji {
+      font-size: 28px;
+      margin-right: 10px;
+      display: inline-block;
+      animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .grade-text {
+      display: inline-block;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes slideIn {
+      0% {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .grade-a-plus {
+      color: #2ecc71;
+    }
+
+    .grade-b {
+      color: #3498db;
+    }
+
+    .grade-c {
+      color: #f1c40f;
+    }
+
+    .grade-d {
+      color: #e67e22;
+    }
+
+    .grade-f {
+      color: #e74c3c;
+    }
+
+    .correct-answer {
+      position: absolute;
+      top: 20px;
+      left: 30%;
+      transform: translateX(-50%);
+      color: #dc3545;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 2;
+    }
+
+    .word-problem .correct-answer {
+      position: relative;
+      top: 0;
+      left: 0;
+      transform: none;
+      display: inline-block;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    /* Add the worksheet number styling */
+    .worksheet-number {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="worksheetNumber" class="worksheet-number"></div>
+  <div class="header">
+    <h1>Fun with Division!</h1>
+    <p>Name: <input type="text" id="student-name" placeholder="Enter name">
+       Date: <input type="text" id="worksheet-date" placeholder="Enter date">
+    </p>
+  </div>
+
+  <div class="example-box">
+    <h3>Example:</h3>
+    <p id="example">8 ÷ 4 = 2</p>
+    <p>To divide numbers, we share them equally!</p>
+  </div>
+
+  <div class="problems-grid" id="problems"></div>
+
+  <div class="word-problems" id="wordProblems">
+    <h3>🎯 Division Story Time! 🎯</h3>
+    <div class="word-problem"></div>
+    <div class="word-problem"></div>
+  </div>
+
+  <div class="grade-display" id="gradeDisplay"></div>
+
+  <div class="button-container">
+    <button class="btn generate-btn" onclick="generateNewWorksheet()">Generate New Worksheet</button>
+    <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+    <button class="btn print-btn" onclick="window.print()">Print</button>
+    <button class="btn static-btn" onclick="createStaticWorksheet()">Create Static Worksheet</button>
+  </div>
+
+  <script>
+    // Word problem templates for division
+    const wordProblemTemplates = [
+      {
+        template: "{name} has {num1} {item}s. He wants to share them equally among {num2} friends. How many {item}s does each friend get?",
+        items: ['candy', 'cookie', 'sticker', 'apple', 'balloon'],
+        names: ['Tom', 'Sara', 'Emma', 'Jack', 'Lucy', 'Max']
+      },
+      {
+        template: "There are {num1} {item}s to be packed equally into {num2} boxes. How many {item}s will be in each box?",
+        items: ['book', 'toy', 'ball', 'pencil', 'flower'],
+        places: []
+      }
+    ];
+
+        let usedProblems = new Set();
+        let usedWordProblems = new Set();
+        let currentProblems = [];
+        let answersChecked = false; // Track if answers are currently shown
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // For division, ensure an integer result by generating divisor and quotient first.
+    function generateExample() {
+      let divisor = getRandomInt(1, 9);
+      let quotient = getRandomInt(1, 9);
+      let dividend = divisor * quotient;
+      return `${dividend} ÷ ${divisor} = ${quotient}`;
+    }
+
+    function generateProblem() {
+      let divisor, quotient, dividend, problemKey;
+      let attempts = 0;
+      do {
+        divisor = getRandomInt(1, 9);
+        quotient = getRandomInt(1, 9);
+        dividend = divisor * quotient;
+        problemKey = `${dividend}÷${divisor}`;
+        attempts++;
+        if (attempts > 50) {
+          usedProblems.clear();
+          attempts = 0;
+        }
+      } while (usedProblems.has(problemKey));
+      usedProblems.add(problemKey);
+      return { num1: dividend, num2: divisor, answer: quotient };
+    }
+
+    // Generate a division word problem ensuring dividend is divisible by divisor.
+    function generateWordProblem(template, index) {
+      const data = wordProblemTemplates[index];
+      let problem = data.template;
+      let divisor, quotient, dividend, problemKey;
+
+      do {
+        divisor = getRandomInt(1, 5);
+        quotient = getRandomInt(1, 4);
+        dividend = divisor * quotient;
+        problemKey = `word${index}_${dividend}÷${divisor}`;
+        if (usedWordProblems.size >= 20) {
+          usedWordProblems.clear();
+        }
+      } while (usedWordProblems.has(problemKey));
+      usedWordProblems.add(problemKey);
+
+      // Pick a random item from the array
+      const item = data.items[Math.floor(Math.random() * data.items.length)];
+
+      // Replace placeholders with actual numbers and item
+      problem = problem
+        .replace('{num1}', dividend)
+        .replace('{num2}', divisor)
+        .replace(/{item}/g, item);
+
+      // If there's a names array, replace {name} placeholders
+      if (data.names) {
+        const name = data.names[Math.floor(Math.random() * data.names.length)];
+        problem = problem.replace(/{name}/g, name);
+      }
+
+      // If there's a places array, handle that as well
+      if (data.places && data.places.length) {
+        const place = data.places[Math.floor(Math.random() * data.places.length)];
+        problem = problem.replace('{place}', place);
+      }
+
+      return { problem, answer: quotient };
+    }
+
+    function generateWorksheetNumber() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const year = now.getFullYear();
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `WS-${month}${day}${year}-${random}`;
+    }
+
+    function generateNewWorksheet() {
+      // Update worksheet number
+      document.getElementById('worksheetNumber').textContent = generateWorksheetNumber();
+      
+      currentProblems = [];
+      usedProblems.clear();
+      usedWordProblems.clear();
+
+      document.getElementById('example').textContent = generateExample();
+
+      const problemsContainer = document.getElementById('problems');
+      problemsContainer.innerHTML = '';
+
+      // Generate 12 division problems
+      for (let i = 0; i < 12; i++) {
+        const problem = generateProblem();
+        currentProblems.push(problem);
+
+        const problemDiv = document.createElement('div');
+        problemDiv.className = 'problem';
+        problemDiv.id = `problem-${i}`;
+        problemDiv.setAttribute('data-number', '#' + (i + 1));
+
+        problemDiv.innerHTML = `
+          <div class="math-expression">
+            <div class="number">${String(problem.num1).padStart(2, ' ')}</div>
+            <div class="operator">÷${String(problem.num2).padStart(2, ' ')}</div>
+          </div>
+          <input type="number" class="answer-input" id="answer-${i}">
+        `;
+
+        problemsContainer.appendChild(problemDiv);
+      }
+
+      // Generate word problems
+      const wordProblemsContainer = document.getElementById('wordProblems');
+      const wordProblemDivs = wordProblemsContainer.getElementsByClassName('word-problem');
+
+      for (let i = 0; i < wordProblemDivs.length; i++) {
+        const wordProblem = generateWordProblem(wordProblemTemplates[i], i);
+        currentProblems.push(wordProblem);
+
+        wordProblemDivs[i].innerHTML = `
+          <p>${i + 1}. ${wordProblem.problem}</p>
+          <input type="number" class="answer-input" id="answer-${i + 12}">
+        `;
+      }
+
+      // Clear grade display if it exists
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      if (gradeDisplay) {
+        gradeDisplay.innerHTML = '';
+      }
+    }
+
+    function checkAnswers() {
+      const checkBtn = document.querySelector('.check-btn');
+      
+      if (answersChecked) {
+        // Uncheck - hide answers
+        document.querySelectorAll('.problem').forEach(problemDiv => {
+          problemDiv.classList.remove('correct', 'incorrect');
+          const existingCorrectAnswer = problemDiv.querySelector('.correct-answer');
+          if (existingCorrectAnswer) existingCorrectAnswer.remove();
+        });
+        document.querySelectorAll('.word-problem').forEach(problemDiv => {
+          problemDiv.classList.remove('correct', 'incorrect');
+          const existingCorrectAnswer = problemDiv.querySelector('.correct-answer');
+          if (existingCorrectAnswer) existingCorrectAnswer.remove();
+        });
+        document.getElementById('gradeDisplay').innerHTML = '';
+        checkBtn.textContent = 'Check Answers';
+        answersChecked = false;
+      } else {
+        // Check - show answers
+        let score = 0;
+      const problems = document.querySelectorAll('.problem');
+      const wordProblems = document.querySelectorAll('.word-problem');
+
+      problems.forEach((problemDiv) => {
+        const answerInput = problemDiv.querySelector('.answer-input');
+        const mathExpression = problemDiv.querySelector('.math-expression');
+        const numbers = mathExpression.querySelectorAll('div');
+        const num1 = parseInt(numbers[0].textContent);
+        const num2 = parseInt(numbers[1].textContent.replace('÷', ''));
+        const correctAnswer = num1 / num2;
+
+        // Remove any existing correct answer display
+        const existingCorrectAnswer = problemDiv.querySelector('.correct-answer');
+        if (existingCorrectAnswer) {
+          existingCorrectAnswer.remove();
+        }
+
+        problemDiv.classList.remove('correct', 'incorrect');
+
+        if (parseInt(answerInput.value) === correctAnswer) {
+          score++;
+          problemDiv.classList.add('correct');
+        } else {
+          problemDiv.classList.add('incorrect');
+          // Add the correct answer display
+          const correctAnswerDiv = document.createElement('div');
+          correctAnswerDiv.className = 'correct-answer';
+          correctAnswerDiv.textContent = correctAnswer;
+          problemDiv.appendChild(correctAnswerDiv);
+        }
+      });
+
+      // Check word problems
+      wordProblems.forEach((problemDiv, index) => {
+        const answerInput = problemDiv.querySelector('.answer-input');
+        const correctAnswer = currentProblems[index + 12].answer;
+
+        // Remove any existing correct answer display
+        const existingCorrectAnswer = problemDiv.querySelector('.correct-answer');
+        if (existingCorrectAnswer) {
+          existingCorrectAnswer.remove();
+        }
+
+        problemDiv.classList.remove('correct', 'incorrect');
+
+        if (parseInt(answerInput.value) === correctAnswer) {
+          score++;
+          problemDiv.classList.add('correct');
+        } else {
+          problemDiv.classList.add('incorrect');
+          // Add the correct answer display to the right of the input
+          const correctAnswerDiv = document.createElement('div');
+          correctAnswerDiv.className = 'correct-answer';
+          correctAnswerDiv.textContent = correctAnswer;
+          answerInput.parentNode.insertBefore(correctAnswerDiv, answerInput.nextSibling);
+        }
+      });
+
+      const grade = calculateGrade(score);
+      const gradeClass = getGradeClass(grade);
+      const emoji = getGradeEmoji(grade);
+      const percentage = (score / 14) * 100;
+
+      const gradeDisplay = document.getElementById('gradeDisplay');
+      gradeDisplay.innerHTML = `
+        <span class="grade-emoji ${gradeClass}">${emoji}</span>
+        <span class="grade-text ${gradeClass}">
+          Grade: ${grade} (${score}/14 - ${percentage.toFixed(1)}%)
+        </span>
+      `;
+        checkBtn.textContent = 'Uncheck Answers';
+        answersChecked = true;
+      }
+    }
+
+    function calculateGrade(correctCount) {
+      const percentage = (correctCount / 14) * 100;
+      if (percentage >= 97) return 'A+';
+      if (percentage >= 93) return 'A';
+      if (percentage >= 90) return 'A-';
+      if (percentage >= 87) return 'B+';
+      if (percentage >= 83) return 'B';
+      if (percentage >= 80) return 'B-';
+      if (percentage >= 77) return 'C+';
+      if (percentage >= 73) return 'C';
+      if (percentage >= 70) return 'C-';
+      if (percentage >= 67) return 'D+';
+      if (percentage >= 63) return 'D';
+      if (percentage >= 60) return 'D-';
+      return 'F';
+    }
+
+    function getGradeEmoji(grade) {
+      switch (grade) {
+        case 'A+': return '🏆';
+        case 'A': return '🌟';
+        case 'A-': return '⭐';
+        case 'B+': return '😊';
+        case 'B': return '👍';
+        case 'B-': return '👌';
+        case 'C+': return '🙂';
+        case 'C': return '😐';
+        case 'C-': return '😕';
+        case 'D+': return '😟';
+        case 'D': return '😥';
+        case 'D-': return '😓';
+        default: return '😢';
+      }
+    }
+
+    function getGradeClass(grade) {
+      if (grade.startsWith('A')) return 'grade-a-plus';
+      if (grade.startsWith('B')) return 'grade-b';
+      if (grade.startsWith('C')) return 'grade-c';
+      if (grade.startsWith('D')) return 'grade-d';
+      return 'grade-f';
+    }
+
+    function createStaticWorksheet() {
+      // Clone the current document
+      const staticDoc = document.documentElement.cloneNode(true);
+
+      // Remove both Generate New Worksheet and Create Static Worksheet buttons
+      const buttonContainer = staticDoc.querySelector('.button-container');
+      buttonContainer.innerHTML = `
+        <button class="btn check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button class="btn save-btn" onclick="saveWorksheet()">Save Worksheet</button>
+      `;
+
+      // Remove the generateNewWorksheet function and onload call
+      const scriptElement = staticDoc.querySelector('script');
+
+      // Create new script content with only necessary functions
+      const newScript = `
+        let currentProblems = ${JSON.stringify(currentProblems)};
+
+        function saveWorksheet() {
+          const inputs = document.querySelectorAll('.answer-input, .header input');
+          inputs.forEach(input => {
+            input.setAttribute('value', input.value || '');
+          });
+          const gradeDisplay = document.getElementById('gradeDisplay');
+          if (gradeDisplay) {
+            gradeDisplay.setAttribute('data-content', gradeDisplay.innerHTML);
+          }
+          const content = document.documentElement.outerHTML;
+          const blob = new Blob([content], { type: 'text/html' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'worksheet.html';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+        }
+
+        ${checkAnswers.toString()}
+        ${calculateGrade.toString()}
+        ${getGradeEmoji.toString()}
+        ${getGradeClass.toString()}
+      `;
+
+      scriptElement.textContent = newScript;
+
+      const blob = new Blob([staticDoc.outerHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      const date = new Date();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const filename = `math_WS-${month}${day}-${randomNum}.html`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    window.onload = generateNewWorksheet;
+  </script>
+</body>
+
+</html>
