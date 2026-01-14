@@ -9,7 +9,7 @@ export const mathContent: ContentItem[] = [
         category: 'math',
         subjects: ['Arithmetic'],
         gradeLevels: ['1st', '2nd'],
-        thumbnail: '/assets/thumbnails/space-addition.png',
+        // thumbnail: '/assets/thumbnails/space-addition.png', // File doesn't exist, using default placeholder
         isFeatured: true,
         dateAdded: '2023-10-15',
         componentName: 'SpaceAdditionGame'

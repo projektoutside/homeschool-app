@@ -8,8 +8,13 @@ const Viewer = React.lazy(() => import('./pages/Viewer'));
 const Admin = React.lazy(() => import('./pages/Admin'));
 
 const App: React.FC = () => {
+  // Use the same base path as Vite config
+  // In production (GitHub Pages): /homeschool-app
+  // In development: / (empty string means root)
+  const basename = import.meta.env.PROD ? '/homeschool-app' : '';
+  
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <Suspense fallback={<div className="loading">Loading...</div>}>
         <Routes>
           <Route path="/" element={<MainLayout />}>
