@@ -37,6 +37,8 @@
     position: relative;
     overflow: hidden;
     background: white;
+    display: block;
+    min-height: 100%;
 }
 
 .preview-iframe {
@@ -50,6 +52,8 @@
     pointer-events: none;
     /* Disable interaction */
     user-select: none;
+    display: block;
+    visibility: visible;
 }
 
 /* Cover the iframe to ensure clicks register on the card, not the iframe content */

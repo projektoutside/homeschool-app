@@ -39,20 +39,23 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
     };
 
     const previewPath = getPreviewPath();
+    // Show iframe preview for any item with customHtmlPath (worksheets, games, tools)
+    const showIframePreview = !!item.customHtmlPath && !item.thumbnail;
 
     return (
         <div className="content-card" onClick={handleClick} role="button" tabIndex={0}>
             <div className="card-thumbnail">
                 {item.thumbnail ? (
                     <img src={previewPath || item.thumbnail} alt={item.title} loading="lazy" />
-                ) : item.type === 'worksheet' && item.customHtmlPath ? (
+                ) : showIframePreview && previewPath ? (
                     <div className="iframe-preview-wrapper">
                         <iframe
-                            src={previewPath || item.customHtmlPath}
+                            src={previewPath}
                             title={`Preview of ${item.title}`}
                             className="preview-iframe"
                             tabIndex={-1}
                             loading="lazy"
+                            sandbox="allow-same-origin allow-scripts"
                         />
                         <div className="preview-overlay"></div>
                     </div>
