@@ -26,18 +26,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
     return (
         <div className="content-card" onClick={handleClick} role="button" tabIndex={0}>
             <div className="card-thumbnail">
-                {item.type === 'worksheet' && item.customHtmlPath ? (
-                    <div className="iframe-preview-wrapper">
-                        <iframe
-                            src={item.customHtmlPath}
-                            title={`Preview of ${item.title}`}
-                            className="preview-iframe"
-                            tabIndex={-1}
-                            loading="lazy"
-                        />
-                        <div className="preview-overlay"></div>
-                    </div>
-                ) : item.thumbnail ? (
+                {item.thumbnail ? (
                     <img src={item.thumbnail} alt={item.title} loading="lazy" />
                 ) : (
                     <div className="placeholder-thumb" data-type={item.type}>
