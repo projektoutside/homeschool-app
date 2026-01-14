@@ -23,11 +23,39 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
         }
     };
 
+    // Build preview path with base URL for GitHub Pages compatibility
+    const getPreviewPath = () => {
+        if (item.thumbnail) {
+            return item.thumbnail.startsWith('/')
+                ? `${import.meta.env.BASE_URL}${item.thumbnail.slice(1)}`
+                : `${import.meta.env.BASE_URL}${item.thumbnail}`;
+        }
+        if (item.customHtmlPath) {
+            return item.customHtmlPath.startsWith('/')
+                ? `${import.meta.env.BASE_URL}${item.customHtmlPath.slice(1)}`
+                : `${import.meta.env.BASE_URL}${item.customHtmlPath}`;
+        }
+        return null;
+    };
+
+    const previewPath = getPreviewPath();
+
     return (
         <div className="content-card" onClick={handleClick} role="button" tabIndex={0}>
             <div className="card-thumbnail">
                 {item.thumbnail ? (
-                    <img src={item.thumbnail} alt={item.title} loading="lazy" />
+                    <img src={previewPath || item.thumbnail} alt={item.title} loading="lazy" />
+                ) : item.type === 'worksheet' && item.customHtmlPath ? (
+                    <div className="iframe-preview-wrapper">
+                        <iframe
+                            src={previewPath || item.customHtmlPath}
+                            title={`Preview of ${item.title}`}
+                            className="preview-iframe"
+                            tabIndex={-1}
+                            loading="lazy"
+                        />
+                        <div className="preview-overlay"></div>
+                    </div>
                 ) : (
                     <div className="placeholder-thumb" data-type={item.type}>
                         {getIcon(item.type)}
