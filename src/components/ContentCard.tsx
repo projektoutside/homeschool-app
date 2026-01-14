@@ -2,6 +2,7 @@ import React from 'react';
 import type { ContentItem } from '../types/content';
 import './ContentCard.css';
 import { useNavigate } from 'react-router-dom';
+import { buildAssetPath } from '../utils/pathUtils';
 
 interface ContentCardProps {
     item: ContentItem;
@@ -24,16 +25,13 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
     };
 
     // Build preview path with base URL for GitHub Pages compatibility
+    // Uses utility function to ensure paths work on both desktop and mobile browsers
     const getPreviewPath = () => {
         if (item.thumbnail) {
-            return item.thumbnail.startsWith('/')
-                ? `${import.meta.env.BASE_URL}${item.thumbnail.slice(1)}`
-                : `${import.meta.env.BASE_URL}${item.thumbnail}`;
+            return buildAssetPath(item.thumbnail);
         }
         if (item.customHtmlPath) {
-            return item.customHtmlPath.startsWith('/')
-                ? `${import.meta.env.BASE_URL}${item.customHtmlPath.slice(1)}`
-                : `${import.meta.env.BASE_URL}${item.customHtmlPath}`;
+            return buildAssetPath(item.customHtmlPath);
         }
         return null;
     };
@@ -46,7 +44,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
         <div className="content-card" onClick={handleClick} role="button" tabIndex={0}>
             <div className="card-thumbnail">
                 {item.thumbnail ? (
-                    <img src={previewPath || item.thumbnail} alt={item.title} loading="lazy" />
+                    <img src={previewPath || buildAssetPath(item.thumbnail)} alt={item.title} loading="lazy" />
                 ) : showIframePreview && previewPath ? (
                     <div className="iframe-preview-wrapper">
                         <iframe

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
+import { buildAssetPath } from '../utils/pathUtils';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -21,10 +22,8 @@ const ViewerPage: React.FC = () => {
     const renderContent = () => {
         // 1. Check for Local HTML Content (Legacy support)
         if (item.customHtmlPath) {
-            // Use Vite's BASE_URL to ensure paths work on GitHub Pages
-            const htmlPath = item.customHtmlPath.startsWith('/')
-                ? `${import.meta.env.BASE_URL}${item.customHtmlPath.slice(1)}`
-                : `${import.meta.env.BASE_URL}${item.customHtmlPath}`;
+            // Use utility function to ensure paths work on both desktop and mobile
+            const htmlPath = buildAssetPath(item.customHtmlPath);
             
             return (
                 <div className="iframe-container">
