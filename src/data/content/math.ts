@@ -14,17 +14,18 @@ export const mathContent: ContentItem[] = [
         dateAdded: '2023-10-15',
         componentName: 'SpaceAdditionGame'
     },
-    {
-        id: 'legacy-html-example',
-        title: 'Example Legacy Game',
-        description: 'An example showing how to integrate an existing HTML/JS game.',
-        type: 'game',
-        category: 'math',
-        subjects: ['Arithmetic'],
-        gradeLevels: ['All'],
-        customHtmlPath: '/example-game/index.html',
-        dateAdded: '2024-01-01'
-    },
+    // Example game entry removed - file '/example-game/index.html' does not exist
+    // {
+    //     id: 'legacy-html-example',
+    //     title: 'Example Legacy Game',
+    //     description: 'An example showing how to integrate an existing HTML/JS game.',
+    //     type: 'game',
+    //     category: 'math',
+    //     subjects: ['Arithmetic'],
+    //     gradeLevels: ['All'],
+    //     customHtmlPath: '/example-game/index.html',
+    //     dateAdded: '2024-01-01'
+    // },
     {
         id: 'math-worksheet-creator',
         title: 'Math Worksheet Creator',
@@ -338,7 +339,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-30-subtraction-worksheet-1768357164001",
+        "id": "math-30-subtraction-worksheet-1768357164002",
         "title": "30_Subtraction_Worksheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -383,7 +384,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-additionsubtractionmissing-substitution-1768357164004",
+        "id": "math-additionsubtractionmissing-substitution-1768357164005",
         "title": "AdditionSubtractionMissing_substitution",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -563,7 +564,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-introduction-to-fractions-worksheet-1768357164015",
+        "id": "math-introduction-to-fractions-worksheet-1768357164016",
         "title": "introduction_to_fractions_worksheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -608,7 +609,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-missingpatterncountsheet-1768357164017",
+        "id": "math-missingpatterncountsheet-1768357164018",
         "title": "missingpatterncountsheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -623,7 +624,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-missingpatterncountsheet-easy-1768357164018",
+        "id": "math-missingpatterncountsheet-easy-1768357164019",
         "title": "missingpatterncountsheet_easy",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -638,7 +639,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-missingpatterncountsheet-hard-1768357164019",
+        "id": "math-missingpatterncountsheet-hard-1768357164020",
         "title": "missingpatterncountsheet_hard",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -668,7 +669,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-positive-negative-add-sub-worksheet-1768357164020",
+        "id": "math-positive-negative-add-sub-worksheet-1768357164021",
         "title": "positive_negative_add_sub_worksheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -728,7 +729,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-presidenttestlast15-1768357164023",
+        "id": "math-presidenttestlast15-1768357164024",
         "title": "presidenttestlast15",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -773,7 +774,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-simple-substitution16-divisionworksheet-1768357164025",
+        "id": "math-simple-substitution16-divisionworksheet-1768357164026",
         "title": "Simple_Substitution16_divisionWorksheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",
@@ -863,7 +864,7 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-storytelling-elements-worksheet-1768357164030",
+        "id": "math-storytelling-elements-worksheet-1768357164029",
         "title": "storytelling_elements_worksheet",
         "description": "Start auto-uploaded worksheet.",
         "type": "worksheet",

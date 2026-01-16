@@ -2,6 +2,14 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
+    height: 100%;
+    min-height: calc(100vh - 200px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.viewer-page.fullscreen-mode {
+    gap: 0;
+    min-height: 100vh;
 }
 
 .back-btn {
@@ -11,15 +19,34 @@
     font-size: 1rem;
     color: var(--color-primary);
     padding: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .back-btn:hover {
     text-decoration: underline;
 }
 
+.fullscreen-mode .back-btn {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-20px);
+}
+
 .viewer-header {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: var(--spacing-lg);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fullscreen-mode .viewer-header {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    border: none;
 }
 
 .viewer-header h1 {
@@ -39,8 +66,12 @@
     border-radius: var(--radius-xl);
     border: 1px solid var(--border-color);
     min-height: 400px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: var(--shadow-md);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* Game Styles */
@@ -65,13 +96,137 @@
 /* Tool/Iframe Styles */
 .iframe-container {
     width: 100%;
-    height: 600px;
+    height: 100%;
+    min-height: 800px;
+    position: relative;
+    overflow: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    -webkit-overflow-scrolling: touch;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Ensure container can scroll to show all iframe content */
 }
 
-.iframe-container iframe {
+.iframe-container.game-container {
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.iframe-container.fullscreen-active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    min-height: 100vh;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.iframe-container iframe,
+.content-iframe {
     width: 100%;
     height: 100%;
+    min-height: 800px;
     border: none;
+    display: block;
+    background-color: var(--color-surface);
+    flex: 1;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Iframe will fill container, container scrolls if content exceeds viewport */
+    /* Content inside iframe can also scroll if it exceeds iframe height */
+}
+
+.content-iframe.game-iframe {
+    background-color: #000;
+}
+
+.fullscreen-active .content-iframe {
+    min-height: 100vh;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(236, 72, 153, 0.95));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--spacing-lg);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Exit Fullscreen Button */
+.exit-fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.exit-fullscreen-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.exit-fullscreen-btn:active {
+    transform: scale(0.95);
 }
 
 /* Resource/PDF Styles */

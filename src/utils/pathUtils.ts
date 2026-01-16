@@ -19,7 +19,11 @@ export const buildAssetPath = (path: string): string => {
     // Remove leading slash from path if present to avoid double slashes
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     
-    // Combine base and path
+    // Combine base and path - if base is root, just use the path with leading slash
+    if (normalizedBase === '') {
+        return `/${cleanPath}`;
+    }
+    
     const fullPath = `${normalizedBase}${cleanPath}`;
     
     // Ensure no double slashes (except at the beginning for absolute URLs)

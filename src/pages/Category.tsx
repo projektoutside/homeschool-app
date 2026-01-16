@@ -23,7 +23,7 @@ const CategoryPage: React.FC = () => {
     const pageTitle = pageType.charAt(0).toUpperCase() + pageType.slice(1) + 's';
 
     const filteredItems = useMemo(() => {
-        return CONTENT_ITEMS.filter(item => {
+        const filtered = CONTENT_ITEMS.filter(item => {
             // 1. Filter by Page Type (if applicable)
             const typeMatch = pageType === 'all' || item.type === pageType || (pageType === 'resource' && item.type === 'worksheet'); // Quick fix: files can be worksheets for now
 
@@ -36,6 +36,17 @@ const CategoryPage: React.FC = () => {
 
             return typeMatch && searchMatch;
         });
+        
+        // Debug: Log filtered items for debugging
+        if (pageType === 'game') {
+            console.log('Games page - Total games found:', filtered.length);
+            console.log('Games:', filtered.map(g => ({ id: g.id, title: g.title, type: g.type, customHtmlPath: g.customHtmlPath })));
+        } else if (pageType === 'tool') {
+            console.log('Tools page - Total tools found:', filtered.length);
+            console.log('Tools:', filtered.map(t => ({ id: t.id, title: t.title, type: t.type, customHtmlPath: t.customHtmlPath, externalUrl: t.externalUrl })));
+        }
+        
+        return filtered;
     }, [pageType, searchQuery]);
 
     return (

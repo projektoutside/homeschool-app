@@ -102,6 +102,10 @@
     /* Width of sidebar */
     padding: var(--spacing-xl);
     max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - var(--spacing-xl) * 2);
+    overflow: visible;
 }
 
 .overlay {
