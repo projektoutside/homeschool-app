@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homeschool Hub</title>
+    <script>
+        // GitHub Pages 404.html fallback for React Router
+        // This redirects 404s to index.html so React Router can handle client-side routing
+        (function() {
+            const path = window.location.pathname;
+            const segments = path.split('/').filter(s => s && s !== '404.html' && s !== 'index.html');
+            
+            // For project pages: /repo-name/path -> /repo-name/index.html
+            // For user/org pages: /path -> /index.html
+            let basePath = '/';
+            
+            // If we have segments, the first one might be the repo name
+            // Check if index.html exists at /first-segment/
+            if (segments.length > 0) {
+                // Try to determine base path
+                // For GitHub Pages project pages, base is usually /repo-name/
+                basePath = '/' + segments[0] + '/';
+            }
+            
+            // Build the redirect URL
+            const indexPath = basePath === '/' ? '/index.html' : basePath + 'index.html';
+            
+            // Redirect immediately
+            window.location.replace(indexPath);
+        })();
+    </script>
+</head>
+<body>
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, sans-serif;">
+        <div style="text-align: center;">
+            <h1>Loading...</h1>
+            <p>Redirecting...</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -131,9 +131,22 @@ const contentManagerPlugin = () => {
 }
 
 // Determine base path based on environment
-// For GitHub Pages: /homeschool-app/
+// For GitHub Pages: use repository name from environment variable
 // For local dev: /
-const base = process.env.NODE_ENV === 'production' ? '/homeschool-app/' : '/';
+// To set custom base path, use: BASE_PATH=/your-repo-name/ npm run build
+// Note: BASE_PATH should end with a slash for GitHub Pages subdirectory deployments
+const getBasePath = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    return '/';
+  }
+  // Use BASE_PATH env var if set (from GitHub Actions workflow)
+  // Default to '/' if not set (for user/organization pages)
+  const basePath = process.env.BASE_PATH || process.env.VITE_BASE || '/';
+  // Ensure it ends with / if not root
+  return basePath === '/' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
+};
+
+const base = getBasePath();
 
 // https://vite.dev/config/
 export default defineConfig({

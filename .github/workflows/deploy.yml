@@ -30,8 +30,24 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Get repository name
+        id: repo
+        run: echo "name=${{ github.repository }}" >> $GITHUB_OUTPUT
+  
+      - name: Extract repository name
+        id: repo-name
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          echo "name=$REPO_NAME" >> $GITHUB_OUTPUT
+      
       - name: Build
         run: npm run build
+        env:
+          # Set BASE_PATH to match your repository name
+          # For user/organization pages (username.github.io), use: BASE_PATH=/
+          # For project pages (username.github.io/repo-name), use: BASE_PATH=/repo-name/
+          # To manually set: change the value below to your repository name
+          BASE_PATH: /${{ steps.repo-name.outputs.name }}/
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact

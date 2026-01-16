@@ -9,9 +9,10 @@ const Admin = React.lazy(() => import('./pages/Admin'));
 
 const App: React.FC = () => {
   // Use the same base path as Vite config
-  // In production (GitHub Pages): /homeschool-app
-  // In development: / (empty string means root)
-  const basename = import.meta.env.PROD ? '/homeschool-app' : '';
+  // BASE_URL from Vite includes the trailing slash, but React Router basename shouldn't
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  // Remove trailing slash for React Router basename
+  const basename = baseUrl === '/' ? '' : baseUrl.replace(/\/$/, '');
   
   return (
     <BrowserRouter basename={basename}>
