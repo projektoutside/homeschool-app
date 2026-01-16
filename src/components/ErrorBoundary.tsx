@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
     children: ReactNode;
@@ -59,8 +59,8 @@ export class ErrorBoundary extends Component<Props, State> {
                             <button onClick={this.handleReset} className="error-btn">
                                 Try again
                             </button>
-                            <button 
-                                onClick={() => window.location.href = '/'} 
+                            <button
+                                onClick={() => window.location.href = '/'}
                                 className="error-btn error-btn-secondary"
                             >
                                 Go to home

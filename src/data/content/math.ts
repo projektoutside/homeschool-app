@@ -1,19 +1,6 @@
 import type { ContentItem } from '../../types/content';
 
 export const mathContent: ContentItem[] = [
-    {
-        id: 'math-addition-1',
-        title: 'Space Addition Adventure',
-        description: 'Practice simple addition facts while exploring the galaxy.',
-        type: 'game',
-        category: 'math',
-        subjects: ['Arithmetic'],
-        gradeLevels: ['1st', '2nd'],
-        // thumbnail: '/assets/thumbnails/space-addition.png', // File doesn't exist, using default placeholder
-        isFeatured: true,
-        dateAdded: '2023-10-15',
-        componentName: 'SpaceAdditionGame'
-    },
     // Example game entry removed - file '/example-game/index.html' does not exist
     // {
     //     id: 'legacy-html-example',

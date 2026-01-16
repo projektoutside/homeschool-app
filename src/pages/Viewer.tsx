@@ -13,6 +13,7 @@ const ViewerPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isGame = useRef(false);
+    const hasAutoMaximized = useRef<string | null>(null);
 
     const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
 
@@ -29,7 +30,7 @@ const ViewerPage: React.FC = () => {
 
         try {
             const element = containerRef.current as FullscreenHTMLElementType;
-            
+
             // Request fullscreen - this may require user gesture
             if (element.requestFullscreen) {
                 await element.requestFullscreen();
@@ -40,7 +41,7 @@ const ViewerPage: React.FC = () => {
             } else if (element.msRequestFullscreen) {
                 await element.msRequestFullscreen();
             }
-            
+
             // Don't set state here - let the fullscreenchange event handle it
             // This prevents state updates if fullscreen is blocked
         } catch (err: unknown) {
@@ -72,16 +73,16 @@ const ViewerPage: React.FC = () => {
     useEffect(() => {
         const handleFullscreenChange = () => {
             const doc = document as FullscreenDocumentType;
-            const fullscreenElement = doc.fullscreenElement || 
-                doc.webkitFullscreenElement || 
-                doc.mozFullScreenElement || 
+            const fullscreenElement = doc.fullscreenElement ||
+                doc.webkitFullscreenElement ||
+                doc.mozFullScreenElement ||
                 doc.msFullscreenElement;
             setIsFullscreen(!!fullscreenElement);
         };
 
         // Use all possible fullscreen event names for cross-browser support
         const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
-        
+
         events.forEach(eventName => {
             document.addEventListener(eventName, handleFullscreenChange);
         });
@@ -97,14 +98,15 @@ const ViewerPage: React.FC = () => {
     useEffect(() => {
         setIsLoading(true);
         setIsFullscreen(false);
-        
+        hasAutoMaximized.current = null;
+
         if (!item) {
             return;
         }
-        
+
         if (item.customHtmlPath && iframeRef.current) {
             const htmlPath = buildAssetPath(item.customHtmlPath);
-            
+
             // Always set the src to ensure it loads correctly, especially when item changes
             // Force a clean reload by clearing first
             const currentSrc = iframeRef.current.src;
@@ -144,9 +146,9 @@ const ViewerPage: React.FC = () => {
             // Use utility function to ensure paths work on both desktop and mobile
             const htmlPath = buildAssetPath(item.customHtmlPath);
             const isGameContent = item.type === 'game';
-            
+
             return (
-                <div 
+                <div
                     ref={containerRef}
                     className={`iframe-container ${isGameContent ? 'game-container' : ''} ${isFullscreen ? 'fullscreen-active' : ''}`}
                 >
@@ -154,20 +156,25 @@ const ViewerPage: React.FC = () => {
                         <div className="loading-spinner"></div>
                         <p className="loading-text">Loading {isGameContent ? 'Game' : 'Content'}...</p>
                     </div>
-                    {isGameContent && isFullscreen && (
-                        <button 
-                            className="exit-fullscreen-btn"
-                            onClick={exitFullscreen}
-                            aria-label="Exit fullscreen mode"
+                    {isGameContent && (
+                        <button
+                            className="fullscreen-toggle-btn"
+                            onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+                            aria-label={isFullscreen ? "Minimize" : "Maximize"}
                             type="button"
+                            title={isFullscreen ? "Minimize" : "Maximize"}
                         >
-                            <span aria-hidden="true">✕</span>
-                            <span className="sr-only">Exit fullscreen</span>
+                            {isFullscreen ? (
+                                <span className="minimize-icon" aria-hidden="true">[]</span>
+                            ) : (
+                                <span className="maximize-icon" aria-hidden="true">[ ]</span>
+                            )}
+                            <span className="sr-only">{isFullscreen ? "Minimize" : "Maximize"}</span>
                         </button>
                     )}
                     <iframe
                         ref={iframeRef}
-                        key={`${item.id}-${Date.now()}`}
+                        key={item.id}
                         src={htmlPath}
                         title={item.title}
                         allowFullScreen
@@ -178,21 +185,20 @@ const ViewerPage: React.FC = () => {
                         onLoad={() => {
                             setIsLoading(false);
 
-                            // Auto-enter fullscreen for games after a smooth transition
-                            if (isGameContent && isGame.current) {
-                                // Use a longer delay to ensure iframe is fully loaded
+                            // Automatically maximize when game loads, but only once per item
+                            if (isGameContent && hasAutoMaximized.current !== item.id) {
+                                hasAutoMaximized.current = item.id;
                                 setTimeout(() => {
                                     enterFullscreen().catch(() => {
-                                        // Don't block game loading if fullscreen fails
+                                        // Silently fail if blocked by browser policy
                                     });
-                                }, 500); // Slightly longer delay for smooth transition
+                                }, 300);
                             }
                         }}
                         onError={() => {
                             setIsLoading(false);
                             // Don't navigate away on iframe error - error is already handled by loading state
                         }}
-                        className="iframe-element"
                     />
                 </div>
             );
@@ -215,10 +221,10 @@ const ViewerPage: React.FC = () => {
                 if (item.externalUrl) {
                     return (
                         <div className="iframe-container">
-                            <iframe 
+                            <iframe
                                 key={item.id}
-                                src={item.externalUrl} 
-                                title={item.title} 
+                                src={item.externalUrl}
+                                title={item.title}
                                 allowFullScreen
                                 className="content-iframe"
                                 allow="fullscreen; camera; microphone; geolocation"
@@ -258,8 +264,8 @@ const ViewerPage: React.FC = () => {
         <div className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}>
             {!isFullscreen && (
                 <>
-                    <button 
-                        onClick={() => navigate(-1)} 
+                    <button
+                        onClick={() => navigate(-1)}
                         className="back-btn"
                         aria-label="Go back to previous page"
                         type="button"

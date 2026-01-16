@@ -25,7 +25,7 @@ const App: React.FC = () => {
     const baseUrl = import.meta.env.BASE_URL || '/';
     // Remove trailing slash for React Router basename
     const basename = baseUrl === '/' ? '' : baseUrl.replace(/\/$/, '');
-  
+
     return (
         <ErrorBoundary>
             <BrowserRouter basename={basename}>
@@ -36,7 +36,6 @@ const App: React.FC = () => {
                             <Route path="worksheets" element={<Category />} />
                             <Route path="games" element={<Category />} />
                             <Route path="tools" element={<Category />} />
-                            <Route path="files" element={<Category />} />
                             <Route path="resource/:id" element={<Viewer />} />
                             <Route path="admin" element={<Admin />} />
                             <Route path="*" element={<Navigate to="/" replace />} />

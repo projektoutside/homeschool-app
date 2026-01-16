@@ -1,9 +1,32 @@
+/* Skip to Main Content - Accessibility */
+.skip-to-main {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-primary);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    z-index: 9999;
+    text-decoration: none;
+    font-weight: 600;
+    transition: top 0.3s ease;
+}
+
+.skip-to-main:focus {
+    top: var(--spacing-md);
+    outline: 2px solid var(--color-primary-dark);
+    outline-offset: 2px;
+}
+
 .layout-container {
     display: flex;
     min-height: 100vh;
     background-color: var(--color-background);
     color: var(--color-text-main);
 }
+
 
 /* Sidebar Styles */
 .sidebar {
@@ -16,6 +39,12 @@
     height: 100vh;
     z-index: 50;
     transition: transform var(--transition-normal);
+}
+
+.sidebar-footer {
+    padding: var(--spacing-md);
+    border-top: var(--border-width) solid var(--border-color);
+    margin-top: auto;
 }
 
 .sidebar-header {
@@ -77,8 +106,14 @@
     padding: 0 var(--spacing-md);
     align-items: center;
     gap: var(--spacing-md);
-    border-bottom: var(--border-width) solid var(--border-color);
+    /* border-bottom: var(--border-width) solid var(--border-color); */
     z-index: 40;
+    justify-content: space-between;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
 }
 
 .menu-btn,
@@ -143,10 +178,10 @@
 
     .main-content {
         margin-left: 0;
-        padding-top: 80px;
-        /* Header height + padding */
-        padding-left: var(--spacing-md);
-        padding-right: var(--spacing-md);
+        padding-top: calc(80px + env(safe-area-inset-top, 0px));
+        padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
+        padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     .close-btn {
@@ -157,16 +192,58 @@
         display: block;
         /* Show overlay when sidebar is open */
     }
-    
+
     .logo-text {
         font-size: 1.25rem;
     }
-    
+
+    .nav-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.9rem;
+    }
+
+    .mobile-header {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+/* Tablet-specific styles (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 220px;
+    }
+
+    .main-content {
+        margin-left: 220px;
+        padding: var(--spacing-lg);
+    }
+
+    .logo-text {
+        font-size: 1.25rem;
+    }
+
     .nav-item {
         padding: var(--spacing-sm) var(--spacing-md);
         font-size: 0.9rem;
     }
 }
+
+/* Landscape mode on mobile devices */
+@media (max-width: 900px) and (orientation: landscape) {
+    .sidebar.open {
+        width: 50vw;
+        max-width: 280px;
+    }
+
+    .main-content {
+        padding-top: 70px;
+    }
+
+    .mobile-header {
+        height: 56px;
+    }
+}
+
 
 /* Accessibility improvements */
 .nav-item:focus {
