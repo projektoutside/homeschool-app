@@ -7,7 +7,7 @@ interface SearchBarProps {
     placeholder?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = React.memo(({
+const SearchBarComponent: React.FC<SearchBarProps> = ({
     value,
     onChange,
     placeholder = "Search resources..."
@@ -29,4 +29,8 @@ export const SearchBar: React.FC<SearchBarProps> = React.memo(({
             />
         </div>
     );
-});
+};
+
+SearchBarComponent.displayName = 'SearchBar';
+
+export const SearchBar = React.memo(SearchBarComponent);

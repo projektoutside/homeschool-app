@@ -8,7 +8,7 @@ interface ContentCardProps {
     item: ContentItem;
 }
 
-export const ContentCard: React.FC<ContentCardProps> = React.memo(({ item }) => {
+const ContentCardComponent: React.FC<ContentCardProps> = ({ item }) => {
     const navigate = useNavigate();
 
     const handleClick = useCallback((e: React.MouseEvent) => {
@@ -109,9 +109,15 @@ export const ContentCard: React.FC<ContentCardProps> = React.memo(({ item }) => 
             </div>
         </div>
     );
-}, (prevProps, nextProps) => {
+};
+
+ContentCardComponent.displayName = 'ContentCard';
+
+const areEqual = (prevProps: ContentCardProps, nextProps: ContentCardProps) => {
     // Custom comparison for memoization
     return prevProps.item.id === nextProps.item.id &&
            prevProps.item.title === nextProps.item.title &&
            prevProps.item.description === nextProps.item.description;
-});
+};
+
+export const ContentCard = React.memo(ContentCardComponent, areEqual);

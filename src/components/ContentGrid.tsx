@@ -10,7 +10,7 @@ interface ContentGridProps {
 
 const ITEMS_PER_PAGE = 12;
 
-export const ContentGrid: React.FC<ContentGridProps> = React.memo(({
+const ContentGridComponent: React.FC<ContentGridProps> = ({
     items,
     emptyMessage = "No content found matching your criteria."
 }) => {
@@ -85,4 +85,8 @@ export const ContentGrid: React.FC<ContentGridProps> = React.memo(({
             )}
         </div>
     );
-});
+};
+
+ContentGridComponent.displayName = 'ContentGrid';
+
+export const ContentGrid = React.memo(ContentGridComponent);
