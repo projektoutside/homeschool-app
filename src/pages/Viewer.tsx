@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
+import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import './Viewer.css';
 
@@ -11,6 +12,7 @@ const ViewerPage: React.FC = () => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isGame = useRef(false);
     const hasAutoMaximized = useRef<string | null>(null);
@@ -128,6 +130,32 @@ const ViewerPage: React.FC = () => {
             setIsLoading(false);
         }
     }, [item, id]);
+
+    const handleDownload = useCallback(async () => {
+        if (!item) return;
+
+        setIsDownloading(true);
+        try {
+            // Priority: downloadUrl, then customHtmlPath, then externalUrl
+            const downloadUrl = item.downloadUrl || (item.customHtmlPath ? buildAssetPath(item.customHtmlPath) : item.externalUrl);
+
+            if (!downloadUrl) {
+                alert('No download available for this item.');
+                return;
+            }
+
+            // Generate a clean filename
+            const extension = downloadUrl.toLowerCase().endsWith('.pdf') ? '.pdf' : '.html';
+            const filename = `${item.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`;
+
+            await downloadFile(downloadUrl, filename);
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('An error occurred while trying to download this resource.');
+        } finally {
+            setIsDownloading(false);
+        }
+    }, [item]);
 
     if (!item) {
         return (
@@ -273,7 +301,27 @@ const ViewerPage: React.FC = () => {
                         <span aria-hidden="true">←</span> Back
                     </button>
                     <header className="viewer-header">
-                        <h1>{item.title}</h1>
+                        <div className="viewer-header-title">
+                            <h1>{item.title}</h1>
+                            <button
+                                onClick={handleDownload}
+                                className={`download-btn-main ${isDownloading ? 'downloading' : ''}`}
+                                disabled={isDownloading}
+                                title="Download for offline use"
+                            >
+                                {isDownloading ? (
+                                    <>
+                                        <span className="spinner-sm"></span>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="icon">💾</span>
+                                        Download
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <p>{item.description}</p>
                         <div className="tags" role="list">
                             {item.gradeLevels.map(g => (
