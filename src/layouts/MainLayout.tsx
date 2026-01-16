@@ -73,10 +73,14 @@ const MainLayout: React.FC = () => {
                     <NavLink to="/tools" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
                         Tools ({counts.tools})
                     </NavLink>
-                    <div className="nav-divider" role="separator"></div>
-                    <NavLink to="/admin" className={({ isActive }) => `nav-item nav-item-admin ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-                        ⚙️ Manager
-                    </NavLink>
+                    {import.meta.env.DEV && (
+                        <>
+                            <div className="nav-divider" role="separator"></div>
+                            <NavLink to="/admin" className={({ isActive }) => `nav-item nav-item-admin ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
+                                ⚙️ Manager
+                            </NavLink>
+                        </>
+                    )}
                 </nav>
                 <div className="sidebar-footer">
                     <ThemeToggle />
