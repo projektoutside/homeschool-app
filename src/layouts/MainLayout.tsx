@@ -42,8 +42,8 @@ const MainLayout: React.FC = () => {
                     <NavLink to="/files" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         Files
                     </NavLink>
-                    <div style={{ height: '1px', background: 'var(--border-color)', margin: 'var(--spacing-sm) 0' }}></div>
-                    <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} style={{ color: 'var(--color-primary)' }}>
+                    <div className="nav-divider"></div>
+                    <NavLink to="/admin" className={({ isActive }) => `nav-item nav-item-admin ${isActive ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}>
                         ⚙️ Manager
                     </NavLink>
                 </nav>

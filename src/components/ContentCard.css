@@ -169,3 +169,38 @@
     color: var(--color-text-muted);
     border: 1px solid var(--border-color);
 }
+
+/* Accessibility improvements */
+.content-card:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.content-card:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.content-card:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Ensure iframe previews don't interfere with card interactions */
+.iframe-preview-wrapper {
+    pointer-events: none;
+}
+
+.preview-iframe {
+    pointer-events: none !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .card-desc {
+        font-size: 0.8rem;
+    }
+}

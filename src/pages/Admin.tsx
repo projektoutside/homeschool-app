@@ -90,10 +90,12 @@ const AdminPage: React.FC = () => {
                     thumbnail: ''
                 });
             } else {
-                throw new Error('Failed to save');
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || 'Failed to save');
             }
         } catch (error) {
-            setStatus({ msg: 'Error saving content. Check console.', type: 'error' });
+            const errorMessage = error instanceof Error ? error.message : 'Error saving content';
+            setStatus({ msg: errorMessage, type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
@@ -126,10 +128,12 @@ const AdminPage: React.FC = () => {
                 setStatus({ msg: `Success! Uploaded ${data.count} worksheets.`, type: 'success' });
                 setBulkFiles(null);
             } else {
-                throw new Error('Bulk upload failed');
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || 'Bulk upload failed');
             }
         } catch (err) {
-            setStatus({ msg: 'Error uploading files. Check console.', type: 'error' });
+            const errorMessage = err instanceof Error ? err.message : 'Error uploading files';
+            setStatus({ msg: errorMessage, type: 'error' });
         } finally {
             setIsSubmitting(false);
         }

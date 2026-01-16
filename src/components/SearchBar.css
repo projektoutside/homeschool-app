@@ -33,3 +33,22 @@
     color: var(--color-text-muted);
     pointer-events: none;
 }
+
+/* Accessibility improvements */
+.search-input:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+    .search-container {
+        max-width: 100%;
+    }
+    
+    .search-input {
+        font-size: 0.9rem;
+        padding: var(--spacing-sm) var(--spacing-md);
+        padding-left: var(--spacing-xl);
+    }
+}

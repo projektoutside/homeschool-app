@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
+import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -21,81 +22,74 @@ const ViewerPage: React.FC = () => {
     }, [item]);
 
     // Enter fullscreen for games
-    const enterFullscreen = async () => {
+    const enterFullscreen = useCallback(async () => {
         if (!isGame.current || !containerRef.current) {
-            console.log('Fullscreen - Conditions not met:', { isGame: isGame.current, hasContainer: !!containerRef.current });
             return;
         }
 
         try {
-            const element = containerRef.current;
-            console.log('Attempting to enter fullscreen for:', item?.title);
+            const element = containerRef.current as FullscreenHTMLElementType;
             
             // Request fullscreen - this may require user gesture
             if (element.requestFullscreen) {
                 await element.requestFullscreen();
-                console.log('Fullscreen entered successfully (standard API)');
-            } else if ((element as any).webkitRequestFullscreen) {
-                await (element as any).webkitRequestFullscreen();
-                console.log('Fullscreen entered successfully (webkit API)');
-            } else if ((element as any).mozRequestFullScreen) {
-                await (element as any).mozRequestFullScreen();
-                console.log('Fullscreen entered successfully (moz API)');
-            } else if ((element as any).msRequestFullscreen) {
-                await (element as any).msRequestFullscreen();
-                console.log('Fullscreen entered successfully (ms API)');
-            } else {
-                console.warn('Fullscreen API not supported');
-                return;
+            } else if (element.webkitRequestFullscreen) {
+                await element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                await element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                await element.msRequestFullscreen();
             }
             
             // Don't set state here - let the fullscreenchange event handle it
             // This prevents state updates if fullscreen is blocked
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Fullscreen might be blocked by browser policy (requires user gesture)
-            console.warn('Fullscreen error (may require user interaction):', err?.message || err);
-            // Don't throw - just log and continue with game display
+            // Silently fail - fullscreen is a nice-to-have feature
         }
-    };
+    }, []);
 
     // Exit fullscreen
-    const exitFullscreen = async () => {
+    const exitFullscreen = useCallback(async () => {
         try {
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-            } else if ((document as any).webkitExitFullscreen) {
-                await (document as any).webkitExitFullscreen();
-            } else if ((document as any).mozCancelFullScreen) {
-                await (document as any).mozCancelFullScreen();
-            } else if ((document as any).msExitFullscreen) {
-                await (document as any).msExitFullscreen();
+            const doc = document as FullscreenDocumentType;
+            if (doc.exitFullscreen) {
+                await doc.exitFullscreen();
+            } else if (doc.webkitExitFullscreen) {
+                await doc.webkitExitFullscreen();
+            } else if (doc.mozCancelFullScreen) {
+                await doc.mozCancelFullScreen();
+            } else if (doc.msExitFullscreen) {
+                await doc.msExitFullscreen();
             }
             setIsFullscreen(false);
-        } catch (err) {
-            console.log('Exit fullscreen error:', err);
+        } catch (err: unknown) {
+            // Silently fail - exit fullscreen error is not critical
         }
-    };
+    }, []);
 
     // Listen for fullscreen changes
     useEffect(() => {
         const handleFullscreenChange = () => {
-            const fullscreenElement = document.fullscreenElement || 
-                (document as any).webkitFullscreenElement || 
-                (document as any).mozFullScreenElement || 
-                (document as any).msFullscreenElement;
+            const doc = document as FullscreenDocumentType;
+            const fullscreenElement = doc.fullscreenElement || 
+                doc.webkitFullscreenElement || 
+                doc.mozFullScreenElement || 
+                doc.msFullscreenElement;
             setIsFullscreen(!!fullscreenElement);
         };
 
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        // Use all possible fullscreen event names for cross-browser support
+        const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        
+        events.forEach(eventName => {
+            document.addEventListener(eventName, handleFullscreenChange);
+        });
 
         return () => {
-            document.removeEventListener('fullscreenchange', handleFullscreenChange);
-            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+            events.forEach(eventName => {
+                document.removeEventListener(eventName, handleFullscreenChange);
+            });
         };
     }, []);
 
@@ -110,14 +104,6 @@ const ViewerPage: React.FC = () => {
         
         if (item.customHtmlPath && iframeRef.current) {
             const htmlPath = buildAssetPath(item.customHtmlPath);
-            console.log('Viewer - Setting iframe src:', {
-                id: item.id,
-                title: item.title,
-                type: item.type,
-                customHtmlPath: item.customHtmlPath,
-                builtPath: htmlPath,
-                currentSrc: iframeRef.current.src
-            });
             
             // Always set the src to ensure it loads correctly, especially when item changes
             // Force a clean reload by clearing first
@@ -142,41 +128,21 @@ const ViewerPage: React.FC = () => {
     }, [item, id]);
 
     if (!item) {
-        console.error('Viewer - Item not found:', { id, availableIds: CONTENT_ITEMS.map(i => i.id) });
         return (
             <div className="empty-state">
                 <p>Resource not found for ID: {id}</p>
-                <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
-                <button onClick={() => navigate('/')} style={{ marginLeft: '10px' }}>Go Home</button>
+                <div className="empty-state-actions">
+                    <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
+                    <button onClick={() => navigate('/')} className="home-btn">Go Home</button>
+                </div>
             </div>
         );
     }
 
     const renderContent = () => {
-        // 1. Check for Local HTML Content (for games, tools, worksheets with customHtmlPath)
-        if (!item.customHtmlPath) {
-            console.warn('Viewer - Item has no customHtmlPath:', {
-                id: item.id,
-                title: item.title,
-                type: item.type
-            });
-        }
-        
         if (item.customHtmlPath) {
             // Use utility function to ensure paths work on both desktop and mobile
             const htmlPath = buildAssetPath(item.customHtmlPath);
-            
-            // Debug logging
-            console.log('Viewer - Loading content:', {
-                id: item.id,
-                title: item.title,
-                type: item.type,
-                customHtmlPath: item.customHtmlPath,
-                builtPath: htmlPath,
-                baseUrl: import.meta.env.BASE_URL,
-                isProd: import.meta.env.PROD
-            });
-            
             const isGameContent = item.type === 'game';
             
             return (
@@ -192,9 +158,11 @@ const ViewerPage: React.FC = () => {
                         <button 
                             className="exit-fullscreen-btn"
                             onClick={exitFullscreen}
-                            aria-label="Exit Fullscreen"
+                            aria-label="Exit fullscreen mode"
+                            type="button"
                         >
-                            ✕
+                            <span aria-hidden="true">✕</span>
+                            <span className="sr-only">Exit fullscreen</span>
                         </button>
                     )}
                     <iframe
@@ -207,71 +175,24 @@ const ViewerPage: React.FC = () => {
                         allow="fullscreen; camera; microphone; geolocation"
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
                         loading="eager"
-                        onLoad={(e) => {
-                            const iframe = e.currentTarget;
+                        onLoad={() => {
                             setIsLoading(false);
-                            
-                            try {
-                                // Prevent navigation inside iframe from affecting parent
-                                if (iframe.contentWindow) {
-                                    const currentSrc = iframe.src || '';
-                                    console.log('Iframe loaded successfully:', {
-                                        htmlPath,
-                                        currentSrc,
-                                        isGame: isGameContent,
-                                        iframeTitle: iframe.title
-                                    });
-                                    
-                                    // Verify the iframe loaded the correct content
-                                    try {
-                                        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                                        if (iframeDoc) {
-                                            const title = iframeDoc.title || iframeDoc.querySelector('title')?.textContent;
-                                            console.log('Iframe document title:', title);
-                                            
-                                            // Check if iframe redirected (common cause of "going to main website")
-                                            if (iframeDoc.location && iframeDoc.location.href !== htmlPath) {
-                                                console.warn('Iframe may have redirected:', {
-                                                    expected: htmlPath,
-                                                    actual: iframeDoc.location.href
-                                                });
-                                            }
-                                        }
-                                    } catch (crossOriginErr) {
-                                        // Expected for cross-origin or sandbox restrictions
-                                        console.log('Cannot access iframe document (expected due to sandbox):', crossOriginErr);
-                                    }
-                                }
-                            } catch (err) {
-                                // Cross-origin restriction is expected and safe
-                                console.log('Iframe loaded (cross-origin restrictions apply):', htmlPath);
-                            }
 
                             // Auto-enter fullscreen for games after a smooth transition
                             if (isGameContent && isGame.current) {
                                 // Use a longer delay to ensure iframe is fully loaded
                                 setTimeout(() => {
-                                    console.log('Entering fullscreen for game:', item.title);
-                                    enterFullscreen().catch((err) => {
-                                        console.warn('Fullscreen failed (may require user interaction):', err);
+                                    enterFullscreen().catch(() => {
                                         // Don't block game loading if fullscreen fails
                                     });
                                 }, 500); // Slightly longer delay for smooth transition
                             }
                         }}
-                        onError={(e) => {
-                            console.error('Iframe failed to load:', {
-                                htmlPath,
-                                itemId: item.id,
-                                itemTitle: item.title,
-                                itemType: item.type,
-                                error: e,
-                                iframeSrc: iframeRef.current?.src
-                            });
+                        onError={() => {
                             setIsLoading(false);
-                            // Don't navigate away on iframe error - just show error message
+                            // Don't navigate away on iframe error - error is already handled by loading state
                         }}
-                        style={{ display: 'block', width: '100%', height: '100%', border: 'none' }}
+                        className="iframe-element"
                     />
                 </div>
             );
@@ -337,14 +258,25 @@ const ViewerPage: React.FC = () => {
         <div className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}>
             {!isFullscreen && (
                 <>
-                    <button onClick={() => navigate(-1)} className="back-btn">← Back</button>
-                    <div className="viewer-header">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="back-btn"
+                        aria-label="Go back to previous page"
+                        type="button"
+                    >
+                        <span aria-hidden="true">←</span> Back
+                    </button>
+                    <header className="viewer-header">
                         <h1>{item.title}</h1>
                         <p>{item.description}</p>
-                        <div className="tags">
-                            {item.gradeLevels.map(g => <span key={g} className="tag">{g}</span>)}
+                        <div className="tags" role="list">
+                            {item.gradeLevels.map(g => (
+                                <span key={g} className="tag" role="listitem">
+                                    {g}
+                                </span>
+                            ))}
                         </div>
-                    </div>
+                    </header>
                 </>
             )}
             <div className="viewer-content">

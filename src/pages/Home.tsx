@@ -31,7 +31,20 @@ const HomePage: React.FC = () => {
                 <h2>Browse by Subject</h2>
                 <div className="categories-grid">
                     {CATEGORIES.map(cat => (
-                        <div key={cat.id} className="category-card" onClick={() => navigate('/worksheets')}>
+                        <div 
+                            key={cat.id} 
+                            className="category-card" 
+                            onClick={() => navigate('/worksheets')}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    navigate('/worksheets');
+                                }
+                            }}
+                            aria-label={`Browse ${cat.label} resources`}
+                        >
                             <h3>{cat.label}</h3>
                             <p>{cat.description}</p>
                         </div>

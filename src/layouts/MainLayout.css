@@ -117,6 +117,16 @@
     backdrop-filter: blur(2px);
 }
 
+.nav-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--spacing-sm) 0;
+}
+
+.nav-item-admin {
+    color: var(--color-primary);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .sidebar {
@@ -147,4 +157,45 @@
         display: block;
         /* Show overlay when sidebar is open */
     }
+    
+    .logo-text {
+        font-size: 1.25rem;
+    }
+    
+    .nav-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.9rem;
+    }
+}
+
+/* Accessibility improvements */
+.nav-item:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.nav-item:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.nav-item:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.menu-btn:focus,
+.close-btn:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.menu-btn:focus:not(:focus-visible),
+.close-btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.menu-btn:focus-visible,
+.close-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }

@@ -37,22 +37,13 @@ const CategoryPage: React.FC = () => {
             return typeMatch && searchMatch;
         });
         
-        // Debug: Log filtered items for debugging
-        if (pageType === 'game') {
-            console.log('Games page - Total games found:', filtered.length);
-            console.log('Games:', filtered.map(g => ({ id: g.id, title: g.title, type: g.type, customHtmlPath: g.customHtmlPath })));
-        } else if (pageType === 'tool') {
-            console.log('Tools page - Total tools found:', filtered.length);
-            console.log('Tools:', filtered.map(t => ({ id: t.id, title: t.title, type: t.type, customHtmlPath: t.customHtmlPath, externalUrl: t.externalUrl })));
-        }
-        
         return filtered;
     }, [pageType, searchQuery]);
 
     return (
-        <div className="page-container" style={{ padding: '0' }}>
-            <div className="page-header" style={{ marginBottom: 'var(--spacing-xl)' }}>
-                <h1 style={{ marginBottom: 'var(--spacing-md)' }}>{pageTitle}</h1>
+        <div className="page-container category-page">
+            <div className="page-header">
+                <h1>{pageTitle}</h1>
                 <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder={`Search ${pageTitle}...`} />
             </div>
 
