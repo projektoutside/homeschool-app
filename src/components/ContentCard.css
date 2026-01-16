@@ -49,11 +49,12 @@
     transform: scale(0.25);
     /* Scale down to 25% */
     transform-origin: top left;
-    pointer-events: none;
-    /* Disable interaction */
+    pointer-events: none !important;
+    /* Disable interaction - critical to prevent iframe from capturing clicks */
     user-select: none;
     display: block;
     visibility: visible;
+    /* Ensure iframe can't intercept clicks */
 }
 
 /* Cover the iframe to ensure clicks register on the card, not the iframe content */
@@ -65,6 +66,8 @@
     height: 100%;
     z-index: 10;
     background: transparent;
+    pointer-events: none;
+    /* Allow clicks to pass through to the card */
 }
 
 .content-card:hover .card-thumbnail img {

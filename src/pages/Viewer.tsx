@@ -22,22 +22,39 @@ const ViewerPage: React.FC = () => {
 
     // Enter fullscreen for games
     const enterFullscreen = async () => {
-        if (!isGame.current || !containerRef.current) return;
+        if (!isGame.current || !containerRef.current) {
+            console.log('Fullscreen - Conditions not met:', { isGame: isGame.current, hasContainer: !!containerRef.current });
+            return;
+        }
 
         try {
             const element = containerRef.current;
+            console.log('Attempting to enter fullscreen for:', item?.title);
+            
+            // Request fullscreen - this may require user gesture
             if (element.requestFullscreen) {
                 await element.requestFullscreen();
+                console.log('Fullscreen entered successfully (standard API)');
             } else if ((element as any).webkitRequestFullscreen) {
                 await (element as any).webkitRequestFullscreen();
+                console.log('Fullscreen entered successfully (webkit API)');
             } else if ((element as any).mozRequestFullScreen) {
                 await (element as any).mozRequestFullScreen();
+                console.log('Fullscreen entered successfully (moz API)');
             } else if ((element as any).msRequestFullscreen) {
                 await (element as any).msRequestFullscreen();
+                console.log('Fullscreen entered successfully (ms API)');
+            } else {
+                console.warn('Fullscreen API not supported');
+                return;
             }
-            setIsFullscreen(true);
-        } catch (err) {
-            console.log('Fullscreen error:', err);
+            
+            // Don't set state here - let the fullscreenchange event handle it
+            // This prevents state updates if fullscreen is blocked
+        } catch (err: any) {
+            // Fullscreen might be blocked by browser policy (requires user gesture)
+            console.warn('Fullscreen error (may require user interaction):', err?.message || err);
+            // Don't throw - just log and continue with game display
         }
     };
 
@@ -85,27 +102,66 @@ const ViewerPage: React.FC = () => {
     // Reset iframe when item changes
     useEffect(() => {
         setIsLoading(true);
-        if (iframeRef.current && item?.customHtmlPath) {
+        setIsFullscreen(false);
+        
+        if (!item) {
+            return;
+        }
+        
+        if (item.customHtmlPath && iframeRef.current) {
             const htmlPath = buildAssetPath(item.customHtmlPath);
-            // Only set src if it's different to avoid unnecessary reloads
-            if (iframeRef.current.src !== htmlPath && !iframeRef.current.src.includes(htmlPath)) {
-                console.log('Setting iframe src to:', htmlPath);
+            console.log('Viewer - Setting iframe src:', {
+                id: item.id,
+                title: item.title,
+                type: item.type,
+                customHtmlPath: item.customHtmlPath,
+                builtPath: htmlPath,
+                currentSrc: iframeRef.current.src
+            });
+            
+            // Always set the src to ensure it loads correctly, especially when item changes
+            // Force a clean reload by clearing first
+            const currentSrc = iframeRef.current.src;
+            if (currentSrc === htmlPath || currentSrc.includes(htmlPath)) {
+                // If already loading this path, clear and reload to ensure fresh load
+                iframeRef.current.src = 'about:blank';
+                setTimeout(() => {
+                    if (iframeRef.current && item.id === id) {
+                        iframeRef.current.src = htmlPath;
+                    }
+                }, 100);
+            } else {
+                // Directly set new path
                 iframeRef.current.src = htmlPath;
             }
+        } else if (iframeRef.current && !item.customHtmlPath) {
+            // Clear iframe if no customHtmlPath
+            iframeRef.current.src = 'about:blank';
+            setIsLoading(false);
         }
     }, [item, id]);
 
     if (!item) {
+        console.error('Viewer - Item not found:', { id, availableIds: CONTENT_ITEMS.map(i => i.id) });
         return (
             <div className="empty-state">
-                <p>Resource not found.</p>
-                <button onClick={() => navigate('/')}>Go Home</button>
+                <p>Resource not found for ID: {id}</p>
+                <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
+                <button onClick={() => navigate('/')} style={{ marginLeft: '10px' }}>Go Home</button>
             </div>
         );
     }
 
     const renderContent = () => {
         // 1. Check for Local HTML Content (for games, tools, worksheets with customHtmlPath)
+        if (!item.customHtmlPath) {
+            console.warn('Viewer - Item has no customHtmlPath:', {
+                id: item.id,
+                title: item.title,
+                type: item.type
+            });
+        }
+        
         if (item.customHtmlPath) {
             // Use utility function to ensure paths work on both desktop and mobile
             const htmlPath = buildAssetPath(item.customHtmlPath);
@@ -143,20 +199,28 @@ const ViewerPage: React.FC = () => {
                     )}
                     <iframe
                         ref={iframeRef}
-                        key={`${item.id}-${item.customHtmlPath}`}
+                        key={`${item.id}-${Date.now()}`}
                         src={htmlPath}
                         title={item.title}
                         allowFullScreen
                         className={`content-iframe ${isGameContent ? 'game-iframe' : ''}`}
                         allow="fullscreen; camera; microphone; geolocation"
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+                        loading="eager"
                         onLoad={(e) => {
                             const iframe = e.currentTarget;
                             setIsLoading(false);
+                            
                             try {
                                 // Prevent navigation inside iframe from affecting parent
                                 if (iframe.contentWindow) {
-                                    console.log('Iframe loaded successfully:', htmlPath, 'Current src:', iframe.src);
+                                    const currentSrc = iframe.src || '';
+                                    console.log('Iframe loaded successfully:', {
+                                        htmlPath,
+                                        currentSrc,
+                                        isGame: isGameContent,
+                                        iframeTitle: iframe.title
+                                    });
                                     
                                     // Verify the iframe loaded the correct content
                                     try {
@@ -164,6 +228,14 @@ const ViewerPage: React.FC = () => {
                                         if (iframeDoc) {
                                             const title = iframeDoc.title || iframeDoc.querySelector('title')?.textContent;
                                             console.log('Iframe document title:', title);
+                                            
+                                            // Check if iframe redirected (common cause of "going to main website")
+                                            if (iframeDoc.location && iframeDoc.location.href !== htmlPath) {
+                                                console.warn('Iframe may have redirected:', {
+                                                    expected: htmlPath,
+                                                    actual: iframeDoc.location.href
+                                                });
+                                            }
                                         }
                                     } catch (crossOriginErr) {
                                         // Expected for cross-origin or sandbox restrictions
@@ -176,15 +248,28 @@ const ViewerPage: React.FC = () => {
                             }
 
                             // Auto-enter fullscreen for games after a smooth transition
-                            if (isGameContent) {
+                            if (isGameContent && isGame.current) {
+                                // Use a longer delay to ensure iframe is fully loaded
                                 setTimeout(() => {
-                                    enterFullscreen();
-                                }, 300); // Small delay for smooth transition
+                                    console.log('Entering fullscreen for game:', item.title);
+                                    enterFullscreen().catch((err) => {
+                                        console.warn('Fullscreen failed (may require user interaction):', err);
+                                        // Don't block game loading if fullscreen fails
+                                    });
+                                }, 500); // Slightly longer delay for smooth transition
                             }
                         }}
                         onError={(e) => {
-                            console.error('Iframe failed to load:', htmlPath, e);
+                            console.error('Iframe failed to load:', {
+                                htmlPath,
+                                itemId: item.id,
+                                itemTitle: item.title,
+                                itemType: item.type,
+                                error: e,
+                                iframeSrc: iframeRef.current?.src
+                            });
                             setIsLoading(false);
+                            // Don't navigate away on iframe error - just show error message
                         }}
                         style={{ display: 'block', width: '100%', height: '100%', border: 'none' }}
                     />

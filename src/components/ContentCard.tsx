@@ -11,7 +11,23 @@ interface ContentCardProps {
 export const ContentCard: React.FC<ContentCardProps> = ({ item }) => {
     const navigate = useNavigate();
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        // Prevent iframe clicks from bubbling up
+        const target = e.target as HTMLElement;
+        if (target.closest('iframe') || target.closest('.iframe-preview-wrapper')) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Only navigate if clicking outside the iframe
+            return;
+        }
+        
+        console.log('ContentCard - Navigating to game:', {
+            id: item.id,
+            title: item.title,
+            type: item.type,
+            path: `/resource/${item.id}`
+        });
+        
         navigate(`/resource/${item.id}`);
     };
 
