@@ -966,5 +966,19 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/analogclockgame/index.html",
         "thumbnail": "/Games/analogclockgame/thumb.png",
         "dateAdded": "2026-01-14"
-    }
+    },
+    {
+        "id": "math-1768955732393",
+        "title": "PolygonAPP",
+        "description": "Learn Polygon!",
+        "type": "tool",
+        "category": "math",
+        "subjects": ["Geometry"],
+        "gradeLevels": [
+            "All"
+        ],
+        "customHtmlPath": "/PolygonAPP/index.html",
+        "thumbnail": "/PolygonAPP/thumb.png",
+        "dateAdded": "2026-01-21"
+    },
 ];
