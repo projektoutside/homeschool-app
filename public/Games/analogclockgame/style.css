@@ -1159,6 +1159,45 @@ button:focus-visible {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.instruction-message {
+    margin-bottom: var(--space-md);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.instruction-message.highlight {
+    color: var(--color-accent);
+    animation: pulse 2s infinite;
+}
+
+.spend-coins-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+.spend-coins-grid .shop-item {
+    min-height: 100px;
+    padding: var(--space-sm);
+    flex-direction: column;
+    text-align: center;
+}
+
+.spend-coins-grid .item-icon {
+    font-size: 1.5rem;
+}
+
+.spend-coins-grid .item-name {
+    font-size: var(--text-sm);
+}
+
+.spend-coins-grid .item-cost {
+    margin-top: var(--space-xs);
+    font-size: var(--text-xs);
+}
+
 .wallet-display {
     display: flex;
     justify-content: center;

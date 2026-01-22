@@ -764,11 +764,14 @@ class DOMManager {
             finalAccuracy: document.getElementById('final-accuracy'),
             finalQuestions: document.getElementById('final-questions'),
             gameOverCoins: document.getElementById('game-over-coins'), // New
+            gameOverInstruction: document.getElementById('game-over-instruction'), // New
+            spendCoinsSection: document.getElementById('spend-coins-section'), // New
             buyTimeBtn: document.getElementById('buy-time-btn'),       // New
             gameOverFeedback: document.getElementById('game-over-feedback'), // New
             leaderboardList: document.getElementById('leaderboard-list'),
             modalPlayAgain: document.getElementById('modal-play-again'),
             modalMenu: document.getElementById('modal-menu'),
+            gameOverFooter: document.querySelector('#game-over-modal .modal-footer'), // New
 
             // Points popup elements  
             // Score and Coin popups
@@ -1216,7 +1219,7 @@ class DOMManager {
     }
 
     // Mobile debug and emergency fallback system
-    showGameOverModal(stats, leaderboard, currentCoins, onPlayAgain, onMenu, onBuyTime) {
+    showGameOverModal(stats, leaderboard, currentCoins, onPlayAgain, onMenu, onBuyTime, onBuyItem) {
         GameUtils.log('Trying to show Game Over Modal...');
         try {
             const modal = this.get('gameOverModal');
@@ -1226,19 +1229,33 @@ class DOMManager {
             }
 
             // Force high z-index and visibility
+            const isAlreadyOpen = !modal.classList.contains('hidden');
+            
             modal.style.zIndex = '10000';
-            modal.style.display = 'none'; // Reset first
-            modal.offsetHeight; // Force reflow
-            modal.classList.remove('hidden');
-            modal.style.display = 'flex'; // Verify display property
-            modal.style.visibility = 'visible';
-            modal.style.opacity = '1';
-
-            GameUtils.log('Game Over Modal visibility set to flex/visible');
+            if (!isAlreadyOpen) {
+                modal.style.display = 'none'; // Reset first
+                modal.offsetHeight; // Force reflow
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex'; // Verify display property
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+                GameUtils.log('Game Over Modal visibility set to flex/visible');
+            }
 
             // Function to animate numbers
             const animateValue = (element, start, end, duration) => {
                 if (!element) return;
+                
+                // If already visible, start from current displayed value
+                if (isAlreadyOpen) {
+                    const currentText = element.textContent.replace(/[^0-9]/g, '');
+                    const currentVal = parseInt(currentText, 10);
+                    if (!isNaN(currentVal)) {
+                        start = currentVal;
+                        duration = 500; // Faster animation for updates
+                    }
+                }
+
                 let startTimestamp = null;
                 const step = (timestamp) => {
                     if (!startTimestamp) startTimestamp = timestamp;
@@ -1270,10 +1287,72 @@ class DOMManager {
             if (questionsEl) questionsEl.textContent = stats.questions || 0;
             if (coinsEl) coinsEl.textContent = currentCoins || 0;
 
-            // Setup Buy Time Button
+            // --- Logic for Spending vs Final ---
+            const footerEl = this.get('gameOverFooter');
+            const spendSection = this.get('spendCoinsSection');
+            const instructionEl = this.get('gameOverInstruction');
             const buyTimeBtn = this.get('buyTimeBtn');
+            const TIME_COST = 10;
+
+            // Determine State
+            const canAffordAnything = currentCoins >= 1; // Cheapest item is 1 coin
+
+            if (canAffordAnything) {
+                // SPENDING MODE
+                if (footerEl) footerEl.classList.add('hidden');
+                if (spendSection) spendSection.classList.remove('hidden');
+                if (buyTimeBtn) buyTimeBtn.parentNode.classList.remove('hidden'); // Show container
+
+                if (instructionEl) {
+                    instructionEl.textContent = "⚠️ Spend all remaining coins to boost your score!";
+                    instructionEl.classList.add('highlight');
+                }
+
+                // Populate Spend Section
+                if (spendSection) {
+                    spendSection.innerHTML = '';
+                    const pointItems = [
+                        { value: 10, cost: 1, icon: '🌟', name: '+10 Pts' },
+                        { value: 60, cost: 5, icon: '⭐', name: '+60 Pts' },
+                        { value: 100, cost: 8, icon: '✨', name: '+100 Pts' },
+                        { value: 500, cost: 25, icon: '💫', name: '+500 Pts' }
+                    ];
+
+                    pointItems.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'shop-item';
+                        if (currentCoins < item.cost) {
+                            div.classList.add('insufficient-funds');
+                        }
+                        div.innerHTML = `
+                            <div class="item-icon">${item.icon}</div>
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-cost">${item.cost} 🪙</div>
+                        `;
+                        div.onclick = () => {
+                            if (currentCoins >= item.cost && onBuyItem) {
+                                onBuyItem(item);
+                            }
+                        };
+                        spendSection.appendChild(div);
+                    });
+                }
+
+            } else {
+                // FINAL MODE (Zero coins)
+                if (footerEl) footerEl.classList.remove('hidden');
+                if (spendSection) spendSection.classList.add('hidden');
+                if (buyTimeBtn) buyTimeBtn.parentNode.classList.add('hidden'); // Hide buy time container
+
+                if (instructionEl) {
+                    instructionEl.textContent = "Game Over! Final Score Confirmed.";
+                    instructionEl.classList.remove('highlight');
+                }
+            }
+
+
+            // Setup Buy Time Button (Only active if can afford)
             const feedbackEl = this.get('gameOverFeedback');
-            const TIME_COST = 10; // Cost for 1 minute
 
             if (buyTimeBtn) {
                 // Remove old listeners
@@ -1281,10 +1360,10 @@ class DOMManager {
                 buyTimeBtn.parentNode.replaceChild(newBuyBtn, buyTimeBtn);
                 this.elements.buyTimeBtn = newBuyBtn;
 
-                // Check affordability
                 if (currentCoins < TIME_COST) {
                     newBuyBtn.classList.add('disabled');
                     newBuyBtn.title = "Not enough coins!";
+                    // Disable click
                 } else {
                     newBuyBtn.classList.remove('disabled');
                     newBuyBtn.title = "Buy 1 Minute";
@@ -3018,6 +3097,11 @@ class PerfectGameLogic {
         this.stopTimer();
         this.gameState.isGameActive = false;
 
+        this.refreshGameOverModal();
+        GameUtils.log(`🎮 Game Over processed - Score: ${this.gameState.points}`);
+    }
+
+    refreshGameOverModal() {
         // Calculate final stats
         const accuracy = this.gameState.questionsAnswered > 0 ?
             Math.round((this.gameState.correctAnswers / this.gameState.questionsAnswered) * 100) : 0;
@@ -3044,14 +3128,38 @@ class PerfectGameLogic {
             currentCoins,
             () => this.restartGame(),     // Play Again Callback
             () => this.returnToMenu(),     // Menu Callback
-            (cost, feedbackEl) => this.handleBuyTime(cost, feedbackEl) // Buy Time Callback
+            (cost, feedbackEl) => this.handleBuyTime(cost, feedbackEl), // Buy Time Callback
+            (item) => this.handleGameoverPurchase(item) // Buy Item Callback
         );
 
         // Update status for background context (optional)
         const gameOverMessage = isNewRecord ? 'NEW HIGH SCORE! 🏆' : 'Game Over! 🎮';
         this.domManager.updateClockStatus(gameOverMessage);
+    }
 
-        GameUtils.log(`🎮 Game Over processed - Score: ${this.gameState.points}`);
+    handleGameoverPurchase(item) {
+        if (!this.rewardShop || this.rewardShop.getClockCoins() < item.cost) {
+            return;
+        }
+
+        // Process purchase
+        this.rewardShop.clockCoins -= item.cost;
+        this.gameState.points += item.value;
+        
+        GameUtils.log(`💰 Purchased ${item.name} in Game Over. New Score: ${this.gameState.points}`);
+
+        this.rewardShop.updateClockCoinDisplay();
+        this.domManager.updatePoints(this.gameState.points);
+        this.domManager.updateTotalScoreDisplay(this.gameState.points);
+
+        // Play sound
+        if (this.soundManager) {
+            this.soundManager.playCorrect(); // Use correct sound for purchase
+        }
+
+        // Re-render Game Over Modal with updated stats
+        // This is crucial to update the "Wallet" and switch modes if coins == 0
+        this.refreshGameOverModal();
     }
 
     handleBuyTime(cost, feedbackEl) {
