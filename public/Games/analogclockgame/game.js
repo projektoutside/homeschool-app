@@ -1227,8 +1227,12 @@ class DOMManager {
 
             // Force high z-index and visibility
             modal.style.zIndex = '10000';
+            modal.style.display = 'none'; // Reset first
+            modal.offsetHeight; // Force reflow
             modal.classList.remove('hidden');
             modal.style.display = 'flex'; // Verify display property
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
 
             GameUtils.log('Game Over Modal visibility set to flex/visible');
 
@@ -3002,10 +3006,17 @@ class PerfectGameLogic {
     }
 
     handleGameOver(isWin = false) {
-        if (!this.gameState.isGameActive) return;
+        // Log status for debugging
+        GameUtils.log(`🎮 handleGameOver triggered. Active: ${this.gameState.isGameActive}, Time: ${this.gameState.timeRemaining}`);
 
-        this.gameState.isGameActive = false;
+        if (!this.gameState.isGameActive) {
+            GameUtils.warn('⚠️ handleGameOver ignored because game is not active');
+            return;
+        }
+
+        // CRITICAL: Stop timer immediately to prevent multiple triggers
         this.stopTimer();
+        this.gameState.isGameActive = false;
 
         // Calculate final stats
         const accuracy = this.gameState.questionsAnswered > 0 ?
@@ -3040,11 +3051,12 @@ class PerfectGameLogic {
         const gameOverMessage = isNewRecord ? 'NEW HIGH SCORE! 🏆' : 'Game Over! 🎮';
         this.domManager.updateClockStatus(gameOverMessage);
 
-        // Log game over stats
-        GameUtils.log(`🎮 Game Over - Score: ${this.gameState.points}, Accuracy: ${accuracy}%`);
+        GameUtils.log(`🎮 Game Over processed - Score: ${this.gameState.points}`);
     }
 
     handleBuyTime(cost, feedbackEl) {
+        GameUtils.log(`💰 handleBuyTime called. Cost: ${cost}`);
+        
         if (!this.rewardShop || this.rewardShop.getClockCoins() < cost) {
             if (feedbackEl) {
                 feedbackEl.textContent = "Not enough coins!";
@@ -3058,19 +3070,31 @@ class PerfectGameLogic {
         this.rewardShop.clockCoins -= cost;
         this.rewardShop.updateClockCoinDisplay();
         
-        // Add time and resume
+        // Add time
         const SECONDS_TO_ADD = 60;
         this.gameState.addTime(SECONDS_TO_ADD);
-        this.gameState.isGameActive = true;
-        this.resumeTimer();
         
-        // Hide modal
+        // CRITICAL: Ensure clean state for restart
+        this.stopTimer(); // Kill any old timer references
+        this.gameState.isGameActive = true; // Reactivate game state
+        
+        // Use startTimer(false) instead of resumeTimer for cleaner restart logic
+        // passing false ensures we don't reset the time from settings
+        this.startTimer(false); 
+        
+        // Hide modal explicitly
         this.domManager.safeUpdate('gameOverModal', el => {
             el.classList.add('hidden');
-            el.style.display = ''; 
+            el.style.display = 'none'; 
         });
+        
+        // Clear any previous feedback in the modal for next time
+        if (feedbackEl) {
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'feedback-message hidden';
+        }
 
-        // Show feedback
+        // Show global feedback
         GameUtils.log(`✅ Resumed game with +${SECONDS_TO_ADD}s for ${cost} coins`);
         this.domManager.updateClockStatus("Time Extended! Go! 🚀");
     }
@@ -4372,7 +4396,7 @@ class HighScoreManager {
                 <div class="celebration-icon">🏆</div>
                 <div class="celebration-text">
                     <div class="celebration-title">NEW HIGH SCORE!</div>
-                    <div class="celebration-score">${this.formatScore(this.highScore)}</div>
+                    <div class="celebration-score">${this.getHighScore().toLocaleString()}</div>
                 </div>
             </div>
         `;
@@ -4457,17 +4481,6 @@ class HighScoreManager {
                 }
             }, 300);
         });
-    }
-
-    getHighScore() {
-        return this.highScore;
-    }
-
-    resetHighScore() {
-        this.highScore = 0;
-        this.saveHighScore(0);
-        this.updateDisplay();
-        GameUtils.log('High score reset to 0');
     }
 }
 
