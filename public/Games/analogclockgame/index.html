@@ -3,100 +3,87 @@
 
 <head>
     <meta charset="UTF-8">
-    <!-- Enhanced viewport meta tag for perfect mobile optimization -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description"
-        content="Learn to read analog clocks with this interactive educational game. Practice telling time with different difficulty levels.">
-    <meta name="keywords" content="analog clock, time, learning, educational game, children">
-    <meta name="author" content="Analog Clock Learning Game">
-    <meta name="theme-color" content="#FF6B6B">
-
-    <!-- Mobile-specific meta tags -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Clock Game">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="Learn to read analog clocks with this interactive educational game.">
+    <meta name="theme-color" content="#1A1A2E">
 
     <title>Learn Analog Clocks - Interactive Time Learning Game</title>
 
-    <!-- Preload critical resources -->
-    <link rel="preload" href="style.css" as="style">
-    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <!-- Load main game script -->
+    <link rel="stylesheet" href="style.css">
     <script src="game.js" defer></script>
 </head>
 
 <body>
-    <!-- Orientation Lock Overlay REMOVED for responsive redesign -->
+
     <!-- Start Menu Overlay -->
-    <div id="start-menu" class="start-menu-overlay" role="dialog" aria-labelledby="game-title" aria-modal="true">
+    <div id="start-menu" class="start-menu-overlay">
         <div class="start-menu-content">
             <div class="game-header">
                 <h1 id="game-title" class="game-title">⏰ Analog Clock Game</h1>
                 <p class="game-tagline">Master time reading with interactive fun!</p>
-                <div class="high-score-badge" role="status" aria-label="High score display">
-                    <span class="trophy-icon" aria-hidden="true">🏆</span>
+                <div class="high-score-badge">
+                    <span class="trophy-icon">🏆</span>
                     <div class="score-info">
                         <span class="score-label">Best Score</span>
-                        <span id="high-score-value" class="score-number" aria-live="polite">0</span>
+                        <span id="high-score-value" class="score-number">0</span>
                     </div>
                 </div>
             </div>
 
             <div class="difficulty-selector">
                 <h2 class="section-title">Choose Difficulty</h2>
-                <div class="difficulty-grid" role="radiogroup" aria-labelledby="section-title">
+                <div class="difficulty-grid">
                     <label class="difficulty-card easy-card">
-                        <input type="radio" name="difficulty" value="easy" checked aria-describedby="easy-description">
+                        <input type="radio" name="difficulty" value="easy" checked>
                         <div class="card-content">
-                            <div class="card-icon" aria-hidden="true">🌟</div>
+                            <div class="card-icon">🌟</div>
                             <div class="card-title">Easy</div>
                             <div class="card-subtitle">Level 1 Start</div>
-                            <div id="easy-description" class="card-description">Perfect for beginners</div>
+                            <div class="card-description">Perfect for beginners</div>
                         </div>
-                        <div class="card-glow" aria-hidden="true"></div>
                     </label>
 
                     <label class="difficulty-card medium-card">
-                        <input type="radio" name="difficulty" value="medium" aria-describedby="medium-description">
+                        <input type="radio" name="difficulty" value="medium">
                         <div class="card-content">
-                            <div class="card-icon" aria-hidden="true">⚡</div>
+                            <div class="card-icon">⚡</div>
                             <div class="card-title">Medium</div>
                             <div class="card-subtitle">Level 3 Start</div>
-                            <div id="medium-description" class="card-description">Some challenge</div>
+                            <div class="card-description">Some challenge</div>
                         </div>
-                        <div class="card-glow" aria-hidden="true"></div>
                     </label>
 
                     <label class="difficulty-card hard-card">
-                        <input type="radio" name="difficulty" value="hard" aria-describedby="hard-description">
+                        <input type="radio" name="difficulty" value="hard">
                         <div class="card-content">
-                            <div class="card-icon" aria-hidden="true">🔥</div>
+                            <div class="card-icon">🔥</div>
                             <div class="card-title">Hard</div>
                             <div class="card-subtitle">Level 5 Start</div>
-                            <div id="hard-description" class="card-description">For experts</div>
+                            <div class="card-description">For experts</div>
                         </div>
-                        <div class="card-glow" aria-hidden="true"></div>
                     </label>
                 </div>
             </div>
 
             <div class="menu-actions">
-                <button id="start-game-btn" class="primary-btn" aria-describedby="start-description">
+                <button id="start-game-btn" class="primary-btn">
                     <span class="btn-text">Start Learning!</span>
-                    <span class="btn-icon" aria-hidden="true">🚀</span>
+                    <span class="btn-icon">🚀</span>
                 </button>
-                <div id="start-description" class="sr-only">Begin the analog clock learning game</div>
 
                 <div class="secondary-actions">
                     <button id="instructions-btn" class="secondary-btn">
-                        <span class="btn-icon" aria-hidden="true">❓</span>
+                        <span class="btn-icon">❓</span>
                         <span class="btn-text">How to Play</span>
                     </button>
                     <button id="settings-btn" class="secondary-btn">
-                        <span class="btn-icon" aria-hidden="true">⚙️</span>
+                        <span class="btn-icon">⚙️</span>
                         <span class="btn-text">Settings</span>
                     </button>
                 </div>
@@ -104,31 +91,18 @@
         </div>
     </div>
 
-    <!-- Instructions Modal -->
-    <div id="instructions-modal" class="instructions-modal hidden" role="dialog" aria-labelledby="instructions-title"
-        aria-modal="true">
+    <!-- Modals -->
+    <div id="instructions-modal" class="instructions-modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="instructions-title">How to Play</h2>
-                <button id="close-instructions" class="close-button" aria-label="Close instructions">&times;</button>
+                <h2>How to Play</h2>
+                <button id="close-instructions" class="secondary-btn" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="instruction-step">
-                    <span class="step-number" aria-hidden="true">1</span>
-                    <p>Look at the analog clock and read the time shown by the hands</p>
-                </div>
-                <div class="instruction-step">
-                    <span class="step-number" aria-hidden="true">2</span>
-                    <p>Choose the correct time from the multiple choice options</p>
-                </div>
-                <div class="instruction-step">
-                    <span class="step-number" aria-hidden="true">3</span>
-                    <p>Progress through 7 difficulty levels from O'Clock times to seconds precision</p>
-                </div>
-                <div class="instruction-step">
-                    <span class="step-number" aria-hidden="true">4</span>
-                    <p>Earn stars for correct answers and try to beat the timer!</p>
-                </div>
+                <p>1. Look at the analog clock and read the time.</p>
+                <p>2. Choose the correct time from the options.</p>
+                <p>3. Progress through 7 difficulty levels.</p>
+                <p>4. Earn stars and beat the timer!</p>
             </div>
             <div class="modal-footer">
                 <button id="start-from-instructions" class="start-button">Start Playing!</button>
@@ -136,203 +110,138 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="settings-modal hidden" role="dialog" aria-labelledby="settings-title"
-        aria-modal="true">
+    <div id="settings-modal" class="settings-modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="settings-title">Game Settings</h2>
-                <button id="close-settings" class="close-button" aria-label="Close settings">&times;</button>
+                <h2>Game Settings</h2>
+                <button id="close-settings" class="secondary-btn" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="settings-section">
-                    <h3>⏰ Time Settings</h3>
-                    <div class="setting-item">
-                        <label for="time-multiplier">Time Limit (Minutes):</label>
-                        <div class="setting-control">
-                            <input type="range" id="time-multiplier" min="1" max="15" step="1" value="5"
-                                aria-describedby="time-description">
-                            <span id="time-multiplier-value" aria-live="polite">5 minutes</span>
-                        </div>
-                        <p id="time-description" class="setting-description">Set how many minutes you get for each level
-                        </p>
-                    </div>
+                <div class="setting-item">
+                    <label>Time Limit (Minutes): <span id="time-multiplier-value">5 minutes</span></label>
+                    <input type="range" id="time-multiplier" min="1" max="15" step="1" value="5">
                 </div>
-
-                <div class="settings-section">
-                    <h3>🔊 Sound Settings</h3>
-                    <div class="setting-item">
-                        <label for="sound-toggle-container"
-                            style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                            <span>Enable Sound Effects</span>
-                            <div class="toggle-switch-wrapper">
-                                <input type="checkbox" id="sound-toggle" checked>
-                                <span class="toggle-slider"></span>
-                            </div>
-                        </label>
-                        <p class="setting-description">Turn game sounds on or off</p>
-                    </div>
+                <div class="setting-item">
+                    <label>Enable Sound</label>
+                    <input type="checkbox" id="sound-toggle" checked>
                 </div>
-
-                <div class="settings-section">
-                    <h3>⭐ Life Settings</h3>
-                    <div class="setting-item">
-                        <label for="star-count">Number of Lives:</label>
-                        <div class="setting-control">
-                            <input type="range" id="star-count" min="1" max="10" step="1" value="3"
-                                aria-describedby="lives-description">
-                            <span id="star-count-value" aria-live="polite">3</span>
-                        </div>
-                        <p id="lives-description" class="setting-description">Set how many mistakes you can make</p>
-                    </div>
+                <div class="setting-item">
+                    <label>Lives: <span id="star-count-value">3</span></label>
+                    <input type="range" id="star-count" min="1" max="10" step="1" value="3">
                 </div>
-
                 <div class="settings-preview">
-                    <h4>Current Settings Preview:</h4>
-                    <div class="preview-item">
-                        <span class="preview-label">Level 1 Time:</span>
-                        <span id="preview-time" aria-live="polite">5:00</span>
-                    </div>
-                    <div class="preview-item">
-                        <span class="preview-label">Starting Lives:</span>
-                        <span id="preview-lives" aria-live="polite">★★★</span>
-                    </div>
+                    <p>Preview Level 1 Time: <span id="preview-time">5:00</span></p>
+                    <p>Lives: <span id="preview-lives">★★★</span></p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button id="save-settings" class="primary-button">Save & Close</button>
-                <button id="reset-settings" class="secondary-button" style="margin-left: 10px;">Reset Defaults</button>
+                <button id="reset-settings" class="secondary-button">Reset Defaults</button>
             </div>
         </div>
     </div>
 
-    <!-- Game Over Modal -->
-    <div id="game-over-modal" class="game-over-modal hidden" role="dialog" aria-labelledby="game-over-title"
-        aria-modal="true">
-        <div class="modal-content glass-panel" style="max-width: 500px;">
-            <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
-                <h2 id="game-over-title"
-                    style="font-size: 2.5rem; color: var(--color-primary); text-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
-                    Time's Up! ⏰</h2>
+    <div id="game-over-modal" class="game-over-modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Time's Up! ⏰</h2>
             </div>
-
-            <div class="modal-body" style="text-align: center;">
-                <!-- Primary Stats -->
+            <div class="modal-body">
                 <div class="game-over-stats-container">
                     <div class="stat-box main-score">
                         <span class="stat-label">FINAL SCORE</span>
                         <span id="final-score" class="stat-value">0</span>
                     </div>
                 </div>
-
                 <div class="secondary-stats">
-                    <div class="stat-box">
-                        <span class="stat-label">ACCURACY</span>
-                        <span id="final-accuracy" class="stat-value">0%</span>
+                    <p>Accuracy: <span id="final-accuracy">0%</span></p>
+                    <p>Questions: <span id="final-questions">0</span></p>
+                </div>
+                
+                <!-- New: Coin Balance & Continue Option -->
+                <div class="game-over-wallet-section">
+                    <div class="wallet-display">
+                        <span class="wallet-label">Your Wallet:</span>
+                        <span class="wallet-amount"><span id="game-over-coins">0</span> 🪙</span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-label">QUESTIONS</span>
-                        <span id="final-questions" class="stat-value">0</span>
+                    
+                    <div class="continue-options">
+                        <button id="buy-time-btn" class="shop-action-btn">
+                            <span class="btn-icon">⏰</span>
+                            <div class="btn-details">
+                                <span class="btn-title">Extend Time</span>
+                                <span class="btn-cost">1 Minute for 10 🪙</span>
+                            </div>
+                        </button>
                     </div>
+                    <div id="game-over-feedback" class="feedback-message hidden"></div>
                 </div>
 
-                <!-- Leaderboard -->
                 <div class="leaderboard-section">
                     <h3>🏆 Top Scores</h3>
-                    <div id="leaderboard-list" class="leaderboard-list">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer" style="flex-direction: column; gap: 10px; border-top: none; padding-top: 0;">
-                <button id="modal-play-again" class="primary-button pulse-animation"
-                    style="width: 100%; font-size: 1.3rem;">Play Again 🔄</button>
-                <button id="modal-menu" class="secondary-button" style="width: 100%;">Main Menu 🏠</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Level Transition Modal -->
-    <div id="level-transition-modal" class="level-transition-modal hidden" role="dialog"
-        aria-labelledby="level-transition-title" aria-modal="true">
-        <div class="modal-content">
-            <div class="modal-header level-header">
-                <h2 id="level-transition-title">Level Up!</h2>
-            </div>
-            <div class="modal-body">
-                <div class="level-celebration">
-                    <div class="celebration-icon" aria-hidden="true">🎉</div>
-                    <p id="level-celebration-text">Congratulations! You've unlocked the next level!</p>
-                </div>
-
-                <div class="level-info-section">
-                    <h3 id="next-level-name">Level 2: O'Clocks + Half Past</h3>
-                    <div class="level-details">
-                        <div class="detail-item">
-                            <span class="detail-icon" aria-hidden="true">🎯</span>
-                            <div class="detail-content">
-                                <strong>New Challenge:</strong>
-                                <span id="level-challenge-text">Half past times added</span>
-                            </div>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-icon" aria-hidden="true">⏱️</span>
-                            <div class="detail-content">
-                                <strong>Time Limit:</strong>
-                                <span id="level-time-limit">4:30</span>
-                            </div>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-icon" aria-hidden="true">💡</span>
-                            <div class="detail-content">
-                                <strong>Tip:</strong>
-                                <span id="level-tip">Half past means 30 minutes past the hour</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="scoring-section">
-                    <h3>🏆 Point System</h3>
-                    <div class="scoring-grid" id="scoring-breakdown" role="list">
-                        <!-- Scoring details will be populated by JavaScript -->
-                    </div>
-                </div>
-
-                <div class="ready-section">
-                    <p class="ready-text">Ready to take on the next challenge?</p>
+                    <div id="leaderboard-list" class="leaderboard-list"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="reward-shop-btn" class="shop-button">
-                    <span class="button-text">Reward Shop</span>
-                    <span class="button-icon" aria-hidden="true">🏪</span>
-                </button>
-                <button id="start-next-level-btn" class="start-button">
-                    <span class="button-text">Start Level</span>
-                    <span class="button-icon" aria-hidden="true">🚀</span>
-                </button>
+                <button id="modal-play-again" class="primary-button pulse-animation">Play Again 🔄</button>
+                <button id="modal-menu" class="secondary-button">Main Menu 🏠</button>
             </div>
         </div>
     </div>
 
-    <main id="game-container" role="main" class="hidden">
-        <!-- Left Panel - Clock Display -->
-        <section id="clock-panel" aria-label="Interactive analog clock display">
+    <div id="level-transition-modal" class="level-transition-modal hidden">
+        <div class="modal-content">
+            <h2 id="level-transition-title">Level Up!</h2>
+            <p id="level-celebration-text">Congratulations!</p>
+            <h3 id="next-level-name">Level 2</h3>
+            <div class="level-details">
+                <p>New: <span id="level-challenge-text">Challenge</span></p>
+                <p>Time: <span id="level-time-limit">4:30</span></p>
+                <p>Tip: <span id="level-tip">Keep going!</span></p>
+            </div>
+            <div id="scoring-breakdown"></div>
+            <div class="modal-footer">
+                <button id="reward-shop-btn" class="secondary-button">Reward Shop 🏪</button>
+                <button id="start-next-level-btn" class="start-button">Start Level 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <main id="game-container" class="hidden">
+
+        <!-- Timer/Score Section (Mobile: Top / Desktop: Top-Right typically, but here integrated) -->
+        <!-- Clock Panel -->
+        <!-- Mobile Header Bar (New) -->
+        <div id="game-header-bar">
+            <div class="header-left">
+                <button id="mobile-shop-toggle" class="header-icon-btn" aria-label="Open Shop">
+                    <span class="icon">🏪</span>
+                </button>
+            </div>
+            <div class="header-center">
+                <div class="mini-score">Score: <span id="total-score-display">0</span></div>
+            </div>
+            <div class="header-right">
+                <button id="fullscreen-toggle" class="header-icon-btn" aria-label="Toggle Fullscreen">
+                    <span class="icon">⛶</span>
+                </button>
+                <div class="coin-display-mini">
+                    🪙 <span id="clockcoin-amount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clock Panel -->
+        <section id="clock-panel">
             <div class="clock-wrapper">
-                <!-- AM/PM Test Panel (Hidden by default, shown on levels 6+) -->
-                <div id="ampm-panel" class="ampm-panel hidden" role="status" aria-label="Time of day indicator">
-                    <div class="ampm-label">Time of Day:</div>
-                    <div id="ampm-indicator" class="ampm-indicator" aria-live="polite">Morning</div>
+                <div id="ampm-panel" class="hidden">
+                    Time of Day: <span id="ampm-indicator">Morning</span>
                 </div>
 
-                <!-- Main Clock Display -->
                 <div class="clock-container">
-                    <svg id="analog-clock" viewBox="0 0 500 500" role="img"
-                        aria-label="Analog clock showing current time">
-                        <title>Interactive analog clock for time learning</title>
-                        <!-- Clock Face Background -->
+                    <!-- SVG Clock Face -->
+                    <svg id="analog-clock" viewBox="0 0 500 500" role="img" aria-label="Analog clock">
                         <defs>
                             <filter id="glow">
                                 <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -346,247 +255,184 @@
                                 <stop offset="85%" style="stop-color:#F8F9FA;stop-opacity:1" />
                                 <stop offset="100%" style="stop-color:#E9ECEF;stop-opacity:1" />
                             </radialGradient>
-                            <linearGradient id="minuteHandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" style="stop-color:#FF1744;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#D32F2F;stop-opacity:1" />
-                            </linearGradient>
                         </defs>
 
                         <!-- Outer Ring -->
                         <circle cx="250" cy="250" r="240" fill="none" stroke="#FF9800" stroke-width="8" opacity="0.8" />
-
                         <!-- Clock Face -->
                         <circle cx="250" cy="250" r="230" fill="url(#clockFace)" stroke="#E0E0E0" stroke-width="2"
                             filter="drop-shadow(0 4px 12px rgba(0,0,0,0.15))" />
 
-                        <!-- Hour Marks -->
-                        <g id="hour-marks" aria-hidden="true">
-                            <!-- Generated by JavaScript -->
-                        </g>
+                        <!-- JS Generated Content -->
+                        <g id="hour-marks"></g>
+                        <g id="minute-marks"></g>
+                        <g id="clock-numbers"></g>
 
-                        <!-- Minute Marks -->
-                        <g id="minute-marks" aria-hidden="true">
-                            <!-- Generated by JavaScript -->
-                        </g>
-
-                        <!-- Clock Numbers -->
-                        <g id="clock-numbers"
-                            style="font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Trebuchet MS', 'Verdana', 'Arial Black', cursive, sans-serif; font-weight: bold; text-anchor: middle; dominant-baseline: central;"
-                            aria-hidden="true">
-                            <!-- Generated by JavaScript -->
-                        </g>
-
-                        <!-- Clock Hands -->
-                        <g id="clock-hands" aria-hidden="true">
-                            <!-- Hour Hand (Short Hand) -->
+                        <!-- Hands -->
+                        <g id="clock-hands">
                             <line id="hour-hand" x1="250" y1="250" x2="250" y2="160" stroke="#1976D2" stroke-width="15"
-                                stroke-linecap="round" filter="drop-shadow(0 3px 8px rgba(0,0,0,0.5))" />
-
-                            <!-- Minute Hand (Long Hand) - Simple line like hour hand -->
+                                stroke-linecap="round" />
                             <line id="minute-hand" x1="250" y1="250" x2="250" y2="110" stroke="#D32F2F"
-                                stroke-width="10" stroke-linecap="round"
-                                filter="drop-shadow(0 3px 8px rgba(0,0,0,0.5))" />
-
-                            <!-- Seconds Hand (Thin orange hand for Level 7) -->
+                                stroke-width="10" stroke-linecap="round" />
                             <line id="seconds-hand" x1="250" y1="250" x2="250" y2="100" stroke="#FF9800"
-                                stroke-width="3" stroke-linecap="round" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                                style="opacity: 0; transition: opacity 0.3s ease;" />
+                                stroke-width="3" stroke-linecap="round" style="opacity: 0;" />
                         </g>
 
                         <!-- Center Cap -->
-                        <circle cx="250" cy="250" r="15" fill="#FF9800" stroke="#FFFFFF" stroke-width="3"
-                            filter="drop-shadow(0 2px 6px rgba(0,0,0,0.2))" />
+                        <circle cx="250" cy="250" r="15" fill="#FF9800" stroke="#FFFFFF" stroke-width="3" />
                     </svg>
                 </div>
 
-                <!-- Clock Status Display -->
                 <div class="clock-status">
-                    <div class="status-text" id="clock-status" role="status" aria-live="polite">Ready to Learn!</div>
+                    <span id="clock-status">Ready?</span>
                 </div>
 
-                <!-- Total Score Display -->
-                <div class="total-score-display" role="status" aria-label="Total score">
-                    <div class="score-label">Total Score</div>
-                    <div class="score-value" id="total-score-display" aria-live="polite">0</div>
-                </div>
+                <!-- Removed total-score-display from here as it is now in header -->
+                <!-- Kept div for structure if needed or hidden -->
 
-                <!-- Points Popup for Correct Answers -->
-                <div id="points-popup" class="points-popup hidden" role="status" aria-live="assertive">
-                    <span id="points-popup-text">+10</span>
-                </div>
+                <!-- Removed points-popup from here to move to body for better positioning logic -->
             </div>
         </section>
 
-        <!-- Right Panel - Game Interface -->
-        <section id="game-panel" aria-label="Game interface and controls">
-            <!-- Progress and Stats Panel - Moved to Top -->
-            <div id="progress-panel" role="region" aria-label="Game progress and statistics">
-                <!-- Level Badge - Full Width -->
-                <div class="level-row">
-                    <div class="badge" aria-label="Current level" role="status">Level 1</div>
-                </div>
+        <!-- Dynamic Feedback Popups -->
 
-                <!-- Stats Grid - 3 columns -->
+
+        <!-- Game Controls -->
+        <section id="game-panel">
+            <div id="progress-panel">
+                <div class="level-row">
+                    <div class="badge">Level <span id="level-display">1</span></div>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div class="stat-label">Lives</div>
-                        <div id="stars" aria-label="Stars remaining" role="status">★ ★ ★</div>
+                        <div id="stars">★ ★ ★</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Time</div>
-                        <div id="timer" aria-label="Time remaining" role="timer" aria-live="polite">05:00</div>
+                        <div id="timer">05:00</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Score</div>
-                        <div id="points" aria-label="Current score" role="status" aria-live="polite">0 points</div>
+                        <div id="points">0</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Question Panel -->
-            <div id="question-panel" role="region" aria-live="polite" aria-label="Question area">
+            <div id="question-panel">
                 <h1>What time is it?</h1>
-                <div id="options" role="group" aria-label="Time options">
-                    <!-- Options will be dynamically generated here -->
+                <div id="options">
+                    <!-- Options generated by JS -->
                 </div>
             </div>
 
-            <!-- Reward Shop Button - Always visible in game panel -->
-            <div id="reward-shop-button-container" style="margin: var(--spacing-md); flex-shrink: 0;">
-                <button id="shop-toggle-button" class="shop-toggle-button" 
-                    aria-label="Open Reward Shop" aria-expanded="false" 
-                    type="button">
-                    <div class="mobile-shop-header">
-                        <div class="mobile-shop-title">
-                            <span class="shop-icon" aria-hidden="true">🏪</span>
-                            <span class="shop-text">Reward Shop</span>
+            <!-- Reward Shop Container (Now purely overlay content structure) -->
+            <div id="reward-shop-panel" class="hidden-panel">
+                <!-- Shop items container - toggled via class/ARIA -->
+                <div id="shop-items-container" class="shop-items-container overlay-style" aria-hidden="true">
+
+                    <!-- +10 Points -->
+                    <div class="shop-item" data-effect="points" data-value="10" data-cost="1">
+                        <div class="item-icon">🌟</div>
+                        <div class="item-info">
+                            <div class="item-name">+10 Points</div>
+                            <div class="item-description">Quick boost</div>
                         </div>
-                        <div class="mobile-clockcoin-balance" role="status" aria-label="ClockCoin balance">
-                            <span class="coin-icon" aria-hidden="true">🪙</span>
-                            <span id="mobile-clockcoin-amount" aria-live="polite">0</span>
+                        <div class="item-cost">
+                            <span class="cost-amount">1</span>
+                            <span class="cost-icon">🪙</span>
                         </div>
                     </div>
-                </button>
-            </div>
 
+                    <!-- +60 Points -->
+                    <div class="shop-item" data-effect="points" data-value="60" data-cost="5">
+                        <div class="item-icon">⭐</div>
+                        <div class="item-info">
+                            <div class="item-name">+60 Points</div>
+                            <div class="item-description">Good boost</div>
+                        </div>
+                        <div class="item-cost">
+                            <span class="cost-amount">5</span>
+                            <span class="cost-icon">🪙</span>
+                        </div>
+                    </div>
+
+                    <!-- +100 Points -->
+                    <div class="shop-item" data-effect="points" data-value="100" data-cost="8">
+                        <div class="item-icon">✨</div>
+                        <div class="item-info">
+                            <div class="item-name">+100 Points</div>
+                            <div class="item-description">Great boost</div>
+                        </div>
+                        <div class="item-cost">
+                            <span class="cost-amount">8</span>
+                            <span class="cost-icon">🪙</span>
+                        </div>
+                    </div>
+
+                    <!-- +1 Minute -->
+                    <div class="shop-item" data-effect="time" data-value="60" data-cost="10">
+                        <div class="item-icon">⏰</div>
+                        <div class="item-info">
+                            <div class="item-name">+1 Minute</div>
+                            <div class="item-description">Time Extension</div>
+                        </div>
+                        <div class="item-cost">
+                            <span class="cost-amount">10</span>
+                            <span class="cost-icon">🪙</span>
+                        </div>
+                    </div>
+
+                    <!-- +1 Life -->
+                    <div class="shop-item" data-effect="life" data-value="1" data-cost="10">
+                        <div class="item-icon">❤️</div>
+                        <div class="item-info">
+                            <div class="item-name">+1 Life</div>
+                            <div class="item-description">Extra Chance</div>
+                        </div>
+                        <div class="item-cost">
+                            <span class="cost-amount">10</span>
+                            <span class="cost-icon">🪙</span>
+                        </div>
+                    </div>
+
+                    <!-- +500 Points -->
+                    <div class="shop-item" data-effect="points" data-value="500" data-cost="25">
+                        <div class="item-icon">💫</div>
+                        <div class="item-info">
+                            <div class="item-name">+500 Points</div>
+                            <div class="item-description">Mega boost!</div>
+                        </div>
+                        <div class="item-cost">
+                            <span class="cost-amount">25</span>
+                            <span class="cost-icon">🪙</span>
+                        </div>
+                    </div>
+
+                    <!-- Return to Game Button -->
+                    <button id="close-shop-btn" class="shop-close-btn" aria-label="Return to Game">
+                        Return to Game ↩️
+                    </button>
+
+                </div>
+                <div id="purchase-feedback" class="hidden"></div>
+            </div>
         </section>
+
     </main>
 
-    <!-- Reward Shop Modal Overlay - Popup on screen -->
-    <div id="reward-shop-modal" class="reward-shop-modal hidden" role="dialog" 
-        aria-labelledby="shop-modal-title" aria-modal="true">
-        <div class="shop-modal-content">
-            <div class="shop-modal-header">
-                <div class="shop-header-content">
-                    <h2 id="shop-modal-title" class="shop-modal-title">🏪 Reward Shop</h2>
-                    <div class="clockcoin-balance" role="status" aria-label="ClockCoin balance">
-                        <span class="coin-icon" aria-hidden="true">🪙</span>
-                        <span id="clockcoin-amount" aria-live="polite">0</span>
-                        <span class="coin-label">ClockCoins</span>
-                    </div>
-                </div>
-                <button id="close-shop-button" class="close-shop-button" aria-label="Close Reward Shop" type="button">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
+    <!-- Screen Reader Live Region -->
+    <div class="sr-only" aria-live="polite" id="live-region"></div>
 
-            <div class="shop-modal-body">
-                <div id="shop-items-container" class="shop-items-container">
-                    <div class="shop-items" role="list">
-                        <div class="shop-item" data-item="extra-minute" data-cost="10" data-effect="time"
-                            role="listitem" tabindex="0">
-                            <div class="item-icon" aria-hidden="true">⏰</div>
-                            <div class="item-info">
-                                <div class="item-name">+1 Extra Minute</div>
-                                <div class="item-description">+60s</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 10 ClockCoins">
-                                <span class="cost-amount">10</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
 
-                        <div class="shop-item" data-item="points-10" data-cost="1" data-effect="points" data-value="10"
-                            role="listitem" tabindex="0">
-                            <div class="item-icon" aria-hidden="true">⭐</div>
-                            <div class="item-info">
-                                <div class="item-name">+10 Points</div>
-                                <div class="item-description">Quick boost</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 1 ClockCoin">
-                                <span class="cost-amount">1</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
-
-                        <div class="shop-item" data-item="points-60" data-cost="5" data-effect="points" data-value="60"
-                            role="listitem" tabindex="0">
-                            <div class="item-icon" aria-hidden="true">🌟</div>
-                            <div class="item-info">
-                                <div class="item-name">+60 Points</div>
-                                <div class="item-description">Good boost</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 5 ClockCoins">
-                                <span class="cost-amount">5</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
-
-                        <div class="shop-item" data-item="points-100" data-cost="8" data-effect="points"
-                            data-value="100" role="listitem" tabindex="0">
-                            <div class="item-icon" aria-hidden="true">💫</div>
-                            <div class="item-info">
-                                <div class="item-name">+100 Points</div>
-                                <div class="item-description">Great boost</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 8 ClockCoins">
-                                <span class="cost-amount">8</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
-
-                        <div class="shop-item" data-item="extra-life" data-cost="10" data-effect="life" role="listitem"
-                            tabindex="0">
-                            <div class="item-icon" aria-hidden="true">❤️</div>
-                            <div class="item-info">
-                                <div class="item-name">+1 Extra Life</div>
-                                <div class="item-description">+1 ❤️</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 10 ClockCoins">
-                                <span class="cost-amount">10</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
-
-                        <div class="shop-item" data-item="points-500" data-cost="25" data-effect="points"
-                            data-value="500" role="listitem" tabindex="0">
-                            <div class="item-icon" aria-hidden="true">🏆</div>
-                            <div class="item-info">
-                                <div class="item-name">+500 Points</div>
-                                <div class="item-description">Mega boost!</div>
-                            </div>
-                            <div class="item-cost" aria-label="Cost: 25 ClockCoins">
-                                <span class="cost-amount">25</span>
-                                <span class="cost-icon" aria-hidden="true">🪙</span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Purchase Feedback -->
-                <div id="purchase-feedback" class="purchase-feedback hidden" role="status" aria-live="polite">
-                    <span id="feedback-text">Purchase successful!</span>
-                </div>
-            </div>
-        </div>
+    <!-- Dynamic Feedback Popups (Moved to body for global positioning) -->
+    <div id="score-popup" class="feedback-popup hidden">
+        <span id="score-popup-text">+10</span>
     </div>
-    </main>
-
-    <!-- Screen reader only content -->
-    <div class="sr-only">
-        <div id="live-region" aria-live="polite" aria-atomic="true"></div>
+    <div id="coin-popup" class="feedback-popup hidden">
+        <span id="coin-popup-text">+1 🪙</span>
     </div>
+
 </body>
 
 </html>

@@ -763,13 +763,19 @@ class DOMManager {
             finalScore: document.getElementById('final-score'),
             finalAccuracy: document.getElementById('final-accuracy'),
             finalQuestions: document.getElementById('final-questions'),
+            gameOverCoins: document.getElementById('game-over-coins'), // New
+            buyTimeBtn: document.getElementById('buy-time-btn'),       // New
+            gameOverFeedback: document.getElementById('game-over-feedback'), // New
             leaderboardList: document.getElementById('leaderboard-list'),
             modalPlayAgain: document.getElementById('modal-play-again'),
             modalMenu: document.getElementById('modal-menu'),
 
             // Points popup elements  
-            pointsPopup: document.getElementById('points-popup'),
-            pointsPopupText: document.getElementById('points-popup-text')
+            // Score and Coin popups
+            scorePopup: document.getElementById('score-popup'),
+            scorePopupText: document.getElementById('score-popup-text'),
+            coinPopup: document.getElementById('coin-popup'),
+            coinPopupText: document.getElementById('coin-popup-text')
         };
     }
 
@@ -1022,33 +1028,60 @@ class DOMManager {
         this.safeUpdate('totalScoreDisplay', el => el.textContent = points.toString());
     }
 
-    showPointsPopup(points) {
-        const popup = this.get('pointsPopup');
-        const popupText = this.get('pointsPopupText');
+    showPointsPopup(points, coins = 0) {
+        // Show Score Popup
+        const scorePopup = this.get('scorePopup');
+        const scorePopupText = this.get('scorePopupText');
+        const pointsElement = this.get('points'); // Target to position near (stats panel)
 
-        if (popup && popupText) {
-            // Set the points text
-            popupText.textContent = `+${points}`;
-
-            // Remove any existing animation classes
-            popup.classList.remove('show', 'hidden');
-
-            // Force a reflow to ensure the class removal takes effect
-            popup.offsetHeight;
-
-            // Show the popup with animation
-            popup.classList.add('show');
-
-            // Hide the popup after animation completes
-            setTimeout(() => {
-                popup.classList.remove('show');
-                popup.classList.add('hidden');
-            }, 2000);
-
-            GameUtils.log(`Points popup shown: +${points}`);
-        } else {
-            GameUtils.warn('Points popup elements not found');
+        if (scorePopup && scorePopupText && pointsElement) {
+            scorePopupText.textContent = `+${points}`;
+            scorePopup.classList.remove('hidden'); // Ensure visible for measurement
+            this.positionPopupNearElement(scorePopup, pointsElement);
+            this.animatePopup(scorePopup);
         }
+
+        // Show Coin Popup (if coins earned)
+        if (coins > 0) {
+            const coinPopup = this.get('coinPopup');
+            const coinPopupText = this.get('coinPopupText');
+            // Try desktop coin display first, then mobile
+            const coinElement = document.getElementById('clockcoin-amount') || document.getElementById('mobile-clockcoin-amount');
+
+            if (coinPopup && coinPopupText && coinElement) {
+                // Ensure coin popup text includes the specific amount
+                coinPopupText.textContent = `+${coins} 🪙`;
+                coinPopup.classList.remove('hidden'); // Ensure visible for measurement
+                this.positionPopupNearElement(coinPopup, coinElement);
+
+                // Slight delay for cinematic feel
+                setTimeout(() => {
+                    this.animatePopup(coinPopup);
+                }, 200);
+            }
+        }
+    }
+
+    positionPopupNearElement(popup, targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        // Center the popup on the target element
+        const top = rect.top + (rect.height / 2) - (popup.offsetHeight / 2);
+        const left = rect.left + (rect.width / 2) - (popup.offsetWidth / 2);
+
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+    }
+
+    animatePopup(popup) {
+        popup.classList.remove('show', 'hidden');
+        popup.offsetHeight; // Force reflow
+        popup.classList.add('show');
+
+        setTimeout(() => {
+            popup.classList.remove('show');
+            popup.classList.add('hidden');
+        }, 1500);
+
     }
 
     updateClockStatus(text) {
@@ -1183,7 +1216,7 @@ class DOMManager {
     }
 
     // Mobile debug and emergency fallback system
-    showGameOverModal(stats, leaderboard, onPlayAgain, onMenu) {
+    showGameOverModal(stats, leaderboard, currentCoins, onPlayAgain, onMenu, onBuyTime) {
         GameUtils.log('Trying to show Game Over Modal...');
         try {
             const modal = this.get('gameOverModal');
@@ -1222,6 +1255,7 @@ class DOMManager {
             const scoreEl = this.get('finalScore');
             const accuracyEl = this.get('finalAccuracy');
             const questionsEl = this.get('finalQuestions');
+            const coinsEl = this.get('gameOverCoins');
 
             GameUtils.log(`Updating stats: Score=${stats.score}, Accuracy=${stats.accuracy}`);
 
@@ -1230,6 +1264,33 @@ class DOMManager {
                 accuracyEl.textContent = (stats.accuracy || 0) + '%';
             }
             if (questionsEl) questionsEl.textContent = stats.questions || 0;
+            if (coinsEl) coinsEl.textContent = currentCoins || 0;
+
+            // Setup Buy Time Button
+            const buyTimeBtn = this.get('buyTimeBtn');
+            const feedbackEl = this.get('gameOverFeedback');
+            const TIME_COST = 10; // Cost for 1 minute
+
+            if (buyTimeBtn) {
+                // Remove old listeners
+                const newBuyBtn = buyTimeBtn.cloneNode(true);
+                buyTimeBtn.parentNode.replaceChild(newBuyBtn, buyTimeBtn);
+                this.elements.buyTimeBtn = newBuyBtn;
+
+                // Check affordability
+                if (currentCoins < TIME_COST) {
+                    newBuyBtn.classList.add('disabled');
+                    newBuyBtn.title = "Not enough coins!";
+                } else {
+                    newBuyBtn.classList.remove('disabled');
+                    newBuyBtn.title = "Buy 1 Minute";
+                    newBuyBtn.addEventListener('click', () => {
+                        if (onBuyTime) {
+                            onBuyTime(TIME_COST, feedbackEl);
+                        }
+                    });
+                }
+            }
 
             // Populate Leaderboard
             const listEl = this.get('leaderboardList');
@@ -1919,7 +1980,8 @@ class PerfectGameLogic {
 
         this.updateAllDisplays();
         this.generateQuestion();
-        this.startTimer();
+        // Initialize the global timer for the new game
+        this.startTimer(true);
         this.domManager.updateClockStatusWithLevel(this.gameState);
 
         GameUtils.log(`Game started successfully at level ${startingLevel} - question should be generated`);
@@ -2704,8 +2766,8 @@ class PerfectGameLogic {
             this.rewardShop.earnClockCoin();
         }
 
-        // Show points popup with the points earned
-        this.domManager.showPointsPopup(pointsEarned);
+        // Show points popup with the points earned and 1 coin
+        this.domManager.showPointsPopup(pointsEarned, 1);
 
         let feedbackDuration = 1500;
         let showLevelTransition = false;
@@ -2881,10 +2943,23 @@ class PerfectGameLogic {
         }
     }
 
-    startTimer() {
-        const level = this.gameState.getCurrentLevel();
-        this.gameState.timeRemaining = level.timeLimit;
+    startTimer(isNewGame = false) {
+        // Only set initial time if it's a new game (or restart)
+        if (isNewGame) {
+            // Use global time limit from settings (in minutes) converted to seconds
+            // Default to 5 minutes if settings not available
+            const timeInMinutes = this.gameState.settingsManager ?
+                this.gameState.settingsManager.getSetting('timeMultiplier') : 5;
+            this.gameState.timeRemaining = timeInMinutes * 60;
+            GameUtils.log(`Global timer initialized: ${timeInMinutes} minutes (${this.gameState.timeRemaining}s)`);
+        }
+
         this.updateTimerDisplay();
+
+        // Clear any existing timer to avoid duplicates
+        if (this.gameState.timer) {
+            clearInterval(this.gameState.timer);
+        }
 
         this.gameState.timer = setInterval(() => {
             this.gameState.timeRemaining--;
@@ -2949,13 +3024,16 @@ class PerfectGameLogic {
         };
 
         const leaderboard = this.highScoreManager ? this.highScoreManager.getLeaderboard() : [];
+        const currentCoins = this.rewardShop ? this.rewardShop.getClockCoins() : 0;
 
         // Show Game Over Modal (replacing inline options)
         this.domManager.showGameOverModal(
             stats,
             leaderboard,
+            currentCoins,
             () => this.restartGame(),     // Play Again Callback
-            () => this.returnToMenu()     // Menu Callback
+            () => this.returnToMenu(),     // Menu Callback
+            (cost, feedbackEl) => this.handleBuyTime(cost, feedbackEl) // Buy Time Callback
         );
 
         // Update status for background context (optional)
@@ -2964,6 +3042,37 @@ class PerfectGameLogic {
 
         // Log game over stats
         GameUtils.log(`🎮 Game Over - Score: ${this.gameState.points}, Accuracy: ${accuracy}%`);
+    }
+
+    handleBuyTime(cost, feedbackEl) {
+        if (!this.rewardShop || this.rewardShop.getClockCoins() < cost) {
+            if (feedbackEl) {
+                feedbackEl.textContent = "Not enough coins!";
+                feedbackEl.className = "feedback-message error visible";
+                setTimeout(() => feedbackEl.classList.add('hidden'), 2000);
+            }
+            return;
+        }
+
+        // Process purchase
+        this.rewardShop.clockCoins -= cost;
+        this.rewardShop.updateClockCoinDisplay();
+        
+        // Add time and resume
+        const SECONDS_TO_ADD = 60;
+        this.gameState.addTime(SECONDS_TO_ADD);
+        this.gameState.isGameActive = true;
+        this.resumeTimer();
+        
+        // Hide modal
+        this.domManager.safeUpdate('gameOverModal', el => {
+            el.classList.add('hidden');
+            el.style.display = ''; 
+        });
+
+        // Show feedback
+        GameUtils.log(`✅ Resumed game with +${SECONDS_TO_ADD}s for ${cost} coins`);
+        this.domManager.updateClockStatus("Time Extended! Go! 🚀");
     }
 
     restartGame() {
@@ -2999,9 +3108,10 @@ class PerfectGameLogic {
    SETTINGS MODAL MANAGER
    ============================================= */
 class SettingsModalManager {
-    constructor(domManager, settingsManager) {
+    constructor(domManager, settingsManager, gameLogic) {
         this.domManager = domManager;
         this.settingsManager = settingsManager;
+        this.gameLogic = gameLogic;
         this.setupEventListeners();
         this.updateDisplay();
     }
@@ -3136,12 +3246,18 @@ class SettingsModalManager {
     }
 
     showSettings() {
+        if (this.gameLogic) {
+            this.gameLogic.pauseTimer();
+        }
         this.updateDisplay();
         this.domManager.showSettingsModal();
     }
 
     hideSettings() {
         this.domManager.hideSettingsModal();
+        if (this.gameLogic) {
+            this.gameLogic.resumeTimer();
+        }
     }
 }
 
@@ -3194,6 +3310,11 @@ class LevelTransitionManager {
         this.domManager.showLevelTransitionModal();
 
         GameUtils.log(`Showing level transition from ${currentLevel.id} to ${nextLevel.id}`);
+
+        // Pause timer while in transition
+        if (this.gameLogic) {
+            this.gameLogic.pauseTimer();
+        }
     }
 
     startNextLevel() {
@@ -3205,6 +3326,9 @@ class LevelTransitionManager {
             // ✨ UNLOCK: Reset processing state before generating new question
             this.gameLogic.isProcessingAnswer = false;
             this.gameLogic.answerProcessingStartTime = null;
+
+            // Resume the global timer (do NOT reset it)
+            this.gameLogic.resumeTimer();
 
             // Generate new question for the new level
             setTimeout(() => {
@@ -3656,174 +3780,133 @@ class RewardShop {
         });
 
         GameUtils.log(`📱 Enhanced shop event listeners set up for ${shopItems.length} items`);
+
+        // Close Shop Button Listener
+        const closeShopBtn = document.getElementById('close-shop-btn');
+        if (closeShopBtn) {
+            closeShopBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent bubbling
+                this.toggleMobileShop(); // Re-use toggle logic which handles animation/state/timer
+            });
+
+            // Touch support
+            closeShopBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleMobileShop();
+            });
+        }
     }
 
     setupMobileToggle() {
-        // Professional shop modal popup for ALL DEVICES
-        const shopToggleButton = document.getElementById('shop-toggle-button');
-        const shopModal = document.getElementById('reward-shop-modal');
-        const closeShopButton = document.getElementById('close-shop-button');
+        // Universal Shop Toggle Setup (All Devices)
+        const mobileToggle = document.getElementById('mobile-shop-toggle');
+        const shopItemsContainer = document.getElementById('shop-items-container');
 
-        if (shopToggleButton && shopModal) {
-            // Set initial state - modal hidden by default
-            shopToggleButton.setAttribute('aria-expanded', 'false');
-            shopModal.classList.add('hidden');
-
-            // Enhanced styling for better touch interaction
-            shopToggleButton.style.touchAction = 'manipulation';
-            shopToggleButton.style.webkitTapHighlightColor = 'rgba(255, 255, 255, 0.2)';
-            shopToggleButton.style.userSelect = 'none';
-            shopToggleButton.style.webkitUserSelect = 'none';
-
-            // Open shop modal on button click
-            const handleOpenShop = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.openShopModal();
-            };
-
-            shopToggleButton.addEventListener('click', handleOpenShop);
-            shopToggleButton.addEventListener('touchend', handleOpenShop);
-
-            // Add keyboard support for open button
-            shopToggleButton.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    this.openShopModal();
-                }
-            });
-
-            // Close shop modal button
-            if (closeShopButton) {
-                const handleCloseShop = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.closeShopModal();
-                };
-
-                closeShopButton.addEventListener('click', handleCloseShop);
-                closeShopButton.addEventListener('touchend', handleCloseShop);
-
-                closeShopButton.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        this.closeShopModal();
-                    }
-                });
+        if (mobileToggle && shopItemsContainer) {
+            // Apply initial state only if not set
+            if (!mobileToggle.hasAttribute('aria-expanded')) {
+                mobileToggle.setAttribute('aria-expanded', 'false');
+                shopItemsContainer.setAttribute('aria-hidden', 'true');
             }
 
-            // Close modal when clicking outside (on backdrop)
-            shopModal.addEventListener('click', (e) => {
-                if (e.target === shopModal) {
-                    this.closeShopModal();
-                }
-            });
+            // Ensure toggle is visible (override any legacy hiding)
+            mobileToggle.style.display = 'flex';
+            mobileToggle.style.removeProperty('visibility');
 
-            // Close modal with Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !shopModal.classList.contains('hidden')) {
-                    this.closeShopModal();
-                }
-            });
+            // Add interaction listeners if not already present (simple idempotency check handling)
+            // We use a custom property on the element to track if listeners are added
+            if (!mobileToggle.dataset.hasListeners) {
+                const handleToggleClick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleMobileShop();
+                };
 
-            GameUtils.log('🏪 Professional reward shop modal initialized for all devices');
+                mobileToggle.addEventListener('click', handleToggleClick);
+                mobileToggle.addEventListener('touchend', handleToggleClick);
+
+                // Keyboard support
+                mobileToggle.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.toggleMobileShop();
+                    }
+                });
+
+                mobileToggle.dataset.hasListeners = 'true';
+            }
+
+            // Mobile-specific optimizations
+            if (window.innerWidth <= 600) {
+                this.optimizeForMobilePhone();
+            }
+
+            GameUtils.log('🏪 Shop toggle initialized for current viewport');
         } else {
-            GameUtils.warn('🏪 Shop modal elements not found:', {
-                button: !!shopToggleButton,
-                modal: !!shopModal
-            });
+            GameUtils.warn('Shop toggle elements not found');
         }
     }
 
-    openShopModal() {
-        const shopToggleButton = document.getElementById('shop-toggle-button');
-        const shopModal = document.getElementById('reward-shop-modal');
+    toggleMobileShop() {
+        const mobileToggle = document.getElementById('mobile-shop-toggle');
         const shopItemsContainer = document.getElementById('shop-items-container');
 
-        if (!shopToggleButton || !shopModal) {
-            GameUtils.warn('🏪 Cannot open shop modal - elements not found');
+        if (!mobileToggle || !shopItemsContainer) {
+            GameUtils.warn('📱 Cannot toggle mobile shop - elements not found');
             return;
         }
 
-        // Show modal
-        shopModal.classList.remove('hidden');
-        shopToggleButton.setAttribute('aria-expanded', 'true');
-        shopToggleButton.setAttribute('aria-label', 'Reward Shop is open');
+        const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+        const newState = !isExpanded;
 
-        // Prevent body scroll when modal is open
-        document.body.style.overflow = 'hidden';
+        // Update ARIA attributes
+        mobileToggle.setAttribute('aria-expanded', newState.toString());
+        shopItemsContainer.setAttribute('aria-hidden', (!newState).toString());
+
+        // Update ARIA label
+        mobileToggle.setAttribute('aria-label', newState ? 'Close Reward Shop' : 'Open Reward Shop');
+
+        // Pause/Resume timer based on shop state
+        if (this.gameLogic) {
+            if (newState) {
+                this.gameLogic.pauseTimer();
+            } else {
+                this.gameLogic.resumeTimer();
+            }
+        }
+
+        // Add visual feedback for mobile interaction
+        if (newState) {
+            // Expanding - add expanded styling
+            mobileToggle.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+            mobileToggle.style.borderColor = '#4CAF50';
+        } else {
+            // Collapsing - restore original styling
+            setTimeout(() => {
+                mobileToggle.style.backgroundColor = '';
+                mobileToggle.style.borderColor = '';
+            }, 300);
+        }
 
         // Add haptic feedback for mobile devices
         if (navigator.vibrate) {
             navigator.vibrate(50);
         }
 
-        // Ensure shop items are visible and properly clickable
-        if (shopItemsContainer) {
-            // Make sure shop items container is visible
-            shopItemsContainer.style.display = 'block';
-            shopItemsContainer.style.visibility = 'visible';
-            shopItemsContainer.style.opacity = '1';
-            shopItemsContainer.removeAttribute('aria-hidden');
-            shopItemsContainer.setAttribute('aria-hidden', 'false');
-            
-            // Make sure shop items are visible
-            const shopItems = shopItemsContainer.querySelectorAll('.shop-item');
-            const shopItemsList = shopItemsContainer.querySelector('.shop-items');
-            
-            if (shopItemsList) {
-                shopItemsList.style.display = 'grid';
-                shopItemsList.style.visibility = 'visible';
-                shopItemsList.style.opacity = '1';
-            }
-            
-            shopItems.forEach(item => {
-                item.style.display = 'flex';
-                item.style.visibility = 'visible';
-                item.style.opacity = '1';
-                item.style.touchAction = 'manipulation';
-                item.style.webkitTapHighlightColor = 'rgba(255, 255, 255, 0.2)';
-            });
-            
-            GameUtils.log(`🏪 Shop items made visible: ${shopItems.length} items found`);
+        // Ensure shop items are properly clickable when expanded
+        if (newState) {
+            setTimeout(() => {
+                const shopItems = shopItemsContainer.querySelectorAll('.shop-item');
+                shopItems.forEach(item => {
+                    item.style.touchAction = 'manipulation';
+                    item.style.webkitTapHighlightColor = 'rgba(255, 255, 255, 0.2)';
+                });
+            }, 100);
         }
 
-        GameUtils.log(`🏪 Reward shop modal opened - ${shopItemsContainer ? shopItemsContainer.querySelectorAll('.shop-item').length : 0} items available`);
-    }
-
-    closeShopModal() {
-        const shopToggleButton = document.getElementById('shop-toggle-button');
-        const shopModal = document.getElementById('reward-shop-modal');
-
-        if (!shopToggleButton || !shopModal) {
-            GameUtils.warn('🏪 Cannot close shop modal - elements not found');
-            return;
-        }
-
-        // Hide modal
-        shopModal.classList.add('hidden');
-        shopToggleButton.setAttribute('aria-expanded', 'false');
-        shopToggleButton.setAttribute('aria-label', 'Open Reward Shop');
-
-        // Restore body scroll
-        document.body.style.overflow = '';
-
-        // Add haptic feedback for mobile devices
-        if (navigator.vibrate) {
-            navigator.vibrate(25);
-        }
-
-        GameUtils.log('🏪 Reward shop modal closed');
-    }
-
-    toggleShop() {
-        // Alias for backward compatibility - opens modal
-        const shopModal = document.getElementById('reward-shop-modal');
-        if (shopModal && shopModal.classList.contains('hidden')) {
-            this.openShopModal();
-        } else {
-            this.closeShopModal();
-        }
+        GameUtils.log(`📱 Mobile reward shop ${newState ? 'expanded' : 'collapsed'} - ${shopItemsContainer.querySelectorAll('.shop-item').length} items available`);
     }
 
     // Mobile phone specific optimizations
@@ -3900,7 +3983,8 @@ class RewardShop {
         this.clockCoins++;
         this.updateClockCoinDisplay();
         this.updateShopAvailability();
-        this.showCoinEarnedFeedback();
+        // Feedback is handled by showPointsPopup in handleCorrectAnswer to avoid duplicates
+        // this.showCoinEarnedFeedback();
         GameUtils.log(`💰 Earned 1 ClockCoin! Total: ${this.clockCoins}`);
     }
 
@@ -4122,37 +4206,8 @@ class RewardShop {
 
     // Ensure tablets and desktops always show the full reward shop
     ensureTabletRewardShopVisibility() {
-        if (window.innerWidth > 600) {
-            const shopItemsContainer = document.getElementById('shop-items-container');
-            const mobileToggle = document.getElementById('mobile-shop-toggle');
-            const desktopHeader = document.querySelector('.desktop-shop-header');
-
-            if (shopItemsContainer) {
-                // Force visibility for tablets and desktops
-                shopItemsContainer.setAttribute('aria-hidden', 'false');
-                shopItemsContainer.style.maxHeight = 'none';
-                shopItemsContainer.style.opacity = '1';
-                shopItemsContainer.style.visibility = 'visible';
-                shopItemsContainer.style.marginTop = 'var(--spacing-sm)';
-
-                // Remove any collapsed state
-                shopItemsContainer.classList.remove('collapsed');
-
-                GameUtils.log(`💻 Forced reward shop visibility for ${window.innerWidth <= 1024 ? 'tablet' : 'desktop'} (${window.innerWidth}px)`);
-            }
-
-            if (mobileToggle) {
-                // Ensure mobile toggle is completely hidden
-                mobileToggle.style.display = 'none';
-                mobileToggle.style.visibility = 'hidden';
-            }
-
-            if (desktopHeader) {
-                // Ensure desktop header is visible
-                desktopHeader.style.display = 'block';
-                desktopHeader.style.visibility = 'visible';
-            }
-        }
+        // Disabled: We now use the toggle button for all screen sizes per user request
+        // This method is kept empty to preserve the interface if called elsewhere
     }
 
     // Handle window resize to ensure proper mobile/tablet/desktop display
@@ -4429,7 +4484,7 @@ class AnalogClockGame {
         this.gameLogic = new PerfectGameLogic(this.gameState, this.domManager, this.clockBuilder, this.soundManager);
         this.rewardShop = new RewardShop(this.gameState, this.domManager, this.gameLogic);
         this.levelTransitionManager = new LevelTransitionManager(this.domManager, this.gameLogic);
-        this.settingsModalManager = new SettingsModalManager(this.domManager, this.settingsManager);
+        this.settingsModalManager = new SettingsModalManager(this.domManager, this.settingsManager, this.gameLogic);
         this.startMenuManager = new StartMenuManager(this.domManager, this.gameLogic, this.settingsModalManager);
         this.highScoreManager = new HighScoreManager();
 
@@ -4466,6 +4521,9 @@ class AnalogClockGame {
             this.settingsManager.applyToGameConfig();
 
             this.setupInitialState();
+
+            // Initialize Fullscreen Toggle
+            this.setupFullScreenToggle();
 
             // Test clock hands if in debug mode
             if (GAME_CONFIG.DEBUG) {
@@ -4542,6 +4600,39 @@ class AnalogClockGame {
         }
     }
 
+    setupFullScreenToggle() {
+        const toggleBtn = document.getElementById('fullscreen-toggle');
+        if (!toggleBtn) return;
+
+        toggleBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen().catch(err => {
+                    GameUtils.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        // Update icon based on state
+        document.addEventListener('fullscreenchange', () => {
+            const icon = toggleBtn.querySelector('.icon');
+            if (document.fullscreenElement) {
+                icon.textContent = '✖'; // Clear Exit Icon
+                toggleBtn.setAttribute('aria-label', 'Exit Fullscreen');
+                GameUtils.log('Entered Fullscreen');
+            } else {
+                icon.textContent = '⛶'; // Restore Expand Icon
+                toggleBtn.setAttribute('aria-label', 'Enter Fullscreen');
+                GameUtils.log('Exited Fullscreen');
+            }
+        });
+    }
+
     setupOrientationListeners() {
         // Check orientation on resize and orientation change
         window.addEventListener('resize', () => this.checkOrientation());
@@ -4552,29 +4643,26 @@ class AnalogClockGame {
     }
 
     checkOrientation() {
-        // Responsive design: Game now works in all orientations
-        // No longer pausing in portrait mode - layout adapts dynamically
+        // Logic should match CSS media query (orientation: portrait)
         const isPortrait = window.innerHeight > window.innerWidth;
-        const isLandscape = !isPortrait;
-        
-        // Update body class for responsive styling if needed
+
         if (isPortrait) {
-            document.body.classList.add('orientation-portrait');
-            document.body.classList.remove('orientation-landscape');
+            if (!this.isPausedByOrientation) {
+                this.isPausedByOrientation = true;
+                if (this.gameLogic && this.gameState.isGameActive) {
+                    this.gameLogic.pauseTimer();
+                    GameUtils.log('⏸️ Game paused due to portrait orientation');
+                }
+            }
         } else {
-            document.body.classList.add('orientation-landscape');
-            document.body.classList.remove('orientation-portrait');
+            if (this.isPausedByOrientation) {
+                this.isPausedByOrientation = false;
+                if (this.gameLogic && this.gameState.isGameActive) {
+                    this.gameLogic.resumeTimer();
+                    GameUtils.log('▶️ Game resumed from portrait orientation');
+                }
+            }
         }
-        
-        // Force layout recalculation on orientation change
-        if (window.analogClockGame && window.analogClockGame.clockRenderer) {
-            // Trigger clock resize if needed
-            requestAnimationFrame(() => {
-                window.dispatchEvent(new Event('resize'));
-            });
-        }
-        
-        GameUtils.log(`📱 Orientation: ${isPortrait ? 'Portrait' : 'Landscape'} (${window.innerWidth}x${window.innerHeight})`);
     }
 }
 
@@ -4629,7 +4717,7 @@ function initializeGame() {
                         gameContainer.style.top = '0';
                         gameContainer.style.left = '0';
                         gameContainer.style.zIndex = '1000';
-                        gameContainer.style.background = '#f5576c';
+                        gameContainer.style.background = 'transparent';
                         gameContainer.style.overflow = 'hidden';
 
                         GameUtils.log('MOBILE: Applied aggressive game container styling');
@@ -4641,8 +4729,8 @@ function initializeGame() {
                         optionsContainer.style.width = '100%';
                         optionsContainer.style.padding = '10px';
                         optionsContainer.style.margin = '10px 0';
-                        optionsContainer.style.background = 'rgba(255, 0, 0, 0.1)';
-                        optionsContainer.style.border = '2px solid #ff0000';
+                        optionsContainer.style.background = 'transparent';
+                        optionsContainer.style.border = 'none';
                         optionsContainer.style.boxSizing = 'border-box';
                         optionsContainer.style.overflow = 'visible';
                         optionsContainer.style.position = 'relative';
