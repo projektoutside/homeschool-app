@@ -13,5 +13,17 @@ export const scienceContent: ContentItem[] = [
     thumbnail: '/assets/thumbnails/solar-system.jpg',
     isFeatured: true,
     dateAdded: '2023-09-20'
+  },
+  {
+    id: 'sci-introduction-to-graphs',
+    title: 'Introduction to Graphs',
+    description: 'Learn how to read, create, and interpret graphs and charts.',
+    type: 'tool',
+    category: 'science',
+    subjects: ['Data Analysis', 'Mathematics'],
+    gradeLevels: ['All'],
+    customHtmlPath: '/FinalGraph/index.html',
+    thumbnail: '/FinalGraph/thumb.png',
+    dateAdded: '2026-01-24'
   }
 ];
