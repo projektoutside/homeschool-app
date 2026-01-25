@@ -981,4 +981,15 @@ export const mathContent: ContentItem[] = [
         "thumbnail": "/PolygonAPP/thumb.png",
         "dateAdded": "2026-01-21"
     },
+    {
+        "id": "MathPuzzle",
+        "title": "Math Puzzle",
+        "description": "Solve math puzzles to improve your skills.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Algebra", "Geometry"],
+        "gradeLevels": ["1st", "2nd", "3rd"],
+        "customHtmlPath": "/Games/MathPuzzle/index.html",
+        "thumbnail": "/Games/MathPuzzle/thumb.png",
+        "dateAdded": "2026-01-25"
 ];

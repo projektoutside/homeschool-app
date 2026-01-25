@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del test-validation.js)",
+      "Bash(rm:*)",
+      "Bash(start index.html)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
