@@ -992,4 +992,5 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/MathPuzzle/index.html",
         "thumbnail": "/Games/MathPuzzle/thumb.png",
         "dateAdded": "2026-01-25"
+    }
 ];
