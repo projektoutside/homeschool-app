@@ -992,5 +992,17 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/MathPuzzle/index.html",
         "thumbnail": "/Games/MathPuzzle/thumb.png",
         "dateAdded": "2026-01-25"
+    },
+    {
+        "id": "math-spy-academy",
+        "title": "The Spy Academy",
+        "description": "An immersive escape room experience with team-based puzzles, color code mysteries, and timed challenges. Work together to solve the mystery!",
+        "type": "game",
+        "category": "puzzles",
+        "subjects": ["Logic", "Problem Solving", "Teamwork"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/SpyAcademy/index.html",
+        "thumbnail": "/Games/SpyAcademy/thumb.png",
+        "dateAdded": "2026-01-24"
     }
 ];

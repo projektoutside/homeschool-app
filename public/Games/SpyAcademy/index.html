@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="The Spy Academy">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000511">
+    <meta name="msapplication-navbutton-color" content="#000511">
+    
+    <!-- Performance and compatibility -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <title>The Spy Academy - Escape Room</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💎%3C/text%3E%3C/svg%3E">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23000511'/%3E%3Ctext x='90' y='120' font-size='80' text-anchor='middle' fill='%2300ffff'%3E💎%3C/text%3E%3C/svg%3E">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/utils/mobile-fix.js"></script>
+    
+    <!-- Preload critical fonts with fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Initialize app configuration BEFORE loading scripts -->
+    <script>
+        // Initialize minimal app state for cross-device compatibility
+        window.APP_CONFIG = {
+            initialized: false,
+            audioReady: false,
+            scriptsLoaded: 0,
+            requiredScripts: 10,
+            errors: []
+        };
+        
+        // Simple error tracking
+        window.addEventListener('error', function(e) {
+            console.error('Global Error:', e.error || e.message);
+            window.APP_CONFIG.errors.push({
+                message: e.message,
+                source: e.filename,
+                line: e.lineno
+            });
+        });
+        
+        // Track script loading
+        window.trackScriptLoad = function(scriptName) {
+            window.APP_CONFIG.scriptsLoaded++;
+            console.log('✅ Loaded:', scriptName, '(' + window.APP_CONFIG.scriptsLoaded + '/' + window.APP_CONFIG.requiredScripts + ')');
+        };
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Preparing The Spy Academy...</p>
+        <p class="loading-progress" id="loading-progress">Loading resources...</p>
+    </div>
+
+    <!-- Main Menu Scene -->
+    <div id="main-menu" class="scene">
+        <div id="three-container" class="three-container"></div>
+        <div class="menu-overlay">
+            <h1 class="game-title">THE SPY ACADEMY</h1>
+            <button id="start-game-btn" class="start-button">START GAME</button>
+            
+            <!-- Vote Suspicion Skip Option -->
+            <div class="skip-voting-container">
+                <label class="skip-voting-option">
+                    <input type="checkbox" id="skip-voting-checkbox" class="skip-voting-checkbox">
+                    <span class="skip-voting-label">Skip Voting Suspicion Scene</span>
+                    <span class="skip-voting-description">Play without the initial suspicion voting phase</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Selection Scene -->
+    <div id="player-selection" class="scene">
+        <div class="selection-container">
+            <h2 class="selection-title">How many players will be taking on this challenge?</h2>
+            <div class="player-count-selector">
+                <button class="player-btn" data-count="3">3 Players</button>
+                <button class="player-btn" data-count="4">4 Players</button>
+                <button class="player-btn" data-count="5">5 Players</button>
+                <button class="player-btn" data-count="6">6 Players</button>
+                <button class="player-btn" data-count="7">7 Players</button>
+                <button class="player-btn" data-count="8">8 Players</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Selection Scene -->
+    <div id="color-selection" class="scene">
+        <div class="selection-container">
+            <h2 class="selection-title">Choose your player colors</h2>
+            <div id="color-grid" class="color-grid"></div>
+            <button id="confirm-colors" class="confirm-btn" style="display: none;">Begin The Challenge</button>
+        </div>
+    </div>
+
+    <!-- Challenge Container -->
+    <div id="challenge-container" class="scene">
+        <!-- Challenge content will be loaded here -->
+    </div>
+
+    <!-- Voice Settings Button -->
+    <div id="voice-settings-toggle" class="voice-settings-toggle" title="Voice Settings">🎙️</div>
+    
+    <!-- Fullscreen Toggle Button -->
+    <div id="fullscreen-toggle" class="fullscreen-toggle" title="Enter Fullscreen">⛶</div>
+
+    <!-- Volume Control Interface -->
+    <div id="volume-toggle" class="volume-toggle" title="Audio Settings">🔊</div>
+    <div id="volume-control" class="volume-control">
+        <h4>Audio Settings</h4>
+        
+        <div class="volume-slider-group">
+            <label for="master-volume">Master Volume</label>
+            <input type="range" id="master-volume" class="volume-slider" min="0" max="100" value="70">
+        </div>
+        
+        <div class="volume-slider-group">
+            <label for="sfx-volume">Sound Effects</label>
+            <input type="range" id="sfx-volume" class="volume-slider" min="0" max="100" value="80">
+        </div>
+        
+        <div class="volume-slider-group">
+            <label for="music-volume">Background Music</label>
+            <input type="range" id="music-volume" class="volume-slider" min="0" max="100" value="40">
+        </div>
+        
+        <div class="volume-buttons">
+            <button id="mute-btn" class="volume-btn mute-btn">Mute All</button>
+            <button id="close-volume" class="volume-btn">Close</button>
+        </div>
+    </div>
+
+    <!-- Game Over / Victory Screens -->
+    <div id="game-over" class="scene">
+        <div class="result-container">
+            <h2 class="result-title">The Light Has Faded...</h2>
+            <p class="result-message">Your team could not overcome the challenge.</p>
+            <div class="victory-buttons">
+                <button id="gameover-play-again-same" class="continue-btn">🎮 Play Again With Same Players</button>
+                <button id="gameover-start-new" class="restart-btn">🔄 Start New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory" class="scene">
+        <div class="result-container">
+            <h2 class="result-title">The Light Reveals Its Secrets!</h2>
+            <p class="result-message">Congratulations! You have conquered this challenge.</p>
+            <div class="victory-buttons">
+                <button id="play-again-same-players" class="continue-btn">🎮 Play Again With Same Players</button>
+                <button id="start-new-game" class="restart-btn">🔄 Start New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load utilities first -->
+    <script src="js/utils/logger.js" onerror="console.error('Failed to load logger.js')"></script>
+    <script src="js/utils/config.js" onerror="console.error('Failed to load config.js')"></script>
+    <script src="js/utils/helpers.js" onerror="console.error('Failed to load helpers.js')"></script>
+
+    <!-- Third-party dependencies with fallback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="console.warn('Three.js failed to load - 3D effects will be disabled')"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" onerror="console.warn('Anime.js failed to load - some animations may not work')"></script>
+
+    <!-- Core game modules -->
+    <script src="js/soundManager.js" onerror="console.error('Failed to load soundManager.js')"></script>
+    <script src="js/voiceManager.js" onerror="console.error('Failed to load voiceManager.js')"></script>
+    <script src="js/utils/voiceConfig.js" onerror="console.error('Failed to load voiceConfig.js')"></script>
+    <script src="js/roleManager.js" onerror="console.error('Failed to load roleManager.js')"></script>
+    <script src="js/gameManager.js" onerror="console.error('Failed to load gameManager.js')"></script>
+    
+    <!-- Challenge modules -->
+    <script src="js/challenges/firstImpressionsChallenge.js" onerror="console.error('Failed to load firstImpressionsChallenge.js')"></script>
+    <script src="js/challenges/rockPaperScissorsChallenge.js" onerror="console.error('Failed to load rockPaperScissorsChallenge.js')"></script>
+    
+    <!-- Main initialization - load last -->
+    <script src="js/main.js" onerror="console.error('Failed to load main.js')"></script>
+    
+    <!-- Inline app initialization - simplified for cross-device compatibility -->
+    <script src="js/app-init.js" onerror="console.error('Failed to load app-init.js')"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(reg) { console.log('✅ Service Worker registered'); })
+                    .catch(function(err) { console.warn('⚠️ Service Worker registration failed:', err); });
+            });
+        }
+    </script>
+</body>
+</html>
