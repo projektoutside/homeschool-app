@@ -48,12 +48,18 @@
         
         // Simple error tracking
         window.addEventListener('error', function(e) {
-            console.error('Global Error:', e.error || e.message);
-            window.APP_CONFIG.errors.push({
-                message: e.message,
-                source: e.filename,
-                line: e.lineno
-            });
+            // Handle null errors gracefully (common with CORS/script loading issues)
+            const errorMsg = e.error || e.message || 'Unknown error';
+            console.error('Global Error:', errorMsg);
+            
+            // Only track actual errors, not script loading issues
+            if (e.message && !e.message.includes('Script error')) {
+                window.APP_CONFIG.errors.push({
+                    message: e.message || 'Unknown error',
+                    source: e.filename || 'Unknown source',
+                    line: e.lineno || 'Unknown line'
+                });
+            }
         });
         
         // Track script loading

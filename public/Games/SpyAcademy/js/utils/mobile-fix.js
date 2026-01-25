@@ -1,5 +1,10 @@
 // Fix for mobile address bar height and viewport issues
 function fixMobileViewport() {
+    // Check if document.body exists before proceeding
+    if (!document.body) {
+        return;
+    }
+    
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
     
@@ -10,13 +15,17 @@ function fixMobileViewport() {
         div.style.paddingBottom = 'env(safe-area-inset-bottom)';
         div.style.position = 'fixed';
         div.style.visibility = 'hidden';
-        document.body.appendChild(div);
         
-        const style = window.getComputedStyle(div);
-        document.documentElement.style.setProperty('--safe-area-top', style.paddingTop);
-        document.documentElement.style.setProperty('--safe-area-bottom', style.paddingBottom);
-        
-        document.body.removeChild(div);
+        // Double-check body exists before appending
+        if (document.body) {
+            document.body.appendChild(div);
+            
+            const style = window.getComputedStyle(div);
+            document.documentElement.style.setProperty('--safe-area-top', style.paddingTop);
+            document.documentElement.style.setProperty('--safe-area-bottom', style.paddingBottom);
+            
+            document.body.removeChild(div);
+        }
     }
 }
 
@@ -27,12 +36,26 @@ window.addEventListener('orientationchange', () => {
     setTimeout(fixMobileViewport, 100);
 });
 
-// Run immediately
-fixMobileViewport();
+// Run when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixMobileViewport);
+} else {
+    // DOM already loaded
+    fixMobileViewport();
+}
 
 // Detect touch capability and add class to body
-if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    document.body.classList.add('touch-device');
+function addTouchDeviceClass() {
+    if (document.body && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+        document.body.classList.add('touch-device');
+    }
+}
+
+// Run when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addTouchDeviceClass);
+} else {
+    addTouchDeviceClass();
 }
 
 // Standard helper for all dynamic overlays to ensure they are scrollable and fit viewport

@@ -494,18 +494,23 @@ window.initAppOnDevice = function() {
 
 // Global error handlers to prevent silent failures
 window.addEventListener('error', (event) => {
-    console.error('🚨 Global JavaScript Error:', event.error);
+    // Handle null errors gracefully (common with CORS/script loading issues)
+    const error = event.error || event.message || 'Unknown error';
+    console.error('🚨 Global JavaScript Error:', error);
     console.error('📍 Error details:', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        stack: event.error?.stack
+        message: event.message || 'No message available',
+        filename: event.filename || 'Unknown file',
+        lineno: event.lineno || 'Unknown line',
+        colno: event.colno || 'Unknown column',
+        stack: event.error?.stack || 'No stack trace available'
     });
     
-    // Try to show user-friendly error if game manager is available
-    if (window.gameManager && typeof window.gameManager.showError === 'function') {
-        window.gameManager.showError('A technical error occurred. Please refresh the page if the game becomes unresponsive.');
+    // Only show user-friendly error for actual runtime errors, not script loading issues
+    if (event.error && window.gameManager && typeof window.gameManager.showError === 'function') {
+        // Don't show error for CORS/script loading issues as they're often environmental
+        if (!event.message || !event.message.includes('Script error')) {
+            window.gameManager.showError('A technical error occurred. Please refresh the page if the game becomes unresponsive.');
+        }
     }
 });
 

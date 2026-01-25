@@ -384,6 +384,16 @@
             select.addEventListener('change', function() {
                 var playerIdx = parseInt(this.getAttribute('data-player'));
                 var color = this.value;
+                
+                // If empty or placeholder selected, clear the selection
+                if (!color || color === '') {
+                    selectedColors[playerIdx] = null;
+                    delete selectedColors[playerIdx];
+                    updateColorStates();
+                    checkColorSelectionComplete();
+                    return;
+                }
+                
                 var colorName = this.options[this.selectedIndex].getAttribute('data-name');
                 
                 // Check if color already selected by another player
@@ -395,8 +405,15 @@
                     if (window.soundManager && typeof window.soundManager.playWarning === 'function') {
                         window.soundManager.playWarning();
                     }
+                    // Reset to previous selection or empty
                     this.value = selectedColors[playerIdx] ? selectedColors[playerIdx].color : "";
+                    if (!selectedColors[playerIdx]) {
+                        selectedColors[playerIdx] = null;
+                        delete selectedColors[playerIdx];
+                    }
                     alert("This color is already claimed by another agent!");
+                    updateColorStates();
+                    checkColorSelectionComplete();
                     return;
                 }
                 
@@ -456,28 +473,84 @@
         }
         
         function checkColorSelectionComplete() {
-            var allSelected = selectedColors.length >= playerCount && 
-                selectedColors.slice(0, playerCount).every(function(c) { return c && c.color; });
+            // Check each player's color selection directly from the DOM
+            var allSelected = true;
+            var missingIndices = [];
+            
+            for (var i = 0; i < playerCount; i++) {
+                var select = colorGrid.querySelector('.color-select[data-player="' + i + '"]');
+                if (!select || !select.value || select.value === '') {
+                    allSelected = false;
+                    missingIndices.push(i);
+                }
+            }
             
             if (allSelected) {
                 confirmBtn.style.display = 'block';
+                confirmBtn.style.visibility = 'visible';
                 confirmBtn.disabled = false;
+                confirmBtn.style.pointerEvents = 'auto';
+                confirmBtn.style.opacity = '1';
+                console.log('✅ All colors selected - button enabled');
             } else {
                 confirmBtn.style.display = 'none';
+                confirmBtn.disabled = true;
+                console.log('⏳ Waiting for colors:', missingIndices.map(function(idx) { return 'Player ' + (idx + 1); }).join(', '));
             }
         }
         
         // Confirm button handler
         var confirmHandler = function() {
-            if (confirmBtn.disabled) return;
+            // Prevent double-clicks
+            if (confirmBtn.disabled) {
+                console.log('⚠️ Button is disabled, ignoring click');
+                return;
+            }
+            
+            // Validate that all colors are selected by checking DOM directly
+            var allSelected = true;
+            var missingColors = [];
+            for (var i = 0; i < playerCount; i++) {
+                var select = colorGrid.querySelector('.color-select[data-player="' + i + '"]');
+                if (!select || !select.value || select.value === '') {
+                    allSelected = false;
+                    missingColors.push(i + 1);
+                }
+            }
+            
+            if (!allSelected) {
+                console.warn('⚠️ Cannot confirm: not all colors selected. Missing players:', missingColors);
+                if (window.soundManager && typeof window.soundManager.playWarning === 'function') {
+                    window.soundManager.playWarning();
+                }
+                // Re-check and update button state
+                checkColorSelectionComplete();
+                return;
+            }
+            
+            // Disable button to prevent double-clicks
             confirmBtn.disabled = true;
             
+            // Build player data from DOM selections (most reliable)
             var playerData = [];
             for (var i = 0; i < playerCount; i++) {
+                var select = colorGrid.querySelector('.color-select[data-player="' + i + '"]');
+                var nameInput = colorGrid.querySelector('.player-name-input[data-player="' + i + '"]');
+                
+                if (!select || !select.value) {
+                    console.error('❌ Missing color for player', i);
+                    confirmBtn.disabled = false;
+                    return;
+                }
+                
+                var color = select.value;
+                var colorName = select.options[select.selectedIndex].getAttribute('data-name');
+                var playerName = nameInput ? (nameInput.value.trim() || 'Player ' + (i + 1)) : 'Player ' + (i + 1);
+                
                 playerData.push({
-                    name: playerNames[i] || 'Player ' + (i + 1),
-                    color: selectedColors[i].color,
-                    colorName: selectedColors[i].name
+                    name: playerName,
+                    color: color,
+                    colorName: colorName
                 });
             }
             
@@ -511,11 +584,56 @@
             }
         };
         
-        confirmBtn.addEventListener('click', confirmHandler);
-        confirmBtn.addEventListener('touchend', function(e) {
+        // Add click handler with better error handling
+        confirmBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('🔘 Confirm button clicked');
             confirmHandler();
         });
+        
+        confirmBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔘 Confirm button touched');
+            confirmHandler();
+        });
+        
+        // Also add mousedown for better mobile support
+        confirmBtn.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+        });
+        
+        // Initial check to set button state
+        checkColorSelectionComplete();
+        
+        // Debug helper function
+        window.debugColorSelection = function() {
+            console.log('🔍 Color Selection Debug:');
+            console.log('  Player Count:', playerCount);
+            console.log('  Selected Colors Array:', selectedColors);
+            console.log('  Player Names:', playerNames);
+            
+            for (var i = 0; i < playerCount; i++) {
+                var select = colorGrid.querySelector('.color-select[data-player="' + i + '"]');
+                var nameInput = colorGrid.querySelector('.player-name-input[data-player="' + i + '"]');
+                console.log('  Player ' + (i + 1) + ':', {
+                    selectExists: !!select,
+                    selectedValue: select ? select.value : 'N/A',
+                    name: nameInput ? nameInput.value : 'N/A',
+                    arrayValue: selectedColors[i] || 'not set'
+                });
+            }
+            
+            console.log('  Button State:', {
+                display: confirmBtn.style.display,
+                disabled: confirmBtn.disabled,
+                visible: confirmBtn.offsetParent !== null
+            });
+            
+            checkColorSelectionComplete();
+            console.log('  After re-check, button display:', confirmBtn.style.display);
+        };
     }
     
     /**
