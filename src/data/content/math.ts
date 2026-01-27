@@ -26,6 +26,30 @@ export const mathContent: ContentItem[] = [
         dateAdded: '2024-03-01'
     },
     {
+        id: 'MathPuzzle',
+        title: 'Math Puzzle',
+        description: 'A fun and challenging math puzzle game for all ages.',
+        type: 'game',
+        category: 'math',
+        subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
+        gradeLevels: ['All'],
+        customHtmlPath: '/Games/MathPuzzle/index.html',
+        thumbnail: '/Games/MathPuzzle/thumb.png',
+        dateAdded: '2026-01-26'
+    },
+    {
+        id: 'MathWorksheetCreator',
+        title: 'Math Worksheet Creator',
+        description: 'Create custom math worksheets for practice.',
+        type: 'tool',
+        category: 'math',
+        subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
+        gradeLevels: ['All'],
+        customHtmlPath: '/MathWorksheetCreator/index.html',
+        thumbnail: '/MathWorksheetCreator/thumb.png',
+        dateAdded: '2026-01-26'
+    },
+    {
         "id": "math-1minuteadditiontest-1768357163983",
         "title": "1minuteAdditionTEST",
         "description": "Start auto-uploaded worksheet.",

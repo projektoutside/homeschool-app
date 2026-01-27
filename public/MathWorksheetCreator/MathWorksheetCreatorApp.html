@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes">
+    <title>Math Worksheet Creator</title>
+    <style>
+        /* ======= CSS CUSTOM PROPERTIES (Design System) ======= */
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --success-color: #2ecc71;
+            --success-dark: #27ae60;
+            --warning-color: #e67e22;
+            --warning-dark: #d35400;
+            --purple-color: #9b59b6;
+            --purple-dark: #8e44ad;
+            --text-color: #3498db;
+            --bg-light: #f1f9ff;
+            --bg-white: #ffffff;
+            --border-color: #3498db;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 5px 15px rgba(0, 0, 0, 0.3);
+            --border-radius: clamp(4px, 0.5vw, 8px);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Responsive base sizes */
+            --base-font-size: clamp(14px, 2.5vw, 16px);
+            --h1-size: clamp(20px, 4vw, 28px);
+            --h2-size: clamp(18px, 3.5vw, 24px);
+            --h3-size: clamp(16px, 3vw, 20px);
+            --input-font-size: clamp(14px, 2.5vw, 16px);
+            --button-font-size: clamp(14px, 2.8vw, 16px);
+
+            /* Touch-friendly minimums */
+            --touch-target-min: 44px;
+            --button-padding-y: clamp(10px, 2vw, 12px);
+            --button-padding-x: clamp(16px, 3vw, 22px);
+            --input-padding: clamp(8px, 1.5vw, 10px);
+
+            /* Spacing system */
+            --spacing-xs: clamp(4px, 1vw, 6px);
+            --spacing-sm: clamp(8px, 1.5vw, 10px);
+            --spacing-md: clamp(12px, 2vw, 15px);
+            --spacing-lg: clamp(16px, 3vw, 20px);
+            --spacing-xl: clamp(20px, 4vw, 25px);
+
+            /* Box dimensions (will be overridden by JS) */
+            --box-width: 96px;
+            --box-height: 125px;
+            --box-gap: 20px;
+        }
+
+        /* ======= RESET & BASE ======= */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Trebuchet MS', 'Verdana', 'Arial Black', cursive, sans-serif;
+            color: var(--text-color);
+            background: var(--bg-white);
+            font-size: var(--base-font-size);
+            line-height: 1.5;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ======= CREATOR PANEL (Responsive) ======= */
+        .creator-panel {
+            background: var(--bg-light);
+            border-bottom: 2px solid var(--border-color);
+            padding: var(--spacing-md) var(--spacing-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .creator-panel h1 {
+            margin: 0 0 var(--spacing-sm) 0;
+            font-size: var(--h1-size);
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        .creator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: var(--spacing-md) var(--spacing-lg);
+            width: 100%;
+        }
+
+        .creator-grid>div {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .creator-grid label {
+            font-size: var(--base-font-size);
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+
+        .creator-grid input[type="text"],
+        .creator-grid input[type="number"],
+        .creator-grid select {
+            width: 100%;
+            padding: var(--input-padding);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: var(--input-font-size);
+            min-height: var(--touch-target-min);
+            transition: var(--transition);
+        }
+
+        .creator-grid input[type="text"]:focus,
+        .creator-grid input[type="number"]:focus,
+        .creator-grid select:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .creator-grid input[type="checkbox"] {
+            margin-right: var(--spacing-xs);
+            transform: scale(1.2);
+            min-width: 20px;
+            min-height: 20px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .creator-grid>div:has(input[type="checkbox"]) label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            min-height: var(--touch-target-min);
+        }
+
+        .creator-actions {
+            margin-top: var(--spacing-lg);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            justify-content: center;
+            width: 100%;
+        }
+
+        .btn {
+            padding: var(--button-padding-y) var(--button-padding-x);
+            font-size: var(--button-font-size);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            min-height: var(--touch-target-min);
+            min-width: var(--touch-target-min);
+            font-weight: 600;
+            white-space: nowrap;
+            flex: 1 1 auto;
+            max-width: 100%;
+            touch-action: manipulation;
+        }
+
+        .btn:hover,
+        .btn:focus {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-generate {
+            background: var(--success-color);
+        }
+
+        .btn-generate:hover {
+            background: var(--success-dark);
+        }
+
+        .btn-export {
+            background: var(--purple-color);
+        }
+
+        .btn-export:hover {
+            background: var(--purple-dark);
+        }
+
+        .btn-check {
+            background: var(--primary-color);
+        }
+
+        .btn-check:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-static {
+            background: var(--warning-color);
+        }
+
+        .btn-static:hover {
+            background: var(--warning-dark);
+        }
+
+        .btn-print {
+            background: #34495e;
+        }
+
+        .btn-print:hover {
+            background: #2c3e50;
+        }
+
+        @media print {
+            .creator-panel {
+                display: none !important;
+            }
+        }
+
+        /* ======= WORKSHEET AREA (WYSIWYG Print Layout) ======= */
+        .worksheet-container {
+            /* Fixed print dimensions */
+            width: 8.5in;
+            min-height: 11in;
+
+            /* Visual "Paper" styling */
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            /* Soft shadow */
+
+            /* Centering and Spacing */
+            margin: var(--spacing-lg) auto;
+            padding: 0.5in;
+            /* Standard print margin approximation */
+
+            /* Flex Layout for internal content */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+
+            /* Scaling logic prep */
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+            box-sizing: border-box;
+            overflow: visible !important;
+        }
+
+        .worksheet-number {
+            position: absolute;
+            top: var(--spacing-xs);
+            left: var(--spacing-xs);
+            font-size: clamp(10px, 2vw, 12px);
+            color: #666;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .header h2 {
+            margin: 0 0 var(--spacing-xs) 0;
+            font-size: var(--h2-size);
+            word-wrap: break-word;
+        }
+
+        .header p {
+            margin: var(--spacing-xs) 0;
+            font-size: var(--base-font-size);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .header input[type="text"] {
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            outline: none;
+            width: auto;
+            min-width: 120px;
+            max-width: 100%;
+            font-size: var(--base-font-size);
+            padding: var(--spacing-xs);
+            font-family: inherit;
+            flex: 1 1 auto;
+        }
+
+
+
+        .problems-grid {
+            display: grid;
+            gap: var(--box-gap);
+            margin: var(--spacing-lg) auto;
+            width: 100%;
+            max-width: 100%;
+            justify-items: center;
+            grid-template-columns: repeat(var(--grid-cols, 1), 1fr);
+        }
+
+        .problem {
+            border: 1px solid #ccc;
+            padding: clamp(4px, 1vw, 8px);
+            text-align: right;
+            font-size: clamp(16px, 3vw, 20px);
+            width: 100%;
+            max-width: var(--box-width);
+            height: var(--box-height);
+            min-height: 80px;
+            background: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: var(--transition);
+            box-sizing: border-box;
+            /* Ensure pink box never spills out */
+            /* overflow: hidden removed to allow number badge to show */
+            overflow: visible !important;
+            z-index: 10;
+            /* Establish stacking context if needed */
+        }
+
+        .problem.correct {
+            background: #d4edda;
+            border-color: var(--success-color);
+        }
+
+        .problem.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .problem::before {
+            content: attr(data-number);
+            position: absolute;
+            top: -6px;
+            left: -2px;
+            background: #fff;
+            color: #999;
+            font-size: clamp(8px, 1.5vw, 10px);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid #eee;
+            white-space: nowrap;
+            z-index: 100;
+        }
+
+        .math-expression {
+            display: grid;
+            gap: clamp(2px, 0.5vw, 4px);
+            width: 100%;
+            text-align: right;
+            margin-top: clamp(2px, 0.5vw, 4px);
+        }
+
+        .number,
+        .operator {
+            font-size: clamp(16px, 3vw, 20px);
+            white-space: pre;
+            color: var(--primary-color);
+            word-break: break-all;
+        }
+
+        .operator {
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .answer-input {
+            width: 100%;
+            /* Removed max-width to allow perfect fit in any size box */
+
+            /* Dynamic height adjustments */
+            flex: 1 1 auto;
+            /* Grow to fill space, shrink if needed */
+            min-height: 30px;
+            /* absolute minimum to be visible/usable */
+
+            font-size: clamp(16px, 3vw, 20px);
+            margin-top: var(--spacing-sm);
+            margin-right: auto;
+            margin-left: auto;
+            border: 2px solid #fdc9ec;
+            border-radius: 4px;
+            text-align: right;
+            font-family: inherit;
+            padding: var(--spacing-xs);
+            box-sizing: border-box;
+            /* Ensure it doesn't overlap or overflow */
+            max-width: 100%;
+
+            /* Ensure it doesn't get cut off weirdly, but stays inside */
+            margin-bottom: 2px;
+        }
+
+        .correct-answer-text {
+            color: #dc3545;
+            /* Red for corrections */
+            font-size: clamp(10px, 2vw, 14px);
+            text-align: right;
+            width: 100%;
+            margin-top: 2px;
+            font-weight: bold;
+            display: none;
+            /* hidden by default */
+            white-space: nowrap;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .answer-input::-webkit-outer-spin-button,
+        .answer-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+            justify-content: center;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .grade-display {
+            margin: var(--spacing-lg) auto 0;
+            text-align: center;
+            font-size: clamp(16px, 3vw, 18px);
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        .grade-emoji {
+            font-size: clamp(30px, 6vw, 50px);
+            margin-right: var(--spacing-xs);
+            display: inline-block;
+        }
+
+        .grade-A {
+            color: #28a745;
+        }
+
+        .grade-B {
+            color: #17a2b8;
+        }
+
+        .grade-C {
+            color: #ffc107;
+        }
+
+        .grade-D {
+            color: #fd7e14;
+        }
+
+        .grade-F {
+            color: #dc3545;
+        }
+
+
+
+        /* ===== PRINT PREVIEW MODAL ===== */
+        .print-preview-modal {
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2500;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: visible;
+        }
+
+        .preview-toolbar {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .preview-scroll-container {
+            flex: 1;
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: visible;
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Paper simulation */
+        .paper-preview {
+            background: white;
+            width: 8.5in;
+            min-height: 11in;
+            padding: 0.5in;
+            box-shadow: 0 0 20px rgba((0), 0, 0, 0.5);
+            margin-bottom: 2rem;
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+            box-sizing: border-box;
+            overflow: visible !important;
+        }
+
+        .paper-preview .worksheet-container {
+            margin: 0;
+            padding: 20px !important;
+            /* Ensure content like -6px problem numbers aren't clipped */
+            box-shadow: none;
+            width: 100%;
+            overflow: visible !important;
+        }
+
+        .paper-preview .button-container {
+            display: none;
+            /* Hide buttons in print preview */
+        }
+
+        /* ===== PRINT PREVIEW (Conditional Print Styles) ===== */
+        @media print {
+
+            /* ONLY when printing from preview mode */
+            body.in-print-preview .print-preview-modal {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: auto;
+                background: white;
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            body.in-print-preview .preview-toolbar {
+                display: none;
+            }
+
+            body.in-print-preview .paper-preview {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                height: auto;
+                transform: none !important;
+                padding: 0;
+            }
+
+            /* Hide everything else ONLY when in preview mode */
+            body.in-print-preview> :not(.print-preview-modal) {
+                display: none !important;
+            }
+
+            /* When NOT in preview mode, ensure modal is hidden */
+            body:not(.in-print-preview) .print-preview-modal {
+                display: none !important;
+            }
+        }
+
+        @media print {
+
+            /* Reset body and html for print */
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Hide placeholders on print */
+            input::placeholder {
+                color: transparent !important;
+            }
+
+            ::-webkit-input-placeholder {
+                color: transparent !important;
+            }
+
+            ::-moz-placeholder {
+                color: transparent !important;
+            }
+
+            :-ms-input-placeholder {
+                color: transparent !important;
+            }
+
+
+            .modal {
+                display: none !important;
+            }
+
+            .creator-panel,
+            .button-container,
+            .btn-check,
+            .btn-static {
+                display: none !important;
+            }
+
+            .worksheet-container {
+                display: block !important;
+                /* Fix flexbox print issues */
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0.25in !important;
+                min-height: 0 !important;
+                height: 100% !important;
+                /* Ensure it doesn't grow beyond content */
+                overflow: visible !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            .worksheet-container * {
+                overflow: visible;
+            }
+
+            .grade-display {
+                margin: 10px 0 0 0 !important;
+                /* Minimal top margin, zero bottom */
+                padding: 0 !important;
+                page-break-after: avoid !important;
+            }
+
+            .problems-grid {
+                transform: none !important;
+                width: 100% !important;
+                margin: 0 !important;
+                gap: 20px !important;
+                grid-template-columns: repeat(var(--grid-cols, 1), 1fr);
+            }
+
+            .problem {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .problem.correct {
+                background: #d4edda !important;
+                border-color: #2ecc71 !important;
+            }
+
+            .problem.incorrect {
+                background: #f8d7da !important;
+                border-color: #dc3545 !important;
+            }
+
+            .correct-answer-text {
+                color: #dc3545 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .grade-A {
+                color: #28a745 !important;
+            }
+
+            .grade-B {
+                color: #17a2b8 !important;
+            }
+
+            .grade-C {
+                color: #ffc107 !important;
+            }
+
+            .grade-D {
+                color: #fd7e14 !important;
+            }
+
+            .grade-F {
+                color: #dc3545 !important;
+            }
+        }
+
+        /* Alignment helpers */
+        .num-align-left .number,
+        .num-align-left .operator {
+            text-align: left;
+        }
+
+        .num-align-center .number,
+        .num-align-center .operator {
+            text-align: center;
+        }
+
+        .num-align-right .number,
+        .num-align-right .operator {
+            text-align: right;
+        }
+
+        .op-align-left .operator {
+            text-align: left;
+        }
+
+        .op-align-right .operator {
+            text-align: right;
+        }
+
+        /* ======= PORTRAIT PHONE OPTIMIZATIONS ======= */
+        @media (max-width: 480px) and (orientation: portrait) {
+
+            /* Optimized typography for portrait phones */
+            :root {
+                --base-font-size: 15px;
+                --h1-size: 22px;
+                --h2-size: 20px;
+                --h3-size: 18px;
+                --input-font-size: 16px;
+                --button-font-size: 15px;
+                --spacing-xs: 4px;
+                --spacing-sm: 8px;
+                --spacing-md: 12px;
+                --spacing-lg: 16px;
+                --spacing-xl: 20px;
+                --button-padding-y: 14px;
+                --button-padding-x: 20px;
+                --input-padding: 12px;
+            }
+
+            .creator-panel {
+                padding: var(--spacing-md) var(--spacing-sm);
+                max-height: 85vh;
+            }
+
+            .creator-panel h1 {
+                font-size: var(--h1-size);
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .creator-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-sm) var(--spacing-md);
+            }
+
+            .creator-grid label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            .creator-grid input[type="text"],
+            .creator-grid input[type="number"],
+            .creator-grid select {
+                font-size: 16px;
+                padding: 12px;
+                min-height: 48px;
+            }
+
+            .creator-grid select[multiple] {
+                min-height: 120px;
+                padding: 8px;
+            }
+
+            .creator-grid select[multiple] option {
+                padding: 10px;
+                font-size: 15px;
+            }
+
+            .creator-actions {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+                margin-top: var(--spacing-md);
+            }
+
+            .btn {
+                width: 100%;
+                padding: 14px 20px;
+                font-size: 15px;
+                min-height: 48px;
+                border-radius: 8px;
+            }
+
+            .worksheet-container {
+                padding: var(--spacing-sm);
+                margin: var(--spacing-sm) auto;
+                overflow-x: visible;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .worksheet-number {
+                font-size: 10px;
+                top: 4px;
+                left: 4px;
+                position: absolute;
+                z-index: 10;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+
+            .header {
+                margin-bottom: var(--spacing-md);
+            }
+
+            .header h2 {
+                font-size: 20px;
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .header p {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--spacing-xs);
+            }
+
+            .header input[type="text"] {
+                width: 100%;
+                min-width: 100%;
+                padding: 10px;
+                font-size: 15px;
+                min-height: 44px;
+                margin: 4px 0;
+            }
+
+
+
+            /* Problems grid - optimized for portrait */
+            .problems-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+                gap: var(--spacing-md);
+                margin: var(--spacing-md) auto;
+                width: 100%;
+                justify-items: stretch;
+                padding: 0;
+            }
+
+            .problem {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                padding: var(--spacing-sm);
+                font-size: 18px;
+                min-height: 100px;
+                box-sizing: border-box;
+            }
+
+            .math-expression {
+                width: 100%;
+                gap: 6px;
+            }
+
+            .problem .answer-input {
+                width: 100%;
+                max-width: 120px;
+            }
+
+            .number,
+            .operator {
+                font-size: 18px;
+            }
+
+            .answer-input {
+                width: 100%;
+                max-width: 100%;
+                min-height: 48px;
+                font-size: 18px;
+                padding: 12px;
+                margin-top: var(--spacing-sm);
+                border-width: 2px;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            .answer-input:focus {
+                border-width: 3px;
+                transform: scale(1.02);
+                transition: transform 0.2s ease;
+            }
+
+            .button-container {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+                margin-top: var(--spacing-md);
+            }
+
+            .button-container .btn {
+                width: 100%;
+                min-height: 48px;
+            }
+
+            .grade-display {
+                font-size: 16px;
+                margin-top: var(--spacing-md);
+            }
+
+            .grade-emoji {
+                font-size: 40px;
+            }
+
+
+        }
+
+        @media (max-width: 360px) and (orientation: portrait) {
+            .creator-panel {
+                padding: var(--spacing-sm);
+            }
+
+            .creator-panel h1 {
+                font-size: 20px;
+            }
+
+            .problems-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-sm);
+            }
+
+            .problem {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .creator-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .creator-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .creator-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+        }
+
+        @media (min-width: 769px) {
+            .creator-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 600px) {
+            .creator-panel {
+                max-height: 50vh;
+            }
+
+            .worksheet-container {
+                margin: var(--spacing-sm) auto;
+            }
+        }
+
+        @media (-webkit-min-device-pixel-ratio: 2),
+        (min-resolution: 192dpi) {
+            .problem {
+                border-width: 0.5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ===== CREATOR PANEL ===== -->
+    <div class="creator-panel">
+        <h1>Worksheet Creator</h1>
+        <div class="creator-grid">
+            <div><label for="titleInput">Worksheet Title</label><input type="text" id="titleInput"
+                    value="Fun with Math!"></div>
+            <div><label for="worksheetNumInput">Worksheet Number</label><input type="text" id="worksheetNumInput"
+                    placeholder="Auto-generate"></div>
+
+            <div><label>Operations</label>
+                <div id="operations-container"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: white; padding: 4px; border: 2px solid var(--border-color); border-radius: var(--border-radius); min-height: 48px; align-items: center;">
+                    <label
+                        style="display:flex; align-items:center; font-weight:normal; margin:0; font-size: 13px; cursor: pointer;"><input
+                            type="checkbox" name="opCheck" value="+" checked
+                            style="margin-right: 4px; transform: scale(1.1);"> Add</label>
+                    <label
+                        style="display:flex; align-items:center; font-weight:normal; margin:0; font-size: 13px; cursor: pointer;"><input
+                            type="checkbox" name="opCheck" value="-" style="margin-right: 4px; transform: scale(1.1);">
+                        Sub</label>
+                    <label
+                        style="display:flex; align-items:center; font-weight:normal; margin:0; font-size: 13px; cursor: pointer;"><input
+                            type="checkbox" name="opCheck" value="*" style="margin-right: 4px; transform: scale(1.1);">
+                        Mult</label>
+                    <label
+                        style="display:flex; align-items:center; font-weight:normal; margin:0; font-size: 13px; cursor: pointer;"><input
+                            type="checkbox" name="opCheck" value="/" style="margin-right: 4px; transform: scale(1.1);">
+                        Div</label>
+                </div>
+            </div>
+            <div><label for="numProblems">Total Problems</label><input type="number" id="numProblems" value="30"
+                    readonly style="background:#eef2f7; cursor:not-allowed;"></div>
+            <div><label for="numRows">Rows</label><input type="number" id="numRows" value="5" min="1" max="10"></div>
+            <div><label for="numCols">Columns</label><input type="number" id="numCols" value="6" min="1" max="10"></div>
+            <div><label for="digitCount1">1st Number Digits</label><select id="digitCount1">
+                    <option value="1">1-digit</option>
+                    <option value="2" selected>2-digit</option>
+                    <option value="3">3-digit</option>
+                </select></div>
+            <div><label for="digitCount2">2nd Number Digits</label><select id="digitCount2">
+                    <option value="1">1-digit</option>
+                    <option value="2" selected>2-digit</option>
+                    <option value="3">3-digit</option>
+                </select></div>
+            <div><label for="orientation">Orientation</label><select id="orientation">
+                    <option value="vertical" selected>Vertical</option>
+                    <option value="horizontal">Horizontal</option>
+                </select></div>
+            <div><label for="boxWidth">Box Width (px)</label><input type="number" id="boxWidth" value="96" min="50"
+                    max="200"></div>
+            <div><label for="boxHeight">Box Height (px)</label><input type="number" id="boxHeight" value="125" min="60"
+                    max="300"></div>
+            <div><label for="boxGap">Box Gap (px)</label><input type="number" id="boxGap" value="20" min="0" max="60">
+            </div>
+
+        </div>
+        <div class="creator-actions">
+            <button class="btn btn-generate" id="generateBtn">Generate New Worksheet</button>
+            <button class="btn btn-export" id="exportBtn">Export Worksheet as HTML</button>
+            <button class="btn btn-check" id="previewBtn">Print Preview</button>
+            <button class="btn btn-print" id="printBtn">Print</button>
+        </div>
+    </div>
+
+    <!-- ===== WORKSHEET AREA ===== -->
+    <div id="worksheetArea" class="worksheet-container"></div>
+
+
+    <!-- ===== PRINT PREVIEW (MODAL-LIKE) ===== -->
+    <style>
+        /* Re-adding basic modal styles needed for print preview since we removed the password modal block which contained them */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 2000;
+            padding: var(--spacing-lg);
+            box-sizing: border-box;
+        }
+
+        .modal.show {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+
+
+    <!-- ===== PRINT PREVIEW MODAL ===== -->
+    <div id="printPreviewModal" class="modal print-preview-modal">
+        <div class="preview-toolbar">
+            <button class="btn btn-print" id="modalPrintBtn">🖨️ Print Now</button>
+            <button class="btn btn-static" id="modalCloseBtn">Close</button>
+        </div>
+        <div id="previewScroll" class="preview-scroll-container">
+            <div id="paperPreview" class="paper-preview"
+                style="transform-origin: top center; transition: transform 0.2s; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.2);">
+                <!-- Content will be cloned here -->
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <script>
+        /******************** DEVICE & VIEWPORT DETECTION ********************/
+        const DeviceInfo = {
+            isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait',
+
+            update() {
+                this.viewportWidth = window.innerWidth;
+                this.viewportHeight = window.innerHeight;
+                this.orientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+            }
+        };
+
+        /******************** RESPONSIVE ADAPTATION SYSTEM (WYSIWYG Scaling) ********************/
+        function adaptToViewport() {
+            DeviceInfo.update();
+            // Main scaling is handled by fitWorksheetToViewport now
+            fitWorksheetToViewport();
+        }
+
+        function fitWorksheetToViewport() {
+            const worksheetArea = document.getElementById('worksheetArea');
+            const grid = worksheetArea?.querySelector('.problems-grid');
+
+            // Update grid columns CSS variable
+            const cols = parseInt(numColsInput.value) || 1;
+            document.documentElement.style.setProperty('--grid-cols', cols);
+
+            // --- WYSIWYG SCALING LOGIC ---
+            // The worksheet container is now fixed at 8.5in (approx 816px) width.
+            // We scale the ENTIRE container to fit the viewport width.
+
+            const margin = 20;
+            const availableWidth = Math.min(window.innerWidth - margin, 1000); // cap to keep centered
+
+            const paperWidth = 8.5 * 96; // 816px
+            const paperHeight = 11 * 96; // 1056px
+
+            // Calculate Scale
+            let scale = 1;
+            if (availableWidth < paperWidth) {
+                scale = availableWidth / paperWidth;
+            }
+
+            // Apply Scale
+            worksheetArea.style.transform = `scale(${scale})`;
+
+            // Ensure grid respects flow
+            if (grid) {
+                grid.style.transform = 'none';
+                grid.style.width = '100%';
+                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            }
+        }
+
+        // Listen for viewport changes
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                adaptToViewport();
+            }, 150);
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                adaptToViewport();
+            }, 100);
+        });
+
+        window.addEventListener('load', () => {
+            adaptToViewport();
+            // Fallback for browsers that don't support :has() selector
+            document.querySelectorAll('.creator-grid > div').forEach(div => {
+                const checkbox = div.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    const label = div.querySelector('label');
+                    if (label) {
+                        label.style.display = 'flex';
+                        label.style.alignItems = 'center';
+                    }
+                }
+            });
+        });
+
+        /******************** UTILITIES ********************/
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        function padLeft(num, len) {
+            return String(num).padStart(len, ' ');
+        }
+        function autoWorksheetNumber() {
+            const now = new Date();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const y = now.getFullYear();
+            const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `WS-${m}${d}${y}-${rand}`;
+        }
+
+        /******************** ELEMENT REFS ********************/
+        const worksheetArea = document.getElementById('worksheetArea');
+        const generateBtn = document.getElementById('generateBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const printBtn = document.getElementById('printBtn');
+
+        // Creator inputs
+        const titleInput = document.getElementById('titleInput');
+
+        const worksheetNumInput = document.getElementById('worksheetNumInput');
+        const numProblemsInput = document.getElementById('numProblems');
+        const numRowsInput = document.getElementById('numRows');
+        const numColsInput = document.getElementById('numCols');
+        const digitCount1Input = document.getElementById('digitCount1');
+        const digitCount2Input = document.getElementById('digitCount2');
+        const orientationInput = document.getElementById('orientation');
+        // const operationsSelect = document.getElementById('operations'); // REMOVED
+        const opChecks = document.querySelectorAll('input[name="opCheck"]');
+
+        const boxWidthInput = document.getElementById('boxWidth');
+        const boxHeightInput = document.getElementById('boxHeight');
+        const boxGapInput = document.getElementById('boxGap');
+
+
+        // Rebuild worksheet when numeric settings change (on change to reduce lag)
+        [numRowsInput, numColsInput, digitCount1Input, digitCount2Input, orientationInput, boxWidthInput, boxHeightInput, boxGapInput].forEach(el => {
+            el.addEventListener('change', buildWorksheetInstantWrapper);
+        });
+
+        // Rebuild when operations checkboxes change
+        opChecks.forEach(chk => {
+            chk.addEventListener('change', buildWorksheetInstantWrapper);
+        });
+
+
+
+        /******************** LIVE UPDATE LISTENERS ********************/
+        titleInput.addEventListener('input', () => {
+            const hdrTitle = worksheetArea.querySelector('.header h2');
+            if (hdrTitle) {
+                hdrTitle.textContent = titleInput.value.trim() || 'Fun with Math!';
+            }
+        });
+
+        worksheetNumInput.addEventListener('input', () => {
+            const wsNumDiv = worksheetArea.querySelector('.worksheet-number');
+            if (wsNumDiv) {
+                wsNumDiv.textContent = worksheetNumInput.value.trim() || autoWorksheetNumber();
+            }
+        });
+
+
+
+        /******************** WORKSHEET GENERATION ********************/
+        let currentProblems = [];
+
+        function collectSelectedOperations() {
+            // Updated to collect from checkboxes
+            const checks = document.querySelectorAll('input[name="opCheck"]:checked');
+            return Array.from(checks).map(c => c.value);
+        }
+
+        function generateProblem(ops, d1, d2) {
+            const op = ops[getRandomInt(0, ops.length - 1)];
+
+            // Helper to get range for n digits
+            const getMin = (d) => d === 1 ? 1 : Math.pow(10, d - 1);
+            const getMax = (d) => Math.pow(10, d) - 1;
+
+            let num1, num2, answer;
+
+            // Generate basic numbers based on digits
+            // Special handling for division: num1 is dividend, num2 is divisor.
+
+            if (op === '/') {
+                // For division: 
+                // Num2 (divisor) should match d2.
+                // Num1 (dividend) should match d1.
+                // And num1 % num2 === 0.
+
+                const min2 = d2 === 1 ? 2 : getMin(d2); // avoid div by 0 or 1 usually
+                const max2 = getMax(d2);
+
+                num2 = getRandomInt(min2, max2);
+
+                // Now find a multiple of num2 that fits in d1-digit range
+                const min1 = getMin(d1);
+                const max1 = getMax(d1);
+
+                // Calculate valid range for the multiplier (answer)
+                const minAns = Math.ceil(min1 / num2);
+                const maxAns = Math.floor(max1 / num2);
+
+                if (maxAns < minAns) {
+                    // Retry or fallback: If strict digit count is impossible (e.g. 1-digit / 3-digit),
+                    // allow num1 to be dictated by num2 * simple_ans
+                    // Fallback to simpler logic
+                    num1 = num2 * getRandomInt(2, 9);
+                } else {
+                    const ans = getRandomInt(minAns, maxAns);
+                    num1 = num2 * ans;
+                }
+                answer = num1 / num2;
+
+            } else if (op === '-') {
+                num1 = getRandomInt(getMin(d1), getMax(d1));
+                num2 = getRandomInt(getMin(d2), getMax(d2));
+
+                // Ensure positive result? Usually yes for simple worksheets.
+                // If we must respect digits strictly, we might have negative answers. 
+                // Standard logic: swap if num2 > num1
+                if (num2 > num1) {
+                    // Swapping implies we might violate the "which number has which digits" rule if d1 != d2.
+                    // But for subtraction, usually Big - Small.
+                    // If user wants 2-digit - 3-digit, that implies negative. 
+                    // Let's assume user wants "Big number" (digits1) - "Small number" (digits2).
+                    // If digits1 < digits2, we can't really do positive subtraction easily without negative.
+                    // For now, let's just swap to keep it simple, even if it fudges the strict "1st vs 2nd" slot.
+                    [num1, num2] = [num2, num1];
+                }
+                answer = num1 - num2;
+
+            } else {
+                // + and *
+                num1 = getRandomInt(getMin(d1), getMax(d1));
+                num2 = getRandomInt(getMin(d2), getMax(d2));
+
+                if (op === '+') answer = num1 + num2;
+                if (op === '*') answer = num1 * num2;
+            }
+
+            return { num1, num2, op, answer };
+        }
+
+        function buildWorksheetInstant() {
+            worksheetArea.innerHTML = '';
+            currentProblems = [];
+            const ops = collectSelectedOperations();
+            if (ops.length === 0) {
+                worksheetArea.innerHTML = '<p style="color:red; text-align:center;">Please select at least one operation.</p>';
+                return;
+            }
+            const d1 = parseInt(digitCount1Input.value);
+            const d2 = parseInt(digitCount2Input.value);
+            const rows = parseInt(numRowsInput.value);
+            const cols = parseInt(numColsInput.value);
+            const total = rows * cols;
+            const worksheetNum = worksheetNumInput.value.trim() || autoWorksheetNumber();
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'header';
+            header.innerHTML = `
+        <h2>${titleInput.value.trim() || 'Fun with Math!'}</h2>
+        <p>
+          <span>Name: <input type="text" placeholder="Your Name"></span>
+          <span>Date: <input type="text" placeholder="Date" style="width:100px; min-width:100px;"></span>
+        </p>
+      `;
+            worksheetArea.appendChild(header);
+
+            const wsNumDiv = document.createElement('div');
+            wsNumDiv.className = 'worksheet-number';
+            wsNumDiv.textContent = worksheetNum;
+            worksheetArea.appendChild(wsNumDiv);
+
+
+
+            // Grid
+            const grid = document.createElement('div');
+            grid.className = 'problems-grid';
+            // Apply initial styles
+            const gap = parseInt(boxGapInput.value) || 20;
+            grid.style.gap = gap + 'px';
+            grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+            for (let i = 0; i < total; i++) {
+                const p = generateProblem(ops, d1, d2);
+                currentProblems.push(p);
+
+                const d = document.createElement('div'); d.className = 'problem'; d.dataset.answer = p.answer; d.setAttribute('data-number', '#' + (i + 1));
+                d.classList.add('num-align-right');
+                d.classList.add('op-align-right');
+
+                let opDisplay = p.op;
+                if (opDisplay == '*') opDisplay = '×'; if (opDisplay == '/') opDisplay = '÷';
+
+                if (orientationInput.value === 'vertical') {
+                    const m = document.createElement('div'); m.className = 'math-expression';
+                    const num = document.createElement('div'); num.className = 'number'; num.textContent = padLeft(p.num1, 2);
+                    const op = document.createElement('div'); op.className = 'operator'; op.textContent = opDisplay + ' ' + padLeft(p.num2, 2);
+                    const ans = document.createElement('input'); ans.type = 'number'; ans.className = 'answer-input';
+                    m.append(num, op); d.append(m, ans);
+                } else {
+
+                    // HORIZONTAL FORMATION - STACKED (Problem Top, Box Bottom)
+                    d.style.display = 'flex';
+                    d.style.flexDirection = 'column';
+                    d.style.justifyContent = 'space-between';
+                    d.style.alignItems = 'center';
+
+                    const expr = document.createElement('div');
+                    expr.className = 'expression-text';
+                    expr.style.fontSize = 'clamp(16px, 3vw, 20px)'; // Matches vertical .number size
+                    expr.style.whiteSpace = 'nowrap'; // Prevent wrapping
+                    expr.style.overflow = 'hidden'; // Ensure it stays in box
+                    expr.style.textOverflow = 'ellipsis'; // Show dots if it really doesn't fit
+                    expr.style.maxWidth = '100%'; // Constrain to parent width
+                    expr.style.color = 'var(--primary-color)';
+                    expr.style.marginBottom = 'auto';
+                    expr.style.marginTop = 'auto';
+                    expr.textContent = `${p.num1} ${opDisplay} ${p.num2}`;
+
+                    const ans = document.createElement('input');
+                    ans.type = 'number';
+                    ans.className = 'answer-input';
+                    // No inline style overrides needed, relying on .answer-input CSS from vertical mode
+
+                    d.append(expr, ans);
+                }
+                grid.appendChild(d);
+            }
+            worksheetArea.appendChild(grid);
+
+            // Grade display & buttons
+            const gradeDiv = document.createElement('div'); gradeDiv.className = 'grade-display'; gradeDiv.id = 'gradeDisplay'; worksheetArea.appendChild(gradeDiv);
+            const btnContainer = document.createElement('div'); btnContainer.className = 'button-container';
+            const checkBtn = document.createElement('button'); checkBtn.className = 'btn btn-check'; checkBtn.textContent = 'Check Answers'; checkBtn.onclick = toggleAnswers;
+            const staticBtn = document.createElement('button'); staticBtn.className = 'btn btn-static'; staticBtn.textContent = 'Create Static Worksheet'; staticBtn.onclick = createStaticWorksheet;
+            btnContainer.append(checkBtn, staticBtn); worksheetArea.appendChild(btnContainer);
+
+            worksheetArea.dataset.worksheetNumber = worksheetNum;
+        }
+
+        /* INITIAL BUILD */
+        buildWorksheetInstantWrapper();
+
+        function updateTotalProblems() {
+            const rows = parseInt(numRowsInput.value) || 0;
+            const cols = parseInt(numColsInput.value) || 0;
+            const total = rows * cols;
+            numProblemsInput.value = total;
+        }
+
+        [numRowsInput, numColsInput].forEach(el => {
+            el.addEventListener('input', () => { updateTotalProblems(); buildWorksheetInstantWrapper(); });
+        });
+        updateTotalProblems();
+
+        function applyBoxStyles() {
+            const bw = parseInt(boxWidthInput.value) || 96;
+            const bh = parseInt(boxHeightInput.value) || 125;
+            const gap = parseInt(boxGapInput.value) || 20;
+            document.documentElement.style.setProperty('--box-width', bw + 'px');
+            document.documentElement.style.setProperty('--box-height', bh + 'px');
+            document.documentElement.style.setProperty('--box-gap', gap + 'px');
+            fitWorksheetToViewport();
+        }
+
+        [boxWidthInput, boxHeightInput, boxGapInput].forEach(el => {
+            el.addEventListener('input', () => { applyBoxStyles(); });
+        });
+        applyBoxStyles();
+
+        function buildWorksheetInstantWrapper() {
+            applyBoxStyles();
+            buildWorksheetInstant();
+            setTimeout(() => {
+                adaptToViewport();
+            }, 10);
+        }
+        generateBtn.addEventListener('click', buildWorksheetInstantWrapper);
+
+        function calculateGrade(score, total) {
+            const perc = (score / total) * 100;
+            if (perc >= 90) return 'A'; if (perc >= 80) return 'B'; if (perc >= 70) return 'C'; if (perc >= 60) return 'D'; return 'F';
+        }
+        function getGradeEmoji(g) { switch (g) { case 'A': return '🌟'; case 'B': return "😊"; case 'C': return "🙂"; case 'D': return "😐"; default: return "😢"; } }
+
+        function toggleAnswers() {
+            const gradeDiv = document.getElementById('gradeDisplay');
+            // If already showing a grade (meaning answers are checked), clear them
+            if (gradeDiv && gradeDiv.innerHTML !== '') {
+                const problems = worksheetArea.querySelectorAll('.problem');
+                problems.forEach(div => {
+                    div.classList.remove('correct', 'incorrect');
+                    const ansDisplay = div.querySelector('.correct-answer-text');
+                    if (ansDisplay) ansDisplay.style.display = 'none';
+                });
+                gradeDiv.innerHTML = '';
+            } else {
+                // Otherwise run the check
+                runCheckAnswers();
+            }
+        }
+
+        function runCheckAnswers() {
+            const problems = worksheetArea.querySelectorAll('.problem');
+            let score = 0;
+            problems.forEach(div => {
+                div.classList.remove('correct', 'incorrect');
+                const ansInput = div.querySelector('input');
+                const correct = parseFloat(div.dataset.answer);
+
+                // Show Correct Answer
+                let ansDisplay = div.querySelector('.correct-answer-text');
+                if (!ansDisplay) {
+                    ansDisplay = document.createElement('div');
+                    ansDisplay.className = 'correct-answer-text';
+                    div.appendChild(ansDisplay);
+                }
+                ansDisplay.textContent = correct;
+
+                if (parseFloat(ansInput.value) === correct) {
+                    div.classList.add('correct');
+                    score++;
+                    ansDisplay.style.display = 'none';
+                } else {
+                    div.classList.add('incorrect');
+                    ansDisplay.style.display = 'block';
+                }
+            });
+            const total = problems.length;
+            const grade = calculateGrade(score, total);
+            const gradeDiv = document.getElementById('gradeDisplay');
+            gradeDiv.innerHTML = `<span class="grade-emoji grade-${grade}">${getGradeEmoji(grade)}</span><span class="grade-text grade-${grade}">Grade: ${grade} (${score}/${total})</span>`;
+        }
+
+        /******************** STATIC & EXPORT ********************/
+        function createStaticWorksheet() {
+            const html = buildExportHTML(false);
+            downloadHTML(html, worksheetArea.dataset.worksheetNumber + '.html');
+        }
+        function buildExportHTML(includeAnswers) {
+            const styleBlock = document.querySelector('style').innerHTML;
+            let worksheetHTML = worksheetArea.innerHTML;
+            worksheetHTML = worksheetHTML.replace(/<script/gi, '<scr' + 'ipt');
+
+            let html = '<!DOCTYPE html>';
+            html += '<html lang="en"><head>';
+            html += '<meta charset="UTF-8">';
+            html += '<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes">';
+            html += '<title>' + (titleInput.value || 'Worksheet') + '</title>';
+            html += '<style>' + styleBlock + '</style>';
+            html += '</head><body>';
+            html += '<div class="worksheet-container">' + worksheetHTML + '</div>';
+            // Inline grade script
+            html += '<script>(function(){';
+            html += 'function calcGrade(s,t){const p=(s/t)*100;if(p>=90)return"A";if(p>=80)return"B";if(p>=70)return"C";if(p>=60)return"D";return"F";}';
+            html += 'function emoji(g){switch(g){case"A":return"🌟";case"B":return"😊";case"C":return"🙂";case"D":return"😐";default:return"😢";}}';
+            html += 'window.toggleAnswers=function(){var gd=document.getElementById("gradeDisplay");if(gd&&gd.innerHTML!==""){var ps=document.querySelectorAll(".problem");ps.forEach(function(d){d.classList.remove("correct","incorrect");var ad=d.querySelector(".correct-answer-text");if(ad)ad.style.display="none";});gd.innerHTML="";}else{run();}};';
+            html += 'function run(){var probs=document.querySelectorAll(".problem"),s=0;probs.forEach(function(d){d.classList.remove("correct","incorrect");var inp=d.querySelector("input"),cor=parseFloat(d.dataset.answer);var ad=d.querySelector(".correct-answer-text");if(!ad){ad=document.createElement("div");ad.className="correct-answer-text";d.appendChild(ad);}ad.textContent=cor;if(parseFloat(inp.value)===cor){d.classList.add("correct");s++;ad.style.display="none";}else{d.classList.add("incorrect");ad.style.display="block";}});var tot=probs.length,grade=calcGrade(s,tot);document.getElementById("gradeDisplay").innerHTML=\'<span class="grade-emoji grade-\'+grade+\'">\'+emoji(grade)+\'</span><span class="grade-text grade-\'+grade+\'">Grade: \'+grade+\' (\'+s+\'/\'+tot+\')</span>\';}';
+            html += '})();' + '<' + '/script>';
+            html += '</body></html>';
+            return html;
+        }
+        function downloadHTML(content, filename) { const blob = new Blob([content], { type: 'text/html' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+
+        exportBtn.addEventListener('click', () => {
+            const fname = prompt('Filename for export (.html will be added):', 'MyWorksheet');
+            if (fname !== null && fname.trim() !== '') {
+                downloadHTML(buildExportHTML(false), fname.trim() + '.html');
+            }
+        });
+
+        previewBtn.addEventListener('click', () => {
+            openPrintPreview();
+        });
+
+        /******************** PRINT FUNCTIONALITY & PREVIEW ********************/
+        const printPreviewModal = document.getElementById('printPreviewModal');
+        const paperPreview = document.getElementById('paperPreview');
+        const modalPrintBtn = document.getElementById('modalPrintBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        function openPrintPreview() {
+            // 1. Ensure latest version
+            buildWorksheetInstantWrapper();
+
+            setTimeout(() => {
+                // 2. Clone content carefully preserving inputs
+                paperPreview.innerHTML = '';
+                const clone = worksheetArea.cloneNode(true);
+                const originalInputs = worksheetArea.querySelectorAll('input');
+                const cloneInputs = clone.querySelectorAll('input');
+
+                originalInputs.forEach((orig, index) => {
+                    if (cloneInputs[index]) {
+                        const val = orig.value;
+                        cloneInputs[index].setAttribute('value', val);
+                        cloneInputs[index].value = val;
+                    }
+                });
+
+                // Remove interactive elements that shouldn't appear in print
+                const buttons = clone.querySelector('.button-container');
+                if (buttons) buttons.remove();
+
+                paperPreview.appendChild(clone);
+
+                // 3. Show Modal
+                printPreviewModal.classList.add('show');
+                document.body.classList.add('in-print-preview');
+
+                // 4. Auto-scale paper to fit screen
+                scalePreview();
+                document.body.style.overflow = 'hidden';
+            }, 50);
+        }
+
+        function closePrintPreview() {
+            printPreviewModal.classList.remove('show');
+            document.body.classList.remove('in-print-preview');
+            document.body.style.overflow = '';
+        }
+
+        function scalePreview() {
+            if (!printPreviewModal.classList.contains('show')) return;
+
+            const scrollContainer = document.getElementById('previewScroll');
+            const containerWidth = scrollContainer.clientWidth - 40; // padding
+            const paperWidth = 8.5 * 96; // approx 816px
+
+            if (containerWidth < paperWidth) {
+                const scale = containerWidth / paperWidth;
+                paperPreview.style.transform = `scale(${scale})`;
+            } else {
+                paperPreview.style.transform = 'scale(1)';
+            }
+        }
+
+        window.addEventListener('resize', scalePreview);
+        modalCloseBtn.addEventListener('click', closePrintPreview);
+        modalPrintBtn.addEventListener('click', triggerPrint);
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && printPreviewModal.classList.contains('show')) closePrintPreview();
+        });
+
+        printBtn.addEventListener('click', () => {
+            triggerPrint();
+        });
+
+        function triggerPrint() {
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+    </script>
+</body>
+
+</html>
