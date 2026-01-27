@@ -7,23 +7,32 @@ class MathGameController {
         if (!gameState) {
             gameState = { level: 1, timeLimit: 60, score: 0 };
         }
-        
+
         this.gameState = gameState;
         this.callbacks = callbacks;
         this.currentEquation = null;
         this.score = 0;
-        
+
         // Initialize the new professional Math Generator
         this.mathGenerator = new MathGenerator();
-        
+
         this.initTimeLimit();
-        
+
         this.gameTimer = null;
         this.draggedElement = null;
         this.moveHistory = [];
-        this.gameEnded = false; 
-        
+        this.gameEnded = false;
+
         this.setupGameEventListeners();
+
+
+        // Initialize limits
+        this.maxHints = gameState.hintLimit || 3;
+        this.hintsUsed = 0;
+        this.maxSkips = gameState.skipLimit || 3;
+        this.skipsUsed = 0;
+
+        this.updateLimitVisuals();
         this.updateScoreDisplay();
     }
 
@@ -49,18 +58,32 @@ class MathGameController {
         this.boundHint = () => this.showHint();
         this.boundSkip = () => this.skipQuestion();
 
-        undoBtn?.addEventListener('click', this.boundUndo);
-        clearBtn?.addEventListener('click', this.boundClear);
-        hintBtn?.addEventListener('click', this.boundHint);
-        skipBtn?.addEventListener('click', this.boundSkip);
-        
+        if (undoBtn) {
+            undoBtn.removeEventListener('click', this.boundUndo); // Safety remove
+            undoBtn.addEventListener('click', this.boundUndo);
+        }
+        if (clearBtn) {
+            clearBtn.removeEventListener('click', this.boundClear);
+            clearBtn.addEventListener('click', this.boundClear);
+        }
+        if (hintBtn) {
+            hintBtn.removeEventListener('click', this.boundHint);
+            hintBtn.addEventListener('click', this.boundHint);
+            // Ensure button is enabled
+            hintBtn.disabled = false;
+        }
+        if (skipBtn) {
+            skipBtn.removeEventListener('click', this.boundSkip);
+            skipBtn.addEventListener('click', this.boundSkip);
+        }
+
         this.updateUndoButtonState();
     }
 
     cleanup() {
         this.stopTimer();
         this.gameEnded = true;
-        
+
         const undoBtn = document.getElementById('undoMove');
         const clearBtn = document.getElementById('clearEquation');
         const hintBtn = document.getElementById('getHint');
@@ -82,25 +105,22 @@ class MathGameController {
     }
 
     startNewRound() {
-        this.stopTimer();
-        
         this.moveHistory = [];
         this.gameEnded = false;
-        
-        this.initTimeLimit();
-        
+
         this.updateUndoButtonState();
-        
+
         const timeDisplay = document.getElementById('timeRemaining');
-        if (timeDisplay) {
+        if (timeDisplay && !this.gameTimer) {
+            this.initTimeLimit();
             timeDisplay.textContent = this.timeRemaining;
         }
-        
+
         this.generateEquation();
         this.createAnswerBlocks();
         setTimeout(() => this.optimizeEquationLayout(), 100);
-        
-        if (this.timeRemaining > 0) {
+
+        if (this.timeRemaining > 0 && !this.gameTimer) {
             setTimeout(() => {
                 if (!this.gameEnded && !this.gameTimer) {
                     this.startTimer();
@@ -111,14 +131,14 @@ class MathGameController {
 
     startTimer() {
         if (this.gameTimer) clearInterval(this.gameTimer);
-        
+
         this.gameTimer = setInterval(() => {
             this.timeRemaining--;
-            
+
             const timeDisplay = document.getElementById('timeRemaining');
             if (timeDisplay) {
                 timeDisplay.textContent = this.timeRemaining;
-                
+
                 if (this.timeRemaining <= 10) {
                     timeDisplay.style.color = '#ff6b6b';
                     timeDisplay.style.animation = 'pulse 1s infinite';
@@ -127,7 +147,7 @@ class MathGameController {
                     timeDisplay.style.animation = '';
                 }
             }
-            
+
             if (this.timeRemaining <= 0) {
                 this.endGame();
             }
@@ -152,7 +172,7 @@ class MathGameController {
             this.showFeedback(false, `Time's up! Final Score: ${this.score}`, '⏰');
         }
     }
-    
+
     generateEquation() {
         // Use the professional MathGenerator
         this.currentEquation = this.mathGenerator.generate(this.gameState.level);
@@ -160,28 +180,64 @@ class MathGameController {
 
     createAnswerBlocks() {
         const container = document.getElementById('answerBlocks');
-        if(!container) return;
+        if (!container) return;
         container.innerHTML = '';
-        
+
         let answers = [];
+        let instruction = "Drag the numbers and symbols to complete the equation!";
         const eq = this.currentEquation;
-        
-        switch(eq.type) {
-            case 'basic_operation': answers = [eq.num1, eq.num2, eq.result]; break;
-            case 'comparison': answers = [eq.num1, eq.num2]; break;
-            case 'ordering': answers = [...eq.numbers]; break; // Ensure generator provides 'numbers'
-            case 'multi_step': answers = eq.steps; break;
-            case 'order_operations': answers = [eq.num1, eq.num2, eq.num3, eq.result]; break;
-            case 'mixed_operations': answers = [eq.num1, eq.num2, eq.num3, eq.result]; break;
-            case 'algebra': answers = [eq.coefficient, eq.constant, eq.result_value, eq.x]; break;
-            case 'geometry': answers = eq.shape === 'rectangle' ? [eq.length, eq.width, eq.result] : [eq.radius, eq.result]; break;
-            case 'fractions': answers = [eq.num1, eq.num2, eq.resultNum]; break;
-            case 'percentage': answers = [eq.whole, eq.percentage, eq.result]; break;
-            default: answers = [eq.num1, eq.num2, eq.result];
+
+        switch (eq.type) {
+            case 'basic_operation':
+                answers = [eq.num1, eq.num2, eq.result];
+                instruction = "Complete the math equation!";
+                break;
+            case 'comparison':
+                answers = [eq.num1, eq.num2];
+                instruction = "Compare the two numbers!";
+                break;
+            case 'ordering':
+                answers = [...eq.numbers];
+                instruction = "Arrange numbers from smallest to largest!";
+                break;
+            case 'multi_step':
+                answers = eq.steps;
+                instruction = "Solve the multi-step puzzle!";
+                break;
+            case 'order_operations':
+                answers = [eq.num1, eq.num2, eq.num3, eq.result];
+                instruction = "Follow the Order of Operations!";
+                break;
+            case 'mixed_operations':
+                answers = [eq.num1, eq.num2, eq.num3, eq.result];
+                instruction = "Solve the mixed operation challenge!";
+                break;
+            case 'algebra':
+                answers = [eq.coefficient, eq.constant, eq.result_value, eq.x];
+                instruction = "Solve for x!";
+                break;
+            case 'geometry':
+                answers = (eq.shape === 'rectangle') ? [eq.length, eq.width, eq.result] : [eq.radius, eq.result];
+                instruction = eq.question || "Geometry Challenge!";
+                break;
+            case 'fractions':
+                answers = [eq.num1, eq.num2, eq.resultNum];
+                instruction = "Add the fractions!";
+                break;
+            case 'percentage':
+                answers = [eq.whole, eq.percentage, eq.result];
+                instruction = "Calculate the percentage!";
+                break;
+            default:
+                answers = [eq.num1, eq.num2, eq.result];
         }
-        
+
+        // Update instruction UI
+        const instEl = document.querySelector('.instruction-text');
+        if (instEl) instEl.textContent = instruction;
+
         this.shuffleArray(answers);
-        
+
         answers.forEach((val, idx) => {
             const block = document.createElement('div');
             block.className = 'answer-block';
@@ -191,36 +247,36 @@ class MathGameController {
             this.addDragListeners(block);
             container.appendChild(block);
         });
-        
+
         this.updateEquationDisplay();
         this.createOperationBlocks();
     }
 
     createOperationBlocks() {
         const container = document.getElementById('operationBlocks');
-        if(!container) return;
+        if (!container) return;
         container.innerHTML = '';
-        
+
         let symbols = [];
         const eq = this.currentEquation;
-        
-        if(eq.type === 'basic_operation') symbols = [eq.operator, '='];
-        else if(eq.type === 'comparison') symbols = [eq.operator];
-        else if(eq.type === 'ordering') symbols = [];
-        else if(eq.type === 'multi_step') symbols = ['+', '✕', '='];
-        else if(eq.type === 'order_operations') symbols = ['+', '✕', '='];
-        else if(eq.type === 'mixed_operations') symbols = ['➗', '+', '='];
-        else if(eq.type === 'algebra') symbols = ['✕', '+', '='];
-        else if(eq.type === 'geometry') symbols = ['✕'];
-        else if(eq.type === 'fractions') symbols = ['+', '='];
-        else if(eq.type === 'percentage') symbols = [];
-        
-        if(this.hasEqualsSignInDisplay()) {
+
+        if (eq.type === 'basic_operation') symbols = [eq.operator, '='];
+        else if (eq.type === 'comparison') symbols = [eq.operator];
+        else if (eq.type === 'ordering') symbols = [];
+        else if (eq.type === 'multi_step') symbols = ['+', '✕', '='];
+        else if (eq.type === 'order_operations') symbols = ['+', '✕', '='];
+        else if (eq.type === 'mixed_operations') symbols = ['➗', '+', '='];
+        else if (eq.type === 'algebra') symbols = ['✕', '+', '='];
+        else if (eq.type === 'geometry') symbols = ['✕'];
+        else if (eq.type === 'fractions') symbols = ['+', '='];
+        else if (eq.type === 'percentage') symbols = [];
+
+        if (this.hasEqualsSignInDisplay()) {
             symbols = symbols.filter(s => s !== '=');
         }
-        
+
         this.shuffleArray(symbols);
-        
+
         symbols.forEach((sym, idx) => {
             const tri = document.createElement('div');
             tri.className = 'operation-triangle';
@@ -234,15 +290,34 @@ class MathGameController {
     }
 
     hasEqualsSignInDisplay() {
+        // Special case: basic_operation always implies an equals sign structure
+        // even if the 'equals' symbol block hasn't been created yet or isn't in the DOM text.
+        // We want to return FALSE so that createOperationBlocks creates the "=" block.
+        // Wait, NO. If we return FALSE, it adds "=".
+        // If we return TRUE, it filters out "=".
+        // For basic_operation, we WANT "=". So we should return FALSE unless it's already there?
+        // Actually, updateEquationDisplay for basic_operation creates SLOTS. It does NOT put "=" text.
+        // So allow the generator to create the "=" block.
+        const eq = this.currentEquation;
+
+        // If the layout ALREADY includes a static "=" operator div, then we return true (don't create block).
+        // If the layout expects the user to drag "=" (like basic_operation), we return false (create block).
+
         const display = document.getElementById('equationDisplay');
         if (!display) return false;
-        if (display.innerText.includes('=')) return true;
-        const slots = display.querySelectorAll('.filled');
-        for (const slot of slots) {
-            const el = slot.querySelector('.answer-block, .operation-triangle');
-            if (el && el.dataset.value === '=') return true;
-        }
-        return false;
+
+        // Check for static text equals
+        // Explicitly check for equation-operator with "=" content
+        const operators = Array.from(display.querySelectorAll('.equation-operator'));
+        const hasStaticEquals = operators.some(op => op.textContent.trim() === '=');
+
+        if (hasStaticEquals) return true;
+
+        // Also check if any placed block is equals (for robustness)
+        const filledBlocks = Array.from(display.querySelectorAll('.answer-block, .operation-triangle'));
+        const hasBlockEquals = filledBlocks.some(el => el.dataset.value === '=');
+
+        return hasBlockEquals;
     }
 
     getOperationClass(symbol) {
@@ -252,8 +327,8 @@ class MathGameController {
 
     updateEquationDisplay() {
         const display = document.getElementById('equationDisplay');
-        if(!display) return;
-        
+        if (!display) return;
+
         const type = this.currentEquation.type;
         display.innerHTML = '';
         display.setAttribute('data-type', type);
@@ -267,23 +342,23 @@ class MathGameController {
                 <div class="equation-slot" data-position="4"></div>
             `;
         } else if (type === 'geometry') {
-             if (this.currentEquation.shape === 'rectangle') {
-                 display.innerHTML = `
+            if (this.currentEquation.shape === 'rectangle') {
+                display.innerHTML = `
                     <div class="geometry-label-container"><div class="geometry-label">L:</div><div class="equation-slot" data-position="0"></div></div>
                     <div class="equation-triangle-slot" data-position="1"></div>
                     <div class="geometry-label-container"><div class="geometry-label">W:</div><div class="equation-slot" data-position="2"></div></div>
                     <div class="equation-operator">=</div>
                     <div class="geometry-label-container"><div class="geometry-label">Area:</div><div class="equation-slot" data-position="3"></div></div>
                  `;
-             } else {
-                 display.innerHTML = `
+            } else {
+                display.innerHTML = `
                     <div class="geometry-label-container"><div class="geometry-label">R:</div><div class="equation-slot" data-position="0"></div></div>
                     <div class="equation-triangle-slot" data-position="1"></div>
                     <div class="equation-operator">R</div>
                     <div class="equation-operator">=</div>
                     <div class="geometry-label-container"><div class="geometry-label">Area:</div><div class="equation-slot" data-position="2"></div></div>
                  `;
-             }
+            }
         } else if (type === 'fractions') {
             const d = this.currentEquation.den1;
             // Removed the extra division line div to prevent double lines
@@ -310,7 +385,15 @@ class MathGameController {
                 <div class="equation-triangle-slot" data-position="1"></div>
                 <div class="equation-slot" data-position="2"></div>
             `;
-            if (type === 'algebra') {
+            if (type === 'percentage') {
+                display.innerHTML = `
+                    <div class="equation-slot" data-position="0"></div>
+                    <div class="equation-operator">% of</div>
+                    <div class="equation-slot" data-position="1"></div>
+                    <div class="equation-operator">=</div>
+                    <div class="equation-slot" data-position="2"></div>
+                `;
+            } else if (type === 'algebra') {
                 display.innerHTML += `
                     <div class="equation-triangle-slot" data-position="3"></div>
                     <div class="equation-slot" data-position="4"></div>
@@ -318,7 +401,7 @@ class MathGameController {
                     <div class="equation-slot" data-position="6"></div>
                 `;
             } else if (type === 'multi_step') {
-                 display.innerHTML = `
+                display.innerHTML = `
                     <div class="equation-operator">(</div>
                     <div class="equation-slot" data-position="0"></div>
                     <div class="equation-triangle-slot" data-position="1"></div>
@@ -366,13 +449,13 @@ class MathGameController {
 
     startDrag(e, block) {
         e.preventDefault();
-        
+
         // --- KEY FIX: Move block to body IMMEDIATELY ---
         // 1. Calculate current global position
         const rect = block.getBoundingClientRect();
         const clientX = e.clientX || e.touches[0].clientX;
         const clientY = e.clientY || e.touches[0].clientY;
-        
+
         // 2. If picking up from a slot, clear the slot's state immediately
         if (block.classList.contains('placed')) {
             const parent = block.parentElement;
@@ -381,12 +464,12 @@ class MathGameController {
             }
             block.classList.remove('placed');
         }
-        
+
         // 3. Reparent to body to escape all container constraints (overflow, transform, etc.)
         // Preserve dimensions visually before moving
         const width = rect.width;
         const height = rect.height;
-        
+
         block.style.width = `${width}px`;
         block.style.height = `${height}px`;
         block.style.position = 'fixed';
@@ -394,21 +477,21 @@ class MathGameController {
         block.style.top = `${rect.top}px`;
         block.style.zIndex = '10000'; // Very high z-index
         block.style.margin = '0';
-        
+
         document.body.appendChild(block);
-        
+
         this.draggedElement = block;
         block.classList.add('dragging');
-        
+
         // 4. Calculate offset relative to the block's new fixed position
-        this.dragOffset = { 
-            x: clientX - rect.left, 
-            y: clientY - rect.top 
+        this.dragOffset = {
+            x: clientX - rect.left,
+            y: clientY - rect.top
         };
-        
+
         this.moveHandler = (ev) => this.dragMove(ev);
         this.upHandler = (ev) => this.endDrag(ev);
-        
+
         document.addEventListener('mousemove', this.moveHandler);
         document.addEventListener('touchmove', this.moveHandler, { passive: false });
         document.addEventListener('mouseup', this.upHandler);
@@ -416,48 +499,48 @@ class MathGameController {
     }
 
     dragMove(e) {
-        if(!this.draggedElement) return;
+        if (!this.draggedElement) return;
         e.preventDefault();
-        
+
         const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
         const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-        
+
         const el = this.draggedElement;
-        
+
         // Simply update position - logic is simpler now that it's always fixed on body
         el.style.left = (clientX - this.dragOffset.x) + 'px';
         el.style.top = (clientY - this.dragOffset.y) + 'px';
-        
+
         const dropZone = this.getDropZoneUnder(clientX, clientY);
         this.highlightDropZones(dropZone);
     }
 
     endDrag(e) {
-        if(!this.draggedElement) return;
-        
+        if (!this.draggedElement) return;
+
         document.removeEventListener('mousemove', this.moveHandler);
         document.removeEventListener('touchmove', this.moveHandler);
         document.removeEventListener('mouseup', this.upHandler);
         document.removeEventListener('touchend', this.upHandler);
-        
+
         const clientX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
         const clientY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
-        
+
         const dropZone = this.getDropZoneUnder(clientX, clientY);
-        
+
         // Remove fixed positioning temporary styles before placing or returning
         // The methods placeBlockInSlot/returnBlock will reset styles appropriately
         this.draggedElement.classList.remove('dragging');
         this.clearDropZoneHighlights();
-        
-        if(dropZone && !dropZone.classList.contains('filled')) {
+
+        if (dropZone && !dropZone.classList.contains('filled')) {
             const isTriangle = this.draggedElement.classList.contains('operation-triangle');
             const isTriangleSlot = dropZone.classList.contains('equation-triangle-slot');
-            
+
             // Allow placing triangles in triangle slots AND number blocks in number slots
             const isNumberBlock = this.draggedElement.classList.contains('answer-block');
             const isNumberSlot = dropZone.classList.contains('equation-slot');
-            
+
             if ((isTriangle && isTriangleSlot) || (isNumberBlock && isNumberSlot)) {
                 this.placeBlockInSlot(this.draggedElement, dropZone);
             } else {
@@ -466,7 +549,7 @@ class MathGameController {
         } else {
             this.returnBlock(this.draggedElement);
         }
-        
+
         this.draggedElement = null;
     }
 
@@ -475,20 +558,20 @@ class MathGameController {
         const el = this.draggedElement;
         const prevDisplay = el.style.display;
         el.style.display = 'none';
-        
+
         const elementUnder = document.elementFromPoint(x, y);
-        
+
         el.style.display = prevDisplay;
-        
+
         if (!elementUnder) return null;
-        
+
         return elementUnder.closest('.equation-slot, .equation-triangle-slot');
     }
 
     highlightDropZones(active) {
         document.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('drop-zone'));
-        if(active && !active.classList.contains('filled')) {
-             active.classList.add('drop-zone');
+        if (active && !active.classList.contains('filled')) {
+            active.classList.add('drop-zone');
         }
     }
 
@@ -498,7 +581,7 @@ class MathGameController {
 
     placeBlockInSlot(block, slot) {
         this.saveMove(block, slot);
-        
+
         // Reset fixed positioning and let it flow into slot
         block.style.position = '';
         block.style.left = '';
@@ -507,11 +590,11 @@ class MathGameController {
         block.style.width = '100%';
         block.style.height = '100%';
         block.style.margin = '';
-        
+
         slot.appendChild(block);
         slot.classList.add('filled');
         block.classList.add('placed');
-        
+
         this.checkEquationComplete();
         this.updateUndoButtonState();
     }
@@ -526,18 +609,18 @@ class MathGameController {
         block.style.width = '';     // Clear inline width
         block.style.height = '';    // Clear inline height
         block.style.margin = '';
-        
+
         // 2. Remove state classes
         block.classList.remove('placed');
         block.classList.remove('dragging');
-        
+
         // 3. Determine correct container
         const containerId = block.classList.contains('operation-triangle') ? 'operationBlocks' : 'answerBlocks';
         const container = document.getElementById(containerId);
-        
+
         // 4. Append to container
         container.appendChild(block);
-        
+
         // 5. Restore original order based on data-id
         this.sortContainer(container);
     }
@@ -548,21 +631,21 @@ class MathGameController {
         items.sort((a, b) => {
             const idA = a.dataset.id || '';
             const idB = b.dataset.id || '';
-            
+
             // Extract numbers if possible "block-1" -> 1
             const numA = parseInt(idA.split('-')[1]) || 0;
             const numB = parseInt(idB.split('-')[1]) || 0;
-            
+
             return numA - numB;
         });
-        
+
         // Re-append in correct order
         items.forEach(item => container.appendChild(item));
     }
 
     shuffleArray(arr) {
-        for(let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i+1));
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
     }
@@ -570,7 +653,7 @@ class MathGameController {
     checkEquationComplete() {
         const slots = document.querySelectorAll('#equationDisplay .equation-slot, #equationDisplay .equation-triangle-slot');
         const allFilled = Array.from(slots).every(s => s.classList.contains('filled'));
-        if(allFilled) {
+        if (allFilled) {
             this.validateEquation();
         }
     }
@@ -586,40 +669,40 @@ class MathGameController {
         try {
             const eqType = this.currentEquation.type;
             if (eqType === 'basic_operation') {
-                 correct = this.validateBasicOperation(values);
+                correct = this.validateBasicOperation(values);
             } else if (eqType === 'comparison') {
-                 correct = this.validateComparison(values);
+                correct = this.validateComparison(values);
             } else if (eqType === 'ordering') {
-                 correct = this.validateOrdering(values);
+                correct = this.validateOrdering(values);
             } else if (eqType === 'fractions') {
-                 correct = this.validateFractions(values);
+                correct = this.validateFractions(values);
             } else if (eqType === 'percentage') {
-                 correct = this.validatePercentage(values);
+                correct = this.validatePercentage(values);
             } else if (eqType === 'algebra') {
-                 correct = this.validateAlgebra(values);
+                correct = this.validateAlgebra(values);
             } else if (eqType === 'geometry') {
-                 correct = this.validateGeometry(values);
+                correct = this.validateGeometry(values);
             } else if (eqType === 'multi_step' || eqType === 'order_operations' || eqType === 'mixed_operations') {
-                 correct = this.validateMultiStep(values);
+                correct = this.validateMultiStep(values);
             } else {
-                 correct = true; 
+                correct = true;
             }
         } catch (e) {
             console.error("Validation error", e);
         }
 
-        if(correct) this.handleCorrect();
+        if (correct) this.handleCorrect();
         else this.handleIncorrect();
     }
-    
+
     validateBasicOperation(values) {
         const [n1, op, n2, eq, res] = values;
-        if(eq !== '=') return false;
+        if (eq !== '=') return false;
         const v1 = parseFloat(n1), v2 = parseFloat(n2), vr = parseFloat(res);
-        if(op === '+') return Math.abs(v1+v2 - vr) < 0.001;
-        if(op === '−') return Math.abs(v1-v2 - vr) < 0.001;
-        if(op === '✕') return Math.abs(v1*v2 - vr) < 0.001;
-        if(op === '➗') return Math.abs(v1/v2 - vr) < 0.001;
+        if (op === '+') return Math.abs(v1 + v2 - vr) < 0.001;
+        if (op === '−') return Math.abs(v1 - v2 - vr) < 0.001;
+        if (op === '✕') return Math.abs(v1 * v2 - vr) < 0.001;
+        if (op === '➗') return Math.abs(v1 / v2 - vr) < 0.001;
         return false;
     }
 
@@ -643,7 +726,7 @@ class MathGameController {
         // slot, operator(<), slot, operator(<), slot.
         // The operators are static HTML elements, not slots.
         // So values array will only contain the NUMBERS from the slots.
-        
+
         // values = [num1, num2, num3]
         if (values.length < 3) return false;
         const [n1, n2, n3] = values.map(parseFloat);
@@ -653,9 +736,9 @@ class MathGameController {
     validateFractions(values) {
         // Structure: num1, op, num2, eq, resultNum
         const [n1, op, n2, eq, res] = values;
-        if(eq !== '=') return false;
+        if (eq !== '=') return false;
         const v1 = parseFloat(n1), v2 = parseFloat(n2), vr = parseFloat(res);
-        
+
         if (op === '+') return (v1 + v2) === vr;
         return false;
     }
@@ -670,11 +753,11 @@ class MathGameController {
         // Display logic: `P% of W`
         // So slot 0 is P, slot 1 is W.
         // Values: [P, W, Res]
-        
+
         // However, looking at createAnswerBlocks for percentage:
         // answers = [eq.whole, eq.percentage, eq.result] -> shuffled.
         // user places them.
-        
+
         // We need to validate: (P / 100) * W == Res
         const [p, w, res] = values.map(parseFloat);
         return Math.abs((p / 100) * w - res) < 0.001;
@@ -690,34 +773,34 @@ class MathGameController {
         // Simplified: The intended numbers are specific.
         // Let's rely on checking against expected values if possible, 
         // OR evaluate the expression constructed by the user.
-        
+
         // Let's use a simple evaluator for the sequence of values
         // values array contains numbers and operators in order.
         // e.g. [a, +, b, x, c, =, res]
-        
+
         // Filter out '=' and everything after
         const equalsIndex = values.indexOf('=');
         if (equalsIndex === -1) return false;
-        
+
         const expressionParts = values.slice(0, equalsIndex);
         const userResult = parseFloat(values[values.length - 1]);
-        
+
         // Basic parser for arithmetic
         // Convert symbols to JS math
         const jsExpression = expressionParts.map(p => {
-            if(p === '✕') return '*';
-            if(p === '➗') return '/';
-            if(p === '−') return '-';
+            if (p === '✕') return '*';
+            if (p === '➗') return '/';
+            if (p === '−') return '-';
             return p;
         }).join(' ');
-        
+
         try {
             // Note: eval is dangerous in general web, but here inputs are strictly controlled blocks.
             // We can calculate it.
             // Function constructor is slightly safer than direct eval
             const calculated = new Function(`return ${jsExpression}`)();
             return Math.abs(calculated - userResult) < 0.001;
-        } catch(e) {
+        } catch (e) {
             return false;
         }
     }
@@ -725,12 +808,12 @@ class MathGameController {
     validateAlgebra(values) {
         // Expected structure: [a] [✕] [x] [+] [b] [=] [c]
         // Indices: 0, 2, 4, 6 are numbers. 1, 3, 5 are operators.
-        
+
         const v0 = parseFloat(values[0]); // Coefficient or x
         const v2 = parseFloat(values[2]); // x or Coefficient
         const v4 = parseFloat(values[4]); // Constant
         const v6 = parseFloat(values[6]); // Result
-        
+
         // Check basic structure: (Slot0 * Slot2) + Slot4 = Slot6
         // This covers a*x + b = c and x*a + b = c
         return Math.abs((v0 * v2) + v4 - v6) < 0.001;
@@ -739,34 +822,34 @@ class MathGameController {
     validateGeometry(values) {
         // Rectangle: [L] [op] [W] [=] [Area]
         // Circle: [R] [op] [R] [=] [Area] (Approximated)
-        
+
         // Filter out non-numbers/ops
         const numeric = values.filter(v => !isNaN(parseFloat(v)) && v !== '=').map(parseFloat);
         // Expect 3 numbers: dim1, dim2, area.
-        if(numeric.length < 3) return false;
-        
+        if (numeric.length < 3) return false;
+
         const [d1, d2, area] = numeric;
-        
+
         // Check if d1 * d2 approx area (for rect)
         // For circle: d1(R) * d2(R) * 3.14 approx area?
         // My generator uses integer rounding.
-        
+
         if (this.currentEquation.shape === 'circle') {
-             // We provided R and Area. 
-             // We need R * R * 3.14 approx Area.
-             // But user just provides R and Area?
-             // createAnswerBlocks provided: [radius, result] (2 blocks).
-             // My display has 2 slots?
-             // Geometry display:
-             // Radius: [Slot]
-             // Area: [Slot]
-             // So 2 numbers.
-             const [r, a] = numeric;
-             return Math.abs(r * r * 3.14 - a) < 1.0; // Allow rounding diff
+            // We provided R and Area. 
+            // We need R * R * 3.14 approx Area.
+            // But user just provides R and Area?
+            // createAnswerBlocks provided: [radius, result] (2 blocks).
+            // My display has 2 slots?
+            // Geometry display:
+            // Radius: [Slot]
+            // Area: [Slot]
+            // So 2 numbers.
+            const [r, a] = numeric;
+            return Math.abs(r * r * 3.14 - a) < 1.0; // Allow rounding diff
         } else {
-             // Rectangle: L, W, Area. 3 blocks.
-             // L * W = Area
-             return Math.abs(d1 * d2 - area) < 0.001;
+            // Rectangle: L, W, Area. 3 blocks.
+            // L * W = Area
+            return Math.abs(d1 * d2 - area) < 0.001;
         }
     }
 
@@ -783,13 +866,13 @@ class MathGameController {
     }
 
     showFeedback(success, msg, icon) {
-        if(this.callbacks.showFeedback) {
+        if (this.callbacks.showFeedback) {
             this.callbacks.showFeedback(success ? 'Success' : 'Incorrect', msg, icon);
         }
     }
 
     nextQuestion() {
-        if(this.gameEnded) return;
+        if (this.gameEnded) return;
         this.clearAllSlots();
         this.generateEquation();
         this.createAnswerBlocks();
@@ -799,7 +882,7 @@ class MathGameController {
         const slots = document.querySelectorAll('.filled');
         slots.forEach(slot => {
             const block = slot.firstElementChild;
-            if(block) this.returnBlock(block);
+            if (block) this.returnBlock(block);
             slot.classList.remove('filled');
         });
         this.moveHistory = [];
@@ -811,9 +894,9 @@ class MathGameController {
     }
 
     undoLastMove() {
-        if(this.moveHistory.length === 0) return;
+        if (this.moveHistory.length === 0) return;
         const move = this.moveHistory.pop();
-        if(move.block && move.block.parentElement === move.toSlot) {
+        if (move.block && move.block.parentElement === move.toSlot) {
             this.returnBlock(move.block);
             move.toSlot.classList.remove('filled');
         }
@@ -822,19 +905,198 @@ class MathGameController {
 
     saveMove(block, slot) {
         this.moveHistory.push({ block, toSlot: slot });
-        if(this.moveHistory.length > 10) this.moveHistory.shift();
+        if (this.moveHistory.length > 10) this.moveHistory.shift();
     }
 
     updateUndoButtonState() {
         const btn = document.getElementById('undoMove');
-        if(btn) btn.disabled = this.moveHistory.length === 0;
+        if (btn) btn.disabled = this.moveHistory.length === 0;
     }
-    
+
+    getCorrectSequence() {
+        const eq = this.currentEquation;
+        const type = eq.type;
+
+        switch (type) {
+            case 'basic_operation':
+                return [eq.num1, eq.operator, eq.num2, '=', eq.result];
+
+            case 'comparison':
+                return [eq.num1, eq.operator, eq.num2];
+
+            case 'ordering':
+                if (eq.numbers) return [...eq.numbers].sort((a, b) => a - b);
+                return [];
+
+            case 'fractions':
+                return [eq.num1, '+', eq.num2, '=', eq.resultNum];
+
+            case 'percentage':
+                return [eq.percentage, eq.whole, eq.result];
+
+            case 'geometry':
+                if (eq.shape === 'rectangle') {
+                    return [eq.length, '✕', eq.width, eq.result];
+                } else {
+                    return [eq.radius, '✕', eq.result];
+                }
+
+            case 'algebra':
+                return [eq.coefficient, '✕', eq.x, '+', eq.constant, '=', eq.result_value];
+
+            case 'multi_step':
+                return [eq.steps[0], '+', eq.steps[1], '✕', eq.steps[2], '=', eq.result];
+
+            case 'mixed_operations':
+                return [eq.num1, '➗', eq.num2, '+', eq.num3, '=', eq.result];
+
+            case 'order_operations':
+                return [eq.num1, '+', eq.num2, '✕', eq.num3, '=', eq.result];
+
+            default:
+                return [];
+        }
+    }
+
     showHint() {
-        this.showFeedback(true, "Here's a hint!", "💡");
+        console.log('Hint button clicked');
+
+        if (this.hintsUsed >= this.maxHints) {
+            this.showFeedback(false, "No hints left!", "🔒");
+            return;
+        }
+
+        // Find all slots in DOM order
+        const slots = document.querySelectorAll('#equationDisplay .equation-slot, #equationDisplay .equation-triangle-slot');
+        console.log('Found slots:', slots.length);
+
+        const correctValues = this.getCorrectSequence();
+        console.log('Correct sequence:', correctValues);
+
+        if (correctValues.length === 0) {
+            console.warn('No correct sequence found for type:', this.currentEquation.type);
+            this.showFeedback(false, "Can't hint this level!", "🤔");
+            return;
+        }
+
+        let hintedCount = 0;
+
+        // Iterate and hint empty ones
+        slots.forEach((slot, index) => {
+            // Check if slot corresponds to a value in our sequence
+            if (correctValues[index] !== undefined) {
+                // Determine if slot is effectively empty
+                const isFilled = slot.classList.contains('filled');
+                const isSymbolSlot = slot.classList.contains('equation-triangle-slot');
+
+                // Only hint if it's a SYMBOL slot (triangle) and it's empty
+                if (!isFilled && isSymbolSlot) {
+                    this.flashHintInSlot(slot, correctValues[index]);
+                    hintedCount++;
+                }
+            }
+        });
+
+        console.log('Hinted count:', hintedCount);
+
+        if (hintedCount > 0) {
+            this.hintsUsed++;
+            this.updateLimitVisuals();
+
+            if (this.hintsUsed >= this.maxHints) {
+                const hintBtn = document.getElementById('getHint');
+                if (hintBtn) hintBtn.disabled = true;
+            }
+        }
     }
-    
+
+    flashHintInSlot(slot, value) {
+        console.log('Flashing hint:', value, 'in slot', slot);
+
+        // Remove existing hint if any
+        const existing = slot.querySelector('.hint-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'hint-overlay';
+        overlay.textContent = value;
+
+        slot.appendChild(overlay);
+
+        // Force reflow
+        void overlay.offsetWidth;
+
+        // Remove after animation completes
+        setTimeout(() => {
+            if (overlay.parentElement) overlay.remove();
+        }, 3200);
+    }
+
     skipQuestion() {
+        if (this.skipsUsed >= this.maxSkips) {
+            this.showFeedback(false, "No skips left!", "🔒");
+            return;
+        }
+
+        this.skipsUsed++;
+        this.updateLimitVisuals();
+
+        if (this.skipsUsed >= this.maxSkips) {
+            const skipBtn = document.getElementById('skipQuestion');
+            if (skipBtn) skipBtn.disabled = true;
+        }
+
         this.nextQuestion();
+    }
+
+    updateLimitVisuals() {
+        // Update Hint Stars - Start with all filled, then mark 'used' from right to left (or left to right depending on preference, but usually consume from end)
+        // Original request: "only one start will be removed... matches corresponding number"
+        // Let's render Total stars. And mark the last N as 'used' or empty.
+        // Actually, cleaner visual: Render ALL stars.
+        // If 3 total, used 1 => Show 2 filled, 1 empty.
+        // Logic: i < (max - used) ? filled : used
+
+        const hintContainer = document.getElementById('hintStars');
+        if (hintContainer) {
+            hintContainer.innerHTML = '';
+            // Render stars equal to Max Count
+            for (let i = 0; i < this.maxHints; i++) {
+                const star = document.createElement('div');
+                // Fill the star if index is less than remaining amount
+                // Remaining = maxHints - hintsUsed
+                // e.g. Max 3, Used 0 => Remaining 3. i=0,1,2 < 3 (Filled)
+                // Used 1 => Remaining 2. i=0,1 < 2 (Filled), i=2 (Used)
+                const isRemaining = i < (this.maxHints - this.hintsUsed);
+
+                star.className = `limit-star ${isRemaining ? '' : 'used'}`;
+                hintContainer.appendChild(star);
+            }
+        }
+
+        // Update Skip Stars
+        const skipContainer = document.getElementById('skipStars');
+        if (skipContainer) {
+            skipContainer.innerHTML = '';
+            for (let i = 0; i < this.maxSkips; i++) {
+                const isRemaining = i < (this.maxSkips - this.skipsUsed);
+                const starEl = document.createElement('div');
+                starEl.className = `limit-star ${isRemaining ? '' : 'used'}`;
+                skipContainer.appendChild(starEl);
+            }
+        }
+
+        // Update Button States
+        const hintBtn = document.getElementById('getHint');
+        if (hintBtn) hintBtn.disabled = this.hintsUsed >= this.maxHints;
+
+        const skipBtn = document.getElementById('skipQuestion');
+        if (skipBtn) skipBtn.disabled = this.skipsUsed >= this.maxSkips;
+    }
+
+
+    nextQuestion() {
+        // Logic to generate next equation
+        this.startNewRound();
     }
 }

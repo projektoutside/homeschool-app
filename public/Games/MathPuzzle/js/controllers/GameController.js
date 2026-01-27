@@ -54,27 +54,27 @@ class GameController {
 
     showMainMenu() {
         if (window.mathGameController) {
-            window.mathGameController.cleanup(); 
+            window.mathGameController.cleanup();
             window.mathGameController = null;
         }
-        
+
         this.currentPage = 'mainMenu';
         this.hideAllPages();
         const mainMenu = document.getElementById('mainMenu');
         if (mainMenu) {
             mainMenu.style.display = 'flex';
         }
-        
+
         this.selectedDifficulty = null;
         document.querySelectorAll('.difficulty-button').forEach(btn => {
             btn.classList.remove('selected');
         });
-        
+
         const startButton = document.getElementById('startGame');
         if (startButton) {
             startButton.style.display = 'none';
         }
-        
+
         const feedbackOverlay = document.getElementById('feedbackOverlay');
         if (feedbackOverlay) {
             feedbackOverlay.style.display = 'none';
@@ -112,7 +112,7 @@ class GameController {
             translateY: [50, 0],
             scale: [0.9, 1],
             duration: 800,
-            delay: anime.stagger(100, {start: 200}),
+            delay: anime.stagger(100, { start: 200 }),
             easing: 'easeOutCubic'
         });
     }
@@ -124,22 +124,22 @@ class GameController {
         if (settingsPage) {
             settingsPage.style.display = 'flex';
         }
-        
+
         this.loadSettings();
-        
+
         this.setupSettingsEventListeners();
     }
-    
+
     setupSettingsEventListeners() {
         if (this.settingsListenersSetup) {
             return;
         }
         this.settingsListenersSetup = true;
-        
+
         document.getElementById('backToMainFromSettings')?.addEventListener('click', () => {
             this.showMainMenu();
         });
-        
+
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         if (timeLimitSlider && timeLimitValue) {
@@ -147,7 +147,7 @@ class GameController {
                 timeLimitValue.textContent = e.target.value;
             });
         }
-        
+
         document.querySelectorAll('.preset-button').forEach(button => {
             button.addEventListener('click', () => {
                 const time = parseInt(button.dataset.time);
@@ -159,24 +159,26 @@ class GameController {
                 }
             });
         });
-        
+
         document.getElementById('saveSettings')?.addEventListener('click', () => {
             this.saveSettings();
         });
-        
+
         document.getElementById('resetSettings')?.addEventListener('click', () => {
             this.resetSettings();
         });
     }
-    
+
     loadSettings() {
         const savedSettings = localStorage.getItem('mathGameSettings');
         let settings = {
             customTimeLimit: 60,
             enableHints: true,
-            enableSkip: true
+            enableSkip: true,
+            hintLimit: 3,
+            skipLimit: 3
         };
-        
+
         if (savedSettings) {
             try {
                 settings = { ...settings, ...JSON.parse(savedSettings) };
@@ -184,12 +186,12 @@ class GameController {
                 console.warn('Failed to load settings:', e);
             }
         }
-        
+
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         const enableHints = document.getElementById('enableHints');
         const enableSkip = document.getElementById('enableSkip');
-        
+
         if (timeLimitSlider) {
             timeLimitSlider.value = settings.customTimeLimit;
         }
@@ -202,46 +204,106 @@ class GameController {
         if (enableSkip) {
             enableSkip.checked = settings.enableSkip;
         }
-        
+
+        const hintLimitInput = document.getElementById('hintLimit');
+        const skipLimitInput = document.getElementById('skipLimit');
+
+        if (hintLimitInput) hintLimitInput.value = settings.hintLimit || 3;
+        if (skipLimitInput) skipLimitInput.value = settings.skipLimit || 3;
+
         this.savedSettings = settings;
     }
-    
+
     saveSettings() {
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const enableHints = document.getElementById('enableHints');
         const enableSkip = document.getElementById('enableSkip');
-        
+        const hintLimit = document.getElementById('hintLimit');
+        const skipLimit = document.getElementById('skipLimit');
+
         const settings = {
             customTimeLimit: timeLimitSlider ? parseInt(timeLimitSlider.value) : 60,
             enableHints: enableHints ? enableHints.checked : true,
-            enableSkip: enableSkip ? enableSkip.checked : true
+            enableSkip: enableSkip ? enableSkip.checked : true,
+            hintLimit: hintLimit ? parseInt(hintLimit.value) : 3,
+            skipLimit: skipLimit ? parseInt(skipLimit.value) : 3
         };
-        
-        try {
-            localStorage.setItem('mathGameSettings', JSON.stringify(settings));
-            this.savedSettings = settings;
-            this.showFeedback('Settings', 'Settings saved successfully!', '✅');
-            
-            setTimeout(() => {
-                this.hideFeedback();
-            }, 2000);
-        } catch (e) {
-            this.showFeedback('Error', 'Failed to save settings', '❌');
+
+        const confirmOverlay = document.getElementById('confirmOverlay');
+        const confirmBtn = document.getElementById('confirmSaveBtn');
+        const cancelBtn = document.getElementById('cancelSaveBtn');
+
+        if (confirmOverlay && confirmBtn && cancelBtn) {
+            // Show custom modal
+            confirmOverlay.style.display = 'flex';
+
+            const handleConfirm = () => {
+                try {
+                    localStorage.setItem('mathGameSettings', JSON.stringify(settings));
+                    this.savedSettings = settings;
+                    this.showFeedback('Settings', 'Settings saved successfully!', '✅');
+
+                    setTimeout(() => {
+                        this.hideFeedback();
+                    }, 2000);
+                } catch (e) {
+                    this.showFeedback('Error', 'Failed to save settings', '❌');
+                }
+                cleanup();
+            };
+
+            const handleCancel = () => {
+                cleanup();
+            };
+
+            const cleanup = () => {
+                confirmOverlay.style.display = 'none';
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            // Remove existing listeners first to prevent duplicates
+            // Cloning nodes is a quick way to clear listeners if we don't track the bounded functions
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', handleConfirm);
+            newCancelBtn.addEventListener('click', handleCancel);
+
+        } else {
+            // Fallback if modal elements missing
+            if (confirm("Are you sure you want to save these settings? 💾")) {
+                try {
+                    localStorage.setItem('mathGameSettings', JSON.stringify(settings));
+                    this.savedSettings = settings;
+                    this.showFeedback('Settings', 'Settings saved successfully!', '✅');
+
+                    setTimeout(() => {
+                        this.hideFeedback();
+                    }, 2000);
+                } catch (e) {
+                    this.showFeedback('Error', 'Failed to save settings', '❌');
+                }
+            }
         }
     }
-    
+
     resetSettings() {
         const defaultSettings = {
             customTimeLimit: 60,
             enableHints: true,
-            enableSkip: true
+            enableSkip: true,
+            hintLimit: 3,
+            skipLimit: 3
         };
-        
+
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         const enableHints = document.getElementById('enableHints');
         const enableSkip = document.getElementById('enableSkip');
-        
+
         if (timeLimitSlider) {
             timeLimitSlider.value = defaultSettings.customTimeLimit;
         }
@@ -254,12 +316,17 @@ class GameController {
         if (enableSkip) {
             enableSkip.checked = defaultSettings.enableSkip;
         }
-        
+
+        const hintLimitInput = document.getElementById('hintLimit');
+        const skipLimitInput = document.getElementById('skipLimit');
+        if (hintLimitInput) hintLimitInput.value = defaultSettings.hintLimit;
+        if (skipLimitInput) skipLimitInput.value = defaultSettings.skipLimit;
+
         try {
             localStorage.setItem('mathGameSettings', JSON.stringify(defaultSettings));
             this.savedSettings = defaultSettings;
             this.showFeedback('Settings', 'Settings reset to defaults!', '🔄');
-            
+
             setTimeout(() => {
                 this.hideFeedback();
             }, 2000);
@@ -267,7 +334,7 @@ class GameController {
             this.showFeedback('Error', 'Failed to reset settings', '❌');
         }
     }
-    
+
     getCustomTimeLimit() {
         if (this.savedSettings && this.savedSettings.customTimeLimit) {
             return this.savedSettings.customTimeLimit;
@@ -280,16 +347,16 @@ class GameController {
         const iconEl = document.getElementById('feedbackIcon');
         const messageEl = document.getElementById('feedbackMessage');
         const actionsEl = document.getElementById('feedbackActions');
-        
+
         if (overlay && iconEl && messageEl) {
             iconEl.textContent = icon;
             messageEl.textContent = `${title}: ${message}`;
-            
+
             // Hide action buttons for transient feedback
             if (actionsEl) actionsEl.style.display = 'none';
-            
+
             overlay.style.display = 'flex';
-            
+
             setTimeout(() => {
                 // Only hide if we aren't showing the persistent game over screen
                 // We check if actions are hidden to know it's a transient message
@@ -318,7 +385,7 @@ class GameController {
         const startButton = document.getElementById('startGame');
         if (startButton) {
             startButton.style.display = 'block';
-            
+
             anime({
                 targets: startButton,
                 opacity: [0, 1],
@@ -358,7 +425,7 @@ class GameController {
                 this.gameState.timeLimit = 60;
             }
         }
-        
+
         if (!this.gameState.timeLimit || this.gameState.timeLimit <= 0) {
             this.gameState.timeLimit = 60;
         }
@@ -366,7 +433,7 @@ class GameController {
 
     startCountdown() {
         if (!this.selectedDifficulty) return;
-        
+
         this.currentPage = 'countdownPage';
         this.hideAllPages();
         const countdownPage = document.getElementById('countdownPage');
@@ -384,7 +451,7 @@ class GameController {
             if (count > 0) {
                 countdownNumber.textContent = count;
                 countdownMessage.textContent = '';
-                
+
                 countdownNumber.style.animation = 'none';
                 void countdownNumber.offsetHeight;
                 countdownNumber.style.animation = 'countdownPulse 1s ease-in-out';
@@ -394,7 +461,7 @@ class GameController {
             } else {
                 countdownNumber.textContent = 'GO!';
                 countdownMessage.textContent = '';
-                
+
                 countdownNumber.style.animation = 'none';
                 void countdownNumber.offsetHeight;
                 countdownNumber.style.animation = 'countdownPulse 1s ease-in-out';
@@ -408,36 +475,45 @@ class GameController {
 
     startGame() {
         if (!this.selectedDifficulty) return;
-        
+
         if (window.mathGameController) {
             window.mathGameController.cleanup();
         }
-        
+
         if (!this.gameState.timeLimit || this.gameState.timeLimit <= 0) {
             this.setGameParameters(this.selectedDifficulty);
         }
-        
+
+        if (this.savedSettings) {
+            this.gameState.hintLimit = this.savedSettings.enableHints ? (this.savedSettings.hintLimit || 3) : 0;
+            this.gameState.skipLimit = this.savedSettings.enableSkip ? (this.savedSettings.skipLimit || 3) : 0;
+        } else {
+            // Fallback defaults if no settings loaded
+            this.gameState.hintLimit = 3;
+            this.gameState.skipLimit = 3;
+        }
+
         window.mathGameController = new MathGameController(this.gameState, {
             onGameEnd: (finalScore) => this.handleGameEnd(finalScore),
             showFeedback: (title, msg, icon) => this.showFeedback(title, msg, icon)
         });
-        
+
         this.showGameplayPage();
     }
-    
+
     handleGameEnd(finalScore) {
         // Show persistent game over screen
         const overlay = document.getElementById('feedbackOverlay');
         const iconEl = document.getElementById('feedbackIcon');
         const messageEl = document.getElementById('feedbackMessage');
         const actionsEl = document.getElementById('feedbackActions');
-        
+
         if (overlay && iconEl && messageEl && actionsEl) {
             iconEl.textContent = '⏰';
             messageEl.textContent = `Time's up! Final Score: ${finalScore}`;
             actionsEl.style.display = 'flex'; // Show buttons
             overlay.style.display = 'flex';
-            
+
             // Do NOT set a timeout to hide it. It stays until user clicks a button.
         }
     }

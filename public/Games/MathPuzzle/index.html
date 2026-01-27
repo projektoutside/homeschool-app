@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Math Puzzle - Educational Game</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 </head>
+
 <body>
     <div id="three-container"></div>
-    
+
     <!-- Main Menu Page -->
     <div class="page main-container" id="mainMenu">
         <div class="title-container">
@@ -29,13 +34,13 @@
                 </div>
             </h1>
         </div>
-        
+
         <div class="buttons-container">
             <button class="game-button primary-button" id="singlePlayer">
                 <span class="button-text">Single Player Mode</span>
                 <div class="button-glow"></div>
             </button>
-            
+
             <button class="game-button settings-button" id="settings">
                 <span class="button-text">Settings</span>
                 <div class="button-glow"></div>
@@ -51,7 +56,7 @@
             </button>
             <h2 class="page-title">Choose Your Level!</h2>
         </div>
-        
+
         <div class="difficulty-container">
             <div class="difficulty-grid">
                 <button class="difficulty-button easy-level" data-difficulty="easy">
@@ -59,26 +64,26 @@
                     <div class="difficulty-name">Easy</div>
                     <div class="difficulty-description">Perfect for beginners!</div>
                 </button>
-                
+
                 <button class="difficulty-button medium-level" data-difficulty="medium">
                     <div class="difficulty-icon">⚡</div>
                     <div class="difficulty-name">Medium</div>
                     <div class="difficulty-description">Ready for a challenge?</div>
                 </button>
-                
+
                 <button class="difficulty-button hard-level" data-difficulty="hard">
                     <div class="difficulty-icon">🔥</div>
                     <div class="difficulty-name">Hard</div>
                     <div class="difficulty-description">Think you can handle it?</div>
                 </button>
-                
+
                 <button class="difficulty-button extreme-level" data-difficulty="extreme">
                     <div class="difficulty-icon">💀</div>
                     <div class="difficulty-name">Extreme</div>
                     <div class="difficulty-description">Only for math masters!</div>
                 </button>
             </div>
-            
+
             <div class="start-container">
                 <button class="start-button" id="startGame" style="display: none;">
                     <span class="start-text">START GAME!</span>
@@ -96,7 +101,7 @@
             </button>
             <h2 class="page-title">Settings</h2>
         </div>
-        
+
         <div class="settings-container">
             <div class="settings-section">
                 <h3 class="settings-section-title">⏱️ Timer Settings</h3>
@@ -105,15 +110,8 @@
                         Custom Time Limit (seconds)
                     </label>
                     <div class="settings-input-group">
-                        <input 
-                            type="range" 
-                            id="customTimeLimit" 
-                            class="settings-slider" 
-                            min="10" 
-                            max="300" 
-                            value="60" 
-                            step="5"
-                        >
+                        <input type="range" id="customTimeLimit" class="settings-slider" min="10" max="300" value="60"
+                            step="5">
                         <div class="settings-value-display">
                             <span id="timeLimitValue">60</span> seconds
                         </div>
@@ -126,27 +124,42 @@
                         <button class="preset-button" data-time="180">180s</button>
                     </div>
                     <p class="settings-description">
-                        Set a custom time limit for all difficulty levels. This will override the default difficulty timers.
+                        Set a custom time limit for all difficulty levels. This will override the default difficulty
+                        timers.
                     </p>
                 </div>
             </div>
-            
+
             <div class="settings-section">
                 <h3 class="settings-section-title">🎮 Game Settings</h3>
                 <div class="settings-item">
-                    <label class="settings-checkbox-label">
-                        <input type="checkbox" id="enableHints" class="settings-checkbox" checked>
-                        <span>Enable Hint Button</span>
-                    </label>
+                    <div class="settings-row-group">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="enableHints" class="settings-checkbox" checked>
+                            <span>Enable Hints</span>
+                        </label>
+                        <div class="settings-input-small">
+                            <label for="hintLimit">Count:</label>
+                            <input type="number" id="hintLimit" class="settings-number-input" min="1" max="100"
+                                value="3">
+                        </div>
+                    </div>
                 </div>
                 <div class="settings-item">
-                    <label class="settings-checkbox-label">
-                        <input type="checkbox" id="enableSkip" class="settings-checkbox" checked>
-                        <span>Enable Skip Button</span>
-                    </label>
+                    <div class="settings-row-group">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="enableSkip" class="settings-checkbox" checked>
+                            <span>Enable Skips</span>
+                        </label>
+                        <div class="settings-input-small">
+                            <label for="skipLimit">Count:</label>
+                            <input type="number" id="skipLimit" class="settings-number-input" min="1" max="100"
+                                value="3">
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
             <div class="settings-section">
                 <h3 class="settings-section-title">💾 Save Settings</h3>
                 <div class="settings-actions">
@@ -202,7 +215,7 @@
                         <!-- Draggable number blocks will be dynamically generated -->
                     </div>
                 </div>
-                
+
                 <!-- Operations Section -->
                 <div class="blocks-section">
                     <div class="blocks-label">Symbols</div>
@@ -217,8 +230,20 @@
         <div class="game-controls">
             <button class="control-button undo-button" id="undoMove">↶ Undo</button>
             <button class="control-button clear-button" id="clearEquation">Clear All</button>
-            <button class="control-button hint-button" id="getHint">Hint</button>
-            <button class="control-button skip-button" id="skipQuestion">Skip</button>
+
+            <div class="control-wrapper">
+                <button class="control-button hint-button" id="getHint">Hint</button>
+                <div class="limit-stars" id="hintStars">
+                    <!-- Stars will be injected here -->
+                </div>
+            </div>
+
+            <div class="control-wrapper">
+                <button class="control-button skip-button" id="skipQuestion">Skip</button>
+                <div class="limit-stars" id="skipStars">
+                    <!-- Stars will be injected here -->
+                </div>
+            </div>
         </div>
 
         <!-- Success/Feedback Messages -->
@@ -232,10 +257,24 @@
                 </div>
             </div>
         </div>
+
+
     </div>
-    
+
+    <!-- Custom Confirmation Modal -->
+    <div class="feedback-overlay" id="confirmOverlay" style="display: none;">
+        <div class="feedback-content">
+            <div class="feedback-icon">💾</div>
+            <div class="feedback-message">Save these settings?</div>
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="confirmSaveBtn">✅ Yes, Save</button>
+                <button class="control-button secondary-button" id="cancelSaveBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="particle-overlay"></div>
-    
+
     <!-- Load scripts sequentially to avoid CORS issues with modules on file:// protocol -->
     <script src="js/utils/DeviceDetector.js"></script>
     <script src="js/utils/PerformanceMonitor.js"></script>
@@ -246,4 +285,5 @@
     <script src="js/controllers/GameController.js"></script>
     <script src="js/main.js"></script>
 </body>
+
 </html>

@@ -28,15 +28,17 @@ class MathGenerator {
     // ==========================================
     generateEasy() {
         const type = this.weightedRandom([
-            { item: 'addition', weight: 0.4 },
-            { item: 'subtraction', weight: 0.4 },
-            { item: 'comparison', weight: 0.2 }
+            { item: 'addition', weight: 0.35 },
+            { item: 'subtraction', weight: 0.35 },
+            { item: 'comparison', weight: 0.15 },
+            { item: 'ordering', weight: 0.15 }
         ]);
 
         switch (type) {
             case 'addition': return this.getSmartAddition(1, 20);
             case 'subtraction': return this.getSmartSubtraction(1, 20);
             case 'comparison': return this.getSmartComparison(1, 20);
+            case 'ordering': return this.getSmartOrdering(1, 20);
             default: return this.getSmartAddition(1, 20);
         }
     }
@@ -47,10 +49,11 @@ class MathGenerator {
     // ==========================================
     generateMedium() {
         const type = this.weightedRandom([
-            { item: 'multiplication', weight: 0.3 },
-            { item: 'division', weight: 0.3 },
+            { item: 'multiplication', weight: 0.25 },
+            { item: 'division', weight: 0.25 },
             { item: 'mixed_add', weight: 0.2 },
-            { item: 'mixed_sub', weight: 0.2 }
+            { item: 'mixed_sub', weight: 0.2 },
+            { item: 'ordering', weight: 0.1 }
         ]);
 
         switch (type) {
@@ -58,6 +61,7 @@ class MathGenerator {
             case 'division': return this.getSmartDivision(2, 12); // Divisors 2-12
             case 'mixed_add': return this.getSmartAddition(10, 100); // 2-digit addition
             case 'mixed_sub': return this.getSmartSubtraction(10, 100);
+            case 'ordering': return this.getSmartOrdering(10, 100);
             default: return this.getSmartMultiplication(2, 10);
         }
     }
@@ -87,10 +91,10 @@ class MathGenerator {
     // ==========================================
     generateExtreme() {
         const type = this.weightedRandom([
-            { item: 'algebra', weight: 0.3 },
+            { item: 'algebra', weight: 0.35 },
             { item: 'geometry', weight: 0.3 },
             { item: 'fractions', weight: 0.2 },
-            { item: 'percentage', weight: 0.2 }
+            { item: 'percentage', weight: 0.15 }
         ]);
 
         switch (type) {
@@ -168,7 +172,7 @@ class MathGenerator {
     getSmartComparison(min, max) {
         const num1 = this.randomInt(min, max);
         let num2 = this.randomInt(min, max);
-        
+
         // Reduce chance of equality to 10%
         if (num1 === num2 && Math.random() > 0.1) {
             num2 = num1 + (Math.random() > 0.5 ? 1 : -1);
@@ -214,13 +218,29 @@ class MathGenerator {
 
         return {
             type: 'multi_step',
-            steps: [a, b, c, sum], // Used for validation
-            expression: `(${a} + ${b}) ✕ ${c}`,
+            steps: [a, b, c, result], // Changed 'sum' to 'result' for easier slot filling
             result,
             display: `(${a} + ${b}) ✕ ${c} = ${result}`
         };
     }
-    
+
+    getSmartOrdering(min, max) {
+        let nums = [];
+        while (nums.length < 3) {
+            let n = this.randomInt(min, max);
+            if (!nums.includes(n)) nums.push(n);
+        }
+
+        const sorted = [...nums].sort((a, b) => a - b);
+
+        return {
+            type: 'ordering',
+            numbers: nums,
+            sorted: sorted,
+            display: sorted.join(' < ')
+        };
+    }
+
     getMixedHard() {
         // Pattern: (a * b) / c = result  OR  a * b + c
         // Let's do: Divide first then add -> a / b + c
@@ -230,7 +250,7 @@ class MathGenerator {
         const a = b * quotient; // dividend
         const c = this.randomInt(1, 20);
         const result = quotient + c;
-        
+
         return {
             type: 'mixed_operations',
             num1: a, num2: b, num3: c,
@@ -290,7 +310,7 @@ class MathGenerator {
         const n1 = this.randomInt(1, d - 1);
         // Ensure result is not > 1 for simplicity (optional, can be improved)
         // Let's allow sum > 1 but keep denominators same
-        const n2 = this.randomInt(1, d); 
+        const n2 = this.randomInt(1, d);
         const resultNum = n1 + n2;
 
         return {
@@ -310,19 +330,19 @@ class MathGenerator {
         // 20% -> W is multiple of 5
         // 25% -> W is multiple of 4
         // 50% -> W is multiple of 2
-        
+
         const percentages = [10, 20, 25, 50];
         const p = percentages[Math.floor(Math.random() * percentages.length)];
-        
+
         let multiplier;
-        switch(p) {
+        switch (p) {
             case 10: multiplier = 10; break;
             case 20: multiplier = 5; break;
             case 25: multiplier = 4; break;
             case 50: multiplier = 2; break;
             default: multiplier = 10;
         }
-        
+
         const base = this.randomInt(1, 10);
         const w = base * multiplier;
         const result = (p / 100) * w;
@@ -346,7 +366,7 @@ class MathGenerator {
     weightedRandom(options) {
         let totalWeight = 0;
         options.forEach(o => totalWeight += o.weight);
-        
+
         let random = Math.random() * totalWeight;
         for (const option of options) {
             if (random < option.weight) return option.item;
