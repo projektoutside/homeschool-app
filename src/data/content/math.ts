@@ -1006,18 +1006,6 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-21"
     },
     {
-        "id": "MathPuzzle",
-        "title": "Math Puzzle",
-        "description": "Solve math puzzles to improve your skills.",
-        "type": "game",
-        "category": "math",
-        "subjects": ["Algebra", "Geometry"],
-        "gradeLevels": ["1st", "2nd", "3rd"],
-        "customHtmlPath": "/Games/MathPuzzle/index.html",
-        "thumbnail": "/Games/MathPuzzle/thumb.png",
-        "dateAdded": "2026-01-25"
-    },
-    {
         "id": "math-spy-academy",
         "title": "The Spy Academy",
         "description": "An immersive escape room experience with team-based puzzles, color code mysteries, and timed challenges. Work together to solve the mystery!",
