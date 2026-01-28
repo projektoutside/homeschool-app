@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start C:UsersxatorOneDriveDesktopwritemath3index.html)",
+      "Bash(start index.html)"
+    ],
+    "deny": []
+  }
+}

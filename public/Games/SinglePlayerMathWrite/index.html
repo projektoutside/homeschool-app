@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WriteMath! - Fun Math Game</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="responsive-container">
+  <div id="main-menu" class="screen">
+    <h1>📝 WriteMath!</h1>
+    <h2>Choose a Game Mode</h2>
+    <div class="game-modes">
+      <div class="dropdown-wrapper">
+        <select id="mode-select" title="Game Mode">
+          <option value="add">Addition</option>
+          <option value="sub">Subtraction</option>
+          <option value="mul">Multiplication</option>
+          <option value="div">Division</option>
+          <option value="random">Random</option>
+        </select>
+        <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <h3>Difficulty</h3>
+    <div class="difficulty-select">
+      <div class="dropdown-wrapper">
+        <select id="difficulty-select" title="Difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <button id="start-btn" class="big-btn">Start</button>
+    <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
+  </div>
+
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <label>Timer Length:
+        <select id="timer-select">
+          <option value="30">30 seconds</option>
+          <option value="60" selected>60 seconds</option>
+          <option value="120">120 seconds</option>
+        </select>
+      </label>
+      <label>Lives:
+        <select id="lives-select">
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="unlimited">Unlimited</option>
+        </select>
+      </label>
+      <label>Background Music:
+        <input type="checkbox" id="music-toggle">
+      </label>
+      <button id="close-settings" class="big-btn">Close</button>
+    </div>
+  </div>
+
+  <div id="game-screen" class="screen hidden">
+    <div class="game-header">
+      <div id="scoreboard">Score: <span id="score">0</span></div>
+      <div id="timer">⏱️ <span id="time-left">60</span>s</div>
+      <div id="lives">❤️ <span id="lives-left">3</span></div>
+    </div>
+    <div id="model-status" style="text-align: center; color: #fff; font-size: 0.9rem; margin-top: 0.5em;">
+      🧠 Loading handwriting model...
+    </div>
+    <div id="problem-area">
+      <div id="problem" class="problem-large" aria-live="polite"></div>
+      <div id="play-area" class="play-vertical">
+        <div class="canvas-panel">
+          <div class="panel-title">Write your answer</div>
+          <canvas id="handwriting-canvas" width="480" height="220" aria-label="Handwriting input area"></canvas>
+          <div id="canvas-status" class="hint">✏️ Write digits clearly. It will auto-check when you stop.</div>
+          <button id="clear-canvas">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <!-- Prediction Modal -->
+  <div id="predict-modal" class="modal hidden">
+    <div class="modal-content">
+      <div id="predict-spinner" class="spinner hidden"></div>
+      <div id="predict-result" class="hidden">
+        <h3>Is this your answer?</h3>
+        <div id="predicted-digit" style="font-size:2.5rem; margin:0.5em 0;"></div>
+        <button id="confirm-predict-yes" class="big-btn">Yes</button>
+        <button id="confirm-predict-no" class="big-btn">No</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-over" class="screen hidden">
+    <h2>Game Over!</h2>
+    <div id="final-score"></div>
+    <button id="restart-btn" class="big-btn">Restart</button>
+    <button id="menu-btn" class="big-btn">Main Menu</button>
+  </div>
+
+  <!-- Audio tags removed to prevent file not found errors. -->
+  
+  <!-- Development Testing Panel (remove in production) -->
+  <div id="dev-panel" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000; display: none;">
+    <strong>🧪 Dev Testing</strong><br>
+    <button onclick="testHandwriting()" style="margin: 2px; padding: 4px 8px; font-size: 11px;">Test Recognition</button><br>
+    <button onclick="testDigitPatterns()" style="margin: 2px; padding: 4px 8px; font-size: 11px;">Pattern Analysis</button><br>
+    <button onclick="showRecognitionDebug()" style="margin: 2px; padding: 4px 8px; font-size: 11px;">Visual Debug</button><br>
+    <small>Open console for results</small>
+  </div>
+  
+  <script>
+    // Show dev panel if in development mode
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      document.getElementById('dev-panel').style.display = 'block';
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <script src="handwriting.js"></script>
+  <script src="main.js"></script>
+</div>
+</body>
+</html> 

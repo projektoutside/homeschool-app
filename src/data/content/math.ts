@@ -1016,5 +1016,29 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/SpyAcademy/index.html",
         "thumbnail": "/Games/SpyAcademy/thumb.png",
         "dateAdded": "2026-01-24"
+    },
+    {
+        "id": "math-single-player-math-write",
+        "title": "Single Player Math Write",
+        "description": "Practice handwriting and math skills in a single-player mode.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Addition", "Subtraction", "Multiplication", "Division"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/SinglePlayerMathWrite/index.html",
+        "thumbnail": "/Games/SinglePlayerMathWrite/thumb.png",
+        "dateAdded": "2026-01-28"
+    },
+    {
+        "id": "math-2-players-math-write",
+        "title": "2 Players Math Write",
+        "description": "Take turns practicing handwriting and math skills with a friend.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Addition", "Subtraction", "Multiplication", "Division"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/2PlayersMathWrite/index.html",
+        "thumbnail": "/Games/2PlayersMathWrite/thumb.png",
+        "dateAdded": "2026-01-28"
     }
 ];
