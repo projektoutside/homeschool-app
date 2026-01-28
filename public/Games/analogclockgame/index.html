@@ -126,6 +126,10 @@
                     <input type="checkbox" id="sound-toggle" checked>
                 </div>
                 <div class="setting-item">
+                    <label>Music Volume: <span id="music-volume-value">50%</span></label>
+                    <input type="range" id="music-volume" min="0" max="100" step="5" value="50">
+                </div>
+                <div class="setting-item">
                     <label>Lives: <span id="star-count-value">3</span></label>
                     <input type="range" id="star-count" min="1" max="10" step="1" value="3">
                 </div>
@@ -225,6 +229,7 @@
             <div class="header-left">
                 <button id="mobile-shop-toggle" class="header-icon-btn" aria-label="Open Shop">
                     <span class="icon">🏪</span>
+                    <span class="btn-text">Shop</span>
                 </button>
             </div>
             <div class="header-center">

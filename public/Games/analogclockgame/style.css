@@ -295,6 +295,18 @@ body {
     transform: scale(0.95);
 }
 
+#mobile-shop-toggle {
+    width: auto;
+    padding: 0 16px;
+    border-radius: 24px;
+    gap: 8px;
+}
+
+#mobile-shop-toggle .btn-text {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
 .mini-score {
     font-size: var(--text-md);
     font-weight: 700;

@@ -163,7 +163,7 @@ class GameUtils {
 }
 
 /* =============================================
-   SOUND MANAGER (Web Audio API)
+   SOUND MANAGER (Web Audio API & Music)
    ============================================= */
 class SoundManager {
     constructor(settingsManager) {
@@ -171,10 +171,51 @@ class SoundManager {
         this.context = null;
         this.isMuted = false;
 
+        // Music Tracks
+        const initialVolume = this.settingsManager.getSetting('musicVolume') / 100;
+        this.mainMenuMusic = new Audio('Music/MainMenu.mp3');
+        this.mainMenuMusic.loop = true;
+        this.mainMenuMusic.volume = initialVolume;
+        this.mainMenuMusic.autoplay = true; // Attempt autoplay
+        
+        this.gamePlayMusic = new Audio('Music/GamePlaySong.mp3');
+        this.gamePlayMusic.loop = true;
+        this.gamePlayMusic.volume = initialVolume;
+        
+        // Track current music state
+        this.currentTrack = null; // 'menu' or 'game' or null
+
         // Frequencies for sounds
         this.clickFreq = 800; // Hz
         this.correctFreqs = [523.25, 659.25, 783.99, 1046.50]; // C Major arpeggio
         this.wrongFreqs = [150, 140]; // Dissonant low tones
+        
+        // Setup global interaction listener to unlock audio context
+        this.setupAudioUnlock();
+    }
+
+    setupAudioUnlock() {
+        const unlockHandler = () => {
+            if (this.context && this.context.state === 'suspended') {
+                this.context.resume().then(() => {
+                    GameUtils.log('AudioContext resumed via user interaction');
+                    this.updateMusicState(); // Try playing music again
+                });
+            } else {
+                this.updateMusicState(); // Try playing music if context was already running but music failed
+            }
+            
+            // Remove listener after first successful interaction
+            if (this.context && this.context.state === 'running') {
+                document.removeEventListener('click', unlockHandler);
+                document.removeEventListener('touchstart', unlockHandler);
+                document.removeEventListener('keydown', unlockHandler);
+            }
+        };
+
+        document.addEventListener('click', unlockHandler);
+        document.addEventListener('touchstart', unlockHandler);
+        document.addEventListener('keydown', unlockHandler);
     }
 
     initAudio() {
@@ -192,15 +233,67 @@ class SoundManager {
         if (this.context && this.context.state === 'suspended') {
             this.context.resume();
         }
+        
+        // Try to start music if it was pending
+        this.updateMusicState();
     }
 
     get isSoundEnabled() {
         const enabled = this.settingsManager ? this.settingsManager.getSetting('soundEnabled') : true;
-        return enabled && !this.isMuted && this.context;
+        return enabled && !this.isMuted;
+    }
+
+    playMainMenuMusic() {
+        this.currentTrack = 'menu';
+        this.updateMusicState();
+    }
+
+    playGameplayMusic() {
+        this.currentTrack = 'game';
+        this.updateMusicState();
+    }
+
+    stopAllMusic() {
+        this.mainMenuMusic.pause();
+        this.mainMenuMusic.currentTime = 0;
+        this.gamePlayMusic.pause();
+        this.gamePlayMusic.currentTime = 0;
+    }
+
+    updateMusicState() {
+        if (!this.isSoundEnabled) {
+            this.mainMenuMusic.pause();
+            this.gamePlayMusic.pause();
+            return;
+        }
+
+        const targetTrack = this.currentTrack === 'menu' ? this.mainMenuMusic : 
+                            (this.currentTrack === 'game' ? this.gamePlayMusic : null);
+
+        // Pause the non-active tracks
+        if (targetTrack !== this.mainMenuMusic) this.mainMenuMusic.pause();
+        if (targetTrack !== this.gamePlayMusic) this.gamePlayMusic.pause();
+
+        // Play the active track if paused
+        if (targetTrack && targetTrack.paused) {
+            try {
+                targetTrack.play().catch(e => {
+                    GameUtils.log('Autoplay blocked, waiting for interaction', e);
+                });
+            } catch (e) {
+                GameUtils.error('Error playing music:', e);
+            }
+        }
+    }
+
+    updateMusicVolume(volumePercent) {
+        const volume = Math.max(0, Math.min(1, volumePercent / 100));
+        if (this.mainMenuMusic) this.mainMenuMusic.volume = volume;
+        if (this.gamePlayMusic) this.gamePlayMusic.volume = volume;
     }
 
     playTone(frequency, type, duration, startTime = 0, volume = 0.5) {
-        if (!this.isSoundEnabled) return;
+        if (!this.isSoundEnabled || !this.context) return;
 
         try {
             const osc = this.context.createOscillator();
@@ -252,7 +345,8 @@ class SettingsManager {
         this.defaultSettings = {
             timeMultiplier: 5, // Now represents direct minutes instead of multiplier
             starCount: 3,
-            soundEnabled: true
+            soundEnabled: true,
+            musicVolume: 50 // Default 50%
         };
         this.settings = this.loadSettings();
     }
@@ -288,6 +382,8 @@ class SettingsManager {
                 value = Math.max(1, Math.min(10, parseInt(value) || 3));
             } else if (key === 'soundEnabled') {
                 value = !!value; // Ensure boolean
+            } else if (key === 'musicVolume') {
+                value = Math.max(0, Math.min(100, parseInt(value) || 50));
             }
 
             this.settings[key] = value;
@@ -2045,6 +2141,10 @@ class PerfectGameLogic {
     startGame(startingLevel = 1) {
         GameUtils.log(`Starting game at difficulty level ${startingLevel}...`);
 
+        if (this.soundManager) {
+            this.soundManager.playGameplayMusic();
+        }
+
         this.initialLevel = startingLevel; // Save for restart
 
         // Reset game state with the specified starting level
@@ -3214,6 +3314,9 @@ class PerfectGameLogic {
     }
 
     returnToMenu() {
+        if (this.soundManager) {
+            this.soundManager.playMainMenuMusic();
+        }
         this.gameState.reset();
         this.domManager.showStartMenu();
     }
@@ -3252,6 +3355,7 @@ class SettingsModalManager {
         // Slider event listeners
         const timeMultiplierSlider = this.domManager.get('timeMultiplierSlider');
         const starCountSlider = this.domManager.get('starCountSlider');
+        const musicVolumeSlider = document.getElementById('music-volume');
 
         if (timeMultiplierSlider) {
             timeMultiplierSlider.addEventListener('input', (e) => {
@@ -3268,6 +3372,19 @@ class SettingsModalManager {
                 this.updateDisplay();
             });
         }
+        
+        if (musicVolumeSlider) {
+            musicVolumeSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                this.settingsManager.updateSetting('musicVolume', value);
+                this.updateDisplay();
+                
+                // Update volume immediately
+                if (this.gameLogic && this.gameLogic.soundManager) {
+                    this.gameLogic.soundManager.updateMusicVolume(value);
+                }
+            });
+        }
 
         // Sound toggle listener
         const soundToggle = this.domManager.get('soundToggle');
@@ -3276,6 +3393,11 @@ class SettingsModalManager {
                 const value = e.target.checked;
                 this.settingsManager.updateSetting('soundEnabled', value);
                 this.updateDisplay();
+                
+                // Update music state immediately
+                if (this.gameLogic && this.gameLogic.soundManager) {
+                    this.gameLogic.soundManager.updateMusicState();
+                }
             });
         }
 
@@ -3306,6 +3428,15 @@ class SettingsModalManager {
         if (soundToggle) {
             soundToggle.checked = this.settingsManager.getSetting('soundEnabled');
         }
+        
+        // Update music volume slider
+        const musicVolumeSlider = document.getElementById('music-volume');
+        const musicVolumeValue = document.getElementById('music-volume-value');
+        if (musicVolumeSlider && musicVolumeValue) {
+            const vol = this.settingsManager.getSetting('musicVolume');
+            musicVolumeSlider.value = vol;
+            musicVolumeValue.textContent = vol + '%';
+        }
 
         this.updatePreviewStatus();
     }
@@ -3314,7 +3445,8 @@ class SettingsModalManager {
         // Add visual indicator if settings have been modified from defaults
         const isModified = this.settingsManager.settings.timeMultiplier !== 5 ||
             this.settingsManager.settings.starCount !== 3 ||
-            this.settingsManager.settings.soundEnabled !== true;
+            this.settingsManager.settings.soundEnabled !== true ||
+            this.settingsManager.settings.musicVolume !== 50;
 
         const previewSection = document.querySelector('.settings-preview');
         if (previewSection) {
@@ -3968,6 +4100,18 @@ class RewardShop {
                 });
 
                 mobileToggle.dataset.hasListeners = 'true';
+            }
+
+            // Add click-outside listener to close shop and resume timer
+            if (!shopItemsContainer.dataset.hasListeners) {
+                shopItemsContainer.addEventListener('click', (e) => {
+                    // Only close if clicking the background container itself
+                    if (e.target === shopItemsContainer) {
+                        e.preventDefault();
+                        this.toggleMobileShop(); // This handles closing and resuming timer
+                    }
+                });
+                shopItemsContainer.dataset.hasListeners = 'true';
             }
 
             // Mobile-specific optimizations
@@ -4662,6 +4806,11 @@ class AnalogClockGame {
     setupInitialState() {
         // Show start menu initially
         this.domManager.showStartMenu();
+
+        // Start Main Menu Music
+        if (this.soundManager) {
+            this.soundManager.playMainMenuMusic();
+        }
 
         // Initialize clock to 12:00 - but don't call updateClockHands yet
         // Let the clock stay at its default position until game starts
