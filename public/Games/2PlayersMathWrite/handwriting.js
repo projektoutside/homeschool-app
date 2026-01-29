@@ -625,7 +625,14 @@ async function tryAutoSubmit() {
 
     // Deduplicate
     const candidates = Array.from(new Set(rawCandidates)).filter(s => /^\d{1,3}$/.test(s));
-    if (candidates.length === 0) {
+    
+    // Strict Length Filter:
+    // If we have any candidates that match the expected length, throw away any that don't.
+    // This aggressively fixes the "3 digit interpreted as 4 digit" issue by trusting the game state.
+    const strictLenCandidates = candidates.filter(s => s.length === expectedLen);
+    const finalCandidates = strictLenCandidates.length > 0 ? strictLenCandidates : candidates;
+
+    if (finalCandidates.length === 0) {
       canvas.classList.remove('processing');
       if (statusDiv) statusDiv.innerHTML = '❌ Unrecognized — draw clearer';
       showPopup('Couldn\'t read that. Try again.', false);
@@ -650,9 +657,11 @@ async function tryAutoSubmit() {
       return dp[a.length][b.length];
     }
 
-    const scores = candidates.map(c => {
+    const scores = finalCandidates.map(c => {
       let score = 0;
-      if (c.length === expectedLen) score += 2.0; else score -= 1.5;
+      // Bonus for exact length match (though our strict filter above handles most of this)
+      if (c.length === expectedLen) score += 5.0; else score -= 5.0;
+      
       const dist = editDistance(c, expectedStr);
       score += Math.max(0, 3.0 - dist); // closer strings get higher score
 
@@ -673,6 +682,7 @@ async function tryAutoSubmit() {
 
       return { cand: c, score, dist };
     }).sort((a, b) => b.score - a.score);
+
 
     const best = scores[0];
     const status = document.getElementById('canvas-status');
@@ -821,13 +831,22 @@ async function recognizeMultiDigit(expectedLen) {
     // If the blob is wide (w > 1.2 * h), it is likely multiple digits.
     const aspectRatio = b.w / b.h;
     let forceSplit = false;
-    if (aspectRatio > 1.2 && expectedLen > 1) {
-      forceSplit = true;
+    
+    // ADJUSTMENT: Only force split if the aspect ratio STRONGLY suggests more digits than we found valleys for.
+    // Reducing sensitivity to prevent 3-digit blobs from being split into 4.
+    // For 3 digits, aspect ratio typically ~1.5 to 2.5. For 4 digits, usually > 3.0.
+    if (expectedLen > 1) {
+       // If we expect N digits, only force split if width is at least (N * 0.5) of height
+       // This prevents a slightly wide "8" or "0" from being split unnecessarily
+       if (aspectRatio > (expectedLen * 0.55)) {
+           forceSplit = true;
+       }
     }
-
+    
     let candidateSplits = [];
     // Increased threshold from 0.18 to 0.45 to detect valleys even with connector lines
-    const splitThreshold = 0.45;
+    // ADJUSTMENT: slightly lowered to 0.42 to avoid false positive splits on thick connections
+    const splitThreshold = 0.42;
 
     for (let i = 2; i < smoothed.length - 2; i++) {
       const curr = smoothed[i];
@@ -837,6 +856,7 @@ async function recognizeMultiDigit(expectedLen) {
         candidateSplits.push({ idx: i, val: curr });
       }
     }
+
 
     // Sort deepest valleys first (lowest ink density)
     candidateSplits.sort((a, b) => a.val - b.val);
@@ -851,7 +871,10 @@ async function recognizeMultiDigit(expectedLen) {
 
     // If we expect N digits, we ideally want N-1 splits
     const targetSplits = expectedLen ? expectedLen - 1 : Math.round(aspectRatio);
-    const desiredSplits = Math.max(targetSplits, robustSplits.length > 0 ? 1 : 0);
+    // Limit desired splits to exactly expectedLen - 1 if expectedLen is known
+    // This prevents finding "extra" splits in a 3-digit number that make it look like 4
+    const maxSplits = expectedLen ? expectedLen - 1 : 10;
+    const desiredSplits = Math.min(maxSplits, Math.max(targetSplits, robustSplits.length > 0 ? 1 : 0));
 
     let splits = robustSplits.slice(0, desiredSplits).map(o => o.idx).sort((a, b) => a - b);
 
@@ -865,6 +888,7 @@ async function recognizeMultiDigit(expectedLen) {
           splits.push(Math.floor(k * segmentW));
         }
       } else {
+
         // Truly single digit
         const { digit } = await recognizeDigitML(blobCanvas);
         return digit.toString();
