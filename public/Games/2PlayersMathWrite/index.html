@@ -21,39 +21,50 @@
 </head>
 <body>
   <div id="main-menu" class="screen">
-    <h1>📝 WriteMath!</h1>
-    <h2>Select Players</h2>
-    <div class="mode-categories">
+    <h1 class="main-title">
+      <span class="title-word title-word--write">Write</span>
+      <span class="title-word title-word--math">Math!</span>
+    </h1>
+    <div class="menu-primary">
       <button id="single-mode-btn" class="big-btn">Single Player Mode</button>
       <button id="vs-mode-btn" class="big-btn">Two Player VS Mode</button>
     </div>
-
-    <h2>Choose Math Type</h2>
-    <div class="game-modes">
-      <div class="dropdown-wrapper">
-        <select id="mode-select" title="Math Type">
-          <option value="add">Addition</option>
-          <option value="sub">Subtraction</option>
-          <option value="mul">Multiplication</option>
-          <option value="div">Division</option>
-          <option value="random">Random</option>
-        </select>
-        <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-      </div>
-    </div>
-    <h3>Difficulty</h3>
-    <div class="difficulty-select">
-      <div class="dropdown-wrapper">
-        <select id="difficulty-select" title="Difficulty">
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-        <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-      </div>
-    </div>
-    <button id="start-btn" class="big-btn">Start</button>
     <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
+  </div>
+
+  <div id="setup-screen" class="screen hidden">
+    <h2 class="setup-title">Choose Math Type</h2>
+    <div class="setup-panel">
+      <div class="setup-section">
+        <h3>Math Type</h3>
+        <div class="game-modes">
+          <div class="dropdown-wrapper">
+            <select id="mode-select" title="Math Type">
+              <option value="add">Addition</option>
+              <option value="sub">Subtraction</option>
+              <option value="mul">Multiplication</option>
+              <option value="div">Division</option>
+              <option value="random">Random</option>
+            </select>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Difficulty</h3>
+        <div class="difficulty-select">
+          <div class="dropdown-wrapper">
+            <select id="difficulty-select" title="Difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="#ff4e50" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button id="start-btn" class="big-btn start-btn">Start</button>
   </div>
 
   <div id="settings-modal" class="modal hidden">
@@ -69,15 +80,11 @@
           <option value="300">5 minutes</option>
         </select>
       </label>
-      <label>Lives:
-        <select id="lives-select">
-          <option value="3" selected>3</option>
-          <option value="5">5</option>
-          <option value="unlimited">Unlimited</option>
-        </select>
-      </label>
       <label>Background Music:
         <input type="checkbox" id="music-toggle">
+      </label>
+      <label>Music Volume:
+        <input type="range" id="music-volume" min="0" max="100" value="20">
       </label>
       <button id="close-settings" class="big-btn">Close</button>
     </div>
@@ -87,7 +94,6 @@
     <div class="game-header">
       <div id="scoreboard">Score: <span id="score">0</span></div>
       <div id="timer">⏱️ <span id="time-left">60</span>s</div>
-      <div id="lives">❤️ <span id="lives-left">3</span></div>
     </div>
     <div id="model-status">
       Loading handwriting model...
@@ -224,7 +230,11 @@
     <button id="menu-btn" class="big-btn">Main Menu</button>
   </div>
 
-  <!-- Audio tags removed to prevent file not found errors. -->
+  <div id="countdown-overlay" class="countdown-overlay hidden" aria-hidden="true">3</div>
+
+  <!-- Audio tags -->
+  <audio id="menu-music" src="Music/MainMenu.mp3" preload="auto" loop></audio>
+  <audio id="bg-music" preload="auto"></audio>
   
   <!-- Development Testing Panel (remove in production) -->
   <div id="dev-panel">

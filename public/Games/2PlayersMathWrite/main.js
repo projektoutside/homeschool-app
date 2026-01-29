@@ -206,6 +206,7 @@
 // --- DOM Elements ---
 const screens = {
   menu: document.getElementById('main-menu'),
+  setup: document.getElementById('setup-screen'),
   settings: document.getElementById('settings-modal'),
   game: document.getElementById('game-screen'),
   vs: document.getElementById('vs-screen'),
@@ -220,15 +221,25 @@ const vsModeBtn = document.getElementById('vs-mode-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings');
 const timerSelect = document.getElementById('timer-select');
-const livesSelect = document.getElementById('lives-select');
 const musicToggle = document.getElementById('music-toggle');
+const musicVolume = document.getElementById('music-volume');
+const menuMusic = document.getElementById('menu-music');
 const bgMusic = document.getElementById('bg-music');
 const correctSound = document.getElementById('correct-sound');
 const wrongSound = document.getElementById('wrong-sound');
+const countdownOverlay = document.getElementById('countdown-overlay');
+
+const backgroundTracks = [
+  'Music/Background1.mp3',
+  'Music/Background2.mp3',
+  'Music/Background3.mp3',
+  'Music/Background4.mp3',
+  'Music/Background5.mp3'
+];
+let lastBackgroundTrackIndex = -1;
 
 const scoreboard = document.getElementById('score');
 const timer = document.getElementById('time-left');
-const lives = document.getElementById('lives-left');
 const problemDiv = document.getElementById('problem');
 const feedback = document.getElementById('feedback');
 const finalScore = document.getElementById('final-score');
@@ -391,16 +402,19 @@ let gameSettings = {
   mode: 'add',
   difficulty: 'easy',
   timer: 60,
-  lives: 3,
-  music: false,
+  music: true,
+  musicVolume: 0.2,
 };
 
 let gameState = {
   score: 0,
   timeLeft: 60,
-  livesLeft: 3,
   running: false,
 };
+
+let countdownTimer = null;
+let countdownActive = false;
+let menuFadeTimer = null;
 
 // VS state
 let vsState = {
@@ -417,6 +431,145 @@ let vsState = {
 function showScreen(screen) {
   Object.values(screens).forEach(s => s.classList.add('hidden'));
   screens[screen].classList.remove('hidden');
+  handleScreenMusic(screen);
+}
+
+function safePlayAudio(audio) {
+  if (!audio) return;
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch((error) => {
+      console.warn('[Audio] Playback prevented:', error);
+    });
+  }
+}
+
+function stopAudio(audio) {
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
+}
+
+function pickRandomBackgroundTrack() {
+  if (!backgroundTracks.length) return null;
+  let nextIndex = lastBackgroundTrackIndex;
+  while (backgroundTracks.length > 1 && nextIndex === lastBackgroundTrackIndex) {
+    nextIndex = Math.floor(Math.random() * backgroundTracks.length);
+  }
+  if (nextIndex === lastBackgroundTrackIndex && backgroundTracks.length === 1) {
+    nextIndex = 0;
+  }
+  lastBackgroundTrackIndex = nextIndex;
+  return backgroundTracks[nextIndex];
+}
+
+function playMenuMusic() {
+  if (!menuMusic || !gameSettings.music) return;
+  stopAudio(bgMusic);
+  menuMusic.volume = gameSettings.musicVolume;
+  safePlayAudio(menuMusic);
+}
+
+function playRandomBackgroundMusic() {
+  if (!bgMusic || !gameSettings.music) return;
+  stopAudio(menuMusic);
+  const track = pickRandomBackgroundTrack();
+  if (!track) return;
+  if (bgMusic.src.indexOf(track) === -1) {
+    bgMusic.src = track;
+  }
+  bgMusic.loop = false;
+  bgMusic.volume = gameSettings.musicVolume;
+  safePlayAudio(bgMusic);
+}
+
+function updateMusicVolume(value) {
+  const normalized = Math.min(1, Math.max(0, value));
+  gameSettings.musicVolume = normalized;
+  if (menuMusic) menuMusic.volume = normalized;
+  if (bgMusic) bgMusic.volume = normalized;
+}
+
+function stopAllMusic() {
+  stopAudio(menuMusic);
+  stopAudio(bgMusic);
+}
+
+function handleScreenMusic(screen) {
+  if (!gameSettings.music) {
+    stopAllMusic();
+    return;
+  }
+  if (screen === 'menu' || screen === 'setup') {
+    playMenuMusic();
+  } else if (screen === 'game' || screen === 'vs') {
+    playRandomBackgroundMusic();
+  } else {
+    stopAllMusic();
+  }
+}
+
+function showCountdownOverlay(text) {
+  if (!countdownOverlay) return;
+  countdownOverlay.textContent = text;
+  countdownOverlay.classList.remove('hidden');
+}
+
+function hideCountdownOverlay() {
+  if (!countdownOverlay) return;
+  countdownOverlay.classList.add('hidden');
+}
+
+function startCountdown(onComplete) {
+  if (countdownActive) return;
+  countdownActive = true;
+  const steps = ['3', '2', '1', 'Go!'];
+  let index = 0;
+  clearInterval(countdownTimer);
+  showCountdownOverlay(steps[index]);
+  countdownTimer = setInterval(() => {
+    index += 1;
+    if (index >= steps.length) {
+      clearInterval(countdownTimer);
+      hideCountdownOverlay();
+      countdownActive = false;
+      if (typeof onComplete === 'function') {
+        onComplete();
+      }
+      return;
+    }
+    showCountdownOverlay(steps[index]);
+  }, 850);
+}
+
+function fadeOutMenuMusic(duration = 900) {
+  if (!menuMusic) return;
+  clearInterval(menuFadeTimer);
+  const startVolume = menuMusic.volume;
+  if (startVolume <= 0) {
+    stopAudio(menuMusic);
+    return;
+  }
+  const steps = Math.max(1, Math.floor(duration / 50));
+  let currentStep = 0;
+  menuFadeTimer = setInterval(() => {
+    currentStep += 1;
+    const nextVolume = Math.max(0, startVolume * (1 - currentStep / steps));
+    menuMusic.volume = nextVolume;
+    if (currentStep >= steps || nextVolume <= 0.001) {
+      clearInterval(menuFadeTimer);
+      stopAudio(menuMusic);
+      menuMusic.volume = gameSettings.musicVolume;
+    }
+  }, 50);
+}
+
+function registerBackgroundLoop() {
+  if (!bgMusic) return;
+  bgMusic.addEventListener('ended', () => {
+    if (!gameSettings.music) return;
+    playRandomBackgroundMusic();
+  });
 }
 
 // --- Event Listeners ---
@@ -439,20 +592,24 @@ timerSelect.addEventListener('change', () => {
   gameSettings.timer = parseInt(timerSelect.value);
 });
 
-livesSelect.addEventListener('change', () => {
-  gameSettings.lives = livesSelect.value === 'unlimited' ? Infinity : parseInt(livesSelect.value);
-});
 
 musicToggle.addEventListener('change', () => {
   gameSettings.music = musicToggle.checked;
   if (gameSettings.music) {
-    bgMusic.volume = 0.2;
-    bgMusic.play();
+    const activeScreen = Object.entries(screens).find(([, element]) => !element.classList.contains('hidden'));
+    const screenKey = activeScreen ? activeScreen[0] : 'menu';
+    handleScreenMusic(screenKey);
   } else {
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
+    stopAllMusic();
   }
 });
+
+if (musicVolume) {
+  musicVolume.addEventListener('input', () => {
+    const normalized = parseInt(musicVolume.value, 10) / 100;
+    updateMusicVolume(normalized);
+  });
+}
 
 let selectedPlayers = 'single';
 function updateModeButtons(){
@@ -460,16 +617,30 @@ function updateModeButtons(){
   singleModeBtn.classList.toggle('selected', selectedPlayers==='single');
   vsModeBtn.classList.toggle('selected', selectedPlayers==='vs');
 }
-if (singleModeBtn) singleModeBtn.addEventListener('click', ()=>{ selectedPlayers='single'; updateModeButtons(); });
-if (vsModeBtn) vsModeBtn.addEventListener('click', ()=>{ selectedPlayers='vs'; updateModeButtons(); });
+if (singleModeBtn) singleModeBtn.addEventListener('click', ()=>{
+  selectedPlayers='single';
+  updateModeButtons();
+  showScreen('setup');
+});
+if (vsModeBtn) vsModeBtn.addEventListener('click', ()=>{
+  selectedPlayers='vs';
+  updateModeButtons();
+  showScreen('setup');
+});
 
 startBtn.addEventListener('click', () => {
-  if (selectedPlayers === 'vs') startVsGame();
-  else startGame();
+  fadeOutMenuMusic();
+  startCountdown(() => {
+    if (selectedPlayers === 'vs') startVsGame();
+    else startGame();
+  });
 });
 restartBtn.addEventListener('click', () => {
-  if (selectedPlayers === 'vs') startVsGame();
-  else startGame();
+  fadeOutMenuMusic();
+  startCountdown(() => {
+    if (selectedPlayers === 'vs') startVsGame();
+    else startGame();
+  });
 });
 menuBtn.addEventListener('click', () => {
   showScreen('menu');
@@ -580,8 +751,6 @@ function checkAnswer() {
       }, 50);
     }, 800);
   } else {
-    gameState.livesLeft--;
-    lives.textContent = gameState.livesLeft === 999 ? '∞' : gameState.livesLeft;
     feedback.textContent = 'Oops! Try again.';
     feedback.style.color = '#ff4e50';
     const spCanvas = document.getElementById('handwriting-canvas');
@@ -593,14 +762,10 @@ function checkAnswer() {
     const problemEl = document.getElementById('problem');
     if (problemEl) { problemEl.classList.add('pulse-wrong'); setTimeout(()=>problemEl.classList.remove('pulse-wrong'), 950); }
     if (window.wrongSound) window.wrongSound.play();
-    if (gameState.livesLeft <= 0) {
-      setTimeout(endGame, 800);
-    } else {
-      setTimeout(() => {
-        feedback.textContent = '';
-        showProblem();
-      }, 800);
-    }
+    setTimeout(() => {
+      feedback.textContent = '';
+      showProblem();
+    }, 800);
   }
 }
 
@@ -644,8 +809,6 @@ confirmYesBtn.addEventListener('click', () => {
       }, 50);
     }, 800);
   } else {
-    gameState.livesLeft--;
-    lives.textContent = gameState.livesLeft === 999 ? '∞' : gameState.livesLeft;
     animateFeedback('wrong');
     // pulse canvas for wrong answer
     const spCanvas = document.getElementById('handwriting-canvas');
@@ -655,14 +818,10 @@ confirmYesBtn.addEventListener('click', () => {
       setTimeout(()=>spCanvas.classList.remove('pulse-wrong'), 950); 
     }
     if (window.wrongSound) window.wrongSound.play();
-    if (gameState.livesLeft <= 0) {
-      setTimeout(endGame, 800);
-    } else {
-      setTimeout(() => {
-        feedback.textContent = '';
-        showProblem();
-      }, 800);
-    }
+    setTimeout(() => {
+      feedback.textContent = '';
+      showProblem();
+    }, 800);
   }
 });
 
@@ -685,12 +844,10 @@ function endGame() {
 function startGame() {
   gameState.score = 0;
   gameState.timeLeft = gameSettings.timer;
-  gameState.livesLeft = gameSettings.lives === Infinity ? 999 : gameSettings.lives;
   gameState.running = true;
   usedProblems = new Set();
   scoreboard.textContent = '0';
   timer.textContent = gameState.timeLeft;
-  lives.textContent = gameState.livesLeft === 999 ? '∞' : gameState.livesLeft;
   feedback.textContent = '';
   
   // Reset to Answer tab
@@ -1358,11 +1515,24 @@ function init() {
   difficultySelect.value = gameSettings.difficulty;
   showScreen('menu');
   timerSelect.value = gameSettings.timer;
-  livesSelect.value = gameSettings.lives;
   musicToggle.checked = gameSettings.music;
+  if (musicVolume) musicVolume.value = Math.round(gameSettings.musicVolume * 100);
   // Default highlight Single Player
   selectedPlayers = 'single';
   updateModeButtons();
+  registerBackgroundLoop();
+  updateMusicVolume(gameSettings.musicVolume);
+  playMenuMusic();
+  ['pointerdown', 'touchstart', 'keydown'].forEach((eventName) => {
+    document.addEventListener(eventName, function onFirstInteraction() {
+      document.removeEventListener(eventName, onFirstInteraction);
+      if (screens.menu && !screens.menu.classList.contains('hidden')) {
+        playMenuMusic();
+      } else if (screens.game && !screens.game.classList.contains('hidden')) {
+        playRandomBackgroundMusic();
+      }
+    }, { once: true });
+  });
 }
 
 // Test function for auto-clear (call from browser console)
