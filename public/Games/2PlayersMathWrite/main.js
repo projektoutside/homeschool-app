@@ -228,6 +228,21 @@ const bgMusic = document.getElementById('bg-music');
 const correctSound = document.getElementById('correct-sound');
 const wrongSound = document.getElementById('wrong-sound');
 const countdownOverlay = document.getElementById('countdown-overlay');
+const vsWinnerOverlay = document.getElementById('vs-winner-overlay');
+const vsWinnerTitle = document.getElementById('vs-winner-title');
+const vsWinnerSubtitle = document.getElementById('vs-winner-subtitle');
+const vsWinnerScore = document.getElementById('vs-winner-score');
+const vsWinnerCrown = document.getElementById('vs-winner-crown');
+const vsConfettiTop = document.getElementById('vs-confetti-top');
+const vsConfettiBottom = document.getElementById('vs-confetti-bottom');
+const p1Result = document.getElementById('p1-result');
+const p2Result = document.getElementById('p2-result');
+const p1Confetti = document.getElementById('p1-confetti');
+const p2Confetti = document.getElementById('p2-confetti');
+const player1El = document.getElementById('player1');
+const player2El = document.getElementById('player2');
+const player1Badge = document.getElementById('p1-badge');
+const player2Badge = document.getElementById('p2-badge');
 
 const backgroundTracks = [
   'Music/Background1.mp3',
@@ -415,6 +430,7 @@ let gameState = {
 let countdownTimer = null;
 let countdownActive = false;
 let menuFadeTimer = null;
+let bgFadeTimer = null;
 
 // VS state
 let vsState = {
@@ -450,6 +466,30 @@ function stopAudio(audio) {
   audio.currentTime = 0;
 }
 
+function fadeOutAudio(audio, duration = 900, onComplete) {
+  if (!audio) return null;
+  const startVolume = audio.volume;
+  if (startVolume <= 0.001) {
+    stopAudio(audio);
+    if (typeof onComplete === 'function') onComplete();
+    return null;
+  }
+  const steps = Math.max(1, Math.floor(duration / 50));
+  let currentStep = 0;
+  const timer = setInterval(() => {
+    currentStep += 1;
+    const nextVolume = Math.max(0, startVolume * (1 - currentStep / steps));
+    audio.volume = nextVolume;
+    if (currentStep >= steps || nextVolume <= 0.001) {
+      clearInterval(timer);
+      stopAudio(audio);
+      audio.volume = gameSettings.musicVolume;
+      if (typeof onComplete === 'function') onComplete();
+    }
+  }, 50);
+  return timer;
+}
+
 function pickRandomBackgroundTrack() {
   if (!backgroundTracks.length) return null;
   let nextIndex = lastBackgroundTrackIndex;
@@ -465,14 +505,14 @@ function pickRandomBackgroundTrack() {
 
 function playMenuMusic() {
   if (!menuMusic || !gameSettings.music) return;
-  stopAudio(bgMusic);
+  fadeOutBackgroundMusic(500);
   menuMusic.volume = gameSettings.musicVolume;
   safePlayAudio(menuMusic);
 }
 
 function playRandomBackgroundMusic() {
   if (!bgMusic || !gameSettings.music) return;
-  stopAudio(menuMusic);
+  fadeOutMenuMusic(500);
   const track = pickRandomBackgroundTrack();
   if (!track) return;
   if (bgMusic.src.indexOf(track) === -1) {
@@ -491,8 +531,8 @@ function updateMusicVolume(value) {
 }
 
 function stopAllMusic() {
-  stopAudio(menuMusic);
-  stopAudio(bgMusic);
+  fadeOutMenuMusic(400);
+  fadeOutBackgroundMusic(400);
 }
 
 function handleScreenMusic(screen) {
@@ -545,23 +585,13 @@ function startCountdown(onComplete) {
 function fadeOutMenuMusic(duration = 900) {
   if (!menuMusic) return;
   clearInterval(menuFadeTimer);
-  const startVolume = menuMusic.volume;
-  if (startVolume <= 0) {
-    stopAudio(menuMusic);
-    return;
-  }
-  const steps = Math.max(1, Math.floor(duration / 50));
-  let currentStep = 0;
-  menuFadeTimer = setInterval(() => {
-    currentStep += 1;
-    const nextVolume = Math.max(0, startVolume * (1 - currentStep / steps));
-    menuMusic.volume = nextVolume;
-    if (currentStep >= steps || nextVolume <= 0.001) {
-      clearInterval(menuFadeTimer);
-      stopAudio(menuMusic);
-      menuMusic.volume = gameSettings.musicVolume;
-    }
-  }, 50);
+  menuFadeTimer = fadeOutAudio(menuMusic, duration);
+}
+
+function fadeOutBackgroundMusic(duration = 900) {
+  if (!bgMusic) return;
+  clearInterval(bgFadeTimer);
+  bgFadeTimer = fadeOutAudio(bgMusic, duration);
 }
 
 function registerBackgroundLoop() {
@@ -836,6 +866,7 @@ function endGame() {
   gameState.running = false;
   if (window.__idleTimer) { clearTimeout(window.__idleTimer); window.__idleTimer = null; }
   if (window.clearCanvas) window.clearCanvas();
+  fadeOutBackgroundMusic(800);
   showScreen('over');
   finalScore.textContent = `Final Score: ${gameState.score}`;
 }
@@ -881,6 +912,7 @@ function startGame() {
 
 // ------ VS MODE ------
 function startVsGame() {
+  clearVsWinnerEffects();
   // Reset state
   vsState.running = true;
   vsState.timeLeft = gameSettings.timer;
@@ -956,13 +988,151 @@ function endVsGame(backToMenu = false) {
   clearInterval(vsState.timerInterval);
   vsState.running = false;
   if (backToMenu) {
+    fadeOutBackgroundMusic(600);
     showScreen('menu');
     return;
   }
-  // Reuse game over screen to display winner
-  const winner = vsState.p1.score === vsState.p2.score ? 'Tie!' : (vsState.p1.score > vsState.p2.score ? 'Player 1 Wins!' : 'Player 2 Wins!');
-  showScreen('over');
-  finalScore.textContent = `${winner}  P1: ${vsState.p1.score}  P2: ${vsState.p2.score}`;
+  fadeOutBackgroundMusic(800);
+  const winner = vsState.p1.score === vsState.p2.score ? 'tie' : (vsState.p1.score > vsState.p2.score ? 'p1' : 'p2');
+  showVsWinnerReveal(winner);
+  
+  // Extend the reveal time slightly to enjoy the new effects
+  setTimeout(() => {
+    // Hide the winner overlay before showing game over screen
+    if (vsWinnerOverlay) {
+      vsWinnerOverlay.classList.remove('active');
+      setTimeout(() => vsWinnerOverlay.classList.add('hidden'), 500); // Wait for fade out
+    }
+    
+    showScreen('over');
+    const label = winner === 'tie' ? 'Tie!' : (winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!');
+    finalScore.textContent = `${label}  P1: ${vsState.p1.score}  P2: ${vsState.p2.score}`;
+  }, 4000); // Increased from 2600 to 4000 to give more time to celebrate
+}
+
+function clearVsWinnerEffects() {
+  if (player1El) player1El.classList.remove('vs-winner', 'vs-runnerup', 'vs-tie');
+  if (player2El) player2El.classList.remove('vs-winner', 'vs-runnerup', 'vs-tie');
+  if (player1Badge) player1Badge.textContent = 'Player 1';
+  if (player2Badge) player2Badge.textContent = 'Player 2';
+  
+  // Clear new overlay elements
+  const p1Section = document.getElementById('vs-result-p1');
+  const p2Section = document.getElementById('vs-result-p2');
+  if (p1Section) p1Section.classList.remove('winner', 'loser', 'tie');
+  if (p2Section) p2Section.classList.remove('winner', 'loser', 'tie');
+
+  // Clear confetti
+  const p1ConfettiArea = document.getElementById('p1-confetti-area');
+  const p2ConfettiArea = document.getElementById('p2-confetti-area');
+  if (p1ConfettiArea) p1ConfettiArea.innerHTML = '';
+  if (p2ConfettiArea) p2ConfettiArea.innerHTML = '';
+
+  if (vsWinnerOverlay) {
+    vsWinnerOverlay.classList.add('hidden');
+    vsWinnerOverlay.classList.remove('active');
+  }
+}
+
+function showVsWinnerReveal(winner) {
+  clearVsWinnerEffects();
+  if (!vsWinnerOverlay) return;
+
+  const p1Section = document.getElementById('vs-result-p1');
+  const p2Section = document.getElementById('vs-result-p2');
+  
+  const p1Title = document.getElementById('p1-result-title');
+  const p2Title = document.getElementById('p2-result-title');
+  
+  const p1Msg = document.getElementById('p1-result-message');
+  const p2Msg = document.getElementById('p2-result-message');
+  
+  const p1Score = document.getElementById('p1-final-score');
+  const p2Score = document.getElementById('p2-final-score');
+  
+  const p1Icon = document.getElementById('p1-result-icon');
+  const p2Icon = document.getElementById('p2-result-icon');
+
+  const p1ConfettiArea = document.getElementById('p1-confetti-area');
+  const p2ConfettiArea = document.getElementById('p2-confetti-area');
+
+  // Set scores
+  if (p1Score) p1Score.textContent = `Score: ${vsState.p1.score}`;
+  if (p2Score) p2Score.textContent = `Score: ${vsState.p2.score}`;
+
+  if (winner === 'p1') {
+    // Player 1 Wins
+    p1Section.classList.add('winner');
+    p2Section.classList.add('loser');
+    
+    if (p1Title) p1Title.textContent = 'WINNER!';
+    if (p2Title) p2Title.textContent = 'Nice Try';
+    
+    if (p1Msg) p1Msg.textContent = 'You are the champion!';
+    if (p2Msg) p2Msg.textContent = 'Better luck next time!';
+    
+    if (p1Icon) p1Icon.textContent = '👑';
+    if (p2Icon) p2Icon.textContent = '👏'; // Clapping hands or medal?
+
+    // Add confetti to P1
+    addConfetti(p1ConfettiArea);
+
+  } else if (winner === 'p2') {
+    // Player 2 Wins
+    p2Section.classList.add('winner');
+    p1Section.classList.add('loser');
+    
+    if (p2Title) p2Title.textContent = 'WINNER!';
+    if (p1Title) p1Title.textContent = 'Nice Try';
+    
+    if (p2Msg) p2Msg.textContent = 'You are the champion!';
+    if (p1Msg) p1Msg.textContent = 'Better luck next time!';
+    
+    if (p2Icon) p2Icon.textContent = '👑';
+    if (p1Icon) p1Icon.textContent = '👏';
+
+    // Add confetti to P2
+    addConfetti(p2ConfettiArea);
+
+  } else {
+    // Tie
+    p1Section.classList.add('tie');
+    p2Section.classList.add('tie');
+    
+    if (p1Title) p1Title.textContent = 'TIE GAME!';
+    if (p2Title) p2Title.textContent = 'TIE GAME!';
+    
+    if (p1Msg) p1Msg.textContent = 'Great match!';
+    if (p2Msg) p2Msg.textContent = 'Great match!';
+    
+    if (p1Icon) p1Icon.textContent = '🤝';
+    if (p2Icon) p2Icon.textContent = '🤝';
+    
+    addConfetti(p1ConfettiArea, 15); // Less confetti for tie
+    addConfetti(p2ConfettiArea, 15);
+  }
+
+  vsWinnerOverlay.classList.remove('hidden');
+  // Force reflow
+  void vsWinnerOverlay.offsetWidth;
+  vsWinnerOverlay.classList.add('active');
+}
+
+function addConfetti(container, count = 40) {
+  if (!container) return;
+  const colors = ['#ff4e50', '#f9d423', '#2196f3', '#4caf50', '#ff7ae3'];
+  
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.classList.add('vs-confetti-particle');
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = Math.random() * 100 + '%';
+    el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 1 + 's';
+    el.style.width = (Math.random() * 10 + 5) + 'px';
+    el.style.height = (Math.random() * 10 + 5) + 'px';
+    container.appendChild(el);
+  }
 }
 
 function setupPlayerCanvas(player, id) {
