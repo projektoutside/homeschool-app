@@ -13,6 +13,7 @@ class CarGuessingGame {
         this.lastCarIndex = -1; // Track last car to prevent immediate repeats
         this.isFirstTry = true; // Track if it's the first attempt on current car
         this.voiceSystem = null; // Advanced voice system
+        this.isSystemSpeaking = false; // New flag to track system audio state
         this.transitionTimer = null; // Timer for revealed answer delay
         this.nextCarTimer = null; // Timer for loading next car
         this.menuMusic = null; // Main menu background music
@@ -535,8 +536,10 @@ class CarGuessingGame {
                 this.toggleMicVisuals(false);
             }
 
-            if (this.isGameRunning || this.isMicWarm) {
-                console.log("🔄 Auto-restarting mic engine...");
+            // Only auto-restart if we EXPECT to be listening
+            // Even if system IS speaking, we want to restart to keep permission alive
+            if (this.isListeningForAnswer || this.isSystemSpeaking) {
+                console.log("🔄 Auto-restarting mic engine (Persistent Mode)...");
                 try {
                     this.recognition.start();
                 } catch (e) { }
@@ -544,7 +547,11 @@ class CarGuessingGame {
         };
 
         this.recognition.onresult = (event) => {
-            if (!this.isListeningForAnswer) return;
+            // SOFT MUTE CHECK
+            if (!this.isListeningForAnswer || this.isSystemSpeaking) {
+                // If system is talking, we ignore what the user says (prevents self-hearing)
+                return;
+            }
 
             // Clear any previous "Silence" timer because user is talking
             if (this.silenceTimer) clearTimeout(this.silenceTimer);
@@ -620,6 +627,21 @@ class CarGuessingGame {
     }
 
     // --- NEW MICROPHONE SETTINGS & TESTING ---
+    async hasPermission() {
+        // Quick check if we already have a stream
+        // Quick check if we already have a stream
+        if (this.globalPermStream) {
+            try {
+                if (this.globalPermStream.active) return true;
+                // If it exists but inactive, we need to refresh it
+                this.globalPermStream = null;
+            } catch (e) { this.globalPermStream = null; }
+        }
+
+        // Check verification from localStorage
+        return this.loadMicPermissionState();
+    }
+
     async initMicSettings() {
         const micSelect = document.getElementById('micSelect');
         const testBtn = document.getElementById('testMicBtn');
@@ -667,12 +689,20 @@ class CarGuessingGame {
                     this.micPermissionGranted = true;
                     this.saveMicPermissionState();
 
+                    // Keep this stream OPEN to persist the "Active" permission state.
+                    // This prevents the browser from asking again when the game starts.
+                    if (this.globalPermStream) {
+                        this.globalPermStream.getTracks().forEach(track => track.stop());
+                    }
+                    this.globalPermStream = stream;
+                    this.micPermissionGranted = true;
+                    this.saveMicPermissionState();
+
                     // Refresh list now that we have access
                     await this.refreshMicrophones(false);
 
                     // Note: We do NOT stop the stream here. We keep it active so the
                     // browser considers the site "trusted" for audio capture.
-                    // We will clean it up when the game's SpeechRecognition starts.
 
                 } catch (err) {
                     console.warn("Activation failed:", err);
@@ -769,16 +799,28 @@ class CarGuessingGame {
     async ensureMicrophonePermissionForGame() {
         if (this.inputMode !== 'voice') return;
         if (!navigator.mediaDevices?.getUserMedia) return;
-        if (!this.micPermissionGranted) return;
-        if (this.globalPermStream) return;
 
+        // CHECK IF STREAM IS ALREADY GOOD
+        if (this.globalPermStream && this.globalPermStream.active) {
+            return;
+        }
+
+        // If we THINK we have permission but no stream, try to get it silently
+        // or if we need to request it.
         try {
+            console.log("🎤 Requesting persistent microphone access...");
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.globalPermStream = stream;
-        } catch (err) {
-            console.warn('Microphone keep-alive failed:', err);
-            this.micPermissionGranted = false;
+            this.micPermissionGranted = true;
             this.saveMicPermissionState();
+        } catch (err) {
+            console.warn('Microphone permission/keep-alive failed:', err);
+            // Don't disable flag immediately using strict false, just log it. 
+            // The user might have just cancelled the specific prompt.
+            if (err.name === 'NotAllowedError') {
+                this.micPermissionGranted = false;
+                this.saveMicPermissionState();
+            }
         }
     }
 
@@ -1020,20 +1062,18 @@ class CarGuessingGame {
         }
     }
 
-    // Called ONCE at start of game
-    // Called ONCE at start of game
+    // Called when we want to ensure the mic is Ready
     activateMicrophoneEngine() {
-        // We keep globalPermStream open intentionally to overlap with recognition.start()
-        // This prevents the permission "gap" that causes a re-prompt.
-        // Cleanup happens in recognition.onstart
+        // We allow starting even if system is speaking (Soft Mute handles the data)
+        // This ensures the engine is 'warm' and ready.
 
-        if (this.recognition) {
+        if (this.recognition && !this.isRecognitionActive) {
             try {
                 this.recognition.start();
                 console.log("🎤 Microphone Engine Activated");
             } catch (e) {
                 if (e.error !== 'not-allowed' && e.error !== 'service-not-allowed') {
-                    console.log("Mic already active or error:", e);
+                    console.log("Mic start warning:", e);
                 }
             }
         }
@@ -1066,6 +1106,10 @@ class CarGuessingGame {
     stopListening() {
         this.isListeningForAnswer = false;
         this.toggleMicVisuals(false);
+
+        // NOTE: We do NOT stop the recognition engine here anymore.
+        // We keep it running in background to maintain permissions.
+        // We only stop it if the game is completely over/reset (which calls cancel/reload).
 
         const transcriptEl = document.getElementById('liveTranscript');
         if (transcriptEl) {
@@ -1135,7 +1179,21 @@ class CarGuessingGame {
 
     speak(text, options = {}) {
         if (!this.voiceSystem || !this.soundEnabled) return Promise.resolve();
-        return this.voiceSystem.speak(text, options);
+
+        // SOFT MUTE: Keep mic running, but ignore results
+        this.isSystemSpeaking = true;
+        // NOTE: We do NOT stopListening() here anymore. Keeping the mic open
+        // prevents the "Permission Popup" on mobile when we want to listen again.
+
+        this.toggleMicVisuals(false); // Visually "paused" but technically listening
+
+        return this.voiceSystem.speak(text, options).finally(() => {
+            this.isSystemSpeaking = false;
+            // Restore visuals if we are supposed to be listening
+            if (this.isListeningForAnswer) {
+                this.toggleMicVisuals(true);
+            }
+        });
     }
 
     playSound(soundId) {
@@ -1411,11 +1469,14 @@ class CarGuessingGame {
         // Speak the question with natural variation
         if (this.voiceSystem) {
             this.voiceSystem.sayQuestion().then(() => {
-                // Safety Delay: Wait 1.5s (increased) for audio echo to fade before opening mic
+                // Safety Delay: Wait 0.1s just to align states
                 setTimeout(() => {
                     this.startListening();
-                }, 1500);
+                }, 100);
             });
+        } else {
+            // No voice system, start immediately
+            this.startListening();
         }
 
         // Start timer for auto-reveal
