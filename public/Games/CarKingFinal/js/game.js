@@ -267,11 +267,14 @@ class CarGuessingGame {
         });
 
         // Enter key for guess input
+        // Enter key listener removed because guessInput is now a viewing box
+        /*
         document.getElementById('guessInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.submitGuess();
             }
         });
+        */
 
         // Sound toggle
         document.getElementById('soundToggle').addEventListener('click', () => {
@@ -501,7 +504,7 @@ class CarGuessingGame {
         newBtn.addEventListener('click', () => {
             if (this.isListeningForAnswer) {
                 this.stopListening();
-                document.getElementById('guessInput').placeholder = "Mic Paused";
+                document.getElementById('guessInput').textContent = "Mic Paused";
             } else {
                 this.startListening();
             }
@@ -568,7 +571,7 @@ class CarGuessingGame {
                 // Formatting: Capitalize first letter
                 const formatted = fullSpeech.charAt(0).toUpperCase() + fullSpeech.slice(1).replace(/[.,!?]$/, "");
 
-                input.value = formatted;
+                input.textContent = formatted;
                 input.classList.add('listening-active');
 
                 if (transcriptEl) {
@@ -587,7 +590,7 @@ class CarGuessingGame {
 
                 // FORCE UI TO SHOW CLEAN CORRECT ANSWER
                 // This prevents "Bug" from showing when it should be "Bugatti"
-                input.value = this.currentCar.name;
+                input.textContent = this.currentCar.name;
                 if (transcriptEl) {
                     transcriptEl.textContent = `"${this.currentCar.name}"`;
                 }
@@ -599,7 +602,9 @@ class CarGuessingGame {
             // 2. SILENCE DETECTOR (The "Leeway")
             this.silenceTimer = setTimeout(() => {
                 console.log("⏳ Silence detected (3s). Submitting final guess...");
-                if (this.isListeningForAnswer && input.value.trim().length > 0) {
+                const currentText = input.textContent.trim();
+                const isPlaceholder = currentText === "Listening..." || currentText === "Say the car name..." || currentText === "Mic Paused";
+                if (this.isListeningForAnswer && currentText.length > 0 && !isPlaceholder) {
                     // On manual submission (wrong/silence), the text remains what they said.
                     // e.g. "It is a potato" -> Shows "It is a potato"
                     this.submitGuess();
@@ -1043,9 +1048,8 @@ class CarGuessingGame {
         const transcriptEl = document.getElementById('liveTranscript');
 
         if (guessInput) {
-            guessInput.placeholder = "Say the car name...";
-            guessInput.value = "";
-            guessInput.focus();
+            guessInput.textContent = "Listening...";
+            // guessInput.focus(); // Removed to prevent keyboard
         }
 
         if (transcriptEl) {
@@ -1285,8 +1289,8 @@ class CarGuessingGame {
         carImage.style.opacity = '0';
         loadingSpinner.style.display = 'block';
         answerText.classList.add('hidden');
-        guessInput.value = '';
-        guessInput.disabled = false;
+        guessInput.textContent = 'Say the car name...';
+        // guessInput.disabled = false;
         timerFill.style.width = '100%';
 
         // --- MODE SWITCHING UI ---
@@ -1402,7 +1406,7 @@ class CarGuessingGame {
         // RESET FLAGS
         this.isFirstTry = true;
         this.isProcessingGuess = false; // Reset lock
-        document.getElementById('guessInput').disabled = false;
+        // guessInput.disabled = false;
 
         // Speak the question with natural variation
         if (this.voiceSystem) {
@@ -1456,9 +1460,14 @@ class CarGuessingGame {
         const guessInput = document.getElementById('guessInput');
 
         // Disable immediately
-        guessInput.disabled = true;
+        // guessInput.disabled = true;
 
-        const guess = guessInput.value.trim().toLowerCase();
+        let guess = guessInput.textContent.trim().toLowerCase();
+
+        // Filter out placeholders
+        if (guess === "listening..." || guess === "say the car name..." || guess === "mic paused") {
+            guess = "";
+        }
 
         // If empty, just reveal (counts as skip/wrong)
         if (!guess) {
