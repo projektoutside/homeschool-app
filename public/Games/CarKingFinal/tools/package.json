@@ -1,0 +1,19 @@
+{
+  "name": "carguessinggame333",
+  "version": "1.0.0",
+  "description": "A fully interactive and fun car guessing web application designed specifically for children! This engaging educational game combines visual learning with AI voice interaction to create an exciting automotive adventure.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  }
+}

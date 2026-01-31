@@ -1040,5 +1040,17 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/2PlayersMathWrite/index.html",
         "thumbnail": "/Games/2PlayersMathWrite/thumb.png",
         "dateAdded": "2026-01-28"
+    },
+    {
+        "id": "math-car-king",
+        "title": "Car King",
+        "description": "A car-themed math game where you identify and learn about cars.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["General"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/CarKingFinal/index.html",
+        "thumbnail": "/Games/CarKingFinal/assets/images/ui/thumb.png",
+        "dateAdded": "2026-01-31"
     }
 ];

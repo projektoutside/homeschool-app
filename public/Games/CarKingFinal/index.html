@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FF6B6B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#FF6B6B">
+    <title>Kids Car Guessing Game 🚗</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Comic+Neue:wght@400;700&family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen main-menu">
+        <div class="menu-wallpaper"></div>
+        <div class="menu-wallpaper-glow"></div>
+        <div class="menu-smoke-layer"></div>
+        <div class="menu-streaks"></div>
+
+        <div class="menu-shell">
+            <div class="menu-title-wrap">
+                <h1 class="menu-title" aria-label="Car King">
+                    <span class="title-word word-1">Car</span>
+                    <span class="title-word word-2">King</span>
+                </h1>
+                <div class="title-smoke title-smoke-left"></div>
+                <div class="title-smoke title-smoke-right"></div>
+                <div class="title-impact-ring"></div>
+            </div>
+
+            <div class="menu-click" role="button" aria-label="Click Anywhere to Start">
+                Click Anywhere to Start
+                <span class="menu-click-sheen"></span>
+            </div>
+
+            <div class="menu-panel" aria-hidden="true">
+                <div class="panel-drift"></div>
+                <button id="startBtn" class="menu-btn primary">Start Game</button>
+                <button id="settingsBtn" class="menu-btn secondary" title="Settings">Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsOverlay" class="settings-overlay">
+        <div class="settings-modal">
+            <h2 class="settings-title">Game Settings</h2>
+            <div class="settings-options">
+                <div class="setting-option selected" data-mode="voice">
+                    🎤 Voice (Microphone)
+                </div>
+                <div class="setting-option" data-mode="choice">
+                    🔘 Multiple Choices
+                </div>
+
+                <!-- NEW MICROPHONE CONFIG -->
+                <div class="mic-config-section" id="micConfigSection">
+                    <label class="config-label">Select Microphone:</label>
+                    <div class="select-wrapper">
+                        <select id="micSelect" class="settings-select">
+                            <option value="default">Default Microphone</option>
+                        </select>
+                    </div>
+                    <p id="micDeviceStatus" class="mic-device-status">Detecting microphones...</p>
+
+                    <button id="showMicNamesBtn" class="show-mic-btn" type="button">
+                        Turn On Microphone
+                    </button>
+
+                    <div class="mic-test-wrapper">
+                        <button id="testMicBtn" class="test-mic-btn">
+                            <span class="btn-icon">🎙️</span> Test Check
+                        </button>
+                        <div id="testVisualizer" class="test-visualizer">
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                            <div class="test-bar"></div>
+                        </div>
+                    </div>
+                    <p id="micTestStatus" class="mic-test-status">Click to test if your mic is working</p>
+                </div>
+            </div>
+            <button id="closeSettingsBtn" class="close-settings-btn">Save & Close</button>
+        </div>
+    </div>
+
+    <!-- Countdown Screen -->
+    <div id="countdownScreen" class="screen hidden">
+        <div class="countdown-container">
+            <div id="countdownNumber" class="countdown-number">3</div>
+            <div class="countdown-effects">
+                <div class="sparkle"></div>
+                <div class="sparkle"></div>
+                <div class="sparkle"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen hidden">
+        <div class="game-header">
+            <div class="score-container">
+                <span class="score-label">Score: </span>
+                <span id="scoreValue">0</span>
+                <span class="streak-container">
+                    🔥 <span id="streakValue">0</span>
+                </span>
+            </div>
+            <button id="newGameBtn" class="new-game-btn">🔄 New Game</button>
+        </div>
+
+        <div class="game-content">
+            <div class="car-display">
+                <div id="carImageContainer" class="car-image-container">
+                    <img id="carImage" class="car-image" alt="Mystery Car">
+                    <div class="loading-spinner">🚗 Loading next car...</div>
+                </div>
+            </div>
+
+            <div class="game-controls-wrapper">
+                <div class="game-info">
+                    <div id="questionText" class="question-text">🤔 Can you guess this car?</div>
+                    <div id="answerText" class="answer-text hidden"></div>
+                    <div class="timer-bar">
+                        <div id="timerFill" class="timer-fill"></div>
+                    </div>
+                </div>
+
+                <div class="guess-section" id="inputSection">
+                    <div class="input-group">
+                        <input type="text" id="guessInput" class="guess-input" placeholder="Type or say car name..."
+                            maxlength="50">
+                        <button id="micBtn" class="mic-btn hidden" title="Speak Answer">🎤</button>
+                    </div>
+
+                    <!-- NEW MIC STATUS INDICATOR -->
+                    <div id="micStatus" class="mic-status-container">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+
+                    <!-- NEW LIVE TRANSCRIPT -->
+                    <div id="liveTranscript" class="live-transcript hidden"></div>
+
+                    <button id="submitGuess" class="submit-btn">✨ Submit Guess! ✨</button>
+                </div>
+
+                <!-- MULTIPLE CHOICE SECTION -->
+                <div class="choices-container hidden" id="choicesSection">
+                    <!-- Buttons generated by JS -->
+                </div>
+
+                <div id="feedback" class="feedback hidden"></div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen hidden">
+        <div class="game-over-container">
+            <h1 class="game-over-title">Game Over</h1>
+
+            <div class="final-score-box">
+                <div class="score-label">Your Score</div>
+                <div id="finalScoreDisplay" class="final-score-value">0</div>
+            </div>
+
+            <div class="leaderboard-section">
+                <h3 class="leaderboard-title">🏆 All-Time Legends 🏆</h3>
+                <div id="leaderboardList" class="leaderboard-list">
+                    <!-- Leaderboard items injected via JS -->
+                    <div class="leaderboard-item"><span>1. Loading...</span><span>---</span></div>
+                    <div class="leaderboard-item"><span>2. Loading...</span><span>---</span></div>
+                    <div class="leaderboard-item"><span>3. Loading...</span><span>---</span></div>
+                </div>
+            </div>
+
+            <div class="game-over-actions">
+                <button id="playAgainBtn" class="menu-btn primary">Play Again</button>
+                <button id="mainMenuBtn" class="menu-btn secondary">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="sound-controls">
+        <button id="soundToggle" class="sound-btn">🔊</button>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="menuMusic" preload="auto" loop>
+        <source src="assets/audio/music/Car King.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="countdownSound" preload="auto">
+        <source
+            src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DAsmQdBSuBzvLZiTUIG2m98OScRwUAm9fy1noqBShz0fDUdzEEJHLH8N+GQwTu"
+            </audio>
+        <audio id="successSound" preload="auto">
+            <source
+                src="data:audio/wav;base64,UklGRuoCAABXQVZFZm1sIBAAAAABAQYAQB8AAEAfAAABAAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAXQP+PwtmQdBSuBzvLVgT8oUJbm8NF2L1EJHotM4PnO9oXw%40==="
+                </audio>
+
+
+            <div id="celebration" class="hidden"></div>
+            <script src="js/device-intelligence.js"></script>
+            <script src="js/voice-system.js"></script>
+            <script src="js/game.js"></script>
+</body>
+
+</html>
