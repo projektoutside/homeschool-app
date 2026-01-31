@@ -249,6 +249,19 @@ class CarGuessingGame {
         await this.initializeSpeech();
         this.initMainMenu();
         this.showStartScreen();
+        this.checkSecureContext();
+    }
+
+    checkSecureContext() {
+        const isSecure = window.isSecureContext;
+        const warning = document.getElementById('secureContextWarning');
+
+        if (!isSecure && window.location.protocol !== 'file:') {
+            console.warn("⚠️ Security Warning: App not running in Secure Context (HTTPS/Localhost). Mic may fail.");
+            if (warning) warning.classList.remove('hidden');
+        } else {
+            if (warning) warning.classList.add('hidden');
+        }
     }
 
     setupEventListeners() {
@@ -620,8 +633,17 @@ class CarGuessingGame {
         };
 
         this.recognition.onerror = (event) => {
-            if (event.error !== 'no-speech') {
-                console.warn("Mic Error:", event.error);
+            const errCode = event.error;
+            if (errCode !== 'no-speech') {
+                console.warn("Mic Error:", errCode);
+
+                // Visible Mobile Error Logging
+                const log = document.getElementById('mobileErrorLog');
+                if (log) {
+                    log.classList.remove('hidden');
+                    log.innerHTML = `Mic Error: <strong>${errCode}</strong><br>Check permissions.`;
+                    setTimeout(() => log.classList.add('hidden'), 5000);
+                }
             }
         };
     }

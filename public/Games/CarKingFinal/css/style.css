@@ -1762,3 +1762,53 @@ body.size-xl .car-image-container {
         transform: translateX(3px);
     }
 }
+/* ===========================================
+   6. MOBILE & SECURITY ALERTS
+   =========================================== */
+.secure-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    padding: var(--gap-md);
+    background: #ef4444;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    animation: slideDown 0.3s ease-out;
+}
+
+.mobile-log {
+    position: fixed;
+    bottom: var(--gap-md);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.85);
+    color: #f87171;
+    padding: var(--gap-sm) var(--gap-md);
+    border-radius: var(--radius-md);
+    font-family: monospace;
+    font-size: 0.85rem;
+    text-align: center;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.secure-warning.hidden,
+.mobile-log.hidden {
+    display: none;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
