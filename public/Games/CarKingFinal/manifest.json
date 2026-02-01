@@ -1,0 +1,16 @@
+{
+  "name": "Car King",
+  "short_name": "Car King",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "background_color": "#FF6B6B",
+  "theme_color": "#FF6B6B",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/cars/ferrari/Ferrari.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

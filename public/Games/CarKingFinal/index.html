@@ -11,6 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="msapplication-TileColor" content="#FF6B6B">
     <title>Kids Car Guessing Game 🚗</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,16 +21,6 @@
 </head>
 
 <body>
-    <!-- Secure Context Warning -->
-    <div id="secureContextWarning" class="secure-warning hidden">
-        ⚠️ <strong>Security Warning</strong><br>
-        Microphones require HTTPS (Secure Connection) or Localhost.<br>
-        Please open this site via HTTPS to play.
-    </div>
-
-    <!-- Mobile Error Log (Hidden by default, used for debugging) -->
-    <div id="mobileErrorLog" class="mobile-log hidden"></div>
-
     <!-- Start Screen -->
     <div id="startScreen" class="screen main-menu">
         <div class="menu-wallpaper"></div>
@@ -155,7 +146,8 @@
 
                 <div class="guess-section" id="inputSection">
                     <div class="input-group">
-                        <div id="guessInput" class="guess-input">Say the car name...</div>
+                        <input type="text" id="guessInput" class="guess-input" placeholder="Type or say car name..."
+                            maxlength="50">
                         <button id="micBtn" class="mic-btn hidden" title="Speak Answer">🎤</button>
                     </div>
 
@@ -236,6 +228,19 @@
             <script src="js/device-intelligence.js"></script>
             <script src="js/voice-system.js"></script>
             <script src="js/game.js"></script>
+            <script>
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('sw.js')
+                            .then(registration => {
+                                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                            })
+                            .catch(err => {
+                                console.log('ServiceWorker registration failed: ', err);
+                            });
+                    });
+                }
+            </script>
 </body>
 
 </html>

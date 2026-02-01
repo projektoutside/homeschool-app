@@ -268,54 +268,10 @@ class AdvancedVoiceSystem {
         return this.playClip(path);
     }
 
-    // Methods below are intentionally empty to remove AI voice generation.
-    // They return Promises to maintain compatibility with script.js which expects async behavior.
-
-    sayWelcome() {
-        return Promise.resolve();
-    }
-
-    sayCountdownStart() {
-        return Promise.resolve();
-    }
-
-    sayCountdownNumber(number) {
-        return Promise.resolve();
-    }
-
-    sayCountdownGo() {
-        return Promise.resolve();
-    }
-
-    sayCorrectGuess(streak, isFirstTry) {
-        return Promise.resolve();
-    }
-
-    sayIncorrectGuess(guess) {
-        return Promise.resolve();
-    }
-
-    sayReveal(carName, funFact) {
-        return Promise.resolve();
-    }
-
-    sayNewGame() {
-        return Promise.resolve();
-    }
-
-    saySoundToggle(enabled) {
-        return Promise.resolve();
-    }
-
     // Configuration methods
     setEnabled(enabled) {
         this.enabled = enabled;
         if (!enabled) this.cancel();
-    }
-
-    speak() {
-        // Fallback for generic calls
-        return Promise.resolve();
     }
 }
 
