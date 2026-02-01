@@ -268,11 +268,34 @@ class AdvancedVoiceSystem {
         return this.playClip(path);
     }
 
+    // Methods below are intentionally empty to remove AI voice generation.
+    // They return Promises to maintain compatibility with script.js which expects async behavior.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Configuration methods
     setEnabled(enabled) {
         this.enabled = enabled;
         if (!enabled) this.cancel();
     }
+
+
 }
 
 // Make globally available

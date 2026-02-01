@@ -11,7 +11,7 @@ class CarGuessingGame {
         this.answerTimer = null;
         this.currentCar = null;
         this.lastCarIndex = -1; // Track last car to prevent immediate repeats
-        this.isFirstTry = true; // Track if it's the first attempt on current car
+
         this.voiceSystem = null; // Advanced voice system
         this.transitionTimer = null; // Timer for revealed answer delay
         this.nextCarTimer = null; // Timer for loading next car
@@ -472,10 +472,7 @@ class CarGuessingGame {
 
         // Manual toggle 
         // Remove old listeners to prevent duplicates if recalled
-        const newBtn = micBtn.cloneNode(true);
-        micBtn.parentNode.replaceChild(newBtn, micBtn);
-
-        newBtn.addEventListener('click', () => {
+        micBtn.addEventListener('click', () => {
             if (this.isListeningForAnswer) {
                 this.stopListening();
                 document.getElementById('guessInput').placeholder = "Mic Paused";
@@ -1106,20 +1103,9 @@ class CarGuessingGame {
         }
     }
 
-    speak(text, options = {}) {
-        if (!this.voiceSystem || !this.soundEnabled) return Promise.resolve();
-        return this.voiceSystem.speak(text, options);
-    }
 
-    playSound(soundId) {
-        if (!this.soundEnabled) return;
 
-        const audio = document.getElementById(soundId);
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Sound play failed:", e));
-        }
-    }
+
 
     toggleSound() {
         this.soundEnabled = !this.soundEnabled;
@@ -1130,6 +1116,7 @@ class CarGuessingGame {
             soundBtn.classList.remove('muted');
             if (this.voiceSystem) {
                 this.voiceSystem.setEnabled(true);
+
             }
             if (this.currentScreen === 'startScreen' && document.getElementById('startScreen')?.classList.contains('menu-revealed')) {
                 this.playMenuMusic();
@@ -1166,6 +1153,7 @@ class CarGuessingGame {
         }
         this.isStartingGame = false;
         this.stopMenuMusic();
+
     }
 
     startCountdown() {
@@ -1373,7 +1361,6 @@ class CarGuessingGame {
         questionText.textContent = "🤔 Can you guess this car?";
 
         // RESET FLAGS
-        this.isFirstTry = true;
         this.isProcessingGuess = false; // Reset lock
         document.getElementById('guessInput').disabled = false;
 
@@ -1652,7 +1639,7 @@ class CarGuessingGame {
         if (this.answerTimer) clearTimeout(this.answerTimer);
         if (this.timerInterval) clearInterval(this.timerInterval);
 
-        this.isFirstTry = false;
+
     }
 
     handleIncorrectGuess(guess) {
