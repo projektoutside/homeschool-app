@@ -4,6 +4,8 @@ import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
 import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
+import { usePWAInstall } from '../hooks/usePWAInstall';
+import { PWAInstallModal } from '../components/PWAInstallModal';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -16,6 +18,7 @@ const ViewerPage: React.FC = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isGame = useRef(false);
     const hasAutoMaximized = useRef<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
 
@@ -23,6 +26,38 @@ const ViewerPage: React.FC = () => {
     useEffect(() => {
         isGame.current = item?.type === 'game' && !!item?.customHtmlPath;
     }, [item]);
+
+    // PWA Install Hook Calculation
+    const { manifestUrl, serviceWorkerUrl } = useMemo(() => {
+        if (item?.type === 'game' && item?.customHtmlPath) {
+            // Assume manifest and sw are adjacent to index.html (standard for this project structure)
+            const htmlPath = buildAssetPath(item.customHtmlPath);
+            return {
+                manifestUrl: htmlPath.replace('index.html', 'manifest.json'),
+                serviceWorkerUrl: htmlPath.replace('index.html', 'sw.js')
+            };
+        }
+        return { manifestUrl: '', serviceWorkerUrl: '' };
+    }, [item]);
+
+    const { isInstallable, isInstalled, install } = usePWAInstall({
+        manifestUrl,
+        serviceWorkerUrl,
+        enable: !!manifestUrl
+    });
+
+    const handleInstallClick = useCallback(() => {
+        if (isInstalled) {
+            // Already installed - maybe just open it or disable button
+            return;
+        }
+        if (isInstallable) {
+            install();
+        } else {
+            // Fallback for iOS or unsupported browsers -> Show instructions
+            setIsModalOpen(true);
+        }
+    }, [isInstallable, isInstalled, install]);
 
     // Enter fullscreen for games
     const enterFullscreen = useCallback(async () => {
@@ -303,24 +338,46 @@ const ViewerPage: React.FC = () => {
                     <header className="viewer-header">
                         <div className="viewer-header-title">
                             <h1>{item.title}</h1>
-                            <button
-                                onClick={handleDownload}
-                                className={`download-btn-main ${isDownloading ? 'downloading' : ''}`}
-                                disabled={isDownloading}
-                                title="Download for offline use"
-                            >
-                                {isDownloading ? (
-                                    <>
-                                        <span className="spinner-sm"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="icon">💾</span>
-                                        Download
-                                    </>
-                                )}
-                            </button>
+                            {isGameContent && (
+                                <button
+                                    onClick={handleInstallClick}
+                                    className={`download-btn-main ${isInstalled ? 'installed' : ''}`}
+                                    disabled={isInstalled}
+                                    title={isInstalled ? "App Installed" : "Install App"}
+                                >
+                                    {isInstalled ? (
+                                        <>
+                                            <span className="icon">✓</span>
+                                            Installed
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="icon">📱</span>
+                                            Install App
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                            {!isGameContent && (
+                                <button
+                                    onClick={handleDownload}
+                                    className={`download-btn-main ${isDownloading ? 'downloading' : ''}`}
+                                    disabled={isDownloading}
+                                    title="Download for offline use"
+                                >
+                                    {isDownloading ? (
+                                        <>
+                                            <span className="spinner-sm"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="icon">💾</span>
+                                            Download
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </div>
                         <p>{item.description}</p>
                         <div className="tags" role="list">
@@ -336,6 +393,12 @@ const ViewerPage: React.FC = () => {
             <div className="viewer-content">
                 {renderContent()}
             </div>
+            {isGameContent && (
+                <PWAInstallModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
         </div>
     );
 };
