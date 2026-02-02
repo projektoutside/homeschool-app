@@ -7,10 +7,10 @@
 // ============================================================================
 (function setupCanvasTabSystem() {
   'use strict';
-
+  
   // Store canvas resize functions for calling when tabs switch
   window.canvasResizeFuncs = window.canvasResizeFuncs || {};
-
+  
   /**
    * Initialize tab switching for a set of tabs
    * @param {HTMLElement} container - The container with .canvas-tabs
@@ -18,22 +18,22 @@
    */
   function initTabSwitching(container, prefix = '') {
     if (!container) return;
-
+    
     const tabs = container.querySelectorAll('.canvas-tab');
     const panels = container.querySelectorAll('.canvas-panel');
-
+    
     tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-
+        
         const targetTab = tab.dataset.tab; // 'answer' or 'work'
-
+        
         // Remove active from all tabs in this container
         tabs.forEach(t => t.classList.remove('active'));
         // Add active to clicked tab
         tab.classList.add('active');
-
+        
         // Hide all panels, show target panel
         panels.forEach(panel => {
           panel.classList.remove('active');
@@ -41,21 +41,21 @@
             panel.classList.add('active');
           }
         });
-
+        
         // NO RESIZE NEEDED: With the new CSS (visibility: hidden + position: absolute),
         // the canvases maintain their dimensions even when hidden.
         // Triggering resize here was causing layout thrashing and visual glitches.
-
+        
         console.log(`[TabSystem] Switched to ${targetTab} tab${prefix ? ` for ${prefix}` : ''}`);
       });
-
+      
       // Prevent touch events from propagating to canvas
       tab.addEventListener('touchstart', (e) => {
         e.stopPropagation();
       }, { passive: true });
     });
   }
-
+  
   // Initialize tabs when DOM is ready
   function initAllTabs() {
     // Single player tabs
@@ -64,14 +64,14 @@
       initTabSwitching(spContainer, 'sp');
       console.log('[TabSystem] Single player tabs initialized');
     }
-
+    
     // VS mode tabs - Player 1
     const p1Container = document.querySelector('#player1 .player-tabbed-canvas');
     if (p1Container) {
       initTabSwitching(p1Container, 'p1');
       console.log('[TabSystem] Player 1 tabs initialized');
     }
-
+    
     // VS mode tabs - Player 2
     const p2Container = document.querySelector('#player2 .player-tabbed-canvas');
     if (p2Container) {
@@ -79,24 +79,24 @@
       console.log('[TabSystem] Player 2 tabs initialized');
     }
   }
-
+  
   // Wait for DOM
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAllTabs);
   } else {
     initAllTabs();
   }
-
+  
   // Expose for manual initialization if needed
   window.initCanvasTabs = initAllTabs;
-
+  
   /**
    * Reset tabs to Answer tab for a specific container or all containers
    * @param {string} prefix - Optional: 'sp', 'p1', or 'p2' to reset specific player
    */
-  window.resetCanvasTab = function (prefix) {
+  window.resetCanvasTab = function(prefix) {
     const containers = [];
-
+    
     if (!prefix || prefix === 'sp') {
       const sp = document.querySelector('.tabbed-canvas-container');
       if (sp) containers.push(sp);
@@ -109,22 +109,22 @@
       const p2 = document.querySelector('#player2 .player-tabbed-canvas');
       if (p2) containers.push(p2);
     }
-
+    
     containers.forEach(container => {
       const tabs = container.querySelectorAll('.canvas-tab');
       const panels = container.querySelectorAll('.canvas-panel');
-
+      
       // Reset to answer tab
       tabs.forEach(t => {
         t.classList.toggle('active', t.dataset.tab === 'answer');
       });
-
+      
       panels.forEach(p => {
         p.classList.toggle('active', p.id.includes('-panel-answer'));
       });
     });
   };
-
+  
   console.log('[TabSystem] Canvas tab system loaded');
 })();
 
@@ -134,31 +134,31 @@
 // ============================================================================
 (function setupMultiTouchPrevention() {
   'use strict';
-
+  
   // Prevent all zoom gestures on the document
-  document.addEventListener('gesturestart', function (e) {
+  document.addEventListener('gesturestart', function(e) {
     e.preventDefault();
   }, { passive: false });
-
-  document.addEventListener('gesturechange', function (e) {
+  
+  document.addEventListener('gesturechange', function(e) {
     e.preventDefault();
   }, { passive: false });
-
-  document.addEventListener('gestureend', function (e) {
+  
+  document.addEventListener('gestureend', function(e) {
     e.preventDefault();
   }, { passive: false });
-
+  
   // Prevent pinch zoom on touchmove when multiple touches detected
-  document.addEventListener('touchmove', function (e) {
+  document.addEventListener('touchmove', function(e) {
     // If there are 2+ touches and they're NOT both on canvases, prevent zoom
     if (e.touches.length >= 2) {
       // Check if touches are on different game canvases (VS mode)
       const touch1Target = e.touches[0].target;
       const touch2Target = e.touches[1].target;
-
+      
       const isCanvas1 = touch1Target.tagName === 'CANVAS';
       const isCanvas2 = touch2Target.tagName === 'CANVAS';
-
+      
       // If both touches are on canvases (could be same or different), allow it
       // But prevent default zoom behavior
       if (isCanvas1 || isCanvas2) {
@@ -171,26 +171,26 @@
       }
     }
   }, { passive: false });
-
+  
   // Prevent double-tap zoom
   let lastTouchEnd = 0;
-  document.addEventListener('touchend', function (e) {
+  document.addEventListener('touchend', function(e) {
     const now = Date.now();
     if (now - lastTouchEnd <= 300) {
       e.preventDefault();
     }
     lastTouchEnd = now;
   }, { passive: false });
-
+  
   // Prevent context menu on long press
-  document.addEventListener('contextmenu', function (e) {
+  document.addEventListener('contextmenu', function(e) {
     if (e.target.tagName === 'CANVAS') {
       e.preventDefault();
     }
   });
-
+  
   // Fix for iOS Safari - prevent bouncing/overscroll
-  document.body.addEventListener('touchmove', function (e) {
+  document.body.addEventListener('touchmove', function(e) {
     if (e.target.tagName !== 'CANVAS' && !e.target.closest('.modal-content')) {
       // Allow scrolling in modals but prevent elsewhere
       const isScrollable = e.target.closest('.screen');
@@ -199,7 +199,7 @@
       }
     }
   }, { passive: true });
-
+  
   console.log('[MultiTouch] Gesture prevention system initialized');
 })();
 
@@ -274,15 +274,15 @@ let singlePlayerWorkClear = null;
 // Auto-clear functionality
 function autoStageWork(playerOnly = null) {
   console.log('🔥 autoStageWork called with playerOnly:', playerOnly);
-
+  
   // Get toggle elements dynamically to ensure they exist
   if (!autoClearToggleGame) autoClearToggleGame = document.getElementById('auto-clear-toggle-game');
   if (!autoClearToggleVS) autoClearToggleVS = document.getElementById('auto-clear-toggle-vs');
-
+  
   // Check appropriate toggle based on game mode
   const isVSMode = !!playerOnly;
   const toggleToCheck = isVSMode ? autoClearToggleVS : autoClearToggleGame;
-
+  
   console.log('🔍 Debug info:', {
     isVSMode,
     toggleExists: !!toggleToCheck,
@@ -291,10 +291,10 @@ function autoStageWork(playerOnly = null) {
     singlePlayerWorkClear: !!singlePlayerWorkClear,
     playerWorkClearFunc: playerOnly ? !!playerOnly.workClearFunc : 'N/A'
   });
-
+  
   if (toggleToCheck && toggleToCheck.checked) {
     console.log('✅ Toggle is checked - proceeding with auto-clear');
-
+    
     // Single player mode
     if (!playerOnly) {
       if (singlePlayerWorkClear && singlePlayerWorkClear.clear) {
@@ -441,92 +441,6 @@ let vsState = {
   used1: new Set(),
   used2: new Set(),
   timerInterval: null
-};
-
-// --- Combo System ---
-const ComboSystem = {
-  // Configuration
-  rules: [
-    { threshold: 9, points: 4, class: 'combo-red' },
-    { threshold: 6, points: 3, class: 'combo-orange' },
-    { threshold: 3, points: 2, class: 'combo-yellow' },
-    { threshold: 0, points: 1, class: '' } // Base
-  ],
-
-  // State
-  spCombo: 0,
-  p1Combo: 0,
-  p2Combo: 0,
-
-  // Methods
-  reset(player) {
-    if (player === 'sp') this.spCombo = 0;
-    else if (player === 'p1') this.p1Combo = 0;
-    else if (player === 'p2') this.p2Combo = 0;
-    this.updateVisuals(player);
-  },
-
-  getComboState(player) {
-    let count = 0;
-    if (player === 'sp') count = this.spCombo;
-    else if (player === 'p1') count = this.p1Combo;
-    else if (player === 'p2') count = this.p2Combo;
-
-    // Find highest matching rule
-    const rule = this.rules.find(r => count >= r.threshold) || this.rules[this.rules.length - 1];
-    return { count, points: rule.points, class: rule.class };
-  },
-
-  registerCorrect(player) {
-    if (player === 'sp') this.spCombo++;
-    else if (player === 'p1') this.p1Combo++;
-    else if (player === 'p2') this.p2Combo++;
-
-    const state = this.getComboState(player);
-    this.updateVisuals(player);
-    return state.points;
-  },
-
-  registerIncorrect(player) {
-    this.reset(player);
-  },
-
-  updateVisuals(player) {
-    const state = this.getComboState(player);
-    let canvasElement = null;
-    let containerElement = null;
-
-    // Identify elements
-    if (player === 'sp') {
-      canvasElement = document.getElementById('handwriting-canvas');
-      containerElement = document.getElementById('problem-area'); // Fallback/Secondary
-    } else if (player === 'p1') {
-      canvasElement = document.getElementById('p1-canvas');
-      containerElement = document.getElementById('player1');
-    } else if (player === 'p2') {
-      canvasElement = document.getElementById('p2-canvas');
-      containerElement = document.getElementById('player2');
-    }
-
-    // 1. Update Canvas Border/Glow
-    if (canvasElement) {
-      // Remove all combo classes
-      this.rules.forEach(r => { if (r.class) canvasElement.classList.remove(r.class); });
-      // Add new class
-      if (state.class) canvasElement.classList.add(state.class);
-    }
-
-    // 2. Update Container Background Flash
-    if (containerElement && player !== 'sp') { // Only for VS players essentially, or SP if desired
-      // Rules map to background classes: combo-yellow -> player-bg-yellow
-      const bgClasses = ['player-bg-yellow', 'player-bg-orange', 'player-bg-red'];
-      bgClasses.forEach(c => containerElement.classList.remove(c));
-
-      if (state.class === 'combo-yellow') containerElement.classList.add('player-bg-yellow');
-      if (state.class === 'combo-orange') containerElement.classList.add('player-bg-orange');
-      if (state.class === 'combo-red') containerElement.classList.add('player-bg-red');
-    }
-  }
 };
 
 // --- UI Helpers ---
@@ -728,18 +642,18 @@ if (musicVolume) {
 }
 
 let selectedPlayers = 'single';
-function updateModeButtons() {
+function updateModeButtons(){
   if (!singleModeBtn || !vsModeBtn) return;
-  singleModeBtn.classList.toggle('selected', selectedPlayers === 'single');
-  vsModeBtn.classList.toggle('selected', selectedPlayers === 'vs');
+  singleModeBtn.classList.toggle('selected', selectedPlayers==='single');
+  vsModeBtn.classList.toggle('selected', selectedPlayers==='vs');
 }
-if (singleModeBtn) singleModeBtn.addEventListener('click', () => {
-  selectedPlayers = 'single';
+if (singleModeBtn) singleModeBtn.addEventListener('click', ()=>{
+  selectedPlayers='single';
   updateModeButtons();
   showScreen('setup');
 });
-if (vsModeBtn) vsModeBtn.addEventListener('click', () => {
-  selectedPlayers = 'vs';
+if (vsModeBtn) vsModeBtn.addEventListener('click', ()=>{
+  selectedPlayers='vs';
   updateModeButtons();
   showScreen('setup');
 });
@@ -770,7 +684,7 @@ function getRandomInt(min, max) {
 
 function generateProblem(modeOverride) {
   let a, b, op, answer, display;
-  const baseMode = (modeOverride || gameSettings.mode) === 'random' ? ['add', 'sub', 'mul', 'div'][getRandomInt(0, 3)] : (modeOverride || gameSettings.mode);
+  const baseMode = (modeOverride || gameSettings.mode) === 'random' ? ['add','sub','mul','div'][getRandomInt(0,3)] : (modeOverride || gameSettings.mode);
   let min = 1, max = 9;
   if (gameSettings.difficulty === 'medium') { min = 10; max = 99; }
   if (gameSettings.difficulty === 'hard') { min = 100; max = 999; }
@@ -843,19 +757,18 @@ function checkAnswer() {
   }
   let userAnswer = parseInt(userInput);
   if (userAnswer === currentProblem.answer) {
-    const points = ComboSystem.registerCorrect('sp');
-    gameState.score += points;
+    gameState.score++;
     scoreboard.textContent = gameState.score;
-    feedback.innerHTML = `Correct! +${points} <small>${points > 1 ? 'Combo!' : ''}</small>`;
+    feedback.textContent = 'Correct! 🎉';
     feedback.style.color = '#4caf50';
     const spCanvas = document.getElementById('handwriting-canvas');
-    if (spCanvas) {
-      spCanvas.classList.remove('drawing', 'processing');
-      spCanvas.classList.add('pulse-correct');
-      setTimeout(() => spCanvas.classList.remove('pulse-correct'), 1800);
+    if (spCanvas) { 
+      spCanvas.classList.remove('drawing', 'processing'); 
+      spCanvas.classList.add('pulse-correct'); 
+      setTimeout(()=>spCanvas.classList.remove('pulse-correct'), 1800); 
     }
     const problemEl = document.getElementById('problem');
-    if (problemEl) { problemEl.classList.add('pulse-correct'); setTimeout(() => problemEl.classList.remove('pulse-correct'), 950); }
+    if (problemEl) { problemEl.classList.add('pulse-correct'); setTimeout(()=>problemEl.classList.remove('pulse-correct'), 950); }
     if (window.correctSound) window.correctSound.play();
     setTimeout(() => {
       feedback.textContent = '';
@@ -868,17 +781,16 @@ function checkAnswer() {
       }, 50);
     }, 800);
   } else {
-    ComboSystem.registerIncorrect('sp');
     feedback.textContent = 'Oops! Try again.';
     feedback.style.color = '#ff4e50';
     const spCanvas = document.getElementById('handwriting-canvas');
-    if (spCanvas) {
-      spCanvas.classList.remove('drawing', 'processing');
-      spCanvas.classList.add('pulse-wrong');
-      setTimeout(() => spCanvas.classList.remove('pulse-wrong'), 950);
+    if (spCanvas) { 
+      spCanvas.classList.remove('drawing', 'processing'); 
+      spCanvas.classList.add('pulse-wrong'); 
+      setTimeout(()=>spCanvas.classList.remove('pulse-wrong'), 950); 
     }
     const problemEl = document.getElementById('problem');
-    if (problemEl) { problemEl.classList.add('pulse-wrong'); setTimeout(() => problemEl.classList.remove('pulse-wrong'), 950); }
+    if (problemEl) { problemEl.classList.add('pulse-wrong'); setTimeout(()=>problemEl.classList.remove('pulse-wrong'), 950); }
     if (window.wrongSound) window.wrongSound.play();
     setTimeout(() => {
       feedback.textContent = '';
@@ -905,18 +817,15 @@ confirmYesBtn.addEventListener('click', () => {
   hidePredictModal();
   let userAnswer = parseInt(pendingDigit);
   if (userAnswer === currentProblem.answer) {
-    const points = ComboSystem.registerCorrect('sp');
-    gameState.score += points;
+    gameState.score++;
     scoreboard.textContent = gameState.score;
-    feedback.innerHTML = `Correct! +${points} <small>${points > 1 ? 'Combo!' : ''}</small>`;
-    feedback.style.color = '#4caf50';
     animateFeedback('correct');
     // pulse canvas and problem
     const spCanvas = document.getElementById('handwriting-canvas');
-    if (spCanvas) {
-      spCanvas.classList.remove('drawing', 'processing');
-      spCanvas.classList.add('pulse-correct');
-      setTimeout(() => spCanvas.classList.remove('pulse-correct'), 1800);
+    if (spCanvas) { 
+      spCanvas.classList.remove('drawing', 'processing'); 
+      spCanvas.classList.add('pulse-correct'); 
+      setTimeout(()=>spCanvas.classList.remove('pulse-correct'), 1800); 
     }
     if (window.correctSound) window.correctSound.play();
     setTimeout(() => {
@@ -930,14 +839,13 @@ confirmYesBtn.addEventListener('click', () => {
       }, 50);
     }, 800);
   } else {
-    ComboSystem.registerIncorrect('sp');
     animateFeedback('wrong');
     // pulse canvas for wrong answer
     const spCanvas = document.getElementById('handwriting-canvas');
-    if (spCanvas) {
-      spCanvas.classList.remove('drawing', 'processing');
-      spCanvas.classList.add('pulse-wrong');
-      setTimeout(() => spCanvas.classList.remove('pulse-wrong'), 950);
+    if (spCanvas) { 
+      spCanvas.classList.remove('drawing', 'processing'); 
+      spCanvas.classList.add('pulse-wrong'); 
+      setTimeout(()=>spCanvas.classList.remove('pulse-wrong'), 950); 
     }
     if (window.wrongSound) window.wrongSound.play();
     setTimeout(() => {
@@ -966,24 +874,23 @@ function endGame() {
 // --- Game Logic Placeholders ---
 function startGame() {
   gameState.score = 0;
-  ComboSystem.reset('sp');
   gameState.timeLeft = gameSettings.timer;
   gameState.running = true;
   usedProblems = new Set();
   scoreboard.textContent = '0';
   timer.textContent = gameState.timeLeft;
   feedback.textContent = '';
-
+  
   // Reset to Answer tab
   if (window.resetCanvasTab) window.resetCanvasTab('sp');
-
+  
   // Setup single player work canvas
   const workCanvas = document.getElementById('work-canvas');
   console.log('🏁 Setting up single player work canvas:', !!workCanvas);
   if (workCanvas) {
     singlePlayerWorkClear = setupWorkCanvas(workCanvas, 'single-work');
     console.log('🧹 singlePlayerWorkClear created:', !!singlePlayerWorkClear);
-
+    
     // Add clear button event listener for single player (remove any existing listeners first)
     if (workClearBtn && singlePlayerWorkClear) {
       console.log('🔘 Setting up manual clear button');
@@ -1011,16 +918,13 @@ function startVsGame() {
   vsState.timeLeft = gameSettings.timer;
   vsState.p1.score = 0; vsState.p2.score = 0;
   vsState.used1 = new Set(); vsState.used2 = new Set();
-
-  ComboSystem.reset('p1');
-  ComboSystem.reset('p2');
-
+  
   // Reset tabs to Answer for both players
   if (window.resetCanvasTab) {
     window.resetCanvasTab('p1');
     window.resetCanvasTab('p2');
   }
-
+  
   // Problems
   vsState.p1.problem = uniqueProblem(vsState.used1);
   vsState.p2.problem = uniqueProblem(vsState.used2);
@@ -1036,7 +940,7 @@ function startVsGame() {
   // Setup work area canvases
   p1.workClearFunc = setupWorkCanvas(p1.workCanvas, 'p1-work');
   p2.workClearFunc = setupWorkCanvas(p2.workCanvas, 'p2-work');
-
+  
   // Add clear button event listeners for VS mode (prevent duplicates)
   if (p1.workClearBtn && p1.workClearFunc) {
     p1.workClearBtn.replaceWith(p1.workClearBtn.cloneNode(true));
@@ -1091,7 +995,7 @@ function endVsGame(backToMenu = false) {
   fadeOutBackgroundMusic(800);
   const winner = vsState.p1.score === vsState.p2.score ? 'tie' : (vsState.p1.score > vsState.p2.score ? 'p1' : 'p2');
   showVsWinnerReveal(winner);
-
+  
   // Extend the reveal time slightly to enjoy the new effects
   setTimeout(() => {
     // Hide the winner overlay before showing game over screen
@@ -1099,7 +1003,7 @@ function endVsGame(backToMenu = false) {
       vsWinnerOverlay.classList.remove('active');
       setTimeout(() => vsWinnerOverlay.classList.add('hidden'), 500); // Wait for fade out
     }
-
+    
     showScreen('over');
     const label = winner === 'tie' ? 'Tie!' : (winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!');
     finalScore.textContent = `${label}  P1: ${vsState.p1.score}  P2: ${vsState.p2.score}`;
@@ -1111,7 +1015,7 @@ function clearVsWinnerEffects() {
   if (player2El) player2El.classList.remove('vs-winner', 'vs-runnerup', 'vs-tie');
   if (player1Badge) player1Badge.textContent = 'Player 1';
   if (player2Badge) player2Badge.textContent = 'Player 2';
-
+  
   // Clear new overlay elements
   const p1Section = document.getElementById('vs-result-p1');
   const p2Section = document.getElementById('vs-result-p2');
@@ -1136,16 +1040,16 @@ function showVsWinnerReveal(winner) {
 
   const p1Section = document.getElementById('vs-result-p1');
   const p2Section = document.getElementById('vs-result-p2');
-
+  
   const p1Title = document.getElementById('p1-result-title');
   const p2Title = document.getElementById('p2-result-title');
-
+  
   const p1Msg = document.getElementById('p1-result-message');
   const p2Msg = document.getElementById('p2-result-message');
-
+  
   const p1Score = document.getElementById('p1-final-score');
   const p2Score = document.getElementById('p2-final-score');
-
+  
   const p1Icon = document.getElementById('p1-result-icon');
   const p2Icon = document.getElementById('p2-result-icon');
 
@@ -1160,13 +1064,13 @@ function showVsWinnerReveal(winner) {
     // Player 1 Wins
     p1Section.classList.add('winner');
     p2Section.classList.add('loser');
-
+    
     if (p1Title) p1Title.textContent = 'WINNER!';
     if (p2Title) p2Title.textContent = 'Nice Try';
-
+    
     if (p1Msg) p1Msg.textContent = 'You are the champion!';
     if (p2Msg) p2Msg.textContent = 'Better luck next time!';
-
+    
     if (p1Icon) p1Icon.textContent = '👑';
     if (p2Icon) p2Icon.textContent = '👏'; // Clapping hands or medal?
 
@@ -1177,13 +1081,13 @@ function showVsWinnerReveal(winner) {
     // Player 2 Wins
     p2Section.classList.add('winner');
     p1Section.classList.add('loser');
-
+    
     if (p2Title) p2Title.textContent = 'WINNER!';
     if (p1Title) p1Title.textContent = 'Nice Try';
-
+    
     if (p2Msg) p2Msg.textContent = 'You are the champion!';
     if (p1Msg) p1Msg.textContent = 'Better luck next time!';
-
+    
     if (p2Icon) p2Icon.textContent = '👑';
     if (p1Icon) p1Icon.textContent = '👏';
 
@@ -1194,16 +1098,16 @@ function showVsWinnerReveal(winner) {
     // Tie
     p1Section.classList.add('tie');
     p2Section.classList.add('tie');
-
+    
     if (p1Title) p1Title.textContent = 'TIE GAME!';
     if (p2Title) p2Title.textContent = 'TIE GAME!';
-
+    
     if (p1Msg) p1Msg.textContent = 'Great match!';
     if (p2Msg) p2Msg.textContent = 'Great match!';
-
+    
     if (p1Icon) p1Icon.textContent = '🤝';
     if (p2Icon) p2Icon.textContent = '🤝';
-
+    
     addConfetti(p1ConfettiArea, 15); // Less confetti for tie
     addConfetti(p2ConfettiArea, 15);
   }
@@ -1217,7 +1121,7 @@ function showVsWinnerReveal(winner) {
 function addConfetti(container, count = 40) {
   if (!container) return;
   const colors = ['#ff4e50', '#f9d423', '#2196f3', '#4caf50', '#ff7ae3'];
-
+  
   for (let i = 0; i < count; i++) {
     const el = document.createElement('div');
     el.classList.add('vs-confetti-particle');
@@ -1249,18 +1153,18 @@ function setupPlayerCanvas(player, id) {
     const newW = Math.max(1, Math.round(cssW * scale));
     const newH = Math.max(1, Math.round(cssH * scale));
     if (canvas.width !== newW || canvas.height !== newH) {
-      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale,0,0,scale,0,0);
+      ctx.lineCap='round'; ctx.lineJoin='round';
     }
   }
   resize();
   window.addEventListener('resize', resize);
 
-  function getPos(touch) {
+  function getPos(touch){
     const rect = canvas.getBoundingClientRect();
     let x = touch.clientX - rect.left;
     let y = touch.clientY - rect.top;
-
+    
     // Check if this canvas is rotated 180 degrees (Player 2)
     const canvasContainer = canvas.closest('.player-canvas-container');
     if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
@@ -1268,86 +1172,86 @@ function setupPlayerCanvas(player, id) {
       x = rect.width - x;
       y = rect.height - y;
     }
-
+    
     return { x, y };
   }
 
-  function isBlank() {
+  function isBlank(){
     const blank = document.createElement('canvas');
     blank.width = canvas.width; blank.height = canvas.height;
-    return ctx.getImageData(0, 0, canvas.width, canvas.height).data.toString() === blank.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.toString();
+    return ctx.getImageData(0,0,canvas.width,canvas.height).data.toString()===blank.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.toString();
   }
 
-  function clear() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.classList.remove('drawing', 'processing');
-    if (player.status) player.status.textContent = 'Draw your answer';
+  function clear(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    canvas.classList.remove('drawing','processing');
+    if (player.status) player.status.textContent='Draw your answer';
   }
   player.clear = clear;
   player.isBlank = isBlank;
 
   // Mouse events (for desktop)
-  function startDraw(e) {
+  function startDraw(e){
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     lastX = e.clientX - rect.left;
     lastY = e.clientY - rect.top;
-
+    
     // Handle rotation for Player 2
     const canvasContainer = canvas.closest('.player-canvas-container');
     if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
       lastX = rect.width - lastX;
       lastY = rect.height - lastY;
     }
-
+    
     canvas.classList.add('drawing'); canvas.classList.remove('processing');
-    if (player.status) player.status.textContent = 'Drawing...';
+    if (player.status) player.status.textContent='Drawing...';
   }
-
-  function draw(e) {
-    if (!drawing) return;
+  
+  function draw(e){
+    if(!drawing) return; 
     e.preventDefault();
-
+    
     const rect = canvas.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
-
+    
     // Handle rotation for Player 2
     const canvasContainer = canvas.closest('.player-canvas-container');
     if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
       x = rect.width - x;
       y = rect.height - y;
     }
-
+    
     const base = 8;
     const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke; ctx.strokeStyle = '#000'; ctx.fillStyle = '#000';
-
-    const distance = Math.sqrt((x - lastX) ** 2 + (y - lastY) ** 2);
-    if (distance > 1.5) {
-      const steps = Math.ceil(distance / 1.5);
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const ix = lastX + (x - lastX) * t;
-        const iy = lastY + (y - lastY) * t;
-        ctx.beginPath(); ctx.arc(ix, iy, scaleStroke / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = scaleStroke; ctx.strokeStyle='#000'; ctx.fillStyle='#000';
+    
+    const distance = Math.sqrt((x-lastX)**2+(y-lastY)**2);
+    if (distance>1.5){ 
+      const steps=Math.ceil(distance/1.5); 
+      for(let i=0;i<=steps;i++){ 
+        const t=i/steps; 
+        const ix=lastX+(x-lastX)*t; 
+        const iy=lastY+(y-lastY)*t; 
+        ctx.beginPath(); ctx.arc(ix,iy,scaleStroke/2,0,Math.PI*2); ctx.fill(); 
       }
     }
-    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
-    lastX = x; lastY = y;
-
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); 
+    lastX=x; lastY=y;
+    
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer=null; }
   }
-
-  function endDraw() {
-    drawing = false; canvas.classList.remove('drawing');
-    if (player.status) {
-      if (!isBlank()) player.status.textContent = 'Analyzing...';
-      else player.status.textContent = 'Draw your answer';
+  
+  function endDraw(){
+    drawing=false; canvas.classList.remove('drawing');
+    if (player.status){ 
+      if (!isBlank()) player.status.textContent='Analyzing...'; 
+      else player.status.textContent='Draw your answer'; 
     }
-    if (!isBlank()) {
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => autoRecognize(), SUBMIT_DELAY_MS);
+    if (!isBlank()) { 
+      if (idleTimer) clearTimeout(idleTimer); 
+      idleTimer=setTimeout(()=>autoRecognize(), SUBMIT_DELAY_MS); 
     }
   }
 
@@ -1355,59 +1259,59 @@ function setupPlayerCanvas(player, id) {
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mouseup', endDraw);
   canvas.addEventListener('mouseleave', endDraw);
-
+  
   // ============================================================================
   // MULTI-TOUCH HANDLING - Isolated per canvas for VS mode
   // ============================================================================
-
-  function touchStart(e) {
+  
+  function touchStart(e){
     // Prevent default to stop zoom/scroll
     e.preventDefault();
     e.stopPropagation();
-
+    
     const rect = canvas.getBoundingClientRect();
     const canvasContainer = canvas.closest('.player-canvas-container');
     const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-
+    
     // Process each new touch
     for (const touch of e.changedTouches) {
       // Check if this touch started on THIS canvas
       if (touch.target === canvas) {
         let x = touch.clientX - rect.left;
         let y = touch.clientY - rect.top;
-
+        
         // Adjust for rotation (Player 2)
         if (isRotated) {
           x = rect.width - x;
           y = rect.height - y;
         }
-
+        
         // Store this touch for this canvas
         canvasTouches.set(touch.identifier, { lastX: x, lastY: y });
         drawing = true;
       }
     }
-
+    
     if (canvasTouches.size > 0) {
-      canvas.classList.add('drawing');
+      canvas.classList.add('drawing'); 
       canvas.classList.remove('processing');
-      if (player.status) player.status.textContent = 'Drawing...';
+      if (player.status) player.status.textContent='Drawing...';
       if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
     }
   }
-
-  function touchMove(e) {
+  
+  function touchMove(e){
     // Only process if we have touches on this canvas
     if (canvasTouches.size === 0) return;
-
+    
     // CRITICAL: Prevent default to stop ALL browser gestures
     e.preventDefault();
     e.stopPropagation();
-
+    
     const rect = canvas.getBoundingClientRect();
     const canvasContainer = canvas.closest('.player-canvas-container');
     const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-
+    
     const base = 8;
     const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
     ctx.lineWidth = scaleStroke;
@@ -1415,21 +1319,21 @@ function setupPlayerCanvas(player, id) {
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#000';
     ctx.fillStyle = '#000';
-
+    
     // Process each touch that belongs to this canvas
     for (const touch of e.changedTouches) {
       const state = canvasTouches.get(touch.identifier);
       if (!state) continue; // This touch doesn't belong to this canvas
-
+      
       let x = touch.clientX - rect.left;
       let y = touch.clientY - rect.top;
-
+      
       // Adjust for rotation (Player 2)
       if (isRotated) {
         x = rect.width - x;
         y = rect.height - y;
       }
-
+      
       // Draw smooth line
       const dist = Math.sqrt((x - state.lastX) ** 2 + (y - state.lastY) ** 2);
       if (dist > 1.5) {
@@ -1443,58 +1347,58 @@ function setupPlayerCanvas(player, id) {
           ctx.fill();
         }
       }
-
+      
       ctx.beginPath();
       ctx.moveTo(state.lastX, state.lastY);
       ctx.lineTo(x, y);
       ctx.stroke();
-
+      
       // Update last position for this touch
       state.lastX = x;
       state.lastY = y;
     }
-
+    
     // Reset idle timer while drawing
     if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
   }
-
-  function touchEnd(e) {
+  
+  function touchEnd(e){
     e.preventDefault();
     e.stopPropagation();
-
+    
     // Remove ended touches from our tracking
     for (const touch of e.changedTouches) {
       canvasTouches.delete(touch.identifier);
     }
-
+    
     // If all touches on this canvas are done, trigger end draw
     if (canvasTouches.size === 0 && drawing) {
       endDraw();
     }
   }
-
+  
   // Use capture phase to ensure we get events before other handlers
   canvas.addEventListener('touchstart', touchStart, { passive: false, capture: true });
   canvas.addEventListener('touchmove', touchMove, { passive: false, capture: true });
   canvas.addEventListener('touchend', touchEnd, { passive: false, capture: true });
   canvas.addEventListener('touchcancel', touchEnd, { passive: false, capture: true });
 
-  async function autoRecognize() {
+  async function autoRecognize(){
     if (!vsState.running || isBlank()) return;
     canvas.classList.add('processing'); canvas.classList.remove('drawing');
-    if (player.status) player.status.textContent = '🔬 Analyzing...';
+    if (player.status) player.status.textContent='🔬 Analyzing...';
 
-    const expectedProblem = (player === p1 ? vsState.p1.problem : vsState.p2.problem);
+    const expectedProblem = (player===p1? vsState.p1.problem: vsState.p2.problem);
     const expectedStr = String(expectedProblem.answer);
     const expectedLen = expectedStr.length;
 
     try {
       // Build a cropped, tight canvas around drawing to improve accuracy
-      const bounds = (window.hm_getDrawingBounds ? window.hm_getDrawingBounds(canvas) : null);
+      const bounds = (window.hm_getDrawingBounds? window.hm_getDrawingBounds(canvas) : null);
       let src = canvas;
-      if (bounds && bounds.width > 4 && bounds.height > 4) {
-        const sub = document.createElement('canvas'); sub.width = bounds.width; sub.height = bounds.height;
-        sub.getContext('2d').drawImage(canvas, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height);
+      if (bounds && bounds.width>4 && bounds.height>4){
+        const sub = document.createElement('canvas'); sub.width=bounds.width; sub.height=bounds.height;
+        sub.getContext('2d').drawImage(canvas, bounds.x, bounds.y, bounds.width, bounds.height, 0,0, bounds.width, bounds.height);
         src = sub;
       }
 
@@ -1503,55 +1407,37 @@ function setupPlayerCanvas(player, id) {
         window.hm_recognizeMultiDigitFromCanvas ? window.hm_recognizeMultiDigitFromCanvas(src, expectedLen) : '',
         window.hm_recognizeDigitMLFromCanvas ? window.hm_recognizeDigitMLFromCanvas(src) : null
       ]);
-      const mlDigit = mlSingle ? mlSingle.digit : null;
+      const mlDigit = mlSingle? mlSingle.digit : null;
 
       const raw = [];
       if (multi) raw.push(String(multi));
-      if (mlDigit != null) raw.push(String(mlDigit));
+      if (mlDigit!=null) raw.push(String(mlDigit));
 
       const uniq = Array.from(new Set(raw));
       // Simple scoring: prefer exact match and expected length
       let best = '';
-      if (uniq.includes(expectedStr)) best = expectedStr; else best = uniq.find(c => c.length === expectedLen) || uniq[0] || '';
+      if (uniq.includes(expectedStr)) best = expectedStr; else best = uniq.find(c=>c.length===expectedLen) || uniq[0] || '';
 
       const correct = best === expectedStr;
       if (correct) {
-        if (player === p1) {
-          const points = ComboSystem.registerCorrect('p1');
-          vsState.p1.score += points;
-          p1.scoreSpan.textContent = vsState.p1.score;
-          if (player.feedback) {
-            player.feedback.innerHTML = `Correct! +${points} <small>${points > 1 ? 'Combo!' : ''}</small>`;
-            player.feedback.style.color = '#4caf50';
-          }
-        } else {
-          const points = ComboSystem.registerCorrect('p2');
-          vsState.p2.score += points;
-          p2.scoreSpan.textContent = vsState.p2.score;
-          if (player.feedback) {
-            player.feedback.innerHTML = `Correct! +${points} <small>${points > 1 ? 'Combo!' : ''}</small>`;
-            player.feedback.style.color = '#4caf50';
-          }
-        }
-
+        if (player===p1) { vsState.p1.score++; p1.scoreSpan.textContent = vsState.p1.score; }
+        else { vsState.p2.score++; p2.scoreSpan.textContent = vsState.p2.score; }
+        if (player.feedback){ player.feedback.textContent='Correct! 🎉'; player.feedback.style.color='#4caf50'; }
         // pulse that player's canvas and problem
-        if (player.canvas) { player.canvas.classList.add('pulse-correct'); setTimeout(() => player.canvas.classList.remove('pulse-correct'), 950); }
+        if (player.canvas) { player.canvas.classList.add('pulse-correct'); setTimeout(()=>player.canvas.classList.remove('pulse-correct'), 950); }
         // Auto-clear work area for the player who got it correct
         console.log('🎯 CORRECT ANSWER (VS mode) - calling autoStageWork() for player:', player === p1 ? 'Player 1' : 'Player 2');
         autoStageWork(player);
-        if (player === p1) { vsState.p1.problem = uniqueProblem(vsState.used1); p1.problemDiv.textContent = vsState.p1.problem.display; }
+        if (player===p1){ vsState.p1.problem = uniqueProblem(vsState.used1); p1.problemDiv.textContent = vsState.p1.problem.display; }
         else { vsState.p2.problem = uniqueProblem(vsState.used2); p2.problemDiv.textContent = vsState.p2.problem.display; }
       } else {
-        if (player === p1) ComboSystem.registerIncorrect('p1');
-        else ComboSystem.registerIncorrect('p2');
-
-        if (player.feedback) { player.feedback.textContent = best ? `Incorrect (${best})` : 'Unclear — try again'; player.feedback.style.color = best ? '#ff4e50' : '#fff'; }
-        if (player.canvas) { player.canvas.classList.add('pulse-wrong'); setTimeout(() => player.canvas.classList.remove('pulse-wrong'), 950); }
+        if (player.feedback){ player.feedback.textContent= best? `Incorrect (${best})` : 'Unclear — try again'; player.feedback.style.color = best? '#ff4e50' : '#fff'; }
+        if (player.canvas) { player.canvas.classList.add('pulse-wrong'); setTimeout(()=>player.canvas.classList.remove('pulse-wrong'), 950); }
       }
       clear();
-    } catch (err) {
+    } catch(err){
       console.error('VS recognize error', err);
-      if (player.status) player.status.textContent = '⚠️ Recognition error';
+      if (player.status) player.status.textContent='⚠️ Recognition error';
     } finally {
       canvas.classList.remove('processing');
     }
@@ -1560,11 +1446,11 @@ function setupPlayerCanvas(player, id) {
 
 function setupWorkCanvas(canvas, label) {
   if (!canvas) return null;
-
+  
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  let drawing = false;
+  let drawing = false; 
   let lastX = 0, lastY = 0;
-
+  
   // Track touches specific to THIS canvas only
   const canvasTouches = new Map();
 
@@ -1576,19 +1462,19 @@ function setupWorkCanvas(canvas, label) {
     const newW = Math.max(1, Math.round(cssW * scale));
     const newH = Math.max(1, Math.round(cssH * scale));
     if (canvas.width !== newW || canvas.height !== newH) {
-      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale,0,0,scale,0,0);
+      ctx.lineCap='round'; ctx.lineJoin='round';
     }
   }
   resize();
   window.addEventListener('resize', resize);
 
-  function startDraw(e) {
+  function startDraw(e){
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     lastX = e.clientX - rect.left;
     lastY = e.clientY - rect.top;
-
+    
     // Handle rotation for Player 2
     const canvasContainer = canvas.closest('.player-canvas-container');
     if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
@@ -1596,53 +1482,53 @@ function setupWorkCanvas(canvas, label) {
       lastY = rect.height - lastY;
     }
   }
-
-  function draw(e) {
-    if (!drawing) return;
+  
+  function draw(e){
+    if(!drawing) return; 
     e.preventDefault();
-
+    
     const rect = canvas.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
-
+    
     // Handle rotation for Player 2
     const canvasContainer = canvas.closest('.player-canvas-container');
     if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
       x = rect.width - x;
       y = rect.height - y;
     }
-
+    
     const base = 8;
     const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke;
-    ctx.strokeStyle = '#000';
-    ctx.fillStyle = '#000';
-
-    const distance = Math.sqrt((x - lastX) ** 2 + (y - lastY) ** 2);
-    if (distance > 1.5) {
-      const steps = Math.ceil(distance / 1.5);
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const ix = lastX + (x - lastX) * t;
-        const iy = lastY + (y - lastY) * t;
-        ctx.beginPath();
-        ctx.arc(ix, iy, scaleStroke / 2, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.lineWidth = scaleStroke; 
+    ctx.strokeStyle='#000'; 
+    ctx.fillStyle='#000';
+    
+    const distance = Math.sqrt((x-lastX)**2+(y-lastY)**2);
+    if (distance>1.5){ 
+      const steps=Math.ceil(distance/1.5); 
+      for(let i=0;i<=steps;i++){ 
+        const t=i/steps; 
+        const ix=lastX+(x-lastX)*t; 
+        const iy=lastY+(y-lastY)*t; 
+        ctx.beginPath(); 
+        ctx.arc(ix,iy,scaleStroke/2,0,Math.PI*2); 
+        ctx.fill(); 
       }
     }
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    lastX = x;
-    lastY = y;
+    ctx.beginPath(); 
+    ctx.moveTo(lastX,lastY); 
+    ctx.lineTo(x,y); 
+    ctx.stroke(); 
+    lastX=x; 
+    lastY=y;
+  }
+  
+  function endDraw(){
+    drawing=false;
   }
 
-  function endDraw() {
-    drawing = false;
-  }
-
-  function clearWork() {
+  function clearWork(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
@@ -1651,45 +1537,45 @@ function setupWorkCanvas(canvas, label) {
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mouseup', endDraw);
   canvas.addEventListener('mouseleave', endDraw);
-
+  
   // ============================================================================
   // MULTI-TOUCH HANDLING - Isolated per canvas
   // ============================================================================
-
-  function touchStart(e) {
+  
+  function touchStart(e){
     e.preventDefault();
     e.stopPropagation();
-
+    
     const rect = canvas.getBoundingClientRect();
     const canvasContainer = canvas.closest('.player-canvas-container');
     const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-
+    
     for (const touch of e.changedTouches) {
       if (touch.target === canvas) {
         let x = touch.clientX - rect.left;
         let y = touch.clientY - rect.top;
-
+        
         if (isRotated) {
           x = rect.width - x;
           y = rect.height - y;
         }
-
+        
         canvasTouches.set(touch.identifier, { lastX: x, lastY: y });
         drawing = true;
       }
     }
   }
-
-  function touchMove(e) {
+  
+  function touchMove(e){
     if (canvasTouches.size === 0) return;
-
+    
     e.preventDefault();
     e.stopPropagation();
-
+    
     const rect = canvas.getBoundingClientRect();
     const canvasContainer = canvas.closest('.player-canvas-container');
     const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-
+    
     const base = 8;
     const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
     ctx.lineWidth = scaleStroke;
@@ -1697,19 +1583,19 @@ function setupWorkCanvas(canvas, label) {
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#000';
     ctx.fillStyle = '#000';
-
+    
     for (const touch of e.changedTouches) {
       const state = canvasTouches.get(touch.identifier);
       if (!state) continue;
-
+      
       let x = touch.clientX - rect.left;
       let y = touch.clientY - rect.top;
-
+      
       if (isRotated) {
         x = rect.width - x;
         y = rect.height - y;
       }
-
+      
       const dist = Math.sqrt((x - state.lastX) ** 2 + (y - state.lastY) ** 2);
       if (dist > 1.5) {
         const steps = Math.ceil(dist / 1.5);
@@ -1722,51 +1608,51 @@ function setupWorkCanvas(canvas, label) {
           ctx.fill();
         }
       }
-
+      
       ctx.beginPath();
       ctx.moveTo(state.lastX, state.lastY);
       ctx.lineTo(x, y);
       ctx.stroke();
-
+      
       state.lastX = x;
       state.lastY = y;
     }
   }
-
-  function touchEnd(e) {
+  
+  function touchEnd(e){
     e.preventDefault();
     e.stopPropagation();
-
+    
     for (const touch of e.changedTouches) {
       canvasTouches.delete(touch.identifier);
     }
-
+    
     if (canvasTouches.size === 0) {
       endDraw();
     }
   }
-
+  
   canvas.addEventListener('touchstart', touchStart, { passive: false, capture: true });
   canvas.addEventListener('touchmove', touchMove, { passive: false, capture: true });
   canvas.addEventListener('touchend', touchEnd, { passive: false, capture: true });
   canvas.addEventListener('touchcancel', touchEnd, { passive: false, capture: true });
-
+  
   // Store resize function globally for tab switching to call
   if (canvas.id) {
     window.canvasResizeFuncs = window.canvasResizeFuncs || {};
     window.canvasResizeFuncs[canvas.id] = resize;
     console.log(`[WorkCanvas] Stored resize function for ${canvas.id}`);
   }
-
+  
   return { clear: clearWork, resize: resize };
 }
 
-function clearPlayerCanvas(player) { if (player && player.clear) player.clear(); }
+function clearPlayerCanvas(player){ if (player && player.clear) player.clear(); }
 
 // Auto-correct callback for handwriting.js (single-player only)
-window.onAutoCorrect = (function () {
+window.onAutoCorrect = (function() {
   let solving = false;
-  return function () {
+  return function() {
     if (!gameState.running || solving) return;
     solving = true;
     gameState.score++;
@@ -1820,24 +1706,24 @@ function init() {
 }
 
 // Test function for auto-clear (call from browser console)
-window.testAutoClear = function () {
+window.testAutoClear = function() {
   console.log('=== AUTO-CLEAR TEST ===');
   console.log('Single player toggle:', document.getElementById('auto-clear-toggle-game'));
   console.log('VS toggle:', document.getElementById('auto-clear-toggle-vs'));
   console.log('singlePlayerWorkClear:', singlePlayerWorkClear);
   console.log('p1.workClearFunc:', p1.workClearFunc);
   console.log('p2.workClearFunc:', p2.workClearFunc);
-
+  
   // Test auto-clear function directly
   console.log('Testing single player auto-clear...');
   autoStageWork();
-
+  
   console.log('Testing VS mode auto-clear for p1...');
   autoStageWork(p1);
 };
 
 // Test function to simulate correct answer (call from browser console)
-window.simulateCorrectAnswer = function () {
+window.simulateCorrectAnswer = function() {
   console.log('=== SIMULATING CORRECT ANSWER ===');
   if (gameState.running) {
     console.log('Single player mode - simulating correct answer...');
@@ -1864,17 +1750,17 @@ window.simulateCorrectAnswer = function () {
 };
 
 // Direct test for auto-clear functionality
-window.testAutoClearDirect = function () {
+window.testAutoClearDirect = function() {
   console.log('=== DIRECT AUTO-CLEAR TEST ===');
-
+  
   // First check if toggle is checked
   const toggle = document.getElementById('auto-clear-toggle-game');
   console.log('Toggle element:', toggle);
   console.log('Toggle checked:', toggle ? toggle.checked : 'Not found');
-
+  
   // Check if singlePlayerWorkClear exists
   console.log('singlePlayerWorkClear:', singlePlayerWorkClear);
-
+  
   // Try calling autoStageWork directly
   console.log('Calling autoStageWork() directly...');
   autoStageWork();

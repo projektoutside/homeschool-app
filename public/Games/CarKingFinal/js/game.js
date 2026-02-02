@@ -11,6 +11,7 @@ class CarGuessingGame {
         this.answerTimer = null;
         this.currentCar = null;
         this.lastCarIndex = -1; // Track last car to prevent immediate repeats
+        this.gameMode = 'challenger'; // 'challenger' or 'continuous'
 
         this.voiceSystem = null; // Advanced voice system
         this.transitionTimer = null; // Timer for revealed answer delay
@@ -25,214 +26,11 @@ class CarGuessingGame {
         this.isMicWarm = false;
         this.isRecognitionActive = false;
 
+
         // Dynamic car database loading from local files
         // Fully populated with all available cars in CarFiles
         // Now supports multiple random images per car
-        this.carDatabase = [
-            {
-                name: "Aston Martin",
-                images: ["assets/cars/astonMartin/AstonMartin.png", "assets/cars/astonMartin/AstonMartin1.png"],
-                voice: "assets/cars/astonMartin/astonMartin.mp3",
-                keywords: ["aston", "martin", "james bond", "007"],
-                funFact: "Aston Martin serves as the main car for James Bond!"
-            },
-            {
-                name: "Audi R8",
-                images: ["assets/cars/AudiR8/AudiR8.png"],
-                voice: "assets/cars/AudiR8/AudiR8.mp3",
-                keywords: ["audi", "r8", "sports car", "iron man"],
-                funFact: "The Audi R8 shares many parts with a Lamborghini!"
-            },
-            {
-                name: "BMW",
-                images: ["assets/cars/BMW/BMW.jpg"],
-                voice: "assets/cars/BMW/BMW.mp3",
-                keywords: ["bmw", "bimmer", "german", "luxury"],
-                funFact: "BMW started by making airplane engines before cars!"
-            },
-            {
-                name: "Bentley",
-                images: ["assets/cars/Bentley/Bentley.jpg"],
-                voice: "assets/cars/Bentley/Bentley.mp3",
-                keywords: ["bentley", "luxury", "british", "expensive"],
-                funFact: "Bentley cars are super fancy and even have refrigerators inside!"
-            },
-            {
-                name: "Bugatti",
-                images: ["assets/cars/Bugatti/Bugatti.png"],
-                voice: "assets/cars/Bugatti/Bugatti.mp3",
-                keywords: ["bugatti", "ronaldo", "fastest", "supercar"],
-                funFact: "The Bugatti is one of the fastest cars in the whole world!"
-            },
-            {
-                name: "Corvette",
-                images: ["assets/cars/Corvette/Corvette.png"],
-                voice: "assets/cars/Corvette/Corvette.mp3",
-                keywords: ["corvette", "chevy", "chevrolet", "stingray"],
-                funFact: "The Corvette is an American sports car icon!"
-            },
-            {
-                name: "Cybertruck",
-                images: ["assets/cars/Cybertruck/Cybertruck.png"],
-                voice: "assets/cars/Cybertruck/Cybertruck.mp3",
-                keywords: ["cybertruck", "tesla", "truck", "electric"],
-                funFact: "This truck looks like it came from a video game!"
-            },
-            {
-                name: "Dodge Ram",
-                images: ["assets/cars/DodgeRam/DodgeRam.png"],
-                voice: "assets/cars/DodgeRam/DodgeRam.mp3",
-                keywords: ["ram", "dodge", "truck", "pickup"],
-                funFact: "Ram trucks are super strong and tough!"
-            },
-            {
-                name: "Ferrari",
-                images: ["assets/cars/ferrari/Ferrari.png", "assets/cars/ferrari/Ferrari1.jpg", "assets/cars/ferrari/ferrari.jpg"],
-                voice: "assets/cars/ferrari/ferrari.mp3",
-                keywords: ["ferrari", "horse", "red", "italian"],
-                funFact: "Ferrari's logo is a prancing horse!"
-            },
-            {
-                name: "Hellcat",
-                images: ["assets/cars/Hellcat/Hellcat.png"],
-                voice: "assets/cars/Hellcat/Hellcat.mp3",
-                keywords: ["hellcat", "dodge", "challenger", "charger"],
-                funFact: "The Hellcat engine makes a super loud roar!"
-            },
-            {
-                name: "Honda Civic",
-                images: ["assets/cars/HondaCivic/HondaCivic.png"],
-                voice: "assets/cars/HondaCivic/HondaCivic.mp3",
-                keywords: ["honda", "civic", "vtec", "type r"],
-                funFact: "The Honda Civic is one of the most popular cars ever!"
-            },
-            {
-                name: "Honda Pilot",
-                images: ["assets/cars/HondaPilot/HondaPilot.jpg", "assets/cars/HondaPilot/HondaPilot.png"],
-                voice: "assets/cars/HondaPilot/HondaPilot.mp3",
-                keywords: ["honda", "pilot", "suv", "family"],
-                funFact: "The Pilot is perfect for big family road trips!"
-            },
-            {
-                name: "Jaguar",
-                images: ["assets/cars/Jaguar/Jaguar.png"],
-                voice: "assets/cars/Jaguar/Jaguar.mp3",
-                keywords: ["jaguar", "jag", "cat", "english"],
-                funFact: "Jaguars are named after a fast jungle cat!"
-            },
-            {
-                name: "Lamborghini",
-                images: ["assets/cars/Lamborghini/Lamborghini.png", "assets/cars/Lamborghini/Lamborghini1.jpg"],
-                voice: "assets/cars/Lamborghini/Lamborghini.mp3",
-                keywords: ["lamborghini", "lambo", "supercar", "fast"],
-                funFact: "Lamborghini started because the owner was mad at Ferrari!"
-            },
-            {
-                name: "Lancer Evo",
-                images: ["assets/cars/LancerEvolution/LancerEvolution.png"],
-                voice: "assets/cars/LancerEvolution/LancerEvolution.mp3",
-                keywords: ["lancer", "evo", "mitsubishi", "rally"],
-                funFact: "The Evo is a legendary rally racing car!"
-            },
-            {
-                name: "Lotus",
-                images: ["assets/cars/Lotus/Lotus.jpg"],
-                voice: "assets/cars/Lotus/Lotus.mp3",
-                keywords: ["lotus", "elise", "exige", "light"],
-                funFact: "Lotus cars are super light and handle like go-karts!"
-            },
-            {
-                name: "Maserati",
-                images: ["assets/cars/Masarati/Masarati.png"],
-                voice: "assets/cars/Masarati/Masarati.mp3",
-                keywords: ["maserati", "trident", "italian"],
-                funFact: "Maserati engines make a beautiful musical sound!"
-            },
-            {
-                name: "Mazda Miata",
-                images: ["assets/cars/MazdaMiata/MazdaMiata.png"],
-                voice: "assets/cars/MazdaMiata/MazdaMiata.mp3",
-                keywords: ["miata", "mazda", "mx5", "convertible"],
-                funFact: "The Miata is the best-selling roadster in history!"
-            },
-            {
-                name: "Mercedes",
-                images: ["assets/cars/Mercedes/Mercedes.png", "assets/cars/Mercedes/Mercedes1.png", "assets/cars/Mercedes/Mercedes2.jpg"],
-                voice: "assets/cars/Mercedes/Mercedes.mp3",
-                keywords: ["mercedes", "benz", "amg", "luxury"],
-                funFact: "Mercedes invented the very first car!"
-            },
-            {
-                name: "Mini Cooper",
-                images: ["assets/cars/MiniCooper/Minicooper.png"],
-                voice: "assets/cars/MiniCooper/MiniCooper.mp3",
-                keywords: ["mini", "cooper", "mr bean", "tiny"],
-                funFact: "The Mini Cooper is small but super zippy!"
-            },
-            {
-                name: "Porsche",
-                images: ["assets/cars/Porshe/Porshe.jpg"],
-                voice: "assets/cars/Porshe/Porshe.mp3",
-                keywords: ["porsche", "911", "turbo", "german"],
-                funFact: "Porsche keys go on the left side of the steering wheel!"
-            },
-            {
-                name: "Nissan GT-R",
-                images: ["assets/cars/SKylinGTR/SKylinGTR.png", "assets/cars/SKylinGTR/SKylinGTR1.jpg"],
-                voice: "assets/cars/SKylinGTR/SKylinGTR.mp3",
-                keywords: ["skyline", "gtr", "nissan", "godzilla"],
-                funFact: "The GT-R is nicknamed 'Godzilla' because it's a monster!"
-            },
-            {
-                name: "Subaru WRX",
-                images: ["assets/cars/SubaruWRX/SubaruWRX.png", "assets/cars/SubaruWRX/SubaruWRX1.png"],
-                voice: "assets/cars/SubaruWRX/SubaruWRX.mp3",
-                keywords: ["subaru", "wrx", "sti", "rally"],
-                funFact: "Subaru cars can drive easily on snow and dirt!"
-            },
-            {
-                name: "Toyota Supra",
-                images: ["assets/cars/Supra/Supra.png"],
-                voice: "assets/cars/Supra/Supra.mp3",
-                keywords: ["supra", "toyota", "mk4", "fast"],
-                funFact: "The Supra is a movie star car from Fast & Furious!"
-            },
-            {
-                name: "Tesla",
-                images: ["assets/cars/tesla/Tesla.png", "assets/cars/tesla/Tesla1.png", "assets/cars/tesla/tesla.jpg"],
-                voice: "assets/cars/tesla/tesla.mp3",
-                keywords: ["tesla", "model s", "electric", "elon"],
-                funFact: "Teslas don't need gas, they run on electricity!"
-            },
-            {
-                name: "Toyota Camry",
-                images: ["assets/cars/ToyotaCamry/ToyotaCamry.png"],
-                voice: "assets/cars/ToyotaCamry/ToyotaCamry.mp3",
-                keywords: ["camry", "toyota", "sedan"],
-                funFact: "The Camry is one of the most reliable cars ever made!"
-            },
-            {
-                name: "Toyota Tacoma",
-                images: ["assets/cars/ToyotaTacoma/ToyotaTacoma.png"],
-                voice: "assets/cars/ToyotaTacoma/ToyotaTacoma.mp3",
-                keywords: ["toyota", "tacoma", "truck", "pickup"],
-                funFact: "The Tacoma is so tough it can drive over volcanoes!"
-            },
-            {
-                name: "Toyota Tundra",
-                images: ["assets/cars/ToyotaTundra/ToyotaTundra.png"],
-                voice: "assets/cars/ToyotaTundra/ToyotaTundra.mp3",
-                keywords: ["tundra", "toyota", "truck", "big"],
-                funFact: "The Tundra once pulled a giant space shuttle!"
-            },
-            {
-                name: "Volkswagen",
-                images: ["assets/cars/Volkswagon/Volkswagon.png", "assets/cars/Volkswagon/Volkswagon1.png"],
-                voice: "assets/cars/Volkswagon/Volkswagon.mp3",
-                keywords: ["vw", "volkswagen", "beetle", "bug"],
-                funFact: "Volkswagen means 'People's Car' in German!"
-            }
-        ];
+        this.carDatabase = window.CAR_DATABASE || [];
 
         // Enhanced repeat prevention system
         this.recentlyShownCars = []; // Track last 3 cars to prevent near-repeats
@@ -366,6 +164,23 @@ class CarGuessingGame {
 
         if (this.menuMusic) {
             this.menuMusic.volume = this.menuMusicDefaultVolume;
+        }
+
+        // Logic for Game Mode Toggle
+        const gameModeBtn = document.getElementById('gameModeBtn');
+        if (gameModeBtn) {
+            gameModeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent bubbling issues
+                if (this.gameMode === 'challenger') {
+                    this.gameMode = 'continuous';
+                    gameModeBtn.textContent = 'Mode: Continuous ♾️';
+                } else {
+                    this.gameMode = 'challenger';
+                    gameModeBtn.textContent = 'Mode: Challenger 🏆';
+                }
+                console.log(`Game Mode toggled to: ${this.gameMode}`);
+            });
         }
 
         if (!startScreen || !menuPanel) return;
@@ -568,17 +383,13 @@ class CarGuessingGame {
 
                 this.submitGuess(); // Wins immediately
                 return; // Stop processing
+            } else {
+                console.log("❌ Incorrect guess. Ignoring submission. Waiting for correct answer...");
+                // Visual feedback for wrong guess (optional, but requested to just show transcript)
+                // The transcriptEl is already updated above with what they said.
+                // We simply DO NOT call submitGuess() and do NOT set a timer.
+                // The user must keep speaking until they say the right name or time runs out.
             }
-
-            // 2. SILENCE DETECTOR (The "Leeway")
-            this.silenceTimer = setTimeout(() => {
-                console.log("⏳ Silence detected (3s). Submitting final guess...");
-                if (this.isListeningForAnswer && input.value.trim().length > 0) {
-                    // On manual submission (wrong/silence), the text remains what they said.
-                    // e.g. "It is a potato" -> Shows "It is a potato"
-                    this.submitGuess();
-                }
-            }, 3000);
         };
 
         this.recognition.onerror = (event) => {
@@ -1170,9 +981,13 @@ class CarGuessingGame {
 
         this.switchScreen('countdownScreen');
 
-        // Play the custom voice recording
-        const startAudio = new Audio('assets/audio/voice/Start.mp3');
-        startAudio.play().catch(e => console.warn("Audio playback failed:", e));
+        // Play the custom voice recording via VoiceSystem to ensure trackability/cancellation
+        if (this.voiceSystem) {
+            this.voiceSystem.playClip('assets/audio/voice/Start.mp3').catch(e => console.warn("Start audio failed:", e));
+        } else {
+            const startAudio = new Audio('assets/audio/voice/Start.mp3');
+            startAudio.play().catch(e => console.warn("Audio playback failed:", e));
+        }
 
         let count = 3;
         const countdownElement = document.getElementById('countdownNumber');
@@ -1646,16 +1461,29 @@ class CarGuessingGame {
         // Mute mic during feedback
         this.stopListening();
 
+        // Ensure input is locked (if entered via submitGuess, it's already locked, but good for safety)
+        this.isProcessingGuess = true;
+
+        const onComplete = () => {
+            if (this.gameMode === 'continuous') {
+                // Continuous Mode: Move to next car
+                this.loadNextCar();
+            } else {
+                // Challenger Mode: Game Over
+                this.gameOver();
+            }
+        };
+
         // Use new sequence: Random Wrong -> Car Voice
         if (this.voiceSystem) {
-            console.log("🔊 Playing Wrong Sequence before Game Over...");
+            console.log("🔊 Playing Wrong Sequence...");
             this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
-                console.log("🔊 Sequence finished. Now triggering Game Over.");
-                this.gameOver();
+                console.log("🔊 Sequence finished. Proceeding...");
+                onComplete();
             });
         } else {
             // Fallback if no voice system
-            setTimeout(() => this.gameOver(), 1000);
+            setTimeout(() => onComplete(), 1000);
         }
     }
 
@@ -1673,18 +1501,46 @@ class CarGuessingGame {
 
     // Adjusted revealAnswer - mainly for timeout reveals if user doesn't guess?
     revealAnswer() {
-        // Time ran out or empty guess -> Game Over
-        console.log("⏰ Time ran out! Triggering Game Over.");
+        // PREVENT RACE CONDITIONS: Lock immediately
+        if (this.isProcessingGuess) return;
+        this.isProcessingGuess = true;
+        this.stopListening();
 
-        if (this.voiceSystem) {
-            console.log("🔊 Playing Wrong Sequence (Timeout) before Game Over...");
-            // Treat timeout as a wrong answer
-            this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
-                console.log("🔊 Sequence finished. Now triggering Game Over.");
-                this.gameOver();
-            });
+        // Time ran out or empty guess -> Game Over
+        console.log("⏰ Time ran out! Mode:", this.gameMode);
+
+        if (this.gameMode === 'continuous') {
+            // Continuous Mode: Reveal -> Wrong Voice -> Next Car
+            this.streak = 0; // Reset streak on timeout
+            this.updateScore();
+
+            const message = `Time's up! It was a ${this.currentCar.name}`;
+            this.showFeedback(message, 'incorrect');
+
+            // Force reveal of the car text immediately so they see it
+            const input = document.getElementById('guessInput');
+            if (input) input.value = this.currentCar.name;
+
+            if (this.voiceSystem) {
+                this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
+                    setTimeout(() => this.loadNextCar(), 1500);
+                });
+            } else {
+                setTimeout(() => this.loadNextCar(), 2000);
+            }
+
         } else {
-            setTimeout(() => this.gameOver(), 1000);
+            // Challenger Mode: Game Over
+            if (this.voiceSystem) {
+                console.log("🔊 Playing Wrong Sequence (Timeout) before Game Over...");
+                // Treat timeout as a wrong answer
+                this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
+                    console.log("🔊 Sequence finished. Now triggering Game Over.");
+                    this.gameOver();
+                });
+            } else {
+                setTimeout(() => this.gameOver(), 1000);
+            }
         }
     }
 

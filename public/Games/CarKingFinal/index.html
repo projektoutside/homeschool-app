@@ -45,6 +45,8 @@
 
             <div class="menu-panel" aria-hidden="true">
                 <div class="panel-drift"></div>
+                <button id="gameModeBtn" class="menu-btn secondary" style="margin-bottom: 0.5rem;">Mode: Challenger
+                    🏆</button>
                 <button id="startBtn" class="menu-btn primary">Start Game</button>
                 <button id="settingsBtn" class="menu-btn secondary" title="Settings">Settings</button>
             </div>
@@ -145,8 +147,8 @@
 
                 <div class="guess-section" id="inputSection">
                     <div class="input-group">
-                        <input type="text" id="guessInput" class="guess-input" placeholder="Type or say car name..."
-                            maxlength="50">
+                        <input type="text" id="guessInput" class="guess-input" placeholder="Say the car name..."
+                            maxlength="50" readonly>
                         <button id="micBtn" class="mic-btn hidden" title="Speak Answer">🎤</button>
                     </div>
 
@@ -214,9 +216,10 @@
         <source src="assets/audio/music/Car King.mp3" type="audio/mpeg">
     </audio>
 
-            <script src="js/device-intelligence.js"></script>
-            <script src="js/voice-system.js"></script>
-            <script src="js/game.js"></script>
+    <script src="js/device-intelligence.js"></script>
+    <script src="js/voice-system.js"></script>
+    <script src="js/car-data.js"></script>
+    <script src="js/game.js"></script>
 </body>
 
 </html>

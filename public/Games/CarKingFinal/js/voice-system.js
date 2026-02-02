@@ -94,24 +94,29 @@ class AdvancedVoiceSystem {
 
         // Wrong Answer Clips
         this.wrongClips = [
-            "ElevenLabs_2026-01-30T23_36_59_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_44_51_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_45_30_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_46_07_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_46_35_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_46_54_funnyasian_gen_sp98_s50_sb75_v3 (1).mp3",
-            "ElevenLabs_2026-01-30T23_46_54_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_48_04_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_48_46_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_49_07_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_50_13_funnyasian_gen_sp98_s50_sb75_v3 (1).mp3",
-            "ElevenLabs_2026-01-30T23_50_13_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_50_47_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_51_33_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_52_10_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_53_24_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_54_54_funnyasian_gen_sp98_s50_sb75_v3.mp3",
-            "ElevenLabs_2026-01-30T23_55_44_funnyasian_gen_sp98_s50_sb75_v3.mp3"
+            "ElevenLabs_2026-02-01T22_43_42_funnyasian_gen_sp98_s50_sb75_v3 (1).mp3",
+            "ElevenLabs_2026-02-01T22_43_42_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_44_45_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_47_38_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_49_23_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_51_13_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_51_56_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_53_19_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_53_46_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_54_39_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_56_15_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_56_41_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T22_58_42_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_00_17_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_01_35_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_02_09_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_03_03_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_03_48_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_05_02_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_07_32_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_07_53_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_10_39_funnyasian_gen_sp98_s50_sb75_v3.mp3",
+            "ElevenLabs_2026-02-01T23_10_51_funnyasian_gen_sp98_s50_sb75_v3.mp3"
         ];
     }
 
@@ -133,7 +138,18 @@ class AdvancedVoiceSystem {
             audio1.onended = () => {
                 firstFinished = true;
                 console.log(`🔊 Seq part 1 done, playing part 2: ${secondPath}`);
-                audio2.play().catch(e => console.warn("Audio 2 failed:", e));
+
+                // CRITICAL FIX: Update currentAudio to the new track so it can be cancelled
+                this.currentAudio = audio2;
+
+                const playPromise2 = audio2.play();
+                if (playPromise2 !== undefined) {
+                    playPromise2.catch(e => {
+                        console.warn("Audio 2 failed:", e);
+                        this.currentAudio = null;
+                        resolve();
+                    });
+                }
             };
 
             audio2.onended = () => {
@@ -141,9 +157,14 @@ class AdvancedVoiceSystem {
                 resolve();
             };
 
+            // Error handling fallback
             audio1.onerror = () => {
                 console.warn("Audio 1 error, skipping to Audio 2");
-                audio2.play().catch(() => { });
+                this.currentAudio = audio2;
+                audio2.play().catch(() => {
+                    this.currentAudio = null;
+                    resolve();
+                });
             };
 
             // Start sequence
@@ -153,7 +174,11 @@ class AdvancedVoiceSystem {
             if (playPromise !== undefined) {
                 playPromise.catch(e => {
                     console.warn("Audio 1 playback failed, skipping to Audio 2:", e);
-                    audio2.play().catch(() => { });
+                    this.currentAudio = audio2;
+                    audio2.play().catch(() => {
+                        this.currentAudio = null;
+                        resolve();
+                    });
                 });
             }
         });
@@ -177,7 +202,28 @@ class AdvancedVoiceSystem {
             return this.playClip(carVoicePath);
         }
 
-        const randomClip = this.wrongClips[Math.floor(Math.random() * this.wrongClips.length)];
+        // Initialize history if needed
+        if (!this.recentWrongClips) {
+            this.recentWrongClips = [];
+        }
+
+        // Filter out recently played clips
+        let availableClips = this.wrongClips.filter(clip => !this.recentWrongClips.includes(clip));
+
+        // Safety fallback: if exhausted, reset
+        if (availableClips.length === 0) {
+            availableClips = this.wrongClips;
+            this.recentWrongClips = [];
+        }
+
+        const randomClip = availableClips[Math.floor(Math.random() * availableClips.length)];
+
+        // Update history (keep last 5 to ensure variety without exhausting pool too fast)
+        this.recentWrongClips.push(randomClip);
+        if (this.recentWrongClips.length > 5) {
+            this.recentWrongClips.shift();
+        }
+
         const path = `assets/audio/voice/wronganswers/${randomClip}`;
 
         console.log(`🎤 Playing Wrong Sequence: ${randomClip} -> ${carVoicePath}`);

@@ -881,6 +881,7 @@ body {
     font-family: var(--font-main);
     text-align: center;
     transition: all 0.3s ease;
+    pointer-events: none; /* Disable interaction */
 }
 
 .guess-input:focus {
