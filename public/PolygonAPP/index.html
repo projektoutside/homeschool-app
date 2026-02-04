@@ -7,6 +7,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Geometry Polygon Playground</title>
+    <!-- Sci-Fi "Syncopate" Font for the Shattered Prism Title -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* CSS Custom Properties for Responsive Design System */
         :root {
@@ -219,6 +221,14 @@
         }
 
         /* Main Layout - Fully Responsive */
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            /* Critical: Disables browser handling of gestures */
+        }
+
         .app-container {
             display: flex;
             width: 100vw;
@@ -1960,10 +1970,1431 @@
         .modal-btn:hover {
             opacity: 0.9;
         }
+
+        /* App Dialog (Custom Confirm/Alert) */
+        .app-dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 11000;
+            padding: 24px;
+            backdrop-filter: blur(6px);
+        }
+
+        .app-dialog-panel {
+            width: min(92vw, 460px);
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 26px 50px rgba(15, 23, 42, 0.35);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            animation: modalSlideIn 0.25s ease-out;
+        }
+
+        .app-dialog-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .app-dialog-close {
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .app-dialog-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .app-dialog-body {
+            padding: 18px 20px 8px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        .app-dialog-actions {
+            padding: 16px 20px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .app-dialog-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            min-height: 44px;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+        }
+
+        .app-dialog-btn.primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+        }
+
+        .app-dialog-btn.secondary {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .app-dialog-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .app-dialog-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Main Menu Overlay - AAA Quality */
+        #mainMenuOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            /* Canvas will provide background */
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #mainMenuOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Fun Game Transition Overlay - AAA Smooth Entry */
+        #funTransitionOverlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, rgba(102, 126, 234, 0.55), rgba(15, 23, 42, 0.85));
+            backdrop-filter: blur(12px);
+            z-index: 9500;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+        }
+
+        #funTransitionOverlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.6s ease;
+        }
+
+        #funTransitionOverlay.active.exit {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .fun-game-start-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, rgba(102, 126, 234, 0.35), rgba(15, 23, 42, 0.82));
+            backdrop-filter: blur(8px);
+            z-index: 9800;
+            padding: 24px;
+        }
+
+        .fun-game-start-panel {
+            width: min(92vw, 420px);
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .fun-game-start-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fun-game-start-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .fun-game-start-close {
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 12px;
+            padding: 6px 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .fun-game-start-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .fun-game-start-body {
+            padding: 0 24px 12px;
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .fun-game-start-meta {
+            margin-top: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .fun-game-start-actions {
+            padding: 0 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .fun-game-start-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fun-game-start-slot {
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 18px rgba(148, 163, 184, 0.18);
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .fun-game-start-slot.active {
+            border-color: #667eea;
+            background: #eef2ff;
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.25);
+        }
+
+        .fun-game-start-slot:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 26px rgba(100, 116, 139, 0.2);
+        }
+
+        .fun-game-start-slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: #1e293b;
+            gap: 8px;
+        }
+
+        .fun-game-start-slot-status {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #64748b;
+        }
+
+        .fun-game-start-slot-detail {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        .fun-game-start-slot-action {
+            border: none;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 40px;
+        }
+
+        .fun-game-start-slot-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .fun-game-start-actions button {
+            border: none;
+            border-radius: 14px;
+            padding: 12px 18px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+            min-height: 48px;
+        }
+
+        .fun-game-start-actions button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .fun-game-start-actions button.secondary {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .fun-game-start-actions button:hover {
+            transform: translateY(-1px);
+        }
+
+        .fun-transition-core {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: clamp(20px, 4vw, 32px) clamp(28px, 6vw, 48px);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+            color: white;
+            text-align: center;
+            min-width: min(80vw, 420px);
+            animation: funTransitionFloat 1.6s ease-in-out infinite;
+        }
+
+        .fun-transition-title {
+            font-size: clamp(20px, 3vw, 28px);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .fun-transition-subtitle {
+            font-size: clamp(13px, 1.8vw, 16px);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .fun-transition-bar {
+            width: min(260px, 70vw);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .fun-transition-bar span {
+            display: block;
+            height: 100%;
+            width: 40%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.95));
+            border-radius: 999px;
+            animation: funTransitionSweep 1.1s ease-in-out infinite;
+        }
+
+        @keyframes funTransitionFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        @keyframes funTransitionSweep {
+            0% {
+                transform: translateX(-120%);
+            }
+
+            100% {
+                transform: translateX(220%);
+            }
+        }
+
+        /* THE SHATTERED PRISM TITLE */
+        .menu-title-container {
+            position: relative;
+            margin-bottom: clamp(50px, 6vw, 80px);
+            padding: 0 20px;
+            perspective: 1000px;
+            filter: drop-shadow(0 0 15px rgba(102, 126, 234, 0.5));
+        }
+
+        .shattered-text {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(28px, 6vw, 80px);
+            /* Reduced min size for mobile */
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            position: relative;
+            color: transparent;
+            /* Hide base text */
+            letter-spacing: clamp(4px, 2vw, 20px);
+            /* Reduced min spacing */
+            /* Wide spacing for drama */
+            line-height: 1.1;
+            user-select: none;
+            white-space: nowrap;
+            /* Prevent wrapping unless absolutely necessary */
+            max-width: 100%;
+        }
+
+        /* Mobile specific adjustment for title if it still overflows */
+        @media (max-width: 480px) {
+            .shattered-text {
+                white-space: normal;
+                /* Allow wrap on very small screens */
+                font-size: clamp(32px, 10vw, 40px);
+                line-height: 1.2;
+            }
+
+            .menu-title-container {
+                margin-bottom: 40px;
+            }
+        }
+
+        /* The Layers */
+        .shattered-text::before,
+        .shattered-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            opacity: 0.8;
+        }
+
+        /* Layer 1: Cyan/Blue drift */
+        .shattered-text::before {
+            text-shadow: -2px 0 #00f3ff;
+            clip-path: polygon(0 0, 100% 0, 85% 35%, 15% 35%, 0 0,
+                    0 65%, 15% 65%, 85% 65%, 100% 65%, 100% 100%, 0 100%);
+            animation: shatter-drift-1 4s infinite linear alternate-reverse;
+            z-index: 2;
+        }
+
+        /* Layer 2: Magenta/Pink drift */
+        .shattered-text::after {
+            text-shadow: 2px 0 #bc13fe;
+            clip-path: polygon(15% 35%, 85% 35%, 100% 65%, 0 65%);
+            animation: shatter-drift-2 4s infinite linear alternate;
+            z-index: 3;
+            filter: brightness(1.2);
+        }
+
+        /* Actual Visible Base Layer (White Core) */
+        .shattered-base {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            z-index: 1;
+            opacity: 0.9;
+            mix-blend-mode: overlay;
+        }
+
+        /* Floating Geometry Shards decoration around title */
+        .title-shard {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 10px #00f3ff, 0 0 20px #bc13fe;
+            border-radius: 2px;
+            opacity: 0;
+            animation: shard-twinkle 3s infinite;
+        }
+
+        /* Shard Animations */
+        @keyframes shatter-drift-1 {
+            0% {
+                transform: translate(0, 0) skew(0deg);
+                clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            }
+
+            20% {
+                transform: translate(-2px, 1px) skew(-2deg);
+                clip-path: polygon(0 0, 100% 0, 90% 40%, 10% 40%);
+            }
+
+            40% {
+                transform: translate(2px, -1px) skew(1deg);
+                clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+            }
+
+            60% {
+                transform: translate(-1px, 2px) skew(0deg);
+                clip-path: polygon(0 0, 100% 0, 85% 50%, 15% 50%);
+            }
+
+            80% {
+                transform: translate(1px, -2px) skew(2deg);
+                clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+            }
+
+            100% {
+                transform: translate(0, 0) skew(0deg);
+                clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            }
+        }
+
+        @keyframes shatter-drift-2 {
+            0% {
+                transform: translate(0, 0);
+                clip-path: polygon(0 45%, 100% 45%, 100% 100%, 0 100%);
+            }
+
+            20% {
+                transform: translate(2px, -1px);
+                clip-path: polygon(10% 40%, 90% 40%, 100% 100%, 0 100%);
+            }
+
+            40% {
+                transform: translate(-2px, 1px);
+                clip-path: polygon(0 30%, 100% 30%, 100% 100%, 0 100%);
+            }
+
+            60% {
+                transform: translate(1px, -2px);
+                clip-path: polygon(15% 50%, 85% 50%, 100% 100%, 0 100%);
+            }
+
+            80% {
+                transform: translate(-1px, 2px);
+                clip-path: polygon(0 35%, 100% 35%, 100% 100%, 0 100%);
+            }
+
+            100% {
+                transform: translate(0, 0);
+                clip-path: polygon(0 45%, 100% 45%, 100% 100%, 0 100%);
+            }
+        }
+
+        @keyframes shard-twinkle {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-10px) rotate(45deg);
+            }
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 0 20px;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: clamp(16px, 2.5vw, 24px);
+            font-weight: 600;
+            padding: clamp(16px, 3vw, 24px) clamp(24px, 4vw, 32px);
+            /* Responsive padding */
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn:hover::before {
+            opacity: 1;
+        }
+
+        .menu-btn:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .menu-btn-icon {
+            font-size: 1.2em;
+        }
+
+        /* Fun Game Mode Specifics */
+        .menu-btn.fun-mode {
+            border-color: rgba(237, 137, 54, 0.3);
+        }
+
+        .menu-btn.fun-mode:hover {
+            border-color: #ed8936;
+            box-shadow: 0 0 20px rgba(237, 137, 54, 0.3);
+        }
+
+        /* Learn Mode Specifics */
+        .menu-btn.learn-mode {
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .menu-btn.learn-mode:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Polygon Fun Game Controls */
+        .game-controls {
+            position: absolute;
+            bottom: clamp(16px, 2vw, 24px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 12px;
+            z-index: 1500;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 16px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(6px);
+        }
+
+        .game-controls button {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 44px;
+        }
+
+        .game-controls button.secondary {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+
+        .game-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-controls button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .game-results-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at top, rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.78));
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+        }
+
+        .game-results-panel {
+            position: relative;
+            background: white;
+            border-radius: 28px;
+            max-width: min(92vw, 760px);
+            width: 100%;
+            padding: 28px;
+            box-shadow: 0 26px 50px rgba(15, 23, 42, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+            transform: translateY(12px) scale(0.98);
+            animation: results-pop 0.5s ease forwards;
+        }
+
+        .game-results-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(236, 72, 153, 0.08));
+            pointer-events: none;
+        }
+
+        .game-results-panel.victory {
+            border: 3px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .game-results-panel.failed {
+            border: 3px solid rgba(248, 113, 113, 0.35);
+        }
+
+        .game-results-stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 32px;
+            color: #fbbf24;
+            filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));
+        }
+
+        .game-results-title {
+            font-size: clamp(28px, 3.6vw, 40px);
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            color: #1e293b;
+        }
+
+        .game-results-title span {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-results-panel.failed .game-results-title span {
+            background: linear-gradient(135deg, #fb7185, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-results-subtitle {
+            font-size: clamp(14px, 2vw, 18px);
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .game-results-coin {
+            font-size: clamp(16px, 2vw, 20px);
+            font-weight: 700;
+            color: #b45309;
+            background: #fff7ed;
+            border-radius: 999px;
+            padding: 8px 14px;
+            width: fit-content;
+        }
+
+        .game-results-reason {
+            font-size: 16px;
+            color: #ef4444;
+            font-weight: 700;
+            background: #fff1f2;
+            border-radius: 12px;
+            padding: 8px 12px;
+        }
+
+        .game-results-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .game-results-badge {
+            background: #ecfeff;
+            color: #0e7490;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .game-results-panel.failed .game-results-badge {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .game-results-sticker {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: #fef9c3;
+            color: #ca8a04;
+            font-weight: 800;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            transform: rotate(6deg);
+            box-shadow: 0 10px 20px rgba(202, 138, 4, 0.25);
+        }
+
+        .game-results-panel.failed .game-results-sticker {
+            background: #fee2e2;
+            color: #dc2626;
+            transform: rotate(-6deg);
+        }
+
+        .game-results-confetti {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .game-results-confetti span {
+            position: absolute;
+            width: 10px;
+            height: 18px;
+            border-radius: 4px;
+            opacity: 0;
+            animation: confetti-fall 1.6s ease-in-out infinite;
+        }
+
+        .game-results-panel.failed .game-results-confetti {
+            display: none;
+        }
+
+        @keyframes results-pop {
+            0% {
+                transform: translateY(24px) scale(0.94);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-40px) rotate(0deg);
+                opacity: 0;
+            }
+
+            30% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(380px) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        .game-results-breakdown {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .game-results-canvas {
+            width: 100%;
+            height: 240px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .game-results-piece-list {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            max-height: 240px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .game-results-piece-list div {
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .game-results-piece-list div:last-child {
+            border-bottom: none;
+        }
+
+        .game-results-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .game-results-actions button {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 44px;
+        }
+
+        .game-results-actions button.secondary {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+
+        .game-results-actions button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .game-results-breakdown {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 1);
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+                box-shadow: 0 0 25px 5px rgba(72, 187, 120, 0.6);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(72, 187, 120, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+                transform: scale(1);
+            }
+        }
+
+        .submit-ready {
+            animation: pulse-border 1.2s infinite cubic-bezier(0.66, 0, 0, 1);
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.5px;
+            z-index: 10;
+        }
+
+        .box-score-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 7000;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .box-score-panel {
+            width: min(96vw, 1100px);
+            height: min(92vh, 720px);
+            background: white;
+            border-radius: 26px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .box-score-header {
+            padding: 22px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .box-score-title {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .box-score-title h2 {
+            margin: 0;
+            font-size: clamp(20px, 3vw, 30px);
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .box-score-title span {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .box-score-meta {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .box-score-meta .status-pill {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .box-score-total {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            font-weight: 700;
+        }
+
+        .box-score-total strong {
+            font-size: clamp(20px, 3vw, 28px);
+        }
+
+        .box-score-close {
+            border: none;
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            font-size: 20px;
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .box-score-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .box-score-body {
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) 1.2fr;
+            gap: 24px;
+            padding: 24px;
+            overflow: hidden;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 40%);
+        }
+
+        .level-preview-panel {
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #levelPreviewCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .level-preview-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: 99px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .box-score-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .box-score-slot {
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 6px 14px rgba(148, 163, 184, 0.14);
+        }
+
+        .box-score-slot.active {
+            border-color: #667eea;
+            background: #eef2ff;
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.25);
+        }
+
+        .box-score-slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: #1f2937;
+            gap: 8px;
+        }
+
+        .box-score-slot-title {
+            font-size: 12px;
+            letter-spacing: 0.2px;
+        }
+
+        .box-score-slot-status {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+        }
+
+        .box-score-slot-stars {
+            font-size: 12px;
+            font-weight: 700;
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .box-score-slot-date {
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        .box-score-slot-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .box-score-slot-actions button {
+            border: none;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 10px;
+            min-height: 28px;
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+        }
+
+        .box-score-slot-actions button.secondary {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .box-score-slot-actions button.danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .box-score-slot-actions button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .box-score-slot-progress {
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .box-score-slot-progress span {
+            display: block;
+            height: 100%;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            width: 0;
+            transition: width 0.2s ease;
+        }
+
+        .box-score-slot-badges {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .box-score-slot-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 999px;
+            background: #e0e7ff;
+            color: #4338ca;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+        }
+
+        .box-score-grid {
+            background: #f8fafc;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .box-score-level {
+            background: white;
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .box-score-level.selectable {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .box-score-level.selectable:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.18);
+        }
+
+        .box-score-level.locked {
+            opacity: 0.6;
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+
+        .box-score-level.current {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+        }
+
+        .box-score-level-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .box-score-level-status {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #64748b;
+        }
+
+        .box-score-stars {
+            display: flex;
+            gap: 4px;
+            font-size: 16px;
+            color: #f59e0b;
+        }
+
+        .box-score-star.empty {
+            color: #cbd5f5;
+        }
+
+        @media (max-width: 768px) {
+            .box-score-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .box-score-total {
+                align-items: flex-start;
+            }
+
+            .box-score-body {
+                grid-template-columns: 1fr;
+            }
+
+            .box-score-panel {
+                height: min(94vh, 760px);
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- Main Menu Overlay -->
+    <div id="mainMenuOverlay">
+        <canvas id="bgCanvas"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></canvas>
+        <!-- Shattered Prism Title -->
+        <div class="menu-title-container">
+            <!-- Decorative Shards -->
+
+
+            <div class="title-shard" style="top: 50%; right: -30px; width: 15px; height: 15px; animation-delay: 2s;">
+            </div>
+
+            <div class="shattered-text" data-text="POLYGON FUN">
+                POLYGON FUN
+                <div class="shattered-base">POLYGON FUN</div>
+            </div>
+        </div>
+        <div class="menu-options">
+            <button class="menu-btn fun-mode" id="btnFunMode">
+                <span class="menu-btn-icon">🎮</span>
+                <span>Polygon Fun Game</span>
+            </button>
+            <button class="menu-btn learn-mode" id="btnLearnMode">
+                <span class="menu-btn-icon">🎓</span>
+                <span>Learn Polygon Playground</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="funTransitionOverlay" aria-hidden="true">
+        <div class="fun-transition-core">
+            <div class="fun-transition-title">Entering Polygon Fun Game</div>
+            <div class="fun-transition-subtitle">Syncing geometry & warming up the arena...</div>
+            <div class="fun-transition-bar"><span></span></div>
+        </div>
+    </div>
+
+    <div class="fun-game-start-overlay" id="funGameStartOverlay" aria-hidden="true">
+        <div class="fun-game-start-panel" role="dialog" aria-modal="true" aria-labelledby="funGameStartTitle">
+            <div class="fun-game-start-header">
+                <h3 id="funGameStartTitle">Polygon Fun Game</h3>
+                <button class="fun-game-start-close" id="funGameStartClose" aria-label="Close">✕</button>
+            </div>
+            <div class="fun-game-start-body">
+                <p>Pick how you want to jump back into the action.</p>
+                <div class="fun-game-start-meta" id="funGameStartMeta">Checking save slots...</div>
+            </div>
+            <div class="fun-game-start-actions">
+                <button class="primary" id="funGameStartNew">New Game</button>
+                <div class="fun-game-start-slots" id="funGameStartSlots"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <div class="app-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle">
+            <div class="app-dialog-header">
+                <span id="appDialogTitle">Confirm Action</span>
+                <button class="app-dialog-close" id="appDialogClose" aria-label="Close">✕</button>
+            </div>
+            <div class="app-dialog-body" id="appDialogBody"></div>
+            <div class="app-dialog-actions">
+                <button class="app-dialog-btn secondary" id="appDialogCancel">Cancel</button>
+                <button class="app-dialog-btn primary" id="appDialogConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <div class="app-container">
         <!-- Main Body Row (Sidebars + Canvas) -->
@@ -2068,6 +3499,13 @@
 
                 <!-- Coordinate Display -->
                 <div class="coord-display" id="coordDisplay">X: 0, Y: 0</div>
+
+                <!-- Polygon Fun Game Controls -->
+                <div class="game-controls" id="gameControls">
+                    <button class="secondary" id="gameUndoBtn">Undo</button>
+                    <button class="secondary" id="gameRedoBtn">Redo</button>
+                    <button id="gameSubmitBtn">Submit</button>
+                </div>
             </div>
 
             <!-- Right Sidebar -->
@@ -2297,51 +3735,300 @@
         </div>
     </div>
 
-    <!-- Tutorial Modal -->
-    <div class="modal-overlay" id="tutorialOverlay">
-        <div class="modal-content" style="max-width: 500px;">
+    <!-- Game Message Modal -->
+    <div class="modal-overlay" id="gameMessageModal" style="z-index: 4000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header" style="justify-content: center;">
-                <span class="tutorial-title" style="margin: 0; font-size: 24px;">Welcome to Geometry Playground!
-                    🎉</span>
+                <span class="modal-title" id="gameMessageTitle" style="font-size: 24px;">Level Complete!</span>
             </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 12px;"><strong>Get started:</strong></p>
-                <ul style="margin: 12px 0; padding-left: 20px;">
-                    <li>Click "Create New Polygon" for quick shapes</li>
-                    <li>Use ✋ to select and move shapes</li>
-                    <li>Zoom with scroll wheel or buttons</li>
-                    <li>Click "Learn" 🎓 for definitions</li>
-                </ul>
-                <p style="margin-top: 12px; font-size: 0.9em; color: #666;"><strong>Keyboard shortcuts:</strong> Ctrl+N
-                    (New shape), S (Select), Space (Pan), Ctrl+Z (Undo)</p>
+            <div class="modal-body" id="gameMessageBody" style="font-size: 18px; margin-bottom: 24px;">
+                Great job! You made a perfect split.
             </div>
-            <div class="modal-footer">
-                <button class="modal-btn" onclick="closeTutorial()">Let's Start!</button>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="modal-btn" id="gameMessageBtn">Next Level</button>
             </div>
         </div>
     </div>
-    <!-- Learn Page Overlay -->
-    <div id="learnPage"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: #f8fafc; display: none; flex-direction: column;">
-        <div class="learn-header"
-            style="background: white; padding: 16px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 10;">
-            <div
-                style="font-size: 24px; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 12px;">
-                🎓 Learn Polygons
+    <!-- Polygon Fun Game Results Overlay -->
+    <div class="game-results-overlay" id="gameResultsOverlay">
+        <div class="game-results-panel" id="gameResultsPanel">
+            <div class="game-results-confetti" aria-hidden="true">
+                <span style="left: 10%; background: #38bdf8; animation-delay: 0s;"></span>
+                <span style="left: 20%; background: #f472b6; animation-delay: 0.2s;"></span>
+                <span style="left: 30%; background: #34d399; animation-delay: 0.4s;"></span>
+                <span style="left: 40%; background: #fbbf24; animation-delay: 0.1s;"></span>
+                <span style="left: 50%; background: #c4b5fd; animation-delay: 0.3s;"></span>
+                <span style="left: 60%; background: #fb7185; animation-delay: 0.5s;"></span>
+                <span style="left: 70%; background: #60a5fa; animation-delay: 0.15s;"></span>
+                <span style="left: 80%; background: #facc15; animation-delay: 0.35s;"></span>
+                <span style="left: 90%; background: #4ade80; animation-delay: 0.25s;"></span>
             </div>
-            <button id="closeLearnPageBtn"
-                style="padding: 8px 16px; background: #edf2f7; color: #4a5568; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                Back to App
-            </button>
-        </div>
-        <div style="flex: 1; overflow-y: auto; padding: 24px;">
-            <div id="learnPageContent" class="learn-content-grid">
-                <!-- Content populated by JS -->
+            <div class="game-results-sticker" id="gameResultsSticker">🎉 Awesome!</div>
+            <div class="game-results-stars" id="gameResultsStars"></div>
+            <div class="game-results-title" id="gameResultsTitle"><span>Victory!</span></div>
+            <div class="game-results-subtitle" id="gameResultsSubtitle">You split it like a pro!</div>
+            <div class="game-results-badges" id="gameResultsBadges">
+                <span class="game-results-badge">🏆 Level Clear</span>
+                <span class="game-results-badge">✨ Keep Going</span>
+            </div>
+            <div class="game-results-coin" id="gameResultsCoin"></div>
+            <div class="game-results-reason" id="gameResultsReason" style="display: none;"></div>
+            <div class="game-results-breakdown">
+                <canvas class="game-results-canvas" id="gameResultsCanvas"></canvas>
+                <div class="game-results-piece-list" id="gameResultsPieces"></div>
+            </div>
+            <div class="game-results-actions">
+                <button class="secondary" id="gameResultsRetry">Retry</button>
+                <button id="gameResultsNext">Next Level</button>
+                <button class="secondary" id="gameResultsMenu">Main Menu</button>
             </div>
         </div>
     </div>
 
+    <div class="box-score-overlay" id="boxScoreOverlay" aria-hidden="true">
+        <div class="box-score-panel">
+            <div class="box-score-header">
+                <div class="box-score-title">
+                    <h2>Select Level</h2>
+                    <span>Track your star rating.</span>
+                    <div class="box-score-meta">
+                        <span id="boxScoreActiveSlot">Active Slot: 1</span>
+                        <span class="status-pill" id="boxScoreSaveType">Autosave Ready</span>
+                        <span id="boxScoreLastSave">Last save: --</span>
+                    </div>
+                </div>
+                <div class="box-score-total">
+                    <span>Total Stars</span>
+                    <strong id="boxScoreTotal">0 / 90</strong>
+                </div>
+                <button class="box-score-close" id="boxScoreClose" aria-label="Close Box Score">✕</button>
+            </div>
+            <div class="box-score-body">
+                <div class="box-score-slots" id="boxScoreSlots"></div>
+                <div class="box-score-grid" id="boxScoreGrid"></div>
+                <div class="level-preview-panel" id="levelPreviewPanel">
+                    <canvas id="levelPreviewCanvas"></canvas>
+                    <div class="level-preview-overlay" id="levelPreviewOverlay">
+                        <span id="levelPreviewTitle">Level Preview</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/geometry.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/game.js"></script>
     <script>
+        const AppDialog = (() => {
+            let overlay;
+            let titleEl;
+            let bodyEl;
+            let confirmBtn;
+            let cancelBtn;
+            let closeBtn;
+            let resolver;
+            let escListener;
+
+            const ensureElements = () => {
+                if (overlay) return true;
+                overlay = document.getElementById('appDialogOverlay');
+                titleEl = document.getElementById('appDialogTitle');
+                bodyEl = document.getElementById('appDialogBody');
+                confirmBtn = document.getElementById('appDialogConfirm');
+                cancelBtn = document.getElementById('appDialogCancel');
+                closeBtn = document.getElementById('appDialogClose');
+
+                if (!overlay || !titleEl || !bodyEl || !confirmBtn || !cancelBtn || !closeBtn) {
+                    return false;
+                }
+
+                confirmBtn.addEventListener('click', () => closeDialog(true));
+                cancelBtn.addEventListener('click', () => closeDialog(false));
+                closeBtn.addEventListener('click', () => closeDialog(false));
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay && overlay.dataset.allowCancel === 'true') {
+                        closeDialog(false);
+                    }
+                });
+                return true;
+            };
+
+            const attachEscapeListener = () => {
+                if (escListener) {
+                    document.removeEventListener('keydown', escListener);
+                }
+                escListener = (event) => {
+                    if (event.key === 'Escape' && overlay?.dataset.allowCancel === 'true') {
+                        closeDialog(false);
+                    }
+                };
+                document.addEventListener('keydown', escListener);
+            };
+
+            const openDialog = ({
+                title = 'Confirm Action',
+                message = '',
+                confirmText = 'Confirm',
+                cancelText = 'Cancel',
+                allowCancel = true
+            } = {}) => {
+                if (!ensureElements()) {
+                    return Promise.resolve(false);
+                }
+
+                titleEl.textContent = title;
+                bodyEl.textContent = message;
+                confirmBtn.textContent = confirmText;
+                cancelBtn.textContent = cancelText;
+                cancelBtn.style.display = allowCancel ? 'inline-flex' : 'none';
+                closeBtn.style.display = allowCancel ? 'inline-flex' : 'none';
+                overlay.dataset.allowCancel = allowCancel ? 'true' : 'false';
+                overlay.style.display = 'flex';
+                overlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+
+                attachEscapeListener();
+
+                return new Promise((resolve) => {
+                    resolver = resolve;
+                    setTimeout(() => {
+                        confirmBtn.focus();
+                    }, 0);
+                });
+            };
+
+            const closeDialog = (result) => {
+                if (!overlay) return;
+                overlay.style.display = 'none';
+                overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                if (escListener) {
+                    document.removeEventListener('keydown', escListener);
+                    escListener = null;
+                }
+                if (resolver) {
+                    const callback = resolver;
+                    resolver = null;
+                    callback(result);
+                }
+            };
+
+            const confirm = (message, options = {}) => openDialog({
+                ...options,
+                message,
+                allowCancel: true,
+                confirmText: options.confirmText || 'Confirm',
+                cancelText: options.cancelText || 'Cancel'
+            });
+
+            const alert = (message, options = {}) => openDialog({
+                ...options,
+                message,
+                allowCancel: false,
+                confirmText: options.confirmText || 'OK'
+            });
+
+            return {
+                confirm,
+                alert,
+                close: closeDialog
+            };
+        })();
+
+        window.AppDialog = AppDialog;
+        window.appConfirm = (message, options) => AppDialog.confirm(message, options);
+        window.appAlert = (message, options) => AppDialog.alert(message, options);
+
+        // Main Menu Logic
+        const MainMenu = {
+            overlay: document.getElementById('mainMenuOverlay'),
+            btnFun: document.getElementById('btnFunMode'),
+            btnLearn: document.getElementById('btnLearnMode'),
+
+            init() {
+                if (!this.overlay) return;
+
+                this.btnLearn.addEventListener('click', () => {
+                    this.hide();
+                    // Ensure normal app state
+                    // If there's any other initialization need, do it here
+                });
+
+                this.btnFun.addEventListener('click', () => {
+                    // Instantly hide Learn Page to prevent visual glitch during transition
+                    const learnPage = document.getElementById('learnPage');
+                    if (learnPage) learnPage.classList.remove('active');
+
+                    if (window.stopBackgroundMusic) {
+                        window.stopBackgroundMusic();
+                    }
+
+                    const tutorialDelay = 1000;
+                    const overlayHold = tutorialDelay + 150;
+
+                    const startFunMode = () => {
+                        this.hide();
+                        if (window.game) {
+                            window.game.startMode('beginner');
+                            if (window.tutorial && typeof window.tutorial.show === 'function') {
+                                setTimeout(() => {
+                                    window.tutorial.show();
+                                }, tutorialDelay);
+                            }
+                        } else {
+                            console.error('Game not initialized');
+                        }
+                    };
+
+                    const overlay = document.getElementById('transitionOverlay');
+                    if (overlay) {
+                        overlay.classList.add('active');
+                        setTimeout(() => {
+                            startFunMode();
+                            setTimeout(() => {
+                                overlay.classList.remove('active');
+                            }, overlayHold);
+                        }, 150);
+                    } else {
+                        startFunMode();
+                    }
+                });
+
+                const startGameBtn = document.getElementById('startGameBtn');
+                if (startGameBtn) {
+                    startGameBtn.addEventListener('click', () => {
+                        const tutorialPage = document.getElementById('gameTutorialPage');
+                        if (tutorialPage) {
+                            tutorialPage.style.display = 'none';
+                        }
+                        if (window.game) {
+                            window.game.startMode('beginner');
+                        } else {
+                            console.error('Game not initialized');
+                            alert('Game is loading... please wait.');
+                        }
+                    });
+                }
+
+                // Ensure menu is visible on load
+                this.show();
+            },
+
+            show() {
+                this.overlay.classList.remove('hidden');
+            },
+
+            hide() {
+                this.overlay.classList.add('hidden');
+            }
+        };
+
+        // Initialize Main Menu when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            MainMenu.init();
+        });
+
         // Device Detection and Viewport Intelligence System
         class DeviceDetector {
             constructor() {
@@ -2609,7 +4296,10 @@
                         this.syncResize(false); // Don't compensate pan on initial resize
                         requestAnimationFrame(() => {
                             // Now create the polygon and render
-                            this.createSamplePolygon();
+                            // Now create the polygon and render (only if empty, to prevent duplication with game loader)
+                            if (this.polygons.length === 0) {
+                                this.createSamplePolygon();
+                            }
                             // Force a render to ensure everything is visible
                             this.render(true);
                         });
@@ -2699,6 +4389,20 @@
 
                 // Ensure canvas is properly sized
                 this.resizeCanvas();
+
+                // If in game mode, re-fit the view to the current polygon for a perfect AAA experience
+                // This ensures that when rotating a device or resizing the window, the game content remains perfectly adapted
+                if (this.isGameModeActive() && this.polygons.length > 0) {
+                    const target = this.selectedPolygon || (this.polygons.length > 0 ? this.polygons[0] : null);
+                    if (target) {
+                        // Wait for resizeCanvas and layout to settle using nested RAFs
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                this.fitViewToPolygon(target, 0.25); // 25% padding for AAA feel
+                            });
+                        });
+                    }
+                }
             }
 
             setupResizablePanels() {
@@ -2887,12 +4591,11 @@
                 this.canvas.style.width = rect.width + 'px';
                 this.canvas.style.height = rect.height + 'px';
 
-                // Adjust pan to maintain the visual position relative to Top Center.
-                // ONLY apply compensation during intentional resize operations (panel toggle, window resize)
-                // This prevents random pan drift when DOM updates cause micro layout shifts
-                if (compensatePan && Math.abs(oldCssHeight - newCssHeight) > 1) {
-                    this.pan.y = this.pan.y + (oldCssHeight - newCssHeight) / 2;
-                }
+                // Adjust pan to maintain the visual position relative to Center.
+                // We do NOT want to compensate for height changes by shifting pan.y,
+                // because our screenToWorld calculation allows the center to stay fixed naturally
+                // if pan is unchanged.
+                // (Removed legacy Top-Center compensation logic)
 
                 // Store new dimensions
                 this.lastDimensions = { width: rect.width, height: rect.height };
@@ -2919,7 +4622,7 @@
                 this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
                 this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
                 this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-                this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+                this.canvas.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
                 this.canvas.addEventListener('dblclick', (e) => this.handleDoubleClick(e));
 
                 // Touch events
@@ -3423,7 +5126,78 @@
                 this.pan.y = -worldY * this.zoom;
             }
 
+            // Fit the view to contain a specific polygon
+            fitViewToPolygon(polygon, paddingPercent = 0.2) {
+                if (!polygon || !polygon.vertices || polygon.vertices.length === 0) return;
+
+                // Calculate bounding box
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                for (const v of polygon.vertices) {
+                    minX = Math.min(minX, v.x);
+                    maxX = Math.max(maxX, v.x);
+                    minY = Math.min(minY, v.y);
+                    maxY = Math.max(maxY, v.y);
+                }
+
+                const polyWidth = maxX - minX;
+                const polyHeight = maxY - minY;
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+
+                // Get viewport dimensions
+                const rect = this.canvas.getBoundingClientRect();
+                const cssWidth = rect.width;
+                const cssHeight = rect.height;
+
+                // Calculate zoom needed to fit
+                // Available space is (1 - padding * 2)
+                const availableWidth = cssWidth * (1 - paddingPercent * 2);
+                const availableHeight = cssHeight * (1 - paddingPercent * 2);
+
+                const zoomX = availableWidth / (polyWidth || 1);
+                const zoomY = availableHeight / (polyHeight || 1);
+
+                // Restrict zoom to reasonable limits (e.g. don't zoom in infinitely for a dot)
+                let newZoom = Math.min(zoomX, zoomY);
+                newZoom = Math.min(2.5, Math.max(0.5, newZoom)); // Clamp zoom to keep it looking good
+
+                this.zoom = newZoom;
+                this.centerViewOn(centerX, centerY);
+                this.gridNeedsRedraw = true;
+                this.lastGridState = null;
+                this.render();
+            }
+
+            isGameModeActive() {
+                const isGameActive = window.game && window.game.state === GameState.PLAYING;
+                const isFunModeActive = window.game &&
+                    window.game.currentMode &&
+                    typeof window.game.currentMode.isFunModeActive === 'function' &&
+                    window.game.currentMode.isFunModeActive();
+                return Boolean(isGameActive || isFunModeActive);
+            }
+
+            pruneSamplePolygonForGame() {
+                if (!this.isGameModeActive()) {
+                    return false;
+                }
+
+                const initialCount = this.polygons.length;
+                this.polygons = this.polygons.filter(p => p.name !== 'Triangle 1');
+
+                if (this.selectedPolygon && this.selectedPolygon.name === 'Triangle 1') {
+                    this.selectedPolygon = null;
+                    this.selectedVertex = null;
+                }
+
+                return this.polygons.length !== initialCount;
+            }
+
             createSamplePolygon() {
+                if (this.isGameModeActive() || this.polygons.length > 0) {
+                    return;
+                }
+
                 // Reset pan and zoom to ensure consistent initial state
                 // World origin (0,0) appears at screen center when pan is (0,0) and zoom is 1
                 this.pan = { x: 0, y: 0 };
@@ -3579,7 +5353,7 @@
                     let unionError = null;
 
                     try {
-                        unionResultVertices = PolygonBoolean.union(polygonsToCombine);
+                        unionResultVertices = Geometry.union(polygonsToCombine);
                     } catch (e) {
                         unionError = e;
                         console.error('Union computation error:', e);
@@ -3666,7 +5440,7 @@
                     }
 
                     // STEP 3: Validate polygon area
-                    const area = Math.abs(PolygonBoolean.getArea(unionResultVertices));
+                    const area = Math.abs(Geometry.getArea(unionResultVertices));
                     if (!isFinite(area) || area < 1e-6) {
                         console.warn('Combined polygon would be degenerate', { area });
                         alert('Combined polygon would be too small or invalid.');
@@ -3873,7 +5647,7 @@
 
             enterSplitMode() {
                 this.splitMode = true;
-                this.splitStep = 0; // 0: Select Polygon
+                this.splitStep = 1; // 1: Draw Line (Skip selection)
                 this.splitLineStart = null;
                 this.splitLineEnd = null;
                 this.splitLineType = 'free';
@@ -3893,7 +5667,7 @@
                 const cancelBtn = document.getElementById('cancelSplitBtn');
                 if (cancelBtn) cancelBtn.style.display = 'flex';
 
-                this.updateSplitPrompt("Step 1: Click on the polygon you want to split.");
+                this.updateSplitPrompt("Draw a line across shapes to split them.");
                 this.selectedVertex = null;
 
                 // Removed visual controls (Free, Horizontal, etc) as per user request
@@ -3933,12 +5707,19 @@
 
             updateSplitPrompt(text) {
                 let prompt = document.getElementById('splitPrompt');
+
+                if (!text) {
+                    if (prompt) prompt.style.display = 'none';
+                    return;
+                }
+
                 if (!prompt) {
                     prompt = document.createElement('div');
                     prompt.id = 'splitPrompt';
                     prompt.style.cssText = `
                         position: absolute;
-                        top: 130px; /* Moved down to avoid toolbar overlap */
+                        top: auto;
+                        bottom: 110px; /* Moved to bottom to avoid obscuring polygon */
                         left: 50%;
                         transform: translateX(-50%);
                         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -3958,85 +5739,242 @@
                         text-align: center;
                     `;
                     document.querySelector('.canvas-container').appendChild(prompt);
+                } else {
+                    prompt.style.display = 'block';
                 }
                 prompt.textContent = text;
             }
 
-            executeSplit() {
-                if (!this.splitLineStart || !this.splitLineEnd) {
-                    alert('Please draw a line to split polygons.');
-                    return;
+            updateSplitLineConstraint(pos) {
+                if (!pos) return;
+                if (this.splitLineType === 'horizontal') {
+                    this.splitLineEnd = { x: pos.x, y: this.splitLineStart.y };
+                } else if (this.splitLineType === 'vertical') {
+                    this.splitLineEnd = { x: this.splitLineStart.x, y: pos.y };
+                } else {
+                    this.splitLineEnd = pos;
                 }
+            }
 
-                let splitHappened = false;
-                const newPolygons = [];
-                const toRemove = [];
+            showToast(message, isError = false) {
+                let toast = document.getElementById('gameToast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'gameToast';
+                    toast.style.cssText = `
+                         position: fixed;
+                         top: 100px;
+                         left: 50%;
+                         transform: translateX(-50%);
+                         background: #333;
+                         color: white;
+                         padding: 12px 24px;
+                         border-radius: 50px;
+                         font-family: 'Inter', sans-serif;
+                         font-size: 14px;
+                         font-weight: 500;
+                         z-index: 2000;
+                         pointer-events: none;
+                         opacity: 0;
+                         transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+                         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                     `;
+                    document.body.appendChild(toast);
+                }
+                toast.textContent = message;
+                toast.style.background = isError ? '#ef4444' : '#1f2937';
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(-50%) translateY(0)';
 
-                // If a polygon is selected, target it specifically
-                // Otherwise, split any polygon intersected by the line
-                const targetList = this.selectedPolygon ? [this.selectedPolygon] : this.polygons;
+                if (this.toastTimeout) clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(-50%) translateY(-20px)';
+                }, 3000);
+            }
 
-                for (let poly of targetList) {
-                    if (!poly.visible) continue;
+            removeDuplicates() {
+                const uniquePolys = [];
+                const seenHashes = new Set();
+                let dupsFound = 0;
 
-                    const pieces = PolygonBoolean.split(poly, this.splitLineStart, this.splitLineEnd);
-                    if (pieces && pieces.length > 1) {
-                        splitHappened = true;
-                        toRemove.push(poly);
+                for (const poly of this.polygons) {
+                    if (!poly.vertices || poly.vertices.length === 0) continue;
+                    // Hash vertices to detect exact duplicates (phantom parents)
+                    const hash = poly.vertices.map(v => `${Math.round(v.x)},${Math.round(v.y)}`).join('|');
 
-                        pieces.forEach((pts, idx) => {
-                            const newPoly = new Polygon(pts, poly.color);
-                            newPoly.name = `${poly.name} Part ${idx + 1}`;
-                            newPolygons.push(newPoly);
-                        });
+                    if (!seenHashes.has(hash)) {
+                        seenHashes.add(hash);
+                        uniquePolys.push(poly);
+                    } else {
+                        dupsFound++;
                     }
                 }
 
-                if (splitHappened) {
-                    this.polygons = this.polygons.filter(p => !toRemove.includes(p));
-                    this.polygons.push(...newPolygons);
+                if (dupsFound > 0) {
+                    console.log(`Auto-removed ${dupsFound} duplicate polygons.`);
+                    this.polygons = uniquePolys;
+                    this.updateLayers();
+                    if (this.selectedPolygon && !this.polygons.includes(this.selectedPolygon)) {
+                        this.selectedPolygon = null;
+                        this.selectedVertex = null;
+                    }
+                }
+            }
 
-                    // Deselect the target polygon to avoid stale references
+            executeSplit() {
+                // 1. Clean Duplicates First (Failsafe)
+                this.removeDuplicates();
+
+                if (!this.splitLineStart || !this.splitLineEnd) {
+                    this.showToast('Please draw a line to split polygons.', true);
+                    return;
+                }
+
+                // 2. Lock Execution Variables
+                const p1 = this.splitLineStart;
+                const p2 = this.splitLineEnd;
+                this.splitLineStart = null;
+                this.splitLineEnd = null;
+
+                const isFunGameMode = !!(
+                    window.game &&
+                    window.game.currentMode &&
+                    typeof window.game.currentMode.isFunModeActive === 'function' &&
+                    window.game.currentMode.isFunModeActive()
+                );
+
+                // 3. Validation Phase (World Class Rules)
+                // Check against ALL visible polygons. If ANY cut is invalid (e.g. stops inside), abort ALL.
+                const targets = this.selectedPolygon ? [this.selectedPolygon] : this.polygons;
+                let validationFailed = false;
+                const promptText = "Draw a straight line across the shape.";
+
+                if (isFunGameMode && window.game && window.game.currentMode) {
+                    if (window.game.currentMode.linesUsed >= window.game.currentMode.maxLines) {
+                        this.showToast('Line limit reached. Submit your solution or retry.', true);
+                        validationFailed = true;
+                    }
+                }
+
+                for (let poly of targets) {
+                    if (!poly.visible) continue;
+                    const validation = Geometry.validateCut(poly, p1, p2);
+                    if (!validation.isValid) {
+                        this.showToast(`Invalid Cut: ${validation.reason}`, true);
+                        validationFailed = true;
+                        break;
+                    }
+                }
+
+                if (validationFailed) {
+                    // Reset UI
+                    if (isFunGameMode) {
+                        this.splitStep = 1;
+                        const level = (window.game && window.game.currentMode) ? (window.game.currentMode.currentLevelIndex || 0) : 0;
+                        if (level === 0) {
+                            this.updateSplitPrompt(promptText);
+                        } else {
+                            this.updateSplitPrompt("");
+                        }
+                        this.render(true);
+                    } else {
+                        this.render();
+                    }
+                    return;
+                }
+
+                // 4. Execution Phase (List Rebuild Strategy)
+                const nextPolygons = [];
+                const newlyCreatedPolys = [];
+                let splitCount = 0;
+
+                // Process every polygon in the scene
+                // If selectedPolygon is set, we only attempt splitting that one, others are passed through.
+                const fullList = this.polygons;
+
+                for (let poly of fullList) {
+                    let shouldAttemptSplit = false;
+
+                    if (this.selectedPolygon) {
+                        shouldAttemptSplit = (poly === this.selectedPolygon);
+                    } else {
+                        shouldAttemptSplit = true; // Try all in game mode / global tool
+                    }
+
+                    if (shouldAttemptSplit && poly.visible) {
+                        let pieces = null;
+                        try {
+                            pieces = Geometry.split(poly, p1, p2);
+                        } catch (e) {
+                            console.error("Split calculation error:", e);
+                        }
+
+                        if (pieces && pieces.length > 1) {
+                            // SUCCESS: Add NEW pieces only
+                            pieces.forEach((pts, idx) => {
+                                // Clean collinear vertices to ensure "Type" and vertex count are accurate
+                                const cleanedPts = Geometry.cleanCollinearVertices(pts);
+                                const newPoly = new Polygon(cleanedPts, poly.color);
+                                newPoly.name = `${poly.name} Part ${idx + 1}`;
+                                nextPolygons.push(newPoly);
+                                newlyCreatedPolys.push(newPoly);
+                            });
+                            splitCount++;
+                        } else {
+                            // No split occurred (no intersection) - Keep Original
+                            nextPolygons.push(poly);
+                        }
+                    } else {
+                        // Pass through untouched
+                        nextPolygons.push(poly);
+                    }
+                }
+
+                // 5. Apply Results
+                if (splitCount > 0) {
+                    this.polygons = nextPolygons; // Atomic state update
                     this.selectedPolygon = null;
                     this.selectedVertex = null;
 
                     this.saveHistory();
                     this.updateProperties();
                     this.updateLayers();
-                    this.exitSplitMode();
-                    this.setTool('select');
-                } else {
-                    alert('No polygons were intersected by the split line.');
-                }
-            }
 
-            updateSplitLineConstraint(pos) {
-                if (!this.splitLineStart) return;
+                    // Notify Game Mode
+                    if (window.game && window.game.currentMode && typeof window.game.currentMode.handleSlice === 'function') {
+                        window.game.currentMode.handleSlice(newlyCreatedPolys);
+                    }
 
-                let newEnd = { ...pos };
-
-                if (this.splitLineType === 'horizontal') {
-                    newEnd.y = this.splitLineStart.y;
-                } else if (this.splitLineType === 'vertical') {
-                    newEnd.x = this.splitLineStart.x;
-                } else if (this.splitLineType === 'diagonal') { // Optional: 45 degree snap? Or simply free/diagonal as requested
-                    // If "Diagonal" implies 45 degrees specifically:
-                    const dx = pos.x - this.splitLineStart.x;
-                    const dy = pos.y - this.splitLineStart.y;
-                    const absDx = Math.abs(dx);
-                    const absDy = Math.abs(dy);
-
-                    // Snap to nearest 45
-                    if (absDx > absDy) {
-                        // Closer to horizontal, but force diagonal?
-                        // Or just force 1:1 aspect ratio
-                        newEnd.y = this.splitLineStart.y + Math.sign(dy) * absDx;
+                    // Reset UI for next action
+                    if (isFunGameMode) {
+                        this.splitStep = 1;
+                        this.splitMode = true; // Stay in split mode
+                        const level = (window.game && window.game.currentMode) ? (window.game.currentMode.currentLevelIndex || 0) : 0;
+                        if (level === 0) {
+                            this.updateSplitPrompt(promptText);
+                        } else {
+                            this.updateSplitPrompt("");
+                        }
+                        this.render(true);
                     } else {
-                        newEnd.x = this.splitLineStart.x + Math.sign(dx) * absDy;
+                        this.exitSplitMode();
+                        this.setTool('select');
+                        this.render();
+                    }
+                } else {
+                    this.showToast('No polygons were intersected by the split line.', true);
+                    if (isFunGameMode) {
+                        this.splitStep = 1;
+                        const level = (window.game && window.game.currentMode) ? (window.game.currentMode.currentLevelIndex || 0) : 0;
+                        if (level === 0) {
+                            this.updateSplitPrompt(promptText);
+                        } else {
+                            this.updateSplitPrompt("");
+                        }
+                        this.render(true);
                     }
                 }
-
-                this.splitLineEnd = newEnd;
             }
 
             // Canvas coordinate helpers
@@ -4133,36 +6071,23 @@
 
                 // Handle Split Mode Interaction
                 if (this.splitMode && e.button === 0) {
-                    if (this.splitStep === 0) {
-                        // Step 0: Select Polygon
-                        // Iterate backwards to pick top-most polygon
-                        for (let i = this.polygons.length - 1; i >= 0; i--) {
-                            const poly = this.polygons[i];
-                            if (poly.visible && poly.containsPoint(snappedPos)) {
-                                this.selectedPolygon = poly;
-                                this.updateProperties();
-                                this.updateLayers();
-                                this.render();
+                    // Step 1: Start drawing line (Default)
 
-                                // Show confirmation pop-up
-                                const confirmModal = document.getElementById('splitConfirmSelectionModal');
-                                if (confirmModal) {
-                                    confirmModal.style.display = 'flex';
-                                }
-                                return;
-                            }
-                        }
-                    } else if (this.splitStep === 1) {
-                        // Step 1: Start drawing line
-                        this.isDragging = true;
-                        this.dragStart = { x, y };
+                    // Check for continuation (Click-Click)
+                    const isContinuation = this.splitLineStart !== null;
+
+                    this.isDragging = true;
+                    this.dragStart = { x, y };
+
+                    if (!isContinuation) {
                         this.splitLineStart = snappedPos;
-                        this.splitLineEnd = snappedPos;
-
-                        // Show Execute button once drawing starts
-                        const btn = document.querySelector('[data-tool="split"]');
-                        if (btn) btn.style.display = 'flex';
                     }
+                    this.splitLineEnd = snappedPos;
+
+                    // Show Execute button once drawing starts
+                    const btn = document.querySelector('[data-tool="split"]');
+                    if (btn) btn.style.display = 'flex';
+
                     return;
                 }
 
@@ -4297,6 +6222,7 @@
                 return null; // Clicked on empty space
             }
 
+
             handleMouseMove(e) {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -4373,6 +6299,25 @@
                     this.updateProperties();
                     this.render(true); // Force render during drag for responsiveness
                 }
+
+                // Beginner Mode: Hover Inspection
+                // Only active in game mode when split tool is active (since selection is disabled)
+                if (this.isGameModeActive() && this.splitMode && !this.isDragging && !this.isPanning) {
+                    let hoverPoly = null;
+                    // Check logic similar to selection: reverse order (top first)
+                    for (let i = this.polygons.length - 1; i >= 0; i--) {
+                        if (this.polygons[i].visible && this.polygons[i].containsPoint(worldPos)) {
+                            hoverPoly = this.polygons[i];
+                            break;
+                        }
+                    }
+
+                    // Only update if changed to avoid DOM thrashing
+                    if (this._lastHoverPoly !== hoverPoly) {
+                        this._lastHoverPoly = hoverPoly;
+                        this.updateProperties(hoverPoly);
+                    }
+                }
             }
 
             handleMouseUp(e) {
@@ -4381,6 +6326,35 @@
                     this.isPanning = false;
                     this.canvas.style.cursor = '';
                     this.updateCursor();
+                }
+
+                // Handle Split Mode Execution
+                if (this.splitMode && this.isDragging) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const worldPos = this.screenToWorld(x, y);
+                    const snappedPos = this.snapToGrid(worldPos);
+
+                    const dragDist = Math.sqrt(Math.pow(x - this.dragStart.x, 2) + Math.pow(y - this.dragStart.y, 2));
+
+                    if (dragDist > 10) {
+                        // Dragged -> Execute
+                        this.splitLineEnd = snappedPos;
+                        this.executeSplit();
+                    } else {
+                        // Click (Tap)
+                        // Check if we are clicking a different point (P2)
+                        // Since MouseDown updates splitLineEnd to snappedPos, we can compare splitLineStart vs snappedPos
+                        if (this.splitLineStart &&
+                            (Math.abs(this.splitLineStart.x - snappedPos.x) > 0.001 ||
+                                Math.abs(this.splitLineStart.y - snappedPos.y) > 0.001)) {
+
+                            this.splitLineEnd = snappedPos;
+                            this.executeSplit();
+                        }
+                    }
+                    // Don't return, let dragging state reset below
                 }
 
                 // If we clicked but didn't pan (clicked on empty space without dragging)
@@ -4447,7 +6421,9 @@
             }
 
             handleTouchStart(e) {
-                e.preventDefault();
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
                 e.stopPropagation();
 
                 // Update last touch time to prevent mouse event conflicts
@@ -4501,31 +6477,25 @@
 
                 // Handle Split Mode Interaction
                 if (this.splitMode) {
-                    if (this.splitStep === 0) {
-                        // Step 0: Select Polygon
-                        for (let i = this.polygons.length - 1; i >= 0; i--) {
-                            const poly = this.polygons[i];
-                            if (poly.visible && poly.containsPoint(snappedPos)) {
-                                this.selectedPolygon = poly;
-                                this.updateProperties();
-                                this.updateLayers();
-                                this.render();
-                                const confirmModal = document.getElementById('splitConfirmSelectionModal');
-                                if (confirmModal) {
-                                    confirmModal.style.display = 'flex';
-                                }
-                                return;
-                            }
-                        }
-                    } else if (this.splitStep === 1) {
-                        // Step 1: Start drawing line
-                        this.isDragging = true;
-                        this.dragStart = { x, y };
+                    // Step 1: Start drawing line (Default)
+
+                    // Check if we are continuing from an existing start point (Click-Click method)
+                    // If we have a start point and aren't currently dragging, this might be the second click
+                    const isContinuation = this.splitLineStart !== null;
+
+                    this.isDragging = true;
+                    this.dragStart = { x, y }; // Screen coords
+
+                    if (!isContinuation) {
+                        // New line start
                         this.splitLineStart = snappedPos;
-                        this.splitLineEnd = snappedPos;
-                        const btn = document.querySelector('[data-tool="split"]');
-                        if (btn) btn.style.display = 'flex';
                     }
+                    // Always update end to current pos
+                    this.splitLineEnd = snappedPos;
+
+                    const btn = document.querySelector('[data-tool="split"]');
+                    if (btn) btn.style.display = 'flex';
+
                     return;
                 }
 
@@ -4591,7 +6561,9 @@
             }
 
             handleTouchMove(e) {
-                e.preventDefault();
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
                 e.stopPropagation();
 
                 // Handle pinch-to-zoom
@@ -4652,7 +6624,7 @@
                 }
 
                 // Handle Split Line Dragging
-                if (this.splitMode && this.isDragging && this.splitStep === 1) {
+                if (this.splitMode && this.isDragging) {
                     if (this.splitLineStart) {
                         this.updateSplitLineConstraint(snappedPos);
                         this.render(true); // Force render during drag
@@ -4788,6 +6760,40 @@
             handleTouchEnd(e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Handle Split Mode Execution (Touch)
+                if (this.splitMode && this.isDragging) {
+                    // Check if we have a touch position (from change)
+                    if (e.changedTouches[0]) {
+                        const touch = e.changedTouches[0];
+                        const rect = this.canvas.getBoundingClientRect();
+                        const x = touch.clientX - rect.left;
+                        const y = touch.clientY - rect.top;
+                        const worldPos = this.screenToWorld(x, y);
+                        const snappedPos = this.snapToGrid(worldPos);
+
+                        // Use dragStart (Screen coords)
+                        let dragDist = 0;
+                        if (this.dragStart) {
+                            dragDist = Math.sqrt(Math.pow(x - this.dragStart.x, 2) + Math.pow(y - this.dragStart.y, 2));
+                        }
+
+                        if (dragDist > 10) {
+                            // Dragged -> Execute
+                            this.splitLineEnd = snappedPos;
+                            this.executeSplit();
+                        } else {
+                            // Tap
+                            if (this.splitLineStart &&
+                                (Math.abs(this.splitLineStart.x - snappedPos.x) > 0.001 ||
+                                    Math.abs(this.splitLineStart.y - snappedPos.y) > 0.001)) {
+
+                                this.splitLineEnd = snappedPos;
+                                this.executeSplit();
+                            }
+                        }
+                    }
+                }
 
                 // Update last touch time
                 this.lastTouchTime = Date.now();
@@ -4993,25 +6999,55 @@
                 this.canvas.style.cursor = cursors[this.currentTool] || 'default';
             }
 
-            updateProperties() {
+            updateProperties(targetPoly = null) {
                 const panel = document.getElementById('propertiesPanelContent');
+                let polyToView = targetPoly || this.selectedPolygon;
 
-                if (!this.selectedPolygon) {
-                    panel.innerHTML = '<div class="property-row" style="justify-content: center; padding: 12px;"><span class="property-label" style="color: #94a3b8; font-style: italic;">Select a polygon to view properties</span></div>';
+                // Game Mode Persistence:
+                // If we are in Game Mode and no polygon is explicitly provided or selected,
+                // try to stick to the last viewed one to avoid flickering/clearing during interactions.
+                if (this.isGameModeActive() && !polyToView) {
+                    if (this.lastViewedPolygon && this.polygons.includes(this.lastViewedPolygon)) {
+                        polyToView = this.lastViewedPolygon;
+                    } else if (this.polygons.length > 0) {
+                        // Fallback to the first polygon (usually the target shape in early levels)
+                        polyToView = this.polygons[0];
+                    }
+                }
+
+                if (!polyToView) {
+                    panel.innerHTML = '<div class="property-row" style="justify-content: center; padding: 12px;"><span class="property-label" style="color: #94a3b8; font-style: italic;">Select or hover over a polygon to view properties</span></div>';
                     return;
                 }
 
-                const areaPx = Math.abs(this.selectedPolygon.getArea());
-                const perimeterPx = this.selectedPolygon.getPerimeter();
+                // Cache it for next time
+                this.lastViewedPolygon = polyToView;
+
+                const areaPx = Math.abs(polyToView.getArea());
+                const perimeterPx = polyToView.getPerimeter();
 
                 const area = areaPx / (this.gridSize * this.gridSize);
                 const perimeter = perimeterPx / this.gridSize;
-                const vertices = this.selectedPolygon.vertices.length;
+                const vertices = polyToView.vertices.length;
+
+                // Determine Polygon Type based on vertices
+                let polyType = 'Polygon';
+                const vCount = polyToView.vertices.length;
+                if (vCount === 3) polyType = 'Triangle';
+                else if (vCount === 4) polyType = 'Quadrilateral';
+                else if (vCount === 5) polyType = 'Pentagon';
+                else if (vCount === 6) polyType = 'Hexagon';
+                else if (vCount === 7) polyType = 'Heptagon';
+                else if (vCount === 8) polyType = 'Octagon';
+                else if (vCount === 9) polyType = 'Nonagon';
+                else if (vCount === 10) polyType = 'Decagon';
+                else if (vCount === 12) polyType = 'Dodecagon';
+                else polyType = `${vCount}-gon`;
 
                 let html = `
             <div class="property-row">
-                <span class="property-label">Name:</span>
-                <span class="property-value">${this.selectedPolygon.name}</span>
+                <span class="property-label">Type:</span>
+                <span class="property-value">${polyType}</span>
             </div>
             <div class="property-row">
                 <span class="property-label">Vertices:</span>
@@ -5029,7 +7065,7 @@
 
                 // Add triangle classifier if it's a triangle
                 if (vertices === 3) {
-                    const classification = this.classifyTriangle(this.selectedPolygon);
+                    const classification = this.classifyTriangle(polyToView);
                     html += `
                 <div class="triangle-classifier">
                     <div class="triangle-classifier-title">Triangle Type:</div>
@@ -5144,6 +7180,62 @@
                 return { sides: sideType, angles: angleType };
             }
 
+            isSplitValid(p1, p2) {
+                // Minimum length check (5 pixels) to prevent instant green on click
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                if ((dx * dx + dy * dy) < 25) return false;
+
+                // Determine targets
+                let targets = this.polygons;
+                if (this.selectedPolygon) {
+                    targets = [this.selectedPolygon];
+                }
+
+                // Explicit Segment-Segment Intersection Algorithm
+                // Returns true if segments (a,b) and (c,d) intersect strictly
+                const getSegmentIntersection = (a, b, c, d) => {
+                    const s1_x = b.x - a.x;
+                    const s1_y = b.y - a.y;
+                    const s2_x = d.x - c.x;
+                    const s2_y = d.y - c.y;
+
+                    const s_numer = -s1_y * (a.x - c.x) + s1_x * (a.y - c.y);
+                    const t_numer = s2_x * (a.y - c.y) - s2_y * (a.x - c.x);
+                    const denom = -s2_x * s1_y + s1_x * s2_y;
+
+                    if (Math.abs(denom) < 1e-9) return false; // Parallel
+
+                    const s = s_numer / denom;
+                    const t = t_numer / denom;
+
+                    // Check for strict intersection (0 < s < 1 and 0 < t < 1)
+                    // We use a small epsilon to avoid edge cases causing false negatives on exact hits
+                    // but usually for "crossing" we want strictly inside.
+                    return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
+                };
+
+                for (let poly of targets) {
+                    if (!poly.visible) continue;
+
+                    let crossings = 0;
+                    const verts = poly.vertices;
+                    for (let i = 0; i < verts.length; i++) {
+                        const v1 = verts[i];
+                        const v2 = verts[(i + 1) % verts.length];
+
+                        // Check intersection between split line (p1, p2) and edge (v1, v2)
+                        if (getSegmentIntersection(p1, p2, v1, v2)) {
+                            crossings++;
+                        }
+                    }
+
+                    // Must cross at least 2 edges to split
+                    if (crossings >= 2) return true;
+                }
+                return false;
+            }
+
             // Rendering
             render(force = false) {
                 // Throttle render calls for better performance
@@ -5173,6 +7265,12 @@
 
                 this.lastRenderTime = now;
                 this.renderScheduled = false;
+
+                const removedSample = this.pruneSamplePolygonForGame();
+                if (removedSample) {
+                    this.updateLayers();
+                    this.updateProperties();
+                }
 
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -5219,19 +7317,29 @@
                 // Draw Split Line
                 if (this.splitMode && this.splitLineStart && this.splitLineEnd) {
                     this.ctx.save();
-                    this.ctx.strokeStyle = '#e53e3e';
-                    this.ctx.lineWidth = 2 / this.zoom;
-                    this.ctx.setLineDash([5 / this.zoom, 5 / this.zoom]);
 
-                    // Calculate extended line for visualization if needed, or just segment
-                    // Let's draw the segment for now as the "vector"
+                    // Check validation using our new helper
+                    const isValid = this.isSplitValid(this.splitLineStart, this.splitLineEnd);
+
+                    if (isValid) {
+                        // Valid Cut: Solid Green
+                        this.ctx.strokeStyle = '#48bb78'; // Green
+                        this.ctx.lineWidth = 3 / this.zoom;
+                        this.ctx.setLineDash([]); // Solid
+                    } else {
+                        // Invalid/Drawing: Dotted Gray (as requested)
+                        this.ctx.strokeStyle = '#94a3b8'; // Slate 400 Gray
+                        this.ctx.lineWidth = 2 / this.zoom;
+                        this.ctx.setLineDash([5 / this.zoom, 5 / this.zoom]); // Dotted
+                    }
+
                     this.ctx.beginPath();
                     this.ctx.moveTo(this.splitLineStart.x, this.splitLineStart.y);
                     this.ctx.lineTo(this.splitLineEnd.x, this.splitLineEnd.y);
                     this.ctx.stroke();
 
                     // Draw endpoints
-                    this.ctx.fillStyle = '#e53e3e';
+                    this.ctx.fillStyle = isValid ? '#48bb78' : '#e53e3e';
                     this.ctx.beginPath();
                     this.ctx.arc(this.splitLineStart.x, this.splitLineStart.y, 4 / this.zoom, 0, Math.PI * 2);
                     this.ctx.arc(this.splitLineEnd.x, this.splitLineEnd.y, 4 / this.zoom, 0, Math.PI * 2);
@@ -6209,6 +8317,10 @@
 
             // History management
             saveHistory() {
+                if (this.pruneSamplePolygonForGame()) {
+                    this.updateLayers();
+                    this.updateProperties();
+                }
                 const state = JSON.stringify(this.polygons.map(p => ({
                     vertices: p.vertices,
                     color: p.color,
@@ -6268,6 +8380,7 @@
 
             loadState(state) {
                 try {
+                    const isGameModeActive = this.isGameModeActive();
                     // Store current selection info to restore it if possible
                     const selectedName = this.selectedPolygon ? this.selectedPolygon.name : null;
                     const selectedIndex = this.selectedPolygon ? this.polygons.indexOf(this.selectedPolygon) : -1;
@@ -6281,7 +8394,7 @@
                     }
 
                     // Recreate polygons from state
-                    this.polygons = data.map(p => {
+                    const restoredPolygons = data.map(p => {
                         if (!p || !p.vertices || !Array.isArray(p.vertices) || p.vertices.length < 3) {
                             console.warn('Invalid polygon in state, skipping', p);
                             return null;
@@ -6291,6 +8404,11 @@
                         poly.visible = p.visible !== false; // Default to visible
                         return poly;
                     }).filter(p => p !== null); // Remove any null entries
+
+                    // In game mode, prevent restoring the default triangle from history
+                    this.polygons = isGameModeActive
+                        ? restoredPolygons.filter(p => p.name !== 'Triangle 1')
+                        : restoredPolygons;
 
                     // Restore selection by name first (more reliable), then by index
                     if (selectedName) {
@@ -6501,7 +8619,9 @@
                 this.zoom = 1;
                 this.pan = { x: 0, y: 0 };
 
-                this.createSamplePolygon();
+                if (!this.isGameModeActive()) {
+                    this.createSamplePolygon();
+                }
                 this.updateProperties(); // Clear properties panel
                 this.updateLayers();
                 this.render();
@@ -6778,6 +8898,15 @@
 
             app = new PolygonPlayground();
 
+            // Initialize Game System
+            const game = new Game(app);
+            if (typeof GameLevels !== 'undefined') {
+                game.loadLevels(GameLevels);
+            } else if (typeof BeginnerLevels !== 'undefined') {
+                game.loadLevels(BeginnerLevels);
+            }
+            window.game = game;
+
             // Setup mobile menus
             setupMobileMenus();
 
@@ -6851,897 +8980,20 @@
         }
 
         // Geometry Utilities for Polygon Boolean Operations (Union & Split)
-        class PolygonBoolean {
-            // ... [Union Methods from previous implementation] ...
+        // ... [Union Methods from previous implementation] ...
 
-            // NEW: Split Method
-            static split(polygon, lineStart, lineEnd) {
-                const vertices = polygon.vertices;
-                const intersections = [];
-                const cutLine = { p1: lineStart, p2: lineEnd };
-
-                for (let i = 0; i < vertices.length; i++) {
-                    const current = vertices[i];
-                    const next = vertices[(i + 1) % vertices.length];
-                    const seg = { p1: current, p2: next };
-
-                    const inter = this.getIntersectionInfiniteLine(seg, cutLine);
-                    if (inter) {
-                        intersections.push({
-                            point: inter,
-                            edgeIndex: i,
-                            dist: this.distSq(current, inter)
-                        });
-                    }
-                }
-
-                if (intersections.length < 2) return null;
-
-                // Sort intersections by edge index then distance
-                intersections.sort((a, b) => {
-                    if (a.edgeIndex !== b.edgeIndex) return a.edgeIndex - b.edgeIndex;
-                    return a.dist - b.dist;
-                });
-
-                // Deduplicate intersections (esp. at vertices) per edge
-                const uniqueInts = [];
-                intersections.forEach(i => {
-                    if (!uniqueInts.some(ui => ui.edgeIndex === i.edgeIndex && this.distSq(ui.point, i.point) < 0.0001)) {
-                        uniqueInts.push(i);
-                    }
-                });
-
-                const newSegs = [];
-                let intIdx = 0;
-
-                // 1. Build boundary segments with inserted intersection points
-                for (let i = 0; i < vertices.length; i++) {
-                    let lastP = vertices[i];
-                    while (intIdx < uniqueInts.length && uniqueInts[intIdx].edgeIndex === i) {
-                        const midP = uniqueInts[intIdx].point;
-                        if (this.distSq(lastP, midP) > 0.0001) {
-                            newSegs.push({ p1: { ...lastP }, p2: { ...midP } });
-                        }
-                        lastP = midP;
-                        intIdx++;
-                    }
-                    if (this.distSq(lastP, vertices[(i + 1) % vertices.length]) > 0.0001) {
-                        newSegs.push({ p1: { ...lastP }, p2: { ...vertices[(i + 1) % vertices.length] } });
-                    }
-                }
-
-                // 2. Identify and add bridge segments (internal cut line segments)
-                const bridgePoints = [];
-                uniqueInts.forEach(ui => {
-                    if (!bridgePoints.some(bp => this.distSq(bp, ui.point) < 0.0001)) {
-                        bridgePoints.push(ui.point);
-                    }
-                });
-
-                const proj = (p) => {
-                    const dx = lineEnd.x - lineStart.x;
-                    const dy = lineEnd.y - lineStart.y;
-                    return ((p.x - lineStart.x) * dx + (p.y - lineStart.y) * dy);
-                };
-                bridgePoints.sort((a, b) => proj(a) - proj(b));
-
-                for (let i = 0; i < bridgePoints.length - 1; i++) {
-                    const mid = {
-                        x: (bridgePoints[i].x + bridgePoints[i + 1].x) / 2,
-                        y: (bridgePoints[i].y + bridgePoints[i + 1].y) / 2
-                    };
-                    // midpoint must be inside the original polygon
-                    if (this.pointRelation(mid, vertices) === -1) {
-                        newSegs.push({ p1: { ...bridgePoints[i] }, p2: { ...bridgePoints[i + 1] } });
-                    }
-                }
-
-                const pieces = this.linkSegments(newSegs);
-                return (pieces && pieces.length >= 2) ? pieces : null;
-            }
-
-            static isPointInside(p, vertices) {
-                return this.pointRelation(p, vertices) === -1;
-            }
-
-            static getIntersectionInfiniteLine(seg, line) {
-                // Line: p1, p2. Seg: p3, p4
-                const x1 = line.p1.x, y1 = line.p1.y;
-                const x2 = line.p2.x, y2 = line.p2.y;
-                const x3 = seg.p1.x, y3 = seg.p1.y;
-                const x4 = seg.p2.x, y4 = seg.p2.y;
-
-                const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-                if (Math.abs(denom) < 1e-10) return null; // Parallel
-
-                const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
-                const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
-
-                // ub must be between 0 and 1 (segment) with a small epsilon
-                const EPS = 1e-8;
-                if (ub >= -EPS && ub <= 1 + EPS) {
-                    return {
-                        x: x1 + ua * (x2 - x1),
-                        y: y1 + ua * (y2 - y1)
-                    };
-                }
-                return null;
-            }
-
-            static isPointInside(p, vertices) {
-                return this.pointRelation(p, vertices) === -1;
-            }
-            static union(polygons) {
-                if (!polygons || polygons.length < 2) {
-                    console.warn('Union requires at least 2 polygons');
-                    return null;
-                }
-
-                // Validate all input polygons have valid vertices
-                for (let i = 0; i < polygons.length; i++) {
-                    if (!polygons[i] || !polygons[i].vertices || polygons[i].vertices.length < 3) {
-                        console.warn(`Polygon ${i} is invalid for union`, polygons[i]);
-                        return null;
-                    }
-                }
-
-                let result = this.cleanPolygon(polygons[0].vertices);
-                if (!result || result.length < 3) {
-                    console.warn('First polygon cleaning failed');
-                    return null;
-                }
-
-                for (let i = 1; i < polygons.length; i++) {
-                    const clip = this.cleanPolygon(polygons[i].vertices);
-                    if (!clip || clip.length < 3) continue;
-
-                    const combinedCycles = this.unionTwoPolygons(result, clip);
-
-                    if (combinedCycles && Array.isArray(combinedCycles) && combinedCycles.length > 0) {
-                        // Get only the outer boundary cycle (largest area, containing all others)
-                        const outerBoundary = this.getOuterBoundary(combinedCycles);
-                        if (outerBoundary && Array.isArray(outerBoundary) && outerBoundary.length >= 3) {
-                            // Validate the outer boundary has valid vertices
-                            const hasValidVertices = outerBoundary.every(v =>
-                                v && typeof v.x === 'number' && typeof v.y === 'number' &&
-                                isFinite(v.x) && isFinite(v.y)
-                            );
-                            if (hasValidVertices) {
-                                result = outerBoundary;
-                            } else {
-                                console.warn('Union failed: outer boundary has invalid vertices');
-                                return null;
-                            }
-                        } else {
-                            // If getOuterBoundary fails, the union operation failed
-                            console.warn('Union failed: could not determine outer boundary', {
-                                cyclesCount: combinedCycles.length,
-                                outerBoundary: outerBoundary ? outerBoundary.length : 'null'
-                            });
-                            return null;
-                        }
-                    } else {
-                        // If no cycles returned, check what happened
-                        // This could mean:
-                        // 1. Polygons are completely disjoint (no overlap)
-                        // 2. One polygon is completely inside the other (should have been handled)
-                        // 3. Union algorithm failed due to edge case
-
-                        console.warn('Union returned no cycles', {
-                            resultLength: result.length,
-                            clipLength: clip.length
-                        });
-
-                        // Check if polygons overlap or touch
-                        let hasOverlap = false;
-                        let areTouching = false;
-
-                        // Check vertex overlap
-                        for (let v of clip) {
-                            const rel = this.pointRelation(v, result);
-                            if (rel !== 1) { // Inside or on boundary
-                                hasOverlap = true;
-                                break;
-                            }
-                        }
-                        if (!hasOverlap) {
-                            for (let v of result) {
-                                const rel = this.pointRelation(v, clip);
-                                if (rel !== 1) { // Inside or on boundary
-                                    hasOverlap = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Check if polygons are touching (edges intersect or share vertices)
-                        if (!hasOverlap) {
-                            const segsResult = this.getSegments(result);
-                            const segsClip = this.getSegments(clip);
-                            for (let s1 of segsResult) {
-                                for (let s2 of segsClip) {
-                                    const inter = this.getIntersection(s1.p1, s1.p2, s2.p1, s2.p2);
-                                    if (inter) {
-                                        areTouching = true;
-                                        break;
-                                    }
-                                    // Check if segments share endpoints
-                                    if (this.distSq(s1.p1, s2.p1) < 1e-6 || this.distSq(s1.p1, s2.p2) < 1e-6 ||
-                                        this.distSq(s1.p2, s2.p1) < 1e-6 || this.distSq(s1.p2, s2.p2) < 1e-6) {
-                                        areTouching = true;
-                                        break;
-                                    }
-                                }
-                                if (areTouching) break;
-                            }
-                        }
-
-                        if (!hasOverlap && !areTouching) {
-                            // Return empty array instead of null for clearer handling
-                            // This specifically indicates disjoint polygons (can't be combined)
-                            console.warn('Polygons are disjoint - cannot combine');
-                            return [];
-                        } else {
-                            // Polygons overlap or touch but union failed
-                            // Try to create a bounding polygon as fallback
-                            const allVertices = [...result, ...clip];
-                            const boundingPoly = this.createBoundingPolygon(allVertices);
-                            if (boundingPoly && boundingPoly.length >= 3) {
-                                console.warn('Using bounding polygon fallback for union');
-                                return boundingPoly;
-                            }
-                            console.warn('Union failed: polygons overlap but could not create result');
-                            return [];
-                        }
-                    }
-                }
-
-                // Final validation of result
-                if (result && Array.isArray(result) && result.length >= 3) {
-                    // Validate all vertices are valid
-                    const hasValidVertices = result.every(v =>
-                        v && typeof v.x === 'number' && typeof v.y === 'number' &&
-                        isFinite(v.x) && isFinite(v.y)
-                    );
-                    return hasValidVertices ? result : null;
-                }
-                return null;
-            }
-
-            // Get the outer boundary cycle from multiple cycles, discarding internal ones
-            static getOuterBoundary(cycles) {
-                if (!cycles || cycles.length === 0) return null;
-                if (cycles.length === 1) return cycles[0];
-
-                // Calculate area for each cycle and check containment
-                const cyclesWithInfo = cycles.map(cycle => ({
-                    cycle: cycle,
-                    area: Math.abs(this.getArea(cycle))
-                }));
-
-                // Sort by area (largest first)
-                cyclesWithInfo.sort((a, b) => b.area - a.area);
-
-                // Find the outermost cycle (not contained by any other)
-                for (let i = 0; i < cyclesWithInfo.length; i++) {
-                    const candidate = cyclesWithInfo[i].cycle;
-                    let isContained = false;
-
-                    // Check if this cycle is contained by any larger cycle
-                    for (let j = 0; j < i; j++) {
-                        const largerCycle = cyclesWithInfo[j].cycle;
-                        // Test a point from candidate cycle
-                        const testPoint = candidate[0];
-                        if (this.pointRelation(testPoint, largerCycle) === -1) {
-                            isContained = true;
-                            break;
-                        }
-                    }
-
-                    // If not contained, this is an outer boundary
-                    if (!isContained) {
-                        return candidate;
-                    }
-                }
-
-                // Fallback: return the largest cycle
-                return cyclesWithInfo[0].cycle;
-            }
-
-            // New static method to merge multiple disjoint cycles into a single path
-            static mergeCycles(cycles) {
-                if (!cycles || cycles.length === 0) return [];
-                if (cycles.length === 1) return cycles[0];
-
-                // Start with the first cycle
-                let result = [...cycles[0]];
-                const remaining = cycles.slice(1);
-
-                while (remaining.length > 0) {
-                    let bestDist = Infinity;
-                    let bridgeFrom = -1;
-                    let bridgeToCycleIdx = -1;
-                    let bridgeToVertexIdx = -1;
-
-                    // Find the closest pair of vertices between the current result and any remaining cycle
-                    for (let i = 0; i < result.length; i++) {
-                        const p1 = result[i];
-                        for (let c = 0; c < remaining.length; c++) {
-                            const cycle = remaining[c];
-                            for (let j = 0; j < cycle.length; j++) {
-                                const p2 = cycle[j];
-                                const d = this.distSq(p1, p2);
-                                if (d < bestDist) {
-                                    bestDist = d;
-                                    bridgeFrom = i;
-                                    bridgeToCycleIdx = c;
-                                    bridgeToVertexIdx = j;
-                                }
-                            }
-                        }
-                    }
-
-                    if (bridgeToCycleIdx !== -1) {
-                        const targetCycle = remaining[bridgeToCycleIdx];
-
-                        // Reorder target cycle to start from the bridge vertex
-                        const reordered = [
-                            ...targetCycle.slice(bridgeToVertexIdx),
-                            ...targetCycle.slice(0, bridgeToVertexIdx)
-                        ];
-
-                        // Insert the new cycle into the result at the bridge point
-                        // Path: ... -> From -> To -> ...targetCycle... -> To -> From -> ...
-                        const bridgePointFrom = result[bridgeFrom];
-                        const bridgePointTo = reordered[0];
-
-                        const newPart = [
-                            bridgePointFrom,
-                            ...reordered,
-                            bridgePointTo,
-                            bridgePointFrom
-                        ];
-
-                        result.splice(bridgeFrom + 1, 0, ...newPart);
-                        remaining.splice(bridgeToCycleIdx, 1);
-                    } else {
-                        break;
-                    }
-                }
-
-                return result;
-            }
-
-            static cleanPolygon(vertices) {
-                let clean = [];
-                for (let i = 0; i < vertices.length; i++) {
-                    const current = vertices[i];
-                    const next = vertices[(i + 1) % vertices.length];
-                    if (this.distSq(current, next) > 0.0001) {
-                        clean.push({ x: current.x, y: current.y });
-                    }
-                }
-                if (clean.length < 3) return clean;
-                return this.ensureClockwise(clean);
-            }
-
-            static unionTwoPolygons(polyA, polyB) {
-                let segsA = this.getSegments(polyA);
-                let segsB = this.getSegments(polyB);
-                const allSegs = this.fragmentSegments(segsA, segsB);
-                const keptSegs = [];
-                const EPSILON = 1e-4;
-
-                // Check if one polygon is completely inside the other
-                // Test center points and a few vertices
-                const testPointsA = [
-                    this.getPolygonCenter(polyA),
-                    polyA[0],
-                    polyA[Math.floor(polyA.length / 2)]
-                ].filter(p => p);
-
-                const testPointsB = [
-                    this.getPolygonCenter(polyB),
-                    polyB[0],
-                    polyB[Math.floor(polyB.length / 2)]
-                ].filter(p => p);
-
-                let aCompletelyInB = true;
-                let bCompletelyInA = true;
-
-                for (let p of testPointsA) {
-                    if (this.pointRelation(p, polyB) === 1) {
-                        aCompletelyInB = false;
-                        break;
-                    }
-                }
-
-                for (let p of testPointsB) {
-                    if (this.pointRelation(p, polyA) === 1) {
-                        bCompletelyInA = false;
-                        break;
-                    }
-                }
-
-                // If one is completely inside the other, return the outer one
-                // This is correct union behavior - the union of A inside B is just B
-                // However, we need to ensure this is properly handled in executeCombine
-                if (aCompletelyInB && !bCompletelyInA) {
-                    // A is completely inside B - union is B
-                    return [polyB];
-                } else if (bCompletelyInA && !aCompletelyInB) {
-                    // B is completely inside A - union is A
-                    return [polyA];
-                }
-                // If both are inside each other (shouldn't happen for valid polygons), proceed with normal union
-
-                for (let seg of allSegs) {
-                    const otherPoly = seg.origin === 'A' ? polyB : polyA;
-
-                    // Check multiple points along the segment, not just the midpoint
-                    // This is crucial for overlapping triangles where midpoint might be inside
-                    // but the segment is partially outside
-                    const testPoints = [
-                        seg.p1,
-                        this.getMidpoint(seg),
-                        seg.p2,
-                        { x: seg.p1.x + (seg.p2.x - seg.p1.x) * 0.25, y: seg.p1.y + (seg.p2.y - seg.p1.y) * 0.25 },
-                        { x: seg.p1.x + (seg.p2.x - seg.p1.x) * 0.75, y: seg.p1.y + (seg.p2.y - seg.p1.y) * 0.75 }
-                    ];
-
-                    let allInside = true;
-                    let allOutside = true;
-                    let anyOnBoundary = false;
-
-                    for (let testPoint of testPoints) {
-                        const relation = this.pointRelation(testPoint, otherPoly);
-                        if (relation === 0) {
-                            anyOnBoundary = true;
-                            allInside = false;
-                            allOutside = false;
-                        } else if (relation === 1) {
-                            allInside = false;
-                        } else if (relation === -1) {
-                            allOutside = false;
-                        }
-                    }
-
-                    if (allOutside) {
-                        // All points outside - always keep
-                        keptSegs.push(seg);
-                    } else if (allInside && !anyOnBoundary) {
-                        // All points strictly inside - discard
-                        continue;
-                    } else {
-                        // Segment is partially inside/outside or on boundary
-                        // Check for shared/overlapping segments
-                        const otherSegs = allSegs.filter(s => s.origin !== seg.origin);
-                        const matching = otherSegs.find(s =>
-                            (this.distSq(s.p1, seg.p1) < EPSILON && this.distSq(s.p2, seg.p2) < EPSILON) ||
-                            (this.distSq(s.p1, seg.p2) < EPSILON && this.distSq(s.p2, seg.p1) < EPSILON)
-                        );
-
-                        if (matching) {
-                            // It's a shared edge
-                            const isSameDirection = this.distSq(seg.p1, matching.p1) < EPSILON;
-
-                            if (isSameDirection) {
-                                // Same direction - keep one (from polygon A) to avoid duplication
-                                if (seg.origin === 'A') {
-                                    keptSegs.push(seg);
-                                }
-                            } else {
-                                // Opposite direction - check if it's truly internal
-                                // Test a point slightly offset from the segment to see if it's inside both
-                                const offsetDir = {
-                                    x: (seg.p2.y - seg.p1.y) * 0.0001,
-                                    y: -(seg.p2.x - seg.p1.x) * 0.0001
-                                };
-                                const offsetPoint = {
-                                    x: this.getMidpoint(seg).x + offsetDir.x,
-                                    y: this.getMidpoint(seg).y + offsetDir.y
-                                };
-                                const offsetInA = this.pointRelation(offsetPoint, polyA);
-                                const offsetInB = this.pointRelation(offsetPoint, polyB);
-
-                                // If offset is inside both, it's truly internal - discard
-                                // Otherwise, it's on the boundary - keep one
-                                if (offsetInA === -1 && offsetInB === -1) {
-                                    // Truly internal, discard
-                                } else {
-                                    // On boundary, keep one
-                                    if (seg.origin === 'A') {
-                                        keptSegs.push(seg);
-                                    }
-                                }
-                            }
-                            continue;
-                        } else {
-                            // Not shared - must be part of the union boundary
-                            keptSegs.push(seg);
-                        }
-                    }
-                }
-
-                // If no segments kept, one polygon might be completely inside the other
-                // This should have been caught above, but as a fallback:
-                if (keptSegs.length === 0) {
-                    console.warn('No segments kept in union - one polygon may be inside another', {
-                        polyALength: polyA.length,
-                        polyBLength: polyB.length,
-                        aInB: aCompletelyInB,
-                        bInA: bCompletelyInA
-                    });
-                    // Return the larger polygon as union
-                    const areaA = Math.abs(this.getArea(polyA));
-                    const areaB = Math.abs(this.getArea(polyB));
-                    return areaA >= areaB ? [polyA] : [polyB];
-                }
-
-                const cycles = this.linkSegments(keptSegs);
-
-                // If linkSegments fails but we had segments, log warning
-                if (!cycles || cycles.length === 0) {
-                    console.warn('linkSegments returned no cycles despite having segments', {
-                        keptSegsCount: keptSegs.length,
-                        polyALength: polyA.length,
-                        polyBLength: polyB.length
-                    });
-                    // Return null to indicate failure - let the calling code handle it
-                    return null;
-                }
-
-                return cycles;
-            }
-
-            static getPolygonCenter(vertices) {
-                if (!vertices || vertices.length === 0) return null;
-                const sum = vertices.reduce((acc, v) => ({ x: acc.x + v.x, y: acc.y + v.y }), { x: 0, y: 0 });
-                return { x: sum.x / vertices.length, y: sum.y / vertices.length };
-            }
-
-            static createBoundingPolygon(vertices) {
-                if (!vertices || vertices.length < 3) return null;
-
-                // Remove duplicate vertices first
-                const unique = [];
-                const seen = new Set();
-                for (let v of vertices) {
-                    const key = `${Math.round(v.x * 1000)},${Math.round(v.y * 1000)}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        unique.push({ x: v.x, y: v.y });
-                    }
-                }
-
-                if (unique.length < 3) return null;
-
-                // Find convex hull using Graham scan
-                // First, find the bottom-most point (or leftmost in case of tie)
-                let start = 0;
-                for (let i = 1; i < unique.length; i++) {
-                    if (unique[i].y < unique[start].y ||
-                        (unique[i].y === unique[start].y && unique[i].x < unique[start].x)) {
-                        start = i;
-                    }
-                }
-
-                // Sort points by polar angle with respect to start point
-                const sorted = unique.map((v, i) => ({ ...v, idx: i }))
-                    .filter((v, i) => i !== start)
-                    .sort((a, b) => {
-                        const angleA = Math.atan2(a.y - unique[start].y, a.x - unique[start].x);
-                        const angleB = Math.atan2(b.y - unique[start].y, b.x - unique[start].x);
-                        if (Math.abs(angleA - angleB) < 1e-6) {
-                            const distA = this.distSq(a, unique[start]);
-                            const distB = this.distSq(b, unique[start]);
-                            return distA - distB;
-                        }
-                        return angleA - angleB;
-                    });
-
-                const hull = [{ x: unique[start].x, y: unique[start].y }];
-                for (let point of sorted) {
-                    while (hull.length > 1) {
-                        const p1 = hull[hull.length - 2];
-                        const p2 = hull[hull.length - 1];
-                        const cross = (p2.x - p1.x) * (point.y - p1.y) - (p2.y - p1.y) * (point.x - p1.x);
-                        if (cross <= 0) break;
-                        hull.pop();
-                    }
-                    hull.push({ x: point.x, y: point.y });
-                }
-
-                // Ensure we have at least 3 points and close the hull
-                if (hull.length >= 3) {
-                    // Make sure it's closed (first and last should be same, or close enough)
-                    const first = hull[0];
-                    const last = hull[hull.length - 1];
-                    if (this.distSq(first, last) > 1e-6) {
-                        hull.push({ x: first.x, y: first.y });
-                    }
-                    return this.ensureClockwise(hull);
-                }
-
-                return null;
-            }
-
-            static getSegments(vertices) {
-                const segs = [];
-                for (let i = 0; i < vertices.length; i++) {
-                    segs.push({
-                        p1: { ...vertices[i] },
-                        p2: { ...vertices[(i + 1) % vertices.length] },
-                        origin: null
-                    });
-                }
-                return segs;
-            }
-
-            static fragmentSegments(segsA, segsB) {
-                segsA.forEach(s => s.origin = 'A');
-                segsB.forEach(s => s.origin = 'B');
-
-                const all = [...segsA, ...segsB];
-                const cuts = new Map();
-                for (let i = 0; i < all.length; i++) {
-                    cuts.set(i, [0, 1]);
-                }
-
-                for (let i = 0; i < all.length; i++) {
-                    for (let j = i + 1; j < all.length; j++) {
-                        const s1 = all[i];
-                        const s2 = all[j];
-
-                        if (Math.min(s1.p1.x, s1.p2.x) > Math.max(s2.p1.x, s2.p2.x) ||
-                            Math.max(s1.p1.x, s1.p2.x) < Math.min(s2.p1.x, s2.p2.x) ||
-                            Math.min(s1.p1.y, s1.p2.y) > Math.max(s2.p1.y, s2.p2.y) ||
-                            Math.max(s1.p1.y, s1.p2.y) < Math.min(s2.p1.y, s2.p2.y)) continue;
-
-                        const inter = this.getIntersection(s1.p1, s1.p2, s2.p1, s2.p2);
-                        if (inter) {
-                            const getT = (seg, p) => {
-                                const dx = seg.p2.x - seg.p1.x;
-                                const dy = seg.p2.y - seg.p1.y;
-                                if (Math.abs(dx) > Math.abs(dy)) {
-                                    return (p.x - seg.p1.x) / dx;
-                                } else {
-                                    return (p.y - seg.p1.y) / dy;
-                                }
-                            };
-
-                            const t1 = getT(s1, inter);
-                            const t2 = getT(s2, inter);
-
-                            const T_EPS = 1e-5;
-                            if (t1 > T_EPS && t1 < 1 - T_EPS) cuts.get(i).push(t1);
-                            if (t2 > T_EPS && t2 < 1 - T_EPS) cuts.get(j).push(t2);
-                        }
-                    }
-                }
-
-                const result = [];
-                for (let i = 0; i < all.length; i++) {
-                    const seg = all[i];
-                    const ts = cuts.get(i).sort((a, b) => a - b);
-                    const uniqueTs = [];
-                    let last = -1;
-                    ts.forEach(t => {
-                        if (Math.abs(t - last) > 1e-5) {
-                            uniqueTs.push(t);
-                            last = t;
-                        }
-                    });
-
-                    for (let k = 0; k < uniqueTs.length - 1; k++) {
-                        const tStart = uniqueTs[k];
-                        const tEnd = uniqueTs[k + 1];
-
-                        const pStart = {
-                            x: seg.p1.x + (seg.p2.x - seg.p1.x) * tStart,
-                            y: seg.p1.y + (seg.p2.y - seg.p1.y) * tStart
-                        };
-                        const pEnd = {
-                            x: seg.p1.x + (seg.p2.x - seg.p1.x) * tEnd,
-                            y: seg.p1.y + (seg.p2.y - seg.p1.y) * tEnd
-                        };
-
-                        result.push({
-                            p1: pStart,
-                            p2: pEnd,
-                            origin: seg.origin
-                        });
-                    }
-                }
-                return result;
-            }
-
-            static linkSegments(segments) {
-                if (segments.length === 0) return null;
-
-                const verts = [];
-                const EPSILON = 0.001;
-                const getVertIdx = (p) => {
-                    for (let i = 0; i < verts.length; i++) {
-                        if (this.distSq(verts[i], p) < EPSILON) return i;
-                    }
-                    verts.push(p);
-                    return verts.length - 1;
-                };
-
-                const adj = new Map();
-                const addEdge = (u, v) => {
-                    if (u === v) return;
-                    if (!adj.has(u)) adj.set(u, []);
-                    if (!adj.get(u).includes(v)) adj.get(u).push(v);
-                };
-
-                segments.forEach(seg => {
-                    const u = getVertIdx(seg.p1);
-                    const v = getVertIdx(seg.p2);
-                    addEdge(u, v);
-                    addEdge(v, u); // Make it bidirectional for full face traversal
-                });
-
-                if (adj.size === 0) return null;
-
-                const cycles = [];
-                const visitedDir = new Set();
-
-                // Trace all cycles in the planar graph
-                for (let u of adj.keys()) {
-                    const neighbors = adj.get(u);
-                    for (let v of neighbors) {
-                        const key = `${u},${v}`;
-                        if (visitedDir.has(key)) continue;
-
-                        const path = [verts[u]];
-                        let curr = v;
-                        let prev = u;
-                        visitedDir.add(key);
-
-                        let closed = false;
-                        let steps = 0;
-                        while (steps < segments.length * 4) {
-                            if (curr === u) {
-                                closed = true;
-                                break;
-                            }
-                            path.push(verts[curr]);
-
-                            const nList = adj.get(curr);
-                            const angleIn = Math.atan2(verts[curr].y - verts[prev].y, verts[curr].x - verts[prev].x);
-                            const backRay = angleIn + Math.PI;
-
-                            let bestNext = -1;
-                            let maxTurn = -Infinity;
-
-                            for (let next of nList) {
-                                if (next === prev && nList.length > 1) continue;
-
-                                let angleOut = Math.atan2(verts[next].y - verts[curr].y, verts[next].x - verts[curr].x);
-                                let relAngle = angleOut - backRay;
-                                while (relAngle < 0) relAngle += Math.PI * 2;
-                                while (relAngle >= Math.PI * 2) relAngle -= Math.PI * 2;
-
-                                // Maximize relAngle for Rightmost turn (interior faces in CW winding)
-                                if (bestNext === -1 || relAngle > maxTurn) {
-                                    maxTurn = relAngle;
-                                    bestNext = next;
-                                }
-                            }
-
-                            if (bestNext !== -1) {
-                                visitedDir.add(`${curr},${bestNext}`);
-                                prev = curr;
-                                curr = bestNext;
-                                steps++;
-                            } else {
-                                break;
-                            }
-                        }
-
-                        if (closed && path.length >= 3) {
-                            // Keep cycles with positive area
-                            // Reduced threshold to handle small triangles and thin overlapping regions
-                            const area = Math.abs(this.getArea(path));
-                            if (area > 1e-6) { // Very small threshold to keep valid cycles
-                                cycles.push(path);
-                            }
-                        }
-                    }
-                }
-
-                return cycles.length > 0 ? cycles : null;
-            }
-
-            static getMidpoint(seg) {
-                return {
-                    x: (seg.p1.x + seg.p2.x) / 2,
-                    y: (seg.p1.y + seg.p2.y) / 2
-                };
-            }
-
-            static getIntersection(p1, p2, p3, p4) {
-                const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
-                if (Math.abs(d) < 1e-9) return null;
-
-                const u = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
-                const v = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
-
-                if (u > 1e-6 && u < 1 - 1e-6 && v > 1e-6 && v < 1 - 1e-6) {
-                    return {
-                        x: p1.x + u * (p2.x - p1.x),
-                        y: p1.y + u * (p2.y - p1.y)
-                    };
-                }
-                return null;
-            }
-
-            static pointRelation(p, vertices) {
-                const EPSILON = 1e-6;
-                let inside = false;
-
-                for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-                    const A = vertices[i];
-                    const B = vertices[j];
-
-                    // Check if point is on vertex
-                    if (this.distSq(p, A) < EPSILON || this.distSq(p, B) < EPSILON) return 0;
-
-                    // Check if point is on edge
-                    if (this.isPointOnSegmentBlock(p, A, B)) return 0;
-
-                    // Ray casting with floating point robustness
-                    if (((A.y > p.y) !== (B.y > p.y)) &&
-                        (p.x < (B.x - A.x) * (p.y - A.y) / (B.y - A.y) + A.x + 1e-9)) {
-                        inside = !inside;
-                    }
-                }
-                return inside ? -1 : 1;
-            }
-
-            static isPointOnSegmentBlock(p, a, b) {
-                const cp = (p.y - a.y) * (b.x - a.x) - (p.x - a.x) * (b.y - a.y);
-                if (Math.abs(cp) > 1e-3) return false;
-
-                const dp = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y);
-                if (dp < 0) return false;
-
-                const lenSq = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
-                if (dp > lenSq) return false;
-
-                return true;
-            }
-
-            static ensureClockwise(vertices) {
-                const area = this.getArea(vertices);
-                return area > 0 ? vertices : vertices.reverse();
-            }
-
-            static getArea(vertices) {
-                let area = 0;
-                for (let i = 0; i < vertices.length; i++) {
-                    const j = (i + 1) % vertices.length;
-                    area += vertices[i].x * vertices[j].y;
-                    area -= vertices[j].x * vertices[i].y;
-                }
-                return area / 2;
-            }
-
-            static distSq(p1, p2) {
-                return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
-            }
-        }
-
-        // Setup back buttons when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupPanelBackButtons);
-        } else {
-            // DOM already loaded
-            setupPanelBackButtons();
-        }
+        // NEW: Split Method
     </script>
+    <!-- Background Animation -->
+    <script src="js/background-animation.js"></script>
+    <!-- Tutorial Logic -->
+    <script src="js/tutorial.js"></script>
+    <!-- Music Logic -->
+    <script src="js/music.js"></script>
+    <!-- UI Modals -->
+    <script src="js/ui-modal.js"></script>
+    <!-- Menu Fixes -->
+    <script src="js/menu-fix.js"></script>
 </body>
 
 </html>

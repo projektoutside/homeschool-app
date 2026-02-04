@@ -32,9 +32,9 @@ class CarGuessingGame {
         // Now supports multiple random images per car
         this.carDatabase = window.CAR_DATABASE || [];
 
-        // Enhanced repeat prevention system
-        this.recentlyShownCars = []; // Track last 3 cars to prevent near-repeats
-        this.maxRecentHistory = 3;
+        // Perfect No-Repeat System
+        // We act like a deck of cards: shuffle all cars, pick until empty, then reshuffle.
+        this.availableCarIndices = [];
 
         // Initialize the game
         this.init();
@@ -1131,44 +1131,28 @@ class CarGuessingGame {
     }
 
     getRandomCar() {
-        let randomIndex;
-        let attempts = 0;
-        const maxAttempts = 50; // Prevent infinite loops
+        // 1. If we have no cars left to show, refill the deck
+        if (!this.availableCarIndices || this.availableCarIndices.length === 0) {
+            console.log("🔄 Cycle complete! Reshuffling all cars for a fresh deck.");
+            // Create array [0, 1, 2, ... N]
+            this.availableCarIndices = this.carDatabase.map((_, index) => index);
 
-        // Enhanced repeat prevention - avoid last 3 cars shown
-        if (this.carDatabase.length > this.maxRecentHistory) {
-            do {
-                randomIndex = Math.floor(Math.random() * this.carDatabase.length);
-                attempts++;
-            } while (
-                this.recentlyShownCars.includes(randomIndex) &&
-                attempts < maxAttempts
-            );
-        } else {
-            // If we have fewer cars than history length, just avoid immediate repeat
-            do {
-                randomIndex = Math.floor(Math.random() * this.carDatabase.length);
-                attempts++;
-            } while (
-                randomIndex === this.lastCarIndex &&
-                attempts < maxAttempts &&
-                this.carDatabase.length > 1
-            );
+            // Fisher-Yates Shuffle
+            for (let i = this.availableCarIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [this.availableCarIndices[i], this.availableCarIndices[j]] =
+                    [this.availableCarIndices[j], this.availableCarIndices[i]];
+            }
         }
 
-        // Update recent cars tracking
-        this.recentlyShownCars.push(randomIndex);
-        if (this.recentlyShownCars.length > this.maxRecentHistory) {
-            this.recentlyShownCars.shift(); // Remove oldest entry
-        }
+        // 2. Pop the next unique index
+        const randomIndex = this.availableCarIndices.pop();
+        const car = this.carDatabase[randomIndex];
 
-        // Update last car index for backup prevention
-        this.lastCarIndex = randomIndex;
+        console.log(`🚗 Selected Car: ${car.name} (Index: ${randomIndex})`);
+        console.log(`📚 Remaining in deck: ${this.availableCarIndices.length}`);
 
-        console.log(`🚗 Selected car ${randomIndex}: ${this.carDatabase[randomIndex].name}`);
-        console.log(`📝 Recent cars history: [${this.recentlyShownCars.join(', ')}]`);
-
-        return this.carDatabase[randomIndex];
+        return car;
     }
 
     startQuestionPhase() {
@@ -1274,21 +1258,34 @@ class CarGuessingGame {
         let strongTargets = new Set();
         let weakTargets = new Set();
 
-        // Brand is always weak if there's a model
-        if (modelParts.length > 0) {
+        // SMART CHECK: Is this the ONLY car of this brand in the database?
+        // If so, saying just the brand should count as a win (Strong Match).
+        const carsWithBrand = this.carDatabase.filter(c =>
+            c.name.toLowerCase().split(/\s+/)[0] === brand
+        );
+        const isBrandUnique = carsWithBrand.length === 1;
+
+        // Brand is always weak if there's a model AND other cars share this brand
+        if (modelParts.length > 0 && !isBrandUnique) {
             weakTargets.add(brand);
             modelParts.forEach(p => strongTargets.add(p));
         } else {
-            // If name is single word (BMW), it's strong
+            // If name is single word (BMW) OR brand is unique (Jeep), treat brand as Strong
             strongTargets.add(brand);
+            modelParts.forEach(p => strongTargets.add(p)); // Add model parts too
         }
 
         // Process keywords
         car.keywords.forEach(k => {
             const kLower = k.toLowerCase();
-            // If keyword is basically the brand, treat as weak (unless it's a single-word car)
-            if (kLower === brand && modelParts.length > 0) {
-                weakTargets.add(kLower);
+            // If keyword is matching the brand...
+            if (kLower === brand) {
+                // Only demote to weak if we have a model AND brand is NOT unique
+                if (modelParts.length > 0 && !isBrandUnique) {
+                    weakTargets.add(kLower);
+                } else {
+                    strongTargets.add(kLower);
+                }
             } else {
                 strongTargets.add(kLower);
                 // Also add parts of multi-word keywords as strong? 
@@ -1326,6 +1323,31 @@ class CarGuessingGame {
             if (target.length < 3) return word === target;
             return getDistance(word, target) <= maxEdits;
         };
+
+        // --- ACTUAL KEY WORD DETECTION SECTION ---
+        if (car.actualWords && car.actualWords.length > 0) {
+            console.log(`🔒 Rigid Check Mode for: ${car.name}`);
+            const guessNorm = cleanGuess.trim();
+
+            for (let word of car.actualWords) {
+                const target = word.toLowerCase();
+
+                // 1. Direct Include Check (Handles "It is a Toyota Tundra")
+                if (guessNorm.includes(target)) {
+                    console.log(`✅ Actual Word Match (Exact Inclusion): "${target}"`);
+                    return true;
+                }
+
+                // 2. Fuzzy Match on the full phrase
+                if (isMatch(guessNorm, target)) {
+                    console.log(`✅ Actual Word Match (Fuzzy Full): "${target}"`);
+                    return true;
+                }
+            }
+            console.log("❌ Strict Mode: No match found.");
+            return false;
+        }
+        // -----------------------------------------
 
         // 4. Evaluate Guess
         let hasStrongMatch = false;
