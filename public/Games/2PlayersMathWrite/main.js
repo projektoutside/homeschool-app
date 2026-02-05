@@ -207,6 +207,7 @@
 const screens = {
   menu: document.getElementById('main-menu'),
   setup: document.getElementById('setup-screen'),
+  aiSelect: document.getElementById('ai-select-screen'),
   settings: document.getElementById('settings-modal'),
   game: document.getElementById('game-screen'),
   vs: document.getElementById('vs-screen'),
@@ -218,6 +219,7 @@ const difficultySelect = document.getElementById('difficulty-select');
 const startBtn = document.getElementById('start-btn');
 const singleModeBtn = document.getElementById('single-mode-btn');
 const vsModeBtn = document.getElementById('vs-mode-btn');
+const vsAiModeBtn = document.getElementById('vs-ai-mode-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings');
 const timerSelect = document.getElementById('timer-select');
@@ -263,6 +265,9 @@ const menuBtn = document.getElementById('menu-btn');
 
 // VS DOM
 const vsExitBtn = document.getElementById('vs-exit');
+const aiBackBtn = document.getElementById('ai-back-btn');
+const aiStartBtn = document.getElementById('ai-start-btn');
+const aiCards = Array.from(document.querySelectorAll('.ai-card'));
 
 // Work Area DOM
 const workClearBtn = document.getElementById('work-clear-btn');
@@ -440,7 +445,9 @@ let vsState = {
   p2: { score: 0, problem: null },
   used1: new Set(),
   used2: new Set(),
-  timerInterval: null
+  timerInterval: null,
+  aiProfile: null,
+  isVsAi: false
 };
 
 // --- UI Helpers ---
@@ -540,7 +547,7 @@ function handleScreenMusic(screen) {
     stopAllMusic();
     return;
   }
-  if (screen === 'menu' || screen === 'setup') {
+  if (screen === 'menu' || screen === 'setup' || screen === 'aiSelect') {
     playMenuMusic();
   } else if (screen === 'game' || screen === 'vs') {
     playRandomBackgroundMusic();
@@ -642,10 +649,57 @@ if (musicVolume) {
 }
 
 let selectedPlayers = 'single';
+let selectedAiId = null;
+const aiProfiles = {
+  tom: {
+    id: 'tom',
+    name: 'Tom',
+    difficulty: 'easy',
+    accuracy: 0.55,
+    thinkRange: [1900, 2800],
+    strokeDelay: 20,
+    jitter: 0.19,
+    smoothness: 0.9,
+    lineWidthJitter: 0.18,
+    placementJitter: 0.12
+  },
+  sam: {
+    id: 'sam',
+    name: 'Sam',
+    difficulty: 'medium',
+    accuracy: 0.72,
+    thinkRange: [1300, 2100],
+    strokeDelay: 14,
+    jitter: 0.1,
+    smoothness: 1.1,
+    lineWidthJitter: 0.1,
+    placementJitter: 0.07
+  },
+  jack: {
+    id: 'jack',
+    name: 'Jack',
+    difficulty: 'hard',
+    accuracy: 0.9,
+    thinkRange: [850, 1500],
+    strokeDelay: 10,
+    jitter: 0.05,
+    smoothness: 1.35,
+    lineWidthJitter: 0.05,
+    placementJitter: 0.03
+  }
+};
+
+const aiState = {
+  active: false,
+  busy: false,
+  profile: null,
+  thinkingTimer: null
+};
 function updateModeButtons(){
   if (!singleModeBtn || !vsModeBtn) return;
   singleModeBtn.classList.toggle('selected', selectedPlayers==='single');
   vsModeBtn.classList.toggle('selected', selectedPlayers==='vs');
+  if (vsAiModeBtn) vsAiModeBtn.classList.toggle('selected', selectedPlayers==='vs-ai');
 }
 if (singleModeBtn) singleModeBtn.addEventListener('click', ()=>{
   selectedPlayers='single';
@@ -657,11 +711,41 @@ if (vsModeBtn) vsModeBtn.addEventListener('click', ()=>{
   updateModeButtons();
   showScreen('setup');
 });
+if (vsAiModeBtn) vsAiModeBtn.addEventListener('click', ()=>{
+  selectedPlayers='vs-ai';
+  updateModeButtons();
+  showScreen('aiSelect');
+});
+
+if (aiBackBtn) aiBackBtn.addEventListener('click', () => {
+  selectedAiId = null;
+  aiCards.forEach(card => card.classList.remove('selected'));
+  if (aiStartBtn) aiStartBtn.disabled = true;
+  showScreen('menu');
+});
+
+aiCards.forEach(card => {
+  card.addEventListener('click', () => {
+    aiCards.forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedAiId = card.dataset.ai;
+    if (aiStartBtn) aiStartBtn.disabled = false;
+  });
+});
+
+if (aiStartBtn) aiStartBtn.addEventListener('click', () => {
+  if (!selectedAiId || !aiProfiles[selectedAiId]) return;
+  fadeOutMenuMusic();
+  startCountdown(() => {
+    startVsAiGame();
+  });
+});
 
 startBtn.addEventListener('click', () => {
   fadeOutMenuMusic();
   startCountdown(() => {
     if (selectedPlayers === 'vs') startVsGame();
+    else if (selectedPlayers === 'vs-ai') startVsAiGame();
     else startGame();
   });
 });
@@ -669,6 +753,7 @@ restartBtn.addEventListener('click', () => {
   fadeOutMenuMusic();
   startCountdown(() => {
     if (selectedPlayers === 'vs') startVsGame();
+    else if (selectedPlayers === 'vs-ai') startVsAiGame();
     else startGame();
   });
 });
@@ -911,13 +996,16 @@ function startGame() {
 }
 
 // ------ VS MODE ------
-function startVsGame() {
+function startVsGame(options = {}) {
   clearVsWinnerEffects();
+  stopAiOpponent();
   // Reset state
   vsState.running = true;
   vsState.timeLeft = gameSettings.timer;
   vsState.p1.score = 0; vsState.p2.score = 0;
   vsState.used1 = new Set(); vsState.used2 = new Set();
+  vsState.aiProfile = options.aiProfile || null;
+  vsState.isVsAi = !!vsState.aiProfile;
   
   // Reset tabs to Answer for both players
   if (window.resetCanvasTab) {
@@ -940,6 +1028,16 @@ function startVsGame() {
   // Setup work area canvases
   p1.workClearFunc = setupWorkCanvas(p1.workCanvas, 'p1-work');
   p2.workClearFunc = setupWorkCanvas(p2.workCanvas, 'p2-work');
+
+  // Disable AI canvas input if VS AI
+  if (vsState.isVsAi) {
+    if (p2.canvas) p2.canvas.style.pointerEvents = 'none';
+    if (p2.workCanvas) p2.workCanvas.style.pointerEvents = 'none';
+    if (p2.status && vsState.aiProfile) p2.status.textContent = `${vsState.aiProfile.name} is thinking...`;
+  } else {
+    if (p2.canvas) p2.canvas.style.pointerEvents = 'auto';
+    if (p2.workCanvas) p2.workCanvas.style.pointerEvents = 'auto';
+  }
   
   // Add clear button event listeners for VS mode (prevent duplicates)
   if (p1.workClearBtn && p1.workClearFunc) {
@@ -956,6 +1054,9 @@ function startVsGame() {
   clearPlayerCanvas(p2);
   showScreen('vs');
   startVsTimer();
+  if (vsState.isVsAi && vsState.aiProfile) {
+    initAiOpponent(vsState.aiProfile);
+  }
 }
 
 function uniqueProblem(setRef) {
@@ -987,6 +1088,7 @@ function startVsTimer() {
 function endVsGame(backToMenu = false) {
   clearInterval(vsState.timerInterval);
   vsState.running = false;
+  stopAiOpponent();
   if (backToMenu) {
     fadeOutBackgroundMusic(600);
     showScreen('menu');
@@ -1005,9 +1107,239 @@ function endVsGame(backToMenu = false) {
     }
     
     showScreen('over');
-    const label = winner === 'tie' ? 'Tie!' : (winner === 'p1' ? 'Player 1 Wins!' : 'Player 2 Wins!');
+    const aiLabel = vsState.isVsAi && vsState.aiProfile ? `${vsState.aiProfile.name} Wins!` : 'Player 2 Wins!';
+    const label = winner === 'tie' ? 'Tie!' : (winner === 'p1' ? 'Player 1 Wins!' : aiLabel);
     finalScore.textContent = `${label}  P1: ${vsState.p1.score}  P2: ${vsState.p2.score}`;
   }, 4000); // Increased from 2600 to 4000 to give more time to celebrate
+}
+
+function startVsAiGame() {
+  const profile = selectedAiId ? aiProfiles[selectedAiId] : aiProfiles.tom;
+  startVsGame({ aiProfile: profile });
+}
+
+function stopAiOpponent() {
+  aiState.active = false;
+  aiState.busy = false;
+  if (aiState.thinkingTimer) {
+    clearTimeout(aiState.thinkingTimer);
+    aiState.thinkingTimer = null;
+  }
+}
+
+function initAiOpponent(profile) {
+  aiState.active = true;
+  aiState.profile = profile;
+  aiState.busy = false;
+  scheduleAiTurn();
+}
+
+function scheduleAiTurn() {
+  if (!aiState.active || !vsState.running || !aiState.profile) return;
+  const [minDelay, maxDelay] = aiState.profile.thinkRange;
+  const delay = getRandomInt(minDelay, maxDelay);
+  if (p2.status) p2.status.textContent = `${aiState.profile.name} is thinking...`;
+  if (aiState.thinkingTimer) clearTimeout(aiState.thinkingTimer);
+  aiState.thinkingTimer = setTimeout(() => {
+    aiTakeTurn();
+  }, delay);
+}
+
+function generateAiWrongAnswer(answer) {
+  const answerStr = String(answer);
+  const len = answerStr.length;
+  if (len === 1) {
+    let candidate = getRandomInt(0, 9);
+    if (candidate === answer) candidate = (candidate + 1) % 10;
+    return String(candidate);
+  }
+  const offset = getRandomInt(1, 9);
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  let wrong = Math.max(0, answer + sign * offset);
+  const padded = String(wrong).padStart(len, '0');
+  return padded.length > len ? padded.slice(0, len) : padded;
+}
+
+const aiDigitStrokes = {
+  '0': [
+    [[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.2]]
+  ],
+  '1': [
+    [[0.5, 0.2], [0.5, 0.85]]
+  ],
+  '2': [
+    [[0.2, 0.3], [0.75, 0.3], [0.8, 0.5], [0.25, 0.8], [0.8, 0.8]]
+  ],
+  '3': [
+    [[0.2, 0.25], [0.7, 0.25], [0.55, 0.5], [0.7, 0.75], [0.2, 0.75]]
+  ],
+  '4': [
+    [[0.75, 0.2], [0.75, 0.85]],
+    [[0.2, 0.55], [0.8, 0.55]],
+    [[0.2, 0.55], [0.6, 0.2]]
+  ],
+  '5': [
+    [[0.8, 0.25], [0.25, 0.25], [0.25, 0.5], [0.7, 0.5], [0.8, 0.8], [0.25, 0.8]]
+  ],
+  '6': [
+    [[0.75, 0.25], [0.35, 0.25], [0.25, 0.55], [0.45, 0.8], [0.75, 0.65], [0.45, 0.55]]
+  ],
+  '7': [
+    [[0.2, 0.25], [0.8, 0.25], [0.45, 0.85]]
+  ],
+  '8': [
+    [[0.5, 0.25], [0.75, 0.4], [0.5, 0.55], [0.25, 0.4], [0.5, 0.25]],
+    [[0.5, 0.55], [0.75, 0.7], [0.5, 0.85], [0.25, 0.7], [0.5, 0.55]]
+  ],
+  '9': [
+    [[0.75, 0.55], [0.55, 0.25], [0.25, 0.4], [0.55, 0.55], [0.75, 0.55], [0.75, 0.85]]
+  ]
+};
+
+function getAiCanvasRect(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    width: Math.max(1, rect.width),
+    height: Math.max(1, rect.height)
+  };
+}
+
+function jitterPoint(x, y, jitter, width, height) {
+  return {
+    x: x + (Math.random() - 0.5) * jitter * width,
+    y: y + (Math.random() - 0.5) * jitter * height
+  };
+}
+
+async function drawAiHandwriting(answerStr, profile) {
+  if (!p2.canvas || !profile) return;
+  const canvas = p2.canvas;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  clearPlayerCanvas(p2);
+
+  const { width, height } = getAiCanvasRect(canvas);
+  const digitCount = answerStr.length;
+  const maxWidth = width * 0.72;
+  const spacing = width * 0.04;
+  const digitWidth = Math.min(width * 0.18, (maxWidth - spacing * (digitCount - 1)) / digitCount);
+  const digitHeight = height * 0.6;
+  const startX = (width - (digitWidth * digitCount + spacing * (digitCount - 1))) / 2;
+  const startY = height * 0.2;
+
+  const smoothness = profile.smoothness || 1;
+  const placementJitter = profile.placementJitter || 0;
+  const lineWidthJitter = profile.lineWidthJitter || 0;
+  const baseLineWidth = Math.max(3, Math.round(7 * (width / 480)));
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#000';
+  ctx.fillStyle = '#000';
+
+  for (let i = 0; i < digitCount; i++) {
+    if (!aiState.active || !vsState.running) return;
+    const digit = answerStr[i];
+    const strokes = aiDigitStrokes[digit] || aiDigitStrokes['0'];
+    const offsetX = (Math.random() - 0.5) * placementJitter * digitWidth * 2;
+    const offsetY = (Math.random() - 0.5) * placementJitter * digitHeight * 2;
+    const baseX = startX + i * (digitWidth + spacing) + offsetX;
+    const baseY = startY + offsetY;
+
+    for (const stroke of strokes) {
+      if (!aiState.active || !vsState.running) return;
+      let lastPoint = null;
+      ctx.lineWidth = Math.max(2, baseLineWidth * (1 + (Math.random() - 0.5) * lineWidthJitter * 2));
+      for (const point of stroke) {
+        const rawX = baseX + point[0] * digitWidth;
+        const rawY = baseY + point[1] * digitHeight;
+        const jittered = jitterPoint(rawX, rawY, profile.jitter, digitWidth, digitHeight);
+
+        if (lastPoint) {
+          const dx = jittered.x - lastPoint.x;
+          const dy = jittered.y - lastPoint.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const stepSize = 6 / smoothness;
+          const steps = Math.max(3, Math.ceil(dist / stepSize));
+          for (let s = 1; s <= steps; s++) {
+            if (!aiState.active || !vsState.running) return;
+            const t = s / steps;
+            const x = lastPoint.x + dx * t;
+            const y = lastPoint.y + dy * t;
+            ctx.beginPath();
+            ctx.moveTo(lastPoint.x, lastPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
+            await new Promise(resolve => setTimeout(resolve, profile.strokeDelay));
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(jittered.x, jittered.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        lastPoint = jittered;
+      }
+    }
+  }
+}
+
+async function aiTakeTurn() {
+  if (!aiState.active || aiState.busy || !vsState.running || !aiState.profile) return;
+  aiState.busy = true;
+  const profile = aiState.profile;
+  const problem = vsState.p2.problem;
+  if (!problem) {
+    aiState.busy = false;
+    scheduleAiTurn();
+    return;
+  }
+  const correct = Math.random() < profile.accuracy;
+  const answerStr = correct ? String(problem.answer) : generateAiWrongAnswer(problem.answer);
+  if (p2.status) p2.status.textContent = `${profile.name} is writing...`;
+  await drawAiHandwriting(answerStr, profile);
+  if (!aiState.active || !vsState.running) {
+    aiState.busy = false;
+    return;
+  }
+
+  if (correct) {
+    vsState.p2.score++;
+    p2.scoreSpan.textContent = vsState.p2.score;
+    if (p2.feedback) {
+      p2.feedback.textContent = `${profile.name} got it!`; 
+      p2.feedback.style.color = '#4caf50';
+    }
+    if (p2.canvas) {
+      p2.canvas.classList.add('pulse-correct');
+      setTimeout(() => p2.canvas.classList.remove('pulse-correct'), 950);
+    }
+    autoStageWork(p2);
+  } else {
+    if (p2.feedback) {
+      p2.feedback.textContent = `${profile.name} wrote ${answerStr}`;
+      p2.feedback.style.color = '#ff4e50';
+    }
+    if (p2.canvas) {
+      p2.canvas.classList.add('pulse-wrong');
+      setTimeout(() => p2.canvas.classList.remove('pulse-wrong'), 950);
+    }
+  }
+
+  const wasCorrect = correct;
+  setTimeout(() => {
+    if (!vsState.running || !aiState.active) return;
+    if (p2.feedback) p2.feedback.textContent = '';
+    if (wasCorrect) {
+      vsState.p2.problem = uniqueProblem(vsState.used2);
+      p2.problemDiv.textContent = vsState.p2.problem.display;
+    }
+    clearPlayerCanvas(p2);
+    if (p2.status) p2.status.textContent = `${profile.name} is thinking...`;
+    aiState.busy = false;
+    scheduleAiTurn();
+  }, 650);
 }
 
 function clearVsWinnerEffects() {

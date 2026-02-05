@@ -667,6 +667,68 @@ button:focus-visible {
   -webkit-backdrop-filter: blur(6px);
 }
 
+.ai-select-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+  align-items: stretch;
+}
+
+.ai-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border var(--transition-fast);
+}
+
+.ai-card:hover,
+.ai-card:focus {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ai-card.selected {
+  border-color: rgba(127, 92, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(127, 92, 255, 0.35), 0 0 30px rgba(76, 195, 255, 0.45);
+  background: rgba(127, 92, 255, 0.2);
+}
+
+.ai-avatar {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-xs);
+}
+
+.ai-difficulty {
+  font-size: var(--fs-label);
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: var(--space-xs);
+}
+
+.ai-description {
+  font-size: var(--fs-body);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.ai-select-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.big-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 .setup-section {
   display: flex;
   flex-direction: column;

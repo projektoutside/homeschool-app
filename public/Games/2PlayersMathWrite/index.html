@@ -28,6 +28,7 @@
     <div class="menu-primary">
       <button id="single-mode-btn" class="big-btn">Single Player Mode</button>
       <button id="vs-mode-btn" class="big-btn">Two Player VS Mode</button>
+      <button id="vs-ai-mode-btn" class="big-btn">VS AI Mode</button>
     </div>
     <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
   </div>
@@ -65,6 +66,34 @@
       </div>
     </div>
     <button id="start-btn" class="big-btn start-btn">Start</button>
+  </div>
+
+  <div id="ai-select-screen" class="screen hidden">
+    <h2 class="setup-title">Choose Your AI Opponent</h2>
+    <div class="setup-panel ai-select-panel">
+      <div class="ai-card" data-ai="tom">
+        <div class="ai-avatar">🤖</div>
+        <h3>Tom</h3>
+        <p class="ai-difficulty">Easy Mode</p>
+        <p class="ai-description">Learning the basics. Slow and friendly!</p>
+      </div>
+      <div class="ai-card" data-ai="sam">
+        <div class="ai-avatar">🧠</div>
+        <h3>Sam</h3>
+        <p class="ai-difficulty">Medium Mode</p>
+        <p class="ai-description">Steady thinker with balanced speed.</p>
+      </div>
+      <div class="ai-card" data-ai="jack">
+        <div class="ai-avatar">⚡</div>
+        <h3>Jack</h3>
+        <p class="ai-difficulty">Hard Mode</p>
+        <p class="ai-description">Quick and accurate. Bring your best!</p>
+      </div>
+    </div>
+    <div class="ai-select-actions">
+      <button id="ai-back-btn" class="big-btn">Back</button>
+      <button id="ai-start-btn" class="big-btn start-btn" disabled>Start Match</button>
+    </div>
   </div>
 
   <div id="settings-modal" class="modal hidden">
