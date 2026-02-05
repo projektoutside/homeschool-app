@@ -1006,6 +1006,20 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-21"
     },
     {
+        "id": "math-1768955732393-game",
+        "title": "PolygonAPP",
+        "description": "Learn Polygon!",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Geometry"],
+        "gradeLevels": [
+            "All"
+        ],
+        "customHtmlPath": "/PolygonAPP/index.html",
+        "thumbnail": "/PolygonAPP/thumb.png",
+        "dateAdded": "2026-01-21"
+    },
+    {
         "id": "math-spy-academy",
         "title": "The Spy Academy",
         "description": "An immersive escape room experience with team-based puzzles, color code mysteries, and timed challenges. Work together to solve the mystery!",

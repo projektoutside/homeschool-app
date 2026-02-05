@@ -3964,45 +3964,9 @@
                     // If there's any other initialization need, do it here
                 });
 
-                this.btnFun.addEventListener('click', () => {
-                    // Instantly hide Learn Page to prevent visual glitch during transition
-                    const learnPage = document.getElementById('learnPage');
-                    if (learnPage) learnPage.classList.remove('active');
-
-                    if (window.stopBackgroundMusic) {
-                        window.stopBackgroundMusic();
-                    }
-
-                    const tutorialDelay = 1000;
-                    const overlayHold = tutorialDelay + 150;
-
-                    const startFunMode = () => {
-                        this.hide();
-                        if (window.game) {
-                            window.game.startMode('beginner');
-                            if (window.tutorial && typeof window.tutorial.show === 'function') {
-                                setTimeout(() => {
-                                    window.tutorial.show();
-                                }, tutorialDelay);
-                            }
-                        } else {
-                            console.error('Game not initialized');
-                        }
-                    };
-
-                    const overlay = document.getElementById('transitionOverlay');
-                    if (overlay) {
-                        overlay.classList.add('active');
-                        setTimeout(() => {
-                            startFunMode();
-                            setTimeout(() => {
-                                overlay.classList.remove('active');
-                            }, overlayHold);
-                        }, 150);
-                    } else {
-                        startFunMode();
-                    }
-                });
+                // FUN MODE BUTTON: Handled by menu-fix.js to open popup panel
+                // Do NOT add click handler here - menu-fix.js handles it with openFunPanel()
+                // This prevents mobile race condition where this handler would bypass the popup
 
                 const startGameBtn = document.getElementById('startGameBtn');
                 if (startGameBtn) {
