@@ -21,15 +21,25 @@ const ContentCardComponent: React.FC<ContentCardProps> = ({ item }) => {
             return;
         }
         
-        navigate(`/resource/${item.id}`);
-    }, [item.id, navigate]);
+        const targetPath = item.type === 'game'
+            ? `/play/${item.id}`
+            : (item.type === 'worksheet' || item.type === 'tool')
+                ? `/open/${item.id}`
+                : `/resource/${item.id}`;
+        navigate(targetPath);
+    }, [item.id, item.type, navigate]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            navigate(`/resource/${item.id}`);
+            const targetPath = item.type === 'game'
+                ? `/play/${item.id}`
+                : (item.type === 'worksheet' || item.type === 'tool')
+                    ? `/open/${item.id}`
+                    : `/resource/${item.id}`;
+            navigate(targetPath);
         }
-    }, [item.id, navigate]);
+    }, [item.id, item.type, navigate]);
 
     const getIcon = useCallback((type: string) => {
         switch (type) {
@@ -103,7 +113,11 @@ const ContentCardComponent: React.FC<ContentCardProps> = ({ item }) => {
                         {item.gradeLevels.slice(0, 2).map(grade => (
                             <span key={grade} className="tag" role="listitem">{grade}</span>
                         ))}
-                        {item.gradeLevels.length > 2 && <span className="tag" aria-label={`${item.gradeLevels.length - 2} more grades`}>...</span>}
+                        {item.gradeLevels.length > 2 && (
+                            <span className="tag" role="listitem" title={`${item.gradeLevels.length - 2} more grades`}>
+                                ...
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

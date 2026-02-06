@@ -9,7 +9,7 @@ const GameState = {
 
 class Game {
     constructor(app) {
-        this.app = app; // Reference to PolygonPlayground instance
+        this.app = app; // Reference to PolygonFunApp instance
         this.state = GameState.MENU;
         this.currentMode = null;
         this.currentLevel = 0;
@@ -34,16 +34,35 @@ class Game {
         this.state = GameState.PLAYING;
         // Hide Main Menu
         if (MainMenu) MainMenu.hide();
+
+        // Ensure canvas/layout are fully recalculated after mode switch.
+        // This fixes initial off-center rendering that only corrected after a manual resize (e.g. F12 toggle).
+        this.stabilizeCanvasLayout();
     }
 
     stop() {
         this.state = GameState.MENU;
         this.currentMode = null;
         this.toggleUI(false);
+        if (typeof window.stopGameplayMusic === 'function') {
+            window.stopGameplayMusic({ fadeOutMs: 500 }).catch(() => {});
+        }
+        // Guard against accidental tap/click-through immediately after closing overlays.
+        window.__mainMenuReturnCooldownUntil = Date.now() + 900;
         if (this.app) {
             this.app.gridSnap = true;
         }
         if (MainMenu) MainMenu.show();
+
+        // Ensure any tutorial overlay is fully dismissed when returning to main menu.
+        if (window.tutorial && typeof window.tutorial.reset === 'function') {
+            try {
+                window.tutorial.reset();
+            } catch (e) {
+                console.warn('Failed to reset tutorial on game stop:', e);
+            }
+        }
+        window.__allowTutorialToStartGame = false;
 
         // Remove HUD
         const hud = document.getElementById('gameHUD');
@@ -67,8 +86,37 @@ class Game {
             saveLoad.setAttribute('aria-hidden', 'true');
         }
 
+        const options = document.getElementById('gameOptionsOverlay');
+        if (options) {
+            options.style.display = 'none';
+            options.setAttribute('aria-hidden', 'true');
+        }
+
         // Hide Dev Panel if open
         if (this.devManager) this.devManager.hide();
+
+        // Re-sync canvas after restoring non-game UI panels.
+        this.stabilizeCanvasLayout();
+    }
+
+    stabilizeCanvasLayout() {
+        if (!this.app) return;
+
+        const runResizeSync = () => {
+            if (!this.app) return;
+            this.app.resizeCanvas();
+            this.app.render(true);
+        };
+
+        // Run several passes because flex/layout changes can settle over multiple frames
+        // on some Windows/browser DPI combinations.
+        runResizeSync();
+        requestAnimationFrame(() => {
+            runResizeSync();
+            requestAnimationFrame(runResizeSync);
+        });
+        setTimeout(runResizeSync, 120);
+        setTimeout(runResizeSync, 260);
     }
 
     toggleUI(active) {
@@ -77,18 +125,10 @@ class Game {
             '.sidebar',               // Layers (left)
             '.sidebar-right',         // Visualizers (right)
             '.toolbar',               // Left Toolbar
-            '.top-tools-bar',         // Top Bar (Learn, Save, Open, Fullscreen)
+            '.top-tools-bar',         // Top Bar (Fullscreen toggle)
             '.mobile-menu-toggle',    // Mobile toggles if any
             '.coord-display'          // Coordinate display
         ];
-
-        // Ensure Learn Page is hidden when entering game mode
-        if (active) {
-            const learnPage = document.getElementById('learnPage');
-            if (learnPage) {
-                learnPage.classList.remove('active');
-            }
-        }
 
         selectorsToHide.forEach(selector => {
             const elements = document.querySelectorAll(selector);
@@ -103,15 +143,16 @@ class Game {
             });
         });
 
-        const propPanel = document.getElementById('bottomPropertiesPanel');
-        if (propPanel && active) {
-            propPanel.style.display = 'flex';
-        }
+
 
         const controls = document.getElementById('gameControls');
         if (controls) {
             controls.style.display = active ? 'flex' : 'none';
         }
+
+        // Force a full canvas/layout sync whenever major panels are shown/hidden.
+        // This prevents the viewport from starting shifted until a manual resize occurs.
+        this.stabilizeCanvasLayout();
     }
 
     loadLevels(levels) {
@@ -153,17 +194,20 @@ class BeginnerMode {
         this.modeType = 'fun';
         this.levelFailCount = 0; // Safety Feature: Track frustration
         this.audioCtx = null;
+        // Default gameplay to Grid Snap ON (grid lock enabled by default).
         this.gridFreeMode = false;
         this.gridToggleBound = false;
+        this.optionsMenuReady = false;
         this.saveSlotCount = 3;
         this.activeSaveSlot = 1;
         this.starRatings = [];
         this.boxScoreReady = false;
         this.didAutoResume = false;
+        this.autosaveTimer = null;
     }
 
     start() {
-        console.log('Starting Beginner Mode');
+        console.log('[BeginnerMode] Starting Beginner Mode');
         this.bindGameControls();
         this.setupBoxScoreUI();
         const resumed = this.tryAutoResume();
@@ -171,15 +215,139 @@ class BeginnerMode {
             this.loadLevel(0);
         }
 
-        // Auto-show tutorial for new users
-        if (window.tutorial && !localStorage.getItem('tutorial_seen')) {
-            setTimeout(() => window.tutorial.show(), 150);
-            localStorage.setItem('tutorial_seen', 'true');
+        // NOTE: Tutorial is now shown by menu-fix.js for New Game flow
+        // This code path handles auto-resume and direct calls to startMode('beginner')
+        // Only show tutorial if:
+        // 1. We're NOT resuming a saved game
+        // 2. tutorial_seen flag is not set
+        // 3. window.tutorial exists
+        // 4. no explicit suppression flag is set by the caller (used by menu transition flow)
+        const tutorialSeen = !!localStorage.getItem('tutorial_seen');
+        const shouldShowTutorial = !resumed && window.tutorial && !tutorialSeen && !window.__suppressGameTutorialFallback;
+        const shouldDeferGameplayMusicForExternalTutorial = !resumed && !tutorialSeen && !!window.__suppressGameTutorialFallback;
+        if (shouldShowTutorial) {
+            console.log('[BeginnerMode] Showing tutorial for new user (from game.js fallback)');
+            // Use a longer delay to ensure DOM is ready on mobile
+            setTimeout(() => {
+                try {
+                    if (window.tutorial && typeof window.tutorial.show === 'function') {
+                        window.__allowTutorialToStartGame = true;
+                        window.tutorial.show();
+                        console.log('[BeginnerMode] Tutorial.show() called successfully');
+                    }
+                } catch (e) {
+                    console.error('[BeginnerMode] Tutorial show failed:', e);
+                }
+            }, 250);
+        } else if (!shouldDeferGameplayMusicForExternalTutorial && typeof window.startGameplayMusic === 'function') {
+            window.startGameplayMusic({ fadeInMs: 1300 }).catch(() => {});
         }
     }
 
     isFunModeActive() {
         return this.game && this.game.currentMode === this && this.game.state === GameState.PLAYING;
+    }
+
+    getStorageAdapter() {
+        if (window.SafeStorage && typeof window.SafeStorage.getItem === 'function') {
+            return window.SafeStorage;
+        }
+        return window.localStorage;
+    }
+
+    storageGetItem(key) {
+        try {
+            return this.getStorageAdapter().getItem(key);
+        } catch (error) {
+            console.warn('Storage read failed for key:', key, error);
+            return null;
+        }
+    }
+
+    storageSetItem(key, value) {
+        try {
+            this.getStorageAdapter().setItem(key, value);
+            return true;
+        } catch (error) {
+            console.warn('Storage write failed for key:', key, error);
+            return false;
+        }
+    }
+
+    storageRemoveItem(key) {
+        try {
+            this.getStorageAdapter().removeItem(key);
+            return true;
+        } catch (error) {
+            console.warn('Storage remove failed for key:', key, error);
+            return false;
+        }
+    }
+
+    safeParseJSON(raw, label) {
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            console.warn(`Failed to parse ${label}`, error);
+            return null;
+        }
+    }
+
+    sanitizeAppState(state) {
+        if (!state || typeof state !== 'object') return null;
+        const polygons = Array.isArray(state.polygons)
+            ? state.polygons.map(poly => {
+                const rawVertices = Array.isArray(poly?.vertices) ? poly.vertices : [];
+                const vertices = rawVertices
+                    .map(v => ({ x: Number(v?.x), y: Number(v?.y) }))
+                    .filter(v => Number.isFinite(v.x) && Number.isFinite(v.y));
+                if (vertices.length < 3) return null;
+                return {
+                    vertices,
+                    color: typeof poly?.color === 'string' && poly.color ? poly.color : '#667eea',
+                    name: typeof poly?.name === 'string' && poly.name ? poly.name : 'Polygon',
+                    visible: poly?.visible !== false
+                };
+            }).filter(Boolean)
+            : [];
+
+        if (polygons.length === 0) return null;
+
+        const pan = state.pan && Number.isFinite(Number(state.pan.x)) && Number.isFinite(Number(state.pan.y))
+            ? { x: Number(state.pan.x), y: Number(state.pan.y) }
+            : { x: 0, y: 0 };
+        const zoom = Number(state.zoom);
+
+        return {
+            polygons,
+            history: Array.isArray(state.history) ? [...state.history] : [],
+            historyIndex: Number.isFinite(Number(state.historyIndex)) ? Number(state.historyIndex) : null,
+            pan,
+            zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : 1
+        };
+    }
+
+    sanitizeSlotData(slotData) {
+        if (!slotData || typeof slotData !== 'object') return null;
+        const appState = this.sanitizeAppState(slotData.appState);
+        if (!appState) return null;
+        const levelIndex = Number(slotData.levelIndex);
+        const linesUsed = Number(slotData.linesUsed);
+
+        return {
+            version: Number.isFinite(Number(slotData.version)) ? Number(slotData.version) : 1,
+            savedAt: Number.isFinite(Number(slotData.savedAt)) ? Number(slotData.savedAt) : null,
+            autoSavedAt: Number.isFinite(Number(slotData.autoSavedAt)) ? Number(slotData.autoSavedAt) : null,
+            levelIndex: Number.isFinite(levelIndex) ? Math.max(0, Math.floor(levelIndex)) : 0,
+            linesUsed: Number.isFinite(linesUsed) ? Math.max(0, Math.floor(linesUsed)) : 0,
+            lineHistory: Array.isArray(slotData.lineHistory) ? [...slotData.lineHistory] : [],
+            redoLineHistory: Array.isArray(slotData.redoLineHistory) ? [...slotData.redoLineHistory] : [],
+            gridFreeMode: !!slotData.gridFreeMode,
+            stars: this.normalizeStars(slotData.stars),
+            appState,
+            lastResult: slotData.lastResult || null
+        };
     }
 
     getSlotKey(slot) {
@@ -191,7 +359,7 @@ class BeginnerMode {
     }
 
     getActiveSaveSlot() {
-        const stored = parseInt(localStorage.getItem('polygonFunActiveSlot'), 10);
+        const stored = parseInt(this.storageGetItem('polygonFunActiveSlot'), 10);
         if (!Number.isFinite(stored) || stored < 1 || stored > this.saveSlotCount) {
             return 1;
         }
@@ -201,7 +369,7 @@ class BeginnerMode {
     setActiveSaveSlot(slot) {
         const normalized = Math.min(this.saveSlotCount, Math.max(1, slot));
         this.activeSaveSlot = normalized;
-        localStorage.setItem('polygonFunActiveSlot', `${normalized}`);
+        this.storageSetItem('polygonFunActiveSlot', `${normalized}`);
         this.starRatings = this.getSlotStars(normalized);
         this.refreshBoxScoreUI();
     }
@@ -293,28 +461,23 @@ class BeginnerMode {
 
     getSlotData(slot) {
         const key = this.getSlotKey(slot);
-        const raw = localStorage.getItem(key);
+        const raw = this.storageGetItem(key);
         if (!raw) return null;
-        try {
-            const parsed = JSON.parse(raw);
-            return parsed && typeof parsed === 'object' ? parsed : null;
-        } catch (error) {
-            console.warn('Failed to parse save slot data', error);
+        const parsed = this.safeParseJSON(raw, `save slot ${slot}`);
+        const sanitized = this.sanitizeSlotData(parsed);
+        if (!sanitized) {
+            console.warn(`Discarding invalid/corrupt save slot ${slot}`);
             return null;
         }
+        return sanitized;
     }
 
     getStoredStars(slot) {
         const key = this.getStarKey(slot);
-        const raw = localStorage.getItem(key);
+        const raw = this.storageGetItem(key);
         if (!raw) return null;
-        try {
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : null;
-        } catch (error) {
-            console.warn('Failed to parse stored stars data', error);
-            return null;
-        }
+        const parsed = this.safeParseJSON(raw, `stars slot ${slot}`);
+        return Array.isArray(parsed) ? parsed : null;
     }
 
     getSlotStars(slot) {
@@ -336,12 +499,12 @@ class BeginnerMode {
 
     saveSlotData(slot, data) {
         const key = this.getSlotKey(slot);
-        localStorage.setItem(key, JSON.stringify(data));
+        return this.storageSetItem(key, JSON.stringify(data));
     }
 
     saveStars(slot, stars) {
         const key = this.getStarKey(slot);
-        localStorage.setItem(key, JSON.stringify(this.normalizeStars(stars)));
+        return this.storageSetItem(key, JSON.stringify(this.normalizeStars(stars)));
     }
 
     captureAppState() {
@@ -362,35 +525,35 @@ class BeginnerMode {
 
     applyAppState(state) {
         if (!this.app || !state) return false;
-        if (!Array.isArray(state.polygons) || state.polygons.length === 0) {
+        const safeState = this.sanitizeAppState(state);
+        if (!safeState) {
             return false;
         }
 
-        this.app.polygons = state.polygons.map(p => {
+        this.app.polygons = safeState.polygons.map(p => {
             const poly = new Polygon(p.vertices || [], p.color || '#667eea');
             poly.name = p.name || 'Polygon';
             poly.visible = p.visible !== false;
             return poly;
         }).filter(p => p.vertices.length >= 3);
 
-        this.app.history = Array.isArray(state.history) ? [...state.history] : [];
-        if (Number.isFinite(state.historyIndex)) {
-            this.app.historyIndex = state.historyIndex;
+        this.app.history = Array.isArray(safeState.history) ? [...safeState.history] : [];
+        if (Number.isFinite(safeState.historyIndex)) {
+            this.app.historyIndex = Math.max(-1, Math.min(this.app.history.length - 1, safeState.historyIndex));
         } else {
             this.app.historyIndex = this.app.history.length - 1;
         }
 
-        if (state.pan && Number.isFinite(state.pan.x) && Number.isFinite(state.pan.y)) {
-            this.app.pan = { x: state.pan.x, y: state.pan.y };
+        if (safeState.pan && Number.isFinite(safeState.pan.x) && Number.isFinite(safeState.pan.y)) {
+            this.app.pan = { x: safeState.pan.x, y: safeState.pan.y };
         }
-        if (Number.isFinite(state.zoom)) {
-            this.app.zoom = state.zoom;
+        if (Number.isFinite(safeState.zoom)) {
+            this.app.zoom = safeState.zoom;
         }
 
         this.app.selectedPolygon = null;
         this.app.selectedVertex = null;
         this.app.updateLayers();
-        this.app.updateProperties();
         this.app.render(true);
         return true;
     }
@@ -445,13 +608,14 @@ class BeginnerMode {
     }
 
     restoreFromSlotData(slotData) {
-        if (!slotData || !this.game || !Array.isArray(this.game.levels)) {
+        const safeSlotData = this.sanitizeSlotData(slotData);
+        if (!safeSlotData || !this.game || !Array.isArray(this.game.levels)) {
             return false;
         }
 
         const levelIndex = Math.min(
             this.game.levels.length - 1,
-            Math.max(0, Number(slotData.levelIndex || 0))
+            Math.max(0, Number(safeSlotData.levelIndex || 0))
         );
 
         this.currentLevelIndex = levelIndex;
@@ -460,21 +624,21 @@ class BeginnerMode {
             return false;
         }
 
-        this.linesUsed = Number(slotData.linesUsed || 0);
-        this.lineHistory = Array.isArray(slotData.lineHistory) ? [...slotData.lineHistory] : [];
-        this.redoLineHistory = Array.isArray(slotData.redoLineHistory) ? [...slotData.redoLineHistory] : [];
+        this.linesUsed = Number(safeSlotData.linesUsed || 0);
+        this.lineHistory = Array.isArray(safeSlotData.lineHistory) ? [...safeSlotData.lineHistory] : [];
+        this.redoLineHistory = Array.isArray(safeSlotData.redoLineHistory) ? [...safeSlotData.redoLineHistory] : [];
         this.maxLines = this.levelData.maxLines || 99;
         this.targetPieces = this.levelData.targetPieces;
         this.lastResult = null;
         this.hideResultsOverlay();
         this.hideSkipButton();
 
-        this.gridFreeMode = !!slotData.gridFreeMode;
+        this.gridFreeMode = !!safeSlotData.gridFreeMode;
         this.app.gridSnap = !this.gridFreeMode;
 
-        const restored = this.applyAppState(slotData.appState);
+        const restored = this.applyAppState(safeSlotData.appState);
         if (!restored) {
-            this.setupPlayground();
+            this.setupLevel();
         }
 
         this.app.setTool('split');
@@ -512,8 +676,14 @@ class BeginnerMode {
             appState: this.captureAppState(),
             lastResult: existing.lastResult || null
         };
-        this.saveSlotData(normalizedSlot, payload);
-        this.saveStars(normalizedSlot, mergedStars);
+        const saveOk = this.saveSlotData(normalizedSlot, payload);
+        const starsOk = this.saveStars(normalizedSlot, mergedStars);
+        if (!saveOk || !starsOk) {
+            if (this.app && typeof this.app.showToast === 'function') {
+                this.app.showToast('Save failed. Storage may be unavailable.', true);
+            }
+            return;
+        }
         this.starRatings = mergedStars;
         if (!silent && this.app && typeof this.app.showToast === 'function') {
             this.app.showToast(`Saved to Slot ${normalizedSlot}`);
@@ -544,8 +714,11 @@ class BeginnerMode {
             appState: this.captureAppState(),
             lastResult: existing.lastResult || null
         };
-        this.saveSlotData(normalizedSlot, payload);
-        this.saveStars(normalizedSlot, mergedStars);
+        const saveOk = this.saveSlotData(normalizedSlot, payload);
+        const starsOk = this.saveStars(normalizedSlot, mergedStars);
+        if (!saveOk || !starsOk) {
+            return;
+        }
         this.starRatings = mergedStars;
         this.refreshBoxScoreUI();
         this.updateHUD();
@@ -574,18 +747,28 @@ class BeginnerMode {
 
         this.setActiveSaveSlot(normalizedSlot);
         this.starRatings = this.getSlotStars(normalizedSlot);
-        this.restoreFromSlotData(slotData);
+        const restored = this.restoreFromSlotData(slotData);
+        if (!restored) {
+            if (this.app && typeof this.app.showToast === 'function') {
+                this.app.showToast(`Slot ${normalizedSlot} is invalid or corrupted.`, true);
+            }
+            return;
+        }
 
         if (this.app && typeof this.app.showToast === 'function') {
             this.app.showToast(`Loaded Slot ${normalizedSlot}`);
+        }
+        if (typeof window.startGameplayMusic === 'function') {
+            window.startGameplayMusic({ fadeInMs: 1100 }).catch(() => {});
         }
         this.refreshBoxScoreUI();
     }
 
     clearSlot(slot) {
         const normalizedSlot = Math.min(this.saveSlotCount, Math.max(1, slot));
-        localStorage.removeItem(this.getSlotKey(normalizedSlot));
-        localStorage.removeItem(this.getStarKey(normalizedSlot));
+        this.storageRemoveItem(this.getSlotKey(normalizedSlot));
+        this.storageRemoveItem(this.getStarKey(normalizedSlot));
+        this.storageRemoveItem(this.getSolutionKey(normalizedSlot));
         if (normalizedSlot === this.activeSaveSlot) {
             this.starRatings = this.getSlotStars(normalizedSlot);
         }
@@ -600,15 +783,64 @@ class BeginnerMode {
         if (this.starRatings.length === 0) {
             this.starRatings = this.getSlotStars(this.activeSaveSlot);
         }
-        this.autoSaveSlot(this.activeSaveSlot);
+
+        // Debounce localStorage writes to reduce micro-stutter during rapid actions.
+        if (this.autosaveTimer) {
+            clearTimeout(this.autosaveTimer);
+        }
+        this.autosaveTimer = setTimeout(() => {
+            this.autosaveTimer = null;
+            if (!this.isFunModeActive()) return;
+            this.autoSaveSlot(this.activeSaveSlot);
+        }, 120);
     }
 
     getSolutionKey(slot) {
         return `polygonFunSolutionsSlot${slot}`;
     }
 
-    saveLevelResult(slot, levelIndex, result) {
+    sanitizeSolutionEntry(solution) {
+        if (!solution || typeof solution !== 'object') return null;
+
+        const pieces = Array.isArray(solution.pieces)
+            ? solution.pieces.map(piece => {
+                const vertices = Array.isArray(piece?.vertices)
+                    ? piece.vertices
+                        .map(v => ({ x: Number(v?.x), y: Number(v?.y) }))
+                        .filter(v => Number.isFinite(v.x) && Number.isFinite(v.y))
+                    : [];
+
+                if (vertices.length < 3) return null;
+
+                return {
+                    vertices,
+                    color: (typeof piece?.color === 'string' && piece.color) ? piece.color : '#667eea'
+                };
+            }).filter(Boolean)
+            : [];
+
+        if (!pieces.length) return null;
+
+        const rawPercents = Array.isArray(solution.percents) ? solution.percents : [];
+        const percents = rawPercents
+            .map(value => Number(value))
+            .filter(value => Number.isFinite(value));
+
+        const bestStars = Number(solution.bestStars);
+
+        return {
+            pieces,
+            percents,
+            coins: Number.isFinite(Number(solution.coins)) ? Math.max(0, Number(solution.coins)) : 0,
+            bestStars: Number.isFinite(bestStars) ? Math.max(0, Math.min(3, Math.floor(bestStars))) : 0,
+            timestamp: Number.isFinite(Number(solution.timestamp)) ? Number(solution.timestamp) : Date.now()
+        };
+    }
+
+    saveLevelResult(slot, levelIndex, result, stars = 0) {
         if (!result || !result.pieces) return;
+
+        const normalizedStars = Math.max(0, Math.min(3, Number(stars) || 0));
 
         // Serialize minimal data needed for preview
         const serializablePieces = result.pieces.map(p => ({
@@ -620,28 +852,44 @@ class BeginnerMode {
             pieces: serializablePieces,
             percents: result.piecePercents || [],
             coins: result.coins || 0,
+            bestStars: normalizedStars,
             timestamp: Date.now()
         };
 
         const key = this.getSolutionKey(slot);
         let allSolutions = {};
-        try {
-            const raw = localStorage.getItem(key);
-            if (raw) allSolutions = JSON.parse(raw);
-        } catch (e) { console.warn('Error reading solutions', e); }
+        const raw = this.storageGetItem(key);
+        const parsed = this.safeParseJSON(raw, `solutions slot ${slot}`);
+        if (parsed && typeof parsed === 'object') {
+            allSolutions = parsed;
+        }
+
+        const existing = this.sanitizeSolutionEntry(allSolutions[levelIndex]);
+
+        // Never overwrite a stored preview with a lower score.
+        if (existing && existing.bestStars > normalizedStars) {
+            return;
+        }
+
+        // If stars tie, keep existing to preserve the originally-earned best preview.
+        if (existing && existing.bestStars === normalizedStars) {
+            return;
+        }
 
         allSolutions[levelIndex] = data;
-        localStorage.setItem(key, JSON.stringify(allSolutions));
+        this.storageSetItem(key, JSON.stringify(allSolutions));
     }
 
     getLevelSolution(slot, levelIndex) {
         const key = this.getSolutionKey(slot);
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return null;
-            const all = JSON.parse(raw);
-            return all[levelIndex] || null;
-        } catch (e) { return null; }
+        const raw = this.storageGetItem(key);
+        const all = this.safeParseJSON(raw, `solutions slot ${slot}`);
+        if (!all || typeof all !== 'object') return null;
+
+        const sanitized = this.sanitizeSolutionEntry(all[levelIndex]);
+        if (!sanitized) return null;
+
+        return sanitized;
     }
 
     recordStarRating(stars, resultData = null) {
@@ -661,10 +909,10 @@ class BeginnerMode {
             this.saveStars(this.activeSaveSlot, this.starRatings);
         }
 
-        // Save solution if provided and it's a passing score (and better or equal to previous best)
-        // We prioritize higher stars, or newer solution if stars are same (assuming newer is what user wants to remember)
-        if (resultData && normalizedStars > 0 && normalizedStars >= previous) {
-            this.saveLevelResult(this.activeSaveSlot, levelIndex, resultData);
+        // Save preview only when the score is strictly better than previous best.
+        // This guarantees each level keeps the highest-score preview image only.
+        if (resultData && normalizedStars > 0 && normalizedStars > previous) {
+            this.saveLevelResult(this.activeSaveSlot, levelIndex, resultData, normalizedStars);
         }
 
         this.refreshBoxScoreUI();
@@ -771,6 +1019,225 @@ class BeginnerMode {
                 if (e.target === overlay) this.closeSaveLoadPanel();
             };
         }
+    }
+
+    setupOptionsMenuUI() {
+        if (this.optionsMenuReady) return;
+
+        let overlay = document.getElementById('gameOptionsOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'gameOptionsOverlay';
+            overlay.className = 'overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(15, 23, 42, 0.75);
+                backdrop-filter: blur(6px);
+                z-index: 9998;
+                justify-content: center;
+                align-items: center;
+            `;
+
+            overlay.innerHTML = `
+                <div style="background: white; border-radius: 20px; width: min(92vw, 360px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow: hidden;">
+                    <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                        <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #0f172a;">Options</h3>
+                        <button id="gameOptionsClose" style="background: none; border: none; color: #64748b; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+                    </div>
+                    <div style="padding: 16px; display: grid; gap: 10px;">
+                        <button id="gameOptionsMenuBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">🏠 Menu</button>
+                        <button id="gameOptionsSaveLoadBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">💾 Save / Load</button>
+                        <button id="gameOptionsSettingsBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">⚙️ Settings</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        const closeBtn = document.getElementById('gameOptionsClose');
+        const menuBtn = document.getElementById('gameOptionsMenuBtn');
+        const saveLoadBtn = document.getElementById('gameOptionsSaveLoadBtn');
+        const settingsBtn = document.getElementById('gameOptionsSettingsBtn');
+
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeOptionsMenu();
+        }
+
+        if (overlay) {
+            overlay.onclick = (event) => {
+                if (event.target === overlay) {
+                    this.closeOptionsMenu();
+                }
+            };
+        }
+
+        if (menuBtn) {
+            menuBtn.onclick = async () => {
+                this.closeOptionsMenu();
+                if (await window.appConfirm('Return to Main Menu? Progress will be lost.', { title: 'Exit Game', confirmText: 'Exit' })) {
+                    this.game.stop();
+                }
+            };
+        }
+
+        if (saveLoadBtn) {
+            saveLoadBtn.onclick = () => {
+                this.closeOptionsMenu();
+                this.openSaveLoadPanel();
+            };
+        }
+
+        if (settingsBtn) {
+            settingsBtn.onclick = () => {
+                this.closeOptionsMenu();
+                this.openSettingsPanel();
+            };
+        }
+
+        this.optionsMenuReady = true;
+    }
+
+    setupSettingsUI() {
+        if (!document.getElementById('gameSettingsOverlay')) {
+            const overlay = document.createElement('div');
+            overlay.id = 'gameSettingsOverlay';
+            overlay.className = 'overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.style.cssText = `
+                display: none;
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+                z-index: 10000; justify-content: center; align-items: center;
+            `;
+
+            overlay.innerHTML = `
+                <div style="background: white; border-radius: 20px; width: 94%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;">
+                    <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 700; color: #0f172a;">Audio Settings</h3>
+                        <button id="gameSettingsClose" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; line-height: 1;">&times;</button>
+                    </div>
+                    <div style="padding: 18px 20px 22px; display: grid; gap: 16px; font-family: 'Inter', sans-serif; color: #334155;">
+                        <label style="display: grid; gap: 8px;">
+                            <span style="font-weight: 700;">Music Volume <span id="gameSettingsMusicValue" style="font-weight: 600; color: #64748b;">70%</span></span>
+                            <input id="gameSettingsMusic" type="range" min="0" max="100" step="1" />
+                        </label>
+                        <label style="display: grid; gap: 8px;">
+                            <span style="font-weight: 700;">SFX Volume <span id="gameSettingsSfxValue" style="font-weight: 600; color: #64748b;">75%</span></span>
+                            <input id="gameSettingsSfx" type="range" min="0" max="100" step="1" />
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; user-select: none;">
+                            <input id="gameSettingsMute" type="checkbox" style="width: 16px; height: 16px; accent-color: #3b82f6;" />
+                            Mute All Audio
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        const overlay = document.getElementById('gameSettingsOverlay');
+        const closeBtn = document.getElementById('gameSettingsClose');
+        const musicInput = document.getElementById('gameSettingsMusic');
+        const sfxInput = document.getElementById('gameSettingsSfx');
+        const muteInput = document.getElementById('gameSettingsMute');
+
+        if (!overlay || !closeBtn || !musicInput || !sfxInput || !muteInput) return;
+
+        if (overlay.dataset.bound !== 'true') {
+            closeBtn.addEventListener('click', () => this.closeSettingsPanel());
+            overlay.addEventListener('click', (event) => {
+                if (event.target === overlay) this.closeSettingsPanel();
+            });
+
+            musicInput.addEventListener('input', () => {
+                const value = Number(musicInput.value || 0) / 100;
+                if (typeof window.setMusicVolume === 'function') {
+                    window.setMusicVolume(value);
+                }
+                this.syncSettingsUI();
+            });
+
+            sfxInput.addEventListener('input', () => {
+                const value = Number(sfxInput.value || 0) / 100;
+                if (typeof window.setSfxVolume === 'function') {
+                    window.setSfxVolume(value);
+                }
+                this.syncSettingsUI();
+            });
+
+            muteInput.addEventListener('change', () => {
+                if (typeof window.setAudioMuted === 'function') {
+                    window.setAudioMuted(!!muteInput.checked);
+                }
+                this.syncSettingsUI();
+            });
+
+            window.addEventListener('audio-settings-changed', () => this.syncSettingsUI());
+            overlay.dataset.bound = 'true';
+        }
+    }
+
+    syncSettingsUI() {
+        const musicInput = document.getElementById('gameSettingsMusic');
+        const sfxInput = document.getElementById('gameSettingsSfx');
+        const muteInput = document.getElementById('gameSettingsMute');
+        const musicValue = document.getElementById('gameSettingsMusicValue');
+        const sfxValue = document.getElementById('gameSettingsSfxValue');
+
+        if (!musicInput || !sfxInput || !muteInput || !musicValue || !sfxValue) return;
+
+        const settings = (typeof window.getAudioSettings === 'function')
+            ? window.getAudioSettings()
+            : { musicVolume: 0.7, sfxVolume: 0.75, muted: false };
+
+        const musicPct = Math.round((Number(settings.musicVolume) || 0) * 100);
+        const sfxPct = Math.round((Number(settings.sfxVolume) || 0) * 100);
+
+        musicInput.value = `${musicPct}`;
+        sfxInput.value = `${sfxPct}`;
+        muteInput.checked = !!settings.muted;
+
+        musicValue.textContent = `${musicPct}%`;
+        sfxValue.textContent = `${sfxPct}%`;
+    }
+
+    openSettingsPanel() {
+        this.setupSettingsUI();
+        this.syncSettingsUI();
+        const overlay = document.getElementById('gameSettingsOverlay');
+        if (!overlay) return;
+        overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    closeSettingsPanel() {
+        const overlay = document.getElementById('gameSettingsOverlay');
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    openOptionsMenu() {
+        this.setupOptionsMenuUI();
+        const overlay = document.getElementById('gameOptionsOverlay');
+        if (!overlay) return;
+        overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    closeOptionsMenu() {
+        const overlay = document.getElementById('gameOptionsOverlay');
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        overlay.setAttribute('aria-hidden', 'true');
     }
 
     openSaveLoadPanel() {
@@ -952,13 +1419,23 @@ class BeginnerMode {
     renderBoxScoreGrid(container, stars, unlockedIndex = -1) {
         container.innerHTML = '';
         const levels = Array.isArray(this.game.levels) ? this.game.levels : [];
+        const normalizedCurrentIndex = Number.isFinite(this.currentLevelIndex) ? this.currentLevelIndex : 0;
+        const currentLevelStars = stars[normalizedCurrentIndex] || 0;
+        let maxSelectableIndex = Math.max(-1, unlockedIndex);
+        // Progression rule: next stage is only unlocked after earning at least 1 star
+        // on the current stage.
+        if (currentLevelStars > 0) {
+            maxSelectableIndex = Math.max(maxSelectableIndex, normalizedCurrentIndex + 1);
+        }
+        maxSelectableIndex = Math.min(levels.length - 1, maxSelectableIndex);
+
         stars.forEach((value, index) => {
             const levelLabel = levels[index]
                 ? `${levels[index].name || `Level ${index + 1}`}`
                 : `Level ${index + 1}`;
             const row = document.createElement('div');
             const isCurrent = index === this.currentLevelIndex;
-            const isSelectable = index <= unlockedIndex;
+            const isSelectable = index <= maxSelectableIndex;
             row.className = `box-score-level${isSelectable ? ' selectable' : ' locked'}${isCurrent ? ' current' : ''}`;
             if (isSelectable) {
                 row.setAttribute('role', 'button');
@@ -984,7 +1461,15 @@ class BeginnerMode {
                 <div class="box-score-stars">${starIcons}</div>
             `;
             if (isSelectable) {
-                const handleSelect = () => this.loadLevelFromBoxScore(index);
+                const handleSelect = () => {
+                    // Current level should never trigger replay/loading from Select Level.
+                    // Click only updates preview to show shape-only view.
+                    if (isCurrent) {
+                        this.renderLevelPreview(index, { forceCurrentShapeOnly: true });
+                        return;
+                    }
+                    this.loadLevelFromBoxScore(index);
+                };
                 row.addEventListener('click', handleSelect);
                 row.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -1006,7 +1491,7 @@ class BeginnerMode {
         this.renderLevelPreview(initialPreviewIndex);
     }
 
-    renderLevelPreview(index) {
+    renderLevelPreview(index, options = {}) {
         const canvas = document.getElementById('levelPreviewCanvas');
         const titleEl = document.getElementById('levelPreviewTitle');
         if (!canvas || !titleEl) return;
@@ -1014,12 +1499,18 @@ class BeginnerMode {
         const level = this.game.levels[index];
         if (!level) return;
 
+        const isCurrentLevel = index === this.currentLevelIndex;
+        const forceCurrentShapeOnly = !!options.forceCurrentShapeOnly;
+        const levelStars = (Array.isArray(this.starRatings) ? (this.starRatings[index] || 0) : 0);
+        const isLevelSolved = levelStars > 0;
+
         // Check for saved solution
         const savedSolution = this.getLevelSolution(this.activeSaveSlot, index);
-        const isSolved = savedSolution && savedSolution.pieces && savedSolution.pieces.length > 0;
+        const hasSavedSolution = savedSolution && savedSolution.pieces && savedSolution.pieces.length > 0;
+        const shouldShowSolvedPreview = !!(hasSavedSolution && isLevelSolved);
 
-        titleEl.textContent = isSolved
-            ? `Level ${index + 1} Result`
+        titleEl.textContent = shouldShowSolvedPreview
+            ? `Level ${index + 1} Last Success`
             : `Level ${index + 1} Preview`;
 
         const ctx = canvas.getContext('2d');
@@ -1033,6 +1524,74 @@ class BeginnerMode {
         }
 
         ctx.clearRect(0, 0, width, height);
+
+        // Explicit current-level click behavior: show only the shape silhouette,
+        // with no grid, no outlines, no vertices, and no percentage labels.
+        if (isCurrentLevel && forceCurrentShapeOnly) {
+            titleEl.textContent = `Level ${index + 1} Current Shape`;
+
+            const shapeVertices = Array.isArray(level.startShapeVertices) ? level.startShapeVertices : [];
+            if (shapeVertices.length < 3) {
+                return;
+            }
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            shapeVertices.forEach(v => {
+                minX = Math.min(minX, v.x);
+                minY = Math.min(minY, v.y);
+                maxX = Math.max(maxX, v.x);
+                maxY = Math.max(maxY, v.y);
+            });
+
+            const polyWidth = maxX - minX;
+            const polyHeight = maxY - minY;
+            const scaleX = (width * 0.72) / (polyWidth || 1);
+            const scaleY = (height * 0.72) / (polyHeight || 1);
+            const scale = Math.min(scaleX, scaleY);
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const polyCenterX = (minX + maxX) / 2;
+            const polyCenterY = (minY + maxY) / 2;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(scale, scale);
+            ctx.translate(-polyCenterX, -polyCenterY);
+
+            ctx.beginPath();
+            ctx.moveTo(shapeVertices[0].x, shapeVertices[0].y);
+            for (let i = 1; i < shapeVertices.length; i++) {
+                ctx.lineTo(shapeVertices[i].x, shapeVertices[i].y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = level.color || '#667eea';
+            ctx.fill();
+
+            ctx.restore();
+            return;
+        }
+
+        // IMPORTANT: In Select Level, only show the player's saved last-success image.
+        // Do NOT show level preview / target shape when no saved success exists.
+        if (!shouldShowSolvedPreview) {
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, width, height);
+
+            // Keep current unsolved level blank (do not reveal target/correct answer).
+            if (isCurrentLevel && !isLevelSolved) {
+                return;
+            }
+
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '600 14px "Inter", sans-serif';
+            ctx.fillText('No saved success image yet', width / 2, height / 2 - 10);
+            ctx.font = '500 12px "Inter", sans-serif';
+            ctx.fillText('Complete this level to store your result', width / 2, height / 2 + 14);
+            return;
+        }
 
         // Draw Grid Background
         ctx.strokeStyle = '#e2e8f0';
@@ -1052,7 +1611,7 @@ class BeginnerMode {
         let verticesCollection = [];
         let labels = [];
 
-        if (isSolved) {
+        if (shouldShowSolvedPreview) {
             const storedPercents = Array.isArray(savedSolution.percents) ? savedSolution.percents : [];
             let fallbackPercents = [];
             if (!storedPercents.length || storedPercents.length !== savedSolution.pieces.length) {
@@ -1077,12 +1636,6 @@ class BeginnerMode {
                         vertices: p.vertices
                     });
                 }
-            });
-        } else {
-            // Fallback to start shape
-            verticesCollection.push({
-                vertices: level.startShapeVertices,
-                color: level.color || '#60a5fa'
             });
         }
 
@@ -1162,13 +1715,6 @@ class BeginnerMode {
 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            let fontSize = 24 / scale;
-            if (fontSize < 12) fontSize = 12;
-            if (fontSize > 100) fontSize = 100;
-
-            ctx.font = `800 ${fontSize}px "Inter", sans-serif`;
-            ctx.lineWidth = 2.5 / scale;
-
             labels.forEach(lbl => {
                 let center = { x: 0, y: 0 };
                 if (typeof Geometry !== 'undefined' && Geometry.getPolygonCenter) {
@@ -1179,23 +1725,50 @@ class BeginnerMode {
                     center = { x: sumX / lbl.vertices.length, y: sumY / lbl.vertices.length };
                 }
 
+                let pieceMinX = Infinity;
+                let pieceMinY = Infinity;
+                let pieceMaxX = -Infinity;
+                let pieceMaxY = -Infinity;
+                lbl.vertices.forEach(v => {
+                    pieceMinX = Math.min(pieceMinX, v.x);
+                    pieceMinY = Math.min(pieceMinY, v.y);
+                    pieceMaxX = Math.max(pieceMaxX, v.x);
+                    pieceMaxY = Math.max(pieceMaxY, v.y);
+                });
+
+                const pieceWidth = Math.max(1e-6, pieceMaxX - pieceMinX);
+                const pieceHeight = Math.max(1e-6, pieceMaxY - pieceMinY);
+                const pieceMinDimension = Math.max(1e-6, Math.min(pieceWidth, pieceHeight));
+
+                let fontSize = 16 / scale;
+                const minFont = 9 / scale;
+                const maxFontByPiece = pieceMinDimension * 0.38;
+                fontSize = Math.max(minFont, Math.min(fontSize, maxFontByPiece));
+                if (!Number.isFinite(fontSize) || fontSize <= 0) return;
+
+                // If the shape is too small to hold readable text, skip label.
+                if (fontSize < 7 / scale) return;
+
+                ctx.font = `600 ${fontSize}px "Inter", sans-serif`;
+                ctx.lineWidth = 1.8 / scale;
+
                 const metrics = ctx.measureText(lbl.text);
-                const paddingX = 10 / scale;
-                const paddingY = 6 / scale;
+                const paddingX = 6 / scale;
+                const paddingY = 4 / scale;
                 const boxWidth = metrics.width + paddingX * 2;
                 const boxHeight = fontSize + paddingY * 2;
                 const boxX = center.x - boxWidth / 2;
                 const boxY = center.y - boxHeight / 2;
 
                 ctx.save();
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
-                drawRoundedRect(boxX, boxY, boxWidth, boxHeight, 8 / scale);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
+                ctx.strokeStyle = 'rgba(15, 23, 42, 0.32)';
+                drawRoundedRect(boxX, boxY, boxWidth, boxHeight, 7 / scale);
                 ctx.fill();
                 ctx.stroke();
                 ctx.restore();
 
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
                 ctx.strokeText(lbl.text, center.x, center.y);
                 ctx.fillStyle = '#0f172a';
                 ctx.fillText(lbl.text, center.x, center.y);
@@ -1214,7 +1787,7 @@ class BeginnerMode {
         overlay.id = 'safetyPopup';
         overlay.style.cssText = `
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px); z-index: 10000;
+            backdrop-filter: blur(4px); z-index: 2147483647;
             display: flex; align-items: center; justify-content: center;
             font-family: 'Inter', system-ui, sans-serif;
             animation: fadeIn 0.2s ease-out;
@@ -1224,6 +1797,7 @@ class BeginnerMode {
         card.style.cssText = `
             background: white; width: 90%; max-width: 400px;
             border-radius: 20px; padding: 24px;
+            position: relative; z-index: 2147483647;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             text-align: center;
         `;
@@ -1280,30 +1854,52 @@ class BeginnerMode {
     }
 
     loadLevelFromBoxScore(index) {
-        if (!Number.isFinite(index)) return;
+        const levelCount = Array.isArray(this.game?.levels) ? this.game.levels.length : 0;
+        const normalizedIndex = Number.isFinite(Number(index)) ? Math.floor(Number(index)) : -1;
+        if (normalizedIndex < 0 || normalizedIndex >= levelCount) return;
+
+        const stars = this.normalizeStars(this.starRatings.length ? this.starRatings : this.getSlotStars(this.activeSaveSlot));
+        const currentIndex = Number.isFinite(this.currentLevelIndex) ? this.currentLevelIndex : 0;
+        const currentStars = stars[currentIndex] || 0;
+        const slotData = this.getSlotData(this.activeSaveSlot);
+        const slotLevelIndex = Number.isFinite(slotData?.levelIndex) ? slotData.levelIndex : 0;
+        const lastStarIndex = stars.reduce((acc, value, idx) => (value > 0 ? idx : acc), -1);
+        let maxSelectableIndex = Math.max(slotLevelIndex, lastStarIndex);
+        if (currentStars > 0) {
+            maxSelectableIndex = Math.max(maxSelectableIndex, currentIndex + 1);
+        }
+        maxSelectableIndex = Math.min(levelCount - 1, maxSelectableIndex);
+
+        if (normalizedIndex > maxSelectableIndex) {
+            if (this.app && typeof this.app.showToast === 'function') {
+                this.app.showToast('Beat the current level with at least 1 star to unlock the next stage.', true);
+            }
+            return;
+        }
+
+        // Never allow Select Level to replay/load the currently active level.
+        // Keep action to preview-only behavior handled by the grid click handler.
+        if (normalizedIndex === this.currentLevelIndex) {
+            return;
+        }
 
         const proceed = () => {
             if (this.game.state !== GameState.PLAYING) {
                 this.game.startMode('beginner');
             }
-            if (index < 0 || index >= this.game.levels.length) return;
+            if (normalizedIndex < 0 || normalizedIndex >= this.game.levels.length) return;
             this.closeBoxScore();
-            this.loadLevel(index);
+            this.loadLevel(normalizedIndex);
             if (this.app && typeof this.app.showToast === 'function') {
-                this.app.showToast(`Replaying Level ${index + 1}`);
+                this.app.showToast(`Replaying Level ${normalizedIndex + 1}`);
             }
         };
 
-        // Safety Check: If level is already completed (has stars), confirm first
-        const stars = this.starRatings[index] || 0;
-        if (stars > 0) {
-            this.showSafetyPopup(
-                "You have already completed this level. Do you want to replay it?",
-                proceed
-            );
-        } else {
-            proceed();
-        }
+        // Always confirm level switching from Select Level for safety/intentional replay.
+        this.showSafetyPopup(
+            `Do you want to replay Level ${normalizedIndex + 1}?`,
+            proceed
+        );
     }
 
     loadLevel(index) {
@@ -1330,8 +1926,8 @@ class BeginnerMode {
         this.hideResultsOverlay();
         this.hideSkipButton(); // Reset UI
 
-        // Setup the playground for the level
-        this.setupPlayground();
+        // Setup the game canvas for the level
+        this.setupLevel();
 
         // Show Level Info & Update HUD
         this.updateHUD();
@@ -1346,7 +1942,7 @@ class BeginnerMode {
         this.autosaveProgress();
     }
 
-    setupPlayground() {
+    setupLevel() {
         // Clear existing polygons
         this.app.polygons = [];
         this.app.history = [];
@@ -1376,17 +1972,12 @@ class BeginnerMode {
         this.app.splitLineStart = null;
         this.app.splitLineEnd = null;
 
+
         this.app.gridSnap = !this.gridFreeMode;
 
-        // Show prompt only for the first level
-        if (this.currentLevelIndex === 0) {
-            this.app.updateSplitPrompt("Draw a line across shapes to split them.");
-        } else {
-            this.app.updateSplitPrompt("");
-        }
-
         this.updateGameControlButtons();
-        this.app.updateProperties(startShape);
+
+
     }
 
     handleSlice(newPolygons) {
@@ -1515,34 +2106,14 @@ class BeginnerMode {
 
             const btnClass = 'game-hud-btn';
 
-            // Main Menu Button
-            const menuBtn = document.createElement('button');
-            menuBtn.innerHTML = '<span style="font-size: 16px;">🏠</span> Main Menu';
-            menuBtn.className = btnClass;
-            menuBtn.onclick = async () => {
-                if (await window.appConfirm('Return to Main Menu? Progress will be lost.', { title: 'Exit Game', confirmText: 'Exit' })) {
-                    this.game.stop();
-                }
+            // Options Button (replaces Main Menu + Save/Load + Settings)
+            const optionsBtn = document.createElement('button');
+            optionsBtn.innerHTML = '<span style="font-size: 16px;">☰</span> Options';
+            optionsBtn.className = btnClass;
+            optionsBtn.onclick = () => {
+                this.openOptionsMenu();
             };
-            buttonRow.appendChild(menuBtn);
-
-            // Save/Load Button (New)
-            const saveLoadBtn = document.createElement('button');
-            saveLoadBtn.innerHTML = '<span style="font-size: 16px;">💾</span> Save/Load';
-            saveLoadBtn.className = btnClass;
-            saveLoadBtn.onclick = () => {
-                this.openSaveLoadPanel();
-            };
-            buttonRow.appendChild(saveLoadBtn);
-
-            // Settings Button
-            const settingsBtn = document.createElement('button');
-            settingsBtn.innerHTML = '<span style="font-size: 16px;">⚙️</span> Settings';
-            settingsBtn.className = btnClass;
-            settingsBtn.onclick = () => {
-                window.appAlert('Settings menu coming soon!', { title: 'Settings' });
-            };
-            buttonRow.appendChild(settingsBtn);
+            buttonRow.appendChild(optionsBtn);
 
 
 
@@ -1561,42 +2132,8 @@ class BeginnerMode {
             };
             buttonRow.appendChild(boxScoreBtn);
 
-            const gridLockWrapper = document.createElement('label');
-            gridLockWrapper.style.cssText = `
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 8px 14px;
-                border-radius: 14px;
-                background: rgba(255, 255, 255, 0.92);
-                border: 1px solid rgba(226, 232, 240, 0.95);
-                box-shadow: 0 6px 12px rgba(15, 23, 42, 0.08);
-                font-family: 'Inter', sans-serif;
-                font-size: 13px;
-                font-weight: 700;
-                color: #1f2937;
-                pointer-events: auto;
-                align-self: flex-start;
-            `;
-
-            const gridLockCheckbox = document.createElement('input');
-            gridLockCheckbox.type = 'checkbox';
-            gridLockCheckbox.id = 'gameGridLockToggle';
-            gridLockCheckbox.style.cssText = `
-                width: 18px;
-                height: 18px;
-                accent-color: #667eea;
-                cursor: pointer;
-            `;
-
-            const gridLockText = document.createElement('span');
-            gridLockText.textContent = 'Lock Grid (free click)';
-
-            gridLockWrapper.appendChild(gridLockCheckbox);
-            gridLockWrapper.appendChild(gridLockText);
-
             leftSide.appendChild(buttonRow);
-            leftSide.appendChild(gridLockWrapper);
+            // Grid Lock removed (now integrated in Viewport Controls)
 
             hud.appendChild(leftSide);
 
@@ -1604,17 +2141,11 @@ class BeginnerMode {
             const rightSide = document.createElement('div');
             rightSide.id = 'gameHUD_Stats';
             rightSide.style.cssText = `
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(8px);
-                padding: 16px 20px;
-                border-radius: 16px;
-                border: 1px solid rgba(226, 232, 240, 0.9);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
                 pointer-events: auto;
-                min-width: 200px;
+                min-width: 170px;
             `;
             hud.appendChild(rightSide);
 
@@ -1631,14 +2162,46 @@ class BeginnerMode {
         const rightSide = document.getElementById('gameHUD_Stats');
         if (rightSide) {
             rightSide.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
-                    <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lines</span>
-                    <span style="font-size: 16px; font-weight: 800; color: ${this.linesUsed > this.maxLines ? '#e11d48' : '#0f172a'}">${this.linesUsed} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.maxLines}</span>
+                <div style="
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(8px);
+                    padding: 16px 20px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(226, 232, 240, 0.9);
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
+                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lines</span>
+                        <span style="font-size: 16px; font-weight: 800; color: ${this.linesUsed > this.maxLines ? '#e11d48' : '#0f172a'}">${this.linesUsed} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.maxLines}</span>
+                    </div>
+                    <div style="width: 100%; height: 1px; background: #e2e8f0;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
+                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Pieces</span>
+                        <span style="font-size: 16px; font-weight: 800; color: ${piecesCount !== this.targetPieces ? '#0f172a' : '#16a34a'}">${piecesCount} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.targetPieces}</span>
+                    </div>
                 </div>
-                <div style="width: 100%; height: 1px; background: #e2e8f0;"></div>
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
-                    <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Pieces</span>
-                    <span style="font-size: 16px; font-weight: 800; color: ${piecesCount !== this.targetPieces ? '#0f172a' : '#16a34a'}">${piecesCount} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.targetPieces}</span>
+
+                <div style="
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(8px);
+                    padding: 12px 16px;
+                    border-radius: 14px;
+                    border: 1px solid rgba(226, 232, 240, 0.9);
+                    box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.08), 0 3px 5px -2px rgba(0, 0, 0, 0.05);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16px;
+                    font-family: 'Inter', sans-serif;
+                ">
+                    <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Grid Snap</span>
+                    <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="gameGridSnapToggle" style="width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6;">
+                        <span id="gameGridSnapLabel" style="font-size: 13px; font-weight: 700; color: #0f172a; min-width: 24px; text-align: right;">On</span>
+                    </label>
                 </div>
             `;
         }
@@ -1650,24 +2213,40 @@ class BeginnerMode {
             boxScoreBtn.innerHTML = `<span style="font-size: 16px; color: #facc15;">★</span> <span style="font-weight: 800; color: white;">${totalStars}</span> &nbsp;Select Level`;
         }
 
-        const gridToggle = document.getElementById('gameGridLockToggle');
+        const gridToggle = document.getElementById('gameGridSnapToggle');
         if (gridToggle) {
-            gridToggle.checked = this.gridFreeMode;
+            gridToggle.checked = !this.gridFreeMode;
         }
 
+        this.updateGridLockLabel();
+        this.gridToggleBound = false;
         this.bindGridLockToggle();
     }
 
+    updateGridLockLabel() {
+        const gridLockText = document.getElementById('gameGridSnapLabel');
+        if (!gridLockText) return;
+        gridLockText.textContent = this.gridFreeMode ? 'Off' : 'On';
+    }
+
     bindGridLockToggle() {
-        if (this.gridToggleBound) return;
-        const gridToggle = document.getElementById('gameGridLockToggle');
+        const gridToggle = document.getElementById('gameGridSnapToggle');
         if (!gridToggle) return;
 
-        gridToggle.checked = this.gridFreeMode;
+        if (gridToggle.dataset.bound === 'true') {
+            gridToggle.checked = !this.gridFreeMode;
+            this.updateGridLockLabel();
+            return;
+        }
+
+        gridToggle.checked = !this.gridFreeMode;
         gridToggle.addEventListener('change', () => {
-            this.gridFreeMode = gridToggle.checked;
+            this.gridFreeMode = !gridToggle.checked;
             this.app.gridSnap = !this.gridFreeMode;
+            this.updateGridLockLabel();
         });
+        gridToggle.dataset.bound = 'true';
+        this.updateGridLockLabel();
         this.gridToggleBound = true;
     }
 
@@ -1705,7 +2284,9 @@ class BeginnerMode {
                 menuOverlay.classList.remove('hidden');
             }
 
-            if (typeof window.playBackgroundMusic === 'function') {
+            if (typeof window.restartBackgroundMusic === 'function') {
+                window.restartBackgroundMusic();
+            } else if (typeof window.playBackgroundMusic === 'function') {
                 window.playBackgroundMusic();
             }
         });
@@ -1718,8 +2299,13 @@ class BeginnerMode {
         const redoBtn = document.getElementById('gameRedoBtn');
         const submitBtn = document.getElementById('gameSubmitBtn');
 
-        if (undoBtn) undoBtn.disabled = this.lineHistory.length === 0;
-        if (redoBtn) redoBtn.disabled = this.redoLineHistory.length === 0;
+        const appHistory = Array.isArray(this.app?.history) ? this.app.history : [];
+        const appHistoryIndex = Number.isFinite(this.app?.historyIndex) ? this.app.historyIndex : -1;
+        const canUndo = appHistoryIndex > 0;
+        const canRedo = appHistoryIndex >= 0 && appHistoryIndex < appHistory.length - 1;
+
+        if (undoBtn) undoBtn.disabled = !canUndo;
+        if (redoBtn) redoBtn.disabled = !canRedo;
 
         if (submitBtn) {
             const linesRequirementMet = this.linesUsed >= this.maxLines;
@@ -1738,13 +2324,20 @@ class BeginnerMode {
     }
 
     handleUndo() {
-        if (this.lineHistory.length === 0) return;
+        const canUndo = Number.isFinite(this.app?.historyIndex) && this.app.historyIndex > 0;
+        if (!canUndo) return;
+
         const previousIndex = this.app.historyIndex;
         this.app.undo();
 
         if (this.app.historyIndex < previousIndex) {
-            this.redoLineHistory.push(this.lineHistory.pop());
-            this.linesUsed = this.lineHistory.length;
+            const movedLine = this.lineHistory.pop() || {
+                linesUsed: Math.max(0, this.linesUsed - 1),
+                timestamp: Date.now(),
+                synthetic: true
+            };
+            this.redoLineHistory.push(movedLine);
+            this.linesUsed = Math.max(0, this.linesUsed - 1);
             this.updateHUD();
             this.updateGameControlButtons();
             this.autosaveProgress();
@@ -1752,13 +2345,21 @@ class BeginnerMode {
     }
 
     handleRedo() {
-        if (this.redoLineHistory.length === 0) return;
+        const appHistory = Array.isArray(this.app?.history) ? this.app.history : [];
+        const canRedo = Number.isFinite(this.app?.historyIndex) && this.app.historyIndex < appHistory.length - 1;
+        if (!canRedo) return;
+
         const previousIndex = this.app.historyIndex;
         this.app.redo();
 
         if (this.app.historyIndex > previousIndex) {
-            this.lineHistory.push(this.redoLineHistory.pop());
-            this.linesUsed = this.lineHistory.length;
+            const restoredLine = this.redoLineHistory.pop() || {
+                linesUsed: this.linesUsed + 1,
+                timestamp: Date.now(),
+                synthetic: true
+            };
+            this.lineHistory.push(restoredLine);
+            this.linesUsed = this.linesUsed + 1;
             this.updateHUD();
             this.updateGameControlButtons();
             this.autosaveProgress();
@@ -1799,6 +2400,10 @@ class BeginnerMode {
 
     playResultSound(isVictory) {
         const soundFile = isVictory ? 'Music/victory.mp3' : 'Music/failed.mp3';
+        if (typeof window.playSfx === 'function') {
+            window.playSfx(soundFile, { volume: 0.6 });
+            return;
+        }
         const audio = new Audio(soundFile);
         audio.volume = 0.6;
         audio.play().catch(e => console.warn('Audio playback failed:', e));
@@ -1953,11 +2558,7 @@ class BeginnerMode {
 
         if (list) {
             list.innerHTML = '';
-            result.piecePercents.forEach((percent, index) => {
-                const item = document.createElement('div');
-                item.textContent = `Piece ${index + 1}: ${percent.toFixed(1)}%`;
-                list.appendChild(item);
-            });
+            list.style.display = 'none';
         }
 
         if (nextBtn) {

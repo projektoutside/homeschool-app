@@ -10,6 +10,8 @@ const Home = React.lazy(() => import('./pages/Home'));
 const Category = React.lazy(() => import('./pages/Category'));
 const Viewer = React.lazy(() => import('./pages/Viewer'));
 const Admin = React.lazy(() => import('./pages/Admin'));
+const GamePlayer = React.lazy(() => import('./pages/GamePlayer'));
+const ManagerPage = React.lazy(() => import('./pages/ManagerPage'));
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
@@ -36,6 +38,9 @@ const App: React.FC = () => {
                             <Route path="worksheets" element={<Category />} />
                             <Route path="games" element={<Category />} />
                             <Route path="tools" element={<Category />} />
+                            <Route path="play/:id" element={<GamePlayer />} />
+                            <Route path="open/:id" element={<GamePlayer />} />
+                            <Route path="manager" element={<ManagerPage />} />
                             <Route path="resource/:id" element={<Viewer />} />
                             <Route path="admin" element={<Admin />} />
                             <Route path="*" element={<Navigate to="/" replace />} />

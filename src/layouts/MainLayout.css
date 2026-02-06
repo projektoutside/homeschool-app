@@ -102,6 +102,7 @@
     right: 0;
     height: 64px;
     background-color: var(--color-surface-glass);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     padding: 0 var(--spacing-md);
     align-items: center;
@@ -143,12 +144,25 @@
     overflow: visible;
 }
 
+.layout-container.home-immersive .main-content {
+    margin-left: 0;
+    max-width: 100%;
+    width: 100%;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.layout-container.game-immersive .main-content {
+    padding: 0;
+}
+
 .overlay {
     display: none;
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 45;
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
 }
 
@@ -204,6 +218,14 @@
 
     .mobile-header {
         padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .layout-container.home-immersive .main-content {
+        padding: 0.5rem;
+    }
+
+    .layout-container.game-immersive .main-content {
+        padding: 0;
     }
 }
 
