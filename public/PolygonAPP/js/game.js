@@ -45,7 +45,7 @@ class Game {
         this.currentMode = null;
         this.toggleUI(false);
         if (typeof window.stopGameplayMusic === 'function') {
-            window.stopGameplayMusic({ fadeOutMs: 500 }).catch(() => {});
+            window.stopGameplayMusic({ fadeOutMs: 500 }).catch(() => { });
         }
         // Guard against accidental tap/click-through immediately after closing overlays.
         window.__mainMenuReturnCooldownUntil = Date.now() + 900;
@@ -122,8 +122,8 @@ class Game {
     toggleUI(active) {
         // Elements to hide during game mode
         const selectorsToHide = [
-            '.sidebar',               // Layers (left)
-            '.sidebar-right',         // Visualizers (right)
+            // '.sidebar',               // Layers (left) - REMOVED
+            // '.sidebar-right',         // Visualizers (right) - REMOVED
             '.toolbar',               // Left Toolbar
             '.top-tools-bar',         // Top Bar (Fullscreen toggle)
             '.mobile-menu-toggle',    // Mobile toggles if any
@@ -240,7 +240,7 @@ class BeginnerMode {
                 }
             }, 250);
         } else if (!shouldDeferGameplayMusicForExternalTutorial && typeof window.startGameplayMusic === 'function') {
-            window.startGameplayMusic({ fadeInMs: 1300 }).catch(() => {});
+            window.startGameplayMusic({ fadeInMs: 2000 }).catch(() => { });
         }
     }
 
@@ -759,7 +759,7 @@ class BeginnerMode {
             this.app.showToast(`Loaded Slot ${normalizedSlot}`);
         }
         if (typeof window.startGameplayMusic === 'function') {
-            window.startGameplayMusic({ fadeInMs: 1100 }).catch(() => {});
+            window.startGameplayMusic({ fadeInMs: 1100 }).catch(() => { });
         }
         this.refreshBoxScoreUI();
     }
@@ -1105,108 +1105,235 @@ class BeginnerMode {
     }
 
     setupSettingsUI() {
-        if (!document.getElementById('gameSettingsOverlay')) {
-            const overlay = document.createElement('div');
-            overlay.id = 'gameSettingsOverlay';
-            overlay.className = 'overlay';
-            overlay.setAttribute('aria-hidden', 'true');
-            overlay.style.cssText = `
-                display: none;
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
-                z-index: 10000; justify-content: center; align-items: center;
-            `;
+        if (document.getElementById('gameSettingsOverlay')) return;
 
-            overlay.innerHTML = `
-                <div style="background: white; border-radius: 20px; width: 94%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;">
-                    <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 700; color: #0f172a;">Audio Settings</h3>
-                        <button id="gameSettingsClose" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; line-height: 1;">&times;</button>
-                    </div>
-                    <div style="padding: 18px 20px 22px; display: grid; gap: 16px; font-family: 'Inter', sans-serif; color: #334155;">
-                        <label style="display: grid; gap: 8px;">
-                            <span style="font-weight: 700;">Music Volume <span id="gameSettingsMusicValue" style="font-weight: 600; color: #64748b;">70%</span></span>
-                            <input id="gameSettingsMusic" type="range" min="0" max="100" step="1" />
-                        </label>
-                        <label style="display: grid; gap: 8px;">
-                            <span style="font-weight: 700;">SFX Volume <span id="gameSettingsSfxValue" style="font-weight: 600; color: #64748b;">75%</span></span>
-                            <input id="gameSettingsSfx" type="range" min="0" max="100" step="1" />
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; user-select: none;">
-                            <input id="gameSettingsMute" type="checkbox" style="width: 16px; height: 16px; accent-color: #3b82f6;" />
-                            Mute All Audio
-                        </label>
-                    </div>
-                </div>
+        // Inject Styles for Custom Sliders
+        if (!document.getElementById('settings-slider-style')) {
+            const style = document.createElement('style');
+            style.id = 'settings-slider-style';
+            style.textContent = `
+                .aaa-slider-container {
+                    position: relative;
+                    width: 100%;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                }
+                .aaa-slider {
+                    -webkit-appearance: none;
+                    width: 100%;
+                    height: 6px;
+                    border-radius: 3px;
+                    background: #e2e8f0;
+                    outline: none;
+                    margin: 0;
+                    cursor: pointer;
+                    position: relative;
+                    z-index: 2;
+                }
+                .aaa-slider::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    background: #3b82f6;
+                    box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+                    cursor: pointer;
+                    transition: transform 0.1s;
+                    margin-top: -7px; /* (6px - 20px) / 2 */
+                }
+                .aaa-slider::-webkit-slider-thumb:hover {
+                    transform: scale(1.1);
+                }
+                .aaa-slider::-webkit-slider-thumb:active {
+                    transform: scale(0.95);
+                    background: #2563eb;
+                }
+                /* Fill Track Hack for WebKit */
+                .aaa-slider-fill {
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    height: 6px;
+                    background: #3b82f6;
+                    border-radius: 3px;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                    z-index: 1;
+                }
             `;
-
-            document.body.appendChild(overlay);
+            document.head.appendChild(style);
         }
 
-        const overlay = document.getElementById('gameSettingsOverlay');
+        const overlay = document.createElement('div');
+        overlay.id = 'gameSettingsOverlay';
+        overlay.className = 'overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.style.cssText = `
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+            z-index: 10000; justify-content: center; align-items: center;
+        `;
+
+        overlay.innerHTML = `
+            <div style="background: white; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); overflow: hidden; transform: scale(0.95); transition: transform 0.2s;">
+                <div style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+                    <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: #0f172a;">Settings</h3>
+                    <button id="gameSettingsClose" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div style="padding: 24px; display: grid; gap: 24px;">
+                    <!-- Music Control -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+                            <span style="font-weight: 600; color: #334155; font-size: 15px;">Music</span>
+                            <span id="gameSettingsMusicVal" style="font-weight: 700; color: #3b82f6; font-size: 14px;">70%</span>
+                        </div>
+                        <div class="aaa-slider-container">
+                            <div id="gameSettingsMusicFill" class="aaa-slider-fill" style="width: 70%"></div>
+                            <input id="gameSettingsMusic" class="aaa-slider" type="range" min="0" max="100" step="1" />
+                        </div>
+                    </div>
+
+                    <!-- SFX Control -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+                            <span style="font-weight: 600; color: #334155; font-size: 15px;">Sound Effects</span>
+                            <span id="gameSettingsSfxVal" style="font-weight: 700; color: #3b82f6; font-size: 14px;">75%</span>
+                        </div>
+                        <div class="aaa-slider-container">
+                            <div id="gameSettingsSfxFill" class="aaa-slider-fill" style="width: 75%"></div>
+                            <input id="gameSettingsSfx" class="aaa-slider" type="range" min="0" max="100" step="1" />
+                        </div>
+                    </div>
+
+                    <!-- Mute Toggle -->
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 12px; cursor: pointer; user-select: none;">
+                        <span style="font-weight: 600; color: #334155; font-size: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span id="muteAudioIcon" style="font-size: 18px;">🔊</span> Mute Audio
+                        </span>
+                        <div style="position: relative; width: 44px; height: 24px;">
+                            <input id="gameSettingsMute" type="checkbox" style="opacity: 0; width: 0; height: 0;" />
+                            <span class="mute-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px;"></span>
+                            <span class="mute-knob" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>
+                        </div>
+                        <style>
+                            input:checked + .mute-slider { background-color: #3b82f6; }
+                            input:checked + .mute-slider + .mute-knob { transform: translateX(20px); }
+                        </style>
+                    </label>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Bind Events
         const closeBtn = document.getElementById('gameSettingsClose');
         const musicInput = document.getElementById('gameSettingsMusic');
         const sfxInput = document.getElementById('gameSettingsSfx');
         const muteInput = document.getElementById('gameSettingsMute');
 
-        if (!overlay || !closeBtn || !musicInput || !sfxInput || !muteInput) return;
+        const closePanel = () => {
+            overlay.style.display = 'none';
+            overlay.setAttribute('aria-hidden', 'true');
+        };
 
-        if (overlay.dataset.bound !== 'true') {
-            closeBtn.addEventListener('click', () => this.closeSettingsPanel());
-            overlay.addEventListener('click', (event) => {
-                if (event.target === overlay) this.closeSettingsPanel();
-            });
+        closeBtn.onclick = closePanel;
+        overlay.onclick = (e) => {
+            if (e.target === overlay) closePanel();
+        };
 
-            musicInput.addEventListener('input', () => {
-                const value = Number(musicInput.value || 0) / 100;
-                if (typeof window.setMusicVolume === 'function') {
-                    window.setMusicVolume(value);
-                }
-                this.syncSettingsUI();
-            });
+        // Real-time Music
+        musicInput.addEventListener('input', () => {
+            const val = Number(musicInput.value);
+            document.getElementById('gameSettingsMusicVal').textContent = `${val}%`;
+            document.getElementById('gameSettingsMusicFill').style.width = `${val}%`;
+            if (window.setMusicVolume) window.setMusicVolume(val / 100);
+        });
 
-            sfxInput.addEventListener('input', () => {
-                const value = Number(sfxInput.value || 0) / 100;
-                if (typeof window.setSfxVolume === 'function') {
-                    window.setSfxVolume(value);
-                }
-                this.syncSettingsUI();
-            });
+        // Real-time SFX
+        sfxInput.addEventListener('input', () => {
+            const val = Number(sfxInput.value);
+            document.getElementById('gameSettingsSfxVal').textContent = `${val}%`;
+            document.getElementById('gameSettingsSfxFill').style.width = `${val}%`;
+            if (window.setSfxVolume) window.setSfxVolume(val / 100);
+        });
 
-            muteInput.addEventListener('change', () => {
-                if (typeof window.setAudioMuted === 'function') {
-                    window.setAudioMuted(!!muteInput.checked);
-                }
-                this.syncSettingsUI();
-            });
+        // Preview SFX on change
+        sfxInput.addEventListener('change', () => {
+            // Play a test blip when releasing the slider if not muted
+            if (!muteInput.checked && window.playSfx) {
+                // Try to find a click or interact sound
+                // window.playSfx('...', { volume: 1 });
+            }
+        });
 
-            window.addEventListener('audio-settings-changed', () => this.syncSettingsUI());
-            overlay.dataset.bound = 'true';
-        }
+        // Mute
+        muteInput.addEventListener('change', () => {
+            const muted = muteInput.checked;
+            if (window.setAudioMuted) window.setAudioMuted(muted);
+
+            // Update mute icon based on state
+            const muteIcon = document.getElementById('muteAudioIcon');
+            if (muteIcon) {
+                muteIcon.textContent = muted ? '🔇' : '🔊';
+            }
+
+            // Visual feedback immediate
+            musicInput.disabled = muted;
+            sfxInput.disabled = muted;
+            overlay.style.filter = muted ? 'grayscale(0.1)' : 'none';
+        });
+
+        // Listen for external updates (e.g. storage load)
+        window.addEventListener('audio-settings-changed', (e) => {
+            this.syncSettingsUI();
+        });
     }
 
     syncSettingsUI() {
-        const musicInput = document.getElementById('gameSettingsMusic');
-        const sfxInput = document.getElementById('gameSettingsSfx');
-        const muteInput = document.getElementById('gameSettingsMute');
-        const musicValue = document.getElementById('gameSettingsMusicValue');
-        const sfxValue = document.getElementById('gameSettingsSfxValue');
-
-        if (!musicInput || !sfxInput || !muteInput || !musicValue || !sfxValue) return;
+        if (!document.getElementById('gameSettingsOverlay')) return;
 
         const settings = (typeof window.getAudioSettings === 'function')
             ? window.getAudioSettings()
             : { musicVolume: 0.7, sfxVolume: 0.75, muted: false };
 
-        const musicPct = Math.round((Number(settings.musicVolume) || 0) * 100);
-        const sfxPct = Math.round((Number(settings.sfxVolume) || 0) * 100);
+        const musicInput = document.getElementById('gameSettingsMusic');
+        const sfxInput = document.getElementById('gameSettingsSfx');
+        const muteInput = document.getElementById('gameSettingsMute');
 
-        musicInput.value = `${musicPct}`;
-        sfxInput.value = `${sfxPct}`;
+        if (!musicInput || !sfxInput || !muteInput) return;
+
+        // Music
+        const musicVal = Math.round(settings.musicVolume * 100);
+        if (document.activeElement !== musicInput) {
+            musicInput.value = musicVal;
+            document.getElementById('gameSettingsMusicVal').textContent = `${musicVal}%`;
+            document.getElementById('gameSettingsMusicFill').style.width = `${musicVal}%`;
+        }
+
+        // SFX
+        const sfxVal = Math.round(settings.sfxVolume * 100);
+        if (document.activeElement !== sfxInput) {
+            sfxInput.value = sfxVal;
+            document.getElementById('gameSettingsSfxVal').textContent = `${sfxVal}%`;
+            document.getElementById('gameSettingsSfxFill').style.width = `${sfxVal}%`;
+        }
+
+        // Mute
         muteInput.checked = !!settings.muted;
+        musicInput.disabled = !!settings.muted;
+        sfxInput.disabled = !!settings.muted;
 
-        musicValue.textContent = `${musicPct}%`;
-        sfxValue.textContent = `${sfxPct}%`;
+        // Update mute icon based on state
+        const muteIcon = document.getElementById('muteAudioIcon');
+        if (muteIcon) {
+            muteIcon.textContent = settings.muted ? '🔇' : '🔊';
+        }
     }
 
     openSettingsPanel() {

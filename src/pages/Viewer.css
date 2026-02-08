@@ -12,6 +12,77 @@
     min-height: 100vh;
 }
 
+/* Worksheet Viewer - Print Preview Mode */
+.viewer-page.worksheet-viewer {
+    min-height: calc(100vh - 120px);
+}
+
+.worksheet-viewer .viewer-content {
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    overflow: auto;
+    min-height: 600px;
+}
+
+.worksheet-container {
+    width: auto;
+    height: auto;
+    min-height: auto;
+    position: relative;
+    overflow: visible;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.worksheet-iframe {
+    width: 8.5in;
+    height: 11in;
+    min-height: 11in;
+    border: none;
+    display: block;
+    background-color: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    transform-origin: top center;
+}
+
+/* Scale worksheet to fit viewport while maintaining aspect ratio */
+@media (max-width: 900px) {
+    .worksheet-iframe {
+        transform: scale(0.85);
+        margin: -50px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .worksheet-iframe {
+        transform: scale(0.65);
+        margin: -150px 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .worksheet-iframe {
+        transform: scale(0.5);
+        margin: -250px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .worksheet-iframe {
+        transform: scale(0.4);
+        margin: -300px 0;
+    }
+}
+
 .back-btn {
     align-self: flex-start;
     background: none;
@@ -460,6 +531,11 @@
         width: 44px;
         height: 44px;
         font-size: 1rem;
+    }
+
+    /* Worksheet responsive adjustments */
+    .worksheet-viewer .viewer-content {
+        padding: var(--spacing-sm);
     }
 }
 

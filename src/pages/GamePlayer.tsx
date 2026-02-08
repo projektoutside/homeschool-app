@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
-import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
+import type { FullscreenHTMLElementType } from '../types/fullscreen';
 import './GamePlayer.css';
 
 const GamePlayer: React.FC = () => {
@@ -10,7 +10,6 @@ const GamePlayer: React.FC = () => {
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const item = useMemo(() => CONTENT_ITEMS.find(content => content.id === id), [id]);
     const launchPath = useMemo(() => {
@@ -20,7 +19,9 @@ const GamePlayer: React.FC = () => {
         return '';
     }, [item]);
 
-    const isImmersiveType = item?.type === 'game' || item?.type === 'worksheet' || item?.type === 'tool';
+    // Only handle games and tools in fullscreen mode
+    // Worksheets are handled by the Viewer with print preview mode
+    const isImmersiveType = item?.type === 'game' || item?.type === 'tool';
 
     const enterFullscreen = useCallback(async () => {
         if (!containerRef.current) return;
@@ -42,25 +43,6 @@ const GamePlayer: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleFullscreenChange = () => {
-            const doc = document as FullscreenDocumentType;
-            const fullscreenElement =
-                doc.fullscreenElement ||
-                doc.webkitFullscreenElement ||
-                doc.mozFullScreenElement ||
-                doc.msFullscreenElement;
-            setIsFullscreen(!!fullscreenElement);
-        };
-
-        const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
-        events.forEach(eventName => document.addEventListener(eventName, handleFullscreenChange));
-
-        return () => {
-            events.forEach(eventName => document.removeEventListener(eventName, handleFullscreenChange));
-        };
-    }, []);
-
-    useEffect(() => {
         if (!item || !isImmersiveType || !launchPath) {
             navigate(item ? `/resource/${item.id}` : '/', { replace: true });
         }
@@ -72,21 +54,6 @@ const GamePlayer: React.FC = () => {
 
     return (
         <div className="game-player-shell" ref={containerRef}>
-            <button type="button" className="game-player-exit" onClick={() => navigate('/')} aria-label="Exit game">
-                Exit
-            </button>
-
-            {!isFullscreen && (
-                <button
-                    type="button"
-                    className="game-player-fullscreen-prompt"
-                    onClick={enterFullscreen}
-                    aria-label="Enter fullscreen"
-                >
-                    Enter Fullscreen
-                </button>
-            )}
-
             {isLoading && <div className="game-player-loading" aria-live="polite">Launching {item.type}...</div>}
 
             <iframe

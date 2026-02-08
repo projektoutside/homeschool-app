@@ -1,5 +1,18 @@
+/**
+ * Polygon Audio System - Production Ready V3
+ * Clean, simple, bulletproof implementation
+ */
+
 (() => {
-    const PLAYLIST_TRACKS = [
+    'use strict';
+
+    // ==================== CONFIGURATION ====================
+
+    const STORAGE_KEY = 'polygonAudio_v3';
+    const DEFAULT_MUSIC_VOLUME = 0.7;
+    const DEFAULT_SFX_VOLUME = 0.75;
+
+    const PLAYLIST = [
         'Music/RandomPlaylist/PolygonCHILL.mp3',
         'Music/RandomPlaylist/PolygonCHILL (1).mp3',
         'Music/RandomPlaylist/PolygonCHILL (2).mp3',
@@ -20,385 +33,428 @@
         'Music/RandomPlaylist/PolygonCHILL (17).mp3'
     ];
 
-    const STORAGE_KEY = 'polygonAudioSettings_v1';
-    const DEFAULT_SETTINGS = {
-        musicVolume: 0.7,
-        sfxVolume: 0.75,
+    // ==================== STATE ====================
+
+    const state = {
+        musicVolume: DEFAULT_MUSIC_VOLUME,
+        sfxVolume: DEFAULT_SFX_VOLUME,
         muted: false
     };
 
-    const getStorage = () => (window.SafeStorage && typeof window.SafeStorage.getItem === 'function')
-        ? window.SafeStorage
-        : window.localStorage;
+    const audioElements = new Set(); // Track all audio for volume updates
+    let saveTimer = null;
 
-    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-    const toNum = (value, fallback) => {
-        const n = Number(value);
-        return Number.isFinite(n) ? n : fallback;
-    };
+    // Menu music
+    let menuAudio = null;
+    let menuFadeTimer = null;
 
-    const shuffle = (arr) => {
-        const copy = [...arr];
-        for (let i = copy.length - 1; i > 0; i--) {
+    // Gameplay music
+    let gameplayActive = false;
+    let gameplayTrackA = null;
+    let gameplayTrackB = null;
+    let activeTrack = null;
+    let idleTrack = null;
+    let playlistQueue = [];
+    let crossfadeTimer = null;
+
+    // ==================== HELPERS ====================
+
+    function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
+    function shuffle(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [copy[i], copy[j]] = [copy[j], copy[i]];
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        return copy;
-    };
+        return arr;
+    }
 
-    const loadSettings = () => {
+    // ==================== STORAGE ====================
+
+    function loadSettings() {
         try {
-            const raw = getStorage().getItem(STORAGE_KEY);
-            if (!raw) return { ...DEFAULT_SETTINGS };
-            const parsed = JSON.parse(raw);
-            return {
-                musicVolume: clamp(toNum(parsed.musicVolume, DEFAULT_SETTINGS.musicVolume), 0, 1),
-                sfxVolume: clamp(toNum(parsed.sfxVolume, DEFAULT_SETTINGS.sfxVolume), 0, 1),
-                muted: !!parsed.muted
-            };
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (typeof data.musicVolume === 'number') state.musicVolume = clamp(data.musicVolume, 0, 1);
+                if (typeof data.sfxVolume === 'number') state.sfxVolume = clamp(data.sfxVolume, 0, 1);
+                if (typeof data.muted === 'boolean') state.muted = data.muted;
+            }
         } catch (e) {
-            return { ...DEFAULT_SETTINGS };
+            console.warn('Failed to load audio settings:', e);
         }
-    };
+    }
 
-    const settings = loadSettings();
-    const registeredAudio = new Set();
+    function saveSettings() {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Failed to save audio settings:', e);
+            }
+        }, 300);
+    }
 
-    const persistSettings = () => {
-        try {
-            getStorage().setItem(STORAGE_KEY, JSON.stringify(settings));
-        } catch (e) {
-            // no-op
-        }
-    };
+    // ==================== VOLUME MANAGEMENT ====================
 
-    const effectiveVolumeFor = (type, base = 1) => {
-        if (settings.muted) return 0;
-        const master = type === 'music' ? settings.musicVolume : settings.sfxVolume;
-        return clamp(master * base, 0, 1);
-    };
+    function getEffectiveVolume(type, baseVolume = 1) {
+        if (state.muted) return 0;
+        const master = type === 'music' ? state.musicVolume : state.sfxVolume;
+        return clamp(master * baseVolume, 0, 1);
+    }
 
-    const registerAudio = (audio, type = 'sfx', baseVolume = 1) => {
-        if (!audio) return audio;
-        audio.__audioRole = type;
-        audio.__baseVolume = clamp(toNum(baseVolume, 1), 0, 1);
-        registeredAudio.add(audio);
-        audio.addEventListener('ended', () => registeredAudio.delete(audio), { once: true });
-        audio.addEventListener('error', () => registeredAudio.delete(audio), { once: true });
-        audio.volume = effectiveVolumeFor(type, audio.__baseVolume);
-        return audio;
-    };
-
-    const applyVolumes = () => {
-        registeredAudio.forEach((audio) => {
-            if (!audio) return;
-            const role = audio.__audioRole || 'sfx';
-            const base = clamp(toNum(audio.__baseVolume, 1), 0, 1);
-            audio.volume = effectiveVolumeFor(role, base);
+    function updateAllVolumes() {
+        audioElements.forEach(audioData => {
+            if (audioData && audioData.element) {
+                const effectiveVol = getEffectiveVolume(audioData.type, audioData.baseVol);
+                audioData.element.volume = effectiveVol;
+            }
         });
-        window.dispatchEvent(new CustomEvent('audio-settings-changed', { detail: { ...settings } }));
-    };
 
-    const setMusicVolume = (v) => {
-        settings.musicVolume = clamp(toNum(v, settings.musicVolume), 0, 1);
-        persistSettings();
-        applyVolumes();
-    };
+        // Dispatch event for UI sync
+        window.dispatchEvent(new CustomEvent('audio-settings-changed', {
+            detail: { ...state }
+        }));
+    }
 
-    const setSfxVolume = (v) => {
-        settings.sfxVolume = clamp(toNum(v, settings.sfxVolume), 0, 1);
-        persistSettings();
-        applyVolumes();
-    };
+    function registerAudio(element, type, baseVol = 1) {
+        const data = { element, type, baseVol };
+        audioElements.add(data);
 
-    const setAudioMuted = (muted) => {
-        settings.muted = !!muted;
-        persistSettings();
-        applyVolumes();
-    };
+        // Set initial volume
+        element.volume = getEffectiveVolume(type, baseVol);
 
-    const getAudioSettings = () => ({ ...settings });
+        // Auto-cleanup
+        const cleanup = () => audioElements.delete(data);
+        element.addEventListener('ended', cleanup, { once: true });
+        element.addEventListener('error', cleanup, { once: true });
 
-    const playSfx = (path, opts = {}) => {
+        return element;
+    }
+
+    // ==================== PUBLIC API ====================
+
+    function setMusicVolume(vol) {
+        state.musicVolume = clamp(Number(vol) || 0, 0, 1);
+        updateAllVolumes();
+        saveSettings();
+    }
+
+    function setSfxVolume(vol) {
+        state.sfxVolume = clamp(Number(vol) || 0, 0, 1);
+        updateAllVolumes();
+        saveSettings();
+    }
+
+    function setAudioMuted(muted) {
+        state.muted = !!muted;
+        updateAllVolumes();
+        saveSettings();
+    }
+
+    function getAudioSettings() {
+        return { ...state };
+    }
+
+    function playSfx(path, opts = {}) {
         if (!path) return null;
-        const audio = registerAudio(new Audio(path), 'sfx', toNum(opts.volume, 1));
-        audio.preload = 'auto';
-        audio.currentTime = 0;
+        const audio = new Audio(path);
+        registerAudio(audio, 'sfx', opts.volume || 1);
         audio.play().catch(() => { });
         return audio;
-    };
+    }
 
-    const menuAudio = registerAudio(new Audio('Music/MainMenu.mp3'), 'music', 1);
-    menuAudio.loop = true;
-    menuAudio.preload = 'auto';
-    let pendingMenuAutoplay = false;
+    // ==================== MENU MUSIC ====================
 
-    let menuFadeInterval = null;
-    let menuFading = false;
+    function initMenuMusic() {
+        if (!menuAudio) {
+            menuAudio = new Audio('Music/MainMenu.mp3');
+            menuAudio.loop = true;
+            menuAudio.preload = 'auto';
 
-    const clearMenuFade = () => {
-        if (menuFadeInterval) {
-            clearInterval(menuFadeInterval);
-            menuFadeInterval = null;
+            // Keep persistent
+            const data = { element: menuAudio, type: 'music', baseVol: 1 };
+            audioElements.add(data);
+            menuAudio.volume = getEffectiveVolume('music', 1);
         }
-        menuFading = false;
-    };
+    }
 
-    const fadeMenuTo = (target, duration = 800, stopAfter = false) => new Promise((resolve) => {
-        clearMenuFade();
-        menuFading = true;
-        const start = menuAudio.volume;
-        const end = clamp(target, 0, 1);
-        const startAt = performance.now();
-        const tickMs = 30;
+    let audioUnlockListenersBound = false;
 
-        menuFadeInterval = setInterval(() => {
-            const t = clamp((performance.now() - startAt) / Math.max(1, duration), 0, 1);
-            menuAudio.volume = start + (end - start) * t;
-            if (t >= 1) {
-                clearMenuFade();
-                if (stopAfter) {
-                    menuAudio.pause();
-                    menuAudio.currentTime = 0;
-                }
+    function playBackgroundMusic(opts = {}) {
+        initMenuMusic();
+
+        if (gameplayActive) return Promise.resolve();
+
+        // Ensure volume is up-to-date
+        menuAudio.volume = getEffectiveVolume('music', 1);
+
+        const promise = menuAudio.play();
+
+        if (promise !== undefined) {
+            return promise
+                .then(() => {
+                    // Success
+                })
+                .catch(err => {
+                    console.warn('Menu music autoplay blocked. Waiting for interaction...', err);
+                    if (!audioUnlockListenersBound) {
+                        audioUnlockListenersBound = true;
+                        const unlock = () => {
+                            // Only try if still in menu mode
+                            if (!gameplayActive) {
+                                playBackgroundMusic({ immediate: true });
+                            }
+                            audioUnlockListenersBound = false;
+                            ['click', 'touchstart', 'keydown'].forEach(e =>
+                                document.removeEventListener(e, unlock)
+                            );
+                        };
+                        ['click', 'touchstart', 'keydown'].forEach(e =>
+                            document.addEventListener(e, unlock, { once: true })
+                        );
+                    }
+                });
+        }
+        return Promise.resolve();
+    }
+
+    function stopBackgroundMusic() {
+        if (menuAudio) {
+            menuAudio.pause();
+            menuAudio.currentTime = 0;
+        }
+    }
+
+    function fadeOutBackgroundMusic(durationMs = 800) {
+        if (!menuAudio || menuAudio.paused) return Promise.resolve();
+
+        // Simple fade: just stop for now
+        return new Promise(resolve => {
+            setTimeout(() => {
+                stopBackgroundMusic();
                 resolve();
+            }, durationMs);
+        });
+    }
+
+    // ==================== GAMEPLAY MUSIC ====================
+
+    // ==================== FADING HELPERS ====================
+
+    function fadeTrack(track, fromVol, toVol, duration, onComplete) {
+        if (!track) return;
+        const steps = 20;
+        const stepTime = duration / steps;
+        const volStep = (toVol - fromVol) / steps;
+        let currentStep = 0;
+
+        track.volume = fromVol;
+
+        const fadeInterval = setInterval(() => {
+            currentStep++;
+            const newVol = fromVol + (volStep * currentStep);
+            track.volume = clamp(newVol, 0, 1);
+
+            if (currentStep >= steps) {
+                clearInterval(fadeInterval);
+                track.volume = toVol;
+                if (onComplete) onComplete();
             }
-        }, tickMs);
-    });
+        }, stepTime);
 
-    const stopMusicImmediate = () => {
-        clearMenuFade();
-        pendingMenuAutoplay = false;
-        menuAudio.pause();
-        menuAudio.currentTime = 0;
-        stopGameplayMusic({ immediate: true });
-    };
+        return fadeInterval;
+    }
 
-    // Gameplay music engine (no repeat until full cycle is played)
-    const gameplayA = registerAudio(new Audio(), 'music', 1);
-    const gameplayB = registerAudio(new Audio(), 'music', 1);
-    gameplayA.preload = 'auto';
-    gameplayB.preload = 'auto';
+    // ==================== GAMEPLAY MUSIC ====================
 
-    let gameplayQueue = [];
-    let gameplayModeActive = false;
-    let activeGameplayAudio = gameplayA;
-    let idleGameplayAudio = gameplayB;
-    let gameplayCrossfadeMs = 3800;
-    let gameplayTransitioning = false;
-    let gameplayMonitor = null;
+    function initGameplayTracks() {
+        if (!gameplayTrackA) {
+            gameplayTrackA = new Audio();
+            gameplayTrackA.preload = 'auto';
+            const dataA = { element: gameplayTrackA, type: 'music', baseVol: 1 };
+            audioElements.add(dataA);
 
-    const nextTrackFromQueue = () => {
-        if (gameplayQueue.length === 0) {
-            gameplayQueue = shuffle(PLAYLIST_TRACKS);
+            gameplayTrackB = new Audio();
+            gameplayTrackB.preload = 'auto';
+            const dataB = { element: gameplayTrackB, type: 'music', baseVol: 1 };
+            audioElements.add(dataB);
+
+            activeTrack = gameplayTrackA;
+            idleTrack = gameplayTrackB;
         }
-        return gameplayQueue.shift();
-    };
+    }
 
-    const fadePair = (fromAudio, toAudio, durationMs) => new Promise((resolve) => {
-        const startAt = performance.now();
-        const fromStart = fromAudio ? fromAudio.volume : 0;
-        const toStart = toAudio ? toAudio.volume : 0;
-        const targetMusic = effectiveVolumeFor('music', 1);
+    function getNextTrack() {
+        if (playlistQueue.length === 0) {
+            playlistQueue = shuffle(PLAYLIST);
+        }
+        return playlistQueue.pop();
+    }
 
-        const step = () => {
-            const t = clamp((performance.now() - startAt) / Math.max(1, durationMs), 0, 1);
-            if (fromAudio) fromAudio.volume = fromStart + (0 - fromStart) * t;
-            if (toAudio) toAudio.volume = toStart + (targetMusic - toStart) * t;
-            if (t >= 1) {
-                resolve();
+    function startGameplayMusic(opts = {}) {
+        if (gameplayActive && !opts.forceRestart) return Promise.resolve();
+
+        initGameplayTracks();
+        gameplayActive = true;
+
+        // Stop menu music
+        fadeOutBackgroundMusic(500);
+
+        // Load first track
+        const firstTrack = getNextTrack();
+        activeTrack.src = firstTrack;
+        activeTrack.currentTime = 0;
+
+        const targetVol = getEffectiveVolume('music', 1);
+        const fadeInDuration = opts.fadeInMs || 2000; // Default to 2s fade in
+
+        // Start silent then fade in
+        activeTrack.volume = 0;
+
+        return activeTrack.play()
+            .then(() => {
+                // Fade In
+                fadeTrack(activeTrack, 0, targetVol, fadeInDuration);
+                // Monitor for track end
+                monitorGameplayMusic();
+            })
+            .catch(err => {
+                console.warn('Gameplay music failed:', err);
+                gameplayActive = false;
+            });
+    }
+
+    let isCrossfading = false;
+
+    function monitorGameplayMusic() {
+        if (crossfadeTimer) clearInterval(crossfadeTimer);
+        isCrossfading = false;
+
+        crossfadeTimer = setInterval(() => {
+            if (!gameplayActive || !activeTrack || activeTrack.paused) {
+                if (crossfadeTimer) clearInterval(crossfadeTimer);
                 return;
             }
-            requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-    });
 
-    const clearGameplayMonitor = () => {
-        if (gameplayMonitor) {
-            clearInterval(gameplayMonitor);
-            gameplayMonitor = null;
-        }
-    };
+            if (isCrossfading) return;
 
-    const startGameplayMonitor = () => {
-        clearGameplayMonitor();
-        gameplayMonitor = setInterval(async () => {
-            if (!gameplayModeActive || gameplayTransitioning) return;
-            const current = activeGameplayAudio;
-            if (!current || current.paused) return;
-            const duration = Number.isFinite(current.duration) ? current.duration : 0;
-            if (!duration || duration <= 0) return;
-            const remaining = duration - current.currentTime;
-            if (remaining <= gameplayCrossfadeMs / 1000) {
-                gameplayTransitioning = true;
-                const nextTrack = nextTrackFromQueue();
-                idleGameplayAudio.src = nextTrack;
-                idleGameplayAudio.currentTime = 0;
-                idleGameplayAudio.volume = 0;
-                await idleGameplayAudio.play().catch(() => { gameplayTransitioning = false; });
-                await fadePair(current, idleGameplayAudio, gameplayCrossfadeMs);
-                current.pause();
-                current.currentTime = 0;
-                [activeGameplayAudio, idleGameplayAudio] = [idleGameplayAudio, activeGameplayAudio];
-                gameplayTransitioning = false;
+            const duration = activeTrack.duration;
+            const current = activeTrack.currentTime;
+            const remaining = duration - current;
+
+            // Start Crossfade at 5 seconds remaining
+            if (remaining > 0 && remaining < 5 && idleTrack.paused) {
+                isCrossfading = true;
+
+                const nextTrack = getNextTrack();
+                idleTrack.src = nextTrack;
+                idleTrack.currentTime = 0;
+                const targetVol = getEffectiveVolume('music', 1);
+                idleTrack.volume = 0;
+
+                idleTrack.play().then(() => {
+                    // Crossfade: Fade OUT active, Fade IN idle
+                    fadeTrack(activeTrack, activeTrack.volume, 0, 4000);
+                    fadeTrack(idleTrack, 0, targetVol, 4000, () => {
+                        // After fade complete
+                        activeTrack.pause();
+                        activeTrack.currentTime = 0;
+                        // Swap
+                        [activeTrack, idleTrack] = [idleTrack, activeTrack];
+                        isCrossfading = false;
+                    });
+                }).catch(e => {
+                    console.warn('Next track failed to play:', e);
+                    isCrossfading = false;
+                });
             }
-        }, 250);
-    };
+        }, 500);
+    }
 
-    const stopGameplayMusic = async (opts = {}) => {
-        gameplayModeActive = false;
-        clearGameplayMonitor();
-        const immediate = !!opts.immediate;
-        if (!immediate) {
-            await fadePair(gameplayA, null, toNum(opts.fadeOutMs, 900));
-            await fadePair(gameplayB, null, toNum(opts.fadeOutMs, 900));
+    function stopGameplayMusic(opts = {}) {
+        gameplayActive = false;
+        if (crossfadeTimer) {
+            clearInterval(crossfadeTimer);
+            crossfadeTimer = null;
         }
-        gameplayA.pause(); gameplayA.currentTime = 0;
-        gameplayB.pause(); gameplayB.currentTime = 0;
-        gameplayA.src = '';
-        gameplayB.src = '';
-    };
 
-    const startGameplayMusic = async (opts = {}) => {
-        if (!opts.forceRestart && gameplayModeActive && activeGameplayAudio && !activeGameplayAudio.paused && activeGameplayAudio.src) {
-            return;
-        }
-        const fadeInMs = toNum(opts.fadeInMs, 1600);
-        gameplayCrossfadeMs = clamp(toNum(opts.crossfadeMs, gameplayCrossfadeMs), 1400, 9000);
+        const stopTrack = (track) => {
+            if (track) {
+                if (opts.fadeOutMs) {
+                    fadeTrack(track, track.volume, 0, opts.fadeOutMs, () => {
+                        track.pause();
+                        track.currentTime = 0;
+                    });
+                } else {
+                    track.pause();
+                    track.currentTime = 0;
+                }
+            }
+        };
 
-        await fadeOutBackgroundMusic(500).catch(() => { });
-        gameplayModeActive = true;
-        gameplayTransitioning = false;
+        stopTrack(gameplayTrackA);
+        stopTrack(gameplayTrackB);
 
-        activeGameplayAudio.pause();
-        idleGameplayAudio.pause();
-        activeGameplayAudio.currentTime = 0;
-        idleGameplayAudio.currentTime = 0;
+        return Promise.resolve();
+    }
 
-        const firstTrack = nextTrackFromQueue();
-        activeGameplayAudio.src = firstTrack;
-        activeGameplayAudio.volume = 0;
+    // ==================== EXPOSE API ====================
 
-        await activeGameplayAudio.play().catch(() => { });
-        await fadePair(null, activeGameplayAudio, fadeInMs);
-        startGameplayMonitor();
-    };
-
-    const playBackgroundMusic = async (opts = {}) => {
-        const fadeInMs = toNum(opts.fadeInMs, 1200);
-        const immediateStart = !!opts.immediate;
-        await stopGameplayMusic({ fadeOutMs: 300 });
-        clearMenuFade();
-        menuAudio.__baseVolume = 1;
-        menuAudio.volume = immediateStart ? effectiveVolumeFor('music', 1) : 0;
-        try {
-            await menuAudio.play();
-            pendingMenuAutoplay = false;
-        } catch (e) {
-            pendingMenuAutoplay = true;
-            return;
-        }
-        if (immediateStart) {
-            return;
-        }
-        return fadeMenuTo(effectiveVolumeFor('music', 1), fadeInMs, false);
-    };
-
-    const restartBackgroundMusic = async (opts = {}) => {
-        menuAudio.currentTime = 0;
-        return playBackgroundMusic(opts);
-    };
-
-    const fadeOutBackgroundMusic = (duration = 1200) => {
-        if (menuAudio.paused) return Promise.resolve();
-        return fadeMenuTo(0, duration, true);
-    };
-
-    const stopBackgroundMusic = () => {
-        pendingMenuAutoplay = false;
-        fadeOutBackgroundMusic(900).catch(() => { });
-    };
-
-    const isMainMenuVisible = () => {
-        const menu = document.getElementById('mainMenuOverlay');
-        if (!menu) return false;
-        if (menu.classList.contains('hidden')) return false;
-        if (menu.style.display === 'none') return false;
-        return true;
-    };
-
-    const recoverPendingMenuAutoplay = () => {
-        if (!pendingMenuAutoplay) return;
-        if (gameplayModeActive) return;
-        if (!isMainMenuVisible()) return;
-        playBackgroundMusic({ immediate: true }).catch(() => { });
-    };
-
-    const isMusicPlaying = () => {
-        const menuPlaying = !menuAudio.paused && !menuAudio.ended;
-        const gameplayPlaying = (!gameplayA.paused && !!gameplayA.src) || (!gameplayB.paused && !!gameplayB.src);
-        return menuPlaying || gameplayPlaying;
-    };
-
-    const isMusicFading = () => menuFading || gameplayTransitioning;
-
-    window.getAudioSettings = getAudioSettings;
     window.setMusicVolume = setMusicVolume;
     window.setSfxVolume = setSfxVolume;
     window.setAudioMuted = setAudioMuted;
-    window.toggleAudioMuted = () => setAudioMuted(!settings.muted);
+    window.toggleAudioMuted = () => setAudioMuted(!state.muted);
+    window.getAudioSettings = getAudioSettings;
     window.playSfx = playSfx;
-    window.applyAudioPreferencesToElement = (audio, type = 'sfx', baseVolume = 1) => registerAudio(audio, type, baseVolume);
 
-    // Compatibility + existing callsites
+    window.playBackgroundMusic = playBackgroundMusic;
     window.stopBackgroundMusic = stopBackgroundMusic;
     window.fadeOutBackgroundMusic = fadeOutBackgroundMusic;
-    window.playBackgroundMusic = playBackgroundMusic;
-    window.restartBackgroundMusic = restartBackgroundMusic;
-    window.stopMusicImmediate = stopMusicImmediate;
-    window.isMusicPlaying = isMusicPlaying;
-    window.isMusicFading = isMusicFading;
+    window.restartBackgroundMusic = (opts) => {
+        if (menuAudio) menuAudio.currentTime = 0;
+        return playBackgroundMusic(opts);
+    };
 
-    // New gameplay API
     window.startGameplayMusic = startGameplayMusic;
     window.stopGameplayMusic = stopGameplayMusic;
-    window.isGameplayMusicActive = () => gameplayModeActive;
-
-    applyVolumes();
-
-    const bootMenuMusic = () => {
-        if (gameplayModeActive) return;
-        playBackgroundMusic({ immediate: true }).catch(() => { });
+    window.isGameplayMusicActive = () => gameplayActive;
+    window.stopMusicImmediate = () => {
+        stopBackgroundMusic();
+        stopGameplayMusic({ immediate: true });
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootMenuMusic, { once: true });
-    } else {
-        setTimeout(bootMenuMusic, 0);
+    // ==================== INIT ====================
+
+    loadSettings();
+    updateAllVolumes();
+
+    // Auto-start menu music
+    function tryAutoplay() {
+        if (!gameplayActive && (!menuAudio || menuAudio.paused)) {
+            playBackgroundMusic({ immediate: true });
+        }
     }
 
-    let menuAutoplayRetryTimer = null;
-    const startAutoplayRetryLoop = () => {
-        if (menuAutoplayRetryTimer) return;
-        menuAutoplayRetryTimer = setInterval(() => {
-            if (!pendingMenuAutoplay || gameplayModeActive || !isMainMenuVisible()) {
-                return;
-            }
-            playBackgroundMusic({ immediate: true }).catch(() => { });
-        }, 700);
-    };
-    startAutoplayRetryLoop();
-
-    ['pageshow', 'visibilitychange', 'focus'].forEach((evt) => {
-        window.addEventListener(evt, () => {
-            if (evt === 'visibilitychange' && document.visibilityState !== 'visible') return;
-            recoverPendingMenuAutoplay();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(tryAutoplay, 100);
         });
-    });
+    } else {
+        setTimeout(tryAutoplay, 100);
+    }
+
+    // Recover on visibility change
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            recoverPendingMenuAutoplay();
+        if (!document.hidden && menuAudio && menuAudio.paused && !gameplayActive) {
+            playBackgroundMusic({ immediate: true });
         }
     });
+
+    console.log('[Audio] System initialized v3');
+
 })();

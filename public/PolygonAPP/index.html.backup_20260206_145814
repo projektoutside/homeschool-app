@@ -471,9 +471,150 @@
             }
         }
 
+        /* Sidebar Panels - Responsive Widths */
+        .sidebar {
+            width: var(--sidebar-width-desktop);
+            min-width: 0;
+            max-width: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--color-border);
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+            flex-shrink: 0;
+            transition: transform 0.3s ease, width 0.3s ease, position 0.3s ease;
+            /* Ensure sidebars are visible by default */
+            visibility: visible;
+            opacity: 1;
+        }
 
-        /* === SIDEBAR CSS REMOVED - Legacy Panels Eliminated === */
+        .sidebar-right {
+            border-right: none;
+            border-left: 1px solid var(--color-border);
+        }
 
+        /* Mobile: Sidebars become overlays */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                /* Start below toolbar - top tools bar + toolbar height */
+                top: clamp(96px, 12vw, 126px);
+                left: 0;
+                width: min(85vw, 320px);
+                /* Height adjusted to account for top offset */
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                z-index: var(--z-menu);
+                transform: translateX(-100%);
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .sidebar.sidebar-right {
+                left: auto;
+                right: 0;
+                transform: translateX(100%);
+                border-left: none;
+                border-right: 1px solid var(--color-border);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .sidebar-right.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Tablet: Sidebars visible by default (like desktop), but can be toggled to overlay */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                /* On tablets, sidebars are visible by default like desktop */
+                width: var(--sidebar-width-tablet);
+                position: relative !important;
+                transform: none !important;
+                box-shadow: none;
+                /* Push sidebars down below toolbar - top-tools-bar + toolbar height */
+                /* Top tools bar: clamp(48px, 6vw, 56px) + Toolbar: clamp(48px, 6vw, 56px) to clamp(60px, 8vw, 70px) */
+                margin-top: clamp(96px, 12vw, 126px);
+                /* Constrain height to fill remaining viewport below toolbar */
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                max-height: calc(100vh - clamp(96px, 12vw, 126px));
+                max-height: calc(100dvh - clamp(96px, 12vw, 126px));
+                top: auto;
+                left: auto;
+                right: auto;
+                z-index: auto;
+                /* Ensure visibility */
+                visibility: visible !important;
+                opacity: 1 !important;
+                display: flex !important;
+                /* Align to start of flex container */
+                align-self: flex-start;
+            }
+
+            /* When toggled to overlay mode on tablet (mobile-open class) */
+            .sidebar.mobile-open {
+                position: fixed !important;
+                top: clamp(96px, 12vw, 126px) !important;
+                left: 0;
+                width: min(70vw, 400px);
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                z-index: var(--z-menu);
+                transform: translateX(0) !important;
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+                /* Reset margin when in overlay mode */
+                margin-top: 0 !important;
+                align-self: auto;
+            }
+
+            .sidebar.sidebar-right.mobile-open {
+                left: auto;
+                right: 0;
+                transform: translateX(0) !important;
+                border-left: none;
+                border-right: 1px solid var(--color-border);
+                /* Reset margin when in overlay mode */
+                margin-top: 0 !important;
+                align-self: auto;
+            }
+        }
+
+        .panel {
+            border-bottom: 1px solid #e0e0e0;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            /* For Safari compatibility */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: var(--spacing-md);
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
 
         /* Canvas Area - Fully Responsive */
         .canvas-container {
@@ -589,9 +730,142 @@
 
 
 
+        /* Layer Item - Responsive */
+        .layer-item {
+            padding: var(--spacing-md);
+            background: #f8f8f8;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            margin-left: var(--spacing-md);
+            margin-right: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: var(--touch-target-min);
+            touch-action: manipulation;
+        }
 
-        /* === LAYER CSS REMOVED - Legacy Panels Eliminated === */
+        .layer-item:hover {
+            background: #f0f0f0;
+        }
 
+        .layer-item.selected {
+            background: #e8e0ff;
+            border: 1px solid #667eea;
+        }
+
+        .layer-color {
+            width: clamp(28px, 3.5vw, 32px);
+            min-width: clamp(28px, 3.5vw, 32px);
+            height: clamp(28px, 3.5vw, 32px);
+            min-height: clamp(28px, 3.5vw, 32px);
+            border-radius: var(--radius-sm);
+            border: clamp(2px, 0.25vw, 3px) solid white;
+            box-shadow: 0 clamp(1px, 0.125vw, 2px) clamp(2px, 0.375vw, 3px) rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .layer-name {
+            flex: 1;
+            font-size: clamp(13px, 1.75vw, 16px);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .layer-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .layer-action-btn {
+            width: var(--touch-target-sm);
+            min-width: var(--touch-target-min);
+            height: var(--touch-target-sm);
+            min-height: var(--touch-target-min);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(14px, 1.875vw, 18px);
+            transition: background 0.2s;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+
+        .layer-action-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Visualizer Items - Responsive */
+        .viz-item {
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            margin-left: var(--spacing-md);
+            margin-right: var(--spacing-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: clamp(2px, 0.25vw, 3px) solid transparent;
+            min-height: var(--touch-target-min);
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+        }
+
+        .viz-item:hover {
+            background: #e0f2fe;
+            border-color: #0ea5e9;
+        }
+
+        .viz-item.active {
+            background: #eef2ff;
+            border-color: #818cf8;
+        }
+
+        .visualizer-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            background: white;
+            margin-right: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .viz-item:hover .visualizer-checkbox {
+            border-color: #0ea5e9;
+        }
+
+        .viz-item.active .visualizer-checkbox {
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+
+        .viz-item.active .visualizer-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .viz-item-title {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: var(--spacing-xs);
+            font-size: clamp(13px, 1.75vw, 16px);
+        }
 
 
 
@@ -3096,27 +3370,6 @@
                 height: min(94vh, 760px);
             }
         }
-
-        /* NUCLEAR OPTION: Force-hide Legacy Panels */
-        .sidebar,
-        .sidebar-left,
-        .sidebar-right,
-        .visualizers-panel,
-        .layers-panel,
-        #layersPanel,
-        #visualizersPanel,
-        [class*="sidebar"],
-        [id*="visualizer"],
-        [id*="layers-panel"] {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-            position: absolute !important;
-            z-index: -9999 !important;
-            visibility: hidden !important;
-        }
     </style>
 </head>
 
@@ -3193,9 +3446,49 @@
             <!-- Mobile Sidebar Backdrop -->
             <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
+            <!-- Left Sidebar -->
+            <div class="sidebar">
 
-            <!-- Left Sidebar REMOVED - Legacy Layers Panel eliminated -->
+                <!-- Wrapper for Layers Panel full height -->
+                <div class="resizable-panel" id="layersPanel" style="height: 100%; flex: 1;">
+                    <!-- Layers Panel -->
+                    <div class="panel-header">
+                        <button class="panel-back-btn" id="layersBackBtn" aria-label="Close Layers Panel">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <rect x="7" y="7" width="10" height="10" rx="1" ry="1" />
+                                <rect x="11" y="11" width="6" height="6" rx="0.5" ry="0.5" />
+                            </svg>
+                            Layers
+                        </span>
+                        <span id="layerCount">0</span>
+                    </div>
+                    <div class="resizable-panel-content">
+                        <!-- Create New Polygon Button -->
+                        <div class="create-polygon-container">
+                            <button id="createPolygonBtn" class="create-polygon-btn"
+                                aria-label="Open create new polygon menu">
+                                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7L2 17L12 22L22 17L22 7L12 2Z" />
+                                </svg>
+                                <span>Create New Polygon</span>
+                            </button>
+                        </div>
 
+                        <!-- Layers List -->
+                        <div id="layersList"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Canvas Container -->
             <div class="canvas-container" id="canvasContainer">
@@ -3268,9 +3561,55 @@
                 <div class="coord-display" id="coordDisplay">X: 0, Y: 0</div>
             </div>
 
-
-            <!-- Right Sidebar REMOVED - Legacy Visualizers Panel eliminated -->
-
+            <!-- Right Sidebar -->
+            <div class="sidebar sidebar-right">
+                <!-- Visualizers Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <button class="panel-back-btn" id="visualizersBackBtn" aria-label="Close Visualizers Panel">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <span>👁️ Visualizers</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="viz-item" data-viz="angles">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Angles</div>
+                        </div>
+                        <div class="viz-item" data-viz="medians">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Medians &amp; Centroid</div>
+                        </div>
+                        <div class="viz-item" data-viz="altitudes">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Altitudes &amp; Orthocenter</div>
+                        </div>
+                        <div class="viz-item" data-viz="bisectors">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Perpendicular Bisectors</div>
+                        </div>
+                        <div class="viz-item" data-viz="diagonals">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Diagonals</div>
+                        </div>
+                        <div class="viz-item" data-viz="vertices">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Vertices</div>
+                        </div>
+                        <div class="viz-item" data-viz="perimeters">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Perimeters</div>
+                        </div>
+                        <div class="viz-item" data-viz="baseHeight">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Base &amp; Height</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -6695,14 +7034,7 @@
 
             updateLayers() {
                 const list = document.getElementById('layersList');
-                const countEl = document.getElementById('layerCount');
-
-                // Safety check: UI elements might be missing in some modes
-                if (countEl) {
-                    countEl.textContent = this.polygons.length;
-                }
-
-                if (!list) return;
+                document.getElementById('layerCount').textContent = this.polygons.length;
 
                 list.innerHTML = '';
                 this.polygons.forEach((poly, index) => {
@@ -8585,13 +8917,111 @@
         }
 
 
+        // Setup back button handlers for panels
+        function setupPanelBackButtons() {
+            // Layers panel back button
+            const layersBackBtn = document.getElementById('layersBackBtn');
+            if (layersBackBtn) {
+                // Remove any existing listeners to prevent duplicates
+                const newLayersBtn = layersBackBtn.cloneNode(true);
+                layersBackBtn.parentNode.replaceChild(newLayersBtn, layersBackBtn);
 
-        // setupPanelBackButtons() REMOVED - Legacy panels eliminated
+                newLayersBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const layersSidebar = document.querySelector('.sidebar:not(.sidebar-right)');
+                    if (layersSidebar) {
+                        const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
 
+                        if (isMobile) {
+                            // On mobile, close the overlay
+                            closeMobileSidebars();
+                        } else if (isTablet) {
+                            // On tablet, toggle sidebar visibility (hide/show)
+                            toggleMobileSidebar(layersSidebar);
+                        }
+                    }
+                });
+            }
 
+            // Visualizers panel back button
+            const visualizersBackBtn = document.getElementById('visualizersBackBtn');
+            if (visualizersBackBtn) {
+                // Remove any existing listeners to prevent duplicates
+                const newVisualizersBtn = visualizersBackBtn.cloneNode(true);
+                visualizersBackBtn.parentNode.replaceChild(newVisualizersBtn, visualizersBackBtn);
 
-        // setupMobileMenus() REMOVED - Legacy sidebar toggles eliminated
+                newVisualizersBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const visualizersSidebar = document.querySelector('.sidebar-right');
+                    if (visualizersSidebar) {
+                        const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
 
+                        if (isMobile) {
+                            // On mobile, close the overlay
+                            closeMobileSidebars();
+                        } else if (isTablet) {
+                            // On tablet, toggle sidebar visibility (hide/show)
+                            toggleMobileSidebar(visualizersSidebar);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Add mobile menu buttons if needed (tablets show sidebars by default, but buttons available for toggling)
+        function setupMobileMenus() {
+            const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+            const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+            const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
+
+            // Show toggle buttons on mobile (required) and optionally on tablets (for overlay mode)
+            if (isMobile || isTablet) {
+                // Add menu toggle buttons to canvas container
+                const canvasContainer = document.getElementById('canvasContainer');
+
+                // Calculate position below toolbar
+                // Top tools bar height + Toolbar height + small gap
+                const topToolsBar = document.querySelector('.top-tools-bar');
+                const toolbar = document.querySelector('.toolbar');
+                let topOffset = 12; // Default gap
+
+                if (topToolsBar && toolbar) {
+                    const topToolsBarHeight = topToolsBar.getBoundingClientRect().height;
+                    const toolbarHeight = toolbar.getBoundingClientRect().height;
+                    topOffset = topToolsBarHeight + toolbarHeight + 8; // 8px gap below toolbar
+                } else {
+                    // Fallback calculation based on CSS values
+                    // Top tools bar: clamp(48px, 6vw, 56px) + mobile offset clamp(10px, 2vw, 15px)
+                    // Toolbar: clamp(48px, 6vw, 56px) to clamp(60px, 8vw, 70px)
+                    const viewportWidth = window.innerWidth;
+                    const topBarHeight = Math.max(48, Math.min(56, viewportWidth * 0.06)) +
+                        (viewportWidth <= 768 ? Math.max(10, Math.min(15, viewportWidth * 0.02)) : 0);
+                    const toolbarHeight = Math.max(48, Math.min(70, viewportWidth * 0.08));
+                    topOffset = topBarHeight + toolbarHeight + 8;
+                }
+
+                // Left sidebar toggle (Layers) - REMOVED per user request
+                // let leftToggle = document.getElementById('mobileMenuLeft');
+                // if (leftToggle) leftToggle.remove(); 
+
+                // Right sidebar toggle (Visualizers) - REMOVED per user request
+                // Also remove any previously injected button from earlier versions.
+                const existingRightToggle = document.getElementById('mobileMenuRight');
+                if (existingRightToggle) existingRightToggle.remove();
+            } else {
+                // Remove mobile menu buttons on desktop
+                const leftToggle = document.getElementById('mobileMenuLeft');
+                const rightToggle = document.getElementById('mobileMenuRight');
+                if (leftToggle) leftToggle.remove();
+                if (rightToggle) rightToggle.remove();
+            }
+        }
 
         // Initialize application
         let app;
@@ -8599,8 +9029,8 @@
             // Initialize device detector first
             deviceDetector = new DeviceDetector();
 
-
-            // setupPanelBackButtons() call removed
+            // Setup panel back buttons
+            setupPanelBackButtons();
 
             app = new PolygonFunApp();
 
@@ -8613,8 +9043,23 @@
             }
             window.game = game;
 
+            // Setup mobile menus
+            setupMobileMenus();
 
-            // setupMobileMenus() calls removed
+            // Update mobile menus on resize and orientation change
+            window.addEventListener('deviceResize', setupMobileMenus);
+            window.addEventListener('resize', () => {
+                // Debounce resize to avoid too many calls
+                clearTimeout(window.mobileMenuResizeTimeout);
+                window.mobileMenuResizeTimeout = setTimeout(() => {
+                    setupMobileMenus();
+                }, 100);
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    setupMobileMenus();
+                }, 200);
+            });
 
             // Example: Set up telemetry callbacks
             app.setTelemetryCallbacks({

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'polygon-fun-v12-tutorial-audio-fix';
+const CACHE_VERSION = 'polygon-fun-v14-music-polish';
 const OFFLINE_ASSETS = [
   './',
   './index.html',
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
           }
           const responseClone = response.clone();
           caches.open(CACHE_VERSION).then((cache) => {
-            cache.put(event.request, responseClone).catch(() => {});
+            cache.put(event.request, responseClone).catch(() => { });
           });
           return response;
         })

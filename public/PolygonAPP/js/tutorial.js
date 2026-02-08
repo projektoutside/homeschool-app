@@ -49,10 +49,10 @@ class Tutorial {
                 setup: (container) => this.setupWinScene(container)
             }
         ];
-        
+
         this._log('Tutorial instance created');
     }
-    
+
     _log(msg, type = 'info') {
         const prefix = '[Tutorial]';
         if (type === 'error') {
@@ -62,7 +62,7 @@ class Tutorial {
         } else {
             console.log(prefix, msg);
         }
-        
+
         // Also log to MobileDebug if available
         if (window.MobileDebug && typeof window.MobileDebug.add === 'function') {
             window.MobileDebug.add(`Tutorial: ${msg}`, type);
@@ -76,18 +76,18 @@ class Tutorial {
         this._log('Resetting tutorial state');
         this.stopAudio();
         this.cleanup();
-        
+
         // Remove any existing overlay
         const existingOverlay = document.getElementById('tutorialOverlay');
         if (existingOverlay) {
             existingOverlay.remove();
         }
-        
+
         this.overlay = null;
         this.initialized = false;
         this.currentStep = 0;
     }
-    
+
     /**
      * Clean up intervals and timeouts
      */
@@ -118,7 +118,7 @@ class Tutorial {
 
     init() {
         this._log(`init() called, initialized=${this.initialized}`);
-        
+
         // Check if there's an existing overlay
         const existingOverlay = document.getElementById('tutorialOverlay');
         if (existingOverlay) {
@@ -127,12 +127,12 @@ class Tutorial {
             this.overlay = null;
             this.initialized = false;
         }
-        
+
         if (this.initialized) {
             this._log('Already initialized, skipping');
             return;
         }
-        
+
         this.initialized = true;
 
         if (this.preloaded) {
@@ -154,7 +154,7 @@ class Tutorial {
 
     preloadStyles() {
         if (this.preloaded) return;
-        
+
         this._log('Preloading styles');
         const style = document.createElement('style');
         style.setAttribute('data-tutorial-style', 'true');
@@ -346,11 +346,11 @@ class Tutorial {
 
     createOverlay() {
         this._log('Creating overlay');
-        
+
         this.overlay = document.createElement('div');
         this.overlay.className = 'tut-overlay';
         this.overlay.id = 'tutorialOverlay';
-        
+
         // Create card content
         this.overlay.innerHTML = `
             <div class="tut-card">
@@ -368,37 +368,37 @@ class Tutorial {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(this.overlay);
-        
+
         // Force visibility (mobile fix)
         this.overlay.style.display = 'flex';
         this.overlay.style.visibility = 'visible';
         this.overlay.style.opacity = '1';
-        
+
         // Attach mobile-friendly button handlers
         this._attachButtonHandlers();
-        
+
         this.showStep(0);
         this._log('Overlay created and shown');
     }
-    
+
     /**
      * Attach touch-friendly button handlers
      */
     _attachButtonHandlers() {
         const skipBtn = document.getElementById('tutSkipBtn');
         const nextBtn = document.getElementById('tutNextBtn');
-        
+
         if (skipBtn) {
             this._addMobileHandler(skipBtn, () => this.skip());
         }
-        
+
         if (nextBtn) {
             this._addMobileHandler(nextBtn, () => this.next());
         }
     }
-    
+
     /**
      * Add mobile-friendly click/touch handler
      */
@@ -409,16 +409,16 @@ class Tutorial {
 
         let lastTime = 0;
         const DEBOUNCE = 300;
-        
+
         const wrappedHandler = (e) => {
             const now = Date.now();
             if (now - lastTime < DEBOUNCE) return;
             lastTime = now;
-            
+
             this._log(`Button pressed: ${element.id || element.className}`);
             handler();
         };
-        
+
         // Use pointer events if available
         if ('PointerEvent' in window) {
             element.addEventListener('pointerup', wrappedHandler, { passive: true });
@@ -435,24 +435,24 @@ class Tutorial {
 
     showStep(index) {
         this._log(`showStep(${index})`);
-        
+
         // Play audio (non-blocking)
         this.playAudio(index);
-        
+
         this.currentStep = index;
         const step = this.steps[index];
-        
+
         if (!step) {
             this._log(`Invalid step index: ${index}`, 'error');
             return;
         }
-        
+
         const stage = document.getElementById('tutStage');
         const title = document.getElementById('tutTitle');
         const desc = document.getElementById('tutDesc');
         const nextBtn = document.getElementById('tutNextBtn');
         const dots = document.getElementById('tutDots');
-        
+
         if (!stage || !title || !desc || !nextBtn || !dots) {
             this._log('Tutorial DOM elements not found', 'error');
             return;
@@ -471,7 +471,7 @@ class Tutorial {
         // Clear and setup stage
         this.cleanup();
         stage.innerHTML = '';
-        
+
         try {
             step.setup(stage);
         } catch (e) {
@@ -492,21 +492,21 @@ class Tutorial {
         this._log('skip() called');
         this.stopAudio();
         this.cleanup();
-        
+
         if (this.overlay) {
             this.overlay.remove();
             this.overlay = null;
         }
-        
+
         this.initialized = false;
-        
+
         // Mark tutorial as seen
         try {
             localStorage.setItem('tutorial_seen', 'true');
         } catch (e) {
             this._log('Could not save tutorial_seen to localStorage', 'warn');
         }
-        
+
         // Only auto-start game when explicitly allowed by the caller.
         // This prevents stale tutorial overlay interactions from re-entering
         // Beginner mode after returning to Main Menu.
@@ -525,7 +525,7 @@ class Tutorial {
         // For New Game flow, game mode is already active behind tutorial.
         // Start gameplay playlist only after tutorial voice flow has finished/skipped.
         if (window.game && window.game.state === 'playing' && typeof window.startGameplayMusic === 'function') {
-            window.startGameplayMusic({ fadeInMs: 1400 }).catch(() => {});
+            window.startGameplayMusic({ fadeInMs: 2000 }).catch(() => { });
         }
     }
 
@@ -574,6 +574,16 @@ class Tutorial {
                 // Audio autoplay blocked - this is expected on mobile
                 this._log(`Audio blocked (expected on mobile): ${e.message}`, 'warn');
             });
+
+            // If this is the final tutorial step (Tutorial4.mp3), fade in music seamlessly
+            if (index === this.audioFiles.length - 1) {
+                this.currentAudio.addEventListener('ended', () => {
+                    if (playToken === this.audioPlayToken && typeof window.startGameplayMusic === 'function') {
+                        this._log('Final tutorial voiceover ended. Fading in gameplay music...');
+                        window.startGameplayMusic({ fadeInMs: 2000 }).catch(() => { });
+                    }
+                }, { once: true });
+            }
         } catch (e) {
             this._log(`Audio creation error: ${e.message}`, 'warn');
         }
@@ -662,10 +672,10 @@ class Tutorial {
         // Update loop for line counter
         const updateLoop = () => {
             if (!document.body.contains(linesUI)) return;
-            
+
             const valSpan = document.getElementById('demoLinesVal');
             if (!valSpan) return;
-            
+
             valSpan.textContent = "1";
             valSpan.style.color = "inherit";
             linesUI.style.animation = 'pulse-attention 1.5s infinite';
@@ -674,7 +684,7 @@ class Tutorial {
                 if (!document.body.contains(linesUI)) return;
                 const valSpan = document.getElementById('demoLinesVal');
                 if (!valSpan) return;
-                
+
                 valSpan.textContent = "0";
                 valSpan.style.color = "#ef4444";
                 linesUI.style.animation = 'pulse-lines-red 0.5s';
@@ -770,7 +780,7 @@ class Tutorial {
 
         setTimeout(() => {
             if (!document.body.contains(container)) return;
-            
+
             p1.style.transform = "translate(-15px, 0) rotate(-5deg)";
             p2.style.transform = "translate(15px, 0) rotate(5deg)";
 
@@ -806,27 +816,27 @@ class Tutorial {
      */
     show() {
         this._log('show() called');
-        
+
         try {
             if (!this.overlay) {
                 this._log('No overlay exists, calling init()');
                 this.init();
                 return;
             }
-            
+
             // Re-append to ensure it's on top
             this._log('Re-appending existing overlay');
             document.body.appendChild(this.overlay);
-            
+
             // Force visibility
             this.overlay.style.display = 'flex';
             this.overlay.style.visibility = 'visible';
             this.overlay.style.opacity = '1';
             this.overlay.style.zIndex = '99999';
-            
+
             // Re-attach handlers (in case they were lost)
             this._attachButtonHandlers();
-            
+
             this.showStep(0);
             this._log('show() complete');
         } catch (e) {

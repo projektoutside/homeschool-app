@@ -209,11 +209,12 @@ const ViewerPage: React.FC = () => {
             // Use utility function to ensure paths work on both desktop and mobile
             const htmlPath = buildAssetPath(item.customHtmlPath);
             const isGameContent = item.type === 'game';
+            const isWorksheetContent = item.type === 'worksheet';
 
             return (
                 <div
                     ref={containerRef}
-                    className={`iframe-container ${isGameContent ? 'game-container' : ''} ${isFullscreen ? 'fullscreen-active' : ''}`}
+                    className={`iframe-container ${isGameContent ? 'game-container' : ''} ${isWorksheetContent ? 'worksheet-container' : ''} ${isFullscreen ? 'fullscreen-active' : ''}`}
                 >
                     <div className={`loading-overlay ${!isLoading ? 'hidden' : ''}`}>
                         <div className="loading-spinner"></div>
@@ -241,7 +242,7 @@ const ViewerPage: React.FC = () => {
                         src={htmlPath}
                         title={item.title}
                         allowFullScreen
-                        className={`content-iframe ${isGameContent ? 'game-iframe' : ''}`}
+                        className={`content-iframe ${isGameContent ? 'game-iframe' : ''} ${isWorksheetContent ? 'worksheet-iframe' : ''}`}
                         allow="fullscreen; camera; microphone; geolocation"
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
                         loading="eager"
@@ -322,9 +323,10 @@ const ViewerPage: React.FC = () => {
     };
 
     const isGameContent = item?.type === 'game';
+    const isWorksheetContent = item?.type === 'worksheet';
 
     return (
-        <div className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+        <div className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isWorksheetContent ? 'worksheet-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}>
             {!isFullscreen && (
                 <>
                     <button

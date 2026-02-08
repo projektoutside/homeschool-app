@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio System Debug Test</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            background: #f8fafc;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        #consoleLog {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔊 Audio System Debug</h1>
+
+    <div class="test-section">
+        <h2>Step 1: Load Audio Controller</h2>
+        <div id="loadStatus" class="status info">Loading...</div>
+        <button onclick="testAudioControllerExists()">Test AudioController</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Test Global API</h2>
+        <div id="apiStatus" class="status info">Waiting...</div>
+        <button onclick="testGlobalAPI()">Test API Functions</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Test Volume Control</h2>
+        <div>
+            <label>Music: <span id="musicVal">70%</span></label><br>
+            <input id="musicSlider" type="range" min="0" max="100" value="70" style="width: 300px;">
+        </div>
+        <div style="margin-top: 10px;">
+            <label>SFX: <span id="sfxVal">75%</span></label><br>
+            <input id="sfxSlider" type="range" min="0" max="100" value="75" style="width: 300px;">
+        </div>
+        <div style="margin-top: 10px;">
+            <label><input id="muteCheck" type="checkbox"> Mute</label>
+        </div>
+        <div id="volumeStatus" class="status info">Move sliders to test</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Test Music Playback</h2>
+        <button onclick="playMenuMusic()">Play Menu Music</button>
+        <button onclick="stopMusic()">Stop Music</button>
+        <div id="musicStatus" class="status info">No music playing</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div id="consoleLog">Initializing...\n</div>
+    </div>
+
+    <!-- Load actual audio system -->
+    <script src="js/audio-unlock.js"></script>
+    <script src="js/music.js"></script>
+
+    <script>
+        // Intercept console.log
+        const logEl = document.getElementById('consoleLog');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addLog(type, ...args) {
+            const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' ');
+            logEl.textContent += `[${type}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        console.log = (...args) => { originalLog(...args); addLog('LOG', ...args); };
+        console.error = (...args) => { originalError(...args); addLog('ERROR', ...args); };
+        console.warn = (...args) => { originalWarn(...args); addLog('WARN', ...args); };
+
+        // Catch all errors
+        window.addEventListener('error', (e) => {
+            addLog('ERROR', `${e.message} at ${e.filename}:${e.lineno}`);
+        });
+
+        // Test 1: AudioController exists
+        function testAudioControllerExists() {
+            const status = document.getElementById('loadStatus');
+            if (window.AudioController) {
+                status.className = 'status success';
+                status.textContent = '✓ AudioController loaded successfully';
+                console.log('AudioController:', window.AudioController);
+            } else {
+                status.className = 'status error';
+                status.textContent = '✗ AudioController not found';
+                console.error('AudioController is undefined');
+            }
+        }
+
+        // Test 2: Global API
+        function testGlobalAPI() {
+            const status = document.getElementById('apiStatus');
+            const required = [
+                'setMusicVolume',
+                'setSfxVolume',
+                'setAudioMuted',
+                'getAudioSettings',
+                'playSfx'
+            ];
+
+            const missing = required.filter(fn => typeof window[fn] !== 'function');
+
+            if (missing.length === 0) {
+                status.className = 'status success';
+                status.textContent = `✓ All ${required.length} API functions exist`;
+                console.log('API Test passed. Settings:', window.getAudioSettings());
+            } else {
+                status.className = 'status error';
+                status.textContent = `✗ Missing functions: ${missing.join(', ')}`;
+                console.error('Missing API functions:', missing);
+            }
+        }
+
+        // Test 3: Volume Controls
+        document.getElementById('musicSlider').addEventListener('input', (e) => {
+            const val = Number(e.target.value);
+            document.getElementById('musicVal').textContent = val + '%';
+
+            if (window.setMusicVolume) {
+                window.setMusicVolume(val / 100);
+                const settings = window.getAudioSettings ? window.getAudioSettings() : {};
+                document.getElementById('volumeStatus').className = 'status success';
+                document.getElementById('volumeStatus').textContent =
+                    `✓ Music set to ${val}% (actual: ${Math.round(settings.musicVolume * 100)}%)`;
+                console.log('Music volume changed:', settings.musicVolume);
+            } else {
+                document.getElementById('volumeStatus').className = 'status error';
+                document.getElementById('volumeStatus').textContent = '✗ setMusicVolume not available';
+            }
+        });
+
+        document.getElementById('sfxSlider').addEventListener('input', (e) => {
+            const val = Number(e.target.value);
+            document.getElementById('sfxVal').textContent = val + '%';
+
+            if (window.setSfxVolume) {
+                window.setSfxVolume(val / 100);
+                const settings = window.getAudioSettings ? window.getAudioSettings() : {};
+                document.getElementById('volumeStatus').className = 'status success';
+                document.getElementById('volumeStatus').textContent =
+                    `✓ SFX set to ${val}% (actual: ${Math.round(settings.sfxVolume * 100)}%)`;
+                console.log('SFX volume changed:', settings.sfxVolume);
+            } else {
+                document.getElementById('volumeStatus').className = 'status error';
+                document.getElementById('volumeStatus').textContent = '✗ setSfxVolume not available';
+            }
+        });
+
+        document.getElementById('muteCheck').addEventListener('change', (e) => {
+            const muted = e.target.checked;
+
+            if (window.setAudioMuted) {
+                window.setAudioMuted(muted);
+                const settings = window.getAudioSettings ? window.getAudioSettings() : {};
+                document.getElementById('volumeStatus').className = 'status success';
+                document.getElementById('volumeStatus').textContent =
+                    `✓ Mute ${muted ? 'ON' : 'OFF'} (actual: ${settings.muted})`;
+                console.log('Mute changed:', settings.muted);
+            } else {
+                document.getElementById('volumeStatus').className = 'status error';
+                document.getElementById('volumeStatus').textContent = '✗ setAudioMuted not available';
+            }
+        });
+
+        // Test 4: Music playback
+        function playMenuMusic() {
+            const status = document.getElementById('musicStatus');
+            if (window.playBackgroundMusic) {
+                window.playBackgroundMusic({ immediate: true })
+                    .then(() => {
+                        status.className = 'status success';
+                        status.textContent = '✓ Music playing';
+                        console.log('Music started');
+                    })
+                    .catch(e => {
+                        status.className = 'status error';
+                        status.textContent = '✗ Music failed: ' + e.message;
+                        console.error('Music error:', e);
+                    });
+            } else {
+                status.className = 'status error';
+                status.textContent = '✗ playBackgroundMusic not available';
+            }
+        }
+
+        function stopMusic() {
+            const status = document.getElementById('musicStatus');
+            if (window.stopMusicImmediate) {
+                window.stopMusicImmediate();
+                status.className = 'status info';
+                status.textContent = 'Music stopped';
+                console.log('Music stopped');
+            } else {
+                status.className = 'status error';
+                status.textContent = '✗ stopMusicImmediate not available';
+            }
+        }
+
+        // Auto-test on load
+        setTimeout(() => {
+            testAudioControllerExists();
+            testGlobalAPI();
+        }, 500);
+    </script>
+</body>
+
+</html>
