@@ -1,10 +1,10 @@
 /**
  * Service Worker for La's Homeschool Hub App
  * Provides offline support, caching, and auto-update functionality
- * @version 1.0.0
+ * @version 1.0.1
  */
 
-const CACHE_NAME = 'homeschool-hub-v3';
+const CACHE_NAME = 'homeschool-hub-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -28,76 +28,84 @@ const GITHUB_CONFIG = {
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
-
+  console.log('[SW] Installing Service Worker v4...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => {
-        console.log('[SW] Skip waiting to activate immediately');
-        return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('[SW] Cache installation failed:', error);
-      })
+      .then(() => self.skipWaiting())
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
-
+  console.log('[SW] Activating Service Worker v4...');
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((name) => name !== CACHE_NAME)
-            .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Claiming clients');
-        return self.clients.claim();
-      })
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-// Helper to determine if a request should be Cache-First (static assets)
-const isStaticAsset = (url) => {
-  // Check for common static file extensions
-  // Supports optional query strings (e.g., style.css?v=1)
-  return /\.(png|jpg|jpeg|svg|gif|webp|ico|mp3|wav|ogg|mp4|webm|woff|woff2|ttf|eot|css|js)(\?.*)?$/i.test(url);
+// Helper to determine if a request is an API or external call to skip
+const shouldSkip = (url) => {
+  return url.includes('api.github.com') || url.startsWith('chrome-extension://');
 };
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - Robust Strategy
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and browser extensions
-  if (event.request.method !== 'GET' || event.request.url.startsWith('chrome-extension://')) {
+  if (event.request.method !== 'GET' || shouldSkip(event.request.url)) {
     return;
   }
 
-  // Skip API calls and external resources (Google Fonts/Analytics might be external but let's skip API)
-  if (event.request.url.includes('api.github.com')) {
-    return;
-  }
+  const url = new URL(event.request.url);
 
-  // Strategy 1: Cache First for Static Assets (Images, Media, Fonts, Scripts)
-  // If in cache, return immediately. Do NOT revalidate in background.
-  if (isStaticAsset(event.request.url)) {
+  // STRATEGY 1: Network First for HTML/Navigation
+  // We want the latest entry point always, falling back to cache if offline.
+  if (event.request.mode === 'navigate' ||
+    (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((networkResponse) => {
-          // Cache the new asset
+      fetch(event.request)
+        .then((networkResponse) => {
+          // Cache the fresh copy
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            // Update the specific request cache
+            cache.put(event.request, responseToCache);
+
+            // CRITICAL: Also update the 'index.html' cache entry because that's our fallback
+            // We use './index.html' so it resolves relative to the SW location
+            cache.put('./index.html', responseToCache.clone());
+          });
+          return networkResponse;
+        })
+        .catch(() => {
+          console.log('[SW] Network failed, serving offline fallback');
+          // Fallback to the cached index.html
+          return caches.match('./index.html').then(response => {
+            // If we don't have index.html in cache (unlikely), just return null (browser default offline page)
+            return response || null;
+          });
+        })
+    );
+    return;
+  }
+
+  // STRATEGY 2: Stale-While-Revalidate for everything else (JS, CSS, Images)
+  // Returns cached version immediately, but updates cache in background.
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
           if (networkResponse.ok && networkResponse.type === 'basic') {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -105,56 +113,16 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return networkResponse;
+        })
+        .catch((err) => {
+          // Network failure is fine if we have cache
+          // console.log('[SW] Background fetch failed:', err);
         });
-      })
-    );
-    return;
-  }
 
-  // Strategy 2: Stale-While-Revalidate for HTML, JSON, and other content
-  // Return cached version if avail, but always update in background
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version if available
-        if (response) {
-          // Fetch new version in background for next time
-          // ONLY if it's the same origin to avoid cross-origin issues
-          if (event.request.url.startsWith(self.location.origin)) {
-            fetch(event.request)
-              .then((fetchResponse) => {
-                if (fetchResponse.ok) {
-                  caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, fetchResponse.clone());
-                  });
-                }
-              })
-              .catch(() => { }); // Ignore fetch errors for background update
-          }
-          return response;
-        }
-
-        // Otherwise fetch from network
-        return fetch(event.request)
-          .then((fetchResponse) => {
-            // Cache successful responses
-            if (fetchResponse.ok && fetchResponse.type === 'basic') {
-              const responseToCache = fetchResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-            }
-            return fetchResponse;
-          })
-          .catch((error) => {
-            console.error('[SW] Fetch failed:', error);
-            // Return offline fallback if available
-            if (event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-            throw error;
-          });
-      })
+      // If we have a cached response, return it immediately
+      // The network request continues in background to update cache for NEXT time
+      return cachedResponse || fetchPromise;
+    })
   );
 });
 
@@ -164,14 +132,11 @@ self.addEventListener('message', (event) => {
 
   switch (event.data.type) {
     case 'SKIP_WAITING':
-      console.log('[SW] Skip waiting message received');
       self.skipWaiting();
       break;
-
     case 'CHECK_FOR_UPDATES':
       checkForUpdates(event.source);
       break;
-
     case 'GET_VERSION':
       event.source.postMessage({
         type: 'VERSION_INFO',
@@ -187,93 +152,26 @@ async function checkForUpdates(client) {
   try {
     const response = await fetch(
       `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/commits/${GITHUB_CONFIG.branch}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Homeschool-Hub-App'
-        }
-      }
+      { headers: { 'Accept': 'application/vnd.github.v3+json' } }
     );
 
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
     const data = await response.json();
-
-    // Safely extract commit data with fallbacks
     const latestCommit = data?.sha || 'unknown';
-    const commitData = data?.commit || {};
-    const commitInfo = commitData?.commit || commitData; // Handle different API versions
-    const authorInfo = commitInfo?.author || commitData?.author || {};
-
-    const commitDate = authorInfo?.date || new Date().toISOString();
-    const commitMessage = commitInfo?.message || commitData?.message || 'No message available';
-
-    // Get stored commit hash
-    const storedCommit = await getStoredCommit();
 
     client.postMessage({
       type: 'UPDATE_CHECK_RESULT',
-      hasUpdate: latestCommit !== storedCommit && latestCommit !== 'unknown',
-      currentCommit: storedCommit,
-      latestCommit: latestCommit,
-      commitDate: commitDate,
-      commitMessage: commitMessage,
-      repoUrl: `https://github.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`
+      hasUpdate: false, // Simplified for now since we rely on SW versioning
+      latestCommit: latestCommit
     });
-
   } catch (error) {
     console.log('[SW] Update check failed:', error.message);
-    // Silently fail - don't spam console with errors
-    client.postMessage({
-      type: 'UPDATE_CHECK_ERROR',
-      error: 'Unable to check for updates'
-    });
   }
 }
 
-// Store commit hash in cache
-async function storeCommit(commitHash) {
-  const cache = await caches.open(CACHE_NAME);
-  const response = new Response(JSON.stringify({ commit: commitHash }));
-  await cache.put('app-commit-hash', response);
-}
-
-// Get stored commit hash from cache
-async function getStoredCommit() {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const response = await cache.match('app-commit-hash');
-    if (response) {
-      const data = await response.json();
-      return data.commit;
-    }
-  } catch (e) {
-    console.error('[SW] Error reading stored commit:', e);
-  }
-  return null;
-}
-
-// Periodic sync for background update checks (if supported)
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-check') {
-    event.waitUntil(
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => checkForUpdates(client));
-      })
-    );
-  }
-});
-
-// Background sync for offline form submissions (if implemented)
+// Background sync (placeholder)
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
+    // console.log('[SW] Background sync');
   }
 });
-
-async function syncData() {
-  // Implement data synchronization logic here if needed
-  console.log('[SW] Background sync triggered');
-}

@@ -1,42 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homeschool Hub</title>
     <script>
-        // GitHub Pages 404.html fallback for React Router
-        // This redirects 404s to index.html so React Router can handle client-side routing
-        (function() {
-            const path = window.location.pathname;
-            const segments = path.split('/').filter(s => s && s !== '404.html' && s !== 'index.html');
-            
-            // For project pages: /repo-name/path -> /repo-name/index.html
-            // For user/org pages: /path -> /index.html
-            let basePath = '/';
-            
-            // If we have segments, the first one might be the repo name
-            // Check if index.html exists at /first-segment/
-            if (segments.length > 0) {
-                // Try to determine base path
-                // For GitHub Pages project pages, base is usually /repo-name/
-                basePath = '/' + segments[0] + '/';
+        // GitHub Pages 404.html fallback for React Router - SPA
+        // This handles the redirect for Single Page Apps on GitHub Pages
+        (function () {
+            var repoName = 'homeschool-app';
+            var l = window.location;
+            var redirectBase = '/' + repoName;
+
+            // Clean up the path: remove the repo name to get the "internal" router path
+            var path = l.pathname;
+            if (path.startsWith(redirectBase)) {
+                path = path.slice(redirectBase.length);
             }
-            
-            // Build the redirect URL
-            const indexPath = basePath === '/' ? '/index.html' : basePath + 'index.html';
-            
-            // Redirect immediately
-            window.location.replace(indexPath);
+            if (!path.startsWith('/')) path = '/' + path;
+
+            // Redirect to repo root index.html logic
+            l.replace(
+                l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+                redirectBase + '/?' +
+                path +
+                (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+                l.hash
+            );
         })();
     </script>
 </head>
+
 <body>
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, sans-serif;">
+    <div
+        style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, sans-serif;">
         <div style="text-align: center;">
             <h1>Loading...</h1>
             <p>Redirecting...</p>
         </div>
     </div>
 </body>
+
 </html>
