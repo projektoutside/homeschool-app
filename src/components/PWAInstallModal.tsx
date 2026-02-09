@@ -10,12 +10,13 @@ interface PWAInstallModalProps {
 export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClose, title = "Install App" }) => {
     if (!isOpen) return null;
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                  !(window as unknown as { MSStream?: boolean }).MSStream;
 
     return (
         <div className="pwa-modal-overlay" onClick={onClose}>
             <div className="pwa-modal-content" onClick={e => e.stopPropagation()}>
-                <button className="pwa-modal-close" onClick={onClose}>×</button>
+                <button className="pwa-modal-close" onClick={onClose} aria-label="Close">×</button>
                 <h2>{title}</h2>
 
                 {isIOS ? (

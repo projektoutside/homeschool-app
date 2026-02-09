@@ -4,7 +4,8 @@
  * @version 1.0.1
  */
 
-const CACHE_NAME = 'homeschool-hub-v5';
+const CACHE_NAME = 'homeschool-hub-v1.0.1';
+const SW_VERSION = '1.0.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -28,7 +29,7 @@ const GITHUB_CONFIG = {
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker v4...');
+  console.log(`[SW] Installing Service Worker v${SW_VERSION}...`);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -41,7 +42,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker v4...');
+  console.log(`[SW] Activating Service Worker v${SW_VERSION}...`);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(

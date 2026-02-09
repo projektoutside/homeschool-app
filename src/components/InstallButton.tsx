@@ -52,7 +52,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
       setIsInstalling(false);
       onInstallComplete?.(false);
     }
-  }, [isInstallable, isInstalled, isIOS, isSafari, installPrompt, onInstallStart, onInstallComplete]);
+  }, [isInstallable, isIOS, isSafari, installPrompt, onInstallStart, onInstallComplete]);
 
   // If already installed, show launch option
   if (isInstalled) {

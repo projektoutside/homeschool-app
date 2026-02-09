@@ -8,7 +8,7 @@ La's Homeschool Hub App now supports **Progressive Web App (PWA)** technology, a
 
 Send this link to your customers:
 ```
-https://https://projektoutside.github.io/homeschool-app//install
+https://projektoutside.github.io/homeschool-app/install
 ```
 
 When users visit this link, they'll see:

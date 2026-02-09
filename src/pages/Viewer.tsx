@@ -25,6 +25,10 @@ const ViewerPage: React.FC = () => {
 
     const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
 
+    // Derived state - defined early for use in callbacks
+    const isGameContent = item?.type === 'game';
+    const isWorksheetContent = item?.type === 'worksheet';
+
     useEffect(() => {
         isGame.current = item?.type === 'game' && !!item?.customHtmlPath;
     }, [item]);
@@ -110,14 +114,14 @@ const ViewerPage: React.FC = () => {
                 setShowControls(false);
             }, 3000);
         }
-    }, [isFullscreen]);
+    }, [isFullscreen, isWorksheetContent]);
 
     const handleMouseMove = useCallback(() => {
         if (isFullscreen && isWorksheetContent) {
             setShowControls(true);
             resetControlsTimeout();
         }
-    }, [isFullscreen, resetControlsTimeout]);
+    }, [isFullscreen, isWorksheetContent, resetControlsTimeout]);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -135,7 +139,7 @@ const ViewerPage: React.FC = () => {
         const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
         events.forEach(e => document.addEventListener(e, handleFullscreenChange));
         return () => events.forEach(e => document.removeEventListener(e, handleFullscreenChange));
-    }, [resetControlsTimeout]);
+    }, [resetControlsTimeout, isWorksheetContent]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -146,17 +150,6 @@ const ViewerPage: React.FC = () => {
             iframeRef.current.src = buildAssetPath(item.customHtmlPath);
         }
     }, [item]);
-
-    // Auto-enter fullscreen for worksheets when loaded - REMOVED due to browser restrictions
-    // useEffect(() => {
-    //     if (isWorksheetContent && !isLoading && !hasAutoMaximized.current && item?.id) {
-    //         hasAutoMaximized.current = item.id;
-    //         // Small delay to ensure content is rendered
-    //         setTimeout(() => {
-    //             enterFullscreen().catch(() => {});
-    //         }, 500);
-    //     }
-    // }, [isLoading, item?.id]);
 
     const handleDownload = useCallback(async () => {
         if (!item) return;
@@ -184,10 +177,8 @@ const ViewerPage: React.FC = () => {
                 <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
             </div>
         );
-    }
 
-    const isGameContent = item.type === 'game';
-    const isWorksheetContent = item.type === 'worksheet';
+    }
 
     const renderContent = () => {
         if (!item.customHtmlPath) {
@@ -223,7 +214,6 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
                             setIsLoading(false);
-                            // Auto maximizing removed to prevent user gesture errors
                         }}
                     />
                 </div>

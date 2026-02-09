@@ -131,7 +131,8 @@ const contentManagerPlugin = () => {
 }
 
 // Use absolute path for GitHub Pages to support client-side routing with deep links
-const base = process.env.NODE_ENV === 'production' ? '/homeschool-app/' : '/';
+// Respect BASE_PATH env var if set (by GitHub Actions workflow)
+const base = process.env.BASE_PATH || (process.env.NODE_ENV === 'production' ? '/homeschool-app/' : '/');
 
 // https://vite.dev/config/
 export default defineConfig({
