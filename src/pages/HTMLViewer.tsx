@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { buildAssetPath } from '../utils/pathUtils';
 import './HTMLViewer.css';
 
 interface WorksheetFile {
@@ -15,6 +16,11 @@ interface WorksheetFolder {
     path: string;
     files: WorksheetFile[];
 }
+
+// Build URL for worksheet files that works with GitHub Pages base URL
+const buildWorksheetUrl = (folderName: string): string => {
+    return buildAssetPath(`Worksheets/${folderName}/index.html`);
+};
 
 const HTMLViewer: React.FC = () => {
     const navigate = useNavigate();
@@ -77,11 +83,12 @@ const HTMLViewer: React.FC = () => {
 
                 for (const folderName of worksheetFolders) {
                     try {
-                        const response = await fetch(`/Worksheets/${folderName}/index.html`, { method: 'HEAD' });
+                        const filePath = buildWorksheetUrl(folderName);
+                        const response = await fetch(filePath, { method: 'HEAD' });
                         if (response.ok) {
                             const file: WorksheetFile = {
                                 name: 'index.html',
-                                path: `/Worksheets/${folderName}/index.html`,
+                                path: filePath,
                                 folder: folderName,
                                 title: formatFolderName(folderName),
                                 description: 'Interactive worksheet'
@@ -89,12 +96,12 @@ const HTMLViewer: React.FC = () => {
 
                             scannedFolders.push({
                                 name: folderName,
-                                path: `/Worksheets/${folderName}`,
+                                path: buildAssetPath(`Worksheets/${folderName}`),
                                 files: [file]
                             });
                         }
                     } catch {
-                        // Folder doesn't exist or no index.html
+                        // Folder doesn't exist or no index.html - silently skip
                     }
                 }
 
@@ -138,7 +145,6 @@ const HTMLViewer: React.FC = () => {
     const calculatePanelFit = useCallback(() => {
         if (!panelRef.current) return 1;
 
-
         const padding = 60; // 30px padding on each side
         const availableWidth = panelRef.current.clientWidth - padding;
         const availableHeight = panelRef.current.clientHeight - padding;
@@ -149,8 +155,6 @@ const HTMLViewer: React.FC = () => {
         const scaleX = availableWidth / contentWidth;
         const scaleY = availableHeight / contentHeight;
 
-        // Fit largely by height to see full page if possible, but respect width
-        // Using 0.95 to leave a small breathing room
         let scale = Math.min(scaleX, scaleY) * 0.98;
 
         if (scale <= 0 || !isFinite(scale)) scale = 1;
@@ -161,8 +165,6 @@ const HTMLViewer: React.FC = () => {
     const handleFileSelect = useCallback((file: WorksheetFile) => {
         setSelectedFile(file);
         setShowFileBrowser(false);
-        // Set initial zoom to perfect fit
-        // We use a timeout to let the UI settle if needed, though usually instant
         setTimeout(() => {
             setZoomScale(calculatePanelFit());
         }, 50);
@@ -171,11 +173,6 @@ const HTMLViewer: React.FC = () => {
     // Update scale on window resize
     useEffect(() => {
         const handleResize = () => {
-            // Only auto-adjust if not in fullscreen. 
-            // If user manually zoomed, we might want to respect that? 
-            // For now, let's keep it responsive to window size changes by updating the baseline.
-            // Actually, updating zoomScale directly on resize might be annoying if user is zoomed in.
-            // But the user requested "perfectly filling up... exactly similar to fullscreen", which implies responsiveness.
             if (!isFullscreen && selectedFile) {
                 setZoomScale(calculatePanelFit());
             }
@@ -203,32 +200,22 @@ const HTMLViewer: React.FC = () => {
         return matchesSearch;
     });
 
-    // Track fullscreen state changes - REMOVED (Using CSS overlay instead)
-    // The previous implementation using the Fullscreen API caused issues with iframes and security.
-    // We are switching to a robust CSS-based "Maximize" approach.
-
     // Calculate perfect fit scale when in fullscreen
     useEffect(() => {
         if (!isFullscreen) return;
 
         const calculateFitScale = () => {
-            // Standard letter size in pixels (approx)
             const contentWidth = 816;
             const contentHeight = 1056;
 
-            // Get screen dimensions - safeguard against 0
             const screenWidth = window.innerWidth || 1024;
             const screenHeight = window.innerHeight || 768;
 
-            // Calculate scale to fit
-            // Use 0.95 factor to leave a small margin/breathing room
             const scaleX = screenWidth / contentWidth;
             const scaleY = screenHeight / contentHeight;
 
-            // Use the smaller scale to ensure it fits entirely
             let fitScale = Math.min(scaleX, scaleY) * 0.95;
 
-            // Safety check
             if (!fitScale || fitScale <= 0 || !isFinite(fitScale)) {
                 fitScale = 1;
             }
@@ -236,7 +223,6 @@ const HTMLViewer: React.FC = () => {
             setFullscreenScale(fitScale);
         };
 
-        // Small delay to allow browser to complete layout update
         const timer = setTimeout(calculateFitScale, 50);
 
         window.addEventListener('resize', calculateFitScale);
@@ -256,11 +242,8 @@ const HTMLViewer: React.FC = () => {
 
     return (
         <div className={`html-viewer-page ${isFullscreen ? 'is-fullscreen' : ''}`} ref={viewerContainerRef}>
-            {/* Glass Container */}
             <div className="html-viewer-container">
-                {/* Header Control Panel */}
                 <header className="html-viewer-header">
-                    {/* Open Worksheet Button - Omitted for brevity, logic unchanged */}
                     <button
                         className="open-worksheet-btn"
                         onClick={() => setShowFileBrowser(true)}
@@ -278,7 +261,6 @@ const HTMLViewer: React.FC = () => {
                         <span className="open-worksheet-text">Open Worksheet</span>
                     </button>
 
-                    {/* Information Panel */}
                     <div className="worksheet-info-panel">
                         {selectedFile ? (
                             <>
@@ -294,9 +276,7 @@ const HTMLViewer: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Toolbar Row */}
                 <div className="html-viewer-toolbar">
-                    {/* Zoom Control */}
                     <div className="zoom-control">
                         <button
                             className="zoom-btn zoom-out"
@@ -322,7 +302,6 @@ const HTMLViewer: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="toolbar-actions">
                         <button
                             className="toolbar-action-btn home-btn"
@@ -374,9 +353,7 @@ const HTMLViewer: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Main Worksheet Viewer Panel */}
                 <div className="worksheet-viewer-panel" ref={panelRef}>
-                    {/* Exit Fullscreen Button - Only visible in fullscreen */}
                     <button
                         className="exit-fullscreen-btn"
                         onClick={exitFullscreen}
@@ -431,7 +408,6 @@ const HTMLViewer: React.FC = () => {
                 </div>
             </div>
 
-            {/* File Browser Modal */}
             {showFileBrowser && (
                 <div className="file-browser-overlay" onClick={() => setShowFileBrowser(false)}>
                     <div className="file-browser-panel" onClick={e => e.stopPropagation()}>
