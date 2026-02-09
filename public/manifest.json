@@ -2,94 +2,68 @@
   "name": "La's Homeschool Hub App",
   "short_name": "Homeschool Hub",
   "description": "A central place for all your homeschool educational resources, games, and tools.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#6366f1",
   "theme_color": "#6366f1",
-  "categories": ["education", "games", "kids"],
+  "categories": [
+    "education",
+    "games",
+    "kids"
+  ],
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
+      "src": "icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-96x96.png",
+      "src": "icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-128x128.png",
+      "src": "icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-144x144.png",
+      "src": "icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-152x152.png",
+      "src": "icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-384x384.png",
+      "src": "icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/home-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshots/home-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Games",
-      "short_name": "Games",
-      "description": "Browse educational games",
-      "url": "/?tab=games",
-      "icons": [{ "src": "/icons/games-shortcut.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Worksheets",
-      "short_name": "Worksheets",
-      "description": "Browse worksheets",
-      "url": "/?tab=worksheets",
-      "icons": [{ "src": "/icons/worksheets-shortcut.png", "sizes": "96x96" }]
     }
   ]
 }
