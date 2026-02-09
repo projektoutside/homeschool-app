@@ -80,25 +80,45 @@ const HomePage: React.FC = () => {
 
                 {visibleItems.map(item => {
                     const iconPath = item.thumbnail ? buildAssetPath(item.thumbnail) : null;
-                    const targetPath = item.type === 'game'
-                        ? `/play/${item.id}`
-                        : (item.type === 'worksheet' || item.type === 'tool')
-                            ? `/open/${item.id}`
-                            : `/resource/${item.id}`;
+
+                    // Handle navigation based on item properties
+                    const handleItemClick = () => {
+                        // If item has externalUrl, navigate directly to it
+                        if (item.externalUrl) {
+                            navigate(item.externalUrl);
+                            return;
+                        }
+                        // Otherwise, use type-based routing
+                        const targetPath = item.type === 'game'
+                            ? `/play/${item.id}`
+                            : (item.type === 'worksheet' || item.type === 'tool')
+                                ? `/open/${item.id}`
+                                : `/resource/${item.id}`;
+                        navigate(targetPath);
+                    };
+
                     return (
                         <button
                             key={item.id}
                             type="button"
                             className="desktop-app-icon"
-                            onClick={() => navigate(targetPath)}
+                            onClick={handleItemClick}
                             aria-label={`Open ${item.title}`}
                         >
                             <span className="desktop-app-icon-inner" aria-hidden="true">
                                 {iconPath ? (
-                                    <img src={iconPath} alt="" loading="lazy" decoding="async" />
-                                ) : (
-                                    <span className="desktop-app-fallback">{getFallbackIcon(item.type)}</span>
-                                )}
+                                    <img
+                                        src={iconPath}
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextElementSibling?.removeAttribute('hidden');
+                                        }}
+                                    />
+                                ) : null}
+                                <span className="desktop-app-fallback" hidden={!!iconPath}>{getFallbackIcon(item.type)}</span>
                             </span>
                         </button>
                     );
@@ -116,6 +136,10 @@ const HomePage: React.FC = () => {
                         type="button"
                         className={`dock-tab-btn ${currentTabId === tab.id ? 'active' : ''}`}
                         onClick={() => {
+                            if (tab.label === 'Worksheets') {
+                                navigate('/html-viewer');
+                                return;
+                            }
                             setActiveTab(tab.id);
                             setOpenFolderId(null);
                         }}

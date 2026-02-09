@@ -12,25 +12,25 @@ const ViewerPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const viewerContainerRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [zoomScale, setZoomScale] = useState(1);
+    const [showControls, setShowControls] = useState(true);
+    const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isGame = useRef(false);
     const hasAutoMaximized = useRef<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
 
-    // Determine if this is a game
     useEffect(() => {
         isGame.current = item?.type === 'game' && !!item?.customHtmlPath;
     }, [item]);
 
-    // PWA Install Hook Calculation
     const { manifestUrl, serviceWorkerUrl } = useMemo(() => {
         if (item?.type === 'game' && item?.customHtmlPath) {
-            // Assume manifest and sw are adjacent to index.html (standard for this project structure)
             const htmlPath = buildAssetPath(item.customHtmlPath);
             return {
                 manifestUrl: htmlPath.replace('index.html', 'manifest.json'),
@@ -47,146 +47,131 @@ const ViewerPage: React.FC = () => {
     });
 
     const handleInstallClick = useCallback(() => {
-        if (isInstalled) {
-            // Already installed - maybe just open it or disable button
-            return;
-        }
+        if (isInstalled) return;
         if (isInstallable) {
             install();
         } else {
-            // Fallback for iOS or unsupported browsers -> Show instructions
             setIsModalOpen(true);
         }
     }, [isInstallable, isInstalled, install]);
 
-    // Enter fullscreen for games
-    const enterFullscreen = useCallback(async () => {
-        if (!isGame.current || !containerRef.current) {
-            return;
-        }
+    const handleZoomIn = useCallback(() => {
+        setZoomScale(prev => Math.min(prev * 1.2, 3));
+    }, []);
 
-        try {
-            const element = containerRef.current as FullscreenHTMLElementType;
+    const handleZoomOut = useCallback(() => {
+        setZoomScale(prev => Math.max(prev * 0.8, 0.5));
+    }, []);
 
-            // Request fullscreen - this may require user gesture
-            if (element.requestFullscreen) {
-                await element.requestFullscreen();
-            } else if (element.webkitRequestFullscreen) {
-                await element.webkitRequestFullscreen();
-            } else if (element.mozRequestFullScreen) {
-                await element.mozRequestFullScreen();
-            } else if (element.msRequestFullscreen) {
-                await element.msRequestFullscreen();
-            }
+    const handleZoomReset = useCallback(() => {
+        setZoomScale(1);
+    }, []);
 
-            // Don't set state here - let the fullscreenchange event handle it
-            // This prevents state updates if fullscreen is blocked
-        } catch (err: unknown) {
-            // Fullscreen might be blocked by browser policy (requires user gesture)
-            // Silently fail - fullscreen is a nice-to-have feature
+    const handlePrint = useCallback(() => {
+        if (iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.print();
         }
     }, []);
 
-    // Exit fullscreen
+    const enterFullscreen = useCallback(async () => {
+        const element = viewerContainerRef.current;
+        if (!element) return;
+        try {
+            const el = element as FullscreenHTMLElementType;
+            if (el.requestFullscreen) await el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+            else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
+            else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+        } catch {
+            // ignore
+        }
+    }, []);
+
     const exitFullscreen = useCallback(async () => {
         try {
             const doc = document as FullscreenDocumentType;
-            if (doc.exitFullscreen) {
-                await doc.exitFullscreen();
-            } else if (doc.webkitExitFullscreen) {
-                await doc.webkitExitFullscreen();
-            } else if (doc.mozCancelFullScreen) {
-                await doc.mozCancelFullScreen();
-            } else if (doc.msExitFullscreen) {
-                await doc.msExitFullscreen();
-            }
+            if (doc.exitFullscreen) await doc.exitFullscreen();
+            else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+            else if (doc.mozCancelFullScreen) await doc.mozCancelFullScreen();
+            else if (doc.msExitFullscreen) await doc.msExitFullscreen();
             setIsFullscreen(false);
-        } catch (err: unknown) {
-            // Silently fail - exit fullscreen error is not critical
+        } catch {
+            // ignore
         }
     }, []);
 
-    // Listen for fullscreen changes
+    // Auto-hide controls in fullscreen mode
+    const resetControlsTimeout = useCallback(() => {
+        if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+        }
+        if (isFullscreen && isWorksheetContent) {
+            controlsTimeoutRef.current = setTimeout(() => {
+                setShowControls(false);
+            }, 3000);
+        }
+    }, [isFullscreen]);
+
+    const handleMouseMove = useCallback(() => {
+        if (isFullscreen && isWorksheetContent) {
+            setShowControls(true);
+            resetControlsTimeout();
+        }
+    }, [isFullscreen, resetControlsTimeout]);
+
     useEffect(() => {
         const handleFullscreenChange = () => {
             const doc = document as FullscreenDocumentType;
-            const fullscreenElement = doc.fullscreenElement ||
-                doc.webkitFullscreenElement ||
-                doc.mozFullScreenElement ||
-                doc.msFullscreenElement;
-            setIsFullscreen(!!fullscreenElement);
-        };
+            const fullscreenElement = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+            const isNowFullscreen = !!fullscreenElement;
+            setIsFullscreen(isNowFullscreen);
 
-        // Use all possible fullscreen event names for cross-browser support
+            // Auto-show controls when entering fullscreen
+            if (isNowFullscreen && isWorksheetContent) {
+                setShowControls(true);
+                resetControlsTimeout();
+            }
+        };
         const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        events.forEach(e => document.addEventListener(e, handleFullscreenChange));
+        return () => events.forEach(e => document.removeEventListener(e, handleFullscreenChange));
+    }, [resetControlsTimeout]);
 
-        events.forEach(eventName => {
-            document.addEventListener(eventName, handleFullscreenChange);
-        });
-
-        return () => {
-            events.forEach(eventName => {
-                document.removeEventListener(eventName, handleFullscreenChange);
-            });
-        };
-    }, []);
-
-    // Reset iframe when item changes
     useEffect(() => {
         setIsLoading(true);
-        setIsFullscreen(false);
+        setZoomScale(1);
         hasAutoMaximized.current = null;
 
-        if (!item) {
-            return;
+        if (item?.customHtmlPath && iframeRef.current) {
+            iframeRef.current.src = buildAssetPath(item.customHtmlPath);
         }
+    }, [item]);
 
-        if (item.customHtmlPath && iframeRef.current) {
-            const htmlPath = buildAssetPath(item.customHtmlPath);
-
-            // Always set the src to ensure it loads correctly, especially when item changes
-            // Force a clean reload by clearing first
-            const currentSrc = iframeRef.current.src;
-            if (currentSrc === htmlPath || currentSrc.includes(htmlPath)) {
-                // If already loading this path, clear and reload to ensure fresh load
-                iframeRef.current.src = 'about:blank';
-                setTimeout(() => {
-                    if (iframeRef.current && item.id === id) {
-                        iframeRef.current.src = htmlPath;
-                    }
-                }, 100);
-            } else {
-                // Directly set new path
-                iframeRef.current.src = htmlPath;
-            }
-        } else if (iframeRef.current && !item.customHtmlPath) {
-            // Clear iframe if no customHtmlPath
-            iframeRef.current.src = 'about:blank';
-            setIsLoading(false);
-        }
-    }, [item, id]);
+    // Auto-enter fullscreen for worksheets when loaded - REMOVED due to browser restrictions
+    // useEffect(() => {
+    //     if (isWorksheetContent && !isLoading && !hasAutoMaximized.current && item?.id) {
+    //         hasAutoMaximized.current = item.id;
+    //         // Small delay to ensure content is rendered
+    //         setTimeout(() => {
+    //             enterFullscreen().catch(() => {});
+    //         }, 500);
+    //     }
+    // }, [isLoading, item?.id]);
 
     const handleDownload = useCallback(async () => {
         if (!item) return;
-
         setIsDownloading(true);
         try {
-            // Priority: downloadUrl, then customHtmlPath, then externalUrl
-            const downloadUrl = item.downloadUrl || (item.customHtmlPath ? buildAssetPath(item.customHtmlPath) : item.externalUrl);
-
-            if (!downloadUrl) {
-                alert('No download available for this item.');
+            const url = item.downloadUrl || (item.customHtmlPath ? buildAssetPath(item.customHtmlPath) : item.externalUrl);
+            if (!url) {
+                alert('No download available');
                 return;
             }
-
-            // Generate a clean filename
-            const extension = downloadUrl.toLowerCase().endsWith('.pdf') ? '.pdf' : '.html';
-            const filename = `${item.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`;
-
-            await downloadFile(downloadUrl, filename);
-        } catch (error) {
-            console.error('Download error:', error);
-            alert('An error occurred while trying to download this resource.');
+            const ext = url.toLowerCase().endsWith('.pdf') ? '.pdf' : '.html';
+            const filename = `${item.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${ext}`;
+            await downloadFile(url, filename);
+        } catch {
+            alert('Download failed');
         } finally {
             setIsDownloading(false);
         }
@@ -195,212 +180,241 @@ const ViewerPage: React.FC = () => {
     if (!item) {
         return (
             <div className="empty-state">
-                <p>Resource not found for ID: {id}</p>
-                <div className="empty-state-actions">
-                    <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
-                    <button onClick={() => navigate('/')} className="home-btn">Go Home</button>
-                </div>
+                <p>Resource not found</p>
+                <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
             </div>
         );
     }
 
-    const renderContent = () => {
-        if (item.customHtmlPath) {
-            // Use utility function to ensure paths work on both desktop and mobile
-            const htmlPath = buildAssetPath(item.customHtmlPath);
-            const isGameContent = item.type === 'game';
-            const isWorksheetContent = item.type === 'worksheet';
+    const isGameContent = item.type === 'game';
+    const isWorksheetContent = item.type === 'worksheet';
 
+    const renderContent = () => {
+        if (!item.customHtmlPath) {
             return (
-                <div
-                    ref={containerRef}
-                    className={`iframe-container ${isGameContent ? 'game-container' : ''} ${isWorksheetContent ? 'worksheet-container' : ''} ${isFullscreen ? 'fullscreen-active' : ''}`}
-                >
+                <div className="empty-state">
+                    <p>No preview available</p>
+                </div>
+            );
+        }
+
+        const htmlPath = buildAssetPath(item.customHtmlPath);
+
+        if (isGameContent) {
+            return (
+                <div className="game-viewport">
                     <div className={`loading-overlay ${!isLoading ? 'hidden' : ''}`}>
-                        <div className="loading-spinner"></div>
-                        <p className="loading-text">Loading {isGameContent ? 'Game' : 'Content'}...</p>
+                        <div className="loading-spinner" />
+                        <p className="loading-text">Loading Game...</p>
                     </div>
-                    {isGameContent && (
-                        <button
-                            className="fullscreen-toggle-btn"
-                            onClick={isFullscreen ? exitFullscreen : enterFullscreen}
-                            aria-label={isFullscreen ? "Minimize" : "Maximize"}
-                            type="button"
-                            title={isFullscreen ? "Minimize" : "Maximize"}
-                        >
-                            {isFullscreen ? (
-                                <span className="minimize-icon" aria-hidden="true">[]</span>
-                            ) : (
-                                <span className="maximize-icon" aria-hidden="true">[ ]</span>
-                            )}
-                            <span className="sr-only">{isFullscreen ? "Minimize" : "Maximize"}</span>
-                        </button>
-                    )}
+                    <button
+                        className="fullscreen-toggle-btn"
+                        onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+                        aria-label={isFullscreen ? "Minimize" : "Maximize"}
+                    >
+                        {isFullscreen ? '[]' : '[ ]'}
+                    </button>
                     <iframe
                         ref={iframeRef}
-                        key={item.id}
                         src={htmlPath}
                         title={item.title}
+                        className="game-frame"
                         allowFullScreen
-                        className={`content-iframe ${isGameContent ? 'game-iframe' : ''} ${isWorksheetContent ? 'worksheet-iframe' : ''}`}
-                        allow="fullscreen; camera; microphone; geolocation"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
-                        loading="eager"
+                        sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
                             setIsLoading(false);
-
-                            // Automatically maximize when game loads, but only once per item
-                            if (isGameContent && hasAutoMaximized.current !== item.id) {
-                                hasAutoMaximized.current = item.id;
-                                setTimeout(() => {
-                                    enterFullscreen().catch(() => {
-                                        // Silently fail if blocked by browser policy
-                                    });
-                                }, 300);
-                            }
-                        }}
-                        onError={() => {
-                            setIsLoading(false);
-                            // Don't navigate away on iframe error - error is already handled by loading state
+                            // Auto maximizing removed to prevent user gesture errors
                         }}
                     />
                 </div>
             );
         }
 
-        switch (item.type) {
-            case 'game':
-                // Placeholder for game component logic (only for games without customHtmlPath)
-                return (
-                    <div className="game-container">
-                        <div className="placeholder-game">
-                            <span className="game-icon">🎮</span>
-                            <h3>{item.title} - Game Wrapper</h3>
-                            <p>Game Component: {item.componentName}</p>
-                            <p>In a real implementation, the specific React component would dynamically load here.</p>
-                        </div>
-                    </div>
-                );
-            case 'tool':
-                if (item.externalUrl) {
-                    return (
-                        <div className="iframe-container">
-                            <iframe
-                                key={item.id}
-                                src={item.externalUrl}
-                                title={item.title}
-                                allowFullScreen
-                                className="content-iframe"
-                                allow="fullscreen; camera; microphone; geolocation"
-                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
-                            />
-                        </div>
-                    );
-                }
-                // Tool without externalUrl or customHtmlPath - show placeholder
-                return <div className="placeholder-tool">Tool component not found</div>;
-            case 'worksheet':
-            case 'resource':
-                return (
-                    <div className="resource-container">
-                        <div className="pdf-preview">
-                            <span>📄 Preview of {item.title}</span>
-                        </div>
-                        <div className="resource-actions">
-                            {item.downloadUrl ? (
-                                <a href={item.downloadUrl} className="download-btn" target="_blank" rel="noopener noreferrer">
-                                    Download PDF
-                                </a>
-                            ) : (
-                                <button className="download-btn" disabled>Download Unavailable</button>
-                            )}
-                        </div>
-                    </div>
-                );
-            default:
-                return <div>Unknown content type</div>;
-        }
+        // Worksheet view with inner container for proper zoom isolation
+        return (
+            <div className="worksheet-viewport">
+                <div className={`loading-overlay ${!isLoading ? 'hidden' : ''}`}>
+                    <div className="loading-spinner" />
+                    <p className="loading-text">Loading Worksheet...</p>
+                </div>
+                <div className="worksheet-inner">
+                    <iframe
+                        ref={iframeRef}
+                        src={htmlPath}
+                        title={item.title}
+                        className="worksheet-frame"
+                        style={{
+                            transform: `scale(${zoomScale})`,
+                            transformOrigin: 'top center',
+                            width: `${100 / zoomScale}%`,
+                            minHeight: `${100 / zoomScale}%`,
+                            transition: 'transform 0.2s ease-out'
+                        }}
+                        allowFullScreen
+                        sandbox="allow-scripts"
+                        onLoad={() => setIsLoading(false)}
+                    />
+                </div>
+            </div>
+        );
     };
 
-    const isGameContent = item?.type === 'game';
-    const isWorksheetContent = item?.type === 'worksheet';
+    // Worksheet fullscreen control panel
+    const renderWorksheetFullscreenControls = () => {
+        if (!isWorksheetContent || !isFullscreen) return null;
+
+        return (
+            <div
+                className={`worksheet-fullscreen-controls ${showControls ? 'visible' : 'hidden'}`}
+                onMouseEnter={() => setShowControls(true)}
+                onMouseLeave={resetControlsTimeout}
+            >
+                <div className="worksheet-control-panel">
+                    <div className="worksheet-info">
+                        <h2 className="worksheet-title">{item.title}</h2>
+                        <p className="worksheet-description">{item.description}</p>
+                        <div className="worksheet-meta">
+                            <span className="worksheet-subjects">{item.subjects.join(', ')}</span>
+                            <span className="worksheet-grades">{item.gradeLevels.join(', ')}</span>
+                        </div>
+                    </div>
+                    <div className="worksheet-actions">
+                        <div className="worksheet-zoom-controls">
+                            <button
+                                onClick={handleZoomOut}
+                                className="worksheet-zoom-btn"
+                                title="Zoom Out"
+                                aria-label="Zoom Out"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
+                                    <path d="M8 11h6" />
+                                </svg>
+                            </button>
+                            <span className="worksheet-zoom-level">{Math.round(zoomScale * 100)}%</span>
+                            <button
+                                onClick={handleZoomIn}
+                                className="worksheet-zoom-btn"
+                                title="Zoom In"
+                                aria-label="Zoom In"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
+                                    <path d="M11 8v6M8 11h6" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={handleZoomReset}
+                                className="worksheet-zoom-btn reset"
+                                title="Reset Zoom"
+                                aria-label="Reset Zoom"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                    <path d="M3 3v5h5" />
+                                </svg>
+                            </button>
+                        </div>
+                        <button
+                            onClick={handlePrint}
+                            className="worksheet-action-btn print-btn"
+                            title="Print Worksheet"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="6 9 6 2 18 2 18 9" />
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                <rect width="12" height="8" x="6" y="14" />
+                            </svg>
+                            <span>Print</span>
+                        </button>
+                        <button
+                            onClick={handleDownload}
+                            className={`worksheet-action-btn download-btn ${isDownloading ? 'downloading' : ''}`}
+                            disabled={isDownloading}
+                            title="Download Worksheet"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" x2="12" y1="15" y2="3" />
+                            </svg>
+                            <span>{isDownloading ? 'Saving...' : 'Save'}</span>
+                        </button>
+                        <button
+                            onClick={exitFullscreen}
+                            className="worksheet-action-btn exit-btn"
+                            title="Exit Fullscreen"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
+                            </svg>
+                            <span>Exit</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isWorksheetContent ? 'worksheet-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+        <div
+            ref={viewerContainerRef}
+            className={`viewer-page ${isGameContent ? 'game-viewer' : ''} ${isWorksheetContent ? 'worksheet-viewer' : ''} ${isFullscreen ? 'fullscreen-mode' : ''}`}
+            onMouseMove={handleMouseMove}
+        >
             {!isFullscreen && (
                 <>
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="back-btn"
-                        aria-label="Go back to previous page"
-                        type="button"
-                    >
-                        <span aria-hidden="true">←</span> Back
-                    </button>
+                    <button onClick={() => navigate(-1)} className="back-btn">← Back</button>
                     <header className="viewer-header">
                         <div className="viewer-header-title">
                             <h1>{item.title}</h1>
-                            {isGameContent && (
-                                <button
-                                    onClick={handleInstallClick}
-                                    className={`download-btn-main ${isInstalled ? 'installed' : ''}`}
-                                    disabled={isInstalled}
-                                    title={isInstalled ? "App Installed" : "Install App"}
-                                >
-                                    {isInstalled ? (
-                                        <>
-                                            <span className="icon">✓</span>
-                                            Installed
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="icon">📱</span>
-                                            Install App
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                            {!isGameContent && (
-                                <button
-                                    onClick={handleDownload}
-                                    className={`download-btn-main ${isDownloading ? 'downloading' : ''}`}
-                                    disabled={isDownloading}
-                                    title="Download for offline use"
-                                >
-                                    {isDownloading ? (
-                                        <>
-                                            <span className="spinner-sm"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="icon">💾</span>
-                                            Download
-                                        </>
-                                    )}
-                                </button>
-                            )}
+                            <div className="header-actions">
+                                {isWorksheetContent && (
+                                    <>
+                                        <div className="zoom-controls">
+                                            <button onClick={handleZoomOut} className="zoom-btn" title="Zoom Out">−</button>
+                                            <span className="zoom-level">{Math.round(zoomScale * 100)}%</span>
+                                            <button onClick={handleZoomIn} className="zoom-btn" title="Zoom In">+</button>
+                                            <button onClick={handleZoomReset} className="zoom-btn reset" title="Reset">⤢</button>
+                                        </div>
+                                        <button onClick={handlePrint} className="print-btn-main">🖨️ Print</button>
+                                    </>
+                                )}
+                                {isGameContent ? (
+                                    <button
+                                        onClick={handleInstallClick}
+                                        className={`download-btn-main ${isInstalled ? 'installed' : ''}`}
+                                        disabled={isInstalled}
+                                    >
+                                        {isInstalled ? '✓ Installed' : '📱 Install App'}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleDownload}
+                                        className={`download-btn-main ${isDownloading ? 'downloading' : ''}`}
+                                        disabled={isDownloading}
+                                    >
+                                        {isDownloading ? 'Saving...' : '💾 Download'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <p>{item.description}</p>
-                        <div className="tags" role="list">
-                            {item.gradeLevels.map(g => (
-                                <span key={g} className="tag" role="listitem">
-                                    {g}
-                                </span>
-                            ))}
+                        <div className="tags">
+                            {item.gradeLevels.map(g => <span key={g} className="tag">{g}</span>)}
                         </div>
                     </header>
                 </>
             )}
+
+            {renderWorksheetFullscreenControls()}
+
             <div className="viewer-content">
                 {renderContent()}
             </div>
-            {isGameContent && (
-                <PWAInstallModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                />
-            )}
+            {isGameContent && <PWAInstallModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />}
         </div>
     );
 };

@@ -3,7 +3,7 @@ import { CONTENT_ITEMS } from '../data/mockContent';
 import type { ContentItem, ContentType } from '../types/content';
 import type { ManagerConfig, ManagerFolder, ManagerTab } from '../types/manager';
 
-const STORAGE_KEY = 'homeschool_manager_config_v1';
+const STORAGE_KEY = 'homeschool_manager_config_v2';
 
 const DEFAULT_TABS: ManagerTab[] = [
   { id: 'game', label: 'Games', icon: '🎮', sourceType: 'game' },

@@ -1,0 +1,824 @@
+/* HTML Viewer - Glass Style Application Shell */
+.html-viewer-page {
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(135deg, #1a2744 0%, #0d1525 50%, #0a0f1a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Soft glow background effect */
+.html-viewer-page::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+/* Glass Container */
+.html-viewer-container {
+    width: 100%;
+    max-width: 900px;
+    height: calc(100vh - 40px);
+    max-height: 1200px;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border-radius: 24px;
+    box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header Control Panel */
+.html-viewer-header {
+    background: linear-gradient(180deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+    padding: 24px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Open Worksheet Button - Teal to Green Gradient */
+.open-worksheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #0d9488 0%, #10b981 50%, #059669 100%);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+        0 4px 15px rgba(16, 185, 129, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.open-worksheet-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.open-worksheet-btn:hover::before {
+    left: 100%;
+}
+
+.open-worksheet-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 25px rgba(16, 185, 129, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.open-worksheet-btn:active {
+    transform: translateY(0);
+}
+
+.open-worksheet-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.open-worksheet-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.open-worksheet-text {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.5px;
+}
+
+/* Information Panel */
+.worksheet-info-panel {
+    background: linear-gradient(180deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.3) 100%);
+    padding: 14px 24px;
+    border-radius: 12px;
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.2),
+        0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.worksheet-title {
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+    font-style: italic;
+}
+
+.worksheet-description {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Toolbar Row */
+.html-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    background: rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 16px;
+}
+
+/* Zoom Control */
+.zoom-control {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border-radius: 50px;
+    padding: 4px;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.zoom-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+
+.zoom-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.zoom-level {
+    min-width: 50px;
+    text-align: center;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Toolbar Actions */
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.8) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.toolbar-action-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, rgba(71, 85, 105, 0.7) 0%, rgba(51, 65, 85, 0.9) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.toolbar-action-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.toolbar-action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.toolbar-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Main Worksheet Viewer Panel */
+.worksheet-viewer-panel {
+    flex: 1;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    margin: 20px;
+    margin-top: 0;
+    border-radius: 12px;
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.05),
+        0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: auto;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 30px;
+}
+
+/* Worksheet Content Wrapper */
+.worksheet-content-wrapper {
+    /* Auto width/height to wrap the fixed-size iframe */
+    width: auto;
+    height: auto;
+    min-height: auto;
+    max-width: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease, height 0.3s ease;
+    transform-origin: top center;
+    /* Center it in the panel */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.worksheet-iframe {
+    /* Fixed base dimensions for US Letter / A4 worksheet (approx) */
+    width: 816px;
+    height: 1056px;
+    min-height: 1056px;
+    border: none;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Placeholder */
+.worksheet-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+}
+
+.worksheet-placeholder p {
+    font-size: 2rem;
+    color: #64748b;
+    font-weight: 300;
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* File Browser Modal Overlay */
+.file-browser-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* File Browser Panel */
+.file-browser-panel {
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.99) 100%);
+    border-radius: 20px;
+    box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.file-browser-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.file-browser-header h2 {
+    color: #e2e8f0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.close-browser-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-browser-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+}
+
+.close-browser-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Search */
+.file-browser-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.file-browser-search svg {
+    width: 20px;
+    height: 20px;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.file-browser-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.file-browser-search input::placeholder {
+    color: #64748b;
+}
+
+/* File Browser Content */
+.file-browser-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.file-browser-loading,
+.file-browser-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #64748b;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #10b981;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Folder List */
+.folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.folder-item {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.folder-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(51, 65, 85, 0.3);
+    border: none;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.folder-header:hover {
+    background: rgba(71, 85, 105, 0.4);
+}
+
+.folder-arrow {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    color: #64748b;
+}
+
+.folder-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.folder-arrow svg {
+    width: 100%;
+    height: 100%;
+}
+
+.folder-icon {
+    width: 20px;
+    height: 20px;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.folder-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.folder-name {
+    flex: 1;
+}
+
+/* Folder Files */
+.folder-files {
+    padding: 4px 4px 4px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(30, 41, 59, 0.5);
+    border: none;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+.file-item:hover {
+    background: rgba(51, 65, 85, 0.6);
+    color: #e2e8f0;
+}
+
+.file-item.selected {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.file-icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.file-name {
+    flex: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .html-viewer-page {
+        padding: 10px;
+    }
+
+    .html-viewer-container {
+        height: calc(100vh - 20px);
+        border-radius: 16px;
+    }
+
+    .html-viewer-header {
+        padding: 16px 20px;
+    }
+
+    .open-worksheet-btn {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+
+    .worksheet-info-panel {
+        padding: 12px 16px;
+    }
+
+    .worksheet-title {
+        font-size: 0.9rem;
+    }
+
+    .worksheet-description {
+        font-size: 0.8rem;
+    }
+
+    .html-viewer-toolbar {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .toolbar-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toolbar-action-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+
+    .worksheet-viewer-panel {
+        margin: 12px;
+        margin-top: 0;
+        padding: 16px;
+    }
+
+    .worksheet-placeholder p {
+        font-size: 1.4rem;
+    }
+
+    .file-browser-panel {
+        max-height: 90vh;
+        margin: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .open-worksheet-btn {
+        width: 100%;
+    }
+
+    .zoom-control {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toolbar-action-btn span {
+        display: none;
+    }
+
+    .toolbar-action-btn {
+        padding: 10px;
+    }
+
+    .worksheet-placeholder p {
+        font-size: 1.2rem;
+    }
+}
+
+/* Scrollbar Styling */
+.file-browser-content::-webkit-scrollbar,
+.worksheet-viewer-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.file-browser-content::-webkit-scrollbar-track,
+.worksheet-viewer-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.file-browser-content::-webkit-scrollbar-thumb,
+.worksheet-viewer-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.file-browser-content::-webkit-scrollbar-thumb:hover,
+.worksheet-viewer-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================================
+   FULLSCREEN STYLES - "Maximize" Mode
+   ============================================================================ */
+
+/* 
+   When the .is-fullscreen class is present on the page container,
+   we override the layout to be a fixed overlay.
+*/
+
+.html-viewer-page.is-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #1a1a1a !important;
+    overflow: hidden !important;
+}
+
+/* Ensure the main container fills the space */
+.html-viewer-page.is-fullscreen .html-viewer-container {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Hide header and toolbar in fullscreen */
+.html-viewer-page.is-fullscreen .html-viewer-header,
+.html-viewer-page.is-fullscreen .html-viewer-toolbar {
+    display: none !important;
+}
+
+/* Viewer panel takes up all space */
+.html-viewer-page.is-fullscreen .worksheet-viewer-panel {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+}
+
+/* Wrapper centers the content */
+.html-viewer-page.is-fullscreen .worksheet-content-wrapper {
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform-origin: center center !important;
+}
+
+/* Fixed size iframe for scaling */
+.html-viewer-page.is-fullscreen .worksheet-iframe {
+    width: 816px !important;
+    height: 1056px !important;
+    min-height: 1056px !important;
+    max-width: none !important;
+    max-height: none !important;
+    background: white !important;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 4px !important;
+    transform: none !important;
+}
+
+/* Exit button */
+.exit-fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.html-viewer-page.is-fullscreen .exit-fullscreen-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.exit-fullscreen-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.05);
+}
+
+.exit-fullscreen-btn svg {
+    width: 18px;
+    height: 18px;
+}
