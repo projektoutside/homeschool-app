@@ -37,6 +37,10 @@ class GameController {
         });
 
         document.getElementById('startGame')?.addEventListener('click', () => {
+            // Fade out main menu music when Start Game is clicked
+            if (window.musicController) {
+                window.musicController.fadeOutMainMenuMusic();
+            }
             this.startCountdown();
         });
 
@@ -78,6 +82,11 @@ class GameController {
         const feedbackOverlay = document.getElementById('feedbackOverlay');
         if (feedbackOverlay) {
             feedbackOverlay.style.display = 'none';
+        }
+
+        // Start main menu music when returning to main menu
+        if (window.musicController) {
+            window.musicController.startMainMenuMusic();
         }
 
         anime({
@@ -140,6 +149,7 @@ class GameController {
             this.showMainMenu();
         });
 
+        // Time limit slider
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         if (timeLimitSlider && timeLimitValue) {
@@ -148,6 +158,7 @@ class GameController {
             });
         }
 
+        // Preset buttons for time limit
         document.querySelectorAll('.preset-button').forEach(button => {
             button.addEventListener('click', () => {
                 const time = parseInt(button.dataset.time);
@@ -160,6 +171,9 @@ class GameController {
             });
         });
 
+        // Sound settings event listeners
+        this.setupSoundSettingsListeners();
+
         document.getElementById('saveSettings')?.addEventListener('click', () => {
             this.saveSettings();
         });
@@ -169,6 +183,54 @@ class GameController {
         });
     }
 
+    setupSoundSettingsListeners() {
+        // Music volume slider
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const musicVolumeValue = document.getElementById('musicVolumeValue');
+        if (musicVolumeSlider && musicVolumeValue) {
+            musicVolumeSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                musicVolumeValue.textContent = value;
+                // Apply volume in real-time
+                if (window.musicController) {
+                    window.musicController.setMusicVolume(value / 100);
+                }
+            });
+        }
+
+        // SFX volume slider
+        const sfxVolumeSlider = document.getElementById('sfxVolume');
+        const sfxVolumeValue = document.getElementById('sfxVolumeValue');
+        if (sfxVolumeSlider && sfxVolumeValue) {
+            sfxVolumeSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                sfxVolumeValue.textContent = value;
+                // Apply volume in real-time
+                if (window.musicController) {
+                    window.musicController.setSfxVolume(value / 100);
+                }
+            });
+        }
+
+        // Mute all checkbox
+        const muteAllCheckbox = document.getElementById('muteAll');
+        if (muteAllCheckbox) {
+            muteAllCheckbox.addEventListener('change', (e) => {
+                const isMuted = e.target.checked;
+                // Apply mute state in real-time
+                if (window.musicController) {
+                    if (isMuted) {
+                        window.musicController.isMuted = true;
+                        window.musicController.applySoundSettings();
+                    } else {
+                        window.musicController.isMuted = false;
+                        window.musicController.applySoundSettings();
+                    }
+                }
+            });
+        }
+    }
+
     loadSettings() {
         const savedSettings = localStorage.getItem('mathGameSettings');
         let settings = {
@@ -176,7 +238,10 @@ class GameController {
             enableHints: true,
             enableSkip: true,
             hintLimit: 3,
-            skipLimit: 3
+            skipLimit: 3,
+            musicVolume: 70,
+            sfxVolume: 80,
+            muteAll: false
         };
 
         if (savedSettings) {
@@ -187,6 +252,7 @@ class GameController {
             }
         }
 
+        // Timer settings
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         const enableHints = document.getElementById('enableHints');
@@ -211,23 +277,66 @@ class GameController {
         if (hintLimitInput) hintLimitInput.value = settings.hintLimit || 3;
         if (skipLimitInput) skipLimitInput.value = settings.skipLimit || 3;
 
+        // Sound settings
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const musicVolumeValue = document.getElementById('musicVolumeValue');
+        const sfxVolumeSlider = document.getElementById('sfxVolume');
+        const sfxVolumeValue = document.getElementById('sfxVolumeValue');
+        const muteAllCheckbox = document.getElementById('muteAll');
+
+        if (musicVolumeSlider) {
+            musicVolumeSlider.value = settings.musicVolume !== undefined ? settings.musicVolume : 70;
+        }
+        if (musicVolumeValue) {
+            musicVolumeValue.textContent = settings.musicVolume !== undefined ? settings.musicVolume : 70;
+        }
+        if (sfxVolumeSlider) {
+            sfxVolumeSlider.value = settings.sfxVolume !== undefined ? settings.sfxVolume : 80;
+        }
+        if (sfxVolumeValue) {
+            sfxVolumeValue.textContent = settings.sfxVolume !== undefined ? settings.sfxVolume : 80;
+        }
+        if (muteAllCheckbox) {
+            muteAllCheckbox.checked = settings.muteAll !== undefined ? settings.muteAll : false;
+        }
+
         this.savedSettings = settings;
     }
 
     saveSettings() {
+        // Get timer settings
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const enableHints = document.getElementById('enableHints');
         const enableSkip = document.getElementById('enableSkip');
         const hintLimit = document.getElementById('hintLimit');
         const skipLimit = document.getElementById('skipLimit');
 
+        // Get sound settings
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const sfxVolumeSlider = document.getElementById('sfxVolume');
+        const muteAllCheckbox = document.getElementById('muteAll');
+
         const settings = {
+            // Timer and game settings
             customTimeLimit: timeLimitSlider ? parseInt(timeLimitSlider.value) : 60,
             enableHints: enableHints ? enableHints.checked : true,
             enableSkip: enableSkip ? enableSkip.checked : true,
             hintLimit: hintLimit ? parseInt(hintLimit.value) : 3,
-            skipLimit: skipLimit ? parseInt(skipLimit.value) : 3
+            skipLimit: skipLimit ? parseInt(skipLimit.value) : 3,
+            // Sound settings
+            musicVolume: musicVolumeSlider ? parseInt(musicVolumeSlider.value) : 70,
+            sfxVolume: sfxVolumeSlider ? parseInt(sfxVolumeSlider.value) : 80,
+            muteAll: muteAllCheckbox ? muteAllCheckbox.checked : false
         };
+
+        // Apply sound settings to MusicController before saving
+        if (window.musicController) {
+            window.musicController.updateSoundSettings(
+                settings.musicVolume,
+                settings.sfxVolume,
+                settings.muteAll
+            );
+        }
 
         const confirmOverlay = document.getElementById('confirmOverlay');
         const confirmBtn = document.getElementById('confirmSaveBtn');
@@ -296,9 +405,13 @@ class GameController {
             enableHints: true,
             enableSkip: true,
             hintLimit: 3,
-            skipLimit: 3
+            skipLimit: 3,
+            musicVolume: 70,
+            sfxVolume: 80,
+            muteAll: false
         };
 
+        // Reset UI elements
         const timeLimitSlider = document.getElementById('customTimeLimit');
         const timeLimitValue = document.getElementById('timeLimitValue');
         const enableHints = document.getElementById('enableHints');
@@ -321,6 +434,28 @@ class GameController {
         const skipLimitInput = document.getElementById('skipLimit');
         if (hintLimitInput) hintLimitInput.value = defaultSettings.hintLimit;
         if (skipLimitInput) skipLimitInput.value = defaultSettings.skipLimit;
+
+        // Reset sound settings UI
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const musicVolumeValue = document.getElementById('musicVolumeValue');
+        const sfxVolumeSlider = document.getElementById('sfxVolume');
+        const sfxVolumeValue = document.getElementById('sfxVolumeValue');
+        const muteAllCheckbox = document.getElementById('muteAll');
+
+        if (musicVolumeSlider) musicVolumeSlider.value = defaultSettings.musicVolume;
+        if (musicVolumeValue) musicVolumeValue.textContent = defaultSettings.musicVolume;
+        if (sfxVolumeSlider) sfxVolumeSlider.value = defaultSettings.sfxVolume;
+        if (sfxVolumeValue) sfxVolumeValue.textContent = defaultSettings.sfxVolume;
+        if (muteAllCheckbox) muteAllCheckbox.checked = defaultSettings.muteAll;
+
+        // Apply default sound settings immediately
+        if (window.musicController) {
+            window.musicController.updateSoundSettings(
+                defaultSettings.musicVolume,
+                defaultSettings.sfxVolume,
+                defaultSettings.muteAll
+            );
+        }
 
         try {
             localStorage.setItem('mathGameSettings', JSON.stringify(defaultSettings));
@@ -465,6 +600,11 @@ class GameController {
                 countdownNumber.style.animation = 'none';
                 void countdownNumber.offsetHeight;
                 countdownNumber.style.animation = 'countdownPulse 1s ease-in-out';
+
+                // Start gameplay music right after GO! appears
+                if (window.musicController) {
+                    window.musicController.startGameplayMusic();
+                }
 
                 setTimeout(() => this.startGame(), 1000);
             }

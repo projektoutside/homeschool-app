@@ -131,6 +131,38 @@
             </div>
 
             <div class="settings-section">
+                <h3 class="settings-section-title">🔊 Sound Settings</h3>
+                <div class="settings-item">
+                    <label class="settings-checkbox-label sound-mute-label">
+                        <input type="checkbox" id="muteAll" class="settings-checkbox">
+                        <span>🔇 Mute All Sounds</span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <label for="musicVolume" class="settings-label">
+                        🎵 Background Music Volume
+                    </label>
+                    <div class="settings-input-group">
+                        <input type="range" id="musicVolume" class="settings-slider" min="0" max="100" value="70">
+                        <div class="settings-value-display">
+                            <span id="musicVolumeValue">70</span>%
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="sfxVolume" class="settings-label">
+                        🎮 Sound Effects Volume
+                    </label>
+                    <div class="settings-input-group">
+                        <input type="range" id="sfxVolume" class="settings-slider" min="0" max="100" value="80">
+                        <div class="settings-value-display">
+                            <span id="sfxVolumeValue">80</span>%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3 class="settings-section-title">🎮 Game Settings</h3>
                 <div class="settings-item">
                     <div class="settings-row-group">
@@ -283,6 +315,7 @@
     <script src="js/effects/AnimationController.js"></script>
     <script src="js/controllers/MathGameController.js"></script>
     <script src="js/controllers/GameController.js"></script>
+    <script src="js/controllers/MusicController.js"></script>
     <script src="js/main.js"></script>
 </body>
 
