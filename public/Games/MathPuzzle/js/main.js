@@ -35,11 +35,82 @@ document.addEventListener('DOMContentLoaded', () => {
         // 7. Auto-start main menu music
         startMainMenuMusic();
 
+        // 8. Enable fullscreen mode
+        enableFullscreen();
+
         console.log('Math Puzzle: All systems initialized successfully');
     } catch (error) {
         console.error('Math Puzzle: Initialization error:', error);
     }
 });
+
+/**
+ * Enable fullscreen mode for the game
+ * Requests fullscreen on the document body to hide browser UI
+ */
+function enableFullscreen() {
+    const docElm = document.documentElement;
+    
+    if (docElm.requestFullscreen) {
+        docElm.requestFullscreen();
+    } else if (docElm.mozRequestFullScreen) { // Firefox
+        docElm.mozRequestFullScreen();
+    } else if (docElm.webkitRequestFullscreen) { // Chrome, Safari, Opera
+        docElm.webkitRequestFullscreen();
+    } else if (docElm.msRequestFullscreen) { // IE/Edge
+        docElm.msRequestFullscreen();
+    }
+    
+    console.log('Fullscreen mode enabled');
+}
+
+/**
+ * Exit fullscreen mode
+ */
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
+}
+
+/**
+ * Toggle fullscreen mode on user interaction
+ * Browsers require user interaction to enter fullscreen
+ */
+document.addEventListener('click', () => {
+    if (!document.fullscreenElement && 
+        !document.mozFullScreenElement && 
+        !document.webkitFullscreenElement && 
+        !document.msFullscreenElement) {
+        enableFullscreen();
+    }
+}, { once: true });
+
+// Also try to enable fullscreen on any key press (backup method)
+document.addEventListener('keydown', () => {
+    if (!document.fullscreenElement && 
+        !document.mozFullScreenElement && 
+        !document.webkitFullscreenElement && 
+        !document.msFullscreenElement) {
+        enableFullscreen();
+    }
+}, { once: true });
+
+// Enable fullscreen on touch (for mobile devices)
+document.addEventListener('touchstart', () => {
+    if (!document.fullscreenElement && 
+        !document.mozFullScreenElement && 
+        !document.webkitFullscreenElement && 
+        !document.msFullscreenElement) {
+        enableFullscreen();
+    }
+}, { once: true });
 
 /**
  * Start main menu music - tries immediately, and if blocked by autoplay policy,

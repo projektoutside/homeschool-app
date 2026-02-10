@@ -20,6 +20,10 @@ class MathGameController {
 
         this.gameTimer = null;
         this.draggedElement = null;
+        this.pendingDragBlock = null;
+        this.dragStartPoint = null;
+        this.selectedBlock = null;
+        this.suppressClickUntil = 0;
         this.moveHistory = [];
         this.gameEnded = false;
 
@@ -83,6 +87,7 @@ class MathGameController {
     cleanup() {
         this.stopTimer();
         this.gameEnded = true;
+        this.clearSelectedBlock();
 
         const undoBtn = document.getElementById('undoMove');
         const clearBtn = document.getElementById('clearEquation');
@@ -436,6 +441,9 @@ class MathGameController {
                 `;
             }
         }
+
+        this.setupSlotClickListeners();
+        this.refreshSlotGlow();
     }
 
     optimizeEquationLayout() {
@@ -445,49 +453,88 @@ class MathGameController {
     addDragListeners(block) {
         block.addEventListener('mousedown', (e) => this.startDrag(e, block));
         block.addEventListener('touchstart', (e) => this.startDrag(e, block), { passive: false });
+        block.addEventListener('click', (e) => this.handleBlockClick(e, block));
+    }
+
+    handleBlockClick(e, block, force = false) {
+        if (!force && Date.now() < this.suppressClickUntil) return;
+        if (this.gameEnded || this.draggedElement) return;
+
+        // Only allow selecting available blocks from answer/operation pools
+        if (block.classList.contains('placed')) return;
+
+        if (this.selectedBlock === block) {
+            this.clearSelectedBlock();
+            return;
+        }
+
+        this.setSelectedBlock(block);
+    }
+
+    setSelectedBlock(block) {
+        if (this.selectedBlock && this.selectedBlock !== block) {
+            this.selectedBlock.classList.remove('selected-answer');
+        }
+
+        this.selectedBlock = block;
+        this.selectedBlock.classList.add('selected-answer');
+        this.refreshSlotGlow();
+    }
+
+    clearSelectedBlock() {
+        if (this.selectedBlock) {
+            this.selectedBlock.classList.remove('selected-answer');
+        }
+        this.selectedBlock = null;
+        this.refreshSlotGlow();
+    }
+
+    setupSlotClickListeners() {
+        const slots = document.querySelectorAll('#equationDisplay .equation-slot, #equationDisplay .equation-triangle-slot');
+        slots.forEach(slot => {
+            slot.addEventListener('click', () => this.handleSlotClick(slot));
+        });
+    }
+
+    handleSlotClick(slot) {
+        if (!this.selectedBlock || this.gameEnded) return;
+        if (slot.classList.contains('filled')) return;
+
+        const isTriangleBlock = this.selectedBlock.classList.contains('operation-triangle');
+        const isNumberBlock = this.selectedBlock.classList.contains('answer-block');
+        const isTriangleSlot = slot.classList.contains('equation-triangle-slot');
+        const isNumberSlot = slot.classList.contains('equation-slot');
+
+        const compatible = (isTriangleBlock && isTriangleSlot) || (isNumberBlock && isNumberSlot);
+        if (!compatible) return;
+
+        this.placeBlockInSlot(this.selectedBlock, slot);
+        this.clearSelectedBlock();
+    }
+
+    refreshSlotGlow() {
+        const allSlots = document.querySelectorAll('#equationDisplay .equation-slot, #equationDisplay .equation-triangle-slot');
+        allSlots.forEach(slot => slot.classList.remove('slot-placement-glow'));
+
+        if (!this.selectedBlock) return;
+
+        const targetSelector = this.selectedBlock.classList.contains('operation-triangle')
+            ? '#equationDisplay .equation-triangle-slot:not(.filled)'
+            : '#equationDisplay .equation-slot:not(.filled)';
+
+        document.querySelectorAll(targetSelector).forEach(slot => {
+            slot.classList.add('slot-placement-glow');
+        });
     }
 
     startDrag(e, block) {
         e.preventDefault();
+        this.dragMoved = false;
+        this.pendingDragBlock = block;
 
-        // --- KEY FIX: Move block to body IMMEDIATELY ---
-        // 1. Calculate current global position
-        const rect = block.getBoundingClientRect();
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-
-        // 2. If picking up from a slot, clear the slot's state immediately
-        if (block.classList.contains('placed')) {
-            const parent = block.parentElement;
-            if (parent && (parent.classList.contains('equation-slot') || parent.classList.contains('equation-triangle-slot'))) {
-                parent.classList.remove('filled');
-            }
-            block.classList.remove('placed');
-        }
-
-        // 3. Reparent to body to escape all container constraints (overflow, transform, etc.)
-        // Preserve dimensions visually before moving
-        const width = rect.width;
-        const height = rect.height;
-
-        block.style.width = `${width}px`;
-        block.style.height = `${height}px`;
-        block.style.position = 'fixed';
-        block.style.left = `${rect.left}px`;
-        block.style.top = `${rect.top}px`;
-        block.style.zIndex = '10000'; // Very high z-index
-        block.style.margin = '0';
-
-        document.body.appendChild(block);
-
-        this.draggedElement = block;
-        block.classList.add('dragging');
-
-        // 4. Calculate offset relative to the block's new fixed position
-        this.dragOffset = {
-            x: clientX - rect.left,
-            y: clientY - rect.top
-        };
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        this.dragStartPoint = { x: clientX, y: clientY };
 
         this.moveHandler = (ev) => this.dragMove(ev);
         this.upHandler = (ev) => this.endDrag(ev);
@@ -499,11 +546,23 @@ class MathGameController {
     }
 
     dragMove(e) {
-        if (!this.draggedElement) return;
+        if (!this.pendingDragBlock && !this.draggedElement) return;
         e.preventDefault();
 
         const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
         const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+
+        if (!this.draggedElement) {
+            const dx = clientX - (this.dragStartPoint?.x ?? clientX);
+            const dy = clientY - (this.dragStartPoint?.y ?? clientY);
+            const movedEnough = Math.hypot(dx, dy) > 6;
+
+            if (!movedEnough) return;
+
+            this.beginDragFromPending(clientX, clientY);
+            this.dragMoved = true;
+            this.clearSelectedBlock();
+        }
 
         const el = this.draggedElement;
 
@@ -515,13 +574,58 @@ class MathGameController {
         this.highlightDropZones(dropZone);
     }
 
-    endDrag(e) {
-        if (!this.draggedElement) return;
+    beginDragFromPending(clientX, clientY) {
+        const block = this.pendingDragBlock;
+        if (!block) return;
 
+        const rect = block.getBoundingClientRect();
+
+        if (block.classList.contains('placed')) {
+            const parent = block.parentElement;
+            if (parent && (parent.classList.contains('equation-slot') || parent.classList.contains('equation-triangle-slot'))) {
+                parent.classList.remove('filled');
+            }
+            block.classList.remove('placed');
+        }
+
+        block.style.width = `${rect.width}px`;
+        block.style.height = `${rect.height}px`;
+        block.style.position = 'fixed';
+        block.style.left = `${rect.left}px`;
+        block.style.top = `${rect.top}px`;
+        block.style.zIndex = '10000';
+        block.style.margin = '0';
+
+        document.body.appendChild(block);
+
+        this.draggedElement = block;
+        block.classList.add('dragging');
+
+        this.dragOffset = {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    endDrag(e) {
         document.removeEventListener('mousemove', this.moveHandler);
         document.removeEventListener('touchmove', this.moveHandler);
         document.removeEventListener('mouseup', this.upHandler);
         document.removeEventListener('touchend', this.upHandler);
+
+        // Treat as regular click/tap if drag never actually started
+        if (!this.draggedElement) {
+            const tappedBlock = this.pendingDragBlock;
+            this.pendingDragBlock = null;
+            this.dragStartPoint = null;
+            this.dragMoved = false;
+
+            if (tappedBlock) {
+                this.handleBlockClick(e, tappedBlock, true);
+                this.suppressClickUntil = Date.now() + 140;
+            }
+            return;
+        }
 
         const clientX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
         const clientY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
@@ -551,6 +655,10 @@ class MathGameController {
         }
 
         this.draggedElement = null;
+        this.pendingDragBlock = null;
+        this.dragStartPoint = null;
+        this.suppressClickUntil = this.dragMoved ? Date.now() + 120 : 0;
+        this.dragMoved = false;
     }
 
     getDropZoneUnder(x, y) {
@@ -597,6 +705,7 @@ class MathGameController {
 
         this.checkEquationComplete();
         this.updateUndoButtonState();
+        this.refreshSlotGlow();
     }
 
     returnBlock(block) {
@@ -623,6 +732,7 @@ class MathGameController {
 
         // 5. Restore original order based on data-id
         this.sortContainer(container);
+        this.refreshSlotGlow();
     }
 
     // Helper to sort blocks back to their original order
@@ -854,10 +964,25 @@ class MathGameController {
     }
 
     handleCorrect() {
-        this.score += 100 * this.gameState.level;
-        this.updateScoreDisplay();
-        this.showFeedback(true, 'Correct!', '🎉');
-        setTimeout(() => this.nextQuestion(), 800);
+        const pointsEarned = 100 * this.gameState.level;
+        const oldScore = this.score;
+        const newScore = oldScore + pointsEarned;
+
+        this.score = newScore;
+
+        this.showFeedback(true, 'Correct!', '🎉', {
+            scoreGain: {
+                oldScore,
+                pointsEarned,
+                newScore
+            }
+        });
+
+        setTimeout(() => {
+            // Fallback sync for score display in case feedback animation is interrupted
+            this.updateScoreDisplay();
+            this.nextQuestion();
+        }, 800);
     }
 
     handleIncorrect() {
@@ -865,9 +990,9 @@ class MathGameController {
         setTimeout(() => this.clearSlotsOnly(), 800);
     }
 
-    showFeedback(success, msg, icon) {
+    showFeedback(success, msg, icon, options = null) {
         if (this.callbacks.showFeedback) {
-            this.callbacks.showFeedback(success ? 'Success' : 'Incorrect', msg, icon);
+            this.callbacks.showFeedback(success ? 'Success' : 'Incorrect', msg, icon, options);
         }
     }
 
@@ -879,6 +1004,7 @@ class MathGameController {
     }
 
     clearSlotsOnly() {
+        this.clearSelectedBlock();
         const slots = document.querySelectorAll('.filled');
         slots.forEach(slot => {
             const block = slot.firstElementChild;
@@ -901,6 +1027,7 @@ class MathGameController {
             move.toSlot.classList.remove('filled');
         }
         this.updateUndoButtonState();
+        this.refreshSlotGlow();
     }
 
     saveMove(block, slot) {

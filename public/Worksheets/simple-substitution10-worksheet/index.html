@@ -34,7 +34,7 @@
 
     /* ===== BASE LAYOUT & FONTS ===== */
     body{
-      font-family:'Comic Sans MS',cursive,sans-serif;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
       color:#3498db;background:#fff;width:8.5in;margin:0 auto;padding:20px;
                 width: 100% !important;
                 height: 100% !important;
@@ -46,7 +46,7 @@
     .header .input-row{display:flex;justify-content:center;gap:20px;margin:8px 0}
     .header p{font-size:16px;margin:0;display:flex;align-items:center}
     .header input{
-      font-family:'Comic Sans MS',cursive,sans-serif;font-size:16px;border:none;
+      font-family: 'Comic Sans MS', cursive, sans-serif;font-size:16px;border:none;
       border-bottom:1px solid #3498db;outline:none;width:180px;padding:2px 4px;margin:0 5px;
     }
     .header input:focus{border-bottom:2px solid #3498db}
@@ -79,18 +79,18 @@
     .problem.correct::before{border-color:#28a745;color:#28a745}
     .problem.incorrect::before{border-color:#dc3545;color:#dc3545}
 
-    .equation{margin-top:0.05in;margin-bottom:0.1in;font-family:'Comic Sans MS',cursive;font-size:20px;color:#3498db}
+    .equation{margin-top:0.05in;margin-bottom:0.1in;font-family: 'Comic Sans MS', cursive, sans-serif;font-size:20px;color:#3498db}
     .answer-line{display:flex;align-items:center;gap:4px;font-size:18px}
     .answer-line input{
       width:60px;height:38px;font-size:20px;border:2px solid #fdc9ec;border-radius:4px;
-      background:#ffeaf8;text-align:center;font-family:'Comic Sans MS',cursive;
+      background:#ffeaf8;text-align:center;font-family: 'Comic Sans MS', cursive, sans-serif;
       appearance:textfield;-moz-appearance:textfield;
     }
 
     /* ===== BUTTONS & GRADING ===== */
     .button-container{display:flex;gap:10px;margin-top:20px;justify-content:center}
     .btn{padding:12px 24px;font-size:16px;color:#fff;border:none;border-radius:6px;cursor:pointer;
-      font-family:'Comic Sans MS',cursive;transition:background 0.2s ease;}
+      font-family: 'Comic Sans MS', cursive, sans-serif;transition:background 0.2s ease;}
     .generate-btn{background:#2ecc71}.generate-btn:hover{background:#27ae60}
     .check-btn{background:#3498db}.check-btn:hover{background:#2980b9}
     .static-btn{background:#9b59b6}.static-btn:hover{background:#8e44ad}
@@ -100,6 +100,108 @@
     .grade-display.correct{color:#2ecc71}
     .grade-display.incorrect{color:#e74c3c}
   </style>
+
+    <style id="worksheet-standardization">
+        :root {
+            --worksheet-font: 'Comic Sans MS', cursive, sans-serif;
+            --worksheet-primary: #3498db;
+            --worksheet-secondary: #5dbce9;
+            --worksheet-bg: #ffffff;
+            --worksheet-text: #3498db;
+            --worksheet-accent: #fdc9ec;
+        }
+
+        html, body, input, button, select, textarea {
+            font-family: var(--worksheet-font) !important;
+        }
+
+        body {
+            color: var(--worksheet-text) !important;
+            background-color: var(--worksheet-bg) !important;
+        }
+
+        .header input {
+            border-bottom-color: var(--worksheet-primary) !important;
+        }
+
+        .example-box h3,
+        .example-box p {
+            color: var(--worksheet-secondary) !important;
+        }
+
+        .number,
+        .operator {
+            color: var(--worksheet-primary) !important;
+            border-color: var(--worksheet-primary) !important;
+        }
+
+        /* Answer boxes: pink border only, white inside */
+        .answer-input,
+        input.answer-input,
+        [id^="answer-"],
+        .problem input[type="number"],
+        .word-problem input[type="number"],
+        input[type="number"],
+        .answer-box,
+        .response-input,
+        .blank-input {
+            background-color: #ffffff !important;
+            border: 2px solid var(--worksheet-accent) !important;
+            color: var(--worksheet-text) !important;
+        }
+
+        .answer-input:focus,
+        input.answer-input:focus,
+        [id^="answer-"]:focus,
+        .problem input[type="number"]:focus,
+        .word-problem input[type="number"]:focus,
+        input[type="number"]:focus,
+        .answer-box:focus,
+        .response-input:focus,
+        .blank-input:focus {
+            outline: none !important;
+            background-color: #ffffff !important;
+            border-color: var(--worksheet-accent) !important;
+            box-shadow: 0 0 0 2px rgba(253, 201, 236, 0.35) !important;
+        }
+
+        .btn,
+        button {
+            font-family: var(--worksheet-font) !important;
+        }
+
+        .generate-btn { background-color: #2ECC71 !important; }
+        .generate-btn:hover { background-color: #27AE60 !important; }
+        .check-btn { background-color: #3498DB !important; }
+        .check-btn:hover { background-color: #2980B9 !important; }
+        .print-btn { background-color: #e67e22 !important; }
+        .print-btn:hover { background-color: #d35400 !important; }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+            html, body {
+                width: 8.5in !important;
+                min-height: 11in !important;
+                max-height: 11in !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            body > *:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+    </style>
+
 </head>
 <body>
   <div class="header">

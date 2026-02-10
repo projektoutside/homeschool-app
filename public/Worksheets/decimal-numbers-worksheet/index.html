@@ -290,6 +290,108 @@
             background-color: #c0392b;
         }
     </style>
+
+    <style id="worksheet-standardization">
+        :root {
+            --worksheet-font: 'Comic Sans MS', cursive, sans-serif;
+            --worksheet-primary: #3498db;
+            --worksheet-secondary: #5dbce9;
+            --worksheet-bg: #ffffff;
+            --worksheet-text: #3498db;
+            --worksheet-accent: #fdc9ec;
+        }
+
+        html, body, input, button, select, textarea {
+            font-family: var(--worksheet-font) !important;
+        }
+
+        body {
+            color: var(--worksheet-text) !important;
+            background-color: var(--worksheet-bg) !important;
+        }
+
+        .header input {
+            border-bottom-color: var(--worksheet-primary) !important;
+        }
+
+        .example-box h3,
+        .example-box p {
+            color: var(--worksheet-secondary) !important;
+        }
+
+        .number,
+        .operator {
+            color: var(--worksheet-primary) !important;
+            border-color: var(--worksheet-primary) !important;
+        }
+
+        /* Answer boxes: pink border only, white inside */
+        .answer-input,
+        input.answer-input,
+        [id^="answer-"],
+        .problem input[type="number"],
+        .word-problem input[type="number"],
+        input[type="number"],
+        .answer-box,
+        .response-input,
+        .blank-input {
+            background-color: #ffffff !important;
+            border: 2px solid var(--worksheet-accent) !important;
+            color: var(--worksheet-text) !important;
+        }
+
+        .answer-input:focus,
+        input.answer-input:focus,
+        [id^="answer-"]:focus,
+        .problem input[type="number"]:focus,
+        .word-problem input[type="number"]:focus,
+        input[type="number"]:focus,
+        .answer-box:focus,
+        .response-input:focus,
+        .blank-input:focus {
+            outline: none !important;
+            background-color: #ffffff !important;
+            border-color: var(--worksheet-accent) !important;
+            box-shadow: 0 0 0 2px rgba(253, 201, 236, 0.35) !important;
+        }
+
+        .btn,
+        button {
+            font-family: var(--worksheet-font) !important;
+        }
+
+        .generate-btn { background-color: #2ECC71 !important; }
+        .generate-btn:hover { background-color: #27AE60 !important; }
+        .check-btn { background-color: #3498DB !important; }
+        .check-btn:hover { background-color: #2980B9 !important; }
+        .print-btn { background-color: #e67e22 !important; }
+        .print-btn:hover { background-color: #d35400 !important; }
+
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.25in;
+            }
+
+            html, body {
+                width: 8.5in !important;
+                min-height: 11in !important;
+                max-height: 11in !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            body > *:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+    </style>
+
 </head>
 <body>
     <div class="worksheet-container">

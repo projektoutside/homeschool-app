@@ -218,6 +218,11 @@
     <div class="page gameplay-page" id="gameplayPage" style="display: none;">
         <!-- Game Header -->
         <div class="game-header">
+            <div class="gameplay-top-actions">
+                <button class="top-action-button" id="gameplayMainMenuBtn">Main Menu</button>
+                <button class="top-action-button" id="gameplaySettingsBtn">Settings</button>
+            </div>
+
             <div class="game-info">
                 <div class="score-display">Score: <span id="currentScore">0</span></div>
                 <div class="timer-display">Time: <span id="timeRemaining">60</span>s</div>
@@ -238,7 +243,6 @@
 
         <!-- Combined Blocks Area -->
         <div class="answer-blocks-container">
-            <h3 class="instruction-text">Drag the numbers and symbols to complete the equation!</h3>
             <div class="answer-blocks">
                 <!-- Numbers Section -->
                 <div class="blocks-section">
@@ -260,6 +264,8 @@
 
         <!-- Game Controls -->
         <div class="game-controls">
+            <div class="instruction-text control-display-panel">Drag the numbers and symbols to complete the equation!</div>
+
             <button class="control-button undo-button" id="undoMove">↶ Undo</button>
             <button class="control-button clear-button" id="clearEquation">Clear All</button>
 
@@ -278,11 +284,27 @@
             </div>
         </div>
 
+        <div class="correct-answer-fx" id="correctAnswerFx" style="display: none;" aria-live="polite" aria-atomic="true">
+            <div class="correct-answer-text" id="correctAnswerText">Correct!</div>
+            <div class="correct-answer-points" id="correctAnswerPoints">+0 points</div>
+        </div>
+
         <!-- Success/Feedback Messages -->
         <div class="feedback-overlay" id="feedbackOverlay" style="display: none;">
             <div class="feedback-content">
                 <div class="feedback-icon" id="feedbackIcon">🎉</div>
                 <div class="feedback-message" id="feedbackMessage">Correct! Well done!</div>
+                <div class="feedback-score-sequence" id="feedbackScoreSequence" style="display: none;">
+                    <div class="feedback-points-earned" id="feedbackPointsEarned">+0 points</div>
+                    <div class="feedback-score-transition">
+                        <span class="feedback-score-label">Score</span>
+                        <span class="feedback-score-value" id="feedbackOldScore">0</span>
+                        <span class="feedback-score-plus">+</span>
+                        <span class="feedback-score-value" id="feedbackPointsValue">0</span>
+                        <span class="feedback-score-equals">=</span>
+                        <span class="feedback-score-value feedback-score-final" id="feedbackNewScore">0</span>
+                    </div>
+                </div>
                 <div class="feedback-actions" id="feedbackActions" style="display: none;">
                     <button class="control-button primary-button" id="playAgainBtn">🔄 Play Again</button>
                     <button class="control-button secondary-button" id="mainMenuBtn">🏠 Main Menu</button>
@@ -305,7 +327,64 @@
         </div>
     </div>
 
+    <!-- Gameplay Main Menu Confirmation -->
+    <div class="feedback-overlay" id="gameplayMainMenuOverlay" style="display: none;">
+        <div class="feedback-content compact-feedback">
+            <div class="feedback-icon">🏠</div>
+            <div class="feedback-message">Return to Main Menu?</div>
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="confirmGameplayMainMenuBtn">✅ Yes</button>
+                <button class="control-button secondary-button" id="cancelGameplayMainMenuBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gameplay Sound Settings -->
+    <div class="feedback-overlay" id="gameplaySoundOverlay" style="display: none;">
+        <div class="feedback-content gameplay-sound-modal">
+            <div class="feedback-icon">🔊</div>
+            <div class="feedback-message">Sound Settings</div>
+
+            <div class="gameplay-sound-settings">
+                <label class="settings-checkbox-label sound-mute-label">
+                    <input type="checkbox" id="gameplayMuteAll" class="settings-checkbox">
+                    <span>🔇 Mute All Sounds</span>
+                </label>
+
+                <div class="settings-item">
+                    <label for="gameplayMusicVolume" class="settings-label">🎵 Background Music</label>
+                    <div class="settings-input-group">
+                        <input type="range" id="gameplayMusicVolume" class="settings-slider" min="0" max="100" value="70">
+                        <div class="settings-value-display"><span id="gameplayMusicVolumeValue">70</span>%</div>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <label for="gameplaySfxVolume" class="settings-label">🎮 Sound Effects</label>
+                    <div class="settings-input-group">
+                        <input type="range" id="gameplaySfxVolume" class="settings-slider" min="0" max="100" value="80">
+                        <div class="settings-value-display"><span id="gameplaySfxVolumeValue">80</span>%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="saveGameplaySoundBtn">💾 Save</button>
+                <button class="control-button secondary-button" id="closeGameplaySoundBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div class="particle-overlay"></div>
+
+    <!-- Orientation Warning Overlay -->
+    <div id="orientation-warning" class="orientation-warning" style="display: none;">
+        <div class="orientation-content">
+            <div class="rotate-icon">📱</div>
+            <h2>Please Rotate Your Device</h2>
+            <p>This game is designed for landscape mode only.</p>
+        </div>
+    </div>
 
     <!-- Load scripts sequentially to avoid CORS issues with modules on file:// protocol -->
     <script src="js/utils/DeviceDetector.js"></script>

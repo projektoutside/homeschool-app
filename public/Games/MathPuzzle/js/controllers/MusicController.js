@@ -233,7 +233,13 @@ class MusicController {
      * Start playing main menu music
      */
     startMainMenuMusic() {
-        if (this.currentMode === 'mainMenu') return;
+        // Allow retry if autoplay was previously blocked
+        if (this.currentMode === 'mainMenu' && this.mainMenuAudio && !this.mainMenuAudio.paused) return;
+
+        // Clean any stale audio instance before retrying
+        if (this.mainMenuAudio && this.mainMenuAudio.paused) {
+            this.mainMenuAudio = null;
+        }
 
         console.log('MusicController: Starting main menu music');
         this.currentMode = 'mainMenu';
@@ -259,6 +265,8 @@ class MusicController {
             // Silently handle autoplay restriction - this is expected on first load
             // Music will start on user interaction via the event listeners in main.js
             this.isPlaying = false;
+            this.currentMode = null;
+            this.mainMenuAudio = null;
         });
     }
 
