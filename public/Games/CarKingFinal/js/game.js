@@ -23,6 +23,9 @@ class CarGuessingGame {
         this.micDevicesInitialized = false;
         this.micLabelCache = this.loadMicLabelCache();
         this.micPermissionGranted = this.loadMicPermissionState();
+        this.micPermissionState = 'unknown';
+        this.micPermissionRequestInFlight = null;
+        this.globalPermStream = null;
         this.isMicWarm = false;
         this.isRecognitionActive = false;
 
@@ -43,9 +46,117 @@ class CarGuessingGame {
     async init() {
         console.log("🚗 Initializing Kids Car Guessing Game...");
         this.setupEventListeners();
+        this.setupPermissionWatchers();
         await this.initializeSpeech();
         this.initMainMenu();
         this.showStartScreen();
+    }
+
+    setupPermissionWatchers() {
+        // Keep browser permission state in sync where supported.
+        if (!navigator.permissions?.query) return;
+
+        navigator.permissions.query({ name: 'microphone' }).then((status) => {
+            this.micPermissionState = status.state;
+            if (status.state === 'granted') {
+                this.micPermissionGranted = true;
+                this.saveMicPermissionState();
+            }
+
+            status.onchange = () => {
+                this.micPermissionState = status.state;
+                const granted = status.state === 'granted';
+                this.micPermissionGranted = granted;
+                this.saveMicPermissionState();
+
+                // If permission is revoked while app is open, release keep-alive stream safely.
+                if (!granted && this.globalPermStream) {
+                    this.stopMediaStream(this.globalPermStream);
+                    this.globalPermStream = null;
+                }
+            };
+        }).catch(() => {
+            // Permissions API is not consistent on all browsers (especially iOS WebKit).
+        });
+    }
+
+    stopMediaStream(stream) {
+        if (!stream) return;
+        try {
+            stream.getTracks().forEach(track => track.stop());
+        } catch (e) { }
+    }
+
+    attachGlobalPermStream(stream) {
+        if (!stream) return;
+        if (this.globalPermStream && this.globalPermStream !== stream) {
+            this.stopMediaStream(this.globalPermStream);
+        }
+        this.globalPermStream = stream;
+    }
+
+    isAudioStreamUsable(stream) {
+        if (!stream || !stream.active) return false;
+        const tracks = stream.getAudioTracks?.() || [];
+        return tracks.some(track => track.readyState === 'live');
+    }
+
+    getPreferredAudioConstraints(deviceId = null) {
+        // Use broad, mobile-friendly defaults while avoiding strict constraints
+        // that can fail on Safari/iOS and some Android devices.
+        const base = {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+        };
+
+        if (!deviceId || deviceId === 'default') {
+            return { audio: base };
+        }
+
+        return {
+            audio: {
+                ...base,
+                // 'ideal' is more cross-platform than 'exact' for mobile browsers
+                deviceId: { ideal: deviceId }
+            }
+        };
+    }
+
+    async getMicrophoneStream(deviceId = null) {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error('getUserMedia-not-supported');
+        }
+
+        const attempts = [];
+
+        // Attempt 1: preferred constraints
+        attempts.push(this.getPreferredAudioConstraints(deviceId));
+
+        // Attempt 2: minimal + optional device preference
+        if (deviceId && deviceId !== 'default') {
+            attempts.push({
+                audio: {
+                    deviceId: { ideal: deviceId }
+                }
+            });
+        }
+
+        // Attempt 3: absolute fallback
+        attempts.push({ audio: true });
+
+        let lastError = null;
+
+        for (const constraints of attempts) {
+            try {
+                return await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (err) {
+                lastError = err;
+                console.warn('getUserMedia attempt failed with constraints:', constraints, err);
+            }
+        }
+
+        throw lastError || new Error('microphone-stream-failed');
     }
 
     setupEventListeners() {
@@ -410,16 +521,21 @@ class CarGuessingGame {
 
         const isSecureContext = window.isSecureContext && window.location.protocol !== 'file:';
         if (!isSecureContext) {
-            showNamesBtn.textContent = 'Enable via localhost';
-            showNamesBtn.disabled = true;
+            showNamesBtn.textContent = 'Turn On Microphone';
+            showNamesBtn.disabled = false;
             micConfigSection.classList.remove('mic-status-ok');
             micConfigSection.classList.add('mic-status-error');
+            const statusEl = document.getElementById('micDeviceStatus');
+            if (statusEl) {
+                statusEl.textContent = '⚠️ HTTPS is recommended for mobile microphone access.';
+                statusEl.style.color = 'var(--accent)';
+            }
         }
 
         if (!this.micDevicesInitialized) {
             micSelect.addEventListener('change', (e) => {
                 console.log("Input Device Selected:", e.target.value);
-                this.selectedMicId = e.target.value;
+                this.selectedMicId = e.target.value === 'default' ? null : e.target.value;
             });
 
             showNamesBtn.addEventListener('click', async () => {
@@ -427,9 +543,11 @@ class CarGuessingGame {
                     const statusEl = document.getElementById('micDeviceStatus');
                     if (statusEl) statusEl.textContent = "Activating microphone...";
 
-                    // Explicitly request permission (like Test Button)
-                    // We don't need a specific ID yet, just any audio permission
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Request permission through unified flow (single prompt behavior)
+                    const granted = await this.ensureMicrophonePermissionForGame(true);
+                    if (!granted) {
+                        throw new Error('microphone-permission-denied');
+                    }
 
                     // Success! Update UI immediately
                     const micConfigSection = document.getElementById('micConfigSection');
@@ -438,13 +556,8 @@ class CarGuessingGame {
                         micConfigSection.classList.remove('mic-status-error');
                     }
 
-                    // Keep this stream OPEN to persist the "Active" permission state.
-                    // This prevents the browser from asking again when the game starts.
-                    if (this.globalPermStream) {
-                        this.globalPermStream.getTracks().forEach(track => track.stop());
-                    }
-                    this.globalPermStream = stream;
                     this.micPermissionGranted = true;
+                    this.micPermissionState = 'granted';
                     this.saveMicPermissionState();
 
                     // Refresh list now that we have access
@@ -546,20 +659,56 @@ class CarGuessingGame {
         }
     }
 
-    async ensureMicrophonePermissionForGame() {
-        if (this.inputMode !== 'voice') return;
-        if (!navigator.mediaDevices?.getUserMedia) return;
-        if (!this.micPermissionGranted) return;
-        if (this.globalPermStream) return;
+    async ensureMicrophonePermissionForGame(force = false) {
+        if (!force && this.inputMode !== 'voice') return true;
+        if (!navigator.mediaDevices?.getUserMedia) return false;
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.globalPermStream = stream;
-        } catch (err) {
-            console.warn('Microphone keep-alive failed:', err);
-            this.micPermissionGranted = false;
+        // Reuse an already-active stream to avoid repeated permission prompts.
+        if (this.globalPermStream?.active) {
+            this.micPermissionGranted = true;
             this.saveMicPermissionState();
+            return true;
         }
+
+        // If browser explicitly reports denied, avoid re-prompt loops.
+        if (navigator.permissions?.query) {
+            try {
+                const status = await navigator.permissions.query({ name: 'microphone' });
+                this.micPermissionState = status.state;
+                if (status.state === 'denied') {
+                    this.micPermissionGranted = false;
+                    this.saveMicPermissionState();
+                    return false;
+                }
+            } catch (e) {
+                // Continue with getUserMedia fallback path.
+            }
+        }
+
+        // De-duplicate concurrent permission requests from multiple UI actions.
+        if (this.micPermissionRequestInFlight) {
+            return this.micPermissionRequestInFlight;
+        }
+
+        this.micPermissionRequestInFlight = (async () => {
+            try {
+                const stream = await this.getMicrophoneStream();
+                this.attachGlobalPermStream(stream);
+                this.micPermissionGranted = true;
+                this.micPermissionState = 'granted';
+                this.saveMicPermissionState();
+                return true;
+            } catch (err) {
+                console.warn('Microphone permission request failed:', err);
+                this.micPermissionGranted = false;
+                this.saveMicPermissionState();
+                return false;
+            } finally {
+                this.micPermissionRequestInFlight = null;
+            }
+        })();
+
+        return this.micPermissionRequestInFlight;
     }
 
     async refreshMicrophones(requestPermission = false) {
@@ -568,7 +717,7 @@ class CarGuessingGame {
         const micConfigSection = document.getElementById('micConfigSection');
 
         // Safety check: ensure all required elements exist
-        if (!micSelect || !navigator.mediaDevices?.enumerateDevices) return;
+        if (!micSelect) return;
 
         // Helper to update status text
         const setStatus = (text, isError = false) => {
@@ -584,7 +733,29 @@ class CarGuessingGame {
             setStatus('Scanning for microphones...');
         }
 
-        let tempStream = null;
+        if (!navigator.mediaDevices?.enumerateDevices) {
+            if (this.isAudioStreamUsable(this.globalPermStream)) {
+                micSelect.innerHTML = '';
+                const opt = document.createElement('option');
+                opt.value = 'default';
+                opt.text = 'Active microphone (device hidden by browser)';
+                micSelect.add(opt);
+                this.selectedMicId = null;
+                setStatus('✅ Microphone active. Device names not available on this browser.', false);
+                if (micConfigSection) {
+                    micConfigSection.classList.add('mic-status-ok');
+                    micConfigSection.classList.remove('mic-status-error');
+                }
+                return;
+            }
+
+            setStatus('Microphone tools unavailable on this browser/device.', true);
+            if (micConfigSection) {
+                micConfigSection.classList.remove('mic-status-ok');
+                micConfigSection.classList.add('mic-status-error');
+            }
+            return;
+        }
 
         try {
             // Ensure cache is initialized
@@ -592,12 +763,10 @@ class CarGuessingGame {
                 this.micLabelCache = {};
             }
 
-            // STEP 1: Temp stream for permission trigger
+            // STEP 1: Permission trigger (only when explicitly requested by user action)
             if (requestPermission) {
-                try {
-                    tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                } catch (err) {
-                    console.warn("Permission check failed:", err);
+                const granted = await this.ensureMicrophonePermissionForGame(true);
+                if (!granted) {
                     setStatus('Microphone access denied.', true);
                     return; // Stop if we explicitly asked for permission and got denied
                 }
@@ -625,11 +794,40 @@ class CarGuessingGame {
             micSelect.innerHTML = '';
 
             if (audioInputs.length === 0) {
+                const showNamesBtn = document.getElementById('showMicNamesBtn');
+
+                // On many phones, enumerateDevices may be empty until permission is granted.
+                if (!requestPermission && !this.micPermissionGranted) {
+                    const opt = document.createElement('option');
+                    opt.value = 'default';
+                    opt.text = 'Tap "Turn On Microphone" first';
+                    micSelect.add(opt);
+                    setStatus('Microphone permission needed on this device.', false);
+                    if (showNamesBtn) {
+                        showNamesBtn.textContent = 'Turn On Microphone';
+                        showNamesBtn.disabled = false;
+                        showNamesBtn.style.opacity = '1';
+                    }
+                    return;
+                }
+
                 const opt = document.createElement('option');
                 opt.value = 'default';
                 opt.text = "No microphones found";
                 micSelect.add(opt);
-                // Only show error status if we actually found nothing
+
+                // iOS/Safari can hide enumerateDevices even when capture is active.
+                if (this.isAudioStreamUsable(this.globalPermStream)) {
+                    opt.text = 'Active microphone (device hidden by browser)';
+                    this.selectedMicId = null;
+                    setStatus('✅ Microphone active. Browser did not expose device list.', false);
+                    if (micConfigSection) {
+                        micConfigSection.classList.add('mic-status-ok');
+                        micConfigSection.classList.remove('mic-status-error');
+                    }
+                    return;
+                }
+
                 setStatus('No microphone hardware detected.', true);
                 return;
             }
@@ -660,16 +858,39 @@ class CarGuessingGame {
                 micSelect.value = this.selectedMicId;
             } else if (currentVal && Array.from(micSelect.options).some(o => o.value === currentVal)) {
                 micSelect.value = currentVal;
+            } else if (micSelect.options.length > 0) {
+                micSelect.selectedIndex = 0;
+                this.selectedMicId = micSelect.value === 'default' ? null : micSelect.value;
             }
 
             // STEP 4: Update UI State
             const labelsVisible = audioInputs.some(d => d.label && d.label.trim().length > 0);
+            const streamActive = this.isAudioStreamUsable(this.globalPermStream);
+            const permissionLikelyGranted = this.micPermissionGranted || this.micPermissionState === 'granted' || streamActive;
             const showNamesBtn = document.getElementById('showMicNamesBtn');
 
             if (labelsVisible) {
                 setStatus(`✅ Ready! ${audioInputs.length} device(s) found.`);
 
                 // Success State: Turn Green & Lock Button
+                if (micConfigSection) {
+                    micConfigSection.classList.add('mic-status-ok');
+                    micConfigSection.classList.remove('mic-status-error');
+                }
+
+                if (showNamesBtn) {
+                    showNamesBtn.innerHTML = '✅ Microphone Ready';
+                    showNamesBtn.disabled = true;
+                    showNamesBtn.style.opacity = '1';
+                    showNamesBtn.style.background = 'var(--success)';
+                    showNamesBtn.style.borderColor = 'var(--success)';
+                    showNamesBtn.style.color = '#fff';
+                }
+            } else if (audioInputs.length > 0 && permissionLikelyGranted) {
+                // Mobile Safari/Chrome can return audioinput devices without labels
+                // even after permission is granted. Treat this as success, not failure.
+                setStatus(`✅ Microphone active. ${audioInputs.length} input(s) detected (labels hidden by browser).`);
+
                 if (micConfigSection) {
                     micConfigSection.classList.add('mic-status-ok');
                     micConfigSection.classList.remove('mic-status-error');
@@ -698,12 +919,6 @@ class CarGuessingGame {
             if (requestPermission) {
                 setStatus('Error accessing audio subsystem.', true);
             }
-        } finally {
-            if (tempStream) {
-                try {
-                    tempStream.getTracks().forEach(track => track.stop());
-                } catch (e) { }
-            }
         }
     }
 
@@ -713,6 +928,12 @@ class CarGuessingGame {
         const status = document.getElementById('micTestStatus');
 
         try {
+            // Ensure permission is obtained once through the shared path.
+            const granted = await this.ensureMicrophonePermissionForGame(true);
+            if (!granted) {
+                throw new Error('microphone-permission-denied');
+            }
+
             this.isTestingMic = true;
             testBtn.classList.add('testing');
             testBtn.innerHTML = '<span class="btn-icon">⏹️</span> Stop Test';
@@ -726,11 +947,8 @@ class CarGuessingGame {
             }
 
             const deviceId = document.getElementById('micSelect').value;
-            const constraints = {
-                audio: deviceId ? { deviceId: { exact: deviceId } } : true
-            };
-
-            this.testStream = await navigator.mediaDevices.getUserMedia(constraints);
+            const normalizedDeviceId = deviceId === 'default' ? null : deviceId;
+            this.testStream = await this.getMicrophoneStream(normalizedDeviceId);
             await this.refreshMicrophones(false);
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioContext.createMediaStreamSource(this.testStream);

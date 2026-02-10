@@ -1,0 +1,847 @@
+============================== 3080-3465 ==============================
+03080:         leftCol.className = 'dev-left';
+03081:         leftCol.innerHTML = `
+03082:             <div class="dev-left-title-row">
+03083:                 <div class="dev-left-title">Level Creator Controls</div>
+03084:             </div>
+03085: 
+03086:             <div class="lc-control-group">
+03087:                 <label class="lc-label" for="devLevelDropdown">Levels</label>
+03088:                 <select id="devLevelDropdown" class="dev-level-select"></select>
+03089:                 <div class="dev-level-actions">
+03090:                     <button id="devLevelLoadBtn" type="button">Load</button>
+03091:                     <button id="devLevelEditBtn" type="button">Edit</button>
+03092:                 </div>
+03093:             </div>
+03094: 
+03095:             <div class="lc-control-group">
+03096:                 <label class="lc-label">Seed</label>
+03097:                 <div class="lc-inline">
+03098:                     <input id="devSeedInput" type="number" min="1" step="1" value="12345">
+03099:                     <button data-dev-action="regen-seed" type="button">Regen</button>
+03100:                 </div>
+03101:             </div>
+03102: 
+03103:             <div class="lc-control-group">
+03104:                 <label class="lc-label">Vertices: <span id="devVerticesValue">8</span></label>
+03105:                 <input id="devVerticesRange" type="range" min="3" max="18" step="1" value="8">
+03106:             </div>
+03107: 
+03108:             <div class="lc-control-group">
+03109:                 <label class="lc-toggle-row">
+03110:                     <input id="devSymmetryToggle" type="checkbox">
+03111:                     <span>Perfect Symmetry</span>
+03112:                 </label>
+03113:                 <div class="lc-status off" id="devSymmetryStatus">OFF - Random Shape</div>
+03114:             </div>
+03115: 
+03116:             <div class="lc-control-group">
+03117:                 <label class="lc-label">Number of Lines: <span id="devSolveLinesValue">3</span></label>
+03118:                 <input id="devSolveLines" type="range" min="1" max="12" step="1" value="3">
+03119:             </div>
+03120: 
+03121:             <div class="lc-control-group">
+03122:                 <label class="lc-label">Target Pieces</label>
+03123:                 <input id="devTargetPieces" type="number" min="2" max="16" step="1" value="4">
+03124:                 <label class="lc-toggle-row" style="margin-top:8px;">
+03125:                     <input id="devAutoMaximizeToggle" type="checkbox" checked>
+03126:                     <span>Auto Maximize</span>
+03127:                 </label>
+03128:                 <div class="lc-status on" id="devAutoModeStatus">ON - Find max valid</div>
+03129:                 <div class="lc-meta">Max Possible Pieces: <b id="devMaxPiecesValue">7</b></div>
+03130:             </div>
+03131: 
+03132:             <div class="lc-control-group">
+03133:                 <label class="lc-label">Differential Percentage</label>
+03134:                 <input id="devDifferentialPercent" type="number" min="0.1" max="100" step="0.1" value="5">
+03135:                 <div class="lc-status off" id="devDifferentialStatus">FAIL • waiting for equalized split</div>
+03136:             </div>
+03137: 
+03138:             <div class="lc-control-group">
+03139:                 <label class="lc-label">Effort: <span id="devEffortValue">5</span></label>
+03140:                 <input id="devEffortRange" type="range" min="1" max="10" step="1" value="5">
+03141:             </div>
+03142: 
+03143:             <div class="lc-control-group">
+03144:                 <label class="lc-label">Grid</label>
+03145:                 <div class="lc-inline">
+03146:                     <input id="devGridSize" type="number" min="8" max="80" step="1" value="24">
+03147:                     <label class="lc-toggle-row compact"><input id="devGridLock" type="checkbox" checked><span>Lock on Grid <b id="devGridLockLabel">ON</b></span></label>
+03148:                 </div>
+03149:             </div>
+03150: 
+03151:             <div class="lc-control-group">
+03152:                 <label class="lc-label">Max Lines (Level)</label>
+03153:                 <input id="devMaxLines" type="number" min="1" max="12" step="1" value="3">
+03154:             </div>
+03155: 
+03156:             <div class="lc-btn-grid">
+03157:                 <button data-dev-action="random-polygon" type="button">Random Polygon</button>
+03158:                 <button data-dev-action="solve-creator" type="button" class="accent">Solve</button>
+03159:             </div>
+03160:             <div class="lc-btn-grid">
+03161:                 <button data-dev-action="toggle-draw-custom" id="devDrawCustomBtn" type="button" style="background:#9333ea;border-color:#a855f7;">Draw Custom</button>
+03162:                 <button data-dev-action="clear-all" type="button">Clear</button>
+03163:             </div>
+03164:             <div class="lc-btn-grid single">
+03165:                 <button data-dev-action="add-to-level" type="button" class="accent">Add to Level</button>
+03166:                 <button data-dev-action="export-json" type="button">Export JSON</button>
+03167:             </div>
+03168:         `;
+03169:         this.levelList = leftCol.querySelector('#devLevelDropdown');
+03170: 
+03171:         const rightCol = document.createElement('div');
+03172:         rightCol.className = 'dev-right';
+03173:         rightCol.innerHTML = `
+03174:             <canvas id="devCreatorCanvas" width="820" height="470"></canvas>
+03175:             <div id="devCreatorInfo" class="dev-info"></div>
+03176:             <div id="devDebugHost" class="dev-debug-host"></div>
+03177:         `;
+03178: 
+03179:         body.appendChild(leftCol);
+03180:         body.appendChild(rightCol);
+03181:         this.panel.appendChild(body);
+03182: 
+03183:         document.body.appendChild(this.panel);
+03184: 
+03185:         document.getElementById('devCloseBtn').onclick = () => this.hide();
+03186:         this.creatorCanvas = document.getElementById('devCreatorCanvas');
+03187:         this.creatorInfo = document.getElementById('devCreatorInfo');
+03188:         this.debugHost = document.getElementById('devDebugHost');
+03189:         this.bindPanelControls();
+03190:         this.makePanelDraggable();
+03191:         this.makePanelResizable();
+03192:         this.dockDebugConsole();
+03193:     }
+03194: 
+03195:     ensureStyles() {
+03196:         if (document.getElementById('dev-manager-styles')) return;
+03197:         const style = document.createElement('style');
+03198:         style.id = 'dev-manager-styles';
+03199:         style.textContent = `
+03200:             #devManagerPanel ::-webkit-scrollbar { width: 8px; }
+03201:             #devManagerPanel ::-webkit-scrollbar-track { background: #111827; }
+03202:             #devManagerPanel ::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
+03203:             #devManagerPanel .dev-header{ padding:14px 16px; border-bottom:1px solid #334155; }
+03204:             #devManagerPanel .dev-body{ display:grid; grid-template-columns:340px 1fr; min-height:0; flex:1; }
+03205:             #devManagerPanel .dev-left{ border-right:1px solid #334155; padding:12px; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+03206:             #devManagerPanel .dev-left-title-row{ display:flex; align-items:center; justify-content:space-between; }
+03207:             #devManagerPanel .dev-left-title{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; }
+03208:             #devManagerPanel .dev-level-select{ width:100%; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:8px; padding:8px; font-size:12px; }
+03209:             #devManagerPanel .dev-level-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+03210:             #devManagerPanel .dev-level-actions button,
+03211:             #devManagerPanel .lc-btn-grid button,
+03212:             #devManagerPanel .lc-inline button{ background:#1e293b; border:1px solid #334155; color:#dbeafe; border-radius:8px; padding:7px 10px; cursor:pointer; font-weight:600; font-size:12px; }
+03213:             #devManagerPanel .lc-btn-grid button.accent{ background:#0ea5e9; border-color:#38bdf8; color:#fff; }
+03214:             #devManagerPanel .dev-right{ padding:6px 10px 10px 10px; display:flex; flex-direction:column; gap:8px; min-height:0; }
+03215:             #devManagerPanel .lc-control-group{ background:#111c33; border:1px solid #334155; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+03216:             #devManagerPanel .lc-label{ font-size:12px; color:#cbd5e1; }
+03217:             #devManagerPanel .lc-inline{ display:flex; gap:8px; align-items:center; }
+03218:             #devManagerPanel .lc-inline input[type='number'],
+03219:             #devManagerPanel .lc-control-group input[type='number']{ width:90px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:6px; padding:4px 6px; }
+03220:             #devManagerPanel .lc-control-group input[type='range']{ width:100%; }
+03221:             #devManagerPanel .lc-toggle-row{ display:flex; align-items:center; gap:8px; font-size:12px; color:#cbd5e1; }
+03222:             #devManagerPanel .lc-toggle-row.compact{ font-size:11px; }
+03223:             #devManagerPanel .lc-status{ font-size:11px; font-weight:600; }
+03224:             #devManagerPanel .lc-status.on{ color:#22c55e; }
+03225:             #devManagerPanel .lc-status.off{ color:#94a3b8; }
+03226:             #devManagerPanel .lc-meta{ font-size:11px; color:#cbd5e1; }
+03227:             #devManagerPanel .lc-btn-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+03228:             #devManagerPanel .lc-btn-grid.single{ grid-template-columns:1fr 1fr; }
+03229:             #devCreatorCanvas{ width:100%; min-height:0; flex:1; border:1px solid #334155; border-radius:10px; background:#0b1220; cursor:crosshair; }
+03230:             #devManagerPanel .dev-info{ font-size:12px; color:#cbd5e1; background:#0f172a; border:1px solid #334155; border-radius:8px; padding:8px; }
+03231:             #devManagerPanel .dev-debug-host{ border:1px solid #334155; background:#020617; border-radius:8px; min-height:90px; max-height:130px; overflow:hidden; }
+03232:             #devManagerPanel .dev-header{ cursor:move; user-select:none; }
+03233:             #devManagerPanel .dev-header button{ cursor:pointer; }
+03234:             #devManagerPanel .dev-resize-handle{ position:absolute; width:16px; height:16px; right:4px; bottom:4px; cursor:nwse-resize; background:linear-gradient(135deg, transparent 45%, #64748b 45%, #64748b 58%, transparent 58%, transparent 70%, #64748b 70%, #64748b 83%, transparent 83%); opacity:.85; }
+03235:         `;
+03236:         document.head.appendChild(style);
+03237:     }
+03238: 
+03239:     dockDebugConsole() {
+03240:         if (!this.debugHost || !window.MobileDebug || !window.MobileDebug.overlay) return;
+03241:         const debugOverlay = window.MobileDebug.overlay;
+03242:         if (debugOverlay.parentElement !== this.debugHost) {
+03243:             this.debugHost.appendChild(debugOverlay);
+03244:         }
+03245:         debugOverlay.style.position = 'relative';
+03246:         debugOverlay.style.left = '0';
+03247:         debugOverlay.style.right = '0';
+03248:         debugOverlay.style.bottom = '0';
+03249:         debugOverlay.style.top = '0';
+03250:         debugOverlay.style.margin = '0';
+03251:         debugOverlay.style.maxHeight = '100%';
+03252:         debugOverlay.style.height = '100%';
+03253:         debugOverlay.style.width = '100%';
+03254:         debugOverlay.style.borderRadius = '8px';
+03255:         debugOverlay.style.borderWidth = '1px';
+03256:         debugOverlay.style.fontSize = '10px';
+03257:         debugOverlay.style.display = 'block';
+03258:         debugOverlay.style.zIndex = '1';
+03259:         const logDiv = debugOverlay.querySelector('#mobileDebugLog');
+03260:         if (logDiv) {
+03261:             logDiv.style.maxHeight = '115px';
+03262:             logDiv.style.overflowY = 'auto';
+03263:         }
+03264:         if (typeof window.MobileDebug.render === 'function') {
+03265:             window.MobileDebug.render();
+03266:         }
+03267:     }
+03268: 
+03269:     makePanelDraggable() {
+03270:         if (!this.panel || !this.headerEl) return;
+03271:         this.headerEl.addEventListener('pointerdown', (event) => {
+03272:             if (event.target && event.target.closest('button')) return;
+03273:             const rect = this.panel.getBoundingClientRect();
+03274:             this.isDraggingPanel = true;
+03275:             this.dragState = {
+03276:                 offsetX: event.clientX - rect.left,
+03277:                 offsetY: event.clientY - rect.top
+03278:             };
+03279:             this.panel.style.right = 'auto';
+03280:             this.panel.style.bottom = 'auto';
+03281:             this.headerEl.setPointerCapture(event.pointerId);
+03282:         });
+03283: 
+03284:         this.headerEl.addEventListener('pointermove', (event) => {
+03285:             if (!this.isDraggingPanel || !this.dragState) return;
+03286:             const vw = window.innerWidth;
+03287:             const vh = window.innerHeight;
+03288:             const rect = this.panel.getBoundingClientRect();
+03289:             const maxLeft = Math.max(0, vw - rect.width);
+03290:             const maxTop = Math.max(0, vh - 40);
+03291:             const left = Math.min(maxLeft, Math.max(0, event.clientX - this.dragState.offsetX));
+03292:             const top = Math.min(maxTop, Math.max(0, event.clientY - this.dragState.offsetY));
+03293:             this.panel.style.left = `${left}px`;
+03294:             this.panel.style.top = `${top}px`;
+03295:         });
+03296: 
+03297:         const stopDrag = (event) => {
+03298:             if (!this.isDraggingPanel) return;
+03299:             this.isDraggingPanel = false;
+03300:             this.dragState = null;
+03301:             try {
+03302:                 this.headerEl.releasePointerCapture(event.pointerId);
+03303:             } catch (_) { }
+03304:         };
+03305:         this.headerEl.addEventListener('pointerup', stopDrag);
+03306:         this.headerEl.addEventListener('pointercancel', stopDrag);
+03307:     }
+03308: 
+03309:     makePanelResizable() {
+03310:         if (!this.panel) return;
+03311:         const handle = document.createElement('div');
+03312:         handle.className = 'dev-resize-handle';
+03313:         this.panel.appendChild(handle);
+03314: 
+03315:         handle.addEventListener('pointerdown', (event) => {
+03316:             const rect = this.panel.getBoundingClientRect();
+03317:             this.isResizingPanel = true;
+03318:             this.resizeState = {
+03319:                 startX: event.clientX,
+03320:                 startY: event.clientY,
+03321:                 width: rect.width,
+03322:                 height: rect.height
+03323:             };
+03324:             handle.setPointerCapture(event.pointerId);
+03325:             event.preventDefault();
+03326:             event.stopPropagation();
+03327:         });
+03328: 
+03329:         handle.addEventListener('pointermove', (event) => {
+03330:             if (!this.isResizingPanel || !this.resizeState) return;
+03331:             const dx = event.clientX - this.resizeState.startX;
+03332:             const dy = event.clientY - this.resizeState.startY;
+03333:             const minW = 760;
+03334:             const minH = 500;
+03335:             const maxW = window.innerWidth - 16;
+03336:             const maxH = window.innerHeight - 16;
+03337:             const nextW = Math.min(maxW, Math.max(minW, this.resizeState.width + dx));
+03338:             const nextH = Math.min(maxH, Math.max(minH, this.resizeState.height + dy));
+03339:             this.panel.style.width = `${nextW}px`;
+03340:             this.panel.style.height = `${nextH}px`;
+03341:             this.renderCreatorCanvas();
+03342:         });
+03343: 
+03344:         const stopResize = (event) => {
+03345:             if (!this.isResizingPanel) return;
+03346:             this.isResizingPanel = false;
+03347:             this.resizeState = null;
+03348:             try {
+03349:                 handle.releasePointerCapture(event.pointerId);
+03350:             } catch (_) { }
+03351:         };
+03352:         handle.addEventListener('pointerup', stopResize);
+03353:         handle.addEventListener('pointercancel', stopResize);
+03354:     }
+03355: 
+03356:     bindPanelControls() {
+03357:         if (!this.panel) return;
+03358:         this.panel.querySelectorAll('[data-dev-action]').forEach(btn => {
+03359:             btn.addEventListener('click', async () => {
+03360:                 const action = btn.dataset.devAction;
+03361:                 if (action === 'random-polygon') this.createRandomShape();
+03362:                 if (action === 'regen-seed') this.createRandomShape(false);
+03363:                 if (action === 'clear-all') this.clearCreator();
+03364:                 if (action === 'toggle-draw-custom') this.toggleDrawCustomMode();
+03365:                 if (action === 'solve-creator') this.solveToTarget();
+03366:                 if (action === 'add-to-level') this.openAddToLevelModal();
+03367:                 if (action === 'export-json') this.exportCreatorJson();
+03368:             });
+03369:         });
+03370: 
+03371:         const gridInput = this.panel.querySelector('#devGridSize');
+03372:         const lockInput = this.panel.querySelector('#devGridLock');
+03373:         const tpInput = this.panel.querySelector('#devTargetPieces');
+03374:         const mlInput = this.panel.querySelector('#devMaxLines');
+03375:         const diffInput = this.panel.querySelector('#devDifferentialPercent');
+03376:         const vertsRange = this.panel.querySelector('#devVerticesRange');
+03377:         const symmetryToggle = this.panel.querySelector('#devSymmetryToggle');
+03378:         const solveLines = this.panel.querySelector('#devSolveLines');
+03379:         const effortRange = this.panel.querySelector('#devEffortRange');
+03380:         const autoMaximizeToggle = this.panel.querySelector('#devAutoMaximizeToggle');
+03381:         const seedInput = this.panel.querySelector('#devSeedInput');
+03382:         const levelDropdown = this.panel.querySelector('#devLevelDropdown');
+03383:         const levelLoadBtn = this.panel.querySelector('#devLevelLoadBtn');
+03384:         const levelEditBtn = this.panel.querySelector('#devLevelEditBtn');
+03385:         if (gridInput) gridInput.addEventListener('input', () => { this.creatorState.gridSize = Math.max(8, Math.min(80, Number(gridInput.value) || 24)); this.renderCreatorCanvas(); });
+03386:         if (lockInput) lockInput.addEventListener('change', () => { this.creatorState.gridLock = !!lockInput.checked; this.syncCreatorControlText(); this.renderCreatorCanvas(); });
+03387:         if (tpInput) tpInput.addEventListener('input', () => {
+03388:             this.creatorState.targetPieces = Math.max(2, Math.min(16, Number(tpInput.value) || 4));
+03389:             this.syncCreatorControlText();
+03390:             this.updateCreatorInfo();
+03391:         });
+03392:         if (mlInput) mlInput.addEventListener('input', () => {
+03393:             this.creatorState.maxLines = Math.max(1, Math.min(12, Number(mlInput.value) || 3));
+03394:             this.syncCreatorControlText();
+03395:             this.updateCreatorInfo();
+03396:         });
+03397:         if (diffInput) diffInput.addEventListener('input', () => {
+03398:             this.creatorState.maxDifferentialPercent = Math.max(0.1, Math.min(100, Number(diffInput.value) || 5));
+03399:             this.syncCreatorControlText();
+03400:             this.updateCreatorInfo();
+03401:             this.renderCreatorCanvas();
+03402:         });
+03403:         if (vertsRange) vertsRange.addEventListener('input', () => {
+03404:             this.creatorState.vertexCount = Math.max(3, Math.min(18, Number(vertsRange.value) || 8));
+03405:             this.syncCreatorControlText();
+03406:         });
+03407:         if (symmetryToggle) symmetryToggle.addEventListener('change', () => {
+03408:             this.creatorState.symmetryEnabled = !!symmetryToggle.checked;
+03409:             this.createRandomShape();
+03410:         });
+03411:         if (solveLines) solveLines.addEventListener('input', () => {
+03412:             this.creatorState.maxLines = Math.max(1, Math.min(12, Number(solveLines.value) || 3));
+03413:             if (mlInput) mlInput.value = `${this.creatorState.maxLines}`;
+03414:             this.syncCreatorControlText();
+03415:             this.updateCreatorInfo();
+03416:         });
+03417:         if (effortRange) effortRange.addEventListener('input', () => {
+03418:             this.creatorState.searchEffort = Math.max(1, Math.min(10, Number(effortRange.value) || 5));
+03419:             this.syncCreatorControlText();
+03420:         });
+03421:         if (autoMaximizeToggle) autoMaximizeToggle.addEventListener('change', () => {
+03422:             this.creatorState.autoMaximize = !!autoMaximizeToggle.checked;
+03423:             this.syncCreatorControlText();
+03424:             this.updateCreatorInfo();
+03425:         });
+03426:         if (seedInput) seedInput.addEventListener('input', () => {
+03427:             this.creatorState.seed = Math.max(1, Number(seedInput.value) || 12345);
+03428:         });
+03429:         if (levelDropdown) levelDropdown.addEventListener('change', () => {
+03430:             this.creatorState.selectedLevelIndex = Math.max(0, Number(levelDropdown.value) || 0);
+03431:             this.hydrateCreatorFromCurrentLevel(true, this.creatorState.selectedLevelIndex);
+03432:             this.syncCreatorControls();
+03433:             this.syncCreatorControlText();
+03434:             this.updateCreatorInfo();
+03435:             this.renderCreatorCanvas();
+03436:         });
+03437:         if (levelLoadBtn) levelLoadBtn.addEventListener('click', () => {
+03438:             this.loadLevel(this.creatorState.selectedLevelIndex || 0);
+03439:             this.populateList();
+03440:         });
+03441:         if (levelEditBtn) levelEditBtn.addEventListener('click', async () => {
+03442:             await this.openLevelEditModal(this.creatorState.selectedLevelIndex || 0);
+03443:             this.populateList();
+03444:         });
+03445: 
+03446:         this.syncCreatorControls();
+03447:         this.syncCreatorControlText();
+03448: 
+03449:         if (this.creatorCanvas) {
+03450:             this.creatorCanvas.addEventListener('mousedown', (e) => this.onCanvasPointerDown(e));
+03451:             this.creatorCanvas.addEventListener('mousemove', (e) => this.onCanvasPointerMove(e));
+03452:             this.creatorCanvas.addEventListener('mouseup', () => this.onCanvasPointerUp());
+03453:             this.creatorCanvas.addEventListener('mouseleave', () => this.onCanvasPointerUp());
+03454:             this.creatorCanvas.addEventListener('dblclick', (e) => this.onCanvasDoubleClick(e));
+03455:         }
+03456:     }
+03457: 
+03458:     syncCreatorControls() {
+03459:         if (!this.panel) return;
+03460:         const map = {
+03461:             '#devGridSize': this.creatorState.gridSize,
+03462:             '#devGridLock': this.creatorState.gridLock,
+03463:             '#devTargetPieces': this.creatorState.targetPieces,
+03464:             '#devMaxLines': this.creatorState.maxLines,
+03465:             '#devDifferentialPercent': this.creatorState.maxDifferentialPercent,
+============================== 3888-4070 ==============================
+03888:                     split.forEach(verts => {
+03889:                         if (Array.isArray(verts) && verts.length >= 3) next.push({ vertices: verts });
+03890:                     });
+03891:                 } else {
+03892:                     next.push(piece);
+03893:                 }
+03894:             });
+03895:             pieces = next;
+03896:             if (!didSplit) {
+03897:                 return { pieces, allLinesCross: false, splitCount, failedLineIndex: i };
+03898:             }
+03899:             splitCount++;
+03900:         }
+03901:         return { pieces, allLinesCross: true, splitCount };
+03902:     }
+03903: 
+03904:     computePieceStats() {
+03905:         const applied = this.applyCutsDetailed(this.creatorState.vertices, this.creatorState.lines || []);
+03906:         const pieces = applied.pieces;
+03907:         const areas = pieces.map(p => Math.abs(Geometry.getArea(p.vertices)));
+03908:         const total = areas.reduce((a, b) => a + b, 0);
+03909:         const minA = areas.length ? Math.min(...areas) : 0;
+03910:         const maxA = areas.length ? Math.max(...areas) : 0;
+03911:         const diffPct = maxA > 0 ? ((maxA - minA) / maxA) * 100 : 100;
+03912:         const threshold = Math.max(0.1, Number(this.creatorState.maxDifferentialPercent) || 5);
+03913:         const piecePercents = total > 0 ? areas.map(a => (a / total) * 100) : areas.map(() => 0);
+03914:         const pieceDiffFromLargest = maxA > 0 ? areas.map(a => ((maxA - a) / maxA) * 100) : areas.map(() => 0);
+03915:         const allWithinThreshold = pieceDiffFromLargest.every(v => v <= threshold + 1e-6);
+03916:         const valid = !!applied.allLinesCross && allWithinThreshold;
+03917:         return {
+03918:             pieces,
+03919:             areas,
+03920:             total,
+03921:             minA,
+03922:             maxA,
+03923:             diffPct,
+03924:             threshold,
+03925:             piecePercents,
+03926:             pieceDiffFromLargest,
+03927:             allWithinThreshold,
+03928:             valid,
+03929:             maxError: diffPct / 100,
+03930:             allLinesCross: applied.allLinesCross
+03931:         };
+03932:     }
+03933: 
+03934:     updateCreatorInfo() {
+03935:         if (!this.creatorInfo) return;
+03936:         const s = this.computePieceStats();
+03937:         const diff = s.diffPct.toFixed(2);
+03938:         const threshold = Math.max(0.1, Number(this.creatorState.maxDifferentialPercent) || 5);
+03939:         const autoMode = this.creatorState.autoMaximize ? 'Auto Maximize ON' : `Target ${this.creatorState.targetPieces}`;
+03940:         const crossing = this.creatorState.lines.length > 0
+03941:             ? (s.allLinesCross ? ' • Crossing: <b>OK</b>' : ' • Crossing: <b style="color:#fb7185;">FAILED</b>')
+03942:             : '';
+03943:         const scanStatus = s.valid
+03944:             ? ` • Scan: <b style="color:#22c55e;">PASS</b>`
+03945:             : ` • Scan: <b style="color:#ef4444;">FAIL</b>`;
+03946:         const solving = this.creatorState.isSolving ? ' • <b style="color:#22d3ee;">Solving...</b>' : '';
+03947:         const solveMeta = this.creatorState.lastSolveMeta
+03948:             ? ` • Solve: <b>${this.creatorState.lastSolveMeta}</b>`
+03949:             : '';
+03950:         this.creatorInfo.innerHTML = `Vertices: <b>${this.creatorState.vertices.length}</b> • Number of Lines: <b>${this.creatorState.maxLines}</b> • Pieces: <b>${s.pieces.length}</b> • Max differential: <b>${diff}%</b> / <b>${threshold.toFixed(1)}%</b>${scanStatus} • ${autoMode}${crossing}${solving}${solveMeta}`;
+03951:     }
+03952: 
+03953:     renderCreatorCanvas() {
+03954:         if (!this.creatorCanvas) return;
+03955:         const size = this.syncCreatorCanvasSize();
+03956:         if (!size) return;
+03957:         const ctx = this.creatorCanvas.getContext('2d');
+03958:         const w = size.width;
+03959:         const h = size.height;
+03960:         const dpr = size.dpr;
+03961:         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+03962:         ctx.clearRect(0, 0, w, h);
+03963: 
+03964:         const g = this.creatorState.gridSize;
+03965:         ctx.strokeStyle = 'rgba(71, 85, 105, 0.35)';
+03966:         ctx.lineWidth = 1;
+03967:         for (let x = 0; x <= w; x += g) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+03968:         for (let y = 0; y <= h; y += g) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+03969: 
+03970:         if (this.creatorState.vertices.length < 1) {
+03971:             this.creatorView = { scale: 1, offsetX: 0, offsetY: 0 };
+03972:             this.creatorViewDirty = false;
+03973:         } else if (this.creatorViewDirty) {
+03974:             this.creatorView = this.computeCreatorView(w, h);
+03975:             this.creatorViewDirty = false;
+03976:         }
+03977:         ctx.save();
+03978:         ctx.translate(this.creatorView.offsetX, this.creatorView.offsetY);
+03979:         ctx.scale(this.creatorView.scale, this.creatorView.scale);
+03980: 
+03981:         const stats = this.computePieceStats();
+03982:         const pieces = stats.pieces || [];
+03983:         const palette = ['#38bdf8', '#60a5fa', '#818cf8', '#22d3ee', '#67e8f9', '#0ea5e9'];
+03984:         pieces.forEach((piece, i) => {
+03985:             const verts = piece.vertices || [];
+03986:             if (verts.length < 3) return;
+03987:             ctx.beginPath();
+03988:             ctx.moveTo(verts[0].x, verts[0].y);
+03989:             for (let k = 1; k < verts.length; k++) ctx.lineTo(verts[k].x, verts[k].y);
+03990:             ctx.closePath();
+03991:             ctx.fillStyle = `${palette[i % palette.length]}44`;
+03992:             ctx.strokeStyle = '#93c5fd';
+03993:             ctx.lineWidth = 2 / Math.max(0.001, this.creatorView.scale);
+03994:             ctx.fill();
+03995:             ctx.stroke();
+03996:         });
+03997: 
+03998:         const drawRoundedRect = (x, y, width, height, radius) => {
+03999:             const r = Math.min(radius, width / 2, height / 2);
+04000:             ctx.beginPath();
+04001:             ctx.moveTo(x + r, y);
+04002:             ctx.lineTo(x + width - r, y);
+04003:             ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+04004:             ctx.lineTo(x + width, y + height - r);
+04005:             ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+04006:             ctx.lineTo(x + r, y + height);
+04007:             ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+04008:             ctx.lineTo(x, y + r);
+04009:             ctx.quadraticCurveTo(x, y, x + r, y);
+04010:             ctx.closePath();
+04011:         };
+04012: 
+04013:         pieces.forEach((piece, i) => {
+04014:             const verts = piece.vertices || [];
+04015:             if (verts.length < 3) return;
+04016:             const pct = Number.isFinite(stats.piecePercents?.[i]) ? stats.piecePercents[i] : 0;
+04017:             const isPass = !!stats.valid && (stats.pieceDiffFromLargest?.[i] ?? Infinity) <= (stats.threshold + 1e-6);
+04018: 
+04019:             let center;
+04020:             if (typeof Geometry !== 'undefined' && typeof Geometry.getPolygonCenter === 'function') {
+04021:                 center = Geometry.getPolygonCenter(verts);
+04022:             }
+04023:             if (!center || !Number.isFinite(center.x) || !Number.isFinite(center.y)) {
+04024:                 let sx = 0;
+04025:                 let sy = 0;
+04026:                 verts.forEach(v => { sx += v.x; sy += v.y; });
+04027:                 center = { x: sx / verts.length, y: sy / verts.length };
+04028:             }
+04029: 
+04030:             let pieceMinX = Infinity;
+04031:             let pieceMinY = Infinity;
+04032:             let pieceMaxX = -Infinity;
+04033:             let pieceMaxY = -Infinity;
+04034:             verts.forEach(v => {
+04035:                 pieceMinX = Math.min(pieceMinX, v.x);
+04036:                 pieceMinY = Math.min(pieceMinY, v.y);
+04037:                 pieceMaxX = Math.max(pieceMaxX, v.x);
+04038:                 pieceMaxY = Math.max(pieceMaxY, v.y);
+04039:             });
+04040:             const pieceMinDimension = Math.max(1e-6, Math.min(pieceMaxX - pieceMinX, pieceMaxY - pieceMinY));
+04041: 
+04042:             let fontSize = 15 / Math.max(0.001, this.creatorView.scale);
+04043:             const minFont = 8 / Math.max(0.001, this.creatorView.scale);
+04044:             const maxFontByPiece = pieceMinDimension * 0.36;
+04045:             fontSize = Math.max(minFont, Math.min(fontSize, maxFontByPiece));
+04046:             if (!Number.isFinite(fontSize) || fontSize < 6 / Math.max(0.001, this.creatorView.scale)) return;
+04047: 
+04048:             const text = `${pct.toFixed(1)}%`;
+04049:             ctx.font = `700 ${fontSize}px Inter, sans-serif`;
+04050:             const metrics = ctx.measureText(text);
+04051:             const paddingX = 7 / Math.max(0.001, this.creatorView.scale);
+04052:             const paddingY = 4 / Math.max(0.001, this.creatorView.scale);
+04053:             const boxW = metrics.width + paddingX * 2;
+04054:             const boxH = fontSize + paddingY * 2;
+04055:             const boxX = center.x - boxW / 2;
+04056:             const boxY = center.y - boxH / 2;
+04057: 
+04058:             ctx.save();
+04059:             ctx.fillStyle = isPass ? 'rgba(22,163,74,0.9)' : 'rgba(220,38,38,0.92)';
+04060:             ctx.strokeStyle = isPass ? 'rgba(187,247,208,0.95)' : 'rgba(254,202,202,0.95)';
+04061:             ctx.lineWidth = 1.6 / Math.max(0.001, this.creatorView.scale);
+04062:             drawRoundedRect(boxX, boxY, boxW, boxH, 7 / Math.max(0.001, this.creatorView.scale));
+04063:             ctx.fill();
+04064:             ctx.stroke();
+04065:             ctx.restore();
+04066: 
+04067:             ctx.fillStyle = '#ffffff';
+04068:             ctx.textAlign = 'center';
+04069:             ctx.textBaseline = 'middle';
+04070:             ctx.fillText(text, center.x, center.y);
+============================== 4268-4542 ==============================
+04268:             const idx = Math.floor(rng.next() * out.length);
+04269:             if (rng.next() < 0.7) out[idx].theta = this.wrapPI(out[idx].theta + rng.range(-step, step));
+04270:             const range = this.getProjectionRange(vertices, out[idx].theta);
+04271:             const span = Math.max(0.0001, range.max - range.min);
+04272:             if (rng.next() < 0.9) out[idx].d = out[idx].d + rng.range(-span * step, span * step);
+04273:             const margin = Math.max(1e-6, span * 0.001);
+04274:             out[idx].d = this.clampValue(out[idx].d, range.min + margin, range.max - margin);
+04275:         }
+04276:         return out;
+04277:     }
+04278: 
+04279:     scoreSolutionDetailed(pieces, targetPieces, totalArea, thresholdPct, allLinesCross) {
+04280:         const count = pieces.length;
+04281:         if (!allLinesCross) {
+04282:             return {
+04283:                 score: 1e14,
+04284:                 count,
+04285:                 valid: false,
+04286:                 diffPct: Infinity,
+04287:                 minA: 0,
+04288:                 maxA: 0,
+04289:                 pieces
+04290:             };
+04291:         }
+04292: 
+04293:         if (count !== targetPieces) {
+04294:             const countDiff = Math.abs(count - targetPieces);
+04295:             return {
+04296:                 score: 1e12 + countDiff * 1e10,
+04297:                 count,
+04298:                 valid: false,
+04299:                 diffPct: Infinity,
+04300:                 minA: 0,
+04301:                 maxA: 0,
+04302:                 pieces
+04303:             };
+04304:         }
+04305: 
+04306:         const areas = pieces.map(p => Math.abs(Geometry.getArea(p.vertices)));
+04307:         const minA = Math.min(...areas);
+04308:         const maxA = Math.max(...areas);
+04309:         const diffPct = (maxA - minA) / (maxA + 1e-9) * 100;
+04310:         const ideal = totalArea / targetPieces;
+04311:         let varSum = 0;
+04312:         let absSum = 0;
+04313:         let worst = 0;
+04314:         let sliverPenalty = 0;
+04315:         const sliverThreshold = ideal * 0.15;
+04316: 
+04317:         areas.forEach(a => {
+04318:             const dev = Math.abs(a - ideal) / (ideal + 1e-9);
+04319:             absSum += dev;
+04320:             varSum += dev * dev;
+04321:             if (dev > worst) worst = dev;
+04322:             if (a < sliverThreshold) sliverPenalty += 1;
+04323:         });
+04324: 
+04325:         const std = Math.sqrt(varSum / Math.max(1, areas.length));
+04326:         const avg = absSum / Math.max(1, areas.length);
+04327: 
+04328:         let score = 0;
+04329:         score += diffPct * 1e6;
+04330:         if (diffPct > thresholdPct) score += (diffPct - thresholdPct) * 5e6;
+04331:         score += std * 2e5;
+04332:         score += worst * 1e5;
+04333:         score += avg * 5e4;
+04334:         score += sliverPenalty * 5e6;
+04335: 
+04336:         return {
+04337:             score,
+04338:             count,
+04339:             valid: diffPct <= thresholdPct,
+04340:             diffPct,
+04341:             minA,
+04342:             maxA,
+04343:             std,
+04344:             avg,
+04345:             worst,
+04346:             sliverPenalty,
+04347:             pieces
+04348:         };
+04349:     }
+04350: 
+04351:     evaluateGenome(genome, vertices, targetPieces, thresholdPct, totalArea, bounds) {
+04352:         const lines = genome.map(g => this.lineFromThetaD(g.theta, g.d, bounds));
+04353:         const applied = this.applyCutsDetailed(vertices, lines);
+04354:         const scored = this.scoreSolutionDetailed(applied.pieces, targetPieces, totalArea, thresholdPct, applied.allLinesCross);
+04355:         return { ...scored, lines, allLinesCross: applied.allLinesCross };
+04356:     }
+04357: 
+04358:     solveForTargetPiecesAsync({ vertices, numLines, targetPieces, effort, seed, thresholdPct, runId, onUpdate }) {
+04359:         return new Promise((resolve) => {
+04360:             const rng = this.createSeededRng((seed >>> 0) + 1337);
+04361:             const totalArea = Math.abs(Geometry.getArea(vertices));
+04362:             const maxIter = Math.max(500, Math.floor(effort * 220));
+04363:             const batchSize = 60;
+04364:             const bounds = this.getVerticesBounds(vertices);
+04365:             const elite = [];
+04366: 
+04367:             const pushElite = (candidate) => {
+04368:                 elite.push(candidate);
+04369:                 elite.sort((a, b) => a.score - b.score);
+04370:                 if (elite.length > 10) elite.length = 10;
+04371:             };
+04372: 
+04373:             for (let i = 0; i < 5; i++) {
+04374:                 const g = (i % 2 === 0)
+04375:                     ? this.makeStrategicGenome(numLines, rng, vertices)
+04376:                     : this.makeRandomGenome(numLines, rng, vertices);
+04377:                 pushElite(this.evaluateGenome(g, vertices, targetPieces, thresholdPct, totalArea, bounds));
+04378:             }
+04379: 
+04380:             let best = elite[0] || null;
+04381:             let iter = 0;
+04382: 
+04383:             const loop = () => {
+04384:                 if (this.creatorState.solveRunId !== runId) {
+04385:                     resolve(null);
+04386:                     return;
+04387:                 }
+04388: 
+04389:                 for (let b = 0; b < batchSize; b++) {
+04390:                     iter++;
+04391:                     const prog = iter / maxIter;
+04392:                     const step = Math.max(0.02, 0.35 * (1 - prog));
+04393:                     const parent = (rng.next() < 0.6 && elite.length)
+04394:                         ? elite[Math.floor(rng.next() * elite.length)]
+04395:                         : best;
+04396:                     if (!parent) continue;
+04397: 
+04398:                     const child = (iter % 250 === 0 && rng.next() < 0.6)
+04399:                         ? this.makeRandomGenome(numLines, rng, vertices)
+04400:                         : this.mutateGenome(parent.lines.map(line => {
+04401:                             const dx = line.end.x - line.start.x;
+04402:                             const dy = line.end.y - line.start.y;
+04403:                             const theta = this.wrapPI(Math.atan2(dy, dx) + Math.PI / 2);
+04404:                             const d = line.start.x * Math.cos(theta) + line.start.y * Math.sin(theta);
+04405:                             return { theta, d };
+04406:                         }), step, rng.next() < (best.valid ? 0.25 : 0.45), rng, vertices);
+04407: 
+04408:                     const result = this.evaluateGenome(child, vertices, targetPieces, thresholdPct, totalArea, bounds);
+04409:                     if (result.count !== targetPieces && Math.abs(result.count - targetPieces) > 2 && rng.next() < 0.8) {
+04410:                         continue;
+04411:                     }
+04412:                     if (!best || result.score < best.score) {
+04413:                         best = result;
+04414:                         pushElite(result);
+04415:                     } else if (elite.length < 10 || result.score < elite[elite.length - 1].score) {
+04416:                         pushElite(result);
+04417:                     }
+04418:                 }
+04419: 
+04420:                 if (iter % 30 === 0 && onUpdate && best) {
+04421:                     onUpdate({ best, iter, maxIter, targetPieces });
+04422:                 }
+04423: 
+04424:                 const earlyStop = best && best.valid && iter > maxIter * 0.35 && best.diffPct < thresholdPct * 0.65;
+04425:                 if (iter < maxIter && !earlyStop) {
+04426:                     requestAnimationFrame(loop);
+04427:                 } else {
+04428:                     resolve(best);
+04429:                 }
+04430:             };
+04431: 
+04432:             loop();
+04433:         });
+04434:     }
+04435: 
+04436:     async solveToTarget() {
+04437:         if (this.creatorState.isSolving) return;
+04438:         if (!this.creatorState.vertices || this.creatorState.vertices.length < 3) return;
+04439: 
+04440:         const maxLines = Math.max(1, this.creatorState.maxLines);
+04441:         const effort = Math.max(1, this.creatorState.searchEffort || 5);
+04442:         const threshold = Math.max(0.1, this.creatorState.maxDifferentialPercent || 5);
+04443:         const theoreticalMax = this.getMaxPiecesForLines(maxLines);
+04444:         const vertices = this.creatorState.vertices.map(v => ({ x: v.x, y: v.y }));
+04445:         const runId = Date.now();
+04446: 
+04447:         this.creatorState.solveRunId = runId;
+04448:         this.creatorState.isSolving = true;
+04449:         this.creatorState.solverPreviewLines = [];
+04450:         this.creatorState.lastSolveMeta = 'Solving...';
+04451:         this.updateCreatorInfo();
+04452:         this.renderCreatorCanvas();
+04453: 
+04454:         let chosen = null;
+04455:         let chosenMeta = 'No solution';
+04456: 
+04457:         try {
+04458:             if (this.creatorState.autoMaximize) {
+04459:                 let bestAttempt = null;
+04460:                 for (let target = theoreticalMax; target >= 2; target--) {
+04461:                     const localEffort = effort * (0.7 + 0.9 * (target / Math.max(2, theoreticalMax)));
+04462:                     const result = await this.solveForTargetPiecesAsync({
+04463:                         vertices,
+04464:                         numLines: maxLines,
+04465:                         targetPieces: target,
+04466:                         effort: localEffort,
+04467:                         seed: this.creatorState.seed,
+04468:                         thresholdPct: threshold,
+04469:                         runId,
+04470:                         onUpdate: ({ best }) => {
+04471:                             this.creatorState.solverPreviewLines = best?.lines || [];
+04472:                             this.creatorState.lastSolveMeta = `Searching ${target} pcs • diff ${isFinite(best?.diffPct) ? best.diffPct.toFixed(2) : '?'}%`;
+04473:                             this.updateCreatorInfo();
+04474:                             this.renderCreatorCanvas();
+04475:                         }
+04476:                     });
+04477:                     if (!result || this.creatorState.solveRunId !== runId) return;
+04478:                     if (!bestAttempt || result.score < bestAttempt.score) bestAttempt = result;
+04479:                     if (result.valid) {
+04480:                         chosen = result.lines;
+04481:                         chosenMeta = `VALID ${target} pcs @ ${result.diffPct.toFixed(2)}%`;
+04482:                         break;
+04483:                     }
+04484:                 }
+04485:                 if (!chosen && bestAttempt) {
+04486:                     chosen = bestAttempt.lines;
+04487:                     chosenMeta = `Best attempt @ ${isFinite(bestAttempt.diffPct) ? bestAttempt.diffPct.toFixed(2) : '?'}%`;
+04488:                 }
+04489:             } else {
+04490:                 const target = Math.max(2, this.creatorState.targetPieces || 2);
+04491:                 const attempts = 5;
+04492:                 let bestAttempt = null;
+04493:                 for (let attempt = 1; attempt <= attempts; attempt++) {
+04494:                     const result = await this.solveForTargetPiecesAsync({
+04495:                         vertices,
+04496:                         numLines: maxLines,
+04497:                         targetPieces: target,
+04498:                         effort: effort * 1.5,
+04499:                         seed: ((this.creatorState.seed || 1) + attempt * 9999) >>> 0,
+04500:                         thresholdPct: threshold,
+04501:                         runId,
+04502:                         onUpdate: ({ best }) => {
+04503:                             this.creatorState.solverPreviewLines = best?.lines || [];
+04504:                             this.creatorState.lastSolveMeta = `Attempt ${attempt}/${attempts} • ${target} pcs • diff ${isFinite(best?.diffPct) ? best.diffPct.toFixed(2) : '?'}%`;
+04505:                             this.updateCreatorInfo();
+04506:                             this.renderCreatorCanvas();
+04507:                         }
+04508:                     });
+04509:                     if (!result || this.creatorState.solveRunId !== runId) return;
+04510:                     if (!bestAttempt || result.score < bestAttempt.score) bestAttempt = result;
+04511:                     if (result.valid) {
+04512:                         chosen = result.lines;
+04513:                         chosenMeta = `VALID ${target} pcs @ ${result.diffPct.toFixed(2)}%`;
+04514:                         break;
+04515:                     }
+04516:                 }
+04517:                 if (!chosen && bestAttempt) {
+04518:                     chosen = bestAttempt.lines;
+04519:                     chosenMeta = `No valid ${target} pcs • best ${isFinite(bestAttempt.diffPct) ? bestAttempt.diffPct.toFixed(2) : '?'}%`;
+04520:                 }
+04521:             }
+04522:         } finally {
+04523:             if (this.creatorState.solveRunId !== runId) return;
+04524:             this.creatorState.isSolving = false;
+04525:             this.creatorState.solverPreviewLines = [];
+04526:             if (chosen && Array.isArray(chosen)) this.creatorState.lines = chosen;
+04527:             this.creatorState.lastSolveMeta = chosenMeta;
+04528:             this.updateCreatorInfo();
+04529:             this.renderCreatorCanvas();
+04530:         }
+04531:     }
+04532: 
+04533:     async openAddToLevelModal(prefillIndex = null) {
+04534:         const levelCount = this.game.levels.length;
+04535:         const idx = Number.isFinite(prefillIndex) ? prefillIndex : this.creatorState.selectedLevelIndex;
+04536:         const current = this.game.levels[idx] || this.game.levels[0];
+04537:         const stars = this.game.getLevelStarThresholds(current || {});
+04538:         const levelVal = await this.openFormModal({
+04539:             title: 'Add to Level',
+04540:             fields: [
+04541:                 { key: 'level', label: 'Target Level', type: 'number', min: 1, max: levelCount, value: (idx + 1) },
+04542:                 { key: 'lines', label: 'Max Lines', type: 'number', min: 1, max: 12, value: this.creatorState.maxLines },

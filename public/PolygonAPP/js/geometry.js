@@ -1,5 +1,119 @@
 
 class Geometry {
+    static get EPS() {
+        return {
+            INTERSECTION: 1e-9,
+            POINT: 1e-6,
+            COLLINEAR: 1e-6,
+            MIN_EDGE: 1e-6,
+            MIN_AREA: 1e-8
+        };
+    }
+
+    static isFinitePoint(p) {
+        return !!p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y));
+    }
+
+    static robustArea(vertices, minAbsArea = Geometry.EPS.MIN_AREA) {
+        if (!Array.isArray(vertices) || vertices.length < 3) return 0;
+        const area = Math.abs(this.getArea(vertices));
+        if (!Number.isFinite(area)) return 0;
+        return area < minAbsArea ? 0 : area;
+    }
+
+    static sanitizePolygon(vertices, opts = {}) {
+        if (!Array.isArray(vertices) || vertices.length < 3) return null;
+        const pointEps = Number.isFinite(opts.pointEps) ? opts.pointEps : Geometry.EPS.POINT;
+        const minEdgeSq = Math.max(Geometry.EPS.MIN_EDGE, Number(opts.minEdge || 0)) ** 2;
+        const collinearEps = Number.isFinite(opts.collinearEps) ? opts.collinearEps : Geometry.EPS.COLLINEAR;
+        const minAbsArea = Number.isFinite(opts.minAbsArea) ? opts.minAbsArea : Geometry.EPS.MIN_AREA;
+
+        const base = vertices
+            .map(v => ({ x: Number(v?.x), y: Number(v?.y) }))
+            .filter(v => Number.isFinite(v.x) && Number.isFinite(v.y));
+        if (base.length < 3) return null;
+
+        // Remove consecutive duplicates / zero-length edges.
+        const deduped = [];
+        for (let i = 0; i < base.length; i++) {
+            const v = base[i];
+            const prev = deduped[deduped.length - 1];
+            if (!prev || this.distSq(prev, v) > pointEps * pointEps) {
+                deduped.push(v);
+            }
+        }
+        while (deduped.length > 2 && this.distSq(deduped[0], deduped[deduped.length - 1]) <= pointEps * pointEps) {
+            deduped.pop();
+        }
+        if (deduped.length < 3) return null;
+
+        // Remove micro-edges.
+        const edgeClean = [];
+        for (let i = 0; i < deduped.length; i++) {
+            const a = deduped[i];
+            const b = deduped[(i + 1) % deduped.length];
+            if (this.distSq(a, b) > minEdgeSq || deduped.length <= 3) {
+                edgeClean.push(a);
+            }
+        }
+        if (edgeClean.length < 3) return null;
+
+        // Remove near-collinear points robustly.
+        const out = [];
+        const n = edgeClean.length;
+        for (let i = 0; i < n; i++) {
+            const prev = edgeClean[(i - 1 + n) % n];
+            const curr = edgeClean[i];
+            const next = edgeClean[(i + 1) % n];
+            const v1x = curr.x - prev.x;
+            const v1y = curr.y - prev.y;
+            const v2x = next.x - curr.x;
+            const v2y = next.y - curr.y;
+            const len1 = Math.hypot(v1x, v1y);
+            const len2 = Math.hypot(v2x, v2y);
+            if (len1 <= pointEps || len2 <= pointEps) continue;
+            const cross = Math.abs(v1x * v2y - v1y * v2x) / (len1 * len2 + 1e-12);
+            if (cross <= collinearEps && n > 3) continue;
+            out.push(curr);
+        }
+
+        if (out.length < 3) return null;
+        const area = this.robustArea(out, minAbsArea);
+        if (!(area > 0)) return null;
+        return out;
+    }
+
+    static sanitizePieces(pieces, totalArea = 0, opts = {}) {
+        if (!Array.isArray(pieces) || pieces.length === 0) return [];
+        const minAreaRatio = Number.isFinite(opts.minAreaRatio) ? opts.minAreaRatio : 0.0008;
+        const minAbsArea = Math.max(
+            Number.isFinite(opts.minAbsArea) ? opts.minAbsArea : Geometry.EPS.MIN_AREA,
+            Math.max(0, Number(totalArea) || 0) * Math.max(0, minAreaRatio)
+        );
+
+        const out = [];
+        const seen = new Set();
+        pieces.forEach(piece => {
+            const verts = this.sanitizePolygon(piece?.vertices, {
+                pointEps: opts.pointEps,
+                minEdge: opts.minEdge,
+                collinearEps: opts.collinearEps,
+                minAbsArea
+            });
+            if (!verts) return;
+            const area = this.robustArea(verts, minAbsArea);
+            if (!(area > 0)) return;
+
+            const c = this.getPolygonCenter(verts) || { x: 0, y: 0 };
+            const sig = `${Math.round(c.x * 1000)}:${Math.round(c.y * 1000)}:${Math.round(area * 1000)}:${verts.length}`;
+            if (seen.has(sig)) return;
+            seen.add(sig);
+
+            out.push({ vertices: verts });
+        });
+        return out;
+    }
+
     // --- Basic Geometric Primitives ---
 
     static getIntersectionInfiniteLine(segment, line) {

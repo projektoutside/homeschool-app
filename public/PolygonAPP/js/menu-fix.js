@@ -49,9 +49,14 @@
         overlay: null,
         log: [],
         maxLogs: 20,
+        minimized: false,
         startTime: Date.now(),
 
         init() {
+            // Remove any previously-mounted standalone overlay so debug UI only exists inside Dev Manager.
+            const existing = document.getElementById('mobileDebugOverlay');
+            if (existing) existing.remove();
+
             const overlay = document.createElement('div');
             overlay.id = 'mobileDebugOverlay';
             overlay.style.cssText = `
@@ -70,26 +75,40 @@
                 overflow-y: auto;
                 pointer-events: auto;
                 border: 2px solid #00ff00;
-                display: ${DEBUG_MODE ? 'block' : 'none'};
+                display: none;
                 -webkit-overflow-scrolling: touch;
             `;
             overlay.innerHTML = `
                 <div style="display:flex;justify-content:space-between;margin-bottom:8px;border-bottom:1px solid #00ff00;padding-bottom:6px;">
-                    <span style="font-weight:bold;">POLYGON FUN DEBUG</span>
-                    <button id="debugClearBtn" style="background:#333;color:#0f0;border:1px solid #0f0;padding:2px 8px;cursor:pointer;font-size:10px;">Clear</button>
+                    <span style="font-weight:bold;">Debug Console</span>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <button id="debugMinimizeBtn" style="background:#333;color:#0f0;border:1px solid #0f0;padding:2px 8px;cursor:pointer;font-size:10px;">Minimize</button>
+                        <button id="debugClearBtn" style="background:#333;color:#0f0;border:1px solid #0f0;padding:2px 8px;cursor:pointer;font-size:10px;">Clear</button>
+                    </div>
                 </div>
                 <div id="mobileDebugLog"></div>
             `;
-            document.body.appendChild(overlay);
+
+            // IMPORTANT: do not attach to body (standalone console removed).
+            // DevManager will dock this same overlay inside its own panel.
             this.overlay = overlay;
             
-            const clearBtn = document.getElementById('debugClearBtn');
+            const clearBtn = overlay.querySelector('#debugClearBtn');
             if (clearBtn) {
                 clearBtn.onclick = () => {
                     this.log = [];
                     this.render();
                 };
             }
+
+            const minimizeBtn = overlay.querySelector('#debugMinimizeBtn');
+            if (minimizeBtn) {
+                minimizeBtn.onclick = () => {
+                    this.toggleMinimize();
+                };
+            }
+
+            this.setMinimized(false);
             
             // Keyboard shortcut (Ctrl+Shift+D)
             document.addEventListener('keydown', (e) => {
@@ -117,11 +136,45 @@
         },
         
         toggle() {
-            if (this.overlay) {
-                const isVisible = this.overlay.style.display !== 'none';
-                this.overlay.style.display = isVisible ? 'none' : 'block';
-                localStorage.setItem('POLYGON_DEBUG', isVisible ? 'false' : 'true');
+            // Standalone debug overlay is intentionally disabled.
+            // Keep preference write for compatibility with existing logic.
+            storageSetItem('POLYGON_DEBUG', 'false');
+        },
+
+        setMinimized(minimized) {
+            this.minimized = !!minimized;
+            const logDiv = this.overlay ? this.overlay.querySelector('#mobileDebugLog') : null;
+            const minimizeBtn = this.overlay ? this.overlay.querySelector('#debugMinimizeBtn') : null;
+            const header = this.overlay ? this.overlay.querySelector('div') : null;
+
+            if (logDiv) {
+                logDiv.style.display = this.minimized ? 'none' : 'block';
             }
+            if (header) {
+                header.style.marginBottom = this.minimized ? '0' : '8px';
+                header.style.paddingBottom = this.minimized ? '0' : '6px';
+                header.style.borderBottom = this.minimized ? 'none' : '1px solid #00ff00';
+            }
+            if (minimizeBtn) {
+                minimizeBtn.textContent = this.minimized ? 'Expand' : 'Minimize';
+            }
+            if (this.overlay) {
+                this.overlay.style.padding = this.minimized ? '6px 10px' : '10px';
+                this.overlay.style.overflow = 'hidden';
+                this.overlay.style.maxHeight = this.minimized ? '34px' : '100%';
+                this.overlay.style.height = this.minimized ? '34px' : '100%';
+            }
+
+            const host = this.overlay ? this.overlay.parentElement : null;
+            if (host && host.id === 'devDebugHost') {
+                host.style.minHeight = this.minimized ? '34px' : '90px';
+                host.style.maxHeight = this.minimized ? '34px' : '130px';
+                host.style.height = this.minimized ? '34px' : 'auto';
+            }
+        },
+
+        toggleMinimize() {
+            this.setMinimized(!this.minimized);
         },
 
         add(msg, type = 'info') {
@@ -146,13 +199,14 @@
         
         render() {
             if (!this.overlay) return;
-            const logDiv = document.getElementById('mobileDebugLog');
+            const logDiv = this.overlay ? this.overlay.querySelector('#mobileDebugLog') : null;
             if (logDiv) {
                 logDiv.innerHTML = this.log.map(e => 
                     `<div style="color:${e.color};margin:2px 0;word-break:break-word;">[+${e.elapsed}s] ${e.msg}</div>`
                 ).join('');
                 logDiv.scrollTop = logDiv.scrollHeight;
             }
+            this.setMinimized(this.minimized);
         }
     };
 
@@ -704,9 +758,11 @@
             }, 100);
         };
         
-        // Use pointer events for best cross-platform support
+        // Use pointer events when available, but also attach click as a reliable fallback
+        // for automation/browser environments where pointerup may not fire.
         if ('PointerEvent' in window) {
             element.addEventListener('pointerup', wrappedHandler, { passive: false });
+            element.addEventListener('click', wrappedHandler);
         } else {
             // Fallback for older browsers
             element.addEventListener('touchend', wrappedHandler, { passive: false });

@@ -1076,6 +1076,67 @@ async function loadModel() {
 // Initialize when page loads
 loadModel();
 
+// Warmup helper to reduce first-detection latency during countdown
+let hmWarmupPromise = null;
+window.hm_warmupRecognition = async function hmWarmupRecognition() {
+  if (hmWarmupPromise) return hmWarmupPromise;
+
+  hmWarmupPromise = (async () => {
+    // Keep this non-invasive: initialize existing models and run tiny dummy inferences.
+    // No detection logic/thresholds are changed.
+    await loadModel();
+
+    const warm = document.createElement('canvas');
+    warm.width = 64;
+    warm.height = 64;
+    const wctx = warm.getContext('2d', { willReadFrequently: true });
+    wctx.clearRect(0, 0, warm.width, warm.height);
+    wctx.strokeStyle = '#000';
+    wctx.fillStyle = '#000';
+    wctx.lineWidth = 6;
+    wctx.lineCap = 'round';
+    wctx.lineJoin = 'round';
+    // Draw a simple synthetic "8"-like shape to trigger real ML path once
+    wctx.beginPath();
+    wctx.arc(32, 24, 10, 0, Math.PI * 2);
+    wctx.stroke();
+    wctx.beginPath();
+    wctx.arc(32, 42, 10, 0, Math.PI * 2);
+    wctx.stroke();
+
+    try {
+      await recognizeDigitML(warm);
+    } catch (err) {
+      console.warn('[Warmup] ML warmup failed:', err);
+    }
+
+    try {
+      if (window.hm_recognizeDigitMLFromCanvas) {
+        await window.hm_recognizeDigitMLFromCanvas(warm);
+      }
+    } catch (err) {
+      console.warn('[Warmup] VS ML warmup failed:', err);
+    }
+
+    try {
+      if (window.hm_recognizeMultiDigitFromCanvas) {
+        await window.hm_recognizeMultiDigitFromCanvas(warm, 1);
+      }
+    } catch (err) {
+      console.warn('[Warmup] VS multi-digit warmup failed:', err);
+    }
+
+    return true;
+  })();
+
+  try {
+    return await hmWarmupPromise;
+  } catch (err) {
+    hmWarmupPromise = null;
+    throw err;
+  }
+};
+
 // Enhanced pattern-based digit recognition with better bad handwriting support
 function recognizeDigitByPattern() {
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);

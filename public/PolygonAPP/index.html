@@ -3678,6 +3678,22 @@
             }
         };
 
+        // Deterministic automation bootstrap for runtime verification.
+        // Enable with URL params, e.g.:
+        //   index.html?pf_auto=1&pf_mode=beginner&pf_level=0&pf_dev=1
+        const getAutomationBootstrapConfig = () => {
+            const params = new URLSearchParams(window.location.search || '');
+            const auto = params.get('pf_auto') === '1' || params.get('autostart') === '1';
+            if (!auto) return null;
+
+            const mode = params.get('pf_mode') || 'beginner';
+            const levelRaw = params.get('pf_level');
+            const level = Number.isFinite(Number(levelRaw)) ? Math.max(0, Number(levelRaw)) : 0;
+            const openDev = params.get('pf_dev') === '1' || params.get('dev') === '1';
+
+            return { mode, level, openDev };
+        };
+
         // Initialize Main Menu when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             ensureAppEntryRoute();
@@ -8612,6 +8628,30 @@
                 game.loadLevels(BeginnerLevels);
             }
             window.game = game;
+
+            // Deterministic runtime entry (automation/testing only via URL params).
+            const automationConfig = getAutomationBootstrapConfig();
+            if (automationConfig) {
+                try {
+                    if (typeof MainMenu !== 'undefined' && MainMenu && typeof MainMenu.hide === 'function') {
+                        MainMenu.hide();
+                    }
+
+                    game.startMode(automationConfig.mode);
+
+                    if (game.currentMode && typeof game.currentMode.loadLevel === 'function') {
+                        game.currentMode.loadLevel(automationConfig.level);
+                    }
+
+                    if (automationConfig.openDev && game.devManager && typeof game.devManager.toggle === 'function' && !game.devManager.isVisible) {
+                        game.devManager.toggle();
+                    }
+
+                    console.log('[AutomationBootstrap] Applied', automationConfig);
+                } catch (e) {
+                    console.error('[AutomationBootstrap] Failed to apply:', e);
+                }
+            }
 
 
             // setupMobileMenus() calls removed

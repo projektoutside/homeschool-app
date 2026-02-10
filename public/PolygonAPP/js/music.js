@@ -184,6 +184,7 @@
     }
 
     let audioUnlockListenersBound = false;
+    let menuAutoplayBlockedNotified = false;
 
     function playBackgroundMusic(opts = {}) {
         initMenuMusic();
@@ -201,23 +202,38 @@
                     // Success
                 })
                 .catch(err => {
-                    console.warn('Menu music autoplay blocked. Waiting for interaction...', err);
-                    if (!audioUnlockListenersBound) {
-                        audioUnlockListenersBound = true;
-                        const unlock = () => {
-                            // Only try if still in menu mode
-                            if (!gameplayActive) {
-                                playBackgroundMusic({ immediate: true });
-                            }
-                            audioUnlockListenersBound = false;
+                    const errName = String(err?.name || '');
+                    const errMsg = String(err?.message || '');
+                    const isAutoplayBlocked =
+                        errName === 'NotAllowedError' ||
+                        /notallowed|user\s+didn'?t\s+interact|play\(\)\s+failed/i.test(errMsg);
+
+                    if (isAutoplayBlocked) {
+                        if (!menuAutoplayBlockedNotified) {
+                            menuAutoplayBlockedNotified = true;
+                            console.info('Menu music will start after first user interaction.');
+                        }
+
+                        if (!audioUnlockListenersBound) {
+                            audioUnlockListenersBound = true;
+                            const unlock = () => {
+                                // Only try if still in menu mode
+                                if (!gameplayActive) {
+                                    playBackgroundMusic({ immediate: true });
+                                }
+                                audioUnlockListenersBound = false;
+                                ['click', 'touchstart', 'keydown'].forEach(e =>
+                                    document.removeEventListener(e, unlock)
+                                );
+                            };
                             ['click', 'touchstart', 'keydown'].forEach(e =>
-                                document.removeEventListener(e, unlock)
+                                document.addEventListener(e, unlock, { once: true })
                             );
-                        };
-                        ['click', 'touchstart', 'keydown'].forEach(e =>
-                            document.addEventListener(e, unlock, { once: true })
-                        );
+                        }
+                        return;
                     }
+
+                    console.warn('Menu music playback failed:', err);
                 });
         }
         return Promise.resolve();

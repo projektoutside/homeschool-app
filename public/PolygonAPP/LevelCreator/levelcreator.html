@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometric Cut Optimizer</title>
+  <style>
+    :root {
+      --bg: #1e1e24;
+      --panel: #2b2b36;
+      --text: #e0e0e0;
+      --accent: #4a90e2;
+      --danger: #e25555;
+      --success: #4caf50;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    #sidebar {
+      width: 340px;
+      background-color: var(--panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 1.2rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      margin: 15px 0 5px 0;
+      font-size: 0.9rem;
+      color: #888;
+      text-transform: uppercase;
+      border-bottom: 1px solid #444;
+      padding-bottom: 4px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      background: #111;
+      border: 1px solid #444;
+      color: white;
+      padding: 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-action {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-sec {
+      background: #444;
+      color: white;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .toggle-status {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .toggle-status.on {
+      color: var(--success);
+    }
+
+    .toggle-status.off {
+      color: #666;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #333;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .toggle-switch.active {
+      background: var(--success);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(24px);
+    }
+
+    #stats {
+      background: #111;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      color: #ccc;
+    }
+
+    #viewport {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #1a1a20;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    canvas {
+      background: transparent;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 10;
+      white-space: pre-line;
+    }
+
+    #overlay.show {
+      opacity: 1;
+    }
+
+    #grid-info {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #888;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #grid-info.locked {
+      color: var(--success);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="sidebar">
+      <h1>GeoCutter Engine</h1>
+
+      <div class="control-group">
+        <label>Mode</label>
+        <select id="difficulty">
+          <option value="easy">Easy (Fast)</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+          <option value="insanity">Insanity (Slow)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Seed (for reproducibility)</label>
+        <div style="display:flex; gap:5px;">
+          <input type="number" id="seed" value="12345" style="flex:1;">
+          <button class="btn-sec" id="btn-reseed" style="flex:0; padding:6px 10px; font-size:0.8rem;"
+            title="Regenerate with this seed">Regen</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Vertices: <span id="val-verts">8</span></label>
+        <input type="range" id="verts" min="3" max="18" value="8">
+      </div>
+
+      <div class="control-group">
+        <div class="toggle-container" id="symmetry-wrapper" style="cursor:pointer;">
+          <div class="toggle-label">
+            <span class="toggle-title">Perfect Symmetry</span>
+            <span class="toggle-status off" id="symmetry-status">OFF - Random Shape</span>
+          </div>
+          <div class="toggle-switch" id="symmetry-toggle"></div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Number of Lines: <span id="val-lines">3</span></label>
+        <input type="range" id="lines" min="1" max="7" value="3">
+      </div>
+
+      <div class="control-group">
+        <label>Target Pieces</label>
+        <div class="toggle-container" id="target-mode-wrapper" style="margin-bottom:5px; cursor:pointer;">
+          <div class="toggle-label">
+            <span class="toggle-title">Auto Maximize</span>
+            <span class="toggle-status on" id="target-mode-status">ON - Find max valid</span>
+          </div>
+          <div class="toggle-switch active" id="target-mode-toggle"></div>
+        </div>
+        <div id="target-input-box" style="display:none;">
+          <input type="number" id="target-pieces" value="7" min="2" max="50" placeholder="Enter target...">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Max Possible Pieces: <span id="val-max-pieces" style="color:var(--accent); font-weight:bold;">-</span></label>
+        <div id="max-pieces-status" style="font-size:0.75rem; color:#888; margin-top:2px;">Select lines to calculate...</div>
+      </div>
+
+      <div class="control-group">
+        <label>Search Effort (1-10): <span id="val-effort">5</span></label>
+        <input type="range" id="effort" min="1" max="10" value="5">
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-primary" id="btn-poly">Random Polygon</button>
+        <button class="btn-action" id="btn-solve">Solve</button>
+      </div>
+      <div class="btn-group">
+        <button class="btn-sec" id="btn-draw" style="background:#9c27b0;">Draw Custom</button>
+        <button class="btn-sec" id="btn-clear" style="background:#666;">Clear</button>
+      </div>
+      <button class="btn-sec" id="btn-export">Export JSON</button>
+
+      <h2>Grid Settings</h2>
+
+      <div class="control-group">
+        <div class="toggle-container">
+          <div class="toggle-label">
+            <span class="toggle-title">Lock on Grid</span>
+            <span class="toggle-status off" id="grid-lock-status">OFF - Click anywhere</span>
+          </div>
+          <div class="toggle-switch" id="grid-lock-toggle"></div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Grid Divisions: <span id="val-grid-divs">10</span></label>
+        <input type="range" id="grid-divs" min="5" max="20" value="10">
+      </div>
+
+      <h2>Results</h2>
+      <div id="stats">Ready to generate.</div>
+    </div>
+
+    <div id="viewport">
+      <svg id="grid-overlay" width="100%" height="100%"></svg>
+      <canvas id="canvas" width="800" height="800"></canvas>
+      <div id="grid-info">Grid: 10x10 | Lock: OFF</div>
+      <div id="overlay">Processing...</div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ------------------------------------------------------------------
+     * SECTION 1: UTILITIES & RNG
+     * ------------------------------------------------------------------
+     */
+
+    class RNG {
+      constructor(seed) { this.state = seed >>> 0; }
+      next() {
+        let t = this.state += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+      range(min, max) { return min + this.next() * (max - min); }
+      pick(arr) { return arr[Math.floor(this.next() * arr.length)]; }
+    }
+
+    const EPS = 1e-9;
+    const BIG_EPS = 1e-7;
+
+    const Vec2 = {
+      add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
+      sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y }),
+      dot: (a, b) => a.x * b.x + a.y * b.y,
+      cross: (a, b) => a.x * b.y - a.y * b.x,
+      scale: (a, s) => ({ x: a.x * s, y: a.y * s }),
+      len: (a) => Math.hypot(a.x, a.y),
+      dist: (a, b) => Math.hypot(a.x - b.x, a.y - b.y),
+      norm: (a) => {
+        const l = Math.hypot(a.x, a.y);
+        return l < EPS ? { x: 0, y: 0 } : { x: a.x / l, y: a.y / l };
+      },
+      lerp: (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }),
+    };
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function wrapPI(a) {
+      // keep angle stable-ish
+      while (a < 0) a += Math.PI;
+      while (a >= Math.PI) a -= Math.PI;
+      return a;
+    }
+
+    function quantKey(p, q = 1e-7) {
+      // snapping key to merge near-identical intersections
+      const x = Math.round(p.x / q) * q;
+      const y = Math.round(p.y / q) * q;
+      return x.toFixed(7) + "," + y.toFixed(7);
+    }
+
+    /**
+     * ------------------------------------------------------------------
+     * SECTION 2: GEOMETRY ENGINE (REAL REGION DETECTION)
+     * ------------------------------------------------------------------
+     */
+
+    class Polygon {
+      constructor(vertices) {
+        this.vertices = vertices;
+        this._signedArea = Polygon.signedArea(vertices);
+        this.area = Math.abs(this._signedArea);
+      }
+      static signedArea(verts) {
+        let s = 0;
+        const n = verts.length;
+        for (let i = 0; i < n; i++) {
+          const j = (i + 1) % n;
+          s += verts[i].x * verts[j].y - verts[j].x * verts[i].y;
+        }
+        return 0.5 * s;
+      }
+      static area(verts) { return Math.abs(Polygon.signedArea(verts)); }
+      static centroid(verts) {
+        // true polygon centroid
+        const A = Polygon.signedArea(verts);
+        if (Math.abs(A) < EPS) {
+          // fallback average
+          let cx = 0, cy = 0;
+          for (const v of verts) { cx += v.x; cy += v.y; }
+          return { x: cx / verts.length, y: cy / verts.length };
+        }
+        let cx = 0, cy = 0;
+        const n = verts.length;
+        for (let i = 0; i < n; i++) {
+          const j = (i + 1) % n;
+          const cross = verts[i].x * verts[j].y - verts[j].x * verts[i].y;
+          cx += (verts[i].x + verts[j].x) * cross;
+          cy += (verts[i].y + verts[j].y) * cross;
+        }
+        const f = 1 / (6 * A);
+        return { x: cx * f, y: cy * f };
+      }
+      computeCentroid() { return Polygon.centroid(this.vertices); }
+      project(normal) {
+        let min = Infinity, max = -Infinity;
+        for (const v of this.vertices) {
+          const d = Vec2.dot(v, normal);
+          if (d < min) min = d;
+          if (d > max) max = d;
+        }
+        return { min, max };
+      }
+    }
+
+    /**
+     * Line representation:
+     *  - theta in [0, PI)
+     *  - normal = (cos(theta), sin(theta))
+     *  - offset d so that dot(n, p) = d
+     */
+    function lineNormal(theta) { return { x: Math.cos(theta), y: Math.sin(theta) }; }
+    function lineTangent(theta) { return { x: -Math.sin(theta), y: Math.cos(theta) }; }
+    function signedDistToLine(p, theta, d) {
+      const n = lineNormal(theta);
+      return Vec2.dot(n, p) - d;
+    }
+    function pointOnLineParam(p, theta) {
+      // parameter along tangent direction (for sorting intersections along the line)
+      const t = lineTangent(theta);
+      return Vec2.dot(t, p);
+    }
+
+    function segLineIntersection(A, B, theta, d) {
+      // returns intersection point with infinite line if segment crosses it (including endpoints).
+      // Use signed distances.
+      let da = signedDistToLine(A, theta, d);
+      let db = signedDistToLine(B, theta, d);
+
+      // handle near-zero by nudging (prevents duplicate / tangency chaos)
+      if (Math.abs(da) < BIG_EPS) da = 0;
+      if (Math.abs(db) < BIG_EPS) db = 0;
+
+      if (da === 0 && db === 0) {
+        // segment collinear with line: ignore (rare). We'll treat as no single intersection.
+        return null;
+      }
+
+      if (da === 0) return { p: { x: A.x, y: A.y }, t: 0 };
+      if (db === 0) return { p: { x: B.x, y: B.y }, t: 1 };
+
+      // strict crossing
+      if ((da > 0 && db > 0) || (da < 0 && db < 0)) return null;
+
+      const denom = (db - da);
+      if (Math.abs(denom) < EPS) return null;
+
+      const t = (0 - da) / denom;
+      if (t < -1e-6 || t > 1 + 1e-6) return null;
+
+      const P = Vec2.lerp(A, B, t);
+      return { p: P, t: clamp(t, 0, 1) };
+    }
+
+    /**
+     * Core: Split a SIMPLE polygon by ONE infinite line, correctly producing
+     * multiple pieces even for concave shapes.
+     *
+     * Method:
+     *  - Find all intersections of line with polygon edges.
+     *  - Sort intersections along the line, pair them to get inside segments.
+     *  - Build planar graph consisting of polygon boundary + inside chord segments.
+     *  - Extract bounded faces by face-walking.
+     */
+    function splitPolygonByLine(polyVerts, theta, d) {
+      const n = polyVerts.length;
+      if (n < 3) return [new Polygon(polyVerts)];
+
+      // quick reject via projection
+      const P = new Polygon(polyVerts);
+      const nn = lineNormal(theta);
+      const proj = P.project(nn);
+      if (d < proj.min - BIG_EPS || d > proj.max + BIG_EPS) {
+        return [P]; // line misses polygon
+      }
+
+      // 1) gather intersections on each edge
+      const edgeHits = Array.from({ length: n }, () => []);
+      const allHits = [];
+      const seen = new Map();
+
+      for (let i = 0; i < n; i++) {
+        const a = polyVerts[i];
+        const b = polyVerts[(i + 1) % n];
+        const hit = segLineIntersection(a, b, theta, d);
+        if (!hit) continue;
+
+        const key = quantKey(hit.p);
+        // merge duplicates (common when hitting vertices)
+        if (seen.has(key)) continue;
+        seen.set(key, true);
+
+        const s = pointOnLineParam(hit.p, theta);
+        const entry = { edgeIndex: i, tEdge: hit.t, p: hit.p, s };
+        edgeHits[i].push(entry);
+        allHits.push(entry);
+      }
+
+      // If fewer than 2 intersections, no cut
+      if (allHits.length < 2) return [P];
+
+      // sort edge hits by position along the edge
+      for (let i = 0; i < n; i++) {
+        edgeHits[i].sort((u, v) => u.tEdge - v.tEdge);
+      }
+
+      // 2) sort all hits along the line to pair them
+      allHits.sort((u, v) => u.s - v.s);
+
+      // ensure even count: if odd due to tangency, drop the last (rare)
+      if (allHits.length % 2 === 1) {
+        allHits.pop();
+      }
+      if (allHits.length < 2) return [P];
+
+      // chord segments inside polygon are between pairs (0-1, 2-3, ...)
+      const chords = [];
+      for (let i = 0; i < allHits.length; i += 2) {
+        const A = allHits[i].p;
+        const B = allHits[i + 1].p;
+        if (Vec2.dist(A, B) > 1e-6) chords.push([A, B]);
+      }
+      if (chords.length === 0) return [P];
+
+      // 3) Build nodes by inserting intersection points into boundary order.
+      // We'll create a unique node id for each unique point.
+      const nodeIdByKey = new Map();
+      const nodes = [];
+      function getNodeId(pt) {
+        const k = quantKey(pt);
+        if (nodeIdByKey.has(k)) return nodeIdByKey.get(k);
+        const id = nodes.length;
+        nodes.push({ x: pt.x, y: pt.y });
+        nodeIdByKey.set(k, id);
+        return id;
+      }
+
+      // Build boundary node sequence with inserted intersections.
+      const boundaryNodes = [];
+      for (let i = 0; i < n; i++) {
+        const a = polyVerts[i];
+        const aId = getNodeId(a);
+        // push vertex for this corner (but avoid duplicates in a row)
+        if (boundaryNodes.length === 0 || boundaryNodes[boundaryNodes.length - 1] !== aId) {
+          boundaryNodes.push(aId);
+        }
+        // insert any hits on edge i, in order
+        for (const h of edgeHits[i]) {
+          const hid = getNodeId(h.p);
+          if (boundaryNodes[boundaryNodes.length - 1] !== hid) boundaryNodes.push(hid);
+        }
+      }
+      // close loop by removing trailing equals first
+      while (boundaryNodes.length > 1 && boundaryNodes[boundaryNodes.length - 1] === boundaryNodes[0]) {
+        boundaryNodes.pop();
+      }
+      if (boundaryNodes.length < 3) return [P];
+
+      // 4) Create directed edges (half-edges) for boundary and chords.
+      // We'll store adjacency for face-walking.
+      const outgoing = new Map(); // nodeId -> array of halfEdges
+      const halfEdges = []; // {from,to,rev,used,angle}
+      function addHalfEdge(from, to) {
+        const a = nodes[from], b = nodes[to];
+        const angle = Math.atan2(b.y - a.y, b.x - a.x);
+        const id = halfEdges.length;
+        halfEdges.push({ id, from, to, rev: -1, used: false, angle });
+        if (!outgoing.has(from)) outgoing.set(from, []);
+        outgoing.get(from).push(id);
+        return id;
+      }
+      function addEdgePair(u, v) {
+        const e1 = addHalfEdge(u, v);
+        const e2 = addHalfEdge(v, u);
+        halfEdges[e1].rev = e2;
+        halfEdges[e2].rev = e1;
+      }
+
+      // boundary edges in order
+      for (let i = 0; i < boundaryNodes.length; i++) {
+        const u = boundaryNodes[i];
+        const v = boundaryNodes[(i + 1) % boundaryNodes.length];
+        if (u !== v) addEdgePair(u, v);
+      }
+
+      // chord edges
+      for (const [A, B] of chords) {
+        const u = getNodeId(A);
+        const v = getNodeId(B);
+        if (u !== v) addEdgePair(u, v);
+      }
+
+      // 5) Sort outgoing edges at each node by angle (CCW).
+      for (const [nid, list] of outgoing.entries()) {
+        list.sort((ea, eb) => halfEdges[ea].angle - halfEdges[eb].angle);
+      }
+
+      // helper: given we arrived on edge e (from->to),
+      // at vertex 'to', pick next edge that keeps face on LEFT:
+      // Choose the outgoing edge from 'to' that is immediately CCW
+      // from the reverse edge direction.
+      function nextEdgeId(eid) {
+        const e = halfEdges[eid];
+        const at = e.to;
+        const rev = halfEdges[e.rev];
+        const outList = outgoing.get(at) || [];
+        if (outList.length === 0) return -1;
+
+        // incoming direction at 'to' is along rev (to -> from)
+        // We want next edge to be the one just CCW from rev in the cyclic order.
+        // Since outList is sorted by angle, find rev in outList then take previous.
+        const idx = outList.indexOf(e.rev);
+        if (idx === -1) {
+          // fallback: pick the edge with smallest positive turn
+          // compute desired angle = rev.angle
+          const targetAngle = halfEdges[e.rev].angle;
+          let best = outList[0];
+          let bestTurn = Infinity;
+          for (const cand of outList) {
+            let turn = halfEdges[cand].angle - targetAngle;
+            while (turn <= 0) turn += Math.PI * 2;
+            if (turn < bestTurn) { bestTurn = turn; best = cand; }
+          }
+          // to keep left face, we actually want the smallest CCW turn,
+          // then take that edge.
+          return best;
+        }
+        // previous in CCW order = idx - 1 (wrap)
+        const nextIdx = (idx - 1 + outList.length) % outList.length;
+        return outList[nextIdx];
+      }
+
+      // 6) Face-walk all halfedges, build cycles.
+      const faces = [];
+      for (const e0 of halfEdges) {
+        if (e0.used) continue;
+
+        let eid = e0.id;
+        const cycle = [];
+        const guard = new Set();
+        while (eid !== -1 && !guard.has(eid)) {
+          guard.add(eid);
+          const e = halfEdges[eid];
+          e.used = true;
+          cycle.push(e.from);
+          eid = nextEdgeId(eid);
+        }
+
+        // close cycle
+        if (cycle.length >= 3) {
+          // build coords and remove consecutive duplicates
+          const coords = [];
+          for (let i = 0; i < cycle.length; i++) {
+            const p = nodes[cycle[i]];
+            const prev = coords[coords.length - 1];
+            if (!prev || Vec2.dist(prev, p) > 1e-8) coords.push({ x: p.x, y: p.y });
+          }
+          // remove if ends same as start
+          while (coords.length > 2 && Vec2.dist(coords[0], coords[coords.length - 1]) < 1e-8) coords.pop();
+          if (coords.length >= 3) {
+            const a = Polygon.area(coords);
+            if (a > 1e-6) faces.push(coords);
+          }
+        }
+      }
+
+      if (faces.length === 0) return [P];
+
+      // 7) Remove the outer face (largest area face in arrangement tends to be outside).
+      // Because we only embedded boundary+chords (no infinite edges),
+      // outer face might still appear; typically it is the one with the largest area.
+      faces.sort((A, B) => Polygon.area(B) - Polygon.area(A));
+      const outer = faces[0];
+      const outerArea = Polygon.area(outer);
+
+      const innerFaces = faces.filter((f, idx) => {
+        const a = Polygon.area(f);
+        // Keep all but the single largest face. If there are ties, keep only those clearly smaller.
+        if (idx === 0) return false;
+        return a > 1e-6 && a < outerArea * 0.999999;
+      });
+
+      if (innerFaces.length === 0) return [P];
+
+      // 8) Return polygons
+      return innerFaces.map(vs => new Polygon(vs));
+    }
+
+    // Apply multiple cuts sequentially (this now correctly handles concave multi-split)
+    function applyCuts(polygons, lines) {
+      let pieces = polygons.slice();
+      for (const line of lines) {
+        const next = [];
+        for (const p of pieces) {
+          const res = splitPolygonByLine(p.vertices, line.theta, line.d);
+          // if split returned nothing, keep original
+          if (res && res.length) next.push(...res);
+          else next.push(p);
+        }
+        pieces = next;
+      }
+      // filter tiny slivers (still keep for scoring penalty, but avoid numerical trash)
+      return pieces.filter(p => p.area > 1e-8);
+    }
+
+    /**
+     * ------------------------------------------------------------------
+     * SECTION 3: GENERATOR
+     * ------------------------------------------------------------------
+     */
+
+    function snapVal(v) {
+      if (!APP_STATE.gridLockEnabled) return v;
+      const divs = APP_STATE.gridDivisions;
+      const s = Math.round(v * divs) / divs;
+      return Math.max(0, Math.min(1, s));
+    }
+
+    function generatePolygon(seed, nVerts) {
+      if (APP_STATE.symmetryEnabled) return generateSymmetricalPolygon(seed, nVerts);
+
+      const rng = new RNG(seed);
+      const angles = [];
+      for (let i = 0; i < nVerts; i++) angles.push(rng.next() * Math.PI * 2);
+      angles.sort((a, b) => a - b);
+
+      const vertices = [];
+      const cx = 0.5, cy = 0.5;
+      
+      for (let i = 0; i < nVerts; i++) {
+        const r = rng.range(0.2, 0.45);
+        const a = angles[i];
+        let px = cx + r * Math.cos(a);
+        let py = cy + r * Math.sin(a);
+        
+        if (APP_STATE.gridLockEnabled) {
+          px = snapVal(px);
+          py = snapVal(py);
+        }
+        
+        // Basic deduping during generation
+        const last = vertices[vertices.length - 1];
+        if (!last || Math.hypot(px - last.x, py - last.y) > 1e-4) {
+             vertices.push({ x: px, y: py });
+        }
+      }
+      
+      // Ensure closing point isn't duplicate of start
+      if (vertices.length > 1) {
+         const first = vertices[0];
+         const last = vertices[vertices.length - 1];
+         if (Math.hypot(first.x - last.x, first.y - last.y) < 1e-4) {
+             vertices.pop();
+         }
+      }
+      
+      // If snapping reduced count too much, fallback to minimum triangle
+      if (vertices.length < 3) {
+          // Force a simple triangle if generation failed due to aggressive snapping
+          return new Polygon([
+              { x: snapVal(0.5), y: snapVal(0.2) },
+              { x: snapVal(0.8), y: snapVal(0.8) },
+              { x: snapVal(0.2), y: snapVal(0.8) }
+          ]);
+      }
+
+      return new Polygon(vertices);
+    }
+
+    function generateSymmetricalPolygon(seed, nVerts) {
+      const rng = new RNG(seed);
+      let cx = 0.5, cy = 0.5;
+
+      if (APP_STATE.gridLockEnabled) {
+        cx = snapVal(cx); 
+      }
+
+      // Force minimal axis points for nice shapes
+      let numOnAxis = (nVerts % 2 === 0) ? 2 : 1;
+      let numPairs = (nVerts - numOnAxis) / 2;
+
+      let axisPoints = [];
+      let rightSidePoints = [];
+      const usedKeys = new Set();
+
+      function addUnique(list, p) {
+         const k = p.x.toFixed(4) + "," + p.y.toFixed(4);
+         if(usedKeys.has(k)) return false;
+         usedKeys.add(k);
+         list.push(p);
+         return true;
+      }
+
+      // Axis points
+      if (numOnAxis >= 1) {
+        let r = rng.range(0.25, 0.45);
+        let py = cy - r;
+        if (APP_STATE.gridLockEnabled) py = snapVal(py);
+        addUnique(axisPoints, { x: cx, y: py });
+      }
+      if (numOnAxis >= 2) {
+        let r = rng.range(0.25, 0.45);
+        let py = cy + r;
+        if (APP_STATE.gridLockEnabled) py = snapVal(py);
+        addUnique(axisPoints, { x: cx, y: py });
+      }
+
+      // Pair points
+      let safety = 0;
+      while (rightSidePoints.length < numPairs && safety < 50) {
+        safety++;
+        // angle between -PI/2 and PI/2
+        const angle = rng.range(-Math.PI/2 + 0.2, Math.PI/2 - 0.2);
+        const r = rng.range(0.2, 0.45);
+        
+        let px = cx + r * Math.cos(angle);
+        let py = cy + r * Math.sin(angle);
+        
+        if (APP_STATE.gridLockEnabled) {
+             px = snapVal(px);
+             py = snapVal(py);
+             // Ensure strictly right of axis to prevent merging with axis
+             const step = 1.0 / APP_STATE.gridDivisions;
+             if (px <= cx) px = cx + step;
+        }
+        
+        addUnique(rightSidePoints, { x: px, y: py });
+      }
+
+      // Mirror them to create left points
+      const leftSidePoints = rightSidePoints.map(p => ({
+        x: cx - (p.x - cx), // mirror x around cx
+        y: p.y
+      }));
+
+      // Combine all
+      let allPoints = [...axisPoints, ...rightSidePoints, ...leftSidePoints];
+
+      // Sort by angle around center to form valid polygon
+      let centerSumX = 0, centerSumY = 0;
+      for(const p of allPoints) { centerSumX += p.x; centerSumY += p.y; }
+      const geoCx = centerSumX / allPoints.length;
+      const geoCy = centerSumY / allPoints.length;
+
+      allPoints.sort((a, b) => {
+        const angA = Math.atan2(a.y - geoCy, a.x - geoCx);
+        const angB = Math.atan2(b.y - geoCy, b.x - geoCx);
+        return angA - angB;
+      });
+      
+      // Fallback
+      if (allPoints.length < 3) {
+           const step = APP_STATE.gridLockEnabled ? (1.0/APP_STATE.gridDivisions) : 0.1;
+           return new Polygon([
+              { x: cx, y: snapVal(0.2) },
+              { x: cx + step*2, y: snapVal(0.8) },
+              { x: cx - step*2, y: snapVal(0.8) }
+           ]);
+      }
+
+      return new Polygon(allPoints);
+    }
+
+    /**
+     * ------------------------------------------------------------------
+     * SECTION 4: “MAD GENIUS” OPTIMIZER
+     * ------------------------------------------------------------------
+     */
+
+    // 5% strict rule: VALID iff (Largest - Smallest)/Largest * 100 <= 5
+    const MAX_DIFFERENTIAL_PERCENT = 5.0;
+
+    // Theoretical upper bound (arrangement in plane): R = L(L+1)/2 + 1
+    function getMaxPieces(numLines) { return (numLines * (numLines + 1)) / 2 + 1; }
+
+    function computeDifferentialPercent(pieces, totalArea) {
+      const areas = pieces.map(p => p.area);
+      const minA = Math.min(...areas);
+      const maxA = Math.max(...areas);
+      const diffPct = (maxA - minA) / (maxA + EPS) * 100;
+      return { minA, maxA, diffPct };
+    }
+
+    function scoreSolution(pieces, targetPieces, totalArea) {
+      const count = pieces.length;
+
+      if (count !== targetPieces) {
+        // heavy penalty for wrong region count
+        const countDiff = Math.abs(count - targetPieces);
+        return {
+          score: 1e12 + countDiff * 1e10,
+          count,
+          valid: false,
+          diffPct: Infinity,
+          minA: 0,
+          maxA: 0,
+          pieces
+        };
+      }
+
+      const { minA, maxA, diffPct } = computeDifferentialPercent(pieces, totalArea);
+
+      // normalized variance objective relative to ideal
+      const ideal = totalArea / targetPieces;
+      let varSum = 0;
+      let absSum = 0;
+      let worst = 0;
+
+      for (const p of pieces) {
+        const dev = Math.abs(p.area - ideal) / (ideal + EPS);
+        absSum += dev;
+        varSum += dev * dev;
+        if (dev > worst) worst = dev;
+      }
+
+      const std = Math.sqrt(varSum / pieces.length);
+      const avg = absSum / pieces.length;
+
+      // sliver penalty (we *want* meaningful pieces)
+      let sliverPenalty = 0;
+      const sliverThreshold = ideal * 0.15; // stricter than before: tiny pieces are poison
+      for (const p of pieces) {
+        if (p.area < sliverThreshold) sliverPenalty += 1;
+      }
+
+      // PRIMARY: differential percent, HARD THRESHOLD at 5%
+      // SECONDARY: std dev
+      // TERTIARY: worst dev
+      // QUATERNARY: avg dev
+      let score = 0;
+      score += diffPct * 1e6;
+      if (diffPct > MAX_DIFFERENTIAL_PERCENT) {
+        score += (diffPct - MAX_DIFFERENTIAL_PERCENT) * 5e6; // massive penalty
+      }
+      score += std * 2e5;
+      score += worst * 1e5;
+      score += avg * 5e4;
+      score += sliverPenalty * 5e6;
+
+      const valid = diffPct <= MAX_DIFFERENTIAL_PERCENT;
+
+      return {
+        score,
+        count,
+        valid,
+        diffPct,
+        minA,
+        maxA,
+        std,
+        avg,
+        worst,
+        sliverPenalty,
+        pieces
+      };
+    }
+
+    function solveForTargetPieces(poly, numLines, targetPieces, effort, seed, onUpdate, onComplete) {
+      const rng = new RNG((seed >>> 0) + 1337);
+      const totalArea = poly.area;
+
+      // search parameters
+      const maxIter = Math.max(500, Math.floor(effort * 200));
+      const batchSize = 60;
+
+      function getValidDRange(theta) {
+        const n = lineNormal(theta);
+        return poly.project(n);
+      }
+
+      function makeStrategicGenome() {
+        const lines = [];
+        for (let i = 0; i < numLines; i++) {
+          const base = (i / numLines) * Math.PI;
+          const theta = wrapPI(base + rng.range(-0.25, 0.25));
+          const bounds = getValidDRange(theta);
+          const range = bounds.max - bounds.min;
+          // place near even partitions in projection space
+          const pos = (i + 0.5) / numLines;
+          const d = bounds.min + range * clamp(pos + rng.range(-0.15, 0.15), 0.05, 0.95);
+          lines.push({ theta, d });
+        }
+        return lines;
+      }
+
+      function makeRandomGenome() {
+        const lines = [];
+        for (let i = 0; i < numLines; i++) {
+          const theta = rng.range(0, Math.PI);
+          const bounds = getValidDRange(theta);
+          const range = bounds.max - bounds.min;
+          const d = rng.range(bounds.min + range * 0.05, bounds.max - range * 0.05);
+          lines.push({ theta, d });
+        }
+        return lines;
+      }
+
+      function cloneGenome(g) { return g.map(x => ({ theta: x.theta, d: x.d })); }
+
+      function mutateGenome(g, step, hard = false) {
+        const out = cloneGenome(g);
+        const k = hard ? out.length : (rng.next() < 0.8 ? 1 : 2);
+        
+        for (let j = 0; j < k; j++) {
+          const idx = Math.floor(rng.next() * out.length);
+          
+          // Mutate theta?
+          if (rng.next() < 0.7) {
+            out[idx].theta = wrapPI(out[idx].theta + rng.range(-step, step));
+          }
+          
+          // Always recalculate valid range for the (potentially new) theta
+          const bounds = getValidDRange(out[idx].theta);
+          const range = bounds.max - bounds.min;
+          
+          // Mutate d?
+          if (rng.next() < 0.9) {
+            out[idx].d = out[idx].d + rng.range(-range * step, range * step);
+          }
+          
+          // ALWAYS clamp d to valid range (with slight margin to stay inside)
+          // margin = range * 0.001
+          const margin = Math.max(1e-6, range * 0.001);
+          out[idx].d = clamp(out[idx].d, bounds.min + margin, bounds.max - margin);
+        }
+        return out;
+      }
+
+      function evaluate(g) {
+        const pieces = applyCuts([poly], g);
+        return scoreSolution(pieces, targetPieces, totalArea);
+      }
+
+      // “mad genius” memory: keep a small elite set
+      const elite = [];
+      function pushElite(candidate) {
+        elite.push(candidate);
+        elite.sort((a, b) => a.score - b.score);
+        if (elite.length > 10) elite.length = 10;
+      }
+
+      let best = null;
+      let iter = 0;
+
+      // seed elites
+      for (let i = 0; i < 5; i++) {
+        const g = (i % 2 === 0) ? makeStrategicGenome() : makeRandomGenome();
+        const r = evaluate(g);
+        const sol = { ...r, lines: cloneGenome(g) };
+        pushElite(sol);
+      }
+      best = elite[0];
+
+      function loop() {
+        for (let b = 0; b < batchSize; b++) {
+          iter++;
+          const prog = iter / maxIter;
+          const step = Math.max(0.02, 0.35 * (1 - prog));
+
+          let parent;
+          if (rng.next() < 0.6) parent = elite[Math.floor(rng.next() * elite.length)];
+          else parent = best;
+
+          let child;
+          if (iter % 250 === 0 && rng.next() < 0.6) {
+            child = makeRandomGenome();
+          } else {
+            const hard = rng.next() < (best.valid ? 0.25 : 0.45);
+            child = mutateGenome(parent.lines, step, hard);
+          }
+
+          const r = evaluate(child);
+          const sol = { ...r, lines: cloneGenome(child) };
+
+          // ruthless discard if region count wrong by a lot
+          if (sol.count !== targetPieces && Math.abs(sol.count - targetPieces) > 2 && rng.next() < 0.8) {
+            continue;
+          }
+
+          if (sol.score < best.score) {
+            best = sol;
+            pushElite(sol);
+          } else if (sol.score < (elite[elite.length - 1]?.score ?? Infinity)) {
+            pushElite(sol);
+          }
+        }
+
+        if (iter % 30 === 0) onUpdate(best);
+
+        if (iter < maxIter && !(best.valid && iter > maxIter * 0.35 && best.diffPct < MAX_DIFFERENTIAL_PERCENT * 0.65)) {
+          requestAnimationFrame(loop);
+        } else {
+          onComplete(best);
+        }
+      }
+
+      loop();
+    }
+
+    /**
+     * The PRIMARY objective requested:
+     *  - given polygon + exactly N lines,
+     *  - maximize pieces under VALID rule (<=5% diff).
+     *
+     * Strategy:
+     *  - start from theoretical max pieces and work down
+     *  - run optimizer for each target until we find a VALID one
+     *  - if none, return best attempt labeled NOT valid
+     */
+    async function solveMaxValid(poly, numLines, effort, seed, onUpdate, onComplete) {
+      const theoreticalMax = getMaxPieces(numLines);
+
+      let bestAttempt = null;
+
+      // adaptive effort per piece target: higher targets deserve more search time
+      function effortForTarget(tp) {
+        const ratio = tp / Math.max(2, theoreticalMax);
+        return effort * (0.7 + 0.9 * ratio); // more effort for bigger tp
+      }
+
+      let currentTarget = theoreticalMax;
+
+      function runOne() {
+        const tp = currentTarget;
+        const localEffort = effortForTarget(tp);
+
+        onUpdate({
+          status: `Attempting ${tp} pieces (theoretical max = ${theoreticalMax})`,
+          targetPieces: tp
+        });
+
+        solveForTargetPieces(poly, numLines, tp, localEffort, seed,
+          (interim) => {
+            onUpdate({
+              status: `Searching ${tp} pieces...\nFound: ${interim.count}/${tp}\nDiff: ${isFinite(interim.diffPct) ? interim.diffPct.toFixed(2) : "?"}%\n${interim.valid ? "VALID (≤5%)" : "not valid yet"}`,
+              interim
+            });
+          },
+          (finalSol) => {
+            const tagged = { ...finalSol, targetPieces: tp };
+
+            // track best attempt even if invalid
+            if (!bestAttempt || tagged.score < bestAttempt.score) {
+              bestAttempt = tagged;
+            }
+
+            if (tagged.valid) {
+              onComplete({ foundValid: true, solution: tagged, bestAttempt, theoreticalMax });
+              return;
+            }
+
+            currentTarget--;
+            if (currentTarget >= 2) {
+              // Continue down until found
+              setTimeout(runOne, 0);
+            } else {
+              onComplete({ foundValid: false, solution: null, bestAttempt, theoreticalMax });
+            }
+          }
+        );
+      }
+
+      runOne();
+    }
+
+    /**
+     * Finds a valid solution for a SPECIFIC number of pieces.
+     * Retries or runs longer to "try as much as possible".
+     */
+    async function solveSpecificTarget(poly, numLines, targetPieces, effort, seed, onUpdate, onComplete) {
+      const theoreticalMax = getMaxPieces(numLines);
+      if (targetPieces > theoreticalMax) {
+        onComplete({ 
+          foundValid: false, 
+          solution: null, 
+          status: `Target ${targetPieces} exceeds theoretical max ${theoreticalMax}.`,
+          theoreticalMax,
+          impossible: true 
+        });
+        return;
+      }
+
+      // "Try as much as possible" -> We will run multiple attempts if the first one fails.
+      // We will restart the solver a few times with different seeds derived from the base seed.
+      const MAX_ATTEMPTS = 5; 
+      let attempts = 0;
+      let bestAttempt = null;
+
+      function runAttempt() {
+        attempts++;
+        const currentSeed = (seed + attempts * 9999) >>> 0;
+        
+        // Boost effort for specific target to ensure we dig deep
+        const attemptEffort = effort * 1.5; 
+
+        onUpdate({
+          status: `Targeting exactly ${targetPieces} pieces (Attempt ${attempts}/${MAX_ATTEMPTS})...`,
+          targetPieces
+        });
+
+        solveForTargetPieces(poly, numLines, targetPieces, attemptEffort, currentSeed,
+          (interim) => {
+            // Forward interim updates
+             onUpdate({
+              status: `Targeting ${targetPieces} pieces (Attempt ${attempts}/${MAX_ATTEMPTS})...\nFound: ${interim.count}/${targetPieces}\nDiff: ${isFinite(interim.diffPct) ? interim.diffPct.toFixed(2) : "?"}%\n${interim.valid ? "VALID" : "INVALID"}`,
+              interim
+            });
+          },
+          (finalSol) => {
+            const tagged = { ...finalSol, targetPieces };
+
+            if (!bestAttempt || tagged.score < bestAttempt.score) {
+              bestAttempt = tagged;
+            }
+
+            if (tagged.valid) {
+              // SUCCESS!
+              onComplete({ foundValid: true, solution: tagged, bestAttempt, theoreticalMax });
+            } else {
+              // Failed this attempt
+              if (attempts < MAX_ATTEMPTS) {
+                // Retry
+                setTimeout(runAttempt, 10);
+              } else {
+                // All attempts failed
+                onComplete({ foundValid: false, solution: null, bestAttempt, theoreticalMax });
+              }
+            }
+          }
+        );
+      }
+
+      runAttempt();
+    }
+
+    /**
+     * ------------------------------------------------------------------
+     * SECTION 5: APP LOGIC & UI
+     * ------------------------------------------------------------------
+     */
+
+    const elements = {
+      canvas: document.getElementById('canvas'),
+      ctx: document.getElementById('canvas').getContext('2d'),
+      seed: document.getElementById('seed'),
+      verts: document.getElementById('verts'),
+      lines: document.getElementById('lines'),
+      targetModeWrapper: document.getElementById('target-mode-wrapper'),
+      targetModeToggle: document.getElementById('target-mode-toggle'),
+      targetModeStatus: document.getElementById('target-mode-status'),
+      targetInputBox: document.getElementById('target-input-box'),
+      targetInput: document.getElementById('target-pieces'),
+      effort: document.getElementById('effort'),
+      diff: document.getElementById('difficulty'),
+      stats: document.getElementById('stats'),
+      overlay: document.getElementById('overlay'),
+      gridOverlay: document.getElementById('grid-overlay'),
+      gridLockToggle: document.getElementById('grid-lock-toggle'),
+      gridLockStatus: document.getElementById('grid-lock-status'),
+      gridInfo: document.getElementById('grid-info'),
+      gridDivs: document.getElementById('grid-divs'),
+      lGridDivs: document.getElementById('val-grid-divs'),
+      symmetryWrapper: document.getElementById('symmetry-wrapper'),
+      symmetryToggle: document.getElementById('symmetry-toggle'),
+      symmetryStatus: document.getElementById('symmetry-status'),
+      lVerts: document.getElementById('val-verts'),
+      lLines: document.getElementById('val-lines'),
+      lMaxPieces: document.getElementById('val-max-pieces'),
+      lEffort: document.getElementById('val-effort'),
+      btnPoly: document.getElementById('btn-poly'),
+      btnReseed: document.getElementById('btn-reseed'),
+      btnSolve: document.getElementById('btn-solve'),
+      btnExport: document.getElementById('btn-export'),
+      btnDraw: document.getElementById('btn-draw'),
+      btnClear: document.getElementById('btn-clear')
+    };
+
+    let APP_STATE = {
+      poly: null,
+      solution: null,
+      drawMode: false,
+      customVertices: [],
+      isPolygonClosed: false,
+      mousePos: null,
+      gridLockEnabled: false,
+      gridDivisions: 10,
+      maxPiecesValidation: null,
+      targetAuto: true,
+      symmetryEnabled: false
+    };
+
+    const SNAP_THRESHOLD = 20;
+    const MIN_VERTICES = 3;
+
+    function updateStats(text) { elements.stats.textContent = text; }
+
+    // Coordinate mapping
+    function mapX(x) { return x * elements.canvas.width; }
+    function mapY(y) { return y * elements.canvas.height; }
+    function unmapX(x) { return x / elements.canvas.width; }
+    function unmapY(y) { return y / elements.canvas.height; }
+
+    function resizeCanvas() {
+      const box = elements.canvas.parentElement.getBoundingClientRect();
+      elements.canvas.width = box.width;
+      elements.canvas.height = box.height;
+      if (APP_STATE.solution) drawSolution(APP_STATE.solution);
+      else if (APP_STATE.poly) drawBase();
+      drawMinimalGrid();
+    }
+
+    function init() {
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      generateNewPolygon(false);
+      drawMinimalGrid();
+      setTimeout(updateMaxPiecesDisplay, 200);
+    }
+
+    function generateNewPolygon(useCurrentSeed = false) {
+      let seed;
+      if (useCurrentSeed) seed = parseInt(elements.seed.value) || 12345;
+      else {
+        seed = Math.floor(Math.random() * 999999999) + 1;
+        elements.seed.value = seed;
+      }
+
+      const n = parseInt(elements.verts.value);
+      APP_STATE.poly = generatePolygon(seed, n);
+      APP_STATE.solution = null;
+
+      updateStats(`Polygon Generated (Seed: ${seed}). Ready to solve.\nVALID RULE: ≤${MAX_DIFFERENTIAL_PERCENT}% (Largest–Smallest)/Largest`);
+      drawBase();
+
+      setTimeout(updateMaxPiecesDisplay, 100);
+    }
+
+    function drawBase() {
+      const ctx = elements.ctx;
+      const w = elements.canvas.width;
+      const h = elements.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!APP_STATE.poly) return;
+
+      const v = APP_STATE.poly.vertices;
+
+      // Draw axis if symmetry enabled
+      if (APP_STATE.symmetryEnabled) {
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(mapX(0.5), 0);
+        ctx.lineTo(mapX(0.5), h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.fillStyle = "#333";
+      ctx.strokeStyle = "#4a90e2";
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(mapX(v[0].x), mapY(v[0].y));
+      for (let i = 1; i < v.length; i++) ctx.lineTo(mapX(v[i].x), mapY(v[i].y));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#fff";
+      for (const p of v) {
+        ctx.beginPath();
+        ctx.arc(mapX(p.x), mapY(p.y), 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#4a90e2";
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "center";
+      v.forEach((p, i) => ctx.fillText(`${i + 1}`, mapX(p.x), mapY(p.y) - 10));
+
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillRect(10, 10, 220, 64);
+      ctx.fillStyle = "#4a90e2";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("POLYGON INFO", 15, 24);
+      ctx.fillStyle = "white";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(`Vertices: ${v.length}`, 15, 40);
+      ctx.fillText(`Area: ${(APP_STATE.poly.area * 100).toFixed(2)}% of canvas`, 15, 54);
+      ctx.fillStyle = "#ccc";
+      const ruleText = `Rule: VALID iff diff ≤ ${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%`;
+      const symText = APP_STATE.symmetryEnabled ? " (Symmetric)" : "";
+      ctx.fillText(ruleText + symText, 15, 68);
+    }
+
+    function drawSolution(sol) {
+      const ctx = elements.ctx;
+      const w = elements.canvas.width;
+      const h = elements.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!APP_STATE.poly || !sol) return;
+
+      const totalArea = APP_STATE.poly.area;
+      const pieces = sol.pieces;
+      const count = pieces.length;
+
+      // fill pieces
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        const areaPct = (p.area / (totalArea + EPS)) * 100;
+
+        // simple “quality coloring” based on deviation from ideal
+        const ideal = 100 / Math.max(1, count);
+        const dev = Math.abs(areaPct - ideal);
+
+        let hue = 120;
+        if (sol.valid) hue = 120;
+        else if (dev < 2.0) hue = 80;
+        else if (dev < 5.0) hue = 40;
+        else hue = 0;
+
+        ctx.fillStyle = `hsla(${hue}, 70%, 40%, 0.75)`;
+
+        const v = p.vertices;
+        if (!v || v.length < 3) continue;
+        ctx.beginPath();
+        ctx.moveTo(mapX(v[0].x), mapY(v[0].y));
+        for (let k = 1; k < v.length; k++) ctx.lineTo(mapX(v[k].x), mapY(v[k].y));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // outlines
+      ctx.strokeStyle = "rgba(255,255,255,0.95)";
+      ctx.lineWidth = 2;
+      for (const p of pieces) {
+        const v = p.vertices;
+        if (!v || v.length < 3) continue;
+        ctx.beginPath();
+        ctx.moveTo(mapX(v[0].x), mapY(v[0].y));
+        for (let k = 1; k < v.length; k++) ctx.lineTo(mapX(v[k].x), mapY(v[k].y));
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // draw cutting lines (dashed)
+      if (sol.lines) {
+        ctx.setLineDash([8, 4]);
+        ctx.strokeStyle = "rgba(255, 100, 100, 0.8)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < sol.lines.length; i++) {
+          const line = sol.lines[i];
+          const nx = Math.cos(line.theta);
+          const ny = Math.sin(line.theta);
+
+          const P0x = line.d * nx;
+          const P0y = line.d * ny;
+          const tx = -ny, ty = nx;
+
+          const ext = 2.0;
+          const x1 = P0x - tx * ext;
+          const y1 = P0y - ty * ext;
+          const x2 = P0x + tx * ext;
+          const y2 = P0y + ty * ext;
+
+          ctx.beginPath();
+          ctx.moveTo(mapX(x1), mapY(y1));
+          ctx.lineTo(mapX(x2), mapY(y2));
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+
+      // labels
+      const idealPct = 100 / Math.max(1, count);
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        const c = p.computeCentroid();
+        const pct = (p.area / (totalArea + EPS) * 100).toFixed(1);
+
+        ctx.fillStyle = "rgba(0,0,0,0.85)";
+        ctx.fillRect(mapX(c.x) - 30, mapY(c.y) - 14, 60, 28);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 12px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`${pct}%`, mapX(c.x), mapY(c.y) + 4);
+
+        const dev = Math.abs(parseFloat(pct) - idealPct);
+        ctx.fillStyle = dev <= 2 ? "#4caf50" : dev <= 5 ? "#ffb300" : "#f44336";
+        ctx.font = "9px monospace";
+        ctx.fillText(dev <= 2 ? "OK" : dev <= 5 ? "~" : "!", mapX(c.x), mapY(c.y) - 6);
+      }
+
+      // legend
+      const diffPct = sol.diffPct ?? Infinity;
+      ctx.fillStyle = "rgba(0,0,0,0.9)";
+      ctx.fillRect(10, h - 82, 220, 72);
+      ctx.fillStyle = "#4a90e2";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`VALID RULE: ≤ ${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%`, 16, h - 62);
+
+      ctx.font = "11px sans-serif";
+      ctx.fillStyle = sol.valid ? "#4caf50" : "#f44336";
+      ctx.fillText(`Diff: ${isFinite(diffPct) ? diffPct.toFixed(2) : "?"}%`, 16, h - 44);
+      ctx.fillText(sol.valid ? "STATUS: VALID" : "STATUS: NOT VALID", 16, h - 28);
+
+      ctx.fillStyle = "#ccc";
+      ctx.fillText(`Pieces: ${pieces.length}`, 16, h - 12);
+
+      // info box
+      ctx.fillStyle = "rgba(0,0,0,0.9)";
+      ctx.fillRect(w - 210, 10, 200, 84);
+      ctx.fillStyle = "#4a90e2";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("SOLUTION INFO", w - 204, 26);
+
+      ctx.fillStyle = "white";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(`Lines: ${sol.lines ? sol.lines.length : "-"}`, w - 204, 44);
+      ctx.fillText(`Pieces: ${pieces.length}`, w - 204, 60);
+      ctx.fillText(`Ideal: ${idealPct.toFixed(2)}%`, w - 204, 76);
+    }
+
+    // --- Max pieces display (VALID max, quick search)
+    function quickValidatePieces(poly, numLines, targetPieces, seed) {
+      const rng = new RNG((seed >>> 0) + 777);
+      const totalArea = poly.area;
+
+      const maxIter = 250; // quick
+      function getValidDRange(theta) {
+        const n = lineNormal(theta);
+        return poly.project(n);
+      }
+      function randomGenome() {
+        const g = [];
+        for (let i = 0; i < numLines; i++) {
+          const theta = rng.range(0, Math.PI);
+          const bounds = getValidDRange(theta);
+          const range = bounds.max - bounds.min;
+          const d = rng.range(bounds.min + range * 0.05, bounds.max - range * 0.05);
+          g.push({ theta, d });
+        }
+        return g;
+      }
+      function mutate(g, step) {
+        const out = g.map(x => ({ theta: x.theta, d: x.d }));
+        const idx = Math.floor(rng.next() * out.length);
+        
+        out[idx].theta = wrapPI(out[idx].theta + rng.range(-step, step));
+        
+        // Recalculate bounds for new theta and enforce strict clamping
+        const bounds = getValidDRange(out[idx].theta);
+        const range = bounds.max - bounds.min;
+        const margin = Math.max(1e-6, range * 0.001);
+        
+        // Mutate d
+        out[idx].d = out[idx].d + rng.range(-range * step, range * step);
+        
+        // Clamp
+        out[idx].d = clamp(out[idx].d, bounds.min + margin, bounds.max - margin);
+        
+        return out;
+      }
+      function evalGenome(g) {
+        const pieces = applyCuts([poly], g);
+        if (pieces.length !== targetPieces) return { meets: false, diffPct: Infinity, count: pieces.length };
+        const { diffPct } = computeDifferentialPercent(pieces, totalArea);
+        return { meets: diffPct <= MAX_DIFFERENTIAL_PERCENT, diffPct, count: pieces.length };
+      }
+
+      let g = randomGenome();
+      let best = evalGenome(g);
+      if (best.meets) return best;
+
+      for (let i = 0; i < maxIter; i++) {
+        const prog = i / maxIter;
+        const step = Math.max(0.05, 0.35 * (1 - prog));
+        const c = mutate(g, step);
+        const r = evalGenome(c);
+        if (r.diffPct < best.diffPct) { best = r; g = c; }
+        if (best.meets) return best;
+      }
+      return best;
+    }
+
+    async function findValidMaxPieces(numLines) {
+      if (!APP_STATE.poly) return { validMax: '-', status: 'Generate polygon first', meetsRule: false };
+
+      const theoreticalMax = getMaxPieces(numLines);
+      const seed = parseInt(elements.seed.value) || 12345;
+
+      for (let pieces = theoreticalMax; pieces >= 2; pieces--) {
+        const result = quickValidatePieces(APP_STATE.poly, numLines, pieces, seed);
+        if (result.meets) {
+          return {
+            validMax: pieces,
+            status: `✓ VALID max found (≤${MAX_DIFFERENTIAL_PERCENT}%): ${pieces} pcs`,
+            meetsRule: true,
+            differential: result.diffPct
+          };
+        }
+        if (pieces < theoreticalMax - 3 && isFinite(result.diffPct) && result.diffPct > MAX_DIFFERENTIAL_PERCENT * 3) break;
+      }
+
+      return {
+        validMax: '-',
+        status: `✗ No VALID config found (≤${MAX_DIFFERENTIAL_PERCENT}%)`,
+        meetsRule: false,
+        differential: null
+      };
+    }
+
+    function updateMaxPiecesDisplay() {
+      const numLines = parseInt(elements.lines.value);
+      const theoreticalMax = getMaxPieces(numLines);
+      const maxPiecesStatus = document.getElementById('max-pieces-status');
+
+      elements.lMaxPieces.textContent = '-';
+      if (maxPiecesStatus) {
+        maxPiecesStatus.textContent = `Calculating VALID max... (theoretical: ${theoreticalMax})`;
+        maxPiecesStatus.style.color = '#888';
+      }
+
+      if (APP_STATE.maxPiecesValidation) clearTimeout(APP_STATE.maxPiecesValidation);
+
+      APP_STATE.maxPiecesValidation = setTimeout(async () => {
+        const result = await findValidMaxPieces(numLines);
+
+        if (result.meetsRule) {
+          elements.lMaxPieces.textContent = result.validMax;
+          elements.lMaxPieces.style.color = 'var(--success)';
+          if (maxPiecesStatus) {
+            maxPiecesStatus.textContent = `${result.status} | best diff: ${result.differential.toFixed(2)}% | theoretical: ${theoreticalMax}`;
+            maxPiecesStatus.style.color = 'var(--success)';
+          }
+        } else {
+          elements.lMaxPieces.textContent = '-';
+          elements.lMaxPieces.style.color = 'var(--danger)';
+          if (maxPiecesStatus) {
+            maxPiecesStatus.textContent = `${result.status} | theoretical: ${theoreticalMax}`;
+            maxPiecesStatus.style.color = 'var(--danger)';
+          }
+        }
+
+        APP_STATE.maxPiecesValidation = null;
+      }, 120);
+    }
+
+    // Grid overlay
+    function updateGridInfo() {
+      const divs = APP_STATE.gridDivisions;
+      const lockStatus = APP_STATE.gridLockEnabled ? 'ON' : 'OFF';
+      elements.gridInfo.textContent = `Grid: ${divs}x${divs} | Lock: ${lockStatus}`;
+    }
+
+    function drawMinimalGrid() {
+      const svg = elements.gridOverlay;
+      const rect = elements.canvas.getBoundingClientRect();
+      const viewportRect = document.getElementById('viewport').getBoundingClientRect();
+
+      svg.innerHTML = '';
+
+      const canvasLeft = rect.left - viewportRect.left;
+      const canvasTop = rect.top - viewportRect.top;
+
+      const canvasWidth = elements.canvas.width;
+      const canvasHeight = elements.canvas.height;
+
+      const divs = APP_STATE.gridDivisions;
+      const stepX = canvasWidth / divs;
+      const stepY = canvasHeight / divs;
+
+      let svgContent = '';
+
+      for (let i = 0; i <= divs; i++) {
+        const x = canvasLeft + (i * stepX);
+        const y = canvasTop + (i * stepY);
+        svgContent += `<line x1="${x}" y1="${canvasTop}" x2="${x}" y2="${canvasTop + canvasHeight}" stroke="#333" stroke-width="1"/>`;
+        svgContent += `<line x1="${canvasLeft}" y1="${y}" x2="${canvasLeft + canvasWidth}" y2="${y}" stroke="#333" stroke-width="1"/>`;
+      }
+
+      const pointRadius = APP_STATE.gridLockEnabled ? 4 : 2;
+      const pointColor = APP_STATE.gridLockEnabled ? '#4caf50' : '#444';
+      const pointOpacity = APP_STATE.gridLockEnabled ? '0.8' : '0.4';
+
+      for (let i = 0; i <= divs; i++) {
+        for (let j = 0; j <= divs; j++) {
+          const x = canvasLeft + (i * stepX);
+          const y = canvasTop + (j * stepY);
+          svgContent += `<circle cx="${x}" cy="${y}" r="${pointRadius}" fill="${pointColor}" opacity="${pointOpacity}"/>`;
+        }
+      }
+
+      if (APP_STATE.gridLockEnabled) {
+        svgContent += `<rect x="${canvasLeft}" y="${canvasTop}" width="${canvasWidth}" height="${canvasHeight}" fill="none" stroke="#4caf50" stroke-width="2" opacity="0.3"/>`;
+      }
+
+      svg.innerHTML = svgContent;
+    }
+
+    function snapToGrid(canvasX, canvasY) {
+      if (!APP_STATE.gridLockEnabled) return { x: canvasX, y: canvasY };
+      const canvasWidth = elements.canvas.width;
+      const canvasHeight = elements.canvas.height;
+
+      const divs = APP_STATE.gridDivisions;
+      const stepX = canvasWidth / divs;
+      const stepY = canvasHeight / divs;
+
+      const gridX = Math.round(canvasX / stepX) * stepX;
+      const gridY = Math.round(canvasY / stepY) * stepY;
+      return { x: gridX, y: gridY };
+    }
+
+    function toggleGridLock() {
+      APP_STATE.gridLockEnabled = !APP_STATE.gridLockEnabled;
+
+      if (APP_STATE.gridLockEnabled) {
+        elements.gridLockToggle.classList.add('active');
+        elements.gridLockStatus.textContent = 'ON - Snap to grid points';
+        elements.gridLockStatus.classList.remove('off');
+        elements.gridLockStatus.classList.add('on');
+        elements.gridInfo.classList.add('locked');
+      } else {
+        elements.gridLockToggle.classList.remove('active');
+        elements.gridLockStatus.textContent = 'OFF - Click anywhere';
+        elements.gridLockStatus.classList.remove('on');
+        elements.gridLockStatus.classList.add('off');
+        elements.gridInfo.classList.remove('locked');
+      }
+
+      updateGridInfo();
+      drawMinimalGrid();
+    }
+
+    // UI label updates
+    elements.verts.oninput = (e) => elements.lVerts.textContent = e.target.value;
+    elements.lines.oninput = (e) => {
+      elements.lLines.textContent = e.target.value;
+      updateMaxPiecesDisplay();
+    };
+    elements.effort.oninput = (e) => elements.lEffort.textContent = e.target.value;
+
+    elements.gridDivs.oninput = (e) => {
+      APP_STATE.gridDivisions = parseInt(e.target.value);
+      elements.lGridDivs.textContent = e.target.value;
+      updateGridInfo();
+      drawMinimalGrid();
+    };
+
+    elements.btnPoly.onclick = () => {
+      exitDrawingMode();
+      generateNewPolygon(false); // new seed
+    };
+    elements.btnReseed.onclick = () => {
+      exitDrawingMode();
+      generateNewPolygon(true); // keep current seed
+    };
+    elements.btnSolve.onclick = () => runSolver();
+    elements.btnExport.onclick = () => exportJSON();
+    elements.gridLockToggle.onclick = () => toggleGridLock();
+    elements.btnClear.onclick = () => clearAll();
+    elements.btnDraw.onclick = () => {
+      if (!APP_STATE.drawMode) startDrawingMode();
+      else exitDrawingMode();
+    };
+
+    function clearAll() {
+      APP_STATE.poly = null;
+      APP_STATE.solution = null;
+      APP_STATE.customVertices = [];
+      APP_STATE.isPolygonClosed = false;
+      APP_STATE.mousePos = null;
+      exitDrawingMode();
+      elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+      updateStats("Cleared. Generate a polygon or draw a custom one.");
+      updateMaxPiecesDisplay();
+    }
+
+    elements.symmetryWrapper = document.getElementById('symmetry-wrapper');
+    elements.symmetryToggle = document.getElementById('symmetry-toggle');
+    elements.symmetryStatus = document.getElementById('symmetry-status');
+    
+    elements.symmetryWrapper.onclick = () => {
+      APP_STATE.symmetryEnabled = !APP_STATE.symmetryEnabled;
+      if (APP_STATE.symmetryEnabled) {
+        elements.symmetryToggle.classList.add('active');
+        elements.symmetryStatus.textContent = 'ON - Perfect Symmetry';
+        elements.symmetryStatus.classList.remove('off');
+        elements.symmetryStatus.classList.add('on');
+      } else {
+        elements.symmetryToggle.classList.remove('active');
+        elements.symmetryStatus.textContent = 'OFF - Random Shape';
+        elements.symmetryStatus.classList.remove('on');
+        elements.symmetryStatus.classList.add('off');
+      }
+      // Regenerate immediately with CURRENT seed
+      generateNewPolygon(true);
+    };
+
+    elements.targetModeWrapper.onclick = () => {
+      APP_STATE.targetAuto = !APP_STATE.targetAuto;
+      if (APP_STATE.targetAuto) {
+        elements.targetModeToggle.classList.add('active');
+        elements.targetModeStatus.textContent = 'ON - Find max valid';
+        elements.targetModeStatus.classList.add('on');
+        elements.targetModeStatus.classList.remove('off');
+        elements.targetInputBox.style.display = 'none';
+      } else {
+        elements.targetModeToggle.classList.remove('active');
+        elements.targetModeStatus.textContent = 'OFF - Custom Target';
+        elements.targetModeStatus.classList.remove('on');
+        elements.targetModeStatus.classList.add('off');
+        elements.targetInputBox.style.display = 'block';
+        elements.targetInput.focus();
+      }
+    };
+
+    // Main solver runner: now solves “max valid” under N lines OR specific target
+    function runSolver() {
+      if (!APP_STATE.poly) {
+        updateStats("No polygon yet. Generate or draw one first.");
+        return;
+      }
+
+      const numLines = parseInt(elements.lines.value);
+      const seed = parseInt(elements.seed.value) || 12345;
+
+      const effortMap = { easy: 8, medium: 25, hard: 60, insanity: 150 };
+      const difficulty = elements.diff.value;
+      const baseEffort = parseInt(elements.effort.value);
+      const multiplier = effortMap[difficulty] || 25;
+      const totalEffort = baseEffort * multiplier;
+
+      elements.overlay.classList.add('show');
+      elements.overlay.textContent = `Optimizing...\nRule: VALID iff diff ≤ ${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%`;
+
+      if (APP_STATE.targetAuto) {
+         // ORIGINAL MODE: Maximize pieces
+         updateStats(`Solving with exactly ${numLines} lines...\nObjective: MAX pieces under VALID rule (≤${MAX_DIFFERENTIAL_PERCENT}% diff).\nThis may take time at higher effort.`);
+         
+         solveMaxValid(APP_STATE.poly, numLines, totalEffort, seed,
+          (u) => {
+            if (u && u.status) elements.overlay.textContent = u.status;
+            if (u && u.interim) drawSolution(u.interim);
+          },
+          (result) => {
+            elements.overlay.classList.remove('show');
+            elements.overlay.textContent = "Processing...";
+
+            if (result.foundValid) {
+              APP_STATE.solution = result.solution;
+              drawSolution(result.solution);
+              renderStatsForSolution(result.solution, { theoreticalMax: result.theoreticalMax, valid: true });
+            } else {
+              // intelligent failure
+              APP_STATE.solution = result.bestAttempt; 
+              drawSolution(result.bestAttempt);
+              renderStatsForSolution(result.bestAttempt, { theoreticalMax: result.theoreticalMax, valid: false, failure: true });
+            }
+
+            setTimeout(updateMaxPiecesDisplay, 50);
+          }
+        );
+      } else {
+        // NEW MODE: Specific Target
+        const targetPieces = parseInt(elements.targetInput.value);
+        if (isNaN(targetPieces) || targetPieces < 2) {
+          alert("Please enter a valid target number of pieces (>= 2).");
+          elements.overlay.classList.remove('show');
+          return;
+        }
+
+        updateStats(`Solving for EXACTLY ${targetPieces} pieces with ${numLines} lines...\nRule: VALID (≤${MAX_DIFFERENTIAL_PERCENT}% diff).\nTrying repeatedly to achieve this target...`);
+
+        // We use a specialized function that retries if needed
+        // Using "solveSpecificTarget" we defined above (I need to define it in the code block above this one, let me make sure I did)
+        // Wait, I am editing `runSolver` now. I must ensure `solveSpecificTarget` is available. Yes, I added it in previous edit.
+        
+        solveSpecificTarget(APP_STATE.poly, numLines, targetPieces, totalEffort, seed,
+           (u) => {
+             if (u && u.status) elements.overlay.textContent = u.status;
+             if (u && u.interim) drawSolution(u.interim);
+           },
+           (result) => {
+             elements.overlay.classList.remove('show');
+             elements.overlay.textContent = "Processing...";
+             
+             if (result.foundValid) {
+               APP_STATE.solution = result.solution;
+               drawSolution(result.solution);
+               renderStatsForSolution(result.solution, { theoreticalMax: result.theoreticalMax, valid: true, specificTarget: true });
+               updateStats("SUCCESS! Target achieved with valid distribution.");
+             } else {
+               if (result.impossible) {
+                 APP_STATE.solution = null;
+                 drawBase();
+                 const msg = `IMPOSSIBLE TARGET\n\nCannot cut ${targetPieces} pieces with only ${numLines} lines.\n\nThe maximum possible pieces for ${numLines} lines is ${result.theoreticalMax}.\n(Formula: L(L+1)/2 + 1)`;
+                 updateStats(msg);
+                 alert(msg);
+               } else {
+                 APP_STATE.solution = result.bestAttempt;
+                 drawSolution(result.bestAttempt || result.solution);
+                 renderStatsForSolution(result.bestAttempt, { theoreticalMax: result.theoreticalMax, valid: false, failure: true, specificTarget: true });
+                 updateStats(`FAILED to find valid configuration for ${targetPieces} pieces.\n(Best attempt shown)`);
+               }
+             }
+             setTimeout(updateMaxPiecesDisplay, 50);
+           }
+        );
+      }
+    }
+
+    function renderStatsForSolution(sol, meta) {
+      const totalArea = APP_STATE.poly.area;
+      const pieces = sol.pieces;
+      const nPieces = pieces.length;
+
+      const idealPct = 100 / Math.max(1, nPieces);
+      const areasPct = pieces.map(p => p.area / (totalArea + EPS) * 100);
+      const minPct = Math.min(...areasPct);
+      const maxPct = Math.max(...areasPct);
+      const diffPct = (maxPct - minPct) / (maxPct + EPS) * 100;
+
+      const deviations = areasPct.map(a => Math.abs(a - idealPct));
+      const stdDev = Math.sqrt(areasPct.reduce((s, a) => s + Math.pow(a - idealPct, 2), 0) / areasPct.length);
+      const avgDev = deviations.reduce((s, d) => s + d, 0) / deviations.length;
+      const worstDev = Math.max(...deviations);
+
+      const lineDetails = (sol.lines || []).map((line, i) => {
+        const ang = (line.theta * 180 / Math.PI).toFixed(2);
+        return `  L${i + 1}: angle=${ang}°, d=${line.d.toFixed(6)}`;
+      }).join('\n');
+
+      const pieceDetails = areasPct
+        .map((a, i) => ({ i: i + 1, a }))
+        .sort((p, q) => q.a - p.a)
+        .map(p => `  Piece ${p.i}: ${p.a.toFixed(3)}%`)
+        .join('\n');
+
+      const validity = diffPct <= MAX_DIFFERENTIAL_PERCENT;
+      const label = validity ? "VALID" : "NOT VALID";
+      const ruleLine = `VALID RULE: (Largest−Smallest)/Largest ≤ ${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%`;
+
+      const header = meta?.failure
+        ? (meta?.specificTarget 
+            ? `FAILED TO REACH TARGET ${sol.targetPieces || ""} (Valid)\nBest attempt shown below (NOT VALID or wrong count)\n`
+            : `NO VALID SOLUTION EXISTS (within ≤${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%)\nBest attempt shown below (NOT VALID)\n`)
+        : (meta?.specificTarget
+            ? `SUCCESS: TARGET ${sol.targetPieces} ACHIEVED (VALID)\n`
+            : `SOLUTION FOUND (MAX VALID)\n`);
+
+      updateStats(
+        `${header}========================
+Lines Used:          ${(sol.lines || []).length}
+Theoretical Max Pcs: ${meta?.theoreticalMax ?? "-"}
+Pieces Achieved:     ${nPieces}
+
+${ruleLine}
+Status:             ${label}
+Diff Percent:        ${diffPct.toFixed(3)}%
+
+QUALITY METRICS
+---------------
+Ideal Piece:         ${idealPct.toFixed(3)}%
+Min Piece:           ${minPct.toFixed(3)}%
+Max Piece:           ${maxPct.toFixed(3)}%
+Std Deviation:       ${stdDev.toFixed(4)}%
+Avg Deviation:       ${avgDev.toFixed(4)}%
+Worst Deviation:     ${worstDev.toFixed(4)}%
+
+CUTTING LINES:
+${lineDetails || "  (none)"}
+
+PIECES (largest to smallest):
+${pieceDetails}
+`
+      );
+    }
+
+    function exportJSON() {
+      if (!APP_STATE.solution || !APP_STATE.poly) {
+        alert("Please generate a solution first.");
+        return;
+      }
+
+      const numLines = parseInt(elements.lines.value);
+      const theoreticalMax = getMaxPieces(numLines);
+
+      const totalArea = APP_STATE.poly.area;
+      const areasPct = APP_STATE.solution.pieces.map(p => (p.area / (totalArea + EPS) * 100));
+      const minPct = Math.min(...areasPct);
+      const maxPct = Math.max(...areasPct);
+      const diffPct = (maxPct - minPct) / (maxPct + EPS) * 100;
+
+      const data = {
+        version: "2.0",
+        timestamp: new Date().toISOString(),
+        rules: {
+          maxDifferentialPercent: MAX_DIFFERENTIAL_PERCENT,
+          differentialDefinition: "(Largest - Smallest)/Largest * 100"
+        },
+        settings: {
+          seed: parseInt(elements.seed.value) || 12345,
+          difficulty: elements.diff.value,
+          vertices: APP_STATE.poly.vertices.length,
+          numLines: numLines,
+          theoreticalMaxPieces: theoreticalMax
+        },
+        polygon: APP_STATE.poly.vertices,
+        solution: {
+          valid: diffPct <= MAX_DIFFERENTIAL_PERCENT,
+          pieces: APP_STATE.solution.pieces.length,
+          diffPercent: diffPct,
+          lines: APP_STATE.solution.lines || [],
+          pieceAreas: APP_STATE.solution.pieces.map(p => ({
+            area: p.area,
+            areaPercent: (p.area / (totalArea + EPS)) * 100,
+            vertices: p.vertices
+          }))
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `puzzle_${data.settings.seed}_${numLines}lines_${data.solution.pieces}pcs_${data.solution.valid ? "VALID" : "INVALID"}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /**
+     * ------------------------------------------------------------------
+     * CUSTOM POLYGON DRAWING SYSTEM (kept from your app)
+     * ------------------------------------------------------------------
+     */
+
+    function getEventPos(e) {
+      const rect = elements.canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function getDistance(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+
+    function startDrawingMode() {
+      APP_STATE.drawMode = true;
+      APP_STATE.customVertices = [];
+      APP_STATE.isPolygonClosed = false;
+      APP_STATE.mousePos = null;
+      APP_STATE.solution = null;
+      APP_STATE.poly = null;
+
+      updateStats(`DRAW MODE:\n${APP_STATE.gridLockEnabled ? 'Click grid points to place vertices.' : 'Click anywhere to place vertices.'}\nClose polygon: click near first point.\nMinimum ${MIN_VERTICES} vertices required.`);
+      elements.btnDraw.style.background = '#4caf50';
+      elements.btnDraw.textContent = 'Drawing...';
+
+      drawCustomPolygon();
+      updateMaxPiecesDisplay();
+    }
+
+    function exitDrawingMode() {
+      APP_STATE.drawMode = false;
+      APP_STATE.mousePos = null;
+      elements.btnDraw.style.background = '#9c27b0';
+      elements.btnDraw.textContent = 'Draw Custom';
+    }
+
+    function closePolygon() {
+      if (APP_STATE.customVertices.length < MIN_VERTICES) {
+        updateStats(`Need at least ${MIN_VERTICES} vertices to close polygon.`);
+        return;
+      }
+
+      APP_STATE.isPolygonClosed = true;
+      APP_STATE.mousePos = null;
+
+      APP_STATE.poly = new Polygon([...APP_STATE.customVertices]);
+      APP_STATE.solution = null;
+
+      updateStats(`POLYGON COMPLETE!\nVertices: ${APP_STATE.customVertices.length}\nArea: ${(APP_STATE.poly.area * 100).toFixed(2)}% of canvas\nRule: VALID iff diff ≤ ${MAX_DIFFERENTIAL_PERCENT.toFixed(1)}%\n\nReady to solve.`);
+      elements.verts.value = APP_STATE.customVertices.length;
+      elements.lVerts.textContent = APP_STATE.customVertices.length;
+
+      drawCustomPolygon();
+      setTimeout(updateMaxPiecesDisplay, 100);
+    }
+
+    function drawCustomPolygon() {
+      const ctx = elements.ctx;
+      const w = elements.canvas.width;
+      const h = elements.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const vertices = APP_STATE.customVertices;
+      const isClosed = APP_STATE.isPolygonClosed;
+
+      if (vertices.length > 0) {
+        const strokeColor = isClosed ? '#2196f3' : '#4a90e2';
+        const fillColor = isClosed ? 'rgba(33, 150, 243, 0.3)' : 'rgba(74, 144, 226, 0.1)';
+        const pointColor = isClosed ? '#2196f3' : '#fff';
+
+        ctx.fillStyle = fillColor;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = isClosed ? 4 : 2;
+
+        ctx.beginPath();
+        ctx.moveTo(mapX(vertices[0].x), mapY(vertices[0].y));
+        for (let i = 1; i < vertices.length; i++) ctx.lineTo(mapX(vertices[i].x), mapY(vertices[i].y));
+        if (isClosed) ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // points
+        ctx.fillStyle = pointColor;
+        for (let i = 0; i < vertices.length; i++) {
+          const p = vertices[i];
+          ctx.beginPath();
+          ctx.arc(mapX(p.x), mapY(p.y), i === 0 ? 7 : 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // preview line to mouse
+        if (!isClosed && APP_STATE.mousePos) {
+          const last = vertices[vertices.length - 1];
+          ctx.strokeStyle = "rgba(255,255,255,0.5)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(mapX(last.x), mapY(last.y));
+          ctx.lineTo(APP_STATE.mousePos.x, APP_STATE.mousePos.y);
+          ctx.stroke();
+        }
+      }
+
+      // info box
+      ctx.fillStyle = "rgba(0,0,0,0.75)";
+      ctx.fillRect(10, 10, 260, 64);
+      ctx.fillStyle = "#4a90e2";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("DRAW MODE", 15, 26);
+      ctx.fillStyle = "white";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(`Vertices: ${vertices.length}`, 15, 44);
+      ctx.fillStyle = "#ccc";
+      ctx.fillText(isClosed ? "Status: Closed (Ready)" : "Status: In progress", 15, 60);
+    }
+
+    function handleCanvasClick(e) {
+      if (!APP_STATE.drawMode || APP_STATE.isPolygonClosed) return;
+
+      const pos = getEventPos(e);
+      const snapped = snapToGrid(pos.x, pos.y);
+
+      const normalizedX = unmapX(snapped.x);
+      const normalizedY = unmapY(snapped.y);
+
+      // if close to first vertex -> close polygon
+      if (APP_STATE.customVertices.length >= MIN_VERTICES) {
+        const first = APP_STATE.customVertices[0];
+        const firstCanvas = { x: mapX(first.x), y: mapY(first.y) };
+        if (getDistance(snapped, firstCanvas) < SNAP_THRESHOLD) {
+          closePolygon();
+          exitDrawingMode();
+          return;
+        }
+      }
+
+      APP_STATE.customVertices.push({ x: normalizedX, y: normalizedY });
+
+      const lockStatus = APP_STATE.gridLockEnabled ? ' (snapped to grid)' : '';
+      updateStats(`DRAW MODE: ${APP_STATE.customVertices.length} vertices placed${lockStatus}.\n${APP_STATE.customVertices.length >= MIN_VERTICES ? 'Click near first point to close.' : `Need at least ${MIN_VERTICES} vertices.`}`);
+      drawCustomPolygon();
+    }
+
+    function handleCanvasMove(e) {
+      if (!APP_STATE.drawMode || APP_STATE.isPolygonClosed) return;
+      const pos = getEventPos(e);
+      const snapped = snapToGrid(pos.x, pos.y);
+      APP_STATE.mousePos = snapped;
+      drawCustomPolygon();
+    }
+
+    elements.canvas.addEventListener('click', handleCanvasClick);
+    elements.canvas.addEventListener('mousemove', handleCanvasMove);
+    elements.canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleCanvasClick(e); }, { passive: false });
+    elements.canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleCanvasMove(e); }, { passive: false });
+
+    // init grid info
+    updateGridInfo();
+
+    // kick off
+    init();
+  </script>
+</body>
+
+</html>

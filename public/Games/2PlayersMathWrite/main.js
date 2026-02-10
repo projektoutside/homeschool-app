@@ -206,6 +206,7 @@
 // --- DOM Elements ---
 const screens = {
   menu: document.getElementById('main-menu'),
+  lineupTutorial: document.getElementById('lineup-tutorial-screen'),
   setup: document.getElementById('setup-screen'),
   aiSelect: document.getElementById('ai-select-screen'),
   settings: document.getElementById('settings-modal'),
@@ -216,15 +217,44 @@ const screens = {
 
 const modeSelect = document.getElementById('mode-select');
 const difficultySelect = document.getElementById('difficulty-select');
+const lineupTutorialBackBtn = document.getElementById('lineup-tutorial-back-btn');
+const lineupTutorialContinueBtn = document.getElementById('lineup-tutorial-continue-btn');
+const setupBackBtn = document.getElementById('setup-back-btn');
 const startBtn = document.getElementById('start-btn');
+const aiSetupBackBtn = document.getElementById('ai-setup-back-btn');
+const aiSetupContinueBtn = document.getElementById('ai-setup-continue-btn');
+const setupActionsDefault = document.getElementById('setup-actions-default');
+const setupActionsAi = document.getElementById('setup-actions-ai');
 const singleModeBtn = document.getElementById('single-mode-btn');
 const vsModeBtn = document.getElementById('vs-mode-btn');
 const vsAiModeBtn = document.getElementById('vs-ai-mode-btn');
+const lineupModeBtn = document.getElementById('lineup-mode-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings');
 const timerSelect = document.getElementById('timer-select');
+const vsEndModeSelect = document.getElementById('vs-end-mode-select');
+const firstToTargetInput = document.getElementById('first-to-target');
+const firstToTargetRow = document.getElementById('first-to-target-row');
+const vsEndModeHelp = document.getElementById('vs-end-mode-help');
 const musicToggle = document.getElementById('music-toggle');
 const musicVolume = document.getElementById('music-volume');
+const autoClearToggleSettings = document.getElementById('auto-clear-toggle-settings');
+const lineupTimerInputs = {
+  tom: document.getElementById('lineup-timer-tom'),
+  sam: document.getElementById('lineup-timer-sam'),
+  jack: document.getElementById('lineup-timer-jack'),
+  edison: document.getElementById('lineup-timer-edison'),
+  ariel: document.getElementById('lineup-timer-ariel')
+};
+const lineupFirstToInputs = {
+  tom: document.getElementById('lineup-firstto-tom'),
+  sam: document.getElementById('lineup-firstto-sam'),
+  jack: document.getElementById('lineup-firstto-jack'),
+  edison: document.getElementById('lineup-firstto-edison'),
+  ariel: document.getElementById('lineup-firstto-ariel')
+};
+const lineupTimeSettingsGroup = document.getElementById('lineup-time-settings-group');
+const lineupFirstToSettingsGroup = document.getElementById('lineup-firstto-settings-group');
 const menuMusic = document.getElementById('menu-music');
 const bgMusic = document.getElementById('bg-music');
 const correctSound = document.getElementById('correct-sound');
@@ -257,6 +287,7 @@ let lastBackgroundTrackIndex = -1;
 
 const scoreboard = document.getElementById('score');
 const timer = document.getElementById('time-left');
+const timerUnit = document.getElementById('time-unit');
 const problemDiv = document.getElementById('problem');
 const feedback = document.getElementById('feedback');
 const finalScore = document.getElementById('final-score');
@@ -271,33 +302,26 @@ const aiCards = Array.from(document.querySelectorAll('.ai-card'));
 
 // Work Area DOM
 const workClearBtn = document.getElementById('work-clear-btn');
-// Initialize toggle elements (will be accessed dynamically to ensure they exist)
-let autoClearToggleGame = null;
-let autoClearToggleVS = null;
 let singlePlayerWorkClear = null;
 
 // Auto-clear functionality
 function autoStageWork(playerOnly = null) {
   console.log('🔥 autoStageWork called with playerOnly:', playerOnly);
-  
-  // Get toggle elements dynamically to ensure they exist
-  if (!autoClearToggleGame) autoClearToggleGame = document.getElementById('auto-clear-toggle-game');
-  if (!autoClearToggleVS) autoClearToggleVS = document.getElementById('auto-clear-toggle-vs');
-  
-  // Check appropriate toggle based on game mode
-  const isVSMode = !!playerOnly;
-  const toggleToCheck = isVSMode ? autoClearToggleVS : autoClearToggleGame;
+
+  // Auto Clear toggle now lives in Settings only.
+  // Keep feature ON by default if toggle element is unavailable for any reason.
+  const autoClearEnabled = autoClearToggleSettings ? autoClearToggleSettings.checked : true;
   
   console.log('🔍 Debug info:', {
-    isVSMode,
-    toggleExists: !!toggleToCheck,
-    toggleId: toggleToCheck ? toggleToCheck.id : 'null',
-    toggleChecked: toggleToCheck ? toggleToCheck.checked : 'N/A',
+    toggleExists: !!autoClearToggleSettings,
+    toggleId: autoClearToggleSettings ? autoClearToggleSettings.id : 'null',
+    toggleChecked: autoClearToggleSettings ? autoClearToggleSettings.checked : 'N/A',
+    autoClearEnabled,
     singlePlayerWorkClear: !!singlePlayerWorkClear,
     playerWorkClearFunc: playerOnly ? !!playerOnly.workClearFunc : 'N/A'
   });
   
-  if (toggleToCheck && toggleToCheck.checked) {
+  if (autoClearEnabled) {
     console.log('✅ Toggle is checked - proceeding with auto-clear');
     
     // Single player mode
@@ -335,8 +359,6 @@ function autoStageWork(playerOnly = null) {
         });
       }
     }
-  } else if (!toggleToCheck) {
-    console.warn('❌ Auto-clear: Toggle element not found');
   } else {
     console.log('⏸️ Auto-clear: Disabled (toggle unchecked)');
   }
@@ -351,6 +373,7 @@ const p1 = {
   problemDiv: document.getElementById('p1-problem'),
   scoreSpan: document.getElementById('p1-score'),
   timerSpan: document.getElementById('p1-time-left'),
+  timerUnitSpan: document.getElementById('p1-time-unit'),
   workClearFunc: null
 };
 const p2 = {
@@ -363,6 +386,7 @@ const p2 = {
   problemDiv: document.getElementById('p2-problem'),
   scoreSpan: document.getElementById('p2-score'),
   timerSpan: document.getElementById('p2-time-left'),
+  timerUnitSpan: document.getElementById('p2-time-unit'),
   workClearFunc: null
 };
 
@@ -376,6 +400,68 @@ const confirmNoBtn = document.getElementById('confirm-predict-no');
 
 let pendingPrediction = false;
 let pendingDigit = null;
+
+const feedbackTimers = new WeakMap();
+
+function showFeedbackPopup(target, message, color = '#fff', options = {}) {
+  if (!target) return 0;
+
+  const {
+    fadeInMs = 180,
+    visibleMs = 780,
+    fadeOutMs = 480,
+    clearOnFinish = true
+  } = options;
+
+  const existing = feedbackTimers.get(target);
+  if (existing) {
+    if (existing.hideTimer) clearTimeout(existing.hideTimer);
+    if (existing.clearTimer) clearTimeout(existing.clearTimer);
+  }
+
+  target.style.transition = `opacity ${fadeInMs}ms ease`;
+  target.style.opacity = '0';
+  target.textContent = message;
+  target.style.color = color;
+
+  requestAnimationFrame(() => {
+    target.style.opacity = '1';
+  });
+
+  const hideTimer = setTimeout(() => {
+    target.style.transition = `opacity ${fadeOutMs}ms ease`;
+    target.style.opacity = '0';
+  }, visibleMs);
+
+  const clearTimer = setTimeout(() => {
+    if (clearOnFinish) target.textContent = '';
+  }, visibleMs + fadeOutMs + 30);
+
+  feedbackTimers.set(target, { hideTimer, clearTimer });
+
+  return visibleMs + fadeOutMs + 30;
+}
+
+function clearFeedbackPopup(target, immediate = false) {
+  if (!target) return;
+  const existing = feedbackTimers.get(target);
+  if (existing) {
+    if (existing.hideTimer) clearTimeout(existing.hideTimer);
+    if (existing.clearTimer) clearTimeout(existing.clearTimer);
+  }
+
+  if (immediate) {
+    target.style.opacity = '0';
+    target.textContent = '';
+    return;
+  }
+
+  target.style.transition = 'opacity 320ms ease';
+  target.style.opacity = '0';
+  setTimeout(() => {
+    if (target.style.opacity === '0') target.textContent = '';
+  }, 340);
+}
 
 function showPredictModal() {
   predictModal.classList.remove('hidden');
@@ -398,23 +484,11 @@ function hidePredictModal() {
 // Animate feedback
 function animateFeedback(type) {
   if (type === 'correct') {
-    feedback.textContent = 'Correct! 🎉';
-    feedback.style.color = '#4caf50';
-    feedback.animate([
-      { transform: 'scale(1)' },
-      { transform: 'scale(1.2)' },
-      { transform: 'scale(1)' }
-    ], { duration: 400 });
+    return showFeedbackPopup(feedback, 'Correct! 🎉', '#4caf50', { visibleMs: 640, fadeOutMs: 460 });
   } else if (type === 'wrong') {
-    feedback.textContent = 'Oops! Try again.';
-    feedback.style.color = '#ff4e50';
-    feedback.animate([
-      { transform: 'translateX(0)' },
-      { transform: 'translateX(-10px)' },
-      { transform: 'translateX(10px)' },
-      { transform: 'translateX(0)' }
-    ], { duration: 300 });
+    return showFeedbackPopup(feedback, 'Oops! Try again.', '#ff4e50', { visibleMs: 640, fadeOutMs: 460 });
   }
+  return 0;
 }
 
 // --- State ---
@@ -422,8 +496,25 @@ let gameSettings = {
   mode: 'add',
   difficulty: 'easy',
   timer: 60,
+  vsEndMode: 'time',
+  firstToTarget: 10,
   music: true,
   musicVolume: 0.2,
+  autoClearWork: true,
+  lineupTimers: {
+    tom: 75,
+    sam: 70,
+    jack: 65,
+    edison: 60,
+    ariel: 55
+  },
+  lineupFirstToTargets: {
+    tom: 10,
+    sam: 12,
+    jack: 14,
+    edison: 16,
+    ariel: 18
+  }
 };
 
 let gameState = {
@@ -436,11 +527,21 @@ let countdownTimer = null;
 let countdownActive = false;
 let menuFadeTimer = null;
 let bgFadeTimer = null;
+let gameplayStartPending = false;
+let handwritingWarmupPromise = null;
+const HANDWRITING_WARMUP_TIMEOUT_MS = 3200;
+
+// Fullscreen startup/back-button handling
+const FULLSCREEN_HISTORY_TAG = '__writemath_fullscreen__';
+let fullscreenHistoryPushed = false;
+let fullscreenInteractionHandler = null;
 
 // VS state
 let vsState = {
   running: false,
   timeLeft: 60,
+  endMode: 'time',
+  firstToTarget: 10,
   p1: { score: 0, problem: null },
   p2: { score: 0, problem: null },
   used1: new Set(),
@@ -449,6 +550,57 @@ let vsState = {
   aiProfile: null,
   isVsAi: false
 };
+
+const lineupState = {
+  order: ['tom', 'sam', 'jack', 'edison', 'ariel'],
+  active: false,
+  awaitingNext: false,
+  currentIndex: 0,
+  wins: 0
+};
+
+function resetLineupState() {
+  lineupState.active = false;
+  lineupState.awaitingNext = false;
+  lineupState.currentIndex = 0;
+  lineupState.wins = 0;
+}
+
+function getCurrentLineupAiId() {
+  return lineupState.order[lineupState.currentIndex] || null;
+}
+
+function startLineupChallenge() {
+  resetLineupState();
+  lineupState.active = true;
+  restartBtn.textContent = 'Restart';
+  startNextLineupMatch();
+}
+
+function startNextLineupMatch() {
+  lineupState.awaitingNext = false;
+  const aiId = getCurrentLineupAiId();
+  const profile = aiId ? aiProfiles[aiId] : null;
+  if (!profile) {
+    resetLineupState();
+    showScreen('over');
+    finalScore.textContent = 'King of The Hill could not continue (invalid AI profile).';
+    return;
+  }
+
+  const vsOptions = { aiProfile: profile };
+  if (gameSettings.vsEndMode === 'time') {
+    vsOptions.timerOverride = getLineupTimerForAi(aiId);
+  } else {
+    vsOptions.firstToOverride = getLineupFirstToForAi(aiId);
+  }
+  startVsGame(vsOptions);
+
+  const roundText = `King of The Hill: Round ${lineupState.currentIndex + 1}/${lineupState.order.length} vs ${profile.name}`;
+  if (p1.feedback) {
+    showFeedbackPopup(p1.feedback, roundText, '#f9d423', { visibleMs: 1150, fadeOutMs: 520 });
+  }
+}
 
 // --- UI Helpers ---
 function showScreen(screen) {
@@ -547,7 +699,7 @@ function handleScreenMusic(screen) {
     stopAllMusic();
     return;
   }
-  if (screen === 'menu' || screen === 'setup' || screen === 'aiSelect') {
+  if (screen === 'menu' || screen === 'lineupTutorial' || screen === 'setup' || screen === 'aiSelect') {
     playMenuMusic();
   } else if (screen === 'game' || screen === 'vs') {
     playRandomBackgroundMusic();
@@ -567,9 +719,81 @@ function hideCountdownOverlay() {
   countdownOverlay.classList.add('hidden');
 }
 
+function warmupHandwritingDetection() {
+  if (handwritingWarmupPromise) return handwritingWarmupPromise;
+
+  const warmupTask = (async () => {
+    if (typeof window.hm_warmupRecognition === 'function') {
+      return window.hm_warmupRecognition();
+    }
+    return false;
+  })();
+
+  const timeoutTask = new Promise(resolve => {
+    setTimeout(() => resolve('timeout'), HANDWRITING_WARMUP_TIMEOUT_MS);
+  });
+
+  handwritingWarmupPromise = Promise.race([warmupTask, timeoutTask])
+    .catch((err) => {
+      console.warn('[Warmup] Handwriting warmup failed:', err);
+      return false;
+    });
+
+  return handwritingWarmupPromise;
+}
+
+function beginGameplayAfterCountdown(startFn, warmupPromise) {
+  if (gameplayStartPending) return;
+  gameplayStartPending = true;
+
+  (async () => {
+    try {
+      await (warmupPromise || warmupHandwritingDetection());
+    } finally {
+      gameplayStartPending = false;
+      if (typeof startFn === 'function') startFn();
+    }
+  })();
+}
+
+function centerVsDividerInViewport() {
+  const vsScreen = screens && screens.vs;
+  if (!vsScreen || vsScreen.classList.contains('hidden')) return;
+
+  const board = vsScreen.querySelector('.vs-board');
+  const divider = vsScreen.querySelector('.center-divider');
+  if (!board || !divider) return;
+
+  // Reset before measuring so we don't accumulate offsets.
+  board.style.transform = 'translateY(0px)';
+
+  const dividerRect = divider.getBoundingClientRect();
+  const viewportCenterY = window.innerHeight / 2;
+  const dividerCenterY = dividerRect.top + dividerRect.height / 2;
+  let delta = Math.round(viewportCenterY - dividerCenterY);
+
+  // Clamp to keep layout stable while still ensuring visual centering.
+  const maxShift = Math.round(window.innerHeight * 0.12);
+  if (delta > maxShift) delta = maxShift;
+  if (delta < -maxShift) delta = -maxShift;
+
+  board.style.transform = `translateY(${delta}px)`;
+}
+
+function scheduleVsCenterAlignment() {
+  // Run multiple passes to handle dynamic viewport/safe-area settling on mobile.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(centerVsDividerInViewport);
+  });
+  setTimeout(centerVsDividerInViewport, 120);
+  setTimeout(centerVsDividerInViewport, 320);
+}
+
 function startCountdown(onComplete) {
   if (countdownActive) return;
   countdownActive = true;
+  // Begin recognition warmup during countdown so first detection is ready at start.
+  const warmupPromise = warmupHandwritingDetection();
   const steps = ['3', '2', '1', 'Go!'];
   let index = 0;
   clearInterval(countdownTimer);
@@ -581,7 +805,7 @@ function startCountdown(onComplete) {
       hideCountdownOverlay();
       countdownActive = false;
       if (typeof onComplete === 'function') {
-        onComplete();
+        onComplete(warmupPromise);
       }
       return;
     }
@@ -609,6 +833,101 @@ function registerBackgroundLoop() {
   });
 }
 
+function isFullscreenActive() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+}
+
+function hasFullscreenMarker(state) {
+  return !!(state && state[FULLSCREEN_HISTORY_TAG]);
+}
+
+function markFullscreenHistoryState() {
+  if (fullscreenHistoryPushed) return;
+  const nextState = {
+    ...(history.state || {}),
+    [FULLSCREEN_HISTORY_TAG]: true
+  };
+  history.pushState(nextState, '', window.location.href);
+  fullscreenHistoryPushed = true;
+}
+
+function clearFullscreenMarkerFromCurrentState() {
+  const currentState = history.state || {};
+  if (!hasFullscreenMarker(currentState)) return;
+  const nextState = { ...currentState };
+  delete nextState[FULLSCREEN_HISTORY_TAG];
+  history.replaceState(nextState, '', window.location.href);
+}
+
+async function requestAppFullscreen() {
+  try {
+    if (!document.documentElement || isFullscreenActive()) return;
+    const root = document.documentElement;
+    const requestFn = root.requestFullscreen
+      || root.webkitRequestFullscreen
+      || root.msRequestFullscreen;
+    if (typeof requestFn !== 'function') return;
+    await requestFn.call(root);
+  } catch (err) {
+    // Most browsers require user gesture; we'll retry on first interaction.
+    console.debug('[Fullscreen] requestFullscreen blocked/deferred:', err);
+  }
+}
+
+async function exitAppFullscreen() {
+  try {
+    if (!isFullscreenActive()) return;
+    const exitFn = document.exitFullscreen
+      || document.webkitExitFullscreen
+      || document.msExitFullscreen;
+    if (typeof exitFn !== 'function') return;
+    await exitFn.call(document);
+  } catch (err) {
+    console.warn('[Fullscreen] exitFullscreen failed:', err);
+  }
+}
+
+function addFullscreenInteractionListeners() {
+  if (fullscreenInteractionHandler) return;
+  fullscreenInteractionHandler = () => {
+    // User requested: whenever user interacts and app is not fullscreen, go fullscreen.
+    if (!isFullscreenActive()) {
+      requestAppFullscreen();
+    }
+  };
+  ['pointerdown', 'touchstart', 'keydown'].forEach((eventName) => {
+    document.addEventListener(eventName, fullscreenInteractionHandler, { capture: true, passive: false });
+  });
+}
+
+function setupFullscreenExperience() {
+  // Try immediately (works in some app contexts), then retry on first interaction.
+  requestAppFullscreen();
+
+  // Keep listening until fullscreen has successfully entered at least once.
+  addFullscreenInteractionListeners();
+
+  const onFullscreenChange = () => {
+    if (isFullscreenActive()) {
+      markFullscreenHistoryState();
+    } else {
+      clearFullscreenMarkerFromCurrentState();
+      fullscreenHistoryPushed = false;
+    }
+  };
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+  // Keep one history marker while fullscreen is active so device back exits fullscreen first.
+  window.addEventListener('popstate', () => {
+    // If user presses device back while fullscreen, use that action to leave fullscreen.
+    if (isFullscreenActive()) {
+      exitAppFullscreen();
+    }
+  });
+}
+
 // --- Event Listeners ---
 modeSelect.addEventListener('change', () => {
   gameSettings.mode = modeSelect.value;
@@ -629,6 +948,24 @@ timerSelect.addEventListener('change', () => {
   gameSettings.timer = parseInt(timerSelect.value);
 });
 
+if (vsEndModeSelect) {
+  vsEndModeSelect.addEventListener('change', () => {
+    gameSettings.vsEndMode = vsEndModeSelect.value === 'first-to' ? 'first-to' : 'time';
+    updateVsEndModeUi();
+  });
+}
+
+if (firstToTargetInput) {
+  const syncFirstToTarget = () => {
+    const nextValue = clampFirstToTarget(firstToTargetInput.value);
+    gameSettings.firstToTarget = nextValue;
+    firstToTargetInput.value = String(nextValue);
+  };
+
+  firstToTargetInput.addEventListener('change', syncFirstToTarget);
+  firstToTargetInput.addEventListener('blur', syncFirstToTarget);
+}
+
 
 musicToggle.addEventListener('change', () => {
   gameSettings.music = musicToggle.checked;
@@ -648,86 +985,571 @@ if (musicVolume) {
   });
 }
 
+if (autoClearToggleSettings) {
+  autoClearToggleSettings.addEventListener('change', () => {
+    gameSettings.autoClearWork = autoClearToggleSettings.checked;
+  });
+}
+
 let selectedPlayers = 'single';
 let selectedAiId = null;
+const lineupOrder = ['tom', 'sam', 'jack', 'edison', 'ariel'];
+
+function thinkRangeFromSpeed(speed) {
+  const clamped = Math.max(25, Math.min(100, speed));
+  const minDelay = Math.round(140 + (100 - clamped) * 14);
+  const maxDelay = minDelay + Math.round(220 + (100 - clamped) * 6);
+  return [minDelay, maxDelay];
+}
+
+function strokeDelayFromSpeed(speed) {
+  const clamped = Math.max(25, Math.min(100, speed));
+  return Math.max(2, Math.round(16 - clamped * 0.12));
+}
+
+function clampAiTier(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 3;
+  return Math.max(1, Math.min(5, parsed));
+}
+
+function scaleDelayRange(range, factor) {
+  if (!Array.isArray(range) || range.length < 2) return [500, 900];
+  const min = Math.max(50, Math.round(Number(range[0]) * factor));
+  const maxRaw = Math.max(Number(range[1]), Number(range[0]));
+  const max = Math.max(min + 40, Math.round(maxRaw * factor));
+  return [min, max];
+}
+
+function randomDelayFromRange(range, fallback = 600) {
+  if (!Array.isArray(range) || range.length < 2) return fallback;
+  const min = Math.max(0, Math.round(Number(range[0])));
+  const max = Math.max(min, Math.round(Number(range[1])));
+  if (max <= min) return min;
+  return getRandomInt(min, max);
+}
+
+function updateSetupActionsForMode() {
+  const isVsAiSetup = selectedPlayers === 'vs-ai';
+  if (setupActionsDefault) setupActionsDefault.classList.toggle('hidden', isVsAiSetup);
+  if (setupActionsAi) setupActionsAi.classList.toggle('hidden', !isVsAiSetup);
+}
+
+function createAiProfile(config) {
+  const accuracy = Math.max(0.45, Math.min(0.99, Number(config.accuracy) || 0.7));
+  const neatness = Math.max(0, Math.min(1, (accuracy - 0.45) / 0.54));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const tier = clampAiTier(config.tier);
+  const tierThinkFactorMap = {
+    1: 1.34,
+    2: 1.2,
+    3: 1.06,
+    4: 0.94,
+    5: 0.84
+  };
+  const tierStrokeFactorMap = {
+    1: 1.38,
+    2: 1.22,
+    3: 1.06,
+    4: 0.94,
+    5: 0.84
+  };
+  const openingPauseBaseByTier = {
+    1: [3400, 4300],
+    2: [2900, 3800],
+    3: [2300, 3100],
+    4: [1700, 2400],
+    5: [1300, 1900]
+  };
+  const problemPauseBaseByTier = {
+    1: [1200, 1850],
+    2: [1020, 1550],
+    3: [840, 1260],
+    4: [620, 980],
+    5: [480, 760]
+  };
+  const regroupPauseBaseByTier = {
+    1: [900, 1320],
+    2: [760, 1120],
+    3: [640, 940],
+    4: [500, 760],
+    5: [380, 620]
+  };
+
+  const thinkFactor = Number.isFinite(config.thinkFactor)
+    ? Number(config.thinkFactor)
+    : (tierThinkFactorMap[tier] || 1);
+  const handwritingPaceFactor = Number.isFinite(config.handwritingPaceFactor)
+    ? Number(config.handwritingPaceFactor)
+    : (tierStrokeFactorMap[tier] || 1);
+
+  const baseThinkRange = config.thinkRange || thinkRangeFromSpeed(config.speed);
+  const thinkRange = scaleDelayRange(baseThinkRange, thinkFactor);
+  const strokeDelay = Number.isFinite(config.strokeDelay) ? config.strokeDelay : strokeDelayFromSpeed(config.speed);
+  const jitter = Number.isFinite(config.jitter) ? config.jitter : lerp(0.22, 0.025, neatness);
+  const smoothness = Number.isFinite(config.smoothness) ? config.smoothness : lerp(0.82, 1.68, neatness);
+  const lineWidthJitter = Number.isFinite(config.lineWidthJitter) ? config.lineWidthJitter : lerp(0.22, 0.03, neatness);
+  const placementJitter = Number.isFinite(config.placementJitter) ? config.placementJitter : lerp(0.16, 0.02, neatness);
+  const openingPauseRange = scaleDelayRange(
+    config.openingPauseRange || openingPauseBaseByTier[tier] || openingPauseBaseByTier[3],
+    thinkFactor
+  );
+  const problemPauseRange = scaleDelayRange(
+    config.problemPauseRange || problemPauseBaseByTier[tier] || problemPauseBaseByTier[3],
+    thinkFactor
+  );
+  const regroupPauseRange = scaleDelayRange(
+    config.regroupPauseRange || regroupPauseBaseByTier[tier] || regroupPauseBaseByTier[3],
+    thinkFactor
+  );
+
+  return {
+    ...config,
+    tier,
+    accuracy,
+    thinkRange,
+    strokeDelay,
+    thinkFactor,
+    handwritingPaceFactor,
+    openingPauseRange,
+    problemPauseRange,
+    regroupPauseRange,
+    jitter,
+    smoothness,
+    lineWidthJitter,
+    placementJitter
+  };
+}
+
 const aiProfiles = {
-  tom: {
+  tom: createAiProfile({
     id: 'tom',
     name: 'Tom',
+    tier: 1,
     difficulty: 'easy',
-    accuracy: 0.55,
-    thinkRange: [1900, 2800],
-    strokeDelay: 20,
+    accuracy: 0.58,
+    speed: 45,
     jitter: 0.19,
     smoothness: 0.9,
     lineWidthJitter: 0.18,
     placementJitter: 0.12
-  },
-  sam: {
+  }),
+  sam: createAiProfile({
     id: 'sam',
     name: 'Sam',
+    tier: 2,
     difficulty: 'medium',
-    accuracy: 0.72,
-    thinkRange: [1300, 2100],
-    strokeDelay: 14,
+    accuracy: 0.74,
+    speed: 63,
     jitter: 0.1,
     smoothness: 1.1,
     lineWidthJitter: 0.1,
     placementJitter: 0.07
-  },
-  jack: {
+  }),
+  jack: createAiProfile({
     id: 'jack',
     name: 'Jack',
+    tier: 3,
     difficulty: 'hard',
+    accuracy: 0.84,
+    speed: 75,
+    jitter: 0.06,
+    smoothness: 1.25,
+    lineWidthJitter: 0.06,
+    placementJitter: 0.04
+  }),
+  edison: createAiProfile({
+    id: 'edison',
+    name: 'Edison',
+    tier: 4,
+    difficulty: 'expert',
     accuracy: 0.9,
-    thinkRange: [850, 1500],
-    strokeDelay: 10,
-    jitter: 0.05,
-    smoothness: 1.35,
-    lineWidthJitter: 0.05,
+    speed: 85,
+    jitter: 0.045,
+    smoothness: 1.38,
+    lineWidthJitter: 0.045,
     placementJitter: 0.03
-  }
+  }),
+  ariel: createAiProfile({
+    id: 'ariel',
+    name: 'Ariel',
+    tier: 5,
+    difficulty: 'master',
+    accuracy: 0.95,
+    speed: 90,
+    jitter: 0.035,
+    smoothness: 1.46,
+    lineWidthJitter: 0.04,
+    placementJitter: 0.025
+  })
 };
+
+function clampLineupTimer(value) {
+  const fallback = 60;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(15, Math.min(300, parsed));
+}
+
+function clampFirstToTarget(value) {
+  const fallback = 10;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(5, Math.min(50, parsed));
+}
+
+function clampLineupFirstToTarget(value) {
+  return clampFirstToTarget(value);
+}
+
+function populateNumericSelect(selectEl, min, max) {
+  if (!selectEl) return;
+  const existingValue = Number.parseInt(selectEl.value, 10);
+  selectEl.innerHTML = '';
+  for (let n = min; n <= max; n++) {
+    const option = document.createElement('option');
+    option.value = String(n);
+    option.textContent = String(n);
+    selectEl.appendChild(option);
+  }
+  if (Number.isFinite(existingValue) && existingValue >= min && existingValue <= max) {
+    selectEl.value = String(existingValue);
+  }
+}
+
+function updateVsEndModeUi() {
+  const isFirstTo = gameSettings.vsEndMode === 'first-to';
+  if (firstToTargetRow) {
+    firstToTargetRow.classList.toggle('hidden', !isFirstTo);
+  }
+  if (lineupTimeSettingsGroup) {
+    lineupTimeSettingsGroup.classList.toggle('hidden', isFirstTo);
+  }
+  if (lineupFirstToSettingsGroup) {
+    lineupFirstToSettingsGroup.classList.toggle('hidden', !isFirstTo);
+  }
+  if (firstToTargetInput) {
+    firstToTargetInput.value = String(clampFirstToTarget(gameSettings.firstToTarget));
+  }
+}
+
+function updateVsHudByMode() {
+  const isFirstTo = vsState.endMode === 'first-to';
+  const p1DisplayValue = isFirstTo
+    ? Math.max(0, vsState.firstToTarget - vsState.p1.score)
+    : vsState.timeLeft;
+  const p2DisplayValue = isFirstTo
+    ? Math.max(0, vsState.firstToTarget - vsState.p2.score)
+    : vsState.timeLeft;
+  const unitLabel = isFirstTo ? '' : 's';
+
+  if (p1.timerSpan) p1.timerSpan.textContent = String(p1DisplayValue);
+  if (p2.timerSpan) p2.timerSpan.textContent = String(p2DisplayValue);
+  if (p1.timerUnitSpan) p1.timerUnitSpan.textContent = unitLabel;
+  if (p2.timerUnitSpan) p2.timerUnitSpan.textContent = unitLabel;
+}
+
+function hasFirstToWinner() {
+  if (!vsState.running || vsState.endMode !== 'first-to') return false;
+  if (vsState.p1.score >= vsState.firstToTarget) return true;
+  if (vsState.p2.score >= vsState.firstToTarget) return true;
+  return false;
+}
+
+function checkFirstToWinnerAndEnd() {
+  if (!hasFirstToWinner()) return false;
+  endVsGame();
+  return true;
+}
+
+function syncLineupTimerInputs() {
+  Object.entries(lineupTimerInputs).forEach(([id, input]) => {
+    if (!input) return;
+    const value = clampLineupTimer(gameSettings.lineupTimers[id]);
+    gameSettings.lineupTimers[id] = value;
+    input.value = String(value);
+    input.addEventListener('change', () => {
+      const nextValue = clampLineupTimer(input.value);
+      gameSettings.lineupTimers[id] = nextValue;
+      input.value = String(nextValue);
+    });
+  });
+}
+
+function syncLineupFirstToInputs() {
+  Object.entries(lineupFirstToInputs).forEach(([id, input]) => {
+    if (!input) return;
+    populateNumericSelect(input, 5, 50);
+    const value = clampLineupFirstToTarget(gameSettings.lineupFirstToTargets[id]);
+    gameSettings.lineupFirstToTargets[id] = value;
+    input.value = String(value);
+    input.addEventListener('change', () => {
+      const nextValue = clampLineupFirstToTarget(input.value);
+      gameSettings.lineupFirstToTargets[id] = nextValue;
+      input.value = String(nextValue);
+    });
+  });
+}
+
+function getLineupTimerForAi(aiId) {
+  return clampLineupTimer(gameSettings.lineupTimers[aiId]);
+}
+
+function getLineupFirstToForAi(aiId) {
+  return clampLineupFirstToTarget(gameSettings.lineupFirstToTargets[aiId]);
+}
+
+function updateAiCardStats() {
+  aiCards.forEach(card => {
+    const profile = aiProfiles[card.dataset.ai];
+    if (!profile) return;
+    const accuracyEl = card.querySelector('.ai-accuracy');
+    const speedEl = card.querySelector('.ai-speed');
+    if (accuracyEl) accuracyEl.textContent = `${Math.round(profile.accuracy * 100)}%`;
+    if (speedEl) speedEl.textContent = `${Math.round(profile.speed)}`;
+  });
+}
 
 const aiState = {
   active: false,
   busy: false,
   profile: null,
-  thinkingTimer: null
+  thinkingTimer: null,
+  openingPauseDone: false
 };
+
+function queueAiTurnWithPause(pauseRange, statusMessage) {
+  if (!aiState.active || !vsState.running || !aiState.profile) return;
+  const delay = randomDelayFromRange(pauseRange, 650);
+  if (p2.status && statusMessage) p2.status.textContent = statusMessage;
+  if (aiState.thinkingTimer) clearTimeout(aiState.thinkingTimer);
+  aiState.thinkingTimer = setTimeout(() => {
+    scheduleAiTurn();
+  }, delay);
+}
+
+// VS Exit Footer reveal-on-intent behavior
+let vsExitHideTimer = null;
+let lastVsTouchY = null;
+let vsExitArmTimer = null;
+let vsExitSafetyArmed = false;
+
+const VS_EXIT_ARM_MS = 3200;
+
+function isVsScreenActive() {
+  return !!(screens.vs && !screens.vs.classList.contains('hidden'));
+}
+
+function hideVsExitFooter() {
+  if (!screens.vs) return;
+  screens.vs.classList.remove('show-exit-footer');
+  if (vsExitHideTimer) {
+    clearTimeout(vsExitHideTimer);
+    vsExitHideTimer = null;
+  }
+  if (vsExitArmTimer) {
+    clearTimeout(vsExitArmTimer);
+    vsExitArmTimer = null;
+  }
+  vsExitSafetyArmed = false;
+}
+
+function showVsExitFooter(durationMs = 1600) {
+  if (!isVsScreenActive()) return;
+  if (!vsExitSafetyArmed) return;
+  screens.vs.classList.add('show-exit-footer');
+  if (vsExitHideTimer) clearTimeout(vsExitHideTimer);
+  vsExitHideTimer = setTimeout(() => {
+    if (isVsScreenActive()) {
+      screens.vs.classList.remove('show-exit-footer');
+      vsExitSafetyArmed = false;
+    }
+  }, durationMs);
+}
+
+function armVsExitSafety() {
+  if (!isVsScreenActive()) return;
+  vsExitSafetyArmed = true;
+  if (vsExitArmTimer) clearTimeout(vsExitArmTimer);
+  vsExitArmTimer = setTimeout(() => {
+    vsExitSafetyArmed = false;
+    if (isVsScreenActive()) screens.vs.classList.remove('show-exit-footer');
+  }, VS_EXIT_ARM_MS);
+}
+
+function isVsCanvasInteractionTarget(target) {
+  if (!target || !(target instanceof Element)) return false;
+  if (target.tagName === 'CANVAS') return true;
+  if (target.closest('.player-canvas-container')) return true;
+  if (target.closest('.player-tabbed-canvas')) return true;
+  if (target.closest('.canvas-tabs')) return true;
+  if (target.closest('.canvas-panel')) return true;
+  return false;
+}
+
+function isNearBottom(clientY) {
+  const triggerBand = Math.max(76, Math.round(window.innerHeight * 0.14));
+  return clientY >= (window.innerHeight - triggerBand);
+}
+
+function setupVsExitIntentReveal() {
+  window.addEventListener('pointermove', (event) => {
+    if (!isVsScreenActive()) return;
+    if (isNearBottom(event.clientY)) {
+      showVsExitFooter();
+    }
+  }, { passive: true });
+
+  window.addEventListener('pointerdown', (event) => {
+    if (!isVsScreenActive()) return;
+    const target = event.target;
+    if (!isVsCanvasInteractionTarget(target) && !target.closest('.vs-footer')) {
+      armVsExitSafety();
+    }
+    if (isNearBottom(event.clientY)) {
+      showVsExitFooter(2200);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchstart', (event) => {
+    if (!isVsScreenActive()) return;
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
+    const target = event.target;
+    if (!isVsCanvasInteractionTarget(target) && !target.closest('.vs-footer')) {
+      armVsExitSafety();
+    }
+    lastVsTouchY = touch.clientY;
+    if (isNearBottom(touch.clientY)) {
+      showVsExitFooter(2200);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (event) => {
+    if (!isVsScreenActive()) return;
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
+    const dy = lastVsTouchY == null ? 0 : touch.clientY - lastVsTouchY;
+    lastVsTouchY = touch.clientY;
+
+    // Intentional downward slide into bottom trigger zone.
+    if (dy > 10 && isNearBottom(touch.clientY)) {
+      showVsExitFooter(2200);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    lastVsTouchY = null;
+  }, { passive: true });
+
+  window.addEventListener('keydown', (event) => {
+    if (!isVsScreenActive()) return;
+    if (event.key === 'Escape') {
+      armVsExitSafety();
+      showVsExitFooter(2600);
+    }
+  });
+}
+
 function updateModeButtons(){
   if (!singleModeBtn || !vsModeBtn) return;
   singleModeBtn.classList.toggle('selected', selectedPlayers==='single');
   vsModeBtn.classList.toggle('selected', selectedPlayers==='vs');
   if (vsAiModeBtn) vsAiModeBtn.classList.toggle('selected', selectedPlayers==='vs-ai');
+  if (lineupModeBtn) lineupModeBtn.classList.toggle('selected', selectedPlayers==='lineup');
 }
 if (singleModeBtn) singleModeBtn.addEventListener('click', ()=>{
+  resetLineupState();
   selectedPlayers='single';
   updateModeButtons();
+  updateSetupActionsForMode();
   showScreen('setup');
 });
 if (vsModeBtn) vsModeBtn.addEventListener('click', ()=>{
+  resetLineupState();
   selectedPlayers='vs';
   updateModeButtons();
+  updateSetupActionsForMode();
   showScreen('setup');
 });
 if (vsAiModeBtn) vsAiModeBtn.addEventListener('click', ()=>{
+  resetLineupState();
   selectedPlayers='vs-ai';
   updateModeButtons();
-  showScreen('aiSelect');
+  updateSetupActionsForMode();
+  showScreen('setup');
+});
+if (lineupModeBtn) lineupModeBtn.addEventListener('click', () => {
+  resetLineupState();
+  selectedPlayers = 'lineup';
+  selectedAiId = null;
+  aiCards.forEach(card => card.classList.remove('selected'));
+  if (aiStartBtn) aiStartBtn.disabled = true;
+  updateModeButtons();
+  updateSetupActionsForMode();
+  showScreen('lineupTutorial');
+});
+
+if (lineupTutorialBackBtn) lineupTutorialBackBtn.addEventListener('click', () => {
+  resetLineupState();
+  selectedPlayers = 'single';
+  updateModeButtons();
+  updateSetupActionsForMode();
+  showScreen('menu');
+});
+
+if (lineupTutorialContinueBtn) lineupTutorialContinueBtn.addEventListener('click', () => {
+  if (selectedPlayers !== 'lineup') selectedPlayers = 'lineup';
+  updateModeButtons();
+  updateSetupActionsForMode();
+  showScreen('setup');
+});
+
+if (setupBackBtn) setupBackBtn.addEventListener('click', () => {
+  resetLineupState();
+  selectedPlayers = 'single';
+  updateModeButtons();
+  updateSetupActionsForMode();
+  showScreen('menu');
 });
 
 if (aiBackBtn) aiBackBtn.addEventListener('click', () => {
   selectedAiId = null;
   aiCards.forEach(card => card.classList.remove('selected'));
   if (aiStartBtn) aiStartBtn.disabled = true;
+  if (selectedPlayers === 'vs-ai') {
+    updateSetupActionsForMode();
+    showScreen('setup');
+  } else {
+    resetLineupState();
+    showScreen('menu');
+  }
+});
+
+if (aiSetupBackBtn) aiSetupBackBtn.addEventListener('click', () => {
+  selectedAiId = null;
+  aiCards.forEach(card => card.classList.remove('selected'));
+  if (aiStartBtn) aiStartBtn.disabled = true;
+  resetLineupState();
   showScreen('menu');
+});
+
+if (aiSetupContinueBtn) aiSetupContinueBtn.addEventListener('click', () => {
+  selectedAiId = null;
+  aiCards.forEach(card => card.classList.remove('selected'));
+  if (aiStartBtn) aiStartBtn.disabled = true;
+  showScreen('aiSelect');
 });
 
 aiCards.forEach(card => {
   card.addEventListener('click', () => {
     aiCards.forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
+    card.classList.remove('selection-burst');
+    // force reflow so repeat clicks still retrigger animation
+    void card.offsetWidth;
+    card.classList.add('selection-burst');
+    setTimeout(() => card.classList.remove('selection-burst'), 560);
     selectedAiId = card.dataset.ai;
     if (aiStartBtn) aiStartBtn.disabled = false;
   });
@@ -736,28 +1558,43 @@ aiCards.forEach(card => {
 if (aiStartBtn) aiStartBtn.addEventListener('click', () => {
   if (!selectedAiId || !aiProfiles[selectedAiId]) return;
   fadeOutMenuMusic();
-  startCountdown(() => {
-    startVsAiGame();
+  startCountdown((warmupPromise) => {
+    beginGameplayAfterCountdown(() => {
+      startVsAiGame();
+    }, warmupPromise);
   });
 });
 
 startBtn.addEventListener('click', () => {
   fadeOutMenuMusic();
-  startCountdown(() => {
-    if (selectedPlayers === 'vs') startVsGame();
-    else if (selectedPlayers === 'vs-ai') startVsAiGame();
-    else startGame();
+  startCountdown((warmupPromise) => {
+    beginGameplayAfterCountdown(() => {
+      if (selectedPlayers === 'vs') startVsGame();
+      else if (selectedPlayers === 'vs-ai') startVsAiGame();
+      else if (selectedPlayers === 'lineup') startLineupChallenge();
+      else startGame();
+    }, warmupPromise);
   });
 });
 restartBtn.addEventListener('click', () => {
   fadeOutMenuMusic();
-  startCountdown(() => {
-    if (selectedPlayers === 'vs') startVsGame();
-    else if (selectedPlayers === 'vs-ai') startVsAiGame();
-    else startGame();
+  startCountdown((warmupPromise) => {
+    beginGameplayAfterCountdown(() => {
+      if (selectedPlayers === 'vs') startVsGame();
+      else if (selectedPlayers === 'vs-ai') startVsAiGame();
+      else if (selectedPlayers === 'lineup') {
+        if (lineupState.active && lineupState.awaitingNext) {
+          startNextLineupMatch();
+        } else {
+          startLineupChallenge();
+        }
+      }
+      else startGame();
+    }, warmupPromise);
   });
 });
 menuBtn.addEventListener('click', () => {
+  resetLineupState();
   showScreen('menu');
 });
 if (vsExitBtn) vsExitBtn.addEventListener('click', () => { endVsGame(true); });
@@ -836,16 +1673,14 @@ function startTimer() {
 function checkAnswer() {
   let userInput = window.getHandwritingInput();
   if (!userInput) {
-    feedback.textContent = 'Please write your answer!';
-    feedback.style.color = '#fff';
+    showFeedbackPopup(feedback, 'Please write your answer!', '#fff', { visibleMs: 560, fadeOutMs: 420 });
     return;
   }
   let userAnswer = parseInt(userInput);
   if (userAnswer === currentProblem.answer) {
     gameState.score++;
     scoreboard.textContent = gameState.score;
-    feedback.textContent = 'Correct! 🎉';
-    feedback.style.color = '#4caf50';
+    const popupMs = showFeedbackPopup(feedback, 'Correct! 🎉', '#4caf50', { visibleMs: 620, fadeOutMs: 460 });
     const spCanvas = document.getElementById('handwriting-canvas');
     if (spCanvas) { 
       spCanvas.classList.remove('drawing', 'processing'); 
@@ -856,7 +1691,6 @@ function checkAnswer() {
     if (problemEl) { problemEl.classList.add('pulse-correct'); setTimeout(()=>problemEl.classList.remove('pulse-correct'), 950); }
     if (window.correctSound) window.correctSound.play();
     setTimeout(() => {
-      feedback.textContent = '';
       // Auto-clear work area if enabled (before new problem is shown)
       console.log('🎯 CORRECT ANSWER (checkAnswer) - calling autoStageWork() for single player (synchronized)');
       autoStageWork();
@@ -864,10 +1698,9 @@ function checkAnswer() {
       setTimeout(() => {
         showProblem();
       }, 50);
-    }, 800);
+    }, popupMs || 800);
   } else {
-    feedback.textContent = 'Oops! Try again.';
-    feedback.style.color = '#ff4e50';
+    const popupMs = showFeedbackPopup(feedback, 'Oops! Try again.', '#ff4e50', { visibleMs: 620, fadeOutMs: 460 });
     const spCanvas = document.getElementById('handwriting-canvas');
     if (spCanvas) { 
       spCanvas.classList.remove('drawing', 'processing'); 
@@ -878,9 +1711,8 @@ function checkAnswer() {
     if (problemEl) { problemEl.classList.add('pulse-wrong'); setTimeout(()=>problemEl.classList.remove('pulse-wrong'), 950); }
     if (window.wrongSound) window.wrongSound.play();
     setTimeout(() => {
-      feedback.textContent = '';
       showProblem();
-    }, 800);
+    }, popupMs || 800);
   }
 }
 
@@ -904,7 +1736,7 @@ confirmYesBtn.addEventListener('click', () => {
   if (userAnswer === currentProblem.answer) {
     gameState.score++;
     scoreboard.textContent = gameState.score;
-    animateFeedback('correct');
+    const popupMs = animateFeedback('correct');
     // pulse canvas and problem
     const spCanvas = document.getElementById('handwriting-canvas');
     if (spCanvas) { 
@@ -914,7 +1746,6 @@ confirmYesBtn.addEventListener('click', () => {
     }
     if (window.correctSound) window.correctSound.play();
     setTimeout(() => {
-      feedback.textContent = '';
       // Auto-clear work area if enabled (before new problem is shown)
       console.log('🎯 CORRECT ANSWER (predictModal) - calling autoStageWork() for single player (synchronized)');
       autoStageWork();
@@ -922,9 +1753,9 @@ confirmYesBtn.addEventListener('click', () => {
       setTimeout(() => {
         showProblem();
       }, 50);
-    }, 800);
+    }, popupMs || 800);
   } else {
-    animateFeedback('wrong');
+    const popupMs = animateFeedback('wrong');
     // pulse canvas for wrong answer
     const spCanvas = document.getElementById('handwriting-canvas');
     if (spCanvas) { 
@@ -934,16 +1765,14 @@ confirmYesBtn.addEventListener('click', () => {
     }
     if (window.wrongSound) window.wrongSound.play();
     setTimeout(() => {
-      feedback.textContent = '';
       showProblem();
-    }, 800);
+    }, popupMs || 800);
   }
 });
 
 confirmNoBtn.addEventListener('click', () => {
   hidePredictModal();
-  feedback.textContent = 'Try writing your answer again!';
-  feedback.style.color = '#fff';
+  showFeedbackPopup(feedback, 'Try writing your answer again!', '#fff', { visibleMs: 640, fadeOutMs: 420 });
 });
 
 function endGame() {
@@ -964,6 +1793,7 @@ function startGame() {
   usedProblems = new Set();
   scoreboard.textContent = '0';
   timer.textContent = gameState.timeLeft;
+  if (timerUnit) timerUnit.textContent = 's';
   feedback.textContent = '';
   
   // Reset to Answer tab
@@ -999,9 +1829,19 @@ function startGame() {
 function startVsGame(options = {}) {
   clearVsWinnerEffects();
   stopAiOpponent();
+  hideVsExitFooter();
+  const roundTimer = Number.isFinite(options.timerOverride)
+    ? clampLineupTimer(options.timerOverride)
+    : gameSettings.timer;
+  const isFirstTo = gameSettings.vsEndMode === 'first-to';
   // Reset state
   vsState.running = true;
-  vsState.timeLeft = gameSettings.timer;
+  vsState.endMode = isFirstTo ? 'first-to' : 'time';
+  const firstToSource = Number.isFinite(Number.parseInt(options.firstToOverride, 10))
+    ? options.firstToOverride
+    : gameSettings.firstToTarget;
+  vsState.firstToTarget = clampFirstToTarget(firstToSource);
+  vsState.timeLeft = isFirstTo ? vsState.firstToTarget : roundTimer;
   vsState.p1.score = 0; vsState.p2.score = 0;
   vsState.used1 = new Set(); vsState.used2 = new Set();
   vsState.aiProfile = options.aiProfile || null;
@@ -1020,8 +1860,7 @@ function startVsGame(options = {}) {
   p2.problemDiv.textContent = vsState.p2.problem.display;
   p1.scoreSpan.textContent = '0';
   p2.scoreSpan.textContent = '0';
-  p1.timerSpan.textContent = vsState.timeLeft;
-  p2.timerSpan.textContent = vsState.timeLeft;
+  updateVsHudByMode();
   // Clear canvases
   setupPlayerCanvas(p1, 'p1');
   setupPlayerCanvas(p2, 'p2');
@@ -1053,7 +1892,13 @@ function startVsGame(options = {}) {
   clearPlayerCanvas(p1);
   clearPlayerCanvas(p2);
   showScreen('vs');
-  startVsTimer();
+  scheduleVsCenterAlignment();
+  if (vsState.endMode === 'time') {
+    startVsTimer();
+  } else {
+    clearInterval(vsState.timerInterval);
+    updateVsHudByMode();
+  }
   if (vsState.isVsAi && vsState.aiProfile) {
     initAiOpponent(vsState.aiProfile);
   }
@@ -1069,19 +1914,20 @@ function uniqueProblem(setRef) {
 
 function startVsTimer() {
   clearInterval(vsState.timerInterval);
-  p1.timerSpan.textContent = vsState.timeLeft;
-  p2.timerSpan.textContent = vsState.timeLeft;
+  if (vsState.endMode !== 'time') {
+    updateVsHudByMode();
+    return;
+  }
+  updateVsHudByMode();
   vsState.timerInterval = setInterval(() => {
     vsState.timeLeft--;
     if (vsState.timeLeft <= 0) {
       vsState.timeLeft = 0;
-      p1.timerSpan.textContent = vsState.timeLeft;
-      p2.timerSpan.textContent = vsState.timeLeft;
+      updateVsHudByMode();
       endVsGame();
       return;
     }
-    p1.timerSpan.textContent = vsState.timeLeft;
-    p2.timerSpan.textContent = vsState.timeLeft;
+    updateVsHudByMode();
   }, 1000);
 }
 
@@ -1089,7 +1935,10 @@ function endVsGame(backToMenu = false) {
   clearInterval(vsState.timerInterval);
   vsState.running = false;
   stopAiOpponent();
+  hideVsExitFooter();
   if (backToMenu) {
+    resetLineupState();
+    restartBtn.textContent = 'Restart';
     fadeOutBackgroundMusic(600);
     showScreen('menu');
     return;
@@ -1106,6 +1955,36 @@ function endVsGame(backToMenu = false) {
       setTimeout(() => vsWinnerOverlay.classList.add('hidden'), 500); // Wait for fade out
     }
     
+    if (selectedPlayers === 'lineup' && lineupState.active) {
+      const currentAi = vsState.aiProfile ? vsState.aiProfile.name : 'AI';
+      if (winner === 'p1') {
+        lineupState.wins += 1;
+        lineupState.currentIndex += 1;
+
+        if (lineupState.currentIndex >= lineupState.order.length) {
+          lineupState.active = false;
+          lineupState.awaitingNext = false;
+          restartBtn.textContent = 'Restart';
+          showScreen('over');
+          finalScore.textContent = `🏆 King of The Hill Complete! You defeated all ${lineupState.order.length} AI opponents in a row.`;
+        } else {
+          const nextAi = aiProfiles[getCurrentLineupAiId()];
+          lineupState.awaitingNext = true;
+          restartBtn.textContent = 'Next Round';
+          showScreen('over');
+          finalScore.textContent = `Round cleared! ${currentAi} defeated. Next up: ${nextAi ? nextAi.name : 'Unknown'} (${lineupState.currentIndex + 1}/${lineupState.order.length}).`;
+        }
+      } else {
+        lineupState.active = false;
+        lineupState.awaitingNext = false;
+        restartBtn.textContent = 'Restart';
+        showScreen('over');
+        finalScore.textContent = `Challenge ended on ${currentAi}. Wins in a row: ${lineupState.wins}/${lineupState.order.length}.`;
+      }
+      return;
+    }
+
+    restartBtn.textContent = 'Restart';
     showScreen('over');
     const aiLabel = vsState.isVsAi && vsState.aiProfile ? `${vsState.aiProfile.name} Wins!` : 'Player 2 Wins!';
     const label = winner === 'tie' ? 'Tie!' : (winner === 'p1' ? 'Player 1 Wins!' : aiLabel);
@@ -1115,12 +1994,17 @@ function endVsGame(backToMenu = false) {
 
 function startVsAiGame() {
   const profile = selectedAiId ? aiProfiles[selectedAiId] : aiProfiles.tom;
-  startVsGame({ aiProfile: profile });
+  const vsOptions = { aiProfile: profile };
+  if (gameSettings.vsEndMode === 'first-to' && profile && profile.id) {
+    vsOptions.firstToOverride = getLineupFirstToForAi(profile.id);
+  }
+  startVsGame(vsOptions);
 }
 
 function stopAiOpponent() {
   aiState.active = false;
   aiState.busy = false;
+  aiState.openingPauseDone = false;
   if (aiState.thinkingTimer) {
     clearTimeout(aiState.thinkingTimer);
     aiState.thinkingTimer = null;
@@ -1131,14 +2015,22 @@ function initAiOpponent(profile) {
   aiState.active = true;
   aiState.profile = profile;
   aiState.busy = false;
-  scheduleAiTurn();
+  aiState.openingPauseDone = false;
+  queueAiTurnWithPause(
+    profile.openingPauseRange,
+    `${profile.name} is getting ready...`
+  );
 }
 
 function scheduleAiTurn() {
   if (!aiState.active || !vsState.running || !aiState.profile) return;
   const [minDelay, maxDelay] = aiState.profile.thinkRange;
   const delay = getRandomInt(minDelay, maxDelay);
-  if (p2.status) p2.status.textContent = `${aiState.profile.name} is thinking...`;
+  if (p2.status) {
+    const prefix = aiState.openingPauseDone ? '' : 'Focused • ';
+    p2.status.textContent = `${prefix}${aiState.profile.name} is thinking...`;
+  }
+  aiState.openingPauseDone = true;
   if (aiState.thinkingTimer) clearTimeout(aiState.thinkingTimer);
   aiState.thinkingTimer = setTimeout(() => {
     aiTakeTurn();
@@ -1211,6 +2103,33 @@ function jitterPoint(x, y, jitter, width, height) {
   };
 }
 
+function deriveAiHandwritingStyle(profile) {
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  const accuracy = clamp(Number(profile && profile.accuracy) || 0.7, 0.45, 0.99);
+  const neatness = clamp((accuracy - 0.45) / 0.54, 0, 1);
+
+  const baseJitter = Number(profile && profile.jitter);
+  const baseSmoothness = Number(profile && profile.smoothness);
+  const baseLineWidthJitter = Number(profile && profile.lineWidthJitter);
+  const basePlacementJitter = Number(profile && profile.placementJitter);
+
+  return {
+    neatness,
+    jitter: (Number.isFinite(baseJitter) ? baseJitter : lerp(0.22, 0.03, neatness)) * lerp(1.4, 0.46, neatness),
+    smoothness: (Number.isFinite(baseSmoothness) ? baseSmoothness : lerp(0.84, 1.7, neatness)) * lerp(0.85, 1.26, neatness),
+    lineWidthJitter: (Number.isFinite(baseLineWidthJitter) ? baseLineWidthJitter : lerp(0.2, 0.03, neatness)) * lerp(1.5, 0.42, neatness),
+    placementJitter: (Number.isFinite(basePlacementJitter) ? basePlacementJitter : lerp(0.16, 0.02, neatness)) * lerp(1.35, 0.38, neatness),
+    baselineJitter: lerp(0.12, 0.025, neatness),
+    slantBase: lerp(-0.045, 0.07, neatness),
+    slantVariance: lerp(0.16, 0.035, neatness),
+    strokePressure: lerp(0.1, 0.3, neatness),
+    segmentStepBias: lerp(1.18, 0.82, neatness),
+    strokeDelayScale: lerp(1.07, 0.91, neatness)
+  };
+}
+
 async function drawAiHandwriting(answerStr, profile) {
   if (!p2.canvas || !profile) return;
   const canvas = p2.canvas;
@@ -1226,9 +2145,15 @@ async function drawAiHandwriting(answerStr, profile) {
   const startX = (width - (digitWidth * digitCount + spacing * (digitCount - 1))) / 2;
   const startY = height * 0.2;
 
-  const smoothness = profile.smoothness || 1;
-  const placementJitter = profile.placementJitter || 0;
-  const lineWidthJitter = profile.lineWidthJitter || 0;
+  const style = deriveAiHandwritingStyle(profile);
+  const smoothness = style.smoothness || 1;
+  const placementJitter = style.placementJitter || 0;
+  const lineWidthJitter = style.lineWidthJitter || 0;
+  const speed = Math.max(25, Math.min(100, Number(profile && profile.speed) || 60));
+  const speedNorm = (speed - 25) / 75;
+  const speedBoost = 1.24 - speedNorm * 0.55;
+  const paceFactor = Number(profile && profile.handwritingPaceFactor) || 1;
+  const effectiveStrokeDelay = Math.max(2, Math.round((profile.strokeDelay || 10) * style.strokeDelayScale * speedBoost * paceFactor));
   const baseLineWidth = Math.max(3, Math.round(7 * (width / 480)));
 
   ctx.lineCap = 'round';
@@ -1241,30 +2166,40 @@ async function drawAiHandwriting(answerStr, profile) {
     const digit = answerStr[i];
     const strokes = aiDigitStrokes[digit] || aiDigitStrokes['0'];
     const offsetX = (Math.random() - 0.5) * placementJitter * digitWidth * 2;
-    const offsetY = (Math.random() - 0.5) * placementJitter * digitHeight * 2;
+    const offsetY = ((Math.random() - 0.5) * placementJitter + (Math.random() - 0.5) * style.baselineJitter) * digitHeight * 2;
     const baseX = startX + i * (digitWidth + spacing) + offsetX;
     const baseY = startY + offsetY;
+    const slant = style.slantBase + (Math.random() - 0.5) * style.slantVariance;
+    const slantTan = Math.tan(slant);
 
     for (const stroke of strokes) {
       if (!aiState.active || !vsState.running) return;
       let lastPoint = null;
       ctx.lineWidth = Math.max(2, baseLineWidth * (1 + (Math.random() - 0.5) * lineWidthJitter * 2));
-      for (const point of stroke) {
-        const rawX = baseX + point[0] * digitWidth;
-        const rawY = baseY + point[1] * digitHeight;
-        const jittered = jitterPoint(rawX, rawY, profile.jitter, digitWidth, digitHeight);
+      const strokeLen = Math.max(1, stroke.length - 1);
+      for (let pointIndex = 0; pointIndex < stroke.length; pointIndex++) {
+        const point = stroke[pointIndex];
+        const centeredX = (point[0] - 0.5) * digitWidth;
+        const centeredY = (point[1] - 0.5) * digitHeight;
+        const rawX = baseX + digitWidth * 0.5 + centeredX + centeredY * slantTan;
+        const rawY = baseY + digitHeight * 0.5 + centeredY;
+        const jittered = jitterPoint(rawX, rawY, style.jitter, digitWidth, digitHeight);
 
         if (lastPoint) {
           const dx = jittered.x - lastPoint.x;
           const dy = jittered.y - lastPoint.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const stepSize = 6 / smoothness;
+          const stepSize = Math.max(1.8, (6 / smoothness) * style.segmentStepBias);
           const steps = Math.max(3, Math.ceil(dist / stepSize));
           for (let s = 1; s <= steps; s++) {
             if (!aiState.active || !vsState.running) return;
             const t = s / steps;
             const x = lastPoint.x + dx * t;
             const y = lastPoint.y + dy * t;
+            const strokeProgress = (pointIndex - 1 + t) / strokeLen;
+            const pressure = 0.92 + Math.sin(strokeProgress * Math.PI) * style.strokePressure;
+            const widthVariance = 1 + (Math.random() - 0.5) * lineWidthJitter;
+            ctx.lineWidth = Math.max(2, baseLineWidth * pressure * widthVariance);
             ctx.beginPath();
             ctx.moveTo(lastPoint.x, lastPoint.y);
             ctx.lineTo(x, y);
@@ -1272,9 +2207,10 @@ async function drawAiHandwriting(answerStr, profile) {
             ctx.beginPath();
             ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2);
             ctx.fill();
-            await new Promise(resolve => setTimeout(resolve, profile.strokeDelay));
+            await new Promise(resolve => setTimeout(resolve, effectiveStrokeDelay));
           }
         } else {
+          ctx.lineWidth = Math.max(2, baseLineWidth * (0.9 + Math.random() * 0.18));
           ctx.beginPath();
           ctx.arc(jittered.x, jittered.y, ctx.lineWidth / 2, 0, Math.PI * 2);
           ctx.fill();
@@ -1307,19 +2243,25 @@ async function aiTakeTurn() {
   if (correct) {
     vsState.p2.score++;
     p2.scoreSpan.textContent = vsState.p2.score;
+    updateVsHudByMode();
+    var aiPopupMs = 0;
     if (p2.feedback) {
-      p2.feedback.textContent = `${profile.name} got it!`; 
-      p2.feedback.style.color = '#4caf50';
+      aiPopupMs = showFeedbackPopup(p2.feedback, `${profile.name} got it!`, '#4caf50', { visibleMs: 540, fadeOutMs: 420 });
     }
     if (p2.canvas) {
       p2.canvas.classList.add('pulse-correct');
       setTimeout(() => p2.canvas.classList.remove('pulse-correct'), 950);
     }
     autoStageWork(p2);
+
+    if (checkFirstToWinnerAndEnd()) {
+      aiState.busy = false;
+      return;
+    }
   } else {
+    var aiPopupMs = 0;
     if (p2.feedback) {
-      p2.feedback.textContent = `${profile.name} wrote ${answerStr}`;
-      p2.feedback.style.color = '#ff4e50';
+      aiPopupMs = showFeedbackPopup(p2.feedback, `${profile.name} wrote ${answerStr}`, '#ff4e50', { visibleMs: 580, fadeOutMs: 440 });
     }
     if (p2.canvas) {
       p2.canvas.classList.add('pulse-wrong');
@@ -1330,16 +2272,24 @@ async function aiTakeTurn() {
   const wasCorrect = correct;
   setTimeout(() => {
     if (!vsState.running || !aiState.active) return;
-    if (p2.feedback) p2.feedback.textContent = '';
     if (wasCorrect) {
       vsState.p2.problem = uniqueProblem(vsState.used2);
       p2.problemDiv.textContent = vsState.p2.problem.display;
     }
     clearPlayerCanvas(p2);
-    if (p2.status) p2.status.textContent = `${profile.name} is thinking...`;
     aiState.busy = false;
-    scheduleAiTurn();
-  }, 650);
+    if (wasCorrect) {
+      queueAiTurnWithPause(
+        profile.problemPauseRange,
+        `${profile.name} is reading the next problem...`
+      );
+    } else {
+      queueAiTurnWithPause(
+        profile.regroupPauseRange,
+        `${profile.name} is rechecking...`
+      );
+    }
+  }, aiPopupMs || 760);
 }
 
 function clearVsWinnerEffects() {
@@ -1754,16 +2704,32 @@ function setupPlayerCanvas(player, id) {
       if (correct) {
         if (player===p1) { vsState.p1.score++; p1.scoreSpan.textContent = vsState.p1.score; }
         else { vsState.p2.score++; p2.scoreSpan.textContent = vsState.p2.score; }
-        if (player.feedback){ player.feedback.textContent='Correct! 🎉'; player.feedback.style.color='#4caf50'; }
+        updateVsHudByMode();
+        if (player.feedback) {
+          showFeedbackPopup(player.feedback, 'Correct! 🎉', '#4caf50', { visibleMs: 540, fadeOutMs: 420 });
+        }
         // pulse that player's canvas and problem
         if (player.canvas) { player.canvas.classList.add('pulse-correct'); setTimeout(()=>player.canvas.classList.remove('pulse-correct'), 950); }
         // Auto-clear work area for the player who got it correct
         console.log('🎯 CORRECT ANSWER (VS mode) - calling autoStageWork() for player:', player === p1 ? 'Player 1' : 'Player 2');
         autoStageWork(player);
+
+        if (checkFirstToWinnerAndEnd()) {
+          clear();
+          return;
+        }
+
         if (player===p1){ vsState.p1.problem = uniqueProblem(vsState.used1); p1.problemDiv.textContent = vsState.p1.problem.display; }
         else { vsState.p2.problem = uniqueProblem(vsState.used2); p2.problemDiv.textContent = vsState.p2.problem.display; }
       } else {
-        if (player.feedback){ player.feedback.textContent= best? `Incorrect (${best})` : 'Unclear — try again'; player.feedback.style.color = best? '#ff4e50' : '#fff'; }
+        if (player.feedback) {
+          showFeedbackPopup(
+            player.feedback,
+            best ? `Incorrect (${best})` : 'Unclear — try again',
+            best ? '#ff4e50' : '#fff',
+            { visibleMs: 580, fadeOutMs: 440 }
+          );
+        }
         if (player.canvas) { player.canvas.classList.add('pulse-wrong'); setTimeout(()=>player.canvas.classList.remove('pulse-wrong'), 950); }
       }
       clear();
@@ -1989,8 +2955,7 @@ window.onAutoCorrect = (function() {
     solving = true;
     gameState.score++;
     scoreboard.textContent = gameState.score;
-    feedback.textContent = 'Auto! 🎉';
-    feedback.style.color = '#4caf50';
+    const popupMs = showFeedbackPopup(feedback, 'Auto! 🎉', '#4caf50', { visibleMs: 620, fadeOutMs: 460 });
     feedback.animate([
       { transform: 'scale(1)' },
       { transform: 'scale(1.2)' },
@@ -1998,7 +2963,6 @@ window.onAutoCorrect = (function() {
     ], { duration: 400 });
     if (window.correctSound) window.correctSound.play();
     setTimeout(() => {
-      feedback.textContent = '';
       // Auto-clear work area if enabled (before new problem is shown)
       console.log('🎯 CORRECT ANSWER (onAutoCorrect) - calling autoStageWork() for single player (synchronized)');
       autoStageWork();
@@ -2007,21 +2971,33 @@ window.onAutoCorrect = (function() {
         showProblem();
         solving = false;
       }, 50);
-    }, 800);
+    }, popupMs || 800);
   };
 })();
 
 // --- Initialization ---
 function init() {
+  setupFullscreenExperience();
+  setupVsExitIntentReveal();
   modeSelect.value = gameSettings.mode;
   difficultySelect.value = gameSettings.difficulty;
   showScreen('menu');
   timerSelect.value = gameSettings.timer;
+  if (vsEndModeSelect) vsEndModeSelect.value = gameSettings.vsEndMode;
+  if (firstToTargetInput) populateNumericSelect(firstToTargetInput, 5, 50);
+  gameSettings.firstToTarget = clampFirstToTarget(gameSettings.firstToTarget);
+  if (firstToTargetInput) firstToTargetInput.value = String(gameSettings.firstToTarget);
+  updateVsEndModeUi();
   musicToggle.checked = gameSettings.music;
   if (musicVolume) musicVolume.value = Math.round(gameSettings.musicVolume * 100);
+  if (autoClearToggleSettings) autoClearToggleSettings.checked = gameSettings.autoClearWork;
   // Default highlight Single Player
   selectedPlayers = 'single';
   updateModeButtons();
+  updateSetupActionsForMode();
+  updateAiCardStats();
+  syncLineupTimerInputs();
+  syncLineupFirstToInputs();
   registerBackgroundLoop();
   updateMusicVolume(gameSettings.musicVolume);
   playMenuMusic();
@@ -2035,13 +3011,29 @@ function init() {
       }
     }, { once: true });
   });
+
+  // Keep VS split center aligned to the physical viewport center.
+  window.addEventListener('resize', () => {
+    if (screens.vs && !screens.vs.classList.contains('hidden')) {
+      scheduleVsCenterAlignment();
+    }
+  });
+  window.addEventListener('orientationchange', () => {
+    if (screens.vs && !screens.vs.classList.contains('hidden')) {
+      scheduleVsCenterAlignment();
+    }
+  });
+  window.addEventListener('viewportUpdate', () => {
+    if (screens.vs && !screens.vs.classList.contains('hidden')) {
+      scheduleVsCenterAlignment();
+    }
+  });
 }
 
 // Test function for auto-clear (call from browser console)
 window.testAutoClear = function() {
   console.log('=== AUTO-CLEAR TEST ===');
-  console.log('Single player toggle:', document.getElementById('auto-clear-toggle-game'));
-  console.log('VS toggle:', document.getElementById('auto-clear-toggle-vs'));
+  console.log('Settings toggle:', document.getElementById('auto-clear-toggle-settings'));
   console.log('singlePlayerWorkClear:', singlePlayerWorkClear);
   console.log('p1.workClearFunc:', p1.workClearFunc);
   console.log('p2.workClearFunc:', p2.workClearFunc);
@@ -2061,18 +3053,18 @@ window.simulateCorrectAnswer = function() {
     console.log('Single player mode - simulating correct answer...');
     gameState.score++;
     scoreboard.textContent = gameState.score;
-    feedback.textContent = 'Correct! 🎉';
-    feedback.style.color = '#4caf50';
+    const popupMs = showFeedbackPopup(feedback, 'Correct! 🎉', '#4caf50', { visibleMs: 620, fadeOutMs: 460 });
     autoStageWork(); // This should trigger auto-clear if toggle is checked
     setTimeout(() => {
-      feedback.textContent = '';
       showProblem();
-    }, 800);
+    }, popupMs || 800);
   } else if (vsState.running) {
     console.log('VS mode - simulating p1 correct answer...');
     vsState.p1.score++;
     p1.scoreSpan.textContent = vsState.p1.score;
-    if (p1.feedback) { p1.feedback.textContent = 'Correct! 🎉'; p1.feedback.style.color = '#4caf50'; }
+    if (p1.feedback) {
+      showFeedbackPopup(p1.feedback, 'Correct! 🎉', '#4caf50', { visibleMs: 540, fadeOutMs: 420 });
+    }
     autoStageWork(p1); // This should trigger auto-clear for p1 if toggle is checked
     vsState.p1.problem = uniqueProblem(vsState.used1);
     p1.problemDiv.textContent = vsState.p1.problem.display;
@@ -2086,7 +3078,7 @@ window.testAutoClearDirect = function() {
   console.log('=== DIRECT AUTO-CLEAR TEST ===');
   
   // First check if toggle is checked
-  const toggle = document.getElementById('auto-clear-toggle-game');
+  const toggle = document.getElementById('auto-clear-toggle-settings');
   console.log('Toggle element:', toggle);
   console.log('Toggle checked:', toggle ? toggle.checked : 'Not found');
   
