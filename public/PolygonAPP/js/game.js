@@ -50,6 +50,8 @@ class Game {
         this.levels = []; // Loaded from levels.js
         this.baseLevels = [];
         this.levelOverrideStorageKey = 'polygonFunLevelOverridesV1';
+        this.hardcoreLevelStorageKey = 'polygonFunHardcoreLevelsV1';
+        this.officialLevelNamesStorageKey = 'polygonFunOfficialLevelNamesV1';
         this.devManager = new DevManager(this); // Initialize DevManager
     }
 
@@ -199,6 +201,23 @@ class Game {
             this.baseLevels.push(sanitized);
         });
 
+        // Preserve official shipped level names once so Hardcore Save can always
+        // restore naming back to original built-in labels.
+        const savedOfficialNames = this.getOfficialLevelNames();
+        if (!savedOfficialNames.length && this.baseLevels.length) {
+            this.saveOfficialLevelNames(this.baseLevels.map(level => level.name));
+        }
+
+        // Runtime "hardcore" baseline: if present and valid, it becomes the new
+        // built-in level data source across refresh/restart.
+        const hardcoreLevels = this.getHardcoreLevels(this.baseLevels.length);
+        if (hardcoreLevels && hardcoreLevels.length === this.baseLevels.length) {
+            console.info('[HardcoreSave] Loaded committed hardcore baseline levels.');
+            this.baseLevels = this.restoreOfficialLevelNames(hardcoreLevels);
+        } else {
+            this.baseLevels = this.restoreOfficialLevelNames(this.baseLevels);
+        }
+
         this.levels = this.applyLevelOverrides(this.baseLevels);
 
         // Refresh dev manager list if it exists
@@ -231,6 +250,46 @@ class Game {
             console.warn('Level override storage write failed:', error);
             return false;
         }
+    }
+
+    safeParseJSON(raw, label) {
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            console.warn(`Failed to parse ${label}`, error);
+            return null;
+        }
+    }
+
+    getOfficialLevelNames() {
+        const raw = this.storageGetItem(this.officialLevelNamesStorageKey);
+        if (!raw) return [];
+        const parsed = this.safeParseJSON(raw, 'official level names');
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map(name => (typeof name === 'string' ? name.trim() : ''))
+            .filter(Boolean);
+    }
+
+    saveOfficialLevelNames(names) {
+        const sanitized = Array.isArray(names)
+            ? names.map(name => (typeof name === 'string' ? name.trim() : '')).filter(Boolean)
+            : [];
+        if (!sanitized.length) return false;
+        return this.storageSetItem(this.officialLevelNamesStorageKey, JSON.stringify(sanitized));
+    }
+
+    restoreOfficialLevelNames(levels) {
+        const source = Array.isArray(levels) ? levels : [];
+        const officialNames = this.getOfficialLevelNames();
+        if (!officialNames.length) {
+            return source.map(level => ({ ...level }));
+        }
+        return source.map((level, index) => ({
+            ...level,
+            name: officialNames[index] || level.name
+        }));
     }
 
     normalizeStarThresholds(input) {
@@ -281,6 +340,155 @@ class Game {
             maxLines: Number.isFinite(maxLines) ? Math.max(1, Math.floor(maxLines)) : 3,
             starThresholds: this.normalizeStarThresholds(level.starThresholds)
         };
+    }
+
+    validateLevelCollection(levels, label = 'levels') {
+        const source = Array.isArray(levels) ? levels : [];
+        if (!source.length) {
+            return { ok: false, levels: [], error: `${label}: empty dataset.` };
+        }
+        const sanitized = [];
+        for (let i = 0; i < source.length; i++) {
+            const level = this.sanitizeLevel(source[i], i);
+            if (!level) {
+                return { ok: false, levels: [], error: `${label}: invalid level at index ${i}.` };
+            }
+            sanitized.push(level);
+        }
+        return { ok: true, levels: sanitized, error: '' };
+    }
+
+    getHardcorePayload() {
+        const raw = this.storageGetItem(this.hardcoreLevelStorageKey);
+        if (!raw) return null;
+        const parsed = this.safeParseJSON(raw, 'hardcore baseline levels');
+        if (!parsed) return null;
+        if (Array.isArray(parsed)) {
+            return { version: 1, savedAt: null, levels: parsed };
+        }
+        if (typeof parsed === 'object' && parsed && Array.isArray(parsed.levels)) {
+            return {
+                version: Number.isFinite(Number(parsed.version)) ? Number(parsed.version) : 1,
+                savedAt: Number.isFinite(Number(parsed.savedAt)) ? Number(parsed.savedAt) : null,
+                levels: parsed.levels
+            };
+        }
+        return null;
+    }
+
+    getHardcoreLevels(expectedCount = null) {
+        const payload = this.getHardcorePayload();
+        if (!payload || !Array.isArray(payload.levels)) return null;
+        if (Number.isFinite(expectedCount) && payload.levels.length !== expectedCount) {
+            console.warn('[HardcoreSave] Ignoring committed baseline due to level count mismatch.', {
+                expected: expectedCount,
+                actual: payload.levels.length
+            });
+            return null;
+        }
+        const validation = this.validateLevelCollection(payload.levels, 'hardcore baseline');
+        if (!validation.ok) {
+            console.warn('[HardcoreSave] Ignoring invalid committed baseline:', validation.error);
+            return null;
+        }
+        return validation.levels;
+    }
+
+    saveHardcoreLevels(levels) {
+        const payload = {
+            version: 1,
+            savedAt: Date.now(),
+            levels
+        };
+        return this.storageSetItem(this.hardcoreLevelStorageKey, JSON.stringify(payload));
+    }
+
+    buildHardcoreSnapshotFromCurrentLevels() {
+        const source = Array.isArray(this.levels) ? this.levels : [];
+        if (!source.length) return null;
+
+        const officialNames = this.getOfficialLevelNames();
+        const snapshot = source.map((level, index) => {
+            const sanitized = this.sanitizeLevel(level, index);
+            if (!sanitized) return null;
+            if (officialNames[index]) {
+                sanitized.name = officialNames[index];
+            }
+            return sanitized;
+        });
+
+        if (snapshot.some(level => !level)) return null;
+        return snapshot;
+    }
+
+    commitHardcoreLevelsFromCurrentConfig() {
+        const expectedLevelCount = Array.isArray(this.baseLevels) ? this.baseLevels.length : 0;
+        console.groupCollapsed('[HardcoreSave] Commit started');
+        try {
+            const snapshot = this.buildHardcoreSnapshotFromCurrentLevels();
+            const precheck = this.validateLevelCollection(snapshot, 'pre-commit snapshot');
+            if (!precheck.ok) {
+                console.error('[HardcoreSave] Pre-commit validation failed:', precheck.error);
+                return { ok: false, error: precheck.error };
+            }
+            if (expectedLevelCount > 0 && precheck.levels.length !== expectedLevelCount) {
+                const countError = `Level count mismatch: expected ${expectedLevelCount}, got ${precheck.levels.length}.`;
+                console.error('[HardcoreSave] Pre-commit validation failed:', countError);
+                return { ok: false, error: countError };
+            }
+
+            console.info('[HardcoreSave] Pre-commit validation passed.', {
+                levels: precheck.levels.length
+            });
+
+            const writeOk = this.saveHardcoreLevels(precheck.levels);
+            if (!writeOk) {
+                console.error('[HardcoreSave] Failed to write committed baseline to storage.');
+                return { ok: false, error: 'Storage write failed while saving hardcore baseline.' };
+            }
+
+            const readback = this.getHardcoreLevels(precheck.levels.length);
+            const postcheck = this.validateLevelCollection(readback, 'post-commit readback');
+            if (!postcheck.ok) {
+                console.error('[HardcoreSave] Post-commit validation failed:', postcheck.error);
+                return { ok: false, error: postcheck.error };
+            }
+
+            // Clear temporary overrides so the UI no longer labels levels as custom.
+            if (!this.saveLevelOverrides({})) {
+                console.error('[HardcoreSave] Failed to clear temporary override storage.');
+                return { ok: false, error: 'Committed baseline saved, but failed to clear temporary overrides.' };
+            }
+
+            this.baseLevels = this.restoreOfficialLevelNames(postcheck.levels);
+            this.refreshLevelsFromOverrides();
+
+            // Post-commit gameplay verification hook: reload current stage definition.
+            if (this.currentMode && typeof this.currentMode.loadLevel === 'function') {
+                const currentIndex = Number(this.currentMode.currentLevelIndex);
+                const safeIndex = Number.isFinite(currentIndex)
+                    ? Math.max(0, Math.min(this.levels.length - 1, currentIndex))
+                    : 0;
+                this.currentMode.loadLevel(safeIndex);
+                console.info('[HardcoreSave] Reloaded current stage after commit for integrity check.', {
+                    stage: safeIndex + 1
+                });
+            }
+
+            if (this.devManager && this.devManager.panel) {
+                this.devManager.populateList();
+            }
+
+            console.info('[HardcoreSave] Commit completed successfully.', {
+                levels: this.baseLevels.length
+            });
+            return { ok: true, levelsCommitted: this.baseLevels.length };
+        } catch (error) {
+            console.error('[HardcoreSave] Commit failed with unexpected error:', error);
+            return { ok: false, error: error?.message || 'Unknown Hardcore Save error.' };
+        } finally {
+            console.groupEnd();
+        }
     }
 
     getLevelOverrides() {
@@ -2712,47 +2920,64 @@ class BeginnerMode {
         const rawPieces = this.app.polygons.filter(p => p.visible);
         const rawTotalArea = rawPieces.reduce((sum, poly) => sum + Math.abs(Geometry.getArea(poly.vertices)), 0);
 
-        const pieces = rawPieces.filter(p => {
-            const area = Math.abs(Geometry.getArea(p.vertices));
-            return area > (rawTotalArea * 0.005);
-        });
+        // Sanitize each piece first so grading isn't affected by micro-edges/invalid rings.
+        const pieceCandidates = rawPieces
+            .map(p => {
+                const cleanVertices = Geometry.sanitizePolygon(p.vertices, {
+                    minAbsArea: 1e-8,
+                    collinearEps: 1e-6
+                });
+                if (!cleanVertices || cleanVertices.length < 3) return null;
+                const area = Math.abs(Geometry.getArea(cleanVertices));
+                if (!(area > 0)) return null;
+                return {
+                    ...p,
+                    vertices: cleanVertices,
+                    __area: area
+                };
+            })
+            .filter(Boolean);
 
-        const totalArea = rawTotalArea;
+        const candidateAreaTotal = pieceCandidates.reduce((sum, p) => sum + p.__area, 0);
+        const minMeaningfulArea = candidateAreaTotal * 0.005; // Ignore tiny sliver artifacts.
+        const pieces = pieceCandidates
+            .filter(p => p.__area > minMeaningfulArea)
+            .map(({ __area, ...piece }) => piece);
+
+        // Use the sanitized, meaningful pieces total so displayed percentages align with grading.
+        const pieceAreas = pieceCandidates
+            .filter(p => p.__area > minMeaningfulArea)
+            .map(p => p.__area);
+        const totalArea = pieceAreas.reduce((sum, area) => sum + area, 0);
         const targetArea = totalArea / this.targetPieces;
-        const pieceAreas = pieces.map(p => Math.abs(Geometry.getArea(p.vertices)));
-        const piecePercents = totalArea > 0
+        const rawPercents = totalArea > 0
             ? pieceAreas.map(a => (a / totalArea) * 100)
             : pieceAreas.map(() => 0);
-        const pieceErrors = targetArea > 0
-            ? pieceAreas.map(a => Math.abs(a - targetArea) / targetArea)
-            : pieceAreas.map(() => 1);
-
-        const maxError = pieceErrors.length > 0 ? Math.max(...pieceErrors) : 1;
+        const piecePercents = normalizePercentagesToHundred(rawPercents, 1);
+        const maxArea = pieceAreas.length > 0 ? Math.max(...pieceAreas) : 0;
+        const minArea = pieceAreas.length > 0 ? Math.min(...pieceAreas) : 0;
+        const maxPercentRaw = rawPercents.length ? Math.max(...rawPercents) : 0;
+        const minPercentRaw = rawPercents.length ? Math.min(...rawPercents) : 0;
+        // Differential rule: use the percentage-point gap between
+        // largest and smallest pieces (e.g. 17.5% - 15.8% = 1.7%).
+        const differentialPercent = Math.max(0, maxPercentRaw - minPercentRaw);
+        const differentialRatio = differentialPercent / 100;
+        // Keep maxError for backwards compatibility with existing result consumers.
+        const maxError = differentialRatio;
         const cutLimitExceeded = this.linesUsed > this.maxLines;
         const wrongPieceCount = pieces.length !== this.targetPieces;
-
-        let allSimilar = false;
-        if (!wrongPieceCount && pieces.length > 1) {
-            const first = pieces[0].vertices;
-            allSimilar = pieces.slice(1).every(p => Geometry.isGeometricallySimilar(first, p.vertices, 0.05));
-        }
+        const thresholds = this.game.getLevelStarThresholds(this.levelData);
 
         let coins = 0;
         let isPerfectSymmetry = false;
 
         if (!cutLimitExceeded && !wrongPieceCount) {
-            const thresholds = this.game.getLevelStarThresholds(this.levelData);
-            if (maxError <= thresholds.three) {
+            if (differentialRatio <= thresholds.three) {
                 coins = 3;
-            } else if (maxError <= thresholds.two) {
+            } else if (differentialRatio <= thresholds.two) {
                 coins = 2;
-            } else if (maxError <= thresholds.one) {
+            } else if (differentialRatio <= thresholds.one) {
                 coins = 1;
-            }
-
-            if (allSimilar && coins >= 2) {
-                coins = 3;
-                isPerfectSymmetry = true;
             }
         }
 
@@ -2762,11 +2987,24 @@ class BeginnerMode {
         } else if (wrongPieceCount) {
             failureReason = `Needed ${this.targetPieces} pieces, but you created ${pieces.length}.`;
         } else if (coins === 0) {
-            failureReason = 'Pieces are too uneven in area.';
+            const maxPercent = piecePercents.length ? Math.max(...piecePercents) : 0;
+            const minPercent = piecePercents.length ? Math.min(...piecePercents) : 0;
+            failureReason = Number.isFinite(differentialPercent)
+                ? `Largest piece is ${maxPercent.toFixed(1)}% and smallest is ${minPercent.toFixed(1)}% (gap ${differentialPercent.toFixed(2)}%), exceeding the 1★ limit of ${(thresholds.one * 100).toFixed(2)}%.`
+                : 'Pieces are too uneven in area.';
         }
 
         return {
-            pieces, piecePercents, coins, maxError, cutLimitExceeded, wrongPieceCount, failureReason, isPerfectSymmetry
+            pieces,
+            piecePercents,
+            coins,
+            maxError,
+            differentialRatio,
+            differentialPercent,
+            cutLimitExceeded,
+            wrongPieceCount,
+            failureReason,
+            isPerfectSymmetry
         };
     }
 
@@ -2858,7 +3096,69 @@ class BeginnerMode {
 
         if (list) {
             list.innerHTML = '';
-            list.style.display = 'none';
+            if (isVictory) {
+                const thresholds = this.game.getLevelStarThresholds(this.levelData);
+                const piecePercents = Array.isArray(result.piecePercents) ? result.piecePercents : [];
+                const diffPctRaw = Number(result.differentialPercent);
+                const diffPct = Number.isFinite(diffPctRaw) ? diffPctRaw : 0;
+                const tThree = (thresholds.three || 0) * 100;
+                const tTwo = (thresholds.two || 0) * 100;
+                const tOne = (thresholds.one || 0) * 100;
+
+                const didPassThree = diffPct <= tThree;
+                const didPassTwo = diffPct <= tTwo;
+                const didPassOne = diffPct <= tOne;
+                const achievedStars = Math.max(0, Math.min(3, Number(result.coins) || 0));
+                const achievedLabel = `${achievedStars}★`;
+
+                const piecesHtml = piecePercents.length
+                    ? piecePercents
+                        .map((p, idx) => {
+                            const safe = Number.isFinite(Number(p)) ? Number(p).toFixed(1) : '0.0';
+                            return `<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-weight:700;font-size:12px;">P${idx + 1}: ${safe}%</span>`;
+                        })
+                        .join('')
+                    : '<span style="color:#64748b;font-size:12px;">No piece percentages detected.</span>';
+
+                const starRuleRow = (label, limit, passed) => {
+                    const tone = passed ? '#15803d' : '#b91c1c';
+                    const bg = passed ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.10)';
+                    const icon = passed ? '✓' : '✕';
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;background:${bg};font-size:12px;">
+                        <span style="font-weight:700;color:#334155;">${label}</span>
+                        <span style="font-weight:700;color:${tone};">${icon} ≤ ${limit.toFixed(2)}%</span>
+                    </div>`;
+                };
+
+                list.innerHTML = `
+                    <div style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;flex-direction:column;gap:10px;">
+                        <div style="font-weight:800;color:#0f172a;font-size:14px;">Score Breakdown</div>
+
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            ${piecesHtml}
+                        </div>
+
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#ffffff;border:1px solid #e2e8f0;">
+                            <span style="font-size:12px;color:#475569;font-weight:700;">Differential</span>
+                            <span style="font-size:13px;color:#0f172a;font-weight:800;">${diffPct.toFixed(2)}%</span>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            ${starRuleRow('3★ Rating', tThree, didPassThree)}
+                            ${starRuleRow('2★ Rating', tTwo, didPassTwo)}
+                            ${starRuleRow('1★ Rating', tOne, didPassOne)}
+                        </div>
+
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;">
+                            <span style="font-size:12px;color:#9a3412;font-weight:700;">Achieved</span>
+                            <span style="font-size:13px;color:#7c2d12;font-weight:900;">${achievedLabel}</span>
+                        </div>
+                    </div>
+                `;
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
         }
 
         if (nextBtn) {
@@ -2946,7 +3246,8 @@ class BeginnerMode {
                 ctx.textBaseline = 'middle';
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
                 ctx.lineWidth = 3 / scale;
-                const text = `${Math.round(percents[index])}%`;
+                const p = Number(percents[index]);
+                const text = Number.isFinite(p) ? `${p.toFixed(1)}%` : '0.0%';
                 ctx.strokeText(text, center.x, center.y);
                 ctx.fillText(text, center.x, center.y);
                 ctx.restore();
@@ -3000,7 +3301,7 @@ class DevManager {
             solverPreviewLines: [],
             isSolving: false,
             solveRunId: 0,
-            gridSize: 24,
+            gridSize: 20,
             gridLock: true,
             drawingLineStart: null,
             draggingVertexIndex: -1,
@@ -3022,13 +3323,52 @@ class DevManager {
             targetPieces: 4,
             maxLines: 3,
             starPercent: { one: 18, two: 12, three: 6 },
-            zoomLevelDefault: 0.82,
-            zoomLevel: 0.82,
+            zoomLevelDefault: 1,
+            zoomLevel: 1,
             minZoomLevel: 0.6,
             maxZoomLevel: 2.4,
             zoomStep: 0.15,
             drawBoundary: null,
             boundaryPadding: 36
+        };
+    }
+
+    getGameplayGridSize() {
+        const appGrid = Number(this.game?.app?.gridSize);
+        return Math.max(8, Number.isFinite(appGrid) ? appGrid : 20);
+    }
+
+    getGameplayViewportAspect() {
+        const canvas = this.game?.app?.canvas;
+        if (canvas && typeof canvas.getBoundingClientRect === 'function') {
+            const rect = canvas.getBoundingClientRect();
+            const w = Math.max(1, Number(rect.width) || 1);
+            const h = Math.max(1, Number(rect.height) || 1);
+            return w / h;
+        }
+        return 16 / 9;
+    }
+
+    getCreatorGameplayViewportScreenRect(width, height) {
+        const w = Math.max(1, Number(width) || 1);
+        const h = Math.max(1, Number(height) || 1);
+        const aspect = Math.max(0.1, this.getGameplayViewportAspect());
+        const outerPad = 16;
+        const maxW = Math.max(1, w - outerPad * 2);
+        const maxH = Math.max(1, h - outerPad * 2);
+
+        let rectW = maxW;
+        let rectH = rectW / aspect;
+        if (rectH > maxH) {
+            rectH = maxH;
+            rectW = rectH * aspect;
+        }
+
+        return {
+            x: (w - rectW) / 2,
+            y: (h - rectH) / 2,
+            width: rectW,
+            height: rectH
         };
     }
 
@@ -3292,7 +3632,8 @@ class DevManager {
             this.createPanel();
         }
         this.populateList();
-        this.hydrateCreatorFromCurrentLevel();
+        // Always open with Stage 1 as the baseline reference shape.
+        this.hydrateCreatorFromCurrentLevel(true, 0);
         this.resetCreatorInteractionState();
         this.creatorState.zoomLevel = this.clampValue(
             Number(this.creatorState.zoomLevelDefault) || 0.82,
@@ -3337,10 +3678,11 @@ class DevManager {
             <div class="dev-top-row">
                 <h3 style="margin:0; font-size:19px; color:#38bdf8; white-space:nowrap;">Dev Manager</h3>
                 <div class="dev-top-actions">
+                    <button data-dev-action="standard-polygons" type="button">Standard Polygons</button>
                     <button data-dev-action="random-polygon" type="button">Random Polygon</button>
                     <button data-dev-action="toggle-draw-custom" id="devDrawCustomBtn" type="button">Draw Custom</button>
                     <button data-dev-action="clear-all" type="button">Clear</button>
-                    <button data-dev-action="add-to-level" type="button" class="accent">Add to Level</button>
+                    <button data-dev-action="hardcore-save" type="button" class="accent">Hardcore Save</button>
                     <button data-dev-action="open-debug-console" type="button">Debug Console</button>
                 </div>
                 <button id="devCloseBtn" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:20px;">×</button>
@@ -3464,8 +3806,8 @@ class DevManager {
             #devManagerPanel ::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
             #devManagerPanel .dev-header{ padding:12px 14px; border-bottom:1px solid #334155; }
             #devManagerPanel .dev-top-row{ display:flex; align-items:center; gap:10px; }
-            #devManagerPanel .dev-top-actions{ flex:1; min-width:0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
-            #devManagerPanel .dev-top-actions button{ width:100%; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            #devManagerPanel .dev-top-actions{ flex:1; min-width:0; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; }
+            #devManagerPanel .dev-top-actions button{ width:100%; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:7px 2px; font-size:11px; }
             #devManagerPanel .dev-body{ display:grid; grid-template-columns:340px 1fr; min-height:0; flex:1; }
             #devManagerPanel .dev-left{ border-right:1px solid #334155; padding:12px; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
             #devManagerPanel .dev-left-title-row{ display:flex; align-items:center; justify-content:space-between; }
@@ -3476,7 +3818,7 @@ class DevManager {
             #devManagerPanel .dev-top-actions button,
             #devManagerPanel .lc-btn-grid button,
             #devManagerPanel .lc-inline button{ background:#1e293b; border:1px solid #334155; color:#dbeafe; border-radius:8px; padding:7px 10px; cursor:pointer; font-weight:600; font-size:12px; }
-            #devManagerPanel .dev-top-actions button{ background:#6d59b8; border-color:#8d78de; color:#f8f4ff; }
+            #devManagerPanel .dev-top-actions button{ background:#6d59b8; border-color:#8d78de; color:#f8f4ff; padding:7px 2px; font-size:11px; }
             #devManagerPanel .dev-top-actions button:hover{ background:#7c67c9; border-color:#a18cf0; }
             #devManagerPanel .dev-top-actions button:active{ background:#5d4ca4; }
             #devManagerPanel .lc-btn-grid button.accent,
@@ -3762,11 +4104,12 @@ class DevManager {
             btn.addEventListener('click', async () => {
                 const action = btn.dataset.devAction;
                 if (action === 'random-polygon') this.createRandomShape();
+                if (action === 'standard-polygons') this.openStandardPolygonsModal();
                 if (action === 'regen-seed') this.createRandomShape(false);
                 if (action === 'clear-all') this.clearCreator();
                 if (action === 'toggle-draw-custom') this.toggleDrawCustomMode();
                 if (action === 'solve-creator') this.solveToTarget();
-                if (action === 'add-to-level') this.openAddToLevelModal();
+                if (action === 'hardcore-save') this.runHardcoreSaveFlow();
                 if (action === 'open-debug-console') this.openDebugConsoleModal();
             });
         });
@@ -3912,6 +4255,127 @@ class DevManager {
         }
     }
 
+    openStandardPolygonsModal() {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:12000;display:flex;align-items:center;justify-content:center;';
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:12px;padding:20px;width:min(800px, 90vw);max-height:80vh;display:flex;flex-direction:column;gap:16px;';
+            
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <h3 style="margin:0;font-size:18px;color:#38bdf8;">Standard Polygons</h3>
+                    <button data-act="close" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:24px;">&times;</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:16px;overflow-y:auto;padding-right:8px;" id="stdPolyGrid"></div>
+            `;
+
+            const shapes = [
+                { name: 'Triangle', vertices: 3 },
+                { name: 'Quadrilateral', vertices: 4 },
+                { name: 'Pentagon', vertices: 5 },
+                { name: 'Hexagon', vertices: 6 },
+                { name: 'Heptagon', vertices: 7 },
+                { name: 'Octagon', vertices: 8 },
+                { name: 'Nonagon', vertices: 9 },
+                { name: 'Decagon', vertices: 10 }
+            ];
+
+            const grid = card.querySelector('#stdPolyGrid');
+            
+            shapes.forEach(shape => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;transition:all 0.2s;';
+                item.onmouseenter = () => { item.style.background = '#334155'; item.style.borderColor = '#64748b'; };
+                item.onmouseleave = () => { item.style.background = '#1e293b'; item.style.borderColor = '#334155'; };
+                
+                const cvs = document.createElement('canvas');
+                cvs.width = 80;
+                cvs.height = 80;
+                const ctx = cvs.getContext('2d');
+                
+                const cx = 40;
+                const cy = 40;
+                const radius = 30;
+                
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < shape.vertices; i++) {
+                    const angle = (i * 2 * Math.PI / shape.vertices) - Math.PI / 2;
+                    const x = cx + radius * Math.cos(angle);
+                    const y = cy + radius * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+                ctx.fill();
+
+                const label = document.createElement('div');
+                label.textContent = shape.name;
+                label.style.fontSize = '12px';
+                label.style.textAlign = 'center';
+                
+                item.appendChild(cvs);
+                item.appendChild(label);
+                
+                item.onclick = () => {
+                    this.createStandardPolygon(shape.vertices);
+                    overlay.remove();
+                    resolve();
+                };
+                
+                grid.appendChild(item);
+            });
+
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+
+            const close = () => { overlay.remove(); resolve(); };
+            card.querySelector('[data-act="close"]').onclick = close;
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        });
+    }
+
+    createStandardPolygon(sides) {
+        if (this.solverState && this.solverState.running) this.stopSolver();
+        this.pushCreatorHistory(this.snapshotCreatorGeometry());
+
+        const cx = 0;
+        const cy = 0;
+        const radius = 120;
+        
+        const out = [];
+        for (let i = 0; i < sides; i++) {
+            const angle = (i * 2 * Math.PI / sides) - Math.PI / 2;
+            out.push({ 
+                x: cx + Math.cos(angle) * radius, 
+                y: cy + Math.sin(angle) * radius 
+            });
+        }
+
+        this.creatorState.vertices = out;
+        this.creatorState.vertexCount = sides;
+        this.creatorState.lines = [];
+        this.creatorState.drawCustomMode = false;
+        this.creatorState.customMouseWorld = null;
+        this.creatorState.customDrawError = '';
+        this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
+        
+        const vertsRange = this.panel ? this.panel.querySelector('#devVerticesRange') : null;
+        if (vertsRange) vertsRange.value = sides;
+        
+        this.creatorViewDirty = true;
+        this.syncCreatorControls();
+        this.syncCreatorControlText();
+        this.updateCreatorInfo();
+        this.renderCreatorCanvas();
+        this.updateCreatorUndoRedoButtons();
+    }
+
     syncCreatorControls() {
         if (!this.panel) return;
         const map = {
@@ -4008,8 +4472,13 @@ class DevManager {
 
     computeCreatorView(width, height) {
         const verts = this.creatorState.vertices || [];
+        const viewport = this.getCreatorGameplayViewportScreenRect(width, height);
         if (verts.length < 1) {
-            return { scale: 1, offsetX: 0, offsetY: 0 };
+            return {
+                scale: 1,
+                offsetX: viewport.x + viewport.width / 2,
+                offsetY: viewport.y + viewport.height / 2
+            };
         }
 
         let minX = Infinity;
@@ -4023,10 +4492,13 @@ class DevManager {
             maxY = Math.max(maxY, v.y);
         });
 
-        const boundsW = Math.max(1, maxX - minX);
-        const boundsH = Math.max(1, maxY - minY);
-        const pad = 40;
-        const fitScale = Math.min((width - pad * 2) / boundsW, (height - pad * 2) / boundsH);
+        const boundsW = Math.max(1e-6, maxX - minX);
+        const boundsH = Math.max(1e-6, maxY - minY);
+        // Match gameplay fit padding contract used by BeginnerMode.setupLevel -> fitViewToPolygon(..., 0.3)
+        const fitPadding = 0.3;
+        const availableW = Math.max(1, viewport.width * (1 - fitPadding * 2));
+        const availableH = Math.max(1, viewport.height * (1 - fitPadding * 2));
+        const fitScale = Math.min(availableW / boundsW, availableH / boundsH);
         const baseScale = Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1;
         const userZoom = this.clampValue(
             Number(this.creatorState.zoomLevel) || 1,
@@ -4039,8 +4511,8 @@ class DevManager {
         const centerY = (minY + maxY) / 2;
         return {
             scale,
-            offsetX: width / 2 - centerX * scale,
-            offsetY: height / 2 - centerY * scale
+            offsetX: viewport.x + viewport.width / 2 - centerX * scale,
+            offsetY: viewport.y + viewport.height / 2 - centerY * scale
         };
     }
 
@@ -4088,36 +4560,36 @@ class DevManager {
     }
 
     computeAndStoreCreatorBoundary(sourceVertices = this.creatorState.vertices) {
-        const g = Math.max(8, Number(this.creatorState.gridSize) || 24);
-        const pad = Math.max(24, Number(this.creatorState.boundaryPadding) || 36);
-        const canvasRect = this.creatorCanvas
-            ? this.creatorCanvas.getBoundingClientRect()
-            : { width: 820, height: 470 };
-
-        let boundary;
-        const bounds = this.getVerticesBounds(sourceVertices);
-        if (bounds && Number.isFinite(bounds.width) && Number.isFinite(bounds.height)) {
-            const side = Math.max(220, Math.max(bounds.width, bounds.height) + pad * 2);
-            const cx = (bounds.minX + bounds.maxX) / 2;
-            const cy = (bounds.minY + bounds.maxY) / 2;
-            boundary = {
-                x: cx - side / 2,
-                y: cy - side / 2,
-                size: side
-            };
-        } else {
-            const side = Math.max(220, Math.min(canvasRect.width, canvasRect.height) - 100);
-            boundary = {
-                x: (canvasRect.width - side) / 2,
-                y: (canvasRect.height - side) / 2,
-                size: side
-            };
+        if (!this.creatorCanvas) {
+            const fallback = { x: -180, y: -100, width: 360, height: 200 };
+            this.creatorState.drawBoundary = fallback;
+            return fallback;
         }
 
+        const size = this.syncCreatorCanvasSize() || { width: 820, height: 470 };
+        const viewport = this.getCreatorGameplayViewportScreenRect(size.width, size.height);
+        const topLeft = this.screenToWorldPoint(viewport.x, viewport.y);
+        const bottomRight = this.screenToWorldPoint(viewport.x + viewport.width, viewport.y + viewport.height);
+        const grid = this.getGameplayGridSize();
+
+        let boundary = {
+            x: Math.min(topLeft.x, bottomRight.x),
+            y: Math.min(topLeft.y, bottomRight.y),
+            width: Math.abs(bottomRight.x - topLeft.x),
+            height: Math.abs(bottomRight.y - topLeft.y)
+        };
+
         if (this.creatorState.gridLock) {
-            boundary.x = Math.round(boundary.x / g) * g;
-            boundary.y = Math.round(boundary.y / g) * g;
-            boundary.size = Math.max(g * 8, Math.round(boundary.size / g) * g);
+            const x1 = Math.round(boundary.x / grid) * grid;
+            const y1 = Math.round(boundary.y / grid) * grid;
+            const x2 = Math.round((boundary.x + boundary.width) / grid) * grid;
+            const y2 = Math.round((boundary.y + boundary.height) / grid) * grid;
+            boundary = {
+                x: Math.min(x1, x2),
+                y: Math.min(y1, y2),
+                width: Math.max(grid * 6, Math.abs(x2 - x1)),
+                height: Math.max(grid * 4, Math.abs(y2 - y1))
+            };
         }
 
         this.creatorState.drawBoundary = boundary;
@@ -4136,9 +4608,9 @@ class DevManager {
         if (!b || !point) return true;
         return (
             point.x >= b.x + margin &&
-            point.x <= b.x + b.size - margin &&
+            point.x <= b.x + b.width - margin &&
             point.y >= b.y + margin &&
-            point.y <= b.y + b.size - margin
+            point.y <= b.y + b.height - margin
         );
     }
 
@@ -4146,9 +4618,93 @@ class DevManager {
         const b = this.getCreatorBoundary();
         if (!b || !point) return point;
         return {
-            x: this.clampValue(point.x, b.x, b.x + b.size),
-            y: this.clampValue(point.y, b.y, b.y + b.size)
+            x: this.clampValue(point.x, b.x, b.x + b.width),
+            y: this.clampValue(point.y, b.y, b.y + b.height)
         };
+    }
+
+    clipPolygonToRect(vertices, rect) {
+        if (!Array.isArray(vertices) || vertices.length < 3 || !rect) return [];
+
+        const edges = [
+            {
+                inside: (p) => p.x >= rect.x,
+                intersect: (a, b) => {
+                    const dx = b.x - a.x;
+                    if (Math.abs(dx) < 1e-9) return { x: rect.x, y: a.y };
+                    const t = (rect.x - a.x) / dx;
+                    return { x: rect.x, y: a.y + (b.y - a.y) * t };
+                }
+            },
+            {
+                inside: (p) => p.x <= rect.x + rect.width,
+                intersect: (a, b) => {
+                    const xMax = rect.x + rect.width;
+                    const dx = b.x - a.x;
+                    if (Math.abs(dx) < 1e-9) return { x: xMax, y: a.y };
+                    const t = (xMax - a.x) / dx;
+                    return { x: xMax, y: a.y + (b.y - a.y) * t };
+                }
+            },
+            {
+                inside: (p) => p.y >= rect.y,
+                intersect: (a, b) => {
+                    const dy = b.y - a.y;
+                    if (Math.abs(dy) < 1e-9) return { x: a.x, y: rect.y };
+                    const t = (rect.y - a.y) / dy;
+                    return { x: a.x + (b.x - a.x) * t, y: rect.y };
+                }
+            },
+            {
+                inside: (p) => p.y <= rect.y + rect.height,
+                intersect: (a, b) => {
+                    const yMax = rect.y + rect.height;
+                    const dy = b.y - a.y;
+                    if (Math.abs(dy) < 1e-9) return { x: a.x, y: yMax };
+                    const t = (yMax - a.y) / dy;
+                    return { x: a.x + (b.x - a.x) * t, y: yMax };
+                }
+            }
+        ];
+
+        let output = vertices.map(v => ({ x: Number(v.x), y: Number(v.y) }));
+        for (const edge of edges) {
+            const input = output;
+            output = [];
+            if (!input.length) break;
+
+            let prev = input[input.length - 1];
+            for (const curr of input) {
+                const currInside = edge.inside(curr);
+                const prevInside = edge.inside(prev);
+
+                if (currInside) {
+                    if (!prevInside) output.push(edge.intersect(prev, curr));
+                    output.push(curr);
+                } else if (prevInside) {
+                    output.push(edge.intersect(prev, curr));
+                }
+                prev = curr;
+            }
+        }
+        return output;
+    }
+
+    getClippedCreatorVerticesForSave() {
+        const boundary = this.getCreatorBoundary();
+        const source = (this.creatorState.vertices || []).map(v => ({ x: v.x, y: v.y }));
+        if (!boundary || source.length < 3) return [];
+
+        const clipped = this.clipPolygonToRect(source, boundary);
+        if (!clipped || clipped.length < 3) return [];
+
+        const sanitized = (typeof Geometry !== 'undefined' && typeof Geometry.sanitizePolygon === 'function')
+            ? Geometry.sanitizePolygon(clipped, { minAbsArea: 1e-8, collinearEps: 1e-6 })
+            : clipped;
+
+        return Array.isArray(sanitized) && sanitized.length >= 3
+            ? sanitized.map(v => ({ x: Number(v.x), y: Number(v.y) }))
+            : [];
     }
 
     getTheoreticalMaxPiecesForLines(numLines) {
@@ -4441,11 +4997,8 @@ class DevManager {
     createRandomShape(incrementSeed = true) {
         this.stopSolver();
         this.pushCreatorHistory(this.snapshotCreatorGeometry());
-        const rect = this.creatorCanvas ? this.creatorCanvas.getBoundingClientRect() : { width: 820, height: 470 };
-        const w = Math.max(320, rect.width || 820);
-        const h = Math.max(220, rect.height || 470);
-        const cx = w * 0.5;
-        const cy = h * 0.5;
+        const cx = 0;
+        const cy = 0;
         const rng = this.createSeededRng(this.creatorState.seed || 12345);
         const verts = Math.max(3, Math.min(18, Number(this.creatorState.vertexCount) || 8));
         const out = [];
@@ -4456,18 +5009,18 @@ class DevManager {
             const right = [];
             for (let i = 0; i < half; i++) {
                 const t = rng.range(-Math.PI * 0.45, Math.PI * 0.45);
-                const r = rng.range(80, 170);
+                const r = rng.range(90, 180);
                 right.push({ x: axisX + Math.abs(Math.cos(t) * r), y: cy + Math.sin(t) * r });
             }
             const left = right.map(p => ({ x: axisX - (p.x - axisX), y: p.y }));
             let points = [...right, ...left];
-            if (verts % 2 === 1) points.push({ x: axisX, y: cy - rng.range(70, 150) });
+            if (verts % 2 === 1) points.push({ x: axisX, y: cy - rng.range(90, 170) });
             points.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
             points.forEach(p => out.push({ x: p.x, y: p.y }));
         } else {
             for (let i = 0; i < verts; i++) {
                 const t = (i / verts) * Math.PI * 2 + rng.range(-0.18, 0.18);
-                const r = rng.range(80, 180);
+                const r = rng.range(90, 190);
                 out.push({ x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r });
             }
         }
@@ -4538,9 +5091,9 @@ class DevManager {
         this.creatorState.lastSolveDiagnostics = null;
         
         // Reset View
-        this.creatorState.zoomLevel = this.creatorState.zoomLevelDefault || 0.82;
+        this.creatorState.zoomLevel = this.creatorState.zoomLevelDefault || 1;
         this.creatorView = { scale: 1, offsetX: 0, offsetY: 0 };
-        this.creatorViewDirty = false;
+        this.creatorViewDirty = true;
         
         this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
         this.syncCreatorControlText();
@@ -4585,8 +5138,7 @@ class DevManager {
             this.creatorState.draggingVertexIndex = -1;
             this.creatorState.hoverVertexIndex = -1;
             this.creatorState.customMouseWorld = null;
-            this.creatorView = { scale: 1, offsetX: 0, offsetY: 0 };
-            this.creatorViewDirty = false;
+            this.creatorViewDirty = true;
         }
         this.creatorState.customDrawError = '';
         this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
@@ -4904,9 +5456,11 @@ class DevManager {
             this.creatorViewDirty = false;
         }
 
+        // Keep boundary in sync with latest gameplay-parity view transform.
+        this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
         const boundary = this.getCreatorBoundary();
 
-        const g = Math.max(8, Number(this.creatorState.gridSize) || 20);
+        const g = this.getGameplayGridSize();
         const viewScale = Math.max(0.0001, this.creatorView.scale || 1);
         const minWorldX = (0 - (this.creatorView.offsetX || 0)) / viewScale;
         const maxWorldX = (w - (this.creatorView.offsetX || 0)) / viewScale;
@@ -4939,15 +5493,13 @@ class DevManager {
 
         if (boundary) {
             ctx.save();
-            ctx.fillStyle = 'rgba(148,163,184,0.06)';
-            ctx.strokeStyle = 'rgba(148,163,184,0.55)';
+            // Blue highlighted gameplay viewport contract.
+            ctx.fillStyle = 'rgba(59,130,246,0.12)';
+            ctx.strokeStyle = 'rgba(37,99,235,0.9)';
             ctx.lineWidth = 1.3 / Math.max(0.001, this.creatorView.scale);
-            ctx.setLineDash([
-                6 / Math.max(0.001, this.creatorView.scale),
-                5 / Math.max(0.001, this.creatorView.scale)
-            ]);
-            ctx.fillRect(boundary.x, boundary.y, boundary.size, boundary.size);
-            ctx.strokeRect(boundary.x, boundary.y, boundary.size, boundary.size);
+            ctx.setLineDash([]);
+            ctx.fillRect(boundary.x, boundary.y, boundary.width, boundary.height);
+            ctx.strokeRect(boundary.x, boundary.y, boundary.width, boundary.height);
             ctx.restore();
         }
 
@@ -6178,10 +6730,19 @@ class DevManager {
         );
         if (!confirmed) return;
 
+        const clippedVertices = this.getClippedCreatorVerticesForSave();
+        if (!clippedVertices.length) {
+            await window.appAlert(
+                'No valid shape remains inside the highlighted gameplay area. Draw at least 3 vertices inside the blue region.',
+                { title: 'Cannot Save Level', confirmText: 'OK' }
+            );
+            return;
+        }
+
         const base = this.game.baseLevels[levelIndex] || this.game.levels[levelIndex];
         const ok = this.game.upsertLevelOverride(levelIndex, {
             ...base,
-            startShapeVertices: this.creatorState.vertices.map(v => ({ x: v.x, y: v.y })),
+            startShapeVertices: clippedVertices,
             targetPieces: pieces,
             maxLines: lines,
             starThresholds: { one: one / 100, two: two / 100, three: three / 100 }
@@ -6194,6 +6755,41 @@ class DevManager {
             this.creatorState.starPercent = { one, two, three };
             this.populateList();
             if (this.game.currentMode) this.game.currentMode.loadLevel(levelIndex);
+        }
+    }
+
+    async runHardcoreSaveFlow() {
+        const confirmationMessage = 'This will save all current level settings permanently into the application. Click Confirm to proceed.';
+        const confirmed = await window.appConfirm(confirmationMessage, {
+            title: 'Hardcore Save',
+            confirmText: 'Confirm',
+            cancelText: 'Cancel'
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        const result = this.game.commitHardcoreLevelsFromCurrentConfig();
+        if (!result?.ok) {
+            const message = result?.error || 'Hardcore Save failed during validation or storage write.';
+            if (typeof window.appAlert === 'function') {
+                await window.appAlert(message, { title: 'Hardcore Save Failed', confirmText: 'OK' });
+            } else {
+                window.alert(message);
+            }
+            return;
+        }
+
+        this.populateList();
+        this.hydrateCreatorFromCurrentLevel(true, this.creatorState.selectedLevelIndex || 0);
+        this.syncCreatorControls();
+        this.syncCreatorControlText();
+        this.updateCreatorInfo();
+        this.renderCreatorCanvas();
+
+        if (this.game?.app && typeof this.game.app.showToast === 'function') {
+            this.game.app.showToast(`Hardcore Save complete (${result.levelsCommitted} levels committed).`);
         }
     }
 
