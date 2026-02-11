@@ -7,9 +7,11 @@ const MainLayout: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const isHomeRoute = location.pathname === '/';
+    const isAppsRoute = location.pathname === '/apps';
+    const isUserHomeRoute = location.pathname === '/home-profile';
     const isGamePlayerRoute = location.pathname.startsWith('/play/') || location.pathname.startsWith('/open/');
     const isManagerRoute = location.pathname === '/manager';
-    const isImmersiveRoute = isHomeRoute || isGamePlayerRoute || isManagerRoute;
+    const isImmersiveRoute = isHomeRoute || isAppsRoute || isUserHomeRoute || isGamePlayerRoute || isManagerRoute;
 
     // Dev-only shortcut: Ctrl+Shift+M to toggle manager
     React.useEffect(() => {

@@ -2,19 +2,22 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
+    width: 100%;
+    min-width: 0;
     height: 100%;
-    min-height: calc(100vh - 200px);
+    min-height: calc(100dvh - 1rem);
+    overflow-x: hidden;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .viewer-page.fullscreen-mode {
     gap: 0;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 /* Worksheet Viewer - Print Preview Mode */
 .viewer-page.worksheet-viewer {
-    min-height: calc(100vh - 120px);
+    min-height: calc(100dvh - 1rem);
 }
 
 .worksheet-viewer .viewer-content {
@@ -216,13 +219,15 @@
     background-color: var(--color-surface);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border-color);
-    min-height: 400px;
-    overflow: visible;
+    min-height: min(400px, 50dvh);
+    overflow-x: hidden;
+    overflow-y: auto;
     box-shadow: var(--shadow-md);
     flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0;
 }
 
 /* Game Styles */
@@ -331,7 +336,7 @@
     pointer-events: none;
 }
 
-.loading-spinner {
+.viewer-page .loading-spinner {
     width: 60px;
     height: 60px;
     border: 4px solid rgba(255, 255, 255, 0.3);
@@ -347,7 +352,7 @@
     }
 }
 
-.loading-text {
+.viewer-page .loading-text {
     color: white;
     font-size: 1.25rem;
     font-weight: 600;
@@ -358,8 +363,8 @@
 .fullscreen-toggle-btn {
     position: absolute;
     /* Relative to iframe-container */
-    top: 20px;
-    right: 20px;
+    top: max(10px, env(safe-area-inset-top, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
     width: 54px;
     height: 54px;
     border-radius: var(--radius-lg);
@@ -394,8 +399,8 @@
 .fullscreen-active .fullscreen-toggle-btn {
     position: fixed;
     /* Keep it fixed when truly fullscreen */
-    top: 24px;
-    right: 24px;
+    top: max(16px, env(safe-area-inset-top, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
     background-color: rgba(0, 0, 0, 0.6);
 }
 
@@ -507,10 +512,187 @@
     text-decoration: underline;
 }
 
+/* App-shell controls used by Viewer.tsx */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--color-surface-glass);
+    padding: 0.3rem;
+}
+
+.viewer-page .zoom-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 999px;
+    min-width: 2rem;
+    min-height: 2rem;
+    color: var(--color-text-main);
+}
+
+.viewer-page .zoom-btn:hover,
+.viewer-page .zoom-btn:focus-visible {
+    border-color: var(--border-color);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.viewer-page .zoom-level {
+    min-width: 3rem;
+    text-align: center;
+    font-weight: 700;
+}
+
+.print-btn-main {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-glass);
+    color: var(--color-text-main);
+    padding: 0.5rem 0.8rem;
+    font-weight: 600;
+}
+
+/* Content viewports */
+.game-viewport,
+.worksheet-viewport {
+    position: relative;
+    width: 100%;
+    min-height: min(700px, 70dvh);
+    flex: 1;
+    overflow: auto;
+    background: #020617;
+}
+
+.game-frame {
+    width: 100%;
+    min-height: min(700px, 70dvh);
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.worksheet-viewport {
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0.75rem;
+}
+
+.worksheet-inner {
+    width: min(100%, 960px);
+    min-height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: auto;
+}
+
+.worksheet-frame {
+    width: min(100%, 816px);
+    min-height: 1056px;
+    border: 0;
+    background: #fff;
+}
+
+/* Fullscreen worksheet controls */
+.worksheet-fullscreen-controls {
+    position: fixed;
+    top: max(0.6rem, env(safe-area-inset-top, 0px));
+    left: max(0.6rem, env(safe-area-inset-left, 0px));
+    right: max(0.6rem, env(safe-area-inset-right, 0px));
+    z-index: 10001;
+    transition: opacity 200ms ease;
+}
+
+.worksheet-fullscreen-controls.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.worksheet-fullscreen-controls.visible {
+    opacity: 1;
+}
+
+.worksheet-control-panel {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(2, 6, 23, 0.78);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    padding: 0.6rem;
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+    justify-content: space-between;
+    max-height: calc(100dvh - max(1.2rem, env(safe-area-inset-top, 0px)) - max(1.2rem, env(safe-area-inset-bottom, 0px)));
+    overflow: auto;
+}
+
+.viewer-page .worksheet-info {
+    min-width: 0;
+}
+
+.viewer-page .worksheet-title,
+.viewer-page .worksheet-description {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.worksheet-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.worksheet-zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.worksheet-zoom-btn,
+.worksheet-action-btn {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    min-height: 2.2rem;
+    padding: 0.42rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.viewer-page .worksheet-action-btn span {
+    white-space: nowrap;
+}
+
+.viewer-page .worksheet-action-btn svg,
+.viewer-page .worksheet-zoom-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
 /* Responsive Design for Viewer */
 @media (max-width: 768px) {
     .viewer-page {
-        min-height: calc(100vh - 120px);
+        min-height: calc(100dvh - 0.5rem);
     }
 
     .iframe-container {
@@ -528,6 +710,10 @@
         gap: var(--spacing-sm);
     }
 
+    .header-actions {
+        width: 100%;
+    }
+
     .download-btn-main {
         width: 100%;
         justify-content: center;
@@ -543,6 +729,19 @@
         width: 44px;
         height: 44px;
         font-size: 1rem;
+    }
+
+    .worksheet-control-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .worksheet-actions {
+        justify-content: flex-start;
+    }
+
+    .worksheet-action-btn span {
+        display: none;
     }
 }
 

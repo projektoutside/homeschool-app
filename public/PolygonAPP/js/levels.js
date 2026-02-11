@@ -6,13 +6,13 @@ const GameLevels = [
     // =====================================================
     {
         id: 1, name: "Stage 1", focus: "First Cut", instruction: "Draw a line to split the rectangle into 2 equal parts.",
-        startShapeVertices: [{ x: -120, y: -80 }, { x: 120, y: -80 }, { x: 120, y: 80 }, { x: -120, y: 80 }],
+        startShapeVertices: [{ x: 0, y: -120 }, { x: 103.923048, y: 60 }, { x: -103.923048, y: 60 }],
         color: '#90cdf4', targetPieces: 2, maxLines: 1,
         starThresholds: { one: 0.05, two: 0.03, three: 0.01 }
     },
     {
         id: 2, name: "Stage 2", focus: "Triangle Basics", instruction: "Split the triangle into 2 equal parts.",
-        startShapeVertices: [{ x: 0, y: -120 }, { x: 120, y: 80 }, { x: -120, y: 80 }],
+        startShapeVertices: [{ x: 440, y: 300 }, { x: 440, y: 420 }, { x: 640, y: 420 }, { x: 640, y: 300 }],
         color: '#a3bffa', targetPieces: 2, maxLines: 1,
         starThresholds: { one: 0.05, two: 0.03, three: 0.01 }
     },

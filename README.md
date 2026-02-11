@@ -1,73 +1,55 @@
-# React + TypeScript + Vite
+# La's Homeschool App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a Vite + React + TypeScript homeschool app with:
 
-Currently, two official plugins are available:
+- Supabase authentication (username/email + password)
+- Per-user cloud saved manager configuration
+- Row Level Security (RLS) data isolation
+- PWA/service-worker support with cache-update hardening
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 1) Environment setup
 
-## React Compiler
+Copy `.env.example` to `.env` and set your Supabase values:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 2) Supabase database setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Run the SQL in `supabase/schema.sql` inside the Supabase SQL editor.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This creates `public.user_manager_configs` and RLS policies so each user can only access their own row.
+
+## 3) Supabase auth settings
+
+In Supabase dashboard:
+
+- Enable Email/Password sign-in provider
+- If you want instant sign-up/login in development, disable email confirmation
+- If confirmation stays enabled, users must verify email before sign-in
+
+> Note: Username sign-in is implemented by internally mapping usernames to a synthetic email format (`username@<your-supabase-project-host>`) unless a real email is entered.
+
+## 4) Local development
+
+```bash
+npm install
+npm run dev
 ```
+
+## 5) Build
+
+```bash
+npm run build
+```
+
+## Caching/update behavior
+
+- Service worker versioned cache (`public/service-worker.js`)
+- Network-first strategy for HTML/navigation and live content folders
+- Supabase API requests excluded from SW caching
+- Service worker registration uses `import.meta.env.BASE_URL` for GitHub Pages compatibility
+
+This keeps app updates fresher while user data remains safely in Supabase.

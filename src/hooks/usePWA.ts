@@ -144,12 +144,19 @@ export function usePWA(): UsePWAReturn {
   // Register service worker
   useEffect(() => {
     if ('serviceWorker' in navigator) {
+      const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
+
       navigator.serviceWorker
-        .register('/service-worker.js')
+        .register(swUrl)
         .then((registration) => {
           console.log('[PWA] Service Worker registered:', registration.scope);
           setSwRegistration(registration);
           setIsOfflineReady(true);
+
+          // Ask browser to re-check for updated SW on app start
+          registration.update().catch(() => {
+            // Ignore update polling failures
+          });
 
           // Listen for service worker messages
           navigator.serviceWorker.addEventListener('message', (event) => {

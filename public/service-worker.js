@@ -1,11 +1,11 @@
 /**
  * Service Worker for La's Homeschool Hub App
  * Provides offline support, caching, and auto-update functionality
- * @version 1.0.2
+ * @version 1.0.4
  */
 
-const CACHE_NAME = 'homeschool-hub-v1.0.2';
-const SW_VERSION = '1.0.2';
+const CACHE_NAME = 'homeschool-hub-v1.0.4';
+const SW_VERSION = '1.0.4';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -59,7 +59,11 @@ self.addEventListener('activate', (event) => {
 
 // Helper to determine if a request is an API or external call to skip
 const shouldSkip = (url) => {
-  return url.includes('api.github.com') || url.startsWith('chrome-extension://');
+  return (
+    url.includes('api.github.com') ||
+    url.includes('.supabase.co') ||
+    url.startsWith('chrome-extension://')
+  );
 };
 
 const LIVE_CONTENT_SEGMENTS = [
@@ -98,16 +102,21 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(networkRequest)
         .then((networkResponse) => {
-          // Cache the fresh copy
+          if (!networkResponse || !networkResponse.ok) {
+            return networkResponse;
+          }
+
+          // Cache fresh copies (separate clones to avoid consumed-body clone errors)
           const responseToCache = networkResponse.clone();
+          const htmlFallbackToCache = isHtmlRequest ? networkResponse.clone() : null;
           caches.open(CACHE_NAME).then((cache) => {
             // Update the specific request cache
             cache.put(event.request, responseToCache);
 
-            if (isHtmlRequest) {
+            if (isHtmlRequest && htmlFallbackToCache) {
               // CRITICAL: Also update the 'index.html' cache entry because that's our fallback
               // We use './index.html' so it resolves relative to the SW location
-              cache.put('./index.html', responseToCache.clone());
+              cache.put('./index.html', htmlFallbackToCache);
             }
           });
           return networkResponse;

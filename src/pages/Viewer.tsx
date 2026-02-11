@@ -19,8 +19,6 @@ const ViewerPage: React.FC = () => {
     const [zoomScale, setZoomScale] = useState(1);
     const [showControls, setShowControls] = useState(true);
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isGame = useRef(false);
-    const hasAutoMaximized = useRef<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
@@ -28,10 +26,6 @@ const ViewerPage: React.FC = () => {
     // Derived state - defined early for use in callbacks
     const isGameContent = item?.type === 'game';
     const isWorksheetContent = item?.type === 'worksheet';
-
-    useEffect(() => {
-        isGame.current = item?.type === 'game' && !!item?.customHtmlPath;
-    }, [item]);
 
     const { manifestUrl, serviceWorkerUrl } = useMemo(() => {
         if (item?.type === 'game' && item?.customHtmlPath) {
@@ -144,7 +138,6 @@ const ViewerPage: React.FC = () => {
     useEffect(() => {
         setIsLoading(true);
         setZoomScale(1);
-        hasAutoMaximized.current = null;
 
         if (item?.customHtmlPath && iframeRef.current) {
             iframeRef.current.src = buildAssetPath(item.customHtmlPath);

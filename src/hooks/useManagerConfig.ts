@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import type { ContentItem, ContentType } from '../types/content';
 import type { ManagerConfig, ManagerFolder, ManagerTab } from '../types/manager';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const STORAGE_KEY = 'homeschool_manager_config_v2';
+const LEGACY_STORAGE_KEY = STORAGE_KEY;
 
 const normalizeContentType = (value: unknown): ContentType => {
   if (value === 'game' || value === 'worksheet' || value === 'tool' || value === 'resource') {
@@ -138,9 +141,8 @@ const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
   };
 };
 
-const loadConfig = (): ManagerConfig => {
+const parseConfig = (saved: string | null): ManagerConfig => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return buildDefaultConfig();
 
     const parsed = JSON.parse(saved) as Partial<ManagerConfig>;
@@ -151,11 +153,109 @@ const loadConfig = (): ManagerConfig => {
 };
 
 export const useManagerConfig = () => {
-  const [config, setConfig] = useState<ManagerConfig>(loadConfig);
+  const { user } = useAuth();
+  const [config, setConfig] = useState<ManagerConfig>(buildDefaultConfig);
+  const [isHydratedFromStorage, setIsHydratedFromStorage] = useState(false);
+  const [isHydratedFromRemote, setIsHydratedFromRemote] = useState(false);
+
+  const userScopedStorageKey = user ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }, [config]);
+    const scopedConfig = localStorage.getItem(userScopedStorageKey);
+
+    if (scopedConfig) {
+      setConfig(parseConfig(scopedConfig));
+      setIsHydratedFromStorage(true);
+      return;
+    }
+
+    // Legacy migration path for existing local users
+    const legacyConfig = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyConfig) {
+      localStorage.setItem(userScopedStorageKey, legacyConfig);
+      setConfig(parseConfig(legacyConfig));
+      setIsHydratedFromStorage(true);
+      return;
+    }
+
+    setConfig(buildDefaultConfig());
+    setIsHydratedFromStorage(true);
+  }, [userScopedStorageKey]);
+
+  useEffect(() => {
+    if (!isHydratedFromStorage) return;
+    localStorage.setItem(userScopedStorageKey, JSON.stringify(config));
+  }, [config, isHydratedFromStorage, userScopedStorageKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRemoteConfig = async () => {
+      if (!isHydratedFromStorage) return;
+
+      if (!supabase || !user) {
+        setIsHydratedFromRemote(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('user_manager_configs')
+        .select('config')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error('[ManagerConfig] Failed to load remote config:', error.message);
+        setIsHydratedFromRemote(true);
+        return;
+      }
+
+      if (data?.config) {
+        setConfig(sanitizeConfig(data.config as Partial<ManagerConfig>));
+      }
+
+      setIsHydratedFromRemote(true);
+    };
+
+    setIsHydratedFromRemote(false);
+    loadRemoteConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isHydratedFromStorage, user]);
+
+  useEffect(() => {
+    if (!isHydratedFromStorage || !isHydratedFromRemote) return;
+    if (!supabase || !user) return;
+
+    const supabaseClient = supabase;
+
+    const timeout = window.setTimeout(async () => {
+      const { error } = await supabaseClient
+        .from('user_manager_configs')
+        .upsert(
+          {
+            user_id: user.id,
+            config,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id',
+          },
+        );
+
+      if (error) {
+        console.error('[ManagerConfig] Failed to save remote config:', error.message);
+      }
+    }, 600);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [config, isHydratedFromStorage, isHydratedFromRemote, user]);
 
   const allItems = useMemo(() => {
     const baseItems = BASE_CONTENT_ITEMS.filter(item => !config.deletedItemIds.includes(item.id));

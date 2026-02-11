@@ -1,0 +1,245 @@
+.user-home-page {
+  width: 100%;
+  min-height: calc(100dvh - 1rem);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background:
+    radial-gradient(circle at 20% 25%, rgba(45, 212, 191, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 15%, rgba(129, 140, 248, 0.14), transparent 36%),
+    linear-gradient(165deg, #0f1b33 0%, #0b1224 55%, #090f1e 100%);
+  position: relative;
+  overflow: clip;
+  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.user-home-placeholder {
+  min-height: calc(100dvh - 12rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.user-home-placeholder h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3.8vw, 2.1rem);
+  color: #e2e8f0;
+  text-shadow: 0 4px 18px rgba(15, 23, 42, 0.55);
+}
+
+.user-home-bottom-tabs {
+  position: fixed;
+  left: max(0.5rem, env(safe-area-inset-left, 0px));
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  width: auto;
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  z-index: 35;
+}
+
+.user-home-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 3.15rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.9));
+  color: #e2e8f0;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.user-home-tab-btn:hover,
+.user-home-tab-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(103, 232, 249, 0.8);
+}
+
+.user-home-tab-btn:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.user-home-settings-btn {
+  position: fixed;
+  left: max(0.85rem, env(safe-area-inset-left, 0px));
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(180deg, rgba(244, 244, 245, 0.94), rgba(212, 212, 216, 0.95));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    0 8px 18px rgba(2, 6, 23, 0.48);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+}
+
+@media (max-width: 640px) {
+  .user-home-page {
+    min-height: calc(100dvh - 0.5rem);
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .user-home-bottom-tabs {
+    left: max(0.4rem, env(safe-area-inset-left, 0px));
+    right: max(0.4rem, env(safe-area-inset-right, 0px));
+    gap: 0.4rem;
+  }
+
+  .user-home-tab-btn {
+    min-height: 2.9rem;
+    font-size: 0.9rem;
+  }
+
+  .user-home-settings-btn {
+    width: 50px;
+    height: 50px;
+    bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.user-home-settings-btn:hover,
+.user-home-settings-btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.user-home-settings-btn:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+}
+
+.user-home-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.56);
+  border: 0;
+  z-index: 55;
+}
+
+.user-home-settings-panel {
+  position: fixed;
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  width: min(520px, calc(100vw - 1.5rem));
+  max-height: min(85vh, 760px);
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98));
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.58);
+  z-index: 60;
+  padding: 0.95rem;
+  color: #e2e8f0;
+}
+
+.user-home-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.user-home-settings-header h2 {
+  margin: 0;
+}
+
+.user-home-settings-header button {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.settings-tab-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.22);
+  color: #67e8f9;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-group label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.settings-group input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
+  padding: 0.62rem 0.7rem;
+}
+
+.settings-group button {
+  align-self: flex-start;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.52rem 0.78rem;
+  background: linear-gradient(180deg, #22d3ee, #06b6d4);
+  color: #052f43;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-group button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.settings-group.danger-zone {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.settings-group.danger-zone button {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+  color: #fff;
+}
+
+.settings-status {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.settings-status.success {
+  color: #86efac;
+}
+
+.settings-status.error {
+  color: #fca5a5;
+}

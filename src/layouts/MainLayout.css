@@ -22,26 +22,38 @@
 
 .layout-container {
     display: flex;
+    flex-direction: column;
+    width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-background);
     color: var(--color-text-main);
+    overflow-x: hidden;
 }
 
 /* Main Content */
 .main-content {
     flex: 1;
+    width: 100%;
     max-width: 1400px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
+    min-width: 0;
     min-height: calc(100vh - var(--spacing-xl) * 2);
-    overflow: visible;
+    min-height: calc(100dvh - var(--spacing-xl) * 2);
+    overflow-x: hidden;
 }
 
 .layout-container.home-immersive .main-content {
     max-width: 100%;
     width: 100%;
     min-height: 100vh;
-    padding: 1rem;
+    min-height: 100dvh;
+    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+    padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
 }
 
 .layout-container.game-immersive .main-content {
@@ -54,11 +66,14 @@
         padding-top: env(safe-area-inset-top, 0px);
         padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
         padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-bottom: max(var(--spacing-sm), env(safe-area-inset-bottom, 0px));
     }
 
     .layout-container.home-immersive .main-content {
-        padding: 0.5rem;
+        padding-top: max(0.45rem, env(safe-area-inset-top, 0px));
+        padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
+        padding-bottom: max(0.45rem, env(safe-area-inset-bottom, 0px));
+        padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
     }
 
     .layout-container.game-immersive .main-content {
