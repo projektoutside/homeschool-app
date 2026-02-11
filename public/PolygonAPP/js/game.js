@@ -797,6 +797,19 @@ class BeginnerMode {
         console.log('[BeginnerMode] Starting Beginner Mode');
         this.bindGameControls();
         this.setupBoxScoreUI();
+
+        if (!Array.isArray(this.game.levels) || this.game.levels.length === 0) {
+            this.showMessage(
+                'Level Data Missing',
+                'No game levels were loaded. Please refresh the app and try again.',
+                'Back to Menu',
+                () => {
+                    this.game.stop();
+                }
+            );
+            return;
+        }
+
         const resumed = this.tryAutoResume();
         if (!resumed) {
             this.loadLevel(0);
@@ -2617,6 +2630,13 @@ class BeginnerMode {
     }
 
     loadLevel(index) {
+        if (!Array.isArray(this.game.levels) || this.game.levels.length === 0) {
+            this.showMessage('Level Data Missing', 'No game levels are available to play.', 'Back to Menu', () => {
+                this.game.stop();
+            });
+            return;
+        }
+
         if (index >= this.game.levels.length) {
             this.showMessage('Game Completed!', 'Congratulations! You have finished all levels.', 'Back to Menu', () => {
                 this.game.stop();
