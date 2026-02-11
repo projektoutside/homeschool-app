@@ -1,11 +1,11 @@
 /**
  * Service Worker for La's Homeschool Hub App
  * Provides offline support, caching, and auto-update functionality
- * @version 1.0.1
+ * @version 1.0.2
  */
 
-const CACHE_NAME = 'homeschool-hub-v1.0.1';
-const SW_VERSION = '1.0.1';
+const CACHE_NAME = 'homeschool-hub-v1.0.2';
+const SW_VERSION = '1.0.2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -62,6 +62,18 @@ const shouldSkip = (url) => {
   return url.includes('api.github.com') || url.startsWith('chrome-extension://');
 };
 
+const LIVE_CONTENT_SEGMENTS = [
+  '/PolygonAPP/',
+  '/Games/',
+  '/Worksheets/',
+  '/MathWorksheetCreator/',
+  '/FinalGraph/'
+];
+
+const isLiveContentPath = (pathname) => {
+  return LIVE_CONTENT_SEGMENTS.some((segment) => pathname.includes(segment));
+};
+
 // Fetch event - Robust Strategy
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || shouldSkip(event.request.url)) {
@@ -70,12 +82,21 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // STRATEGY 1: Network First for HTML/Navigation
+  const acceptsHeader = event.request.headers.get('accept') || '';
+  const isHtmlRequest =
+    event.request.mode === 'navigate' ||
+    (event.request.method === 'GET' && acceptsHeader.includes('text/html'));
+  const isLiveContentRequest = isLiveContentPath(url.pathname);
+
+  // STRATEGY 1: Network First for HTML/Navigation + mutable game/worksheet/tool assets
   // We want the latest entry point always, falling back to cache if offline.
-  if (event.request.mode === 'navigate' ||
-    (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
+  if (isHtmlRequest || isLiveContentRequest) {
+    const networkRequest = (isLiveContentRequest && !isHtmlRequest)
+      ? new Request(event.request, { cache: 'no-store' })
+      : event.request;
+
     event.respondWith(
-      fetch(event.request)
+      fetch(networkRequest)
         .then((networkResponse) => {
           // Cache the fresh copy
           const responseToCache = networkResponse.clone();
@@ -83,9 +104,11 @@ self.addEventListener('fetch', (event) => {
             // Update the specific request cache
             cache.put(event.request, responseToCache);
 
-            // CRITICAL: Also update the 'index.html' cache entry because that's our fallback
-            // We use './index.html' so it resolves relative to the SW location
-            cache.put('./index.html', responseToCache.clone());
+            if (isHtmlRequest) {
+              // CRITICAL: Also update the 'index.html' cache entry because that's our fallback
+              // We use './index.html' so it resolves relative to the SW location
+              cache.put('./index.html', responseToCache.clone());
+            }
           });
           return networkResponse;
         })

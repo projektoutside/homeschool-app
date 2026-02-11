@@ -1,5 +1,6 @@
-const CACHE_VERSION = 'polygon-fun-v15-live-level-sync';
+const CACHE_VERSION = 'polygon-fun-v16-live-level-sync';
 const NETWORK_FIRST_PATHS = new Set([
+  '/index.html',
   '/js/levels.js',
   '/js/game.js'
 ]);
@@ -72,11 +73,31 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(event.request.url);
   const isSameOrigin = requestUrl.origin === self.location.origin;
-  const shouldUseNetworkFirst = isSameOrigin && NETWORK_FIRST_PATHS.has(requestUrl.pathname);
+  const acceptsHeader = event.request.headers.get('accept') || '';
+  const isNavigationRequest =
+    event.request.mode === 'navigate' || acceptsHeader.includes('text/html');
+
+  const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, '');
+  const scopedPath = requestUrl.pathname.startsWith(scopePath)
+    ? requestUrl.pathname.slice(scopePath.length) || '/'
+    : requestUrl.pathname;
+  const normalizedPath = scopedPath.startsWith('/') ? scopedPath : `/${scopedPath}`;
+
+  const shouldUseNetworkFirst = isSameOrigin && (
+    isNavigationRequest ||
+    NETWORK_FIRST_PATHS.has(normalizedPath) ||
+    NETWORK_FIRST_PATHS.has(requestUrl.pathname) ||
+    normalizedPath.endsWith('/js/levels.js') ||
+    normalizedPath.endsWith('/js/game.js')
+  );
+
+  const networkRequest = shouldUseNetworkFirst
+    ? new Request(event.request, { cache: 'no-store' })
+    : event.request;
 
   if (shouldUseNetworkFirst) {
     event.respondWith(
-      fetch(event.request)
+      fetch(networkRequest)
         .then((response) => {
           if (!response || response.status !== 200 || response.type === 'opaque') {
             return response;
