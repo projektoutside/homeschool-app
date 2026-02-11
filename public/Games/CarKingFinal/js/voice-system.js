@@ -6,7 +6,14 @@
 class AdvancedVoiceSystem {
     constructor() {
         this.currentAudio = null;
+        this.currentAudioElement = null;
+        this.currentSourceNode = null;
         this.enabled = true;
+        this.audioContext = null;
+        this.masterGain = null;
+        this.normalGain = 1;
+        this.duckedGain = 0.35;
+        this.isListeningMode = false;
 
         // List of available MP3 files for the "asking" phase (What car is this?)
         this.askingClips = [
@@ -120,14 +127,78 @@ class AdvancedVoiceSystem {
         ];
     }
 
+    async ensureAudioGraph() {
+        if (!window.AudioContext && !window.webkitAudioContext) {
+            return;
+        }
+
+        if (!this.audioContext) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new Ctx();
+        }
+
+        if (!this.masterGain) {
+            this.masterGain = this.audioContext.createGain();
+            this.masterGain.gain.value = this.normalGain;
+            this.masterGain.connect(this.audioContext.destination);
+        }
+
+        if (this.audioContext.state === 'suspended') {
+            try {
+                await this.audioContext.resume();
+            } catch (e) {
+                // Ignore; browser may require additional user gesture in edge cases.
+            }
+        }
+    }
+
+    async createManagedAudio(path) {
+        const safePath = encodeURI(path);
+        const audio = new Audio(safePath);
+        audio.preload = 'auto';
+        audio.playsInline = true;
+        audio.crossOrigin = 'anonymous';
+
+        await this.ensureAudioGraph();
+
+        if (this.audioContext && this.masterGain) {
+            try {
+                const source = this.audioContext.createMediaElementSource(audio);
+                source.connect(this.masterGain);
+                audio.__sourceNode = source;
+            } catch (e) {
+                // Some browsers can throw if element is already connected or blocked.
+                // Fallback to normal HTMLAudio playback path.
+            }
+        }
+
+        return audio;
+    }
+
+    async setOutputGain(targetGain, fadeMs = 120) {
+        await this.ensureAudioGraph();
+        if (!this.masterGain || !this.audioContext) return;
+
+        const now = this.audioContext.currentTime;
+        this.masterGain.gain.cancelScheduledValues(now);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+        this.masterGain.gain.linearRampToValueAtTime(targetGain, now + (fadeMs / 1000));
+    }
+
+    setListeningMode(isListening) {
+        this.isListeningMode = !!isListening;
+        const gain = this.isListeningMode ? this.duckedGain : this.normalGain;
+        this.setOutputGain(gain, 140);
+    }
+
     // Helper to play two clips in sequence seamlessly
     playSequence(firstPath, secondPath) {
         if (!this.enabled) return Promise.resolve();
         this.cancel();
 
-        return new Promise((resolve) => {
-            const audio1 = new Audio(encodeURI(firstPath));
-            const audio2 = new Audio(encodeURI(secondPath));
+        return new Promise(async (resolve) => {
+            const audio1 = await this.createManagedAudio(firstPath);
+            const audio2 = await this.createManagedAudio(secondPath);
 
             // Preload both for seamless transition
             audio1.load();
@@ -141,6 +212,8 @@ class AdvancedVoiceSystem {
 
                 // CRITICAL FIX: Update currentAudio to the new track so it can be cancelled
                 this.currentAudio = audio2;
+                this.currentAudioElement = audio2;
+                this.currentSourceNode = audio2.__sourceNode || null;
 
                 const playPromise2 = audio2.play();
                 if (playPromise2 !== undefined) {
@@ -154,6 +227,8 @@ class AdvancedVoiceSystem {
 
             audio2.onended = () => {
                 this.currentAudio = null;
+                this.currentAudioElement = null;
+                this.currentSourceNode = null;
                 resolve();
             };
 
@@ -161,22 +236,32 @@ class AdvancedVoiceSystem {
             audio1.onerror = () => {
                 console.warn("Audio 1 error, skipping to Audio 2");
                 this.currentAudio = audio2;
+                this.currentAudioElement = audio2;
+                this.currentSourceNode = audio2.__sourceNode || null;
                 audio2.play().catch(() => {
                     this.currentAudio = null;
+                    this.currentAudioElement = null;
+                    this.currentSourceNode = null;
                     resolve();
                 });
             };
 
             // Start sequence
             this.currentAudio = audio1;
+            this.currentAudioElement = audio1;
+            this.currentSourceNode = audio1.__sourceNode || null;
             const playPromise = audio1.play();
 
             if (playPromise !== undefined) {
                 playPromise.catch(e => {
                     console.warn("Audio 1 playback failed, skipping to Audio 2:", e);
                     this.currentAudio = audio2;
+                    this.currentAudioElement = audio2;
+                    this.currentSourceNode = audio2.__sourceNode || null;
                     audio2.play().catch(() => {
                         this.currentAudio = null;
+                        this.currentAudioElement = null;
+                        this.currentSourceNode = null;
                         resolve();
                     });
                 });
@@ -231,6 +316,7 @@ class AdvancedVoiceSystem {
     }
 
     async init() {
+        await this.ensureAudioGraph();
         console.log("✅ Custom MP3 Voice System initialized!");
     }
 
@@ -240,21 +326,25 @@ class AdvancedVoiceSystem {
 
         this.cancel(); // Stop any currently playing audio
 
-        return new Promise((resolve) => {
-            // Encode the path to handle spaces or special characters safely
-            const safePath = encodeURI(path);
-            this.currentAudio = new Audio(safePath);
+        return new Promise(async (resolve) => {
+            this.currentAudio = await this.createManagedAudio(path);
+            this.currentAudioElement = this.currentAudio;
+            this.currentSourceNode = this.currentAudio.__sourceNode || null;
 
             // Handle completion
             this.currentAudio.onended = () => {
                 this.currentAudio = null;
+                this.currentAudioElement = null;
+                this.currentSourceNode = null;
                 resolve();
             };
 
             // Handle errors
             this.currentAudio.onerror = (e) => {
-                console.warn(`⚠️ Failed to play audio file: ${safePath}`, e);
+                console.warn(`⚠️ Failed to play audio file: ${path}`, e);
                 this.currentAudio = null;
+                this.currentAudioElement = null;
+                this.currentSourceNode = null;
                 resolve();
             };
 
@@ -264,8 +354,10 @@ class AdvancedVoiceSystem {
 
             if (playPromise !== undefined) {
                 playPromise.catch(e => {
-                    console.warn(`⚠️ Audio playback interrupted or failed: ${safePath}`, e);
+                    console.warn(`⚠️ Audio playback interrupted or failed: ${path}`, e);
                     this.currentAudio = null;
+                    this.currentAudioElement = null;
+                    this.currentSourceNode = null;
                     resolve();
                 });
             }
@@ -278,6 +370,8 @@ class AdvancedVoiceSystem {
             this.currentAudio.currentTime = 0;
             this.currentAudio = null;
         }
+        this.currentAudioElement = null;
+        this.currentSourceNode = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

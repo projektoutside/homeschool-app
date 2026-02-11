@@ -84,7 +84,7 @@ window.CAR_DATABASE = [
     },
     {
         name: "Honda Pilot",
-        images: ["assets/cars/HondaPilot/HondaPilot.jpg", "assets/cars/HondaPilot/HondaPilot.png"],
+        images: ["assets/cars/HondaPilot/HondaPilot.png"],
         voice: "assets/cars/HondaPilot/HondaPilot.mp3",
         actualWords: ["Honda Pilot", "Pilot"],
         keywords: ["honda", "pilot", "ho-n-da", "pi-lot"],
@@ -113,7 +113,7 @@ window.CAR_DATABASE = [
     },
     {
         name: "Lotus",
-        images: ["assets/cars/Lotus/Lotus.jpg"],
+        images: ["assets/cars/Lotus/lotus1.jpg", "assets/cars/Lotus/lotus2.jpg", "assets/cars/Lotus/lotus3.jpg"],
         voice: "assets/cars/Lotus/Lotus.mp3",
         keywords: ["lotus", "elise", "lo-tus", "e-lise"],
         funFact: "Lotus cars are super light and handle like go-karts!"
@@ -148,7 +148,7 @@ window.CAR_DATABASE = [
     },
     {
         name: "Porsche",
-        images: ["assets/cars/Porshe/Porshe.jpg"],
+        images: ["assets/cars/Porshe/Porshe.png"],
         voice: "assets/cars/Porshe/Porshe.mp3",
         keywords: ["porsche", "911", "turbo", "por-she", "por-sha"],
         funFact: "Porsche keys go on the left side of the steering wheel!"

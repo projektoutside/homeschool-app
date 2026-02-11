@@ -28,6 +28,16 @@ class CarGuessingGame {
         this.globalPermStream = null;
         this.isMicWarm = false;
         this.isRecognitionActive = false;
+        this.isListeningForAnswer = false;
+        this.micState = 'idle';
+        this.recognitionRestartAttempts = 0;
+        this.maxRecognitionRestarts = 4;
+        this.recognitionRestartCooldownMs = 650;
+        this.lastSpeechResultAt = 0;
+        this.micHealthMonitorTimer = null;
+        this.micNoSpeechTimeoutMs = 5500;
+        this.selectedMicId = this.loadSelectedMicId();
+        this.supportsContinuousRecognition = true;
 
 
         // Dynamic car database loading from local files
@@ -47,9 +57,16 @@ class CarGuessingGame {
         console.log("🚗 Initializing Kids Car Guessing Game...");
         this.setupEventListeners();
         this.setupPermissionWatchers();
-        await this.initializeSpeech();
         this.initMainMenu();
         this.showStartScreen();
+
+        // IMPORTANT: initialize speech/AudioContext in a non-blocking way.
+        // On some devices/browsers, resuming AudioContext before a user gesture can hang,
+        // which previously blocked initMainMenu/showStartScreen from finishing.
+        this.initializeSpeech().catch((err) => {
+            console.warn('Voice system initialization failed (continuing without blocking UI):', err);
+            this.speechSupported = false;
+        });
     }
 
     setupPermissionWatchers() {
@@ -102,16 +119,28 @@ class CarGuessingGame {
     }
 
     getPreferredAudioConstraints(deviceId = null) {
-        // Use broad, mobile-friendly defaults while avoiding strict constraints
-        // that can fail on Safari/iOS and some Android devices.
-        const base = {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-        };
+        const isIOS = !!window.deviceIntelligence?.device?.isIOS;
+        const isAndroid = !!window.deviceIntelligence?.device?.isAndroid;
+        const isMobile = !!window.deviceIntelligence?.device?.isMobile;
+
+        // Adaptive constraints: conservative on mobile/tablet for better compatibility.
+        const base = isIOS
+            ? {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: false,
+                channelCount: 1
+            }
+            : {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                channelCount: 1,
+                sampleRate: isAndroid ? { ideal: 48000 } : { ideal: 44100 }
+            };
 
         if (!deviceId || deviceId === 'default') {
-            return { audio: base };
+            return { audio: isMobile ? base : { ...base, latency: { ideal: 0.02 } } };
         }
 
         return {
@@ -121,6 +150,89 @@ class CarGuessingGame {
                 deviceId: { ideal: deviceId }
             }
         };
+    }
+
+    loadSelectedMicId() {
+        try {
+            const value = localStorage.getItem('carGuessingSelectedMicId');
+            if (!value || value === 'default') return null;
+            return value;
+        } catch (err) {
+            console.warn('Unable to load selected microphone:', err);
+            return null;
+        }
+    }
+
+    saveSelectedMicId(deviceId) {
+        try {
+            const normalized = !deviceId || deviceId === 'default' ? 'default' : deviceId;
+            localStorage.setItem('carGuessingSelectedMicId', normalized);
+        } catch (err) {
+            console.warn('Unable to save selected microphone:', err);
+        }
+    }
+
+    setMicState(nextState) {
+        this.micState = nextState;
+        const micStatus = document.getElementById('micStatus');
+        if (micStatus) {
+            micStatus.dataset.state = nextState;
+        }
+    }
+
+    updateMicStatusMessage(message) {
+        const transcriptEl = document.getElementById('liveTranscript');
+        if (!transcriptEl) return;
+        transcriptEl.textContent = message;
+        transcriptEl.classList.remove('hidden');
+        transcriptEl.classList.add('active');
+    }
+
+    startMicHealthMonitor() {
+        this.stopMicHealthMonitor();
+        this.micHealthMonitorTimer = setInterval(() => {
+            if (!this.isListeningForAnswer || !this.isGameRunning) return;
+
+            const now = Date.now();
+            const idleFor = now - (this.lastSpeechResultAt || 0);
+            if (idleFor >= this.micNoSpeechTimeoutMs) {
+                console.warn('🎤 No speech detected for prolonged period. Restarting recognition engine.');
+                this.lastSpeechResultAt = now;
+                this.restartRecognitionEngine('health-check-no-speech');
+            }
+        }, 1500);
+    }
+
+    stopMicHealthMonitor() {
+        if (this.micHealthMonitorTimer) {
+            clearInterval(this.micHealthMonitorTimer);
+            this.micHealthMonitorTimer = null;
+        }
+    }
+
+    canRestartRecognition() {
+        return this.recognitionRestartAttempts < this.maxRecognitionRestarts;
+    }
+
+    restartRecognitionEngine(reason = 'unknown') {
+        if (!this.recognition) return;
+        if (!this.isGameRunning && !this.isMicWarm) return;
+        if (!this.canRestartRecognition()) {
+            console.warn('🛑 Mic restart limit reached. Falling back to text/choice mode messaging.');
+            this.updateMicStatusMessage('Microphone unstable. Tap mic button to retry.');
+            return;
+        }
+
+        this.recognitionRestartAttempts += 1;
+        console.log(`🔄 Restarting recognition (${this.recognitionRestartAttempts}/${this.maxRecognitionRestarts}) due to: ${reason}`);
+
+        setTimeout(() => {
+            try {
+                this.recognition.start();
+            } catch (e) {
+                console.warn('Recognition restart failed:', e);
+            }
+        }, this.recognitionRestartCooldownMs);
     }
 
     async getMicrophoneStream(deviceId = null) {
@@ -379,6 +491,7 @@ class CarGuessingGame {
     setupSpeechRecognition(micBtn, guessInput) {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             micBtn.style.display = 'none';
+            this.supportsContinuousRecognition = false;
             return;
         }
 
@@ -386,9 +499,11 @@ class CarGuessingGame {
         if (!this.recognition) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRecognition();
+            this.supportsContinuousRecognition = true;
 
-            // 1. ROBUST SETTINGS
-            this.recognition.continuous = true;
+            // 1. ROBUST SETTINGS (adaptive per platform)
+            const isIOS = !!window.deviceIntelligence?.device?.isIOS;
+            this.recognition.continuous = !isIOS;
             this.recognition.interimResults = true;
             this.recognition.maxAlternatives = 1;
             this.recognition.lang = 'en-US';
@@ -403,6 +518,7 @@ class CarGuessingGame {
                 this.stopListening();
                 document.getElementById('guessInput').placeholder = "Mic Paused";
             } else {
+                this.recognitionRestartAttempts = 0;
                 this.startListening();
             }
         });
@@ -413,35 +529,45 @@ class CarGuessingGame {
 
     setupRecognitionHandlers(micBtn, guessInput) {
         this.recognition.onstart = () => {
-            console.log("🎤 Mic started (Continuous Mode)");
+            console.log("🎤 Mic started");
             this.isRecognitionActive = true;
+            this.setMicState('listening');
+            this.recognitionRestartAttempts = 0;
             if (this.isGameRunning || this.isListeningForAnswer) {
                 this.toggleMicVisuals(true);
             }
 
-            // INTENTIONAL: We do NOT close the globalPermStream here.
-            // Keeping it open forces the browser to maintain the "Recording" status,
-            // which prevents a second permission prompt for SpeechRecognition.
+            // Reduce speaker level while listening so prompts don't bleed back into mic.
+            if (this.voiceSystem?.setListeningMode) {
+                this.voiceSystem.setListeningMode(true);
+            }
+
+            // Release keep-alive stream once recognition is active to avoid capture conflicts.
+            if (this.globalPermStream) {
+                this.stopMediaStream(this.globalPermStream);
+                this.globalPermStream = null;
+            }
         };
 
         this.recognition.onend = () => {
             console.log("🎤 Mic stopped");
             this.isRecognitionActive = false;
+            if (!this.isListeningForAnswer) {
+                this.setMicState('ready');
+            }
 
             if (!this.isGameRunning) {
                 this.toggleMicVisuals(false);
             }
 
-            if (this.isGameRunning || this.isMicWarm) {
-                console.log("🔄 Auto-restarting mic engine...");
-                try {
-                    this.recognition.start();
-                } catch (e) { }
+            if ((this.isGameRunning || this.isMicWarm) && (this.isListeningForAnswer || this.isMicWarm)) {
+                this.restartRecognitionEngine('onend');
             }
         };
 
         this.recognition.onresult = (event) => {
             if (!this.isListeningForAnswer) return;
+            this.lastSpeechResultAt = Date.now();
 
             // Clear any previous "Silence" timer because user is talking
             if (this.silenceTimer) clearTimeout(this.silenceTimer);
@@ -507,6 +633,22 @@ class CarGuessingGame {
             if (event.error !== 'no-speech') {
                 console.warn("Mic Error:", event.error);
             }
+
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                this.setMicState('error');
+                this.updateMicStatusMessage('Microphone permission blocked. Check browser settings.');
+                this.stopListening();
+                return;
+            }
+
+            if (event.error === 'audio-capture') {
+                this.setMicState('error');
+                this.updateMicStatusMessage('No audio capture detected. Try selecting another microphone.');
+            }
+
+            if (event.error === 'aborted' || event.error === 'network' || event.error === 'no-speech') {
+                this.restartRecognitionEngine(`error-${event.error}`);
+            }
         };
     }
 
@@ -536,6 +678,10 @@ class CarGuessingGame {
             micSelect.addEventListener('change', (e) => {
                 console.log("Input Device Selected:", e.target.value);
                 this.selectedMicId = e.target.value === 'default' ? null : e.target.value;
+                this.saveSelectedMicId(this.selectedMicId);
+                if (this.isListeningForAnswer) {
+                    this.restartRecognitionEngine('device-change');
+                }
             });
 
             showNamesBtn.addEventListener('click', async () => {
@@ -649,6 +795,7 @@ class CarGuessingGame {
         if (this.isRecognitionActive) return;
 
         this.isMicWarm = true;
+        this.setMicState('warming');
 
         try {
             this.recognition.start();
@@ -862,6 +1009,7 @@ class CarGuessingGame {
                 micSelect.selectedIndex = 0;
                 this.selectedMicId = micSelect.value === 'default' ? null : micSelect.value;
             }
+            this.saveSelectedMicId(this.selectedMicId);
 
             // STEP 4: Update UI State
             const labelsVisible = audioInputs.some(d => d.label && d.label.trim().length > 0);
@@ -1021,25 +1169,27 @@ class CarGuessingGame {
     // Called ONCE at start of game
     // Called ONCE at start of game
     activateMicrophoneEngine() {
-        // We keep globalPermStream open intentionally to overlap with recognition.start()
-        // This prevents the permission "gap" that causes a re-prompt.
-        // Cleanup happens in recognition.onstart
+        if (!this.recognition) return;
+        if (this.isRecognitionActive) return;
 
-        if (this.recognition) {
-            try {
-                this.recognition.start();
-                console.log("🎤 Microphone Engine Activated");
-            } catch (e) {
-                if (e.error !== 'not-allowed' && e.error !== 'service-not-allowed') {
-                    console.log("Mic already active or error:", e);
-                }
+        this.setMicState('starting');
+
+        try {
+            this.recognition.start();
+            console.log("🎤 Microphone Engine Activated");
+        } catch (e) {
+            if (e?.name !== 'InvalidStateError' && e?.error !== 'not-allowed' && e?.error !== 'service-not-allowed') {
+                console.log("Mic already active or error:", e);
             }
         }
     }
 
     // "Open Gate" - Show Visuals
     startListening() {
+        if (this.inputMode !== 'voice') return;
         this.isListeningForAnswer = true;
+        this.lastSpeechResultAt = Date.now();
+        this.setMicState('listening');
         this.toggleMicVisuals(true);
 
         const guessInput = document.getElementById('guessInput');
@@ -1057,6 +1207,12 @@ class CarGuessingGame {
             transcriptEl.classList.add('active');
         }
 
+        if (this.voiceSystem?.setListeningMode) {
+            this.voiceSystem.setListeningMode(true);
+        }
+
+        this.startMicHealthMonitor();
+
         // Ensure engine is running
         this.activateMicrophoneEngine();
     }
@@ -1064,7 +1220,13 @@ class CarGuessingGame {
     // "Close Gate" - Hide Visuals
     stopListening() {
         this.isListeningForAnswer = false;
+        this.setMicState('ready');
         this.toggleMicVisuals(false);
+        this.stopMicHealthMonitor();
+
+        if (this.voiceSystem?.setListeningMode) {
+            this.voiceSystem.setListeningMode(false);
+        }
 
         const transcriptEl = document.getElementById('liveTranscript');
         if (transcriptEl) {
@@ -1120,15 +1282,20 @@ class CarGuessingGame {
     }
 
     async initializeSpeech() {
-        // Initialize the advanced voice system
-        if (window.AdvancedVoiceSystem) {
-            this.voiceSystem = new AdvancedVoiceSystem();
-            await this.voiceSystem.init();
-            this.speechSupported = true;
-            console.log("✅ Advanced Voice System initialized!");
-        } else {
+        try {
+            // Initialize the advanced voice system
+            if (window.AdvancedVoiceSystem) {
+                this.voiceSystem = new AdvancedVoiceSystem();
+                await this.voiceSystem.init();
+                this.speechSupported = true;
+                console.log("✅ Advanced Voice System initialized!");
+            } else {
+                this.speechSupported = false;
+                console.log("❌ Advanced Voice System not available");
+            }
+        } catch (err) {
             this.speechSupported = false;
-            console.log("❌ Advanced Voice System not available");
+            console.warn('Advanced voice system init error:', err);
         }
     }
 
@@ -1383,11 +1550,12 @@ class CarGuessingGame {
 
         // Speak the question with natural variation
         if (this.voiceSystem) {
+            this.voiceSystem.setListeningMode(false);
             this.voiceSystem.sayQuestion().then(() => {
-                // Safety Delay: Wait 1.5s (increased) for audio echo to fade before opening mic
+                // Safety delay helps avoid prompt bleed into speech recognition on phones/tablets.
                 setTimeout(() => {
                     this.startListening();
-                }, 1500);
+                }, 1200);
             });
         }
 
@@ -1802,8 +1970,15 @@ class CarGuessingGame {
             } catch (e) { }
         }
 
+        this.stopMicHealthMonitor();
+        this.setMicState('idle');
+        this.recognitionRestartAttempts = 0;
+
         if (this.voiceSystem) {
             this.voiceSystem.cancel();
+            if (this.voiceSystem.setListeningMode) {
+                this.voiceSystem.setListeningMode(false);
+            }
         }
 
         // Stop all timers
@@ -1816,6 +1991,8 @@ class CarGuessingGame {
 
     gameOver() {
         this.isGameRunning = false;
+        this.stopMicHealthMonitor();
+        this.setMicState('idle');
 
         // Stop all timers
         if (this.answerTimer) clearTimeout(this.answerTimer);
