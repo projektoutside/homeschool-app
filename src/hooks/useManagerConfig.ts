@@ -5,6 +5,31 @@ import type { ManagerConfig, ManagerFolder, ManagerTab } from '../types/manager'
 
 const STORAGE_KEY = 'homeschool_manager_config_v2';
 
+const normalizeContentType = (value: unknown): ContentType => {
+  if (value === 'game' || value === 'worksheet' || value === 'tool' || value === 'resource') {
+    return value;
+  }
+  return 'tool';
+};
+
+const BASE_CONTENT_ITEMS: ContentItem[] = CONTENT_ITEMS.filter((item): item is ContentItem => {
+  return Boolean(
+    item
+    && typeof item === 'object'
+    && typeof item.id === 'string'
+    && item.id.length > 0
+    && typeof item.title === 'string'
+    && typeof item.description === 'string'
+    && typeof item.category === 'string'
+    && Array.isArray(item.subjects)
+    && Array.isArray(item.gradeLevels)
+    && typeof item.dateAdded === 'string',
+  );
+}).map(item => ({
+  ...item,
+  type: normalizeContentType(item.type),
+}));
+
 const DEFAULT_TABS: ManagerTab[] = [
   { id: 'game', label: 'Games', icon: '🎮', sourceType: 'game' },
   { id: 'worksheet', label: 'Worksheets', icon: '📝', sourceType: 'worksheet' },
@@ -25,9 +50,9 @@ const getPreferredTabIdForItem = (
 
 const buildDefaultConfig = (): ManagerConfig => {
   const tabItems: Record<string, string[]> = {
-    game: CONTENT_ITEMS.filter(item => item.type === 'game').map(item => item.id),
-    worksheet: CONTENT_ITEMS.filter(item => item.type === 'worksheet').map(item => item.id),
-    tool: CONTENT_ITEMS.filter(item => item.type === 'tool').map(item => item.id),
+    game: BASE_CONTENT_ITEMS.filter(item => item.type === 'game').map(item => item.id),
+    worksheet: BASE_CONTENT_ITEMS.filter(item => item.type === 'worksheet').map(item => item.id),
+    tool: BASE_CONTENT_ITEMS.filter(item => item.type === 'tool').map(item => item.id),
   };
 
   return {
@@ -65,19 +90,25 @@ const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
       };
     });
 
-  const customItems = (raw.customItems ?? []).map(item => ({
-    ...item,
-    id: item.id,
-    title: item.title?.trim() || 'Untitled Item',
-    description: item.description ?? '',
-    type: (item.type ?? 'tool') as ContentType,
-    category: item.category ?? 'custom',
-    subjects: item.subjects ?? [],
-    gradeLevels: item.gradeLevels ?? ['All'],
-    dateAdded: item.dateAdded ?? new Date().toISOString().split('T')[0],
-  }));
+  const rawCustomItems = Array.isArray(raw.customItems) ? (raw.customItems as unknown[]) : [];
 
-  const baseItems = CONTENT_ITEMS.filter(item => !(raw.deletedItemIds ?? []).includes(item.id));
+  const customItems = rawCustomItems
+    .filter((item): item is Partial<ContentItem> & Pick<ContentItem, 'id'> => (
+      Boolean(item && typeof item === 'object' && 'id' in item && typeof item.id === 'string')
+    ))
+    .map(item => ({
+      ...item,
+      id: item.id,
+      title: item.title?.trim() || 'Untitled Item',
+      description: item.description ?? '',
+      type: normalizeContentType(item.type),
+      category: item.category ?? 'custom',
+      subjects: Array.isArray(item.subjects) ? item.subjects : [],
+      gradeLevels: Array.isArray(item.gradeLevels) ? item.gradeLevels : ['All'],
+      dateAdded: item.dateAdded ?? new Date().toISOString().split('T')[0],
+    }));
+
+  const baseItems = BASE_CONTENT_ITEMS.filter(item => !(raw.deletedItemIds ?? []).includes(item.id));
   const validItemIds = new Set([...baseItems, ...customItems].map(item => item.id));
   const validTabIds = new Set(tabs.map(tab => tab.id));
 
@@ -103,7 +134,7 @@ const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
     folders,
     itemOverrides: raw.itemOverrides ?? {},
     customItems,
-    deletedItemIds: (raw.deletedItemIds ?? []).filter(id => CONTENT_ITEMS.some(item => item.id === id)),
+    deletedItemIds: (raw.deletedItemIds ?? []).filter(id => BASE_CONTENT_ITEMS.some(item => item.id === id)),
   };
 };
 
@@ -127,7 +158,7 @@ export const useManagerConfig = () => {
   }, [config]);
 
   const allItems = useMemo(() => {
-    const baseItems = CONTENT_ITEMS.filter(item => !config.deletedItemIds.includes(item.id));
+    const baseItems = BASE_CONTENT_ITEMS.filter(item => !config.deletedItemIds.includes(item.id));
     return [...baseItems, ...config.customItems];
   }, [config.customItems, config.deletedItemIds]);
 
@@ -329,7 +360,7 @@ export const useManagerConfig = () => {
 
   const deleteItem = useCallback((itemId: string) => {
     setConfig(prev => {
-      const isBaseItem = CONTENT_ITEMS.some(item => item.id === itemId);
+      const isBaseItem = BASE_CONTENT_ITEMS.some(item => item.id === itemId);
 
       const nextTabItems: Record<string, string[]> = {};
       prev.tabs.forEach(tab => {
@@ -358,7 +389,7 @@ export const useManagerConfig = () => {
 
   const restoreBaseItem = useCallback((itemId: string) => {
     setConfig(prev => {
-      const baseItem = CONTENT_ITEMS.find(item => item.id === itemId);
+      const baseItem = BASE_CONTENT_ITEMS.find(item => item.id === itemId);
       if (!baseItem) return prev;
 
       const isAlreadyAssignedToTab = prev.tabs.some(tab => (prev.tabItems[tab.id] ?? []).includes(itemId));
