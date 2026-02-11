@@ -37,24 +37,16 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
     return <>{children}</>;
 };
 
-/**
- * PWA Wrapper Component
- * Handles fullscreen mode and PWA initialization
- */
-const PWAWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isStandalone, enterFullscreen, isFullscreen } = usePWA();
+type PWAState = ReturnType<typeof usePWA>;
 
-    // Auto-enter fullscreen when app is launched from home screen
+const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
+    const { isStandalone, enterFullscreen, isFullscreen } = pwa;
+
     useEffect(() => {
         const attemptFullscreen = async () => {
-            // Only auto-enter fullscreen if:
-            // 1. App is in standalone mode (installed)
-            // 2. Not already in fullscreen
-            // 3. Not on iOS (iOS doesn't support fullscreen API well)
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            
+
             if (isStandalone && !isFullscreen && !isIOS) {
-                // Small delay to ensure DOM is ready
                 setTimeout(() => {
                     enterFullscreen().catch(() => {
                         // Fullscreen may be blocked, that's ok
@@ -71,6 +63,7 @@ const PWAWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();
+    const pwa = usePWA();
 
     // Use the same base path as Vite config
     // BASE_URL from Vite includes the trailing slash, but React Router basename shouldn't
@@ -81,7 +74,7 @@ const App: React.FC = () => {
     return (
         <ErrorBoundary>
             <BrowserRouter basename={basename}>
-                <PWAWrapper>
+                <PWAWrapperWithState pwa={pwa}>
                     <Suspense fallback={<LoadingFallback />}>
                         <Routes>
                             {/* Install page - accessible without layout */}
@@ -105,8 +98,13 @@ const App: React.FC = () => {
                             </Route>
                         </Routes>
                     </Suspense>
-                    <UpdateNotification />
-                </PWAWrapper>
+                    <UpdateNotification
+                        updateInfo={pwa.updateInfo}
+                        isCheckingForUpdates={pwa.isCheckingForUpdates}
+                        checkForUpdates={pwa.checkForUpdates}
+                        applyUpdate={pwa.applyUpdate}
+                    />
+                </PWAWrapperWithState>
             </BrowserRouter>
         </ErrorBoundary>
     );

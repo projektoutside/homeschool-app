@@ -44,6 +44,13 @@ const HomePage: React.FC = () => {
     }, [foldersForTab, openFolderId, resolvedItems]);
 
     const visibleItems = openFolderId ? folderItems : rootItems;
+    const visibleIconPaths = useMemo(
+        () => visibleItems
+            .slice(0, 16)
+            .map(item => item.thumbnail ? buildAssetPath(item.thumbnail) : null)
+            .filter((path): path is string => Boolean(path)),
+        [visibleItems],
+    );
     const userDisplayName = (user?.user_metadata?.home_label as string | undefined)?.trim()
         || (user?.user_metadata?.username as string | undefined)?.trim()
         || user?.email?.split('@')[0]
@@ -75,6 +82,15 @@ const HomePage: React.FC = () => {
         setActiveTab(tabFromQuery.id);
         setOpenFolderId(null);
     }, [location.search, config.tabs]);
+
+    // Prime the most visible icons for faster first paint on slower connections/devices.
+    useEffect(() => {
+        visibleIconPaths.forEach(src => {
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = src;
+        });
+    }, [visibleIconPaths]);
 
     const getFallbackIcon = (type: ContentType): string => {
         if (type === 'game') return '🎮';
@@ -113,8 +129,9 @@ const HomePage: React.FC = () => {
                     </button>
                 )}
 
-                {visibleItems.map(item => {
+                {visibleItems.map((item, index) => {
                     const iconPath = item.thumbnail ? buildAssetPath(item.thumbnail) : null;
+                    const prioritizeIcon = index < 12;
 
                     // Handle navigation based on item properties
                     const handleItemClick = () => {
@@ -145,8 +162,12 @@ const HomePage: React.FC = () => {
                                     <img
                                         src={iconPath}
                                         alt=""
-                                        loading="lazy"
-                                        decoding="async"
+                                        loading={prioritizeIcon ? 'eager' : 'lazy'}
+                                        fetchPriority={prioritizeIcon ? 'high' : 'auto'}
+                                        decoding={prioritizeIcon ? 'sync' : 'async'}
+                                        width={66}
+                                        height={66}
+                                        draggable={false}
                                         onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                             e.currentTarget.nextElementSibling?.removeAttribute('hidden');

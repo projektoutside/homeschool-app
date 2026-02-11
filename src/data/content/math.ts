@@ -22,7 +22,7 @@ export const mathContent: ContentItem[] = [
         subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
         gradeLevels: ['All'],
         customHtmlPath: '/Games/Math-Worksheet-Creator/index.html',
-        thumbnail: '/Games/Math-Worksheet-Creator/thumb.png',
+        thumbnail: '/assets/thumbnails/optimized/math-worksheet-creator-game-128.webp',
         dateAdded: '2024-03-01'
     },
     {
@@ -34,7 +34,7 @@ export const mathContent: ContentItem[] = [
         subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
         gradeLevels: ['All'],
         customHtmlPath: '/Games/MathPuzzle/index.html',
-        thumbnail: '/Games/MathPuzzle/thumb.png',
+        thumbnail: '/assets/thumbnails/optimized/math-puzzle-128.webp',
         dateAdded: '2026-01-26'
     },
     {
@@ -46,7 +46,7 @@ export const mathContent: ContentItem[] = [
         subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
         gradeLevels: ['All'],
         customHtmlPath: '/MathWorksheetCreator/index.html',
-        thumbnail: '/MathWorksheetCreator/thumb.png',
+        thumbnail: '/assets/thumbnails/optimized/math-worksheet-creator-128.webp',
         dateAdded: '2026-01-26'
     },
     {
@@ -988,7 +988,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["Time", "Geometry"],
         "gradeLevels": ["1st", "2nd", "3rd"],
         "customHtmlPath": "/Games/analogclockgame/index.html",
-        "thumbnail": "/Games/analogclockgame/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/analog-clock-128.webp",
         "dateAdded": "2026-01-14"
     },
     {
@@ -1002,7 +1002,7 @@ export const mathContent: ContentItem[] = [
             "All"
         ],
         "customHtmlPath": "/PolygonAPP/index.html",
-        "thumbnail": "/PolygonAPP/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/polygon-app-128.webp",
         "dateAdded": "2026-01-21"
     },
     {
@@ -1016,7 +1016,7 @@ export const mathContent: ContentItem[] = [
             "All"
         ],
         "customHtmlPath": "/PolygonAPP/index.html",
-        "thumbnail": "/PolygonAPP/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/polygon-app-128.webp",
         "dateAdded": "2026-01-21"
     },
     {
@@ -1028,7 +1028,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["Logic", "Problem Solving", "Teamwork"],
         "gradeLevels": ["All"],
         "customHtmlPath": "/Games/SpyAcademy/index.html",
-        "thumbnail": "/Games/SpyAcademy/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/spy-academy-128.webp",
         "dateAdded": "2026-01-24"
     },
     {
@@ -1040,7 +1040,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["Addition", "Subtraction", "Multiplication", "Division"],
         "gradeLevels": ["All"],
         "customHtmlPath": "/Games/SinglePlayerMathWrite/index.html",
-        "thumbnail": "/Games/SinglePlayerMathWrite/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/single-player-math-write-128.webp",
         "dateAdded": "2026-01-28"
     },
     {
@@ -1052,7 +1052,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["Addition", "Subtraction", "Multiplication", "Division"],
         "gradeLevels": ["All"],
         "customHtmlPath": "/Games/2PlayersMathWrite/index.html",
-        "thumbnail": "/Games/2PlayersMathWrite/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/two-players-math-write-128.webp",
         "dateAdded": "2026-01-28"
     },
     {
@@ -1064,7 +1064,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["General"],
         "gradeLevels": ["All"],
         "customHtmlPath": "/Games/CarKingFinal/index.html",
-        "thumbnail": "/Games/CarKingFinal/assets/images/ui/thumb.png",
+        "thumbnail": "/assets/thumbnails/optimized/car-king-128.webp",
         "dateAdded": "2026-01-31"
     }
 ];

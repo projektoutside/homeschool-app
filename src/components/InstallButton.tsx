@@ -19,40 +19,123 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
   onInstallStart,
   onInstallComplete
 }) => {
-  const { isInstallable, isInstalled, installPrompt } = usePWA();
+  const { isInstallable, isInstalled, installPrompt, installContext } = usePWA();
   const [isInstalling, setIsInstalling] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [installError, setInstallError] = useState<string | null>(null);
 
   // Detect iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as { MSStream?: boolean }).MSStream;
-  
-  // Detect Safari
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const supportsShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const isConsoleUnsupported = installContext.platform === 'console';
+
+  const openShareSheet = useCallback(async (): Promise<boolean> => {
+    if (!supportsShare) return false;
+    try {
+      await navigator.share({
+        title: "La's Homeschool Hub",
+        text: "Install La's Homeschool Hub",
+        url: window.location.href
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [supportsShare]);
 
   const handleInstall = useCallback(async () => {
     onInstallStart?.();
     setIsInstalling(true);
+    setInstallError(null);
 
-    // iOS Safari doesn't support beforeinstallprompt
-    if (isIOS && isSafari) {
+    if (isConsoleUnsupported) {
       setShowIOSInstructions(true);
       setIsInstalling(false);
       onInstallComplete?.(false);
       return;
     }
 
-    // Try native install prompt
+    // Preferred path: native one-click install prompt
     if (isInstallable) {
       const success = await installPrompt();
       setIsInstalling(false);
       onInstallComplete?.(success);
-    } else {
-      // Desktop Chrome/Edge or other browsers without prompt
+
+      if (!success) {
+        setInstallError('Install prompt was dismissed. Tap again to retry.');
+      }
+      return;
+    }
+
+    // iOS best possible fallback: open native share sheet in one tap.
+    if (isIOS) {
+      await openShareSheet();
       setShowIOSInstructions(true);
       setIsInstalling(false);
       onInstallComplete?.(false);
+      return;
     }
-  }, [isInstallable, isIOS, isSafari, installPrompt, onInstallStart, onInstallComplete]);
+
+    // Non-iOS fallback guidance
+    setShowIOSInstructions(true);
+    setIsInstalling(false);
+    onInstallComplete?.(false);
+  }, [isConsoleUnsupported, isInstallable, isIOS, installPrompt, onInstallStart, onInstallComplete, openShareSheet]);
+
+  const getInstallHeading = () => {
+    switch (installContext.platform) {
+      case 'android':
+        return '🤖 Install on Android';
+      case 'chromium-desktop':
+        return '💻 Install on Desktop (Chrome/Edge)';
+      case 'firefox':
+        return '🦊 Install on Firefox';
+      case 'safari-desktop':
+        return '🧭 Install on Safari (macOS)';
+      case 'console':
+        return '🎮 Console Browsers';
+      default:
+        return '💻 Install from Browser Menu';
+    }
+  };
+
+  const getInstructionItems = () => {
+    if (installContext.platform === 'console') {
+      return [
+        'Most game consoles do not support full PWA app installation.',
+        'Use a phone, tablet, or desktop browser for the best install experience.',
+        'You can still use the website in the console browser when supported.'
+      ];
+    }
+
+    if (installContext.platform === 'firefox') {
+      return [
+        'Open Firefox menu (☰).',
+        'Use Add to Home Screen / Install shortcut if available on your device.',
+        'If install is not offered, open this app in Chrome or Edge for one-click install.'
+      ];
+    }
+
+    if (installContext.platform === 'safari-desktop') {
+      return [
+        'Open Safari menu bar.',
+        'Use File → Add to Dock (on supported macOS versions).',
+        'Launch from Dock like an app after adding.'
+      ];
+    }
+
+    return [
+      'Open browser menu (⋮ or ...).',
+      'Select Install App or Add to Home Screen.',
+      'Follow prompts to add the app to your device.'
+    ];
+  };
+
+  const installButtonLabel = isInstallable
+    ? 'Install in 1 Tap'
+    : isConsoleUnsupported
+      ? 'Install Not Supported Here'
+      : 'Open Install Steps';
 
   // If already installed, show launch option
   if (isInstalled) {
@@ -77,10 +160,12 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         ) : (
           <>
             {showIcon && <span className="icon">📲</span>}
-            <span>Install App</span>
+            <span>{installButtonLabel}</span>
           </>
         )}
       </button>
+
+      {installError && <p className="install-helper-note">{installError}</p>}
 
       {/* iOS/Desktop Instructions Modal */}
       {showIOSInstructions && (
@@ -96,20 +181,25 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
             
             {isIOS ? (
               <div className="ios-instructions">
-                <h3>📱 Install on iPhone/iPad</h3>
+                <h3>📱 Quick Install on iPhone/iPad</h3>
+                {supportsShare && (
+                  <button className="install-quick-action" onClick={openShareSheet}>
+                    Open Share Sheet
+                  </button>
+                )}
                 <ol>
-                  <li>Tap the <strong>Share</strong> button <span className="share-icon">⎋</span> at the bottom of your screen.</li>
-                  <li>Scroll down and tap <strong>Add to Home Screen</strong> <span className="add-icon">⊕</span>.</li>
+                  <li>Tap <strong>Share</strong> <span className="share-icon">⎋</span>.</li>
+                  <li>Tap <strong>Add to Home Screen</strong> <span className="add-icon">⊕</span>.</li>
                   <li>Tap <strong>Add</strong> in the top right corner.</li>
                 </ol>
               </div>
             ) : (
               <div className="desktop-instructions">
-                <h3>💻 Install on Desktop</h3>
+                <h3>{getInstallHeading()}</h3>
                 <ol>
-                  <li>Look for the install icon <strong>⊕</strong> in your browser's address bar.</li>
-                  <li>Or open the browser menu (⋮) and select "Install La's Homeschool Hub".</li>
-                  <li>Follow the prompts to add the app to your desktop.</li>
+                  {getInstructionItems().map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
                 </ol>
               </div>
             )}

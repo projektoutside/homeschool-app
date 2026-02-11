@@ -4,7 +4,7 @@ import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
 import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
-import { usePWAInstall } from '../hooks/usePWAInstall';
+import { usePWA } from '../hooks/usePWA';
 import { PWAInstallModal } from '../components/PWAInstallModal';
 import './Viewer.css';
 
@@ -27,31 +27,16 @@ const ViewerPage: React.FC = () => {
     const isGameContent = item?.type === 'game';
     const isWorksheetContent = item?.type === 'worksheet';
 
-    const { manifestUrl, serviceWorkerUrl } = useMemo(() => {
-        if (item?.type === 'game' && item?.customHtmlPath) {
-            const htmlPath = buildAssetPath(item.customHtmlPath);
-            return {
-                manifestUrl: htmlPath.replace('index.html', 'manifest.json'),
-                serviceWorkerUrl: htmlPath.replace('index.html', 'sw.js')
-            };
-        }
-        return { manifestUrl: '', serviceWorkerUrl: '' };
-    }, [item]);
+    const { isInstallable, isInstalled, installPrompt, installContext } = usePWA();
 
-    const { isInstallable, isInstalled, install } = usePWAInstall({
-        manifestUrl,
-        serviceWorkerUrl,
-        enable: !!manifestUrl
-    });
-
-    const handleInstallClick = useCallback(() => {
+    const handleInstallClick = useCallback(async () => {
         if (isInstalled) return;
         if (isInstallable) {
-            install();
+            await installPrompt();
         } else {
             setIsModalOpen(true);
         }
-    }, [isInstallable, isInstalled, install]);
+    }, [isInstallable, isInstalled, installPrompt]);
 
     const handleZoomIn = useCallback(() => {
         setZoomScale(prev => Math.min(prev * 1.2, 3));
@@ -371,7 +356,7 @@ const ViewerPage: React.FC = () => {
                                         className={`download-btn-main ${isInstalled ? 'installed' : ''}`}
                                         disabled={isInstalled}
                                     >
-                                        {isInstalled ? '✓ Installed' : '📱 Install App'}
+                                        {isInstalled ? '✓ Installed' : installContext.platform === 'console' ? '🎮 Install Unsupported' : '📱 Install App'}
                                     </button>
                                 ) : (
                                     <button
@@ -397,7 +382,13 @@ const ViewerPage: React.FC = () => {
             <div className="viewer-content">
                 {renderContent()}
             </div>
-            {isGameContent && <PWAInstallModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />}
+            {isGameContent && (
+                <PWAInstallModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    platform={installContext.platform}
+                />
+            )}
         </div>
     );
 };

@@ -1,163 +1,264 @@
-# La's Homeschool Hub App - PWA Installation Guide
+# La's Homeschool Hub — PWA Install & Platform Guide
 
-## 🚀 One-Click Install Feature
+This guide documents the **current, real implementation** of install behavior in this repo.
 
-La's Homeschool Hub App now supports **Progressive Web App (PWA)** technology, allowing users to install the app directly to their device with a single click!
+It explains:
+- what works as true one-tap install,
+- what requires manual browser steps,
+- what is not supported (or only partially supported),
+- how the code is organized,
+- and how to test/troubleshoot it.
 
-## 📱 Installation Link
+---
 
-Send this link to your customers:
-```
-https://projektoutside.github.io/homeschool-app/install
-```
+## 1) Current Install Experience (Reality-Based)
 
-When users visit this link, they'll see:
-- A beautiful install card with app information
-- A one-click "Install App" button
-- Platform-specific instructions for iOS or desktop browsers
+### Best experience (true one-tap prompt)
+- **Chrome / Edge on Android**
+- **Chrome / Edge on Windows/macOS/Linux desktop**
 
-## ✨ Features
+When install criteria are met, users can tap your app install button and get the browser-native install prompt.
 
-### 1. **One-Click Install**
-- Chrome/Edge: Click "Install App" → App installs instantly
-- iOS Safari: Click "Install App" → Shows step-by-step instructions
-- Works on all platforms: Windows, macOS, iOS, Android
+### Manual install experience (not one-tap by platform policy)
+- **iOS Safari**: user must do **Share → Add to Home Screen**
+- **Firefox / Safari desktop**: install method varies by version/device and may require manual menu actions
 
-### 2. **Fullscreen Mode**
-- App launches in fullscreen automatically when installed
-- No browser UI (address bar, tabs) - just the app
-- Distraction-free learning environment for kids
+### Limited / unsupported for app-like install
+- **Console browsers (PlayStation/Xbox/Nintendo web browsers)**
 
-### 3. **Auto-Update Notifications**
-- App checks for updates from GitHub automatically
-- Users get notified when new updates are available
-- One-click to apply updates and get the latest features
+The app can often still be browsed, but full native-style PWA install behavior is generally not available.
 
-### 4. **Offline Support**
-- Works without internet connection after first install
-- All educational content available offline
-- Perfect for travel or areas with poor connectivity
+---
 
-### 5. **Custom App Icon**
-- Beautiful graduation cap icon with "LH" initials
-- Easy to customize - see "Customizing the Icon" below
-- All required sizes generated automatically (72px to 512px)
+## 2) User-Facing Install Entry Points
 
-## 🎨 Customizing the Icon
+### A) Dedicated install route
+- URL: `https://projektoutside.github.io/homeschool-app/install`
+- Page component: `src/pages/InstallPage.tsx`
 
-### Option 1: Edit Python Script (Recommended)
-1. Open `scripts/generate_icons.py`
-2. Edit the `ICON_CONFIG` dictionary:
-```python
-ICON_CONFIG = {
-    'background_color': '#6366f1',    # Change background color
-    'accent_color': '#fbbf24',        # Change cap/tassel color
-    'text_color': '#ffffff',          # Change text color
-    'secondary_color': '#818cf8',     # Change gradient color
-    'text': 'LH',                     # Change initials
-}
-```
-3. Run: `python scripts/generate_icons.py`
+What this page includes:
+- **Platform status badge** (based on detected capability)
+- Install card with app value proposition
+- Main install button
+- Compatibility note footer
 
-### Option 2: Edit SVG Directly
-1. Open `public/icons/icon-source.svg` in a vector editor (Figma, Illustrator, Inkscape)
-2. Make your changes
-3. Export to all required sizes, or use an online converter
+### B) Game viewer install action
+- Component: `src/pages/Viewer.tsx`
 
-### Option 3: Replace PNG Files
-1. Create your icon in any image editor
-2. Export to these sizes: 72, 96, 128, 144, 152, 192, 384, 512
-3. Save to `public/icons/` as `icon-{size}x{size}.png`
+When viewing game content, users can tap “Install App” from the viewer header. If native prompt isn’t available, it opens platform instructions modal.
 
-## 🔧 Technical Details
+---
 
-### Files Created/Modified
+## 3) Current Install Architecture (Code)
 
-| File | Purpose |
-|------|---------|
-| `public/manifest.json` | PWA manifest with app info |
-| `public/service-worker.js` | Offline support & auto-updates |
-| `index.html` | Meta tags for PWA |
-| `src/hooks/usePWA.ts` | PWA functionality hook |
-| `src/components/InstallButton.tsx` | Install button component |
-| `src/components/UpdateNotification.tsx` | Update notifications |
-| `src/pages/InstallPage.tsx` | Install page at `/install` |
-| `public/icons/` | App icons in all sizes |
+## Core hook (single source of truth)
+- `src/hooks/usePWA.ts`
 
-### Browser Compatibility
+This hook now provides:
+- install state (`isInstallable`, `isInstalled`, `isStandalone`)
+- install action (`installPrompt()`)
+- platform-aware context (`installContext`):
+  - `platform`: `ios | android | chromium-desktop | firefox | safari-desktop | console | unknown`
+  - `installMethod`: `native-prompt | manual-ios-share | manual-browser-menu | unsupported`
+  - `canOneClickInstall`: boolean
+- service worker registration + update checks
+- fullscreen helpers
 
-- ✅ Chrome (Windows, macOS, Android)
-- ✅ Edge (Windows, macOS)
-- ✅ Safari (iOS, macOS)
-- ✅ Firefox (Windows, macOS, Android)
-- ✅ Samsung Internet
+> Deprecated hook removed: `src/hooks/usePWAInstall.ts` was deleted in Phase 2 to avoid split install logic.
 
-## 📋 Testing the Install Flow
+### Install UI components
+- `src/components/InstallButton.tsx`
+  - Uses `usePWA()` directly
+  - Tries native prompt first when available
+  - iOS: can trigger share sheet and then show steps
+  - non-native cases: opens detailed platform guidance
+- `src/components/PWAInstallModal.tsx`
+  - Receives `platform` prop
+  - Renders platform-specific instructions for:
+    - console
+    - firefox
+    - safari-desktop
+    - generic non-iOS fallback
+    - iOS-specific share flow
 
-1. **Start the dev server:**
+### Styling
+- `src/components/InstallButton.css`
+  - install button visuals
+  - modal support styles
+  - install page styles
+  - platform status badge styles (`success`, `info`, `warning`)
+
+---
+
+## 4) Service Worker + Offline Strategy
+
+Service worker file: `public/service-worker.js`
+
+### Implemented behavior
+1. **Install/activate lifecycle**
+   - caches static shell assets
+   - removes old caches on activate
+
+2. **Fetch strategy**
+   - **Network-first** for HTML/navigation and mutable live content paths:
+     - `/PolygonAPP/`
+     - `/Games/`
+     - `/Worksheets/`
+     - `/MathWorksheetCreator/`
+     - `/FinalGraph/`
+   - **Stale-while-revalidate** for other static resources (js/css/images)
+
+3. **Important offline fallback fix (Phase 1)**
+   - For offline **HTML navigation**, fallback to cached `index.html`
+   - For offline **non-HTML live assets**, do **not** return `index.html` (prevents broken asset responses)
+
+4. **Update plumbing**
+   - supports `SKIP_WAITING`, update checks, and messaging to app UI
+
+---
+
+## 5) Manifest + PWA Metadata
+
+### Manifest
+- File: `public/manifest.json`
+- Includes:
+  - app name/short name/description
+  - `start_url`, `scope`
+  - `display: "fullscreen"`
+  - icon set from 72 → 512 (including maskable purpose)
+
+### HTML metadata
+- File: `index.html`
+- Includes:
+  - manifest link
+  - mobile web app tags
+  - Apple web app tags
+  - theme color + tile info
+
+---
+
+## 6) Platform Behavior Matrix
+
+| Platform/Browser | One-tap install via app button | Manual path | Notes |
+|---|---:|---|---|
+| Chrome Android | ✅ | Optional | Best path |
+| Edge Android | ✅/⚠️ | Optional | Usually good, browser-version dependent |
+| Chrome Desktop | ✅ | Optional | Best desktop path |
+| Edge Desktop | ✅ | Optional | Best desktop path |
+| Safari iOS | ❌ | Share → Add to Home Screen | Apple policy limitation |
+| Safari macOS | ⚠️ | File → Add to Dock (if supported) | Version dependent |
+| Firefox (mobile/desktop) | ⚠️ | Browser menu path if available | Inconsistent install UX |
+| Console browsers | ❌ | None/limited | Native-style PWA install generally unavailable |
+
+Legend:
+- ✅ = supported
+- ⚠️ = partial/varies
+- ❌ = not supported
+
+---
+
+## 7) Files You Should Know
+
+### Install flow
+- `src/hooks/usePWA.ts`
+- `src/components/InstallButton.tsx`
+- `src/components/PWAInstallModal.tsx`
+- `src/pages/InstallPage.tsx`
+- `src/pages/Viewer.tsx`
+
+### PWA platform plumbing
+- `public/manifest.json`
+- `public/service-worker.js`
+- `index.html`
+
+### Styling
+- `src/components/InstallButton.css`
+- `src/components/PWAInstallModal.css`
+
+---
+
+## 8) Local Testing Checklist
+
+1. Start dev server:
    ```bash
    npm run dev
    ```
 
-2. **Visit the install page:**
+2. Build production bundle (recommended validation):
+   ```bash
+   npm run build
    ```
-   http://localhost:5173/install
-   ```
 
-3. **Test the install button:**
-   - Should show "Install App" button
-   - Click to trigger browser install prompt
+3. Open install page:
+   - `http://localhost:5173/install`
 
-4. **Test installed app:**
-   - After install, app should open from home screen/desktop
-   - Should be in fullscreen mode (no browser UI)
+4. Verify behavior by platform:
+   - Chromium: app button should use native prompt when eligible
+   - iOS Safari: guidance should show Share/Add flow
+   - Console user-agent simulation (or real device): unsupported/limited messaging
 
-5. **Test auto-updates:**
-   - The app checks for GitHub updates automatically
-   - Make a commit to trigger update notification
-
-## 🌐 Deployment
-
-### For GitHub Pages:
-1. Build the project: `npm run build`
-2. Ensure `dist/` folder contains all icon files
-3. Deploy to GitHub Pages
-4. Share the `/install` link with customers
-
-### For Other Hosts:
-1. Build the project: `npm run build`
-2. Upload `dist/` contents to your web server
-3. Ensure HTTPS is enabled (required for PWA)
-4. Verify manifest.json is accessible at `/manifest.json`
-
-## 🐛 Troubleshooting
-
-### Icons not showing?
-- Run: `python scripts/generate_icons.py`
-- Check that `public/icons/` contains all PNG files
-- Verify paths in `public/manifest.json`
-
-### Install button not working?
-- Ensure you're using HTTPS (required for PWA)
-- Check browser console for errors
-- Verify service worker is registered
-
-### App not going fullscreen?
-- Check that `display: fullscreen` in `manifest.json`
-- Some browsers (iOS) don't support fullscreen API
-- App should still launch without browser UI
-
-### Updates not checking?
-- Verify GitHub repo info in `public/service-worker.js`
-- Check browser console for service worker messages
-- Ensure internet connection is available
-
-## 📚 Additional Resources
-
-- [PWA Documentation](https://web.dev/progressive-web-apps/)
-- [Web App Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)
-- [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)
+5. Verify game-viewer install action:
+   - open any game via `Viewer.tsx` path
+   - confirm install button uses same logic and modal guidance
 
 ---
 
-**Quick Start:** Share `https://your-domain.com/install` with customers for one-click installation! 🎉
+## 9) Troubleshooting
+
+### Install prompt never appears on Chrome/Edge
+Check:
+- HTTPS context (or localhost for dev)
+- manifest is reachable and valid
+- service worker successfully registered
+- app meets installability heuristics (icons, start_url/scope, engagement)
+
+### iOS users say “one-tap doesn’t work”
+Expected behavior. iOS Safari does not provide `beforeinstallprompt` one-tap install like Chromium browsers.
+
+### Console users cannot install
+Expected behavior. Keep messaging clear and route them to phone/tablet/desktop for install.
+
+### Offline game/worksheet assets behave strangely
+Confirm latest `public/service-worker.js` is active and old cache was replaced. Hard refresh / unregister old SW during debug.
+
+---
+
+## 10) Native Wrapper Path (Optional, Recommended for Store Distribution)
+
+If you want app-store presence and more consistent install UX on mobile, use Capacitor.
+
+### Phase 2.5 checklist
+
+#### Prepare web build
+- [ ] Keep PWA flow working (`npm run build` passes)
+- [ ] Confirm production routing/base path (`/homeschool-app/`)
+- [ ] Ensure critical assets are in `dist/`
+
+#### Add Capacitor
+- [ ] `npm i @capacitor/core @capacitor/cli`
+- [ ] `npx cap init "La's Homeschool Hub" "com.projektoutside.homeschool" --web-dir=dist`
+- [ ] `npm i @capacitor/android @capacitor/ios`
+- [ ] `npx cap add android` (and iOS on macOS)
+
+#### Sync and run
+- [ ] `npm run build && npx cap sync`
+- [ ] `npx cap open android`
+- [ ] `npx cap open ios` (macOS)
+
+#### Hardening for stores
+- [ ] privacy policy + support url
+- [ ] signing/package ids
+- [ ] kid-safe/parental policy checks
+- [ ] store screenshots/metadata
+
+---
+
+## 11) Executive Summary
+
+Your project now has a **best-possible PWA install implementation** for real-world browser constraints:
+- one-tap where truly supported,
+- clear guided fallback where not,
+- explicit console limitation handling,
+- and cleaner architecture with one main install hook.
+
+For maximum reach, keep this PWA and optionally add a Capacitor wrapper for iOS/Android store distribution.

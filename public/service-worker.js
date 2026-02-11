@@ -123,11 +123,14 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           console.log('[SW] Network failed, serving offline fallback');
-          // Fallback to the cached index.html
-          return caches.match('./index.html').then(response => {
-            // If we don't have index.html in cache (unlikely), just return null (browser default offline page)
-            return response || null;
-          });
+          if (isHtmlRequest) {
+            // HTML navigation fallback to app shell.
+            return caches.match('./index.html').then(response => response || null);
+          }
+
+          // For non-HTML live assets, never return index.html.
+          // Return cached asset match if present, otherwise let request fail naturally.
+          return caches.match(event.request).then(response => response || null);
         })
     );
     return;

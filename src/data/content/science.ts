@@ -23,7 +23,7 @@ export const scienceContent: ContentItem[] = [
     subjects: ['Data Analysis', 'Mathematics'],
     gradeLevels: ['All'],
     customHtmlPath: '/FinalGraph/index.html',
-    thumbnail: '/FinalGraph/thumb.png',
+    thumbnail: '/assets/thumbnails/optimized/final-graph-128.webp',
     dateAdded: '2026-01-24'
   }
 ];

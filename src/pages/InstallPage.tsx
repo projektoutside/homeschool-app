@@ -1,5 +1,6 @@
 import React from 'react';
 import { InstallCard } from '../components/InstallButton';
+import { usePWA } from '../hooks/usePWA';
 import '../components/InstallButton.css';
 
 /**
@@ -8,8 +9,42 @@ import '../components/InstallButton.css';
  * Accessible at /install route
  */
 const InstallPage: React.FC = () => {
+  const { installContext } = usePWA();
+
+  const badgeLabel = (() => {
+    switch (installContext.platform) {
+      case 'android':
+        return installContext.canOneClickInstall
+          ? 'Android: One-tap install available'
+          : 'Android: Use browser menu install';
+      case 'chromium-desktop':
+        return installContext.canOneClickInstall
+          ? 'Desktop Chrome/Edge: One-tap install available'
+          : 'Desktop Chrome/Edge: Use browser install menu';
+      case 'ios':
+        return 'iOS: Share → Add to Home Screen';
+      case 'firefox':
+        return 'Firefox: Install varies by device/version';
+      case 'safari-desktop':
+        return 'Safari macOS: File → Add to Dock (if supported)';
+      case 'console':
+        return 'Console browser: native-style app install not supported';
+      default:
+        return 'Install support depends on your browser/device';
+    }
+  })();
+
+  const badgeTone = installContext.canOneClickInstall
+    ? 'success'
+    : installContext.platform === 'console'
+      ? 'warning'
+      : 'info';
+
   return (
     <div className="install-page">
+      <div className={`install-platform-badge ${badgeTone}`} role="status" aria-live="polite">
+        {badgeLabel}
+      </div>
       <InstallCard />
       
       <footer style={{ 
@@ -18,9 +53,9 @@ const InstallPage: React.FC = () => {
         color: '#9ca3af',
         fontSize: '0.875rem'
       }}>
-        <p>Compatible with Chrome, Edge, Safari, and Firefox</p>
+        <p>Best install experience: Chrome/Edge on Android, Windows, and macOS</p>
         <p style={{ marginTop: '0.5rem' }}>
-          Works on Windows, macOS, iOS, and Android
+          iOS requires Share → Add to Home Screen; console browsers have limited support
         </p>
       </footer>
     </div>

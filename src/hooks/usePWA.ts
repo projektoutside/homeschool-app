@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // Type definitions
 interface BeforeInstallPromptEvent extends Event {
@@ -8,11 +8,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 interface UpdateInfo {
   hasUpdate: boolean;
-  currentCommit: string | null;
-  latestCommit: string;
-  commitDate: string;
-  commitMessage: string;
-  repoUrl: string;
+  currentCommit?: string | null;
+  latestCommit?: string;
+  commitDate?: string;
+  commitMessage?: string;
+  repoUrl?: string;
 }
 
 interface FullscreenDocument extends Document {
@@ -36,6 +36,11 @@ interface UsePWAReturn {
   isInstalled: boolean;
   isStandalone: boolean;
   installPrompt: () => Promise<boolean>;
+  installContext: {
+    platform: 'ios' | 'android' | 'chromium-desktop' | 'firefox' | 'safari-desktop' | 'console' | 'unknown';
+    installMethod: 'native-prompt' | 'manual-ios-share' | 'manual-browser-menu' | 'unsupported';
+    canOneClickInstall: boolean;
+  };
   
   // Fullscreen state
   isFullscreen: boolean;
@@ -74,8 +79,93 @@ export function usePWA(): UsePWAReturn {
   // Service worker state
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const hasReloadedForUpdateRef = useRef(false);
+  const hasAutoAppliedUpdateRef = useRef(false);
   
   const checkForUpdatesFromSWRef = useRef<() => void>(() => {});
+
+  const installContext = useMemo(() => {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    const isConsole = /PlayStation|Nintendo|Xbox/i.test(ua);
+    const isFirefox = /Firefox/i.test(ua);
+    const isEdge = /Edg\//i.test(ua);
+    const isChrome = /Chrome|CriOS/i.test(ua) && !isEdge && !/OPR|Opera|SamsungBrowser/i.test(ua);
+    const isSafariDesktop = /Safari/i.test(ua) && !/Chrome|CriOS|Android|Edg|OPR|Firefox/i.test(ua) && !isIOS;
+
+    if (isConsole) {
+      return {
+        platform: 'console' as const,
+        installMethod: 'unsupported' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    if (deferredPrompt) {
+      if (isAndroid) {
+        return {
+          platform: 'android' as const,
+          installMethod: 'native-prompt' as const,
+          canOneClickInstall: true,
+        };
+      }
+
+      if (isChrome || isEdge) {
+        return {
+          platform: 'chromium-desktop' as const,
+          installMethod: 'native-prompt' as const,
+          canOneClickInstall: true,
+        };
+      }
+    }
+
+    if (isIOS) {
+      return {
+        platform: 'ios' as const,
+        installMethod: 'manual-ios-share' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    if (isFirefox) {
+      return {
+        platform: 'firefox' as const,
+        installMethod: 'manual-browser-menu' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    if (isSafariDesktop) {
+      return {
+        platform: 'safari-desktop' as const,
+        installMethod: 'manual-browser-menu' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    if (isAndroid) {
+      return {
+        platform: 'android' as const,
+        installMethod: 'manual-browser-menu' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    if (isChrome || isEdge) {
+      return {
+        platform: 'chromium-desktop' as const,
+        installMethod: 'manual-browser-menu' as const,
+        canOneClickInstall: false,
+      };
+    }
+
+    return {
+      platform: 'unknown' as const,
+      installMethod: 'manual-browser-menu' as const,
+      canOneClickInstall: false,
+    };
+  }, [deferredPrompt]);
 
   // Check for updates via service worker - defined early for use in effects
   const checkForUpdatesFromSW = useCallback(() => {
@@ -146,6 +236,33 @@ export function usePWA(): UsePWAReturn {
     if ('serviceWorker' in navigator) {
       const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
 
+      const onControllerChange = () => {
+        // Auto-refresh once when a new SW takes control.
+        if (hasReloadedForUpdateRef.current) return;
+        hasReloadedForUpdateRef.current = true;
+        window.location.reload();
+      };
+
+      const onServiceWorkerMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'UPDATE_CHECK_RESULT') {
+          setUpdateInfo({
+            hasUpdate: event.data.hasUpdate,
+            currentCommit: event.data.currentCommit,
+            latestCommit: event.data.latestCommit,
+            commitDate: event.data.commitDate,
+            commitMessage: event.data.commitMessage,
+            repoUrl: event.data.repoUrl
+          });
+          setIsCheckingForUpdates(false);
+        } else if (event.data?.type === 'UPDATE_CHECK_ERROR') {
+          console.error('[PWA] Update check failed:', event.data.error);
+          setIsCheckingForUpdates(false);
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+      navigator.serviceWorker.addEventListener('message', onServiceWorkerMessage);
+
       navigator.serviceWorker
         .register(swUrl)
         .then((registration) => {
@@ -158,22 +275,35 @@ export function usePWA(): UsePWAReturn {
             // Ignore update polling failures
           });
 
-          // Listen for service worker messages
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'UPDATE_CHECK_RESULT') {
-              setUpdateInfo({
-                hasUpdate: event.data.hasUpdate,
-                currentCommit: event.data.currentCommit,
-                latestCommit: event.data.latestCommit,
-                commitDate: event.data.commitDate,
-                commitMessage: event.data.commitMessage,
-                repoUrl: event.data.repoUrl
-              });
-              setIsCheckingForUpdates(false);
-            } else if (event.data?.type === 'UPDATE_CHECK_ERROR') {
-              console.error('[PWA] Update check failed:', event.data.error);
-              setIsCheckingForUpdates(false);
+          if (registration.waiting) {
+            setUpdateInfo({
+              hasUpdate: true,
+              latestCommit: 'A new app version is ready',
+            });
+
+            if (!hasAutoAppliedUpdateRef.current) {
+              hasAutoAppliedUpdateRef.current = true;
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
+          }
+
+          registration.addEventListener('updatefound', () => {
+            const installingWorker = registration.installing;
+            if (!installingWorker) return;
+
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setUpdateInfo({
+                  hasUpdate: true,
+                  latestCommit: 'A new app version is ready',
+                });
+
+                if (registration.waiting && !hasAutoAppliedUpdateRef.current) {
+                  hasAutoAppliedUpdateRef.current = true;
+                  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+              }
+            });
           });
 
           // Check for updates on load
@@ -184,7 +314,14 @@ export function usePWA(): UsePWAReturn {
         .catch((error) => {
           console.error('[PWA] Service Worker registration failed:', error);
         });
+
+      return () => {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        navigator.serviceWorker.removeEventListener('message', onServiceWorkerMessage);
+      };
     }
+
+    return;
   }, []);
 
   // Fullscreen change listener
@@ -271,8 +408,14 @@ export function usePWA(): UsePWAReturn {
   }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
   const checkForUpdates = useCallback(() => {
+    if (swRegistration) {
+      setIsCheckingForUpdates(true);
+      swRegistration.update().finally(() => {
+        setIsCheckingForUpdates(false);
+      });
+    }
     checkForUpdatesFromSW();
-  }, [checkForUpdatesFromSW]);
+  }, [checkForUpdatesFromSW, swRegistration]);
 
   // Apply update - reload to get new version
   const applyUpdate = useCallback(() => {
@@ -294,6 +437,7 @@ export function usePWA(): UsePWAReturn {
     isInstalled,
     isStandalone,
     installPrompt,
+    installContext,
     
     // Fullscreen
     isFullscreen,
