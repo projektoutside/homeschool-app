@@ -48,6 +48,11 @@ jobs:
           # For project pages (username.github.io/repo-name), use: BASE_PATH=/repo-name/
           # To manually set: change the value below to your repository name
           BASE_PATH: /${{ steps.repo-name.outputs.name }}/
+          # Supabase env vars must be present at build time so Vite can inline them.
+          # Add these in GitHub repo settings:
+          # Settings -> Secrets and variables -> Actions -> New repository secret
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact

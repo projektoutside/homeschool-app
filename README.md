@@ -16,6 +16,23 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
+### GitHub Pages deployment note (important)
+
+If your deployed app shows:
+
+`Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.`
+
+that means the GitHub Actions build did not receive Supabase env vars.
+
+Add these **repository secrets** in GitHub:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Path: **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**
+
+Then re-run the deploy workflow (or push a new commit) so Vite can inline those values into the production build.
+
 ## 2) Supabase database setup
 
 Run the SQL in `supabase/schema.sql` inside the Supabase SQL editor.
