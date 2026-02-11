@@ -49,10 +49,50 @@ class Game {
         this.score = 0;
         this.levels = []; // Loaded from levels.js
         this.baseLevels = [];
-        this.levelOverrideStorageKey = 'polygonFunLevelOverridesV1';
-        this.hardcoreLevelStorageKey = 'polygonFunHardcoreLevelsV1';
-        this.officialLevelNamesStorageKey = 'polygonFunOfficialLevelNamesV1';
+        this.levelStorageNamespaceVersion = 'v2';
+        this.levelDataSignature = 'default';
+        this.levelOverrideStorageKey = this.buildScopedStorageKey('polygonFunLevelOverrides');
+        this.hardcoreLevelStorageKey = this.buildScopedStorageKey('polygonFunHardcoreLevels');
+        this.officialLevelNamesStorageKey = this.buildScopedStorageKey('polygonFunOfficialLevelNames');
         this.devManager = new DevManager(this); // Initialize DevManager
+    }
+
+    buildScopedStorageKey(baseKey) {
+        const signature = this.levelDataSignature || 'default';
+        return `${baseKey}:${this.levelStorageNamespaceVersion}:${signature}`;
+    }
+
+    setLevelStorageNamespace(signature) {
+        const safeSignature = (typeof signature === 'string' && signature.trim())
+            ? signature.trim()
+            : 'default';
+        this.levelDataSignature = safeSignature;
+        this.levelOverrideStorageKey = this.buildScopedStorageKey('polygonFunLevelOverrides');
+        this.hardcoreLevelStorageKey = this.buildScopedStorageKey('polygonFunHardcoreLevels');
+        this.officialLevelNamesStorageKey = this.buildScopedStorageKey('polygonFunOfficialLevelNames');
+    }
+
+    computeLevelsSignature(levels) {
+        const source = Array.isArray(levels) ? levels : [];
+        const payload = source.map(level => ({
+            id: Number(level?.id),
+            name: typeof level?.name === 'string' ? level.name : '',
+            targetPieces: Number(level?.targetPieces),
+            maxLines: Number(level?.maxLines),
+            starThresholds: this.normalizeStarThresholds(level?.starThresholds),
+            startShapeVertices: Array.isArray(level?.startShapeVertices)
+                ? level.startShapeVertices.map(v => ({ x: Number(v?.x), y: Number(v?.y) }))
+                : []
+        }));
+        const json = JSON.stringify(payload);
+
+        // Deterministic lightweight hash (djb2 variant) for storage namespacing.
+        let hash = 5381;
+        for (let i = 0; i < json.length; i++) {
+            hash = ((hash << 5) + hash) ^ json.charCodeAt(i);
+        }
+        const normalized = (hash >>> 0).toString(16);
+        return `sig_${normalized}`;
     }
 
     init() {
@@ -200,6 +240,13 @@ class Game {
             if (!sanitized) return;
             this.baseLevels.push(sanitized);
         });
+
+        // IMPORTANT: Scope any local overrides/hardcore saves by the current
+        // shipped level signature. This guarantees that when js/levels.js is
+        // updated in GitHub/deployment, stale local override payloads from old
+        // versions cannot mask the new official levels.
+        const signature = this.computeLevelsSignature(this.baseLevels);
+        this.setLevelStorageNamespace(signature);
 
         // Preserve official shipped level names once so Hardcore Save can always
         // restore naming back to original built-in labels.

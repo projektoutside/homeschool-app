@@ -1,4 +1,8 @@
-const CACHE_VERSION = 'polygon-fun-v14-music-polish';
+const CACHE_VERSION = 'polygon-fun-v15-live-level-sync';
+const NETWORK_FIRST_PATHS = new Set([
+  '/js/levels.js',
+  '/js/game.js'
+]);
 const OFFLINE_ASSETS = [
   './',
   './index.html',
@@ -63,6 +67,33 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const shouldUseNetworkFirst = isSameOrigin && NETWORK_FIRST_PATHS.has(requestUrl.pathname);
+
+  if (shouldUseNetworkFirst) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200 || response.type === 'opaque') {
+            return response;
+          }
+          const responseClone = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => {
+            cache.put(event.request, responseClone).catch(() => { });
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cached) => {
+            if (cached) return cached;
+            return caches.match('./index.html');
+          });
+        })
+    );
     return;
   }
 
