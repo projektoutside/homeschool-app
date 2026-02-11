@@ -1,7 +1,10 @@
-const CACHE_VERSION = 'polygon-fun-v16-live-level-sync';
+const CACHE_VERSION = 'polygon-fun-v17-live-level-sync-hotfix';
 const NETWORK_FIRST_PATHS = new Set([
-  '/index.html',
+  '/index.html'
+]);
+const MUTABLE_NETWORK_FIRST_PATHS = new Set([
   '/js/levels.js',
+  '/js/level.js',
   '/js/game.js'
 ]);
 const OFFLINE_ASSETS = [
@@ -35,9 +38,7 @@ const OFFLINE_ASSETS = [
   './Music/failed.mp3',
   './Music/victory.mp3',
   './js/background-animation.js',
-  './js/game.js',
   './js/geometry.js',
-  './js/levels.js',
   './js/menu-fix.js',
   './js/music.js',
   './js/tutorial.js',
@@ -82,13 +83,19 @@ self.addEventListener('fetch', (event) => {
     ? requestUrl.pathname.slice(scopePath.length) || '/'
     : requestUrl.pathname;
   const normalizedPath = scopedPath.startsWith('/') ? scopedPath : `/${scopedPath}`;
+  const isMutableScript =
+    MUTABLE_NETWORK_FIRST_PATHS.has(normalizedPath) ||
+    MUTABLE_NETWORK_FIRST_PATHS.has(requestUrl.pathname) ||
+    normalizedPath.endsWith('/js/levels.js') ||
+    normalizedPath.endsWith('/js/level.js') ||
+    normalizedPath.endsWith('/js/game.js');
+  const mutableCacheKey = `${requestUrl.origin}${requestUrl.pathname}`;
 
   const shouldUseNetworkFirst = isSameOrigin && (
     isNavigationRequest ||
     NETWORK_FIRST_PATHS.has(normalizedPath) ||
     NETWORK_FIRST_PATHS.has(requestUrl.pathname) ||
-    normalizedPath.endsWith('/js/levels.js') ||
-    normalizedPath.endsWith('/js/game.js')
+    isMutableScript
   );
 
   const networkRequest = shouldUseNetworkFirst
@@ -104,12 +111,14 @@ self.addEventListener('fetch', (event) => {
           }
           const responseClone = response.clone();
           caches.open(CACHE_VERSION).then((cache) => {
-            cache.put(event.request, responseClone).catch(() => { });
+            const key = isMutableScript ? mutableCacheKey : event.request;
+            cache.put(key, responseClone).catch(() => { });
           });
           return response;
         })
         .catch(() => {
-          return caches.match(event.request).then((cached) => {
+          const key = isMutableScript ? mutableCacheKey : event.request;
+          return caches.match(key).then((cached) => {
             if (cached) return cached;
             return caches.match('./index.html');
           });

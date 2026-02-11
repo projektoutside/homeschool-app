@@ -3501,9 +3501,13 @@
     </div>
 
     <script src="js/geometry.js"></script>
-    <script src="js/levels.js"></script>
+    <!--
+      Cache-bust mutable gameplay scripts so updated deployments reliably load.
+      Bump this query token whenever levels/game logic is released.
+    -->
+    <script src="js/levels.js?v=2026-02-11-1"></script>
     <script src="js/storage.js"></script>
-    <script src="js/game.js"></script>
+    <script src="js/game.js?v=2026-02-11-1"></script>
     <script>
         const AppDialog = (() => {
             let overlay;
