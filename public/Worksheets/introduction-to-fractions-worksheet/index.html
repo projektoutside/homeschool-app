@@ -830,8 +830,8 @@
     
     <div class="header">
         <h1>Introduction to Fractions</h1>
-        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> 
-           Date: <input type="text" id="worksheet-date" placeholder="Enter date"></p>
+        <p>Name: <input type="text" id="student-name"> 
+           Date: <input type="text" id="worksheet-date"></p>
     </div>
 
     <div class="problems">
@@ -1156,9 +1156,9 @@
                     <div class="problem-text">What fraction is shaded?</div>
                     <div class="fraction-visual">${visual}</div>
                     <div class="fraction-input">
-                        <input type="number" id="num-${currentProblems.length}" min="0" max="10" placeholder="?">
+                        <input type="number" id="num-${currentProblems.length}" min="0" max="10">
                         <div class="fraction-bar"></div>
-                        <input type="number" id="den-${currentProblems.length}" min="1" max="10" placeholder="?">
+                        <input type="number" id="den-${currentProblems.length}" min="1" max="10">
                     </div>
                 `,
                 answer: { numerator, denominator }
@@ -1261,9 +1261,9 @@
                     <div class="problem-text">Write the fraction:</div>
                     <div class="fraction-visual">${visual}</div>
                     <div class="fraction-input">
-                        <input type="number" id="write-num-${currentProblems.length}" min="0" max="10" placeholder="?">
+                        <input type="number" id="write-num-${currentProblems.length}" min="0" max="10">
                         <div class="fraction-bar"></div>
-                        <input type="number" id="write-den-${currentProblems.length}" min="1" max="10" placeholder="?">
+                        <input type="number" id="write-den-${currentProblems.length}" min="1" max="10">
                     </div>
                 `,
                 answer: { numerator, denominator }
@@ -1296,7 +1296,7 @@
                     <div class="problem-text">How many sections total?</div>
                     <div class="fraction-visual">${visual}</div>
                     <div style="margin: 8px 0;">
-                        <input type="number" id="count-${currentProblems.length}" min="1" max="10" placeholder="?" style="width: 40px; text-align: center; font-size: 14px; padding: 4px; border: 2px solid #fdc9ec; border-radius: 3px;">
+                        <input type="number" id="count-${currentProblems.length}" min="1" max="10" style="width: 40px; text-align: center; font-size: 14px; padding: 4px; border: 2px solid #fdc9ec; border-radius: 3px;">
                     </div>
                 `,
                 answer: sections

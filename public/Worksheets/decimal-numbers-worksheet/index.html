@@ -405,11 +405,11 @@
             <div class="student-info">
                 <div class="info-field">
                     <label>Name:</label>
-                    <input type="text" placeholder="Write your name">
+                    <input type="text">
                 </div>
                 <div class="info-field">
                     <label>Date:</label>
-                    <input type="text" placeholder="Write the date">
+                    <input type="text">
                 </div>
             </div>
         </div>
@@ -451,34 +451,34 @@
 
     <div class="problems-container">
         <div class="problem" data-number="1">
-            1.2 + 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+            1.2 + 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5">
         </div>
         <div class="problem" data-number="2">
-            2.5 - 1.2 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3" placeholder="?">
+            2.5 - 1.2 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3">
         </div>
         <div class="problem" data-number="3">
-            0.7 + 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+            0.7 + 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5">
         </div>
         <div class="problem" data-number="4">
-            3.0 - 0.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.5" placeholder="?">
+            3.0 - 0.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.5">
         </div>
         <div class="problem" data-number="5">
-            0.4 + 0.6 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.0" placeholder="?">
+            0.4 + 0.6 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.0">
         </div>
         <div class="problem" data-number="6">
-            1.8 - 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5" placeholder="?">
+            1.8 - 0.3 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.5">
         </div>
         <div class="problem" data-number="7">
-            2.1 + 0.9 = <span class="answer"></span><input type="number" step="0.1" data-answer="3.0" placeholder="?">
+            2.1 + 0.9 = <span class="answer"></span><input type="number" step="0.1" data-answer="3.0">
         </div>
         <div class="problem" data-number="8">
-            1.6 - 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="0.8" placeholder="?">
+            1.6 - 0.8 = <span class="answer"></span><input type="number" step="0.1" data-answer="0.8">
         </div>
         <div class="problem" data-number="9">
-            0.5 + 1.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.0" placeholder="?">
+            0.5 + 1.5 = <span class="answer"></span><input type="number" step="0.1" data-answer="2.0">
         </div>
         <div class="problem" data-number="10">
-            2.4 - 1.1 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3" placeholder="?">
+            2.4 - 1.1 = <span class="answer"></span><input type="number" step="0.1" data-answer="1.3">
         </div>
     </div>
 
@@ -509,7 +509,7 @@
             problemElements.forEach(problem => {
                 const newProblem = generateProblem();
                 problems.push(newProblem);
-                problem.innerHTML = `${newProblem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${newProblem.answer}" placeholder="?">`;
+                problem.innerHTML = `${newProblem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${newProblem.answer}">`;
                 problem.classList.remove('correct', 'incorrect');
             });
 
@@ -552,7 +552,7 @@
                 document.getElementById('worksheetNumber').textContent = state.worksheetNumber;
                 
                 state.problems.forEach((problem, index) => {
-                    problemElements[index].innerHTML = `${problem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${problem.answer}" placeholder="?">`;
+                    problemElements[index].innerHTML = `${problem.expression} = <span class="answer"></span><input type="number" step="0.1" data-answer="${problem.answer}">`;
                     problemElements[index].classList.remove('correct', 'incorrect');
                 });
             } else {

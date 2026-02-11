@@ -462,8 +462,8 @@
   <div class="header">
     <h1>Fun with Multiplication & Division!</h1>
     <div class="input-row">
-      <p>Name: <input type="text" id="studentName" title="Enter your name" placeholder="Enter your name"></p>
-      <p>Date: <input type="text" id="date" title="Enter today's date" placeholder="MM/DD/YYYY"></p>
+      <p>Name: <input type="text" id="studentName" title="Enter your name"></p>
+      <p>Date: <input type="text" id="date" title="Enter today's date"></p>
     </div>
   </div>
 
@@ -562,7 +562,7 @@
           <div class="math-expression">
             <div class="number">${String(problem.num1).padStart(2, ' ')}</div>
             <div class="operator">${problem.isMultiplication ? '×' : '÷'} ${String(problem.num2).padStart(2, ' ')}</div>
-            <input type="number" placeholder="?" min="0" max="999">
+            <input type="number" min="0" max="999">
           </div>
         `;
         
@@ -608,7 +608,7 @@
           <div class="math-expression">
             <div class="number">${num1}</div>
             <div class="operator">${operator} ${num2}</div>
-            <input type="number" placeholder="?" min="0" max="999">
+            <input type="number" min="0" max="999">
           </div>
         `;
         

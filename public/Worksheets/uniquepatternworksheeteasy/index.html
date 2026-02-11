@@ -351,7 +351,7 @@
         </span>
       </div>
       <div class="pattern-sequence" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-        <span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><input value="1" readonly title="Example missing number" placeholder="?" style="border:2px solid #fdc9ec;background:#fff;width:44px;height:44px;text-align:center;border-radius:4px;"/><span>2</span>
+        <span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><span>1</span><span>2</span><input value="1" readonly title="Example missing number" style="border:2px solid #fdc9ec;background:#fff;width:44px;height:44px;text-align:center;border-radius:4px;"/><span>2</span>
       </div>
     </div>
     <div id="problems-container"></div>
@@ -461,7 +461,7 @@
             input.type = 'number';
             input.dataset.answer = num;
             input.title = 'Enter the missing number';
-            input.placeholder = '?';
+            input.placeholder = '';
             sequenceDiv.appendChild(input);
           } else {
             const span = document.createElement('span');

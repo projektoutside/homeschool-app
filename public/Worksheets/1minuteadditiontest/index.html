@@ -500,8 +500,8 @@
     <div id="worksheetNumber" class="worksheet-number"></div>
     <div class="header">
         <h1>Fun with Addition!</h1>
-        <p>Name: <input type="text" id="student-name" placeholder="Enter name"> Date: <input type="text"
-                id="worksheet-date" placeholder="Enter date"></p>
+        <p>Name: <input type="text" id="student-name"> Date: <input type="text"
+                id="worksheet-date"></p>
     </div>
 
     <div class="example-box">
@@ -660,7 +660,7 @@
                 input.type = 'number';
                 input.className = 'answer-input';
                 input.id = `answer-${i}`;
-                input.placeholder = 'Enter answer';
+                input.placeholder = '';
                 problemDiv.appendChild(input);
 
                 problemsContainer.appendChild(problemDiv);

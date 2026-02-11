@@ -532,8 +532,8 @@
   <div class="header">
     <h1>Decode the Secret Word – Solve Positive & Negative Numbers!</h1>
     <div class="input-row">
-      <p>Name: <input type="text" id="studentName" placeholder="Enter your name"></p>
-      <p>Date: <input type="text" id="date" placeholder="MM/DD/YYYY"></p>
+      <p>Name: <input type="text" id="studentName"></p>
+      <p>Date: <input type="text" id="date"></p>
     </div>
   </div>
 
@@ -581,7 +581,7 @@
   </div>
 
   <div class="custom-word-container">
-    <input type="text" id="customWord" class="custom-word-input" placeholder="Secret Word (max 12 letters)" maxlength="12">
+    <input type="text" id="customWord" class="custom-word-input" maxlength="12">
     <button class="custom-word-btn" onclick="generateCustomWorksheet()">Generate Custom Worksheet</button>
   </div>
 
@@ -851,7 +851,7 @@
       box.innerHTML = `<div class="equation">${data.equation}</div>
                       <div class="answer-area">
                         <div class="pink-box">
-                          <input type="number" step="1" min="-13" max="13" placeholder="">
+                          <input type="number" step="1" min="-13" max="13">
                         </div>
                       </div>`;
       grid.appendChild(box);
