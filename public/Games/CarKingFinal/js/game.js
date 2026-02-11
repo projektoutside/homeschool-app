@@ -38,6 +38,20 @@ class CarGuessingGame {
         this.micNoSpeechTimeoutMs = 5500;
         this.selectedMicId = this.loadSelectedMicId();
         this.supportsContinuousRecognition = true;
+        this.startClipPath = 'assets/audio/voice/Start.mp3';
+        this.startSequenceLeadInMs = 120;
+        this.startSequenceCountdownMs = 4000;
+        this.startSequenceGoHoldMs = 500;
+        this.startSequence = {
+            token: 0,
+            isActive: false,
+            rafId: null,
+            audioWatchdogTimer: null,
+            audioStartAt: 0,
+            timelineAnchorAt: 0,
+            visualPhase: -1,
+            fallbackAudio: null
+        };
 
 
         // Dynamic car database loading from local files
@@ -478,6 +492,13 @@ class CarGuessingGame {
         this.isStartingGame = true;
         await this.ensureMicrophonePermissionForGame();
         await this.warmStartRecognition();
+        if (this.voiceSystem?.preloadClip) {
+            try {
+                await this.voiceSystem.preloadClip(this.startClipPath);
+            } catch (err) {
+                console.warn('Start clip preload failed:', err);
+            }
+        }
         const startGame = () => {
             this.startCountdown();
         };
@@ -486,6 +507,103 @@ class CarGuessingGame {
         } else {
             startGame();
         }
+    }
+
+    createStartSequenceToken() {
+        this.startSequence.token += 1;
+        return this.startSequence.token;
+    }
+
+    clearStartSequenceTimers() {
+        if (this.startSequence.rafId) {
+            cancelAnimationFrame(this.startSequence.rafId);
+            this.startSequence.rafId = null;
+        }
+        if (this.startSequence.audioWatchdogTimer) {
+            clearTimeout(this.startSequence.audioWatchdogTimer);
+            this.startSequence.audioWatchdogTimer = null;
+        }
+    }
+
+    invalidateStartSequence(reason = 'unknown', options = {}) {
+        const { forceCancelAudio = false } = options;
+        this.clearStartSequenceTimers();
+        this.startSequence.isActive = false;
+        this.startSequence.visualPhase = -1;
+        this.startSequence.audioStartAt = 0;
+        this.startSequence.timelineAnchorAt = 0;
+
+        if (this.startSequence.fallbackAudio) {
+            try {
+                this.startSequence.fallbackAudio.pause();
+                this.startSequence.fallbackAudio.currentTime = 0;
+            } catch (e) { }
+            this.startSequence.fallbackAudio = null;
+        }
+
+        if (forceCancelAudio && this.voiceSystem?.cancel) {
+            this.voiceSystem.cancel({ force: true });
+        }
+
+        if (reason) {
+            console.log(`🧩 Start sequence invalidated: ${reason}`);
+        }
+    }
+
+    animateCountdownStep(countdownElement, value) {
+        if (!countdownElement) return;
+        countdownElement.textContent = value;
+        countdownElement.style.animation = 'none';
+        countdownElement.offsetHeight;
+        countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+    }
+
+    renderStartSequenceFrame(token, now) {
+        if (!this.startSequence.isActive || token !== this.startSequence.token) return;
+
+        const countdownElement = document.getElementById('countdownNumber');
+        if (!countdownElement) {
+            this.invalidateStartSequence('countdown-element-missing', { forceCancelAudio: true });
+            return;
+        }
+
+        const elapsed = Math.max(0, now - this.startSequence.timelineAnchorAt);
+        let nextPhase = 0;
+        if (elapsed >= 3000) nextPhase = 3;
+        else if (elapsed >= 2000) nextPhase = 2;
+        else if (elapsed >= 1000) nextPhase = 1;
+
+        // Drift-safe phase snapping: always render from elapsed bucket, never increment blindly.
+        if (nextPhase !== this.startSequence.visualPhase) {
+            this.startSequence.visualPhase = nextPhase;
+            if (nextPhase === 0) this.animateCountdownStep(countdownElement, '3');
+            else if (nextPhase === 1) this.animateCountdownStep(countdownElement, '2');
+            else if (nextPhase === 2) this.animateCountdownStep(countdownElement, '1');
+            else this.animateCountdownStep(countdownElement, 'GO!');
+        }
+
+        const doneAt = this.startSequenceCountdownMs + this.startSequenceGoHoldMs;
+        if (elapsed >= doneAt) {
+            this.clearStartSequenceTimers();
+            this.startSequence.isActive = false;
+            this.startGame();
+            return;
+        }
+
+        this.startSequence.rafId = requestAnimationFrame((frameNow) => {
+            this.renderStartSequenceFrame(token, frameNow);
+        });
+    }
+
+    armStartAudioWatchdog(token) {
+        this.startSequence.audioWatchdogTimer = setTimeout(() => {
+            if (!this.startSequence.isActive || token !== this.startSequence.token) return;
+
+            // If audio start callback was missed on this device/browser, keep timeline stable.
+            if (!this.startSequence.audioStartAt) {
+                console.warn('⏱️ Start audio onplaying callback delayed/missed. Using pre-anchored timeline.');
+            }
+        }, 550);
     }
 
     setupSpeechRecognition(micBtn, guessInput) {
@@ -1353,9 +1471,11 @@ class CarGuessingGame {
     }
 
     startCountdown() {
+        if (this.startSequence.isActive) return;
+
         // Stop any previous AI speech (like the welcome message)
         if (this.voiceSystem) {
-            this.voiceSystem.cancel();
+            this.voiceSystem.cancel({ force: true });
         }
 
         const startBtn = document.getElementById('startBtn');
@@ -1365,47 +1485,62 @@ class CarGuessingGame {
         }
 
         this.switchScreen('countdownScreen');
-
-        // Play the custom voice recording via VoiceSystem to ensure trackability/cancellation
-        if (this.voiceSystem) {
-            this.voiceSystem.playClip('assets/audio/voice/Start.mp3').catch(e => console.warn("Start audio failed:", e));
-        } else {
-            const startAudio = new Audio('assets/audio/voice/Start.mp3');
-            startAudio.play().catch(e => console.warn("Audio playback failed:", e));
+        const countdownElement = document.getElementById('countdownNumber');
+        if (!countdownElement) {
+            this.isStartingGame = false;
+            this.startGame();
+            return;
         }
 
-        let count = 3;
-        const countdownElement = document.getElementById('countdownNumber');
+        const token = this.createStartSequenceToken();
+        this.startSequence.isActive = true;
+        this.startSequence.visualPhase = -1;
 
-        // Initial visual state
-        countdownElement.textContent = count;
+        const anchorAt = performance.now() + this.startSequenceLeadInMs;
+        this.startSequence.timelineAnchorAt = anchorAt;
 
-        // Run visual countdown simultaneously with audio
-        const countdownInterval = setInterval(() => {
-            // Display current count (3, 2, 1) or prepare for GO
-            if (count > 0) {
-                countdownElement.textContent = count;
-            }
+        this.animateCountdownStep(countdownElement, '3');
+        this.startSequence.visualPhase = 0;
 
-            countdownElement.style.animation = 'none';
+        this.startSequence.rafId = requestAnimationFrame((frameNow) => {
+            this.renderStartSequenceFrame(token, frameNow);
+        });
 
-            // Trigger reflow and restart animation
-            countdownElement.offsetHeight;
-            countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+        this.armStartAudioWatchdog(token);
 
-            count--;
+        // Play Start.mp3 in protected mode so it cannot be cut by intermediate cancel calls.
+        if (this.voiceSystem?.playClip) {
+            this.voiceSystem.playClip(this.startClipPath, {
+                protectFromCancel: true,
+                forceCancelExisting: true,
+                reusePreloaded: true,
+                onPlaybackStart: ({ at }) => {
+                    if (!this.startSequence.isActive || token !== this.startSequence.token) return;
+                    this.startSequence.audioStartAt = at;
+                    this.startSequence.timelineAnchorAt = at;
+                }
+            }).catch(e => {
+                console.warn("Start audio failed:", e);
+            });
+        } else {
+            const startAudio = new Audio(this.startClipPath);
+            startAudio.preload = 'auto';
+            startAudio.playsInline = true;
+            this.startSequence.fallbackAudio = startAudio;
 
-            if (count < 0) {
-                clearInterval(countdownInterval);
-                countdownElement.textContent = 'GO!';
-                countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+            startAudio.onplaying = () => {
+                if (!this.startSequence.isActive || token !== this.startSequence.token) return;
+                this.startSequence.audioStartAt = performance.now();
+                this.startSequence.timelineAnchorAt = this.startSequence.audioStartAt;
+            };
 
-                setTimeout(() => this.startGame(), 500);
-            }
-        }, 1000);
+            startAudio.play().catch(e => console.warn("Audio playback failed:", e));
+        }
     }
 
     startGame() {
+        this.clearStartSequenceTimers();
+        this.startSequence.isActive = false;
         console.log("🎮 Starting game...");
         this.isGameRunning = true;
         this.isMicWarm = false;
@@ -1958,6 +2093,7 @@ class CarGuessingGame {
     }
 
     resetGame() {
+        this.invalidateStartSequence('reset-game', { forceCancelAudio: true });
         this.score = 0;
         this.streak = 0;
         this.updateScore();
@@ -1975,7 +2111,7 @@ class CarGuessingGame {
         this.recognitionRestartAttempts = 0;
 
         if (this.voiceSystem) {
-            this.voiceSystem.cancel();
+            this.voiceSystem.cancel({ force: true });
             if (this.voiceSystem.setListeningMode) {
                 this.voiceSystem.setListeningMode(false);
             }
@@ -1990,6 +2126,7 @@ class CarGuessingGame {
     }
 
     gameOver() {
+        this.invalidateStartSequence('game-over', { forceCancelAudio: true });
         this.isGameRunning = false;
         this.stopMicHealthMonitor();
         this.setMicState('idle');
@@ -2001,7 +2138,7 @@ class CarGuessingGame {
 
         // Stop Mic
         this.stopListening();
-        if (this.voiceSystem) this.voiceSystem.cancel();
+        if (this.voiceSystem) this.voiceSystem.cancel({ force: true });
 
         // Save Score
         this.saveHighScores(this.score);

@@ -14,6 +14,8 @@ class AdvancedVoiceSystem {
         this.normalGain = 1;
         this.duckedGain = 0.35;
         this.isListeningMode = false;
+        this.clipCache = new Map();
+        this.protectedPlaybackToken = null;
 
         // List of available MP3 files for the "asking" phase (What car is this?)
         this.askingClips = [
@@ -175,6 +177,47 @@ class AdvancedVoiceSystem {
         return audio;
     }
 
+    async preloadClip(path) {
+        if (!path) return null;
+        const normalizedPath = encodeURI(path);
+
+        const cached = this.clipCache.get(normalizedPath);
+        if (cached && cached.ready && cached.audio) {
+            return cached.audio;
+        }
+
+        const audio = await this.createManagedAudio(normalizedPath);
+
+        return new Promise((resolve) => {
+            let settled = false;
+            const done = (ready) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                this.clipCache.set(normalizedPath, { audio, ready });
+                resolve(audio);
+            };
+
+            const cleanup = () => {
+                audio.removeEventListener('canplaythrough', onReady);
+                audio.removeEventListener('loadeddata', onReady);
+                audio.removeEventListener('error', onError);
+            };
+
+            const onReady = () => done(true);
+            const onError = () => done(false);
+
+            audio.addEventListener('canplaythrough', onReady, { once: true });
+            audio.addEventListener('loadeddata', onReady, { once: true });
+            audio.addEventListener('error', onError, { once: true });
+            audio.preload = 'auto';
+            audio.load();
+
+            // Safety: never hang preload.
+            setTimeout(() => done(audio.readyState >= 2), 1200);
+        });
+    }
+
     async setOutputGain(targetGain, fadeMs = 120) {
         await this.ensureAudioGraph();
         if (!this.masterGain || !this.audioContext) return;
@@ -321,21 +364,72 @@ class AdvancedVoiceSystem {
     }
 
     // Play a specific audio file
-    playClip(path) {
+    playClip(path, options = {}) {
         if (!this.enabled) return Promise.resolve();
 
-        this.cancel(); // Stop any currently playing audio
+        const {
+            protectFromCancel = false,
+            forceCancelExisting = false,
+            reusePreloaded = true,
+            onPlaybackStart = null
+        } = options;
+
+        this.cancel({ force: !!forceCancelExisting }); // Stop any currently playing audio
+
+        const playbackToken = Symbol('voice-playback-token');
+        if (protectFromCancel) {
+            this.protectedPlaybackToken = playbackToken;
+        }
 
         return new Promise(async (resolve) => {
-            this.currentAudio = await this.createManagedAudio(path);
+            const normalizedPath = encodeURI(path);
+
+            let managedAudio = null;
+            if (reusePreloaded) {
+                const cached = this.clipCache.get(normalizedPath);
+                if (cached?.audio) {
+                    managedAudio = cached.audio;
+                }
+            }
+
+            if (!managedAudio) {
+                managedAudio = await this.createManagedAudio(normalizedPath);
+            }
+
+            this.currentAudio = managedAudio;
             this.currentAudioElement = this.currentAudio;
             this.currentSourceNode = this.currentAudio.__sourceNode || null;
+
+            let playbackStarted = false;
+
+            const clearProtectionIfOwned = () => {
+                if (this.protectedPlaybackToken === playbackToken) {
+                    this.protectedPlaybackToken = null;
+                }
+            };
+
+            const markPlaybackStarted = () => {
+                if (playbackStarted) return;
+                playbackStarted = true;
+                if (typeof onPlaybackStart === 'function') {
+                    try {
+                        onPlaybackStart({ at: performance.now(), path: normalizedPath });
+                    } catch (e) {
+                        console.warn('onPlaybackStart callback failed:', e);
+                    }
+                }
+            };
+
+            this.currentAudio.onplaying = () => {
+                markPlaybackStarted();
+            };
 
             // Handle completion
             this.currentAudio.onended = () => {
                 this.currentAudio = null;
                 this.currentAudioElement = null;
                 this.currentSourceNode = null;
+                clearProtectionIfOwned();
                 resolve();
             };
 
@@ -345,10 +439,12 @@ class AdvancedVoiceSystem {
                 this.currentAudio = null;
                 this.currentAudioElement = null;
                 this.currentSourceNode = null;
+                clearProtectionIfOwned();
                 resolve();
             };
 
             // Play
+            this.currentAudio.preload = 'auto';
             this.currentAudio.load(); // Ensure it's loaded
             const playPromise = this.currentAudio.play();
 
@@ -358,13 +454,26 @@ class AdvancedVoiceSystem {
                     this.currentAudio = null;
                     this.currentAudioElement = null;
                     this.currentSourceNode = null;
+                    clearProtectionIfOwned();
                     resolve();
                 });
             }
+
+            // Safety watchdog: some mobile browsers can skip onplaying callback.
+            setTimeout(() => {
+                if (!playbackStarted && this.currentAudio && !this.currentAudio.paused) {
+                    markPlaybackStarted();
+                }
+            }, 240);
         });
     }
 
-    cancel() {
+    cancel(options = {}) {
+        const { force = false } = options;
+        if (this.protectedPlaybackToken && !force) {
+            return;
+        }
+
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
@@ -372,6 +481,7 @@ class AdvancedVoiceSystem {
         }
         this.currentAudioElement = null;
         this.currentSourceNode = null;
+        this.protectedPlaybackToken = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
