@@ -407,18 +407,160 @@ class Game {
         const source = Array.isArray(this.levels) ? this.levels : [];
         if (!source.length) return null;
 
-        const officialNames = this.getOfficialLevelNames();
         const snapshot = source.map((level, index) => {
             const sanitized = this.sanitizeLevel(level, index);
             if (!sanitized) return null;
-            if (officialNames[index]) {
-                sanitized.name = officialNames[index];
-            }
             return sanitized;
         });
 
         if (snapshot.some(level => !level)) return null;
         return snapshot;
+    }
+
+    escapeJsString(value) {
+        const text = typeof value === 'string' ? value : '';
+        return text
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/\r/g, '\\r')
+            .replace(/\n/g, '\\n');
+    }
+
+    formatLevelNumber(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '0';
+        if (Math.abs(n) < 1e-12) return '0';
+        if (Number.isInteger(n)) return `${n}`;
+        return `${n.toFixed(6).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')}`;
+    }
+
+    formatLevelVertices(vertices) {
+        const safeVertices = Array.isArray(vertices) ? vertices : [];
+        const chunks = safeVertices.map(v => {
+            const x = this.formatLevelNumber(v?.x);
+            const y = this.formatLevelNumber(v?.y);
+            return `{ x: ${x}, y: ${y} }`;
+        });
+        return `[${chunks.join(', ')}]`;
+    }
+
+    buildHardcoreLevelsSource(levels) {
+        const safeLevels = Array.isArray(levels) ? levels : [];
+        const blocks = safeLevels.map((level, index) => {
+            const starThresholds = this.normalizeStarThresholds(level?.starThresholds);
+            const id = Number.isFinite(Number(level?.id)) ? Number(level.id) : (index + 1);
+            const name = this.escapeJsString(level?.name || `Stage ${index + 1}`);
+            const focus = this.escapeJsString(level?.focus || 'Custom');
+            const instruction = this.escapeJsString(level?.instruction || 'Split the shape evenly.');
+            const color = this.escapeJsString(level?.color || '#667eea');
+            const targetPieces = Math.max(2, Math.floor(Number(level?.targetPieces) || 2));
+            const maxLines = Math.max(1, Math.floor(Number(level?.maxLines) || 1));
+            const vertices = this.formatLevelVertices(level?.startShapeVertices);
+
+            let tierHeader = '';
+            if (index === 0) {
+                tierHeader = [
+                    '    // =====================================================',
+                    '    // TIER 1: EASY (Stages 1-5) - Learning the Basics',
+                    '    // Difficulty Range: 35-60',
+                    '    // Focus: Simple shapes, intuitive divisions',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            } else if (index === 5) {
+                tierHeader = [
+                    '',
+                    '    // =====================================================',
+                    '    // TIER 2: EASY-MEDIUM (Stages 6-10) - Building Efficiency',
+                    '    // Difficulty Range: 55-90',
+                    '    // Focus: Efficiency, more pieces, new shapes',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            } else if (index === 10) {
+                tierHeader = [
+                    '',
+                    '    // =====================================================',
+                    '    // TIER 3: MEDIUM (Stages 11-15) - Tight Constraints',
+                    '    // Difficulty Range: 85-105',
+                    '    // Focus: High efficiency ratios, irregular shapes',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            } else if (index === 15) {
+                tierHeader = [
+                    '',
+                    '    // =====================================================',
+                    '    // TIER 4: MEDIUM-HARD (Stages 16-20) - Precision Required',
+                    '    // Difficulty Range: 100-135',
+                    '    // Focus: Very tight constraints, complex shapes',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            } else if (index === 20) {
+                tierHeader = [
+                    '',
+                    '    // =====================================================',
+                    '    // TIER 5: HARD (Stages 21-25) - Expert Challenges',
+                    '    // Difficulty Range: 140-170',
+                    '    // Focus: Double-digit pieces, extreme constraints',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            } else if (index === 25) {
+                tierHeader = [
+                    '',
+                    '    // =====================================================',
+                    '    // TIER 6: EXPERT (Stages 26-30) - Legendary Challenges',
+                    '    // Difficulty Range: 180-240',
+                    '    // Focus: Extreme piece counts, near-impossible constraints',
+                    '    // =====================================================',
+                    ''
+                ].join('\n');
+            }
+
+            const codeBlock = [
+                '    {',
+                `        id: ${id}, name: "${name}", focus: "${focus}", instruction: "${instruction}",`,
+                `        startShapeVertices: ${vertices},`,
+                `        color: '${color}', targetPieces: ${targetPieces}, maxLines: ${maxLines},`,
+                `        starThresholds: { one: ${this.formatLevelNumber(starThresholds.one)}, two: ${this.formatLevelNumber(starThresholds.two)}, three: ${this.formatLevelNumber(starThresholds.three)} }`,
+                '    }'
+            ].join('\n');
+            
+            return tierHeader + codeBlock;
+        });
+
+        return [
+            'const GameLevels = [',
+            blocks.join(',\n'),
+            '];',
+            '',
+            '// Export for use in game',
+            "if (typeof module !== 'undefined' && module.exports) {",
+            '    module.exports = GameLevels;',
+            '}'
+        ].join('\n');
+    }
+
+    downloadHardcoreLevelsSource(sourceCode) {
+        try {
+            if (!sourceCode || typeof document === 'undefined' || typeof URL === 'undefined') {
+                return { ok: false, error: 'Download API unavailable.' };
+            }
+            const blob = new Blob([sourceCode], { type: 'text/javascript;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'levels.js';
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+            return { ok: true, error: '' };
+        } catch (error) {
+            return { ok: false, error: error?.message || 'Failed to download generated levels source.' };
+        }
     }
 
     commitHardcoreLevelsFromCurrentConfig() {
@@ -440,6 +582,12 @@ class Game {
             console.info('[HardcoreSave] Pre-commit validation passed.', {
                 levels: precheck.levels.length
             });
+
+            // Update official names first so they persist across reloads
+            const newNames = precheck.levels.map(l => l.name);
+            if (!this.saveOfficialLevelNames(newNames)) {
+                console.warn('[HardcoreSave] Failed to update official level names storage.');
+            }
 
             const writeOk = this.saveHardcoreLevels(precheck.levels);
             if (!writeOk) {
@@ -479,10 +627,22 @@ class Game {
                 this.devManager.populateList();
             }
 
+            const generatedSource = this.buildHardcoreLevelsSource(this.baseLevels);
+            const exportResult = this.downloadHardcoreLevelsSource(generatedSource);
+            window.__hardcoreLevelsSourceCode = generatedSource;
+            if (!exportResult.ok) {
+                console.warn('[HardcoreSave] Generated levels source, but download was not triggered:', exportResult.error);
+            }
+
             console.info('[HardcoreSave] Commit completed successfully.', {
                 levels: this.baseLevels.length
             });
-            return { ok: true, levelsCommitted: this.baseLevels.length };
+            return {
+                ok: true,
+                levelsCommitted: this.baseLevels.length,
+                generatedSource,
+                export: exportResult
+            };
         } catch (error) {
             console.error('[HardcoreSave] Commit failed with unexpected error:', error);
             return { ok: false, error: error?.message || 'Unknown Hardcore Save error.' };
@@ -6788,8 +6948,22 @@ class DevManager {
         this.updateCreatorInfo();
         this.renderCreatorCanvas();
 
+        let summary = `Hardcore Save complete (${result.levelsCommitted} levels committed).`;
+        if (result?.export?.ok) {
+            summary += ' Generated levels.js download started — replace js/levels.js with that file, then commit to GitHub.';
+        } else {
+            summary += ' Generated source is available in window.__hardcoreLevelsSourceCode (download failed in this browser).';
+        }
+
         if (this.game?.app && typeof this.game.app.showToast === 'function') {
-            this.game.app.showToast(`Hardcore Save complete (${result.levelsCommitted} levels committed).`);
+            this.game.app.showToast('Hardcore Save complete.');
+        }
+
+        if (typeof window.appAlert === 'function') {
+            await window.appAlert(summary, {
+                title: 'Hardcore Save Complete',
+                confirmText: 'OK'
+            });
         }
     }
 
