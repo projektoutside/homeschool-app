@@ -55,7 +55,13 @@
     let activeTrack = null;
     let idleTrack = null;
     let playlistQueue = [];
+    let lastPlayedTrack = null;
     let crossfadeTimer = null;
+    let crossfadeRunId = 0;
+
+    const CROSSFADE_LEAD_SECONDS = 5;
+    const CROSSFADE_DURATION_MS = 4000;
+    const TRACK_MONITOR_INTERVAL_MS = 250;
 
     // ==================== HELPERS ====================
 
@@ -264,26 +270,32 @@
 
     function fadeTrack(track, fromVol, toVol, duration, onComplete) {
         if (!track) return;
-        const steps = 20;
-        const stepTime = duration / steps;
-        const volStep = (toVol - fromVol) / steps;
-        let currentStep = 0;
+        if (track.__fadeRafId) {
+            cancelAnimationFrame(track.__fadeRafId);
+            track.__fadeRafId = null;
+        }
 
-        track.volume = fromVol;
+        const safeDuration = Math.max(1, Number(duration) || 1);
+        const startTime = performance.now();
+        track.volume = clamp(fromVol, 0, 1);
 
-        const fadeInterval = setInterval(() => {
-            currentStep++;
-            const newVol = fromVol + (volStep * currentStep);
-            track.volume = clamp(newVol, 0, 1);
+        const animate = (now) => {
+            const progress = clamp((now - startTime) / safeDuration, 0, 1);
+            const nextVol = fromVol + (toVol - fromVol) * progress;
+            track.volume = clamp(nextVol, 0, 1);
 
-            if (currentStep >= steps) {
-                clearInterval(fadeInterval);
-                track.volume = toVol;
-                if (onComplete) onComplete();
+            if (progress < 1) {
+                track.__fadeRafId = requestAnimationFrame(animate);
+                return;
             }
-        }, stepTime);
 
-        return fadeInterval;
+            track.__fadeRafId = null;
+            track.volume = clamp(toVol, 0, 1);
+            if (onComplete) onComplete();
+        };
+
+        track.__fadeRafId = requestAnimationFrame(animate);
+        return track.__fadeRafId;
     }
 
     // ==================== GAMEPLAY MUSIC ====================
@@ -300,6 +312,25 @@
             const dataB = { element: gameplayTrackB, type: 'music', baseVol: 1 };
             audioElements.add(dataB);
 
+            const onTrackEnded = (track) => {
+                if (!gameplayActive || track !== activeTrack) return;
+                if (isCrossfading) return;
+                // Fallback: if timing-based crossfade missed, continue anyway.
+                beginCrossfade({ fromEnded: true });
+            };
+
+            const onTrackError = (track) => {
+                if (!gameplayActive || track !== activeTrack) return;
+                if (isCrossfading) return;
+                console.warn('Active gameplay track error, skipping to next track.');
+                beginCrossfade({ fromEnded: true });
+            };
+
+            gameplayTrackA.addEventListener('ended', () => onTrackEnded(gameplayTrackA));
+            gameplayTrackB.addEventListener('ended', () => onTrackEnded(gameplayTrackB));
+            gameplayTrackA.addEventListener('error', () => onTrackError(gameplayTrackA));
+            gameplayTrackB.addEventListener('error', () => onTrackError(gameplayTrackB));
+
             activeTrack = gameplayTrackA;
             idleTrack = gameplayTrackB;
         }
@@ -309,14 +340,98 @@
         if (playlistQueue.length === 0) {
             playlistQueue = shuffle(PLAYLIST);
         }
-        return playlistQueue.pop();
+
+        // Avoid immediate back-to-back repeat when queue reshuffles.
+        if (playlistQueue.length > 1) {
+            const peek = playlistQueue[playlistQueue.length - 1];
+            if (peek === lastPlayedTrack) {
+                const idx = playlistQueue.findIndex(track => track !== lastPlayedTrack);
+                if (idx >= 0) {
+                    const [swapIn] = playlistQueue.splice(idx, 1);
+                    playlistQueue.push(swapIn);
+                }
+            }
+        }
+
+        const next = playlistQueue.pop();
+        lastPlayedTrack = next;
+        return next;
+    }
+
+    function cleanupTrackAfterFade(track) {
+        if (!track) return;
+        if (track.__fadeRafId) {
+            cancelAnimationFrame(track.__fadeRafId);
+            track.__fadeRafId = null;
+        }
+        track.pause();
+        track.currentTime = 0;
+    }
+
+    function beginCrossfade(opts = {}) {
+        if (!gameplayActive || isCrossfading || !activeTrack || !idleTrack) return;
+
+        const fromEnded = !!opts.fromEnded;
+        const runId = ++crossfadeRunId;
+        isCrossfading = true;
+
+        const outgoingTrack = activeTrack;
+        const incomingTrack = idleTrack;
+        const nextTrack = getNextTrack();
+        const targetVol = getEffectiveVolume('music', 1);
+        const fadeMs = fromEnded ? Math.min(1200, CROSSFADE_DURATION_MS) : CROSSFADE_DURATION_MS;
+
+        incomingTrack.src = nextTrack;
+        incomingTrack.currentTime = 0;
+        incomingTrack.volume = 0;
+
+        incomingTrack.play()
+            .then(() => {
+                if (!gameplayActive || runId !== crossfadeRunId) return;
+
+                if (fromEnded) {
+                    cleanupTrackAfterFade(outgoingTrack);
+                } else {
+                    fadeTrack(outgoingTrack, outgoingTrack.volume, 0, fadeMs, () => {
+                        cleanupTrackAfterFade(outgoingTrack);
+                    });
+                }
+
+                fadeTrack(incomingTrack, 0, targetVol, fadeMs, () => {
+                    if (!gameplayActive || runId !== crossfadeRunId) return;
+                    [activeTrack, idleTrack] = [incomingTrack, outgoingTrack];
+                    isCrossfading = false;
+                });
+            })
+            .catch(e => {
+                console.warn('Next track failed to play:', e);
+                isCrossfading = false;
+
+                // Recovery path: keep music alive by retrying shortly.
+                if (gameplayActive) {
+                    setTimeout(() => {
+                        if (gameplayActive && !isCrossfading) {
+                            beginCrossfade({ fromEnded: true });
+                        }
+                    }, 600);
+                }
+            });
     }
 
     function startGameplayMusic(opts = {}) {
         if (gameplayActive && !opts.forceRestart) return Promise.resolve();
 
         initGameplayTracks();
+
+        if (opts.forceRestart) {
+            stopGameplayMusic({ immediate: true });
+        }
+
         gameplayActive = true;
+        isCrossfading = false;
+        crossfadeRunId++;
+        playlistQueue = [];
+        lastPlayedTrack = null;
 
         // Stop menu music
         fadeOutBackgroundMusic(500);
@@ -352,48 +467,40 @@
         isCrossfading = false;
 
         crossfadeTimer = setInterval(() => {
-            if (!gameplayActive || !activeTrack || activeTrack.paused) {
-                if (crossfadeTimer) clearInterval(crossfadeTimer);
+            if (!gameplayActive || !activeTrack) {
                 return;
             }
 
             if (isCrossfading) return;
+
+            if (activeTrack.ended) {
+                beginCrossfade({ fromEnded: true });
+                return;
+            }
+
+            if (activeTrack.paused) {
+                // Recovery path: resume if possible, otherwise advance to next track.
+                activeTrack.play().catch(() => {
+                    beginCrossfade({ fromEnded: true });
+                });
+                return;
+            }
 
             const duration = activeTrack.duration;
             const current = activeTrack.currentTime;
             const remaining = duration - current;
 
             // Start Crossfade at 5 seconds remaining
-            if (remaining > 0 && remaining < 5 && idleTrack.paused) {
-                isCrossfading = true;
-
-                const nextTrack = getNextTrack();
-                idleTrack.src = nextTrack;
-                idleTrack.currentTime = 0;
-                const targetVol = getEffectiveVolume('music', 1);
-                idleTrack.volume = 0;
-
-                idleTrack.play().then(() => {
-                    // Crossfade: Fade OUT active, Fade IN idle
-                    fadeTrack(activeTrack, activeTrack.volume, 0, 4000);
-                    fadeTrack(idleTrack, 0, targetVol, 4000, () => {
-                        // After fade complete
-                        activeTrack.pause();
-                        activeTrack.currentTime = 0;
-                        // Swap
-                        [activeTrack, idleTrack] = [idleTrack, activeTrack];
-                        isCrossfading = false;
-                    });
-                }).catch(e => {
-                    console.warn('Next track failed to play:', e);
-                    isCrossfading = false;
-                });
+            if (Number.isFinite(remaining) && remaining > 0 && remaining <= CROSSFADE_LEAD_SECONDS && idleTrack.paused) {
+                beginCrossfade({ fromEnded: false });
             }
-        }, 500);
+        }, TRACK_MONITOR_INTERVAL_MS);
     }
 
     function stopGameplayMusic(opts = {}) {
         gameplayActive = false;
+        isCrossfading = false;
+        crossfadeRunId++;
         if (crossfadeTimer) {
             clearInterval(crossfadeTimer);
             crossfadeTimer = null;
@@ -401,6 +508,10 @@
 
         const stopTrack = (track) => {
             if (track) {
+                if (track.__fadeRafId) {
+                    cancelAnimationFrame(track.__fadeRafId);
+                    track.__fadeRafId = null;
+                }
                 if (opts.fadeOutMs) {
                     fadeTrack(track, track.volume, 0, opts.fadeOutMs, () => {
                         track.pause();
