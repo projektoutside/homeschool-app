@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CONTENT_ITEMS } from '../data/mockContent';
+import { buildAssetPath } from '../utils/pathUtils';
 import './BottomNavigation.css';
 
 interface BottomNavigationProps {
@@ -15,6 +16,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     
     const [isMinimized, setIsMinimized] = useState(false);
     const [expandedMode, setExpandedMode] = useState(false);
+    const [failedGameIconIds, setFailedGameIconIds] = useState<Set<string>>(new Set());
     const sliderRef = useRef<HTMLDivElement>(null);
     
     // Reset expanded mode when minimized
@@ -212,26 +214,54 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 >
                     {/* HOME SECTION (Leftmost) */}
                     <div className="nav-slider-section home-section">
-                        <div className="nav-slider-item static">
+                        <button
+                            type="button"
+                            className="nav-slider-item"
+                            onClick={() => navigate('/home-profile')}
+                            title="Home"
+                            tabIndex={expandedMode ? 0 : -1}
+                        >
                             <span className="nav-slider-icon">🏠</span>
                             <span className="nav-slider-label">Home</span>
-                        </div>
+                        </button>
                     </div>
 
                     {/* GAMES SECTION */}
                     <div className="nav-slider-section games-section">
-                        {games.map(game => (
-                            <button
-                                key={game.id}
-                                className="nav-slider-item"
-                                onClick={() => navigate(`/play/${game.id}`)}
-                                title={game.title}
-                                tabIndex={expandedMode ? 0 : -1}
-                            >
-                                <span className="nav-slider-icon">🎮</span>
-                                <span className="nav-slider-label">{game.title}</span>
-                            </button>
-                        ))}
+                        {games.map(game => {
+                            const iconPath = game.thumbnail ? buildAssetPath(game.thumbnail) : null;
+                            const showGameImage = !!iconPath && !failedGameIconIds.has(game.id);
+
+                            return (
+                                <button
+                                    key={game.id}
+                                    className="nav-slider-item has-image"
+                                    onClick={() => navigate(`/play/${game.id}`)}
+                                    title={game.title}
+                                    tabIndex={expandedMode ? 0 : -1}
+                                >
+                                    <span className="nav-slider-icon">
+                                        {showGameImage ? (
+                                            <img 
+                                                src={iconPath} 
+                                                alt="" 
+                                                className="nav-slider-img"
+                                                onError={(e) => {
+                                                    setFailedGameIconIds(prev => {
+                                                        const next = new Set(prev);
+                                                        next.add(game.id);
+                                                        return next;
+                                                    });
+                                                }}
+                                            />
+                                        ) : (
+                                            <span aria-hidden="true">🎮</span>
+                                        )}
+                                    </span>
+                                    <span className="nav-slider-label">{game.title}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* CLASSROOM SECTION (Rightmost) */}

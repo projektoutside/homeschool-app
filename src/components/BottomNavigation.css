@@ -427,6 +427,21 @@
     margin-bottom: 2px;
 }
 
+.nav-slider-img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    display: block;
+}
+
+.nav-slider-item.has-image .nav-slider-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .nav-slider-label {
     font-size: 0.7rem;
     font-weight: 500;
@@ -454,6 +469,12 @@
     
     .nav-slider-icon {
         font-size: 1.2rem;
+    }
+
+    .nav-slider-img,
+    .nav-slider-item.has-image .nav-slider-icon {
+        width: 20px;
+        height: 20px;
     }
     
     .nav-slider-label {
