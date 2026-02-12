@@ -246,7 +246,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                                 src={iconPath} 
                                                 alt="" 
                                                 className="nav-slider-img"
-                                                onError={(e) => {
+                                                onError={() => {
                                                     setFailedGameIconIds(prev => {
                                                         const next = new Set(prev);
                                                         next.add(game.id);
