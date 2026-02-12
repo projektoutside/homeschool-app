@@ -37,7 +37,7 @@
   max-width: 760px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 0.25fr repeat(3, 1fr);
   gap: 0.5rem;
   z-index: 35;
 }
@@ -68,72 +68,56 @@
   outline-offset: 2px;
 }
 
+/* 3-Square Settings Button */
 .user-home-settings-btn {
-  position: fixed;
-  left: max(0.85rem, env(safe-area-inset-left, 0px));
-  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: linear-gradient(180deg, rgba(244, 244, 245, 0.94), rgba(212, 212, 216, 0.95));
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.9),
-    0 8px 18px rgba(2, 6, 23, 0.48);
-  font-size: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 3.15rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(30, 41, 59, 0.38));
+  color: #e2e8f0;
   cursor: pointer;
-  z-index: 40;
-}
-
-@media (max-width: 640px) {
-  .user-home-page {
-    min-height: calc(100dvh - 0.5rem);
-    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .user-home-bottom-tabs {
-    left: max(0.4rem, env(safe-area-inset-left, 0px));
-    right: max(0.4rem, env(safe-area-inset-right, 0px));
-    gap: 0.4rem;
-  }
-
-  .user-home-tab-btn {
-    min-height: 2.9rem;
-    font-size: 0.9rem;
-  }
-
-  .user-home-settings-btn {
-    width: 50px;
-    height: 50px;
-    bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
-  }
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .user-home-settings-btn:hover,
 .user-home-settings-btn:focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(30, 41, 59, 0.45));
 }
 
-.user-home-settings-btn:focus-visible {
-  outline: 2px solid #a5b4fc;
-  outline-offset: 2px;
+.user-home-settings-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 
+.user-home-settings-square {
+  width: 5px;
+  height: 5px;
+  background-color: currentColor;
+  border-radius: 1.5px;
+  opacity: 0.9;
+}
+
+/* Settings Panels */
 .user-home-settings-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(2, 6, 23, 0.56);
   border: 0;
   z-index: 55;
+  cursor: pointer;
 }
 
 .user-home-settings-panel {
   position: fixed;
   right: max(0.75rem, env(safe-area-inset-right, 0px));
-  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   width: min(520px, calc(100vw - 1.5rem));
   max-height: min(85vh, 760px);
   overflow: auto;
@@ -152,12 +136,13 @@
   background: rgba(2, 6, 23, 0.66);
   border: 0;
   z-index: 64;
+  cursor: pointer;
 }
 
 .user-home-settings-subpanel {
   position: fixed;
   right: max(0.9rem, env(safe-area-inset-right, 0px));
-  bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   width: min(560px, calc(100vw - 1.8rem));
   max-height: min(85vh, 760px);
   overflow: auto;
@@ -189,18 +174,11 @@
   background: rgba(255, 255, 255, 0.1);
   color: #e2e8f0;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.settings-tab-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.65rem;
-  margin-bottom: 0.75rem;
-  border-radius: 999px;
-  background: rgba(34, 211, 238, 0.22);
-  color: #67e8f9;
-  font-weight: 700;
-  font-size: 0.85rem;
+.user-home-settings-header button:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .settings-menu-list {
@@ -217,6 +195,7 @@
   font-weight: 700;
   cursor: pointer;
   text-align: left;
+  transition: all 0.15s ease;
 }
 
 .settings-menu-btn:hover,
@@ -249,6 +228,7 @@
   background: rgba(15, 23, 42, 0.6);
   color: #e2e8f0;
   padding: 0.62rem 0.7rem;
+  font-size: 0.95rem;
 }
 
 .settings-group input[type='range'] {
@@ -312,4 +292,31 @@
 
 .settings-status.error {
   color: #fca5a5;
+}
+
+@media (max-width: 640px) {
+  .user-home-page {
+    min-height: calc(100dvh - 0.5rem);
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .user-home-bottom-tabs {
+    left: max(0.4rem, env(safe-area-inset-left, 0px));
+    right: max(0.4rem, env(safe-area-inset-right, 0px));
+    gap: 0.4rem;
+  }
+
+  .user-home-tab-btn {
+    min-height: 2.9rem;
+    font-size: 0.9rem;
+  }
+
+  .user-home-settings-btn {
+    min-height: 2.9rem;
+  }
+
+  .user-home-settings-square {
+    width: 4px;
+    height: 4px;
+  }
 }

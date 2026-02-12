@@ -2,15 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
 import type { ContentType } from '../types/content';
-import type { ManagerTab } from '../types/manager';
 import { useManagerConfig } from '../hooks/useManagerConfig';
-import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useAuth();
     const { config, resolvedItems } = useManagerConfig();
     const [activeTab, setActiveTab] = useState<string>(config.tabs[0]?.id ?? '');
     const [openFolderId, setOpenFolderId] = useState<string | null>(null);
@@ -51,37 +48,23 @@ const HomePage: React.FC = () => {
             .filter((path): path is string => Boolean(path)),
         [visibleItems],
     );
-    const userDisplayName = (user?.user_metadata?.home_label as string | undefined)?.trim()
-        || (user?.user_metadata?.username as string | undefined)?.trim()
-        || user?.email?.split('@')[0]
-        || 'HOME';
-
-    const orderedTabs = useMemo<ManagerTab[]>(() => {
-        const byLabelPriority = (tab: ManagerTab): number => {
-            const label = tab.label.trim().toLowerCase();
-            if (label === 'games') return 0;
-            if (label === 'worksheets') return 1;
-            if (label === 'tools') return 2;
-            return 3;
-        };
-
-        return [...config.tabs].sort((a, b) => {
-            const diff = byLabelPriority(a) - byLabelPriority(b);
-            if (diff !== 0) return diff;
-            return a.label.localeCompare(b.label);
-        });
-    }, [config.tabs]);
 
     useEffect(() => {
         const requestedTab = new URLSearchParams(location.search).get('tab')?.trim().toLowerCase();
         if (!requestedTab) return;
+
+        // Always route worksheets tab requests to the dedicated HTML viewer.
+        if (requestedTab === 'worksheets') {
+            navigate('/html-viewer', { replace: true });
+            return;
+        }
 
         const tabFromQuery = config.tabs.find(tab => tab.label.trim().toLowerCase() === requestedTab);
         if (!tabFromQuery) return;
 
         setActiveTab(tabFromQuery.id);
         setOpenFolderId(null);
-    }, [location.search, config.tabs]);
+    }, [location.search, config.tabs, navigate]);
 
     // Prime the most visible icons for faster first paint on slower connections/devices.
     useEffect(() => {
@@ -180,42 +163,6 @@ const HomePage: React.FC = () => {
                     );
                 })}
             </section>
-
-            <nav
-                className="os-bottom-dock"
-                aria-label="Main tabs"
-                style={{ gridTemplateColumns: `repeat(${Math.max(orderedTabs.length + 1, 1)}, minmax(0, 1fr))` }}
-            >
-                <button
-                    type="button"
-                    className={`dock-tab-btn ${location.pathname === '/home-profile' ? 'active' : ''}`}
-                    onClick={() => navigate('/home-profile')}
-                    aria-label={`Open ${userDisplayName} home`}
-                >
-                    <span className="dock-tab-icon" aria-hidden="true">🏠</span>
-                    <span>{userDisplayName}</span>
-                </button>
-
-                {orderedTabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        type="button"
-                        className={`dock-tab-btn ${currentTabId === tab.id ? 'active' : ''}`}
-                        onClick={() => {
-                            if (tab.label === 'Worksheets') {
-                                navigate('/html-viewer');
-                                return;
-                            }
-                            setActiveTab(tab.id);
-                            setOpenFolderId(null);
-                        }}
-                        aria-label={`Show ${tab.label}`}
-                    >
-                        <span className="dock-tab-icon" aria-hidden="true">{tab.icon}</span>
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
-            </nav>
         </div>
     );
 };

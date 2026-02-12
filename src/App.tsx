@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import MainLayout from './layouts/MainLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -18,6 +18,7 @@ const HTMLViewer = React.lazy(() => import('./pages/HTMLViewer'));
 const InstallPage = React.lazy(() => import('./pages/InstallPage'));
 const AuthPage = React.lazy(() => import('./pages/AuthPage'));
 const UserHomePage = React.lazy(() => import('./pages/UserHomePage'));
+const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage'));
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
@@ -39,24 +40,61 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
 
 type PWAState = ReturnType<typeof usePWA>;
 
+// Routes where auto-fullscreen should be skipped (content handles its own fullscreen)
+const CONTENT_ROUTES = ['/play/', '/open/', '/resource/', '/html-viewer'];
+
+// Main app routes where auto-fullscreen should be active
+const MAIN_APP_ROUTES = ['/', '/apps', '/home-profile', '/manager', '/classroom'];
+
 const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
-    const { isStandalone, enterFullscreen, isFullscreen } = pwa;
+    const { enterFullscreen, isFullscreen } = pwa;
+    const location = useLocation();
+    const fullscreenAttempted = useRef(false);
+    const retryCount = useRef(0);
+    const maxRetries = 3;
 
     useEffect(() => {
         const attemptFullscreen = async () => {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-            if (isStandalone && !isFullscreen && !isIOS) {
+            
+            // Check if current route is a content route (games/worksheets/tools)
+            const isContentRoute = CONTENT_ROUTES.some(route => location.pathname.startsWith(route));
+            
+            // Check if current route is a main app route
+            const isMainAppRoute = MAIN_APP_ROUTES.some(route => 
+                location.pathname === route || location.pathname.startsWith(route + '/')
+            );
+            
+            // Auto-fullscreen for main app routes only (not content routes)
+            // Skip iOS as it doesn't support the Fullscreen API well
+            if (!isFullscreen && !isIOS && !isContentRoute && isMainAppRoute && retryCount.current < maxRetries) {
+                retryCount.current++;
+                
+                // Try multiple times with increasing delays
+                const delays = [100, 500, 1000];
+                const currentDelay = delays[retryCount.current - 1] || 1000;
+                
                 setTimeout(() => {
-                    enterFullscreen().catch(() => {
-                        // Fullscreen may be blocked, that's ok
+                    enterFullscreen().then(() => {
+                        fullscreenAttempted.current = true;
+                    }).catch(() => {
+                        // Fullscreen may be blocked (user gesture required), will retry
+                        if (retryCount.current < maxRetries) {
+                            attemptFullscreen();
+                        }
                     });
-                }, 100);
+                }, currentDelay);
             }
         };
 
+        // Reset retry count when route changes to main app routes
+        const isContentRoute = CONTENT_ROUTES.some(route => location.pathname.startsWith(route));
+        if (!isContentRoute) {
+            retryCount.current = 0;
+        }
+        
         attemptFullscreen();
-    }, [isStandalone, isFullscreen, enterFullscreen]);
+    }, [isFullscreen, enterFullscreen, location.pathname]);
 
     return <>{children}</>;
 };
@@ -94,6 +132,7 @@ const App: React.FC = () => {
                                 <Route path="resource/:id" element={<RequireAuth user={user} loading={loading}><Viewer /></RequireAuth>} />
                                 <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
                                 <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><UserHomePage /></RequireAuth>} />
+                                <Route path="classroom" element={<RequireAuth user={user} loading={loading}><ClassroomPage /></RequireAuth>} />
                                 <Route path="*" element={<Navigate to="/home-profile" replace />} />
                             </Route>
                         </Routes>

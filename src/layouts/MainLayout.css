@@ -43,6 +43,8 @@
     min-height: calc(100vh - var(--spacing-xl) * 2);
     min-height: calc(100dvh - var(--spacing-xl) * 2);
     overflow-x: hidden;
+    /* Add padding for bottom navigation */
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
 }
 
 .layout-container.home-immersive .main-content {
@@ -52,7 +54,7 @@
     min-height: 100dvh;
     padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
     padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
-    padding-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
     padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
 }
 
@@ -66,13 +68,13 @@
         padding-top: env(safe-area-inset-top, 0px);
         padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
         padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
-        padding-bottom: max(var(--spacing-sm), env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     }
 
     .layout-container.home-immersive .main-content {
         padding-top: max(0.45rem, env(safe-area-inset-top, 0px));
         padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
-        padding-bottom: max(0.45rem, env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
         padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
     }
 

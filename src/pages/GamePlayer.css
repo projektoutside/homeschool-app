@@ -2,25 +2,37 @@
     position: fixed;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    /* Use dynamic viewport height to account for mobile browser chrome */
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
     background: #020617;
     z-index: 1000;
     overflow: hidden;
+    /* Safe area insets to respect notches and device edges */
     padding-top: env(safe-area-inset-top, 0px);
     padding-right: env(safe-area-inset-right, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
+    /* Ensure box-sizing includes padding in height calculation */
+    box-sizing: border-box;
     animation: gamePlayerFadeIn 260ms ease-out;
 }
 
 .game-player-frame {
     width: 100%;
+    /* Use 100% to fill parent, respecting parent's safe area padding */
     height: 100%;
-    min-height: 100dvh;
+    min-height: 100%;
+    max-height: 100%;
     border: 0;
     background: #020617;
     opacity: 1;
     transition: opacity 240ms ease;
+    /* Prevent iframe from creating scrollbars */
+    overflow: hidden;
+    /* Ensure iframe doesn't overflow its container */
+    display: block;
 }
 
 .game-player-frame.is-loading {

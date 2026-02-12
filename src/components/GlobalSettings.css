@@ -1,0 +1,223 @@
+/* Global Settings Panel Styles - Extracted from Home.css */
+
+.settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.56);
+    border: 0;
+    z-index: 9998;
+    cursor: pointer;
+}
+
+.settings-panel {
+    position: fixed;
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    width: min(520px, calc(100vw - 1.5rem));
+    max-height: min(85vh, 760px);
+    overflow: auto;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98));
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.58);
+    z-index: 9999;
+    padding: 0.95rem;
+    color: #e2e8f0;
+}
+
+.settings-sub-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.66);
+    border: 0;
+    z-index: 10000;
+    cursor: pointer;
+}
+
+.settings-subpanel {
+    position: fixed;
+    right: max(0.9rem, env(safe-area-inset-right, 0px));
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    width: min(560px, calc(100vw - 1.8rem));
+    max-height: min(85vh, 760px);
+    overflow: auto;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 1));
+    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.65);
+    z-index: 10001;
+    padding: 0.95rem;
+    color: #e2e8f0;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.settings-header h2 {
+    margin: 0;
+}
+
+.settings-header button {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.settings-header button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.settings-menu-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.settings-menu-btn {
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(15, 23, 42, 0.7);
+    color: #cbd5e1;
+    border-radius: 10px;
+    padding: 0.72rem 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.settings-menu-btn:hover,
+.settings-menu-btn:focus-visible {
+    color: #67e8f9;
+    border-color: rgba(34, 211, 238, 0.7);
+    background: rgba(34, 211, 238, 0.18);
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-bottom: 0.9rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-group label {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.settings-group input {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(15, 23, 42, 0.6);
+    color: #e2e8f0;
+    padding: 0.62rem 0.7rem;
+    font-size: 0.95rem;
+}
+
+.settings-group input[type='range'] {
+    padding: 0;
+    accent-color: #22d3ee;
+}
+
+.settings-group button {
+    align-self: flex-start;
+    border: 0;
+    border-radius: 10px;
+    padding: 0.52rem 0.78rem;
+    background: linear-gradient(180deg, #22d3ee, #06b6d4);
+    color: #052f43;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.settings-group button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.settings-toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.settings-toggle-label input[type='checkbox'] {
+    width: auto;
+    transform: scale(1.2);
+}
+
+.settings-helper-text {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+}
+
+.settings-group.danger-zone {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(127, 29, 29, 0.22);
+}
+
+.settings-group.danger-zone button {
+    background: linear-gradient(180deg, #f87171, #ef4444);
+    color: #fff;
+}
+
+.settings-status {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.settings-status.success {
+    color: #86efac;
+}
+
+.settings-status.error {
+    color: #fca5a5;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 480px) {
+    .settings-panel {
+        right: max(0.5rem, env(safe-area-inset-right, 0px));
+        bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+        width: calc(100vw - 1rem);
+        padding: 0.75rem;
+        border-radius: 14px;
+    }
+
+    .settings-subpanel {
+        right: max(0.5rem, env(safe-area-inset-right, 0px));
+        bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+        width: calc(100vw - 1rem);
+        padding: 0.75rem;
+        border-radius: 14px;
+    }
+    
+    .settings-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .settings-group {
+        padding: 0.6rem;
+    }
+    
+    .settings-group input {
+        padding: 0.5rem 0.6rem;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}

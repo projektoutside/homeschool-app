@@ -5,14 +5,20 @@
     width: 100%;
     min-width: 0;
     height: 100%;
-    min-height: calc(100dvh - 1rem);
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem);
     overflow-x: hidden;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    box-sizing: border-box;
 }
 
 .viewer-page.fullscreen-mode {
     gap: 0;
     min-height: 100dvh;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
 /* Worksheet Viewer - Print Preview Mode */
@@ -565,7 +571,8 @@
 .worksheet-viewport {
     position: relative;
     width: 100%;
-    min-height: min(700px, 70dvh);
+    min-height: min(700px, calc(70dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     flex: 1;
     overflow: auto;
     background: #020617;
@@ -573,7 +580,8 @@
 
 .game-frame {
     width: 100%;
-    min-height: min(700px, 70dvh);
+    min-height: min(700px, calc(70dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     height: 100%;
     border: 0;
     display: block;

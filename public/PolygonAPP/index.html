@@ -76,6 +76,14 @@
             --is-touch: 0;
             --is-portrait: 0;
             --is-landscape: 1;
+
+            /* Runtime safety scaling for bottom control panels */
+            --grid-tools-scale: 1;
+            --game-controls-scale: 1;
+
+            /* Runtime viewport guards (updated by JS) */
+            --viewport-bottom-obstruction: 0px;
+            --controls-bottom-lift: clamp(6px, 1.4vh, 14px);
         }
 
         * {
@@ -1297,10 +1305,11 @@
         /* Game Controls Panel - ABOVE (Undo/Redo/Submit) */
         .game-controls-panel {
             position: fixed;
-            bottom: 94px;
+            bottom: calc(94px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
             /* Positioned just above grid panel (70px height + 24px gap for professional spacing) */
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) scale(var(--game-controls-scale));
+            transform-origin: center bottom;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -1383,9 +1392,10 @@
         /* Grid Tools Panel - BELOW (Grid/Zoom/Pan in single row) */
         .grid-tools-panel {
             position: fixed;
-            bottom: 24px;
+            bottom: calc(24px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) scale(var(--grid-tools-scale));
+            transform-origin: center bottom;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1495,7 +1505,7 @@
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .game-controls-panel {
-                bottom: 118px;
+                bottom: calc(118px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
                 /* Maintain professional 24px gap on mobile */
                 gap: 8px;
                 padding: 8px 12px;
@@ -1511,7 +1521,7 @@
                 gap: 6px;
                 /* Further reduced for mobile */
                 padding: 8px 10px;
-                bottom: 20px;
+                bottom: calc(20px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
                 max-width: 98vw;
                 /* Even more space on mobile */
             }
@@ -1567,13 +1577,15 @@
                 left: auto;
                 bottom: 118px;
                 /* Maintain same relative spacing in landscape */
-                transform: none;
+                transform: scale(var(--game-controls-scale));
+                transform-origin: right bottom;
             }
 
             .grid-tools-panel {
                 right: 20px;
                 left: auto;
-                transform: none;
+                transform: scale(var(--grid-tools-scale));
+                transform-origin: right bottom;
                 max-width: 90vw;
                 /* Leave space on edges in landscape */
             }
@@ -3154,6 +3166,7 @@
 
         /* Final viewport-fit hardening for phones (applied last to avoid override conflicts) */
         @media (max-width: 768px) {
+
             html,
             body,
             .app-container {
@@ -3181,18 +3194,20 @@
             .grid-tools-panel {
                 left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
                 right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile)) !important;
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift)) !important;
                 width: auto !important;
                 max-width: none !important;
-                transform: none !important;
+                transform: scale(var(--grid-tools-scale)) !important;
+                transform-origin: center bottom !important;
                 overflow-x: hidden !important;
             }
 
             .game-controls-panel {
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px) !important;
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift)) !important;
                 left: 50% !important;
                 right: auto !important;
-                transform: translateX(-50%) !important;
+                transform: translateX(-50%) scale(var(--game-controls-scale)) !important;
+                transform-origin: center bottom !important;
                 max-width: calc(100vw - (var(--safe-left) + var(--safe-right) + (var(--edge-gap-mobile) * 2))) !important;
             }
 
@@ -3735,6 +3750,208 @@
         window.appConfirm = (message, options) => AppDialog.confirm(message, options);
         window.appAlert = (message, options) => AppDialog.alert(message, options);
 
+        // Safety feature: keep bottom control panels inside visible viewport on any device.
+        const BottomControlViewportSafety = (() => {
+            let rafId = null;
+            let initialized = false;
+
+            const SCALE_MIN = 0.35;
+
+            const parsePx = (value) => {
+                const n = parseFloat(String(value || '').replace('px', ''));
+                return Number.isFinite(n) ? n : 0;
+            };
+
+            const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+            const getInsetValue = (cssVarName) => {
+                try {
+                    const raw = getComputedStyle(document.documentElement).getPropertyValue(cssVarName);
+                    return parsePx(raw);
+                } catch {
+                    return 0;
+                }
+            };
+
+            const getViewportMetrics = () => {
+                const vv = window.visualViewport;
+                const width = vv && Number.isFinite(vv.width) ? vv.width : window.innerWidth;
+                const height = vv && Number.isFinite(vv.height) ? vv.height : window.innerHeight;
+                const vvOffsetTop = vv && Number.isFinite(vv.offsetTop) ? vv.offsetTop : 0;
+                const layoutViewportHeight = window.innerHeight || height;
+                // Area hidden by mobile browser chrome / fullscreen transitions at the bottom.
+                const bottomObstruction = Math.max(0, layoutViewportHeight - (height + vvOffsetTop));
+
+                const safeLeft = getInsetValue('--safe-left');
+                const safeRight = getInsetValue('--safe-right');
+                const safeTop = getInsetValue('--safe-top');
+                const safeBottom = getInsetValue('--safe-bottom');
+                const edgeGap = Math.max(8, getInsetValue('--edge-gap-mobile') || 12);
+                const controlsLift = Math.max(0, getInsetValue('--controls-bottom-lift') || 8);
+
+                return {
+                    width: Math.max(220, width),
+                    height: Math.max(220, height),
+                    bottomObstruction,
+                    safeLeft,
+                    safeRight,
+                    safeTop,
+                    safeBottom,
+                    edgeGap,
+                    controlsLift,
+                    availableWidth: Math.max(220, width - safeLeft - safeRight - (edgeGap * 2) - 6),
+                    topPadding: safeTop + edgeGap,
+                    bottomPadding: safeBottom + edgeGap + controlsLift + bottomObstruction
+                };
+            };
+
+            const getPanelNaturalSize = (panel, cssVarName) => {
+                if (!panel) return { width: 0, height: 0, visible: false, bottom: 0 };
+
+                const style = window.getComputedStyle(panel);
+                const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && panel.offsetParent !== null;
+                if (!isVisible) return { width: 0, height: 0, visible: false, bottom: parsePx(style.bottom) };
+
+                const currentScaleRaw = getComputedStyle(document.documentElement).getPropertyValue(cssVarName);
+                const currentScale = clamp(parseFloat(currentScaleRaw) || 1, SCALE_MIN, 1);
+                const rect = panel.getBoundingClientRect();
+
+                const naturalWidth = Math.max(
+                    panel.scrollWidth || 0,
+                    rect.width > 0 ? rect.width / Math.max(0.001, currentScale) : 0
+                );
+                const naturalHeight = Math.max(
+                    panel.scrollHeight || 0,
+                    rect.height > 0 ? rect.height / Math.max(0.001, currentScale) : 0
+                );
+
+                return {
+                    width: naturalWidth,
+                    height: naturalHeight,
+                    visible: true,
+                    bottom: parsePx(style.bottom)
+                };
+            };
+
+            const computeScale = (naturalSize, availableWidth, viewportHeight, panelBottom, topPadding, minScale = SCALE_MIN) => {
+                if (!(naturalSize.width > 0) || !(naturalSize.height > 0)) return 1;
+
+                const byWidth = availableWidth / naturalSize.width;
+                const availableHeightForPanel = Math.max(40, viewportHeight - panelBottom - topPadding);
+                const byHeight = availableHeightForPanel / naturalSize.height;
+
+                return clamp(Math.min(1, byWidth, byHeight), minScale, 1);
+            };
+
+            const apply = () => {
+                rafId = null;
+
+                const root = document.documentElement;
+                const m = getViewportMetrics();
+                root.style.setProperty('--viewport-bottom-obstruction', `${Math.round(m.bottomObstruction)}px`);
+
+                const gridPanel = document.querySelector('.grid-tools-panel');
+                const gamePanel = document.querySelector('.game-controls-panel');
+
+                const gridNatural = getPanelNaturalSize(gridPanel, '--grid-tools-scale');
+                const gameNatural = getPanelNaturalSize(gamePanel, '--game-controls-scale');
+
+                let gridScale = computeScale(
+                    gridNatural,
+                    m.availableWidth,
+                    m.height,
+                    gridNatural.bottom,
+                    m.topPadding,
+                    SCALE_MIN
+                );
+
+                let gameScale = computeScale(
+                    gameNatural,
+                    m.availableWidth,
+                    m.height,
+                    gameNatural.bottom,
+                    m.topPadding,
+                    SCALE_MIN
+                );
+
+                // Final stack safety pass: ensure highest top edge never goes beyond viewport top padding.
+                const gridTop = gridNatural.visible
+                    ? (m.height - gridNatural.bottom - (gridNatural.height * gridScale))
+                    : Infinity;
+                const gameTop = gameNatural.visible
+                    ? (m.height - gameNatural.bottom - (gameNatural.height * gameScale))
+                    : Infinity;
+                const highestTop = Math.min(gridTop, gameTop);
+
+                if (Number.isFinite(highestTop) && highestTop < m.topPadding) {
+                    if (gridNatural.visible) {
+                        const maxGridScale = (m.height - gridNatural.bottom - m.topPadding) / Math.max(1, gridNatural.height);
+                        gridScale = clamp(Math.min(gridScale, maxGridScale), SCALE_MIN, 1);
+                    }
+                    if (gameNatural.visible) {
+                        const maxGameScale = (m.height - gameNatural.bottom - m.topPadding) / Math.max(1, gameNatural.height);
+                        gameScale = clamp(Math.min(gameScale, maxGameScale), SCALE_MIN, 1);
+                    }
+                }
+
+                root.style.setProperty('--grid-tools-scale', clamp(gridScale, SCALE_MIN, 1).toFixed(3));
+                root.style.setProperty('--game-controls-scale', clamp(gameScale, SCALE_MIN, 1).toFixed(3));
+            };
+
+            const schedule = () => {
+                if (rafId != null) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(apply);
+            };
+
+            const initObservers = () => {
+                if (typeof MutationObserver === 'undefined') return;
+
+                const watchNodes = [
+                    document.body,
+                    document.documentElement,
+                    document.querySelector('.grid-tools-panel'),
+                    document.querySelector('.game-controls-panel'),
+                    document.getElementById('gameControls')
+                ].filter(Boolean);
+
+                watchNodes.forEach((node) => {
+                    const observer = new MutationObserver(schedule);
+                    observer.observe(node, {
+                        attributes: true,
+                        childList: true,
+                        subtree: true,
+                        attributeFilter: ['style', 'class']
+                    });
+                });
+            };
+
+            const init = () => {
+                if (initialized) return;
+                initialized = true;
+
+                schedule();
+                window.addEventListener('resize', schedule, { passive: true });
+                window.addEventListener('orientationchange', () => setTimeout(schedule, 120), { passive: true });
+                window.addEventListener('pageshow', schedule, { passive: true });
+                window.addEventListener('load', schedule, { passive: true });
+                document.addEventListener('visibilitychange', schedule);
+                document.addEventListener('fullscreenchange', schedule);
+                document.addEventListener('webkitfullscreenchange', schedule);
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', schedule, { passive: true });
+                    window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+                }
+
+                initObservers();
+            };
+
+            return { init, apply, schedule };
+        })();
+
+        window.__applyBottomControlsSafeFit = () => BottomControlViewportSafety.apply();
+        window.__scheduleBottomControlsSafeFit = () => BottomControlViewportSafety.schedule();
+
         // Main Menu Logic
         const MainMenu = {
             overlay: document.getElementById('mainMenuOverlay'),
@@ -3808,6 +4025,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             ensureAppEntryRoute();
             MainMenu.init();
+            BottomControlViewportSafety.init();
         });
 
         // Register PWA manifest only on supported secure/network origins.
