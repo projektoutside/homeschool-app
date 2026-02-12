@@ -20,72 +20,46 @@
     outline-offset: 2px;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    /* Lock the body to prevent rubber-banding or accidental page scroll */
+    overflow: hidden; 
+    overscroll-behavior: none;
+    background-color: var(--color-background);
+}
+
 .layout-container {
     display: flex;
     flex-direction: column;
     width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%; /* Fill the fixed html/body */
     background-color: var(--color-background);
     color: var(--color-text-main);
-    overflow-x: hidden;
+    overflow: hidden;
+    position: relative;
 }
 
 /* Main Content */
 .main-content {
     flex: 1;
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+    height: 100%;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    min-height: calc(100vh - var(--spacing-xl) * 2);
-    min-height: calc(100dvh - var(--spacing-xl) * 2);
-    overflow-x: hidden;
-    /* Add padding for bottom navigation */
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    overflow: hidden; /* Strict containment */
+    position: relative;
 }
 
+/* Immersive mode settings */
 .layout-container.home-immersive .main-content {
-    max-width: 100%;
-    width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
-    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-    padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
+    padding: 0;
 }
 
 .layout-container.game-immersive .main-content {
     padding: 0;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .main-content {
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-left: max(var(--spacing-md), env(safe-area-inset-left, 0px));
-        padding-right: max(var(--spacing-md), env(safe-area-inset-right, 0px));
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    }
-
-    .layout-container.home-immersive .main-content {
-        padding-top: max(0.45rem, env(safe-area-inset-top, 0px));
-        padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-        padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
-    }
-
-    .layout-container.game-immersive .main-content {
-        padding: 0;
-    }
-}
-
-/* Landscape mode on mobile devices */
-@media (max-width: 900px) and (orientation: landscape) {
-    .main-content {
-        padding-top: 0;
-    }
 }
