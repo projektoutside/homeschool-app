@@ -6,6 +6,8 @@ import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { usePWA } from '../hooks/usePWA';
 import { PWAInstallModal } from '../components/PWAInstallModal';
+import { useSoundSettings } from '../context/SoundSettingsContext';
+import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -28,6 +30,11 @@ const ViewerPage: React.FC = () => {
     const isWorksheetContent = item?.type === 'worksheet';
 
     const { isInstallable, isInstalled, installPrompt, installContext } = usePWA();
+    const { settings: soundSettings } = useSoundSettings();
+
+    useEffect(() => {
+        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+    }, [soundSettings]);
 
     const handleInstallClick = useCallback(async () => {
         if (isInstalled) return;
@@ -192,6 +199,7 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
                             setIsLoading(false);
+                            applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                         }}
                     />
                 </div>
@@ -220,7 +228,10 @@ const ViewerPage: React.FC = () => {
                         }}
                         allowFullScreen
                         sandbox="allow-scripts"
-                        onLoad={() => setIsLoading(false)}
+                        onLoad={() => {
+                            setIsLoading(false);
+                            applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                        }}
                     />
                 </div>
             </div>

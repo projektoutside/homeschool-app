@@ -4,12 +4,15 @@ import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './context/AuthContext'
+import { SoundSettingsProvider } from './context/SoundSettingsContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <App />
+        <SoundSettingsProvider>
+          <App />
+        </SoundSettingsProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,

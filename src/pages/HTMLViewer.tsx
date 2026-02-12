@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
+import { useSoundSettings } from '../context/SoundSettingsContext';
+import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './HTMLViewer.css';
 
 interface WorksheetFile {
@@ -36,6 +38,11 @@ const HTMLViewer: React.FC = () => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
+    const { settings: soundSettings } = useSoundSettings();
+
+    useEffect(() => {
+        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+    }, [soundSettings]);
 
     // Format folder name for display
     const formatFolderName = (name: string): string => {
@@ -397,6 +404,9 @@ const HTMLViewer: React.FC = () => {
                                     top: 0,
                                     left: 0,
                                     border: 'none'
+                                }}
+                                onLoad={() => {
+                                    applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                                 }}
                             />
                         </div>

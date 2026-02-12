@@ -3,13 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
 import type { FullscreenHTMLElementType } from '../types/fullscreen';
+import { useSoundSettings } from '../context/SoundSettingsContext';
+import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './GamePlayer.css';
 
 const GamePlayer: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { settings: soundSettings } = useSoundSettings();
+
+    useEffect(() => {
+        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+    }, [soundSettings]);
 
     const item = useMemo(() => CONTENT_ITEMS.find(content => content.id === id), [id]);
     const launchPath = useMemo(() => {
@@ -57,6 +65,7 @@ const GamePlayer: React.FC = () => {
             {isLoading && <div className="game-player-loading" aria-live="polite">Launching {item.type}...</div>}
 
             <iframe
+                ref={iframeRef}
                 src={launchPath}
                 title={item.title}
                 className={`game-player-frame ${isLoading ? 'is-loading' : ''}`}
@@ -65,6 +74,7 @@ const GamePlayer: React.FC = () => {
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                 onLoad={() => {
                     setIsLoading(false);
+                    applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                     setTimeout(() => {
                         enterFullscreen().catch(() => {
                             // noop

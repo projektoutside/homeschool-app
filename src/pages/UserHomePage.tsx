@@ -1,13 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSoundSettings } from '../context/SoundSettingsContext';
 import { hasQuickUnlock, resolveQuickUnlockCredentials, saveQuickUnlock } from '../utils/quickUnlock';
 import './UserHomePage.css';
 
 const UserHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut, updateHomeLabel, updatePassword, updateUsername } = useAuth();
+  const { settings, setMuted, setMusicVolume, setSfxVolume, resetSoundSettings } = useSoundSettings();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = React.useState(false);
+  const [isSoundSettingsOpen, setIsSoundSettingsOpen] = React.useState(false);
   const [homeLabel, setHomeLabel] = React.useState('');
   const [username, setUsername] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
@@ -167,85 +171,184 @@ const UserHomePage: React.FC = () => {
           <section className="user-home-settings-panel" aria-label="Settings panel">
             <header className="user-home-settings-header">
               <h2>Settings</h2>
-              <button type="button" onClick={() => setIsSettingsOpen(false)} aria-label="Close settings">✕</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setIsAccountSettingsOpen(false);
+                  setIsSoundSettingsOpen(false);
+                }}
+                aria-label="Close settings"
+              >
+                ✕
+              </button>
             </header>
 
-            <div className="settings-tab-label">Account</div>
-
-            <div className="settings-group">
-              <label htmlFor="homeLabel">Home button label</label>
-              <input
-                id="homeLabel"
-                value={homeLabel}
-                onChange={(e) => setHomeLabel(e.target.value)}
-                placeholder="e.g. Xatori"
-              />
-              <button type="button" onClick={handleSaveHomeLabel} disabled={isSaving}>Save Home Label</button>
+            <div className="settings-menu-list" aria-label="Settings categories">
+              <button
+                type="button"
+                className="settings-menu-btn"
+                onClick={() => setIsAccountSettingsOpen(true)}
+              >
+                Account Settings
+              </button>
+              <button
+                type="button"
+                className="settings-menu-btn"
+                onClick={() => setIsSoundSettingsOpen(true)}
+              >
+                Sound Settings
+              </button>
             </div>
-
-            <div className="settings-group">
-              <label htmlFor="username">Username</label>
-              <input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your username"
-              />
-              <button type="button" onClick={handleSaveUsername} disabled={isSaving}>Save Username</button>
-            </div>
-
-            <div className="settings-group">
-              <label htmlFor="newPassword">Change password</label>
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="New password"
-              />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-              />
-              <button type="button" onClick={handleSavePassword} disabled={isSaving}>Update Password</button>
-            </div>
-
-            <div className="settings-group">
-              <label htmlFor="oldPasskey">Change passkey</label>
-              <input
-                id="oldPasskey"
-                type="password"
-                value={oldPasskey}
-                onChange={(e) => setOldPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                placeholder="Current passkey"
-                inputMode="numeric"
-              />
-              <input
-                type="password"
-                value={newPasskey}
-                onChange={(e) => setNewPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                placeholder="New passkey (4-8 digits)"
-                inputMode="numeric"
-              />
-              <input
-                type="password"
-                value={confirmPasskey}
-                onChange={(e) => setConfirmPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                placeholder="Confirm new passkey"
-                inputMode="numeric"
-              />
-              <button type="button" onClick={handleSavePasskey} disabled={isSaving}>Update Passkey</button>
-            </div>
-
-            <div className="settings-group danger-zone">
-              <button type="button" onClick={handleSignOut} disabled={isSaving}>Sign out</button>
-            </div>
-
-            {statusMessage && <p className="settings-status success">{statusMessage}</p>}
-            {statusError && <p className="settings-status error">{statusError}</p>}
           </section>
+
+          {isAccountSettingsOpen && (
+            <>
+              <button
+                type="button"
+                className="user-home-settings-sub-backdrop"
+                aria-label="Close account settings"
+                onClick={() => setIsAccountSettingsOpen(false)}
+              />
+              <section className="user-home-settings-subpanel" aria-label="Account settings panel">
+                <header className="user-home-settings-header">
+                  <h2>Account Settings</h2>
+                  <button type="button" onClick={() => setIsAccountSettingsOpen(false)} aria-label="Close account settings">✕</button>
+                </header>
+
+                <div className="settings-group">
+                  <label htmlFor="homeLabel">Home button label</label>
+                  <input
+                    id="homeLabel"
+                    value={homeLabel}
+                    onChange={(e) => setHomeLabel(e.target.value)}
+                    placeholder="e.g. Xatori"
+                  />
+                  <button type="button" onClick={handleSaveHomeLabel} disabled={isSaving}>Save Home Label</button>
+                </div>
+
+                <div className="settings-group">
+                  <label htmlFor="username">Username</label>
+                  <input
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Your username"
+                  />
+                  <button type="button" onClick={handleSaveUsername} disabled={isSaving}>Save Username</button>
+                </div>
+
+                <div className="settings-group">
+                  <label htmlFor="newPassword">Change password</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password"
+                  />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                  <button type="button" onClick={handleSavePassword} disabled={isSaving}>Update Password</button>
+                </div>
+
+                <div className="settings-group">
+                  <label htmlFor="oldPasskey">Change passkey</label>
+                  <input
+                    id="oldPasskey"
+                    type="password"
+                    value={oldPasskey}
+                    onChange={(e) => setOldPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder="Current passkey"
+                    inputMode="numeric"
+                  />
+                  <input
+                    type="password"
+                    value={newPasskey}
+                    onChange={(e) => setNewPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder="New passkey (4-8 digits)"
+                    inputMode="numeric"
+                  />
+                  <input
+                    type="password"
+                    value={confirmPasskey}
+                    onChange={(e) => setConfirmPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder="Confirm new passkey"
+                    inputMode="numeric"
+                  />
+                  <button type="button" onClick={handleSavePasskey} disabled={isSaving}>Update Passkey</button>
+                </div>
+
+                <div className="settings-group danger-zone">
+                  <button type="button" onClick={handleSignOut} disabled={isSaving}>Sign out</button>
+                </div>
+
+                {statusMessage && <p className="settings-status success">{statusMessage}</p>}
+                {statusError && <p className="settings-status error">{statusError}</p>}
+              </section>
+            </>
+          )}
+
+          {isSoundSettingsOpen && (
+            <>
+              <button
+                type="button"
+                className="user-home-settings-sub-backdrop"
+                aria-label="Close sound settings"
+                onClick={() => setIsSoundSettingsOpen(false)}
+              />
+              <section className="user-home-settings-subpanel" aria-label="Sound settings panel">
+                <header className="user-home-settings-header">
+                  <h2>Sound Settings</h2>
+                  <button type="button" onClick={() => setIsSoundSettingsOpen(false)} aria-label="Close sound settings">✕</button>
+                </header>
+
+                <div className="settings-group">
+                  <label className="settings-toggle-label" htmlFor="globalMuteToggle">
+                    <span>Mute all app sound</span>
+                    <input
+                      id="globalMuteToggle"
+                      type="checkbox"
+                      checked={settings.muted}
+                      onChange={(e) => setMuted(e.target.checked)}
+                    />
+                  </label>
+                  <p className="settings-helper-text">This setting overrides audio in games, worksheets, and tools.</p>
+                </div>
+
+                <div className="settings-group">
+                  <label htmlFor="musicVolumeRange">Global music volume: {settings.musicVolume}%</label>
+                  <input
+                    id="musicVolumeRange"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={settings.musicVolume}
+                    onChange={(e) => setMusicVolume(Number(e.target.value))}
+                    disabled={settings.muted}
+                  />
+                </div>
+
+                <div className="settings-group">
+                  <label htmlFor="sfxVolumeRange">Global effects volume: {settings.sfxVolume}%</label>
+                  <input
+                    id="sfxVolumeRange"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={settings.sfxVolume}
+                    onChange={(e) => setSfxVolume(Number(e.target.value))}
+                    disabled={settings.muted}
+                  />
+                  <button type="button" onClick={resetSoundSettings}>Reset Sound Defaults</button>
+                </div>
+              </section>
+            </>
+          )}
         </>
       )}
     </div>

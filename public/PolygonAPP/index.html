@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Polygon Fun">
@@ -20,6 +20,15 @@
     <style>
         /* CSS Custom Properties for Responsive Design System */
         :root {
+            /* Safe-area insets for notched/mobile devices */
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+
+            /* Consistent edge breathing room (console-like fit) */
+            --edge-gap-mobile: clamp(8px, 2.5vw, 14px);
+
             /* Base font size - scales with viewport */
             --base-font-size: clamp(12px, 1.5vw, 16px);
             --font-scale: 1;
@@ -101,10 +110,9 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex;
             width: 100%;
-            height: 100svh;
-            min-height: 100svh;
-            max-height: 100svh;
+            height: 100vh;
             min-height: 100dvh;
+            max-height: 100dvh;
             /* Dynamic viewport height for mobile */
             overflow: hidden;
             background: #0f172a;
@@ -141,9 +149,9 @@
             position: fixed;
             inset: 0;
             width: 100%;
-            height: 100svh;
-            min-height: 100svh;
-            max-height: 100svh;
+            height: 100vh;
+            min-height: 100dvh;
+            max-height: 100dvh;
             height: 100dvh;
             max-width: 100%;
             max-height: none;
@@ -167,21 +175,60 @@
         @media (max-width: 768px) {
             .app-container {
                 flex-direction: column;
-                height: 100svh;
+                height: 100vh;
                 height: 100dvh;
-                min-height: 100svh;
-                max-height: 100svh;
+                min-height: 100dvh;
+                max-height: 100dvh;
                 margin: 0;
+            }
+
+            /* Keep all fixed chrome away from device edges */
+            .top-tools-bar {
+                top: calc(var(--safe-top) + var(--edge-gap-mobile));
+                left: calc(var(--safe-left) + var(--edge-gap-mobile));
+                right: calc(var(--safe-right) + var(--edge-gap-mobile));
+                width: auto;
+                border-radius: 14px;
+            }
+
+            .toolbar {
+                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 8px);
+                left: calc(var(--safe-left) + var(--edge-gap-mobile));
+                right: calc(var(--safe-right) + var(--edge-gap-mobile));
+                width: auto;
+                border-radius: 14px;
+            }
+
+            .grid-tools-panel {
+                left: calc(var(--safe-left) + var(--edge-gap-mobile));
+                right: calc(var(--safe-right) + var(--edge-gap-mobile));
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile));
+                width: auto;
+                max-width: none;
+                transform: none;
+            }
+
+            .game-controls-panel {
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px);
+                left: 50%;
+                transform: translateX(-50%);
+                max-width: calc(100vw - (var(--safe-left) + var(--safe-right) + (var(--edge-gap-mobile) * 2)));
+            }
+
+            .coord-display {
+                left: calc(var(--safe-left) + var(--edge-gap-mobile));
+                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 56px + 10px);
+                bottom: auto;
             }
         }
 
         /* Landscape mobile */
         @media (max-width: 768px) and (orientation: landscape) {
             .app-container {
-                height: 100svh;
+                height: 100vh;
                 height: 100dvh;
-                min-height: 100svh;
-                max-height: 100svh;
+                min-height: 100dvh;
+                max-height: 100dvh;
                 margin: 0;
             }
         }
@@ -3102,6 +3149,57 @@
 
             .box-score-panel {
                 height: min(94vh, 760px);
+            }
+        }
+
+        /* Final viewport-fit hardening for phones (applied last to avoid override conflicts) */
+        @media (max-width: 768px) {
+            html,
+            body,
+            .app-container {
+                width: 100%;
+                height: 100dvh !important;
+                min-height: 100dvh !important;
+                max-height: 100dvh !important;
+                overflow: hidden !important;
+            }
+
+            .top-tools-bar {
+                top: calc(var(--safe-top) + var(--edge-gap-mobile)) !important;
+                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
+                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
+                width: auto !important;
+            }
+
+            .toolbar {
+                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 8px) !important;
+                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
+                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
+                width: auto !important;
+            }
+
+            .grid-tools-panel {
+                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
+                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile)) !important;
+                width: auto !important;
+                max-width: none !important;
+                transform: none !important;
+                overflow-x: hidden !important;
+            }
+
+            .game-controls-panel {
+                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px) !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+                max-width: calc(100vw - (var(--safe-left) + var(--safe-right) + (var(--edge-gap-mobile) * 2))) !important;
+            }
+
+            .coord-display {
+                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 56px + 10px) !important;
+                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
+                bottom: auto !important;
             }
         }
 
