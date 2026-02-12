@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
@@ -30,6 +30,9 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     const [statusError, setStatusError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Audio Context Ref
+    const audioContextRef = useRef<AudioContext | null>(null);
+
     // Initialize logic
     useEffect(() => {
         if (isOpen) {
@@ -49,6 +52,78 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         setStatusError('');
         setStatusMessage('');
     };
+
+    const getAudioContext = useCallback(() => {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+        return audioContextRef.current;
+    }, []);
+
+    const playTestTone = useCallback((type: 'music' | 'sfx', volume: number) => {
+        if (settings.muted) return;
+        
+        try {
+            const ctx = getAudioContext();
+            const gainNode = ctx.createGain();
+            const osc = ctx.createOscillator();
+            
+            // Convert 0-100 to 0-1 gain (logarithmic perception approximation)
+            const normalizedVol = Math.pow(volume / 100, 2);
+            
+            gainNode.gain.setValueAtTime(normalizedVol, ctx.currentTime);
+            gainNode.connect(ctx.destination);
+
+            if (type === 'music') {
+                // Play a pleasant major chord arpeggio for music test
+                const now = ctx.currentTime;
+                
+                // Root
+                const osc1 = ctx.createOscillator();
+                osc1.type = 'sine';
+                osc1.frequency.value = 261.63; // C4
+                osc1.connect(gainNode);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // Third
+                const osc2 = ctx.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.value = 329.63; // E4
+                osc2.connect(gainNode);
+                osc2.start(now + 0.1);
+                osc2.stop(now + 0.4);
+
+                // Fifth
+                const osc3 = ctx.createOscillator();
+                osc3.type = 'sine';
+                osc3.frequency.value = 392.00; // G4
+                osc3.connect(gainNode);
+                osc3.start(now + 0.2);
+                osc3.stop(now + 0.6);
+                
+                // Fade out
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            } else {
+                // Play a "blip" sound for SFX
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+                osc.connect(gainNode);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+                
+                // Quick fade
+                gainNode.gain.setValueAtTime(normalizedVol, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+            }
+        } catch (e) {
+            console.error('Audio playback failed', e);
+        }
+    }, [getAudioContext, settings.muted]);
 
     const handleSaveHomeLabel = async () => {
         resetStatus();
@@ -311,6 +386,8 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                 max={100}
                                 value={settings.musicVolume}
                                 onChange={(e) => setMusicVolume(Number(e.target.value))}
+                                onMouseUp={() => playTestTone('music', settings.musicVolume)}
+                                onTouchEnd={() => playTestTone('music', settings.musicVolume)}
                                 disabled={settings.muted}
                             />
                         </div>
@@ -324,6 +401,8 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                 max={100}
                                 value={settings.sfxVolume}
                                 onChange={(e) => setSfxVolume(Number(e.target.value))}
+                                onMouseUp={() => playTestTone('sfx', settings.sfxVolume)}
+                                onTouchEnd={() => playTestTone('sfx', settings.sfxVolume)}
                                 disabled={settings.muted}
                             />
                             <button type="button" onClick={resetSoundSettings}>Reset Sound Defaults</button>
