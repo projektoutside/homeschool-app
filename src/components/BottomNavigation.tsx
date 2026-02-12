@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CONTENT_ITEMS } from '../data/mockContent';
 import './BottomNavigation.css';
 
 interface BottomNavigationProps {
@@ -13,7 +14,29 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const { user } = useAuth();
     
     const [isMinimized, setIsMinimized] = useState(false);
+    const [expandedMode, setExpandedMode] = useState(false);
+    const sliderRef = useRef<HTMLDivElement>(null);
     
+    // Reset expanded mode when minimized
+    useEffect(() => {
+        if (isMinimized) {
+            setExpandedMode(false);
+        }
+    }, [isMinimized]);
+
+    // Scroll to end when entering expanded mode
+    useEffect(() => {
+        if (expandedMode && sliderRef.current) {
+            // Slight timeout to ensure layout is ready/transition has started
+            const timer = setTimeout(() => {
+                if (sliderRef.current) {
+                    sliderRef.current.scrollLeft = sliderRef.current.scrollWidth;
+                }
+            }, 10);
+            return () => clearTimeout(timer);
+        }
+    }, [expandedMode]);
+
     // Touch swipe handling
     const touchStartX = useRef<number | null>(null);
     const hasSwiped = useRef<boolean>(false);
@@ -36,24 +59,46 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             hasSwiped.current = true;
         }
 
-        // If swiping left (positive diff) and NOT minimized -> Minimize
-        if (diff > minSwipeDistance && !isMinimized) {
+        // --- GESTURE LOGIC ---
+
+        // 1. MINIMIZE: Swipe Left (positive diff) on Standard View
+        if (diff > minSwipeDistance && !isMinimized && !expandedMode) {
             setIsMinimized(true);
-            touchStartX.current = null; // Reset to prevent multiple triggers
+            touchStartX.current = null; 
+            return;
         }
         
-        // If swiping right (negative diff) and minimized -> Restore
+        // 2. RESTORE: Swipe Right (negative diff) on Minimized View
         if (diff < -minSwipeDistance && isMinimized) {
             setIsMinimized(false);
-            touchStartX.current = null; // Reset
+            touchStartX.current = null; 
+            return;
+        }
+
+        // 3. OPEN SLIDER: Swipe Right (negative diff) on Standard View
+        if (diff < -minSwipeDistance && !isMinimized && !expandedMode) {
+            setExpandedMode(true);
+            touchStartX.current = null;
+            return;
+        }
+
+        // 4. CLOSE SLIDER: Swipe Left (positive diff) on Slider View AT THE RIGHT EDGE
+        if (diff > minSwipeDistance && !isMinimized && expandedMode && sliderRef.current) {
+            const slider = sliderRef.current;
+            // Check if we are roughly at the right edge (tolerance of 5px)
+            // Logic: scrollLeft + clientWidth approx equals scrollWidth
+            const distFromRight = slider.scrollWidth - (slider.scrollLeft + slider.clientWidth);
+            const isAtRightEdge = distFromRight < 20; // 20px tolerance for ease of use
+
+            if (isAtRightEdge) {
+                setExpandedMode(false);
+                touchStartX.current = null;
+            }
         }
     };
 
     const onTouchEnd = () => {
         touchStartX.current = null;
-        // We do NOT reset hasSwiped here immediately because the onClick event fires *after* touchEnd.
-        // We let the onClickCapture handle it, or reset it on next touchStart.
-        // Actually, for safety, we can reset it after a small timeout if needed, but the next touchStart handles it.
     };
 
     // Block accidental clicks if a swipe occurred
@@ -61,7 +106,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         if (hasSwiped.current) {
             e.stopPropagation();
             e.preventDefault();
-            hasSwiped.current = false; // Consume the block
+            hasSwiped.current = false; 
         }
     };
 
@@ -72,19 +117,19 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
     // Helper to determine active state
     const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
-    
     const isGamesActive = location.pathname === '/apps' && new URLSearchParams(location.search).get('tab')?.toLowerCase() === 'game';
-    
-    // Classroom is active for /classroom route AND the legacy worksheet/tool routes that are now "inside" classroom
     const tab = new URLSearchParams(location.search).get('tab')?.toLowerCase();
     const isClassroomActive = 
         location.pathname === '/classroom' ||
         (location.pathname === '/apps' && (tab === 'worksheet' || tab === 'worksheets' || tab === 'tool' || tab === 'tools')) ||
         location.pathname === '/html-viewer';
 
+    // Content for Expanded Mode
+    const games = CONTENT_ITEMS.filter(item => item.type === 'game');
+
     return (
         <nav 
-            className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''}`} 
+            className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''} ${expandedMode ? 'expanded' : ''}`} 
             aria-label="Main navigation"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
@@ -96,7 +141,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 className="nav-restore-handle" 
                 aria-hidden={!isMinimized}
                 onClick={(e) => {
-                    // Always allow restoring, even if it was a small drag
                     if (isMinimized) {
                         setIsMinimized(false);
                         e.stopPropagation(); 
@@ -107,51 +151,112 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 <div className="nav-restore-line"></div>
             </div>
 
-            {/* Content Container - Hidden when minimized */}
-            <div className="nav-content-container">
-                <button
-                    type="button"
-                    className="nav-settings-btn"
-                    onClick={onOpenSettings}
-                    aria-label="Open settings"
-                    title="Settings"
-                >
-                    <span className="nav-settings-icon" aria-hidden="true">
-                        <span className="settings-square"></span>
-                        <span className="settings-square"></span>
-                        <span className="settings-square"></span>
-                    </span>
-                </button>
+            {/* View Stack: Holds both Standard and Slider views overlapping */}
+            <div className="dock-view-stack">
+                
+                {/* Standard Tab Buttons */}
+                <div className={`nav-content-container ${expandedMode ? 'view-hidden-left' : 'view-active'}`}>
+                    <button
+                        type="button"
+                        className="nav-settings-btn"
+                        onClick={onOpenSettings}
+                        aria-label="Open settings"
+                        title="Settings"
+                        tabIndex={expandedMode ? -1 : 0}
+                    >
+                        <span className="nav-settings-icon" aria-hidden="true">
+                            <span className="settings-square"></span>
+                            <span className="settings-square"></span>
+                            <span className="settings-square"></span>
+                        </span>
+                    </button>
 
-                <button
-                    type="button"
-                    className={`nav-tab-btn ${isHomeActive ? 'active' : ''}`}
-                    onClick={() => navigate('/home-profile')}
-                    aria-label={`Open ${userDisplayName} home`}
-                >
-                    <span className="nav-tab-icon" aria-hidden="true">🏠</span>
-                    <span>{userDisplayName}</span>
-                </button>
+                    <button
+                        type="button"
+                        className={`nav-tab-btn ${isHomeActive ? 'active' : ''}`}
+                        onClick={() => navigate('/home-profile')}
+                        aria-label={`Open ${userDisplayName} home`}
+                        tabIndex={expandedMode ? -1 : 0}
+                    >
+                        <span className="nav-tab-icon" aria-hidden="true">🏠</span>
+                        <span>{userDisplayName}</span>
+                    </button>
 
-                <button
-                    type="button"
-                    className={`nav-tab-btn ${isGamesActive ? 'active' : ''}`}
-                    onClick={() => navigate('/apps?tab=game')}
-                    aria-label="Games"
-                >
-                    <span className="nav-tab-icon" aria-hidden="true">🎮</span>
-                    <span>Games</span>
-                </button>
+                    <button
+                        type="button"
+                        className={`nav-tab-btn ${isGamesActive ? 'active' : ''}`}
+                        onClick={() => navigate('/apps?tab=game')}
+                        aria-label="Games"
+                        tabIndex={expandedMode ? -1 : 0}
+                    >
+                        <span className="nav-tab-icon" aria-hidden="true">🎮</span>
+                        <span>Games</span>
+                    </button>
 
-                <button
-                    type="button"
-                    className={`nav-tab-btn ${isClassroomActive ? 'active' : ''}`}
-                    onClick={() => navigate('/classroom')}
-                    aria-label="Classroom"
+                    <button
+                        type="button"
+                        className={`nav-tab-btn ${isClassroomActive ? 'active' : ''}`}
+                        onClick={() => navigate('/classroom')}
+                        aria-label="Classroom"
+                        tabIndex={expandedMode ? -1 : 0}
+                    >
+                        <span className="nav-tab-icon" aria-hidden="true">🏫</span>
+                        <span>Classroom</span>
+                    </button>
+                </div>
+
+                {/* Expanded Slider Content */}
+                <div 
+                    className={`nav-slider-container ${expandedMode ? 'view-active' : 'view-hidden-right'}`} 
+                    ref={sliderRef}
                 >
-                    <span className="nav-tab-icon" aria-hidden="true">🏫</span>
-                    <span>Classroom</span>
-                </button>
+                    {/* HOME SECTION (Leftmost) */}
+                    <div className="nav-slider-section home-section">
+                        <div className="nav-slider-item static">
+                            <span className="nav-slider-icon">🏠</span>
+                            <span className="nav-slider-label">Home</span>
+                        </div>
+                    </div>
+
+                    {/* GAMES SECTION */}
+                    <div className="nav-slider-section games-section">
+                        {games.map(game => (
+                            <button
+                                key={game.id}
+                                className="nav-slider-item"
+                                onClick={() => navigate(`/play/${game.id}`)}
+                                title={game.title}
+                                tabIndex={expandedMode ? 0 : -1}
+                            >
+                                <span className="nav-slider-icon">🎮</span>
+                                <span className="nav-slider-label">{game.title}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* CLASSROOM SECTION (Rightmost) */}
+                    <div className="nav-slider-section classroom-section">
+                        <button
+                            className="nav-slider-item"
+                            onClick={() => navigate('/apps?tab=tools')}
+                            title="Tools"
+                            tabIndex={expandedMode ? 0 : -1}
+                        >
+                            <span className="nav-slider-icon">🧰</span>
+                            <span className="nav-slider-label">Tools</span>
+                        </button>
+                        <button
+                            className="nav-slider-item"
+                            onClick={() => navigate('/html-viewer')}
+                            title="Worksheets"
+                            tabIndex={expandedMode ? 0 : -1}
+                        >
+                            <span className="nav-slider-icon">📄</span>
+                            <span className="nav-slider-label">Worksheets</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
             {/* Minimize Toggle (Vertical Line) */}
@@ -159,12 +264,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 type="button"
                 className="nav-minimize-btn"
                 onClick={(e) => {
-                    // Always allow toggling via the button
-                    setIsMinimized(!isMinimized);
+                    if (expandedMode) {
+                        setExpandedMode(false); // Close expand first
+                    } else {
+                        setIsMinimized(!isMinimized);
+                    }
                     e.stopPropagation();
                 }}
-                aria-label={isMinimized ? "Restore navigation" : "Minimize navigation"}
-                title={isMinimized ? "Restore" : "Minimize"}
+                aria-label={isMinimized ? "Restore navigation" : (expandedMode ? "Close slider" : "Minimize navigation")}
+                title={isMinimized ? "Restore" : (expandedMode ? "Close" : "Minimize")}
             >
                 <div className="nav-minimize-line"></div>
             </button>

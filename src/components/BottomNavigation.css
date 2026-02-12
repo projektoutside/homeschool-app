@@ -27,6 +27,45 @@
     touch-action: pan-y;
 }
 
+/* View Stack */
+.dock-view-stack {
+    display: grid;
+    grid-template-areas: "stack";
+    flex: 1;
+    min-width: 0; /* Prevents grid blowout */
+    width: 100%;
+    position: relative;
+    align-items: center;
+}
+
+/* Transition Classes */
+.view-active {
+    grid-area: stack;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+}
+
+.view-hidden-left {
+    grid-area: stack;
+    opacity: 0;
+    transform: translateX(-20px) scale(0.95);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1;
+}
+
+.view-hidden-right {
+    grid-area: stack;
+    opacity: 0;
+    transform: translateX(20px) scale(0.95);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1;
+}
+
 /* Container for the actual buttons */
 .nav-content-container {
     display: grid;
@@ -34,7 +73,7 @@
     grid-template-columns: 0.3fr 1fr 1fr 1fr;
     gap: 0.65rem;
     width: 100%;
-    transition: opacity 0.2s ease;
+    /* remove old transition if it conflicts, but keep display grid */
 }
 
 /* MINIMIZED STATE */
@@ -301,9 +340,132 @@
     }
 }
 
+
+/* EXPANDED SLIDER STYLES */
+.nav-slider-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0.5rem;
+    height: 100%;
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+    /* Ensure content is reachable */
+    overscroll-behavior-x: contain;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    
+    /* Grid Area for Stack */
+    grid-area: stack;
+    min-width: 0; /* Fix flex child in grid */
+}
+
+.nav-slider-container::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.nav-slider-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* Add separators between sections if desired */
+.nav-slider-section:not(:last-child)::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.2);
+    margin-left: 0.75rem;
+}
+
+.nav-slider-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.4rem 0.8rem;
+    min-width: 70px;
+    height: 60px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: #e2e8f0;
+}
+
+.nav-slider-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-slider-item.static {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.nav-slider-item.static:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-slider-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.nav-slider-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ANIMATION FOR EXPANSION */
+.bottom-navigation-dock.expanded {
+    /* Optional: Make it slightly wider or taller if needed, 
+       but keeping it consistent is usually better UX */
+}
+
+
+
+/* Adjustments for smaller screens */
+@media (max-width: 480px) {
+    .nav-slider-item {
+        min-width: 60px;
+        height: 54px;
+        padding: 0.3rem 0.5rem;
+    }
+    
+    .nav-slider-icon {
+        font-size: 1.2rem;
+    }
+    
+    .nav-slider-label {
+        font-size: 0.65rem;
+    }
+}
+
 @media (min-width: 481px) and (max-width: 768px) {
     .nav-tab-btn {
         min-height: 56px;
         font-size: 0.9rem;
     }
 }
+
+
