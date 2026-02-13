@@ -3239,6 +3239,7 @@
             visibility: hidden !important;
         }
     </style>
+    <link rel="stylesheet" href="galaxy-theme.css">
 </head>
 
 <body>
@@ -7224,6 +7225,213 @@
 
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+                // Galaxy theme: deep space background with stars & nebula
+                const dpr = window.devicePixelRatio || 1;
+                const bgW = this.canvas.width / dpr;
+                const bgH = this.canvas.height / dpr;
+
+                // 1) Deep space radial gradient
+                const spaceBg = this.ctx.createRadialGradient(bgW * 0.5, bgH * 0.3, 0, bgW * 0.5, bgH * 0.5, bgW * 0.85);
+                spaceBg.addColorStop(0, '#111d3a');
+                spaceBg.addColorStop(0.35, '#0b1228');
+                spaceBg.addColorStop(0.7, '#070e20');
+                spaceBg.addColorStop(1, '#040810');
+                this.ctx.fillStyle = spaceBg;
+                this.ctx.fillRect(0, 0, bgW, bgH);
+
+                // 2) Initialize galaxy elements once (lazy)
+                if (!this._galaxyStars || this._galaxyLastW !== bgW || this._galaxyLastH !== bgH) {
+                    this._galaxyLastW = bgW;
+                    this._galaxyLastH = bgH;
+                    const cx = bgW * 0.5;
+                    const cy = bgH * 0.5;
+                    const maxR = Math.sqrt(cx * cx + cy * cy) * 1.3; // extend beyond canvas edges for rotation
+                    // Dead zone: center area where the polygon typically lives
+                    const deadZoneR = Math.min(bgW, bgH) * 0.22;
+                    // Generate stars in polar coordinates for rotation
+                    const starCount = Math.min(500, Math.max(200, Math.floor(bgW * bgH / 2400)));
+                    this._galaxyStars = [];
+                    for (let i = 0; i < starCount; i++) {
+                        const brightness = Math.random();
+                        const isLarge = brightness > 0.85;
+                        const r = isLarge ? (1.0 + Math.random() * 1.5) : (0.3 + Math.random() * 0.8);
+                        // For large stars, keep them away from the polygon center
+                        let dist;
+                        if (r > 1.0) {
+                            dist = deadZoneR + Math.random() * (maxR - deadZoneR);
+                        } else {
+                            dist = Math.random() * maxR;
+                        }
+                        const angle = Math.random() * Math.PI * 2;
+                        this._galaxyStars.push({
+                            dist: dist,
+                            angle: angle,
+                            r: r,
+                            spikes: isLarge ? (Math.random() > 0.5 ? 4 : 6) : 4,
+                            brightness: 0.3 + brightness * 0.7,
+                            twinkleSpeed: 0.5 + Math.random() * 2.5,
+                            twinkleOffset: Math.random() * Math.PI * 2,
+                            spikeRatio: 0.3 + Math.random() * 0.25,
+                            color: brightness > 0.92 ? [180, 210, 255] :
+                                brightness > 0.8 ? [200, 220, 255] :
+                                    brightness > 0.6 ? [220, 230, 255] :
+                                        [255, 255, 255]
+                        });
+                    }
+                    // Generate nebula clouds
+                    this._galaxyNebulae = [];
+                    const nebulaCount = 4 + Math.floor(Math.random() * 3);
+                    const nebulaColors = [
+                        [30, 50, 120], [50, 30, 100], [20, 60, 130],
+                        [60, 40, 110], [25, 45, 100], [40, 25, 90]
+                    ];
+                    for (let i = 0; i < nebulaCount; i++) {
+                        const c = nebulaColors[i % nebulaColors.length];
+                        // Nebulae also in polar coords for rotation
+                        const ndist = Math.min(bgW, bgH) * (0.2 + Math.random() * 0.5);
+                        const nangle = Math.random() * Math.PI * 2;
+                        this._galaxyNebulae.push({
+                            dist: ndist, angle: nangle,
+                            rx: bgW * (0.15 + Math.random() * 0.25),
+                            ry: bgH * (0.12 + Math.random() * 0.2),
+                            color: c,
+                            alpha: 0.03 + Math.random() * 0.06,
+                            localRotation: Math.random() * Math.PI
+                        });
+                    }
+                }
+
+                // Rotation of the night sky — very slow circular motion
+                const time = performance.now() * 0.001;
+                const skyRotation = time * 0.002; // ~0.11 degrees per second — gentle drift
+                const cx = bgW * 0.5;
+                const cy = bgH * 0.5;
+
+                // Compute polygon bounding box in screen-space for star dimming
+                let polyScreenBounds = null;
+                if (this.polygons && this.polygons.length > 0) {
+                    let minSX = Infinity, maxSX = -Infinity, minSY = Infinity, maxSY = -Infinity;
+                    const halfW = bgW * 0.5, halfH = bgH * 0.5;
+                    const panX = this.pan ? this.pan.x : 0;
+                    const panY = this.pan ? this.pan.y : 0;
+                    const zm = this.zoom || 1;
+                    for (const poly of this.polygons) {
+                        if (poly.visible === false) continue;
+                        for (const vtx of (poly.vertices || [])) {
+                            const screenX = halfW + panX + vtx.x * zm;
+                            const screenY = halfH + panY + vtx.y * zm;
+                            if (screenX < minSX) minSX = screenX;
+                            if (screenX > maxSX) maxSX = screenX;
+                            if (screenY < minSY) minSY = screenY;
+                            if (screenY > maxSY) maxSY = screenY;
+                        }
+                    }
+                    if (isFinite(minSX)) {
+                        // Expand bounds by a margin for the "around" zone
+                        const margin = Math.min(bgW, bgH) * 0.08;
+                        polyScreenBounds = {
+                            cx: (minSX + maxSX) * 0.5,
+                            cy: (minSY + maxSY) * 0.5,
+                            halfW: (maxSX - minSX) * 0.5 + margin,
+                            halfH: (maxSY - minSY) * 0.5 + margin
+                        };
+                    }
+                }
+
+                // Helper: calculate dimming factor for a star at (sx, sy) based on polygon proximity
+                const getDimFactor = (sx, sy) => {
+                    if (!polyScreenBounds) return 1.0;
+                    const pb = polyScreenBounds;
+                    // Normalized distance from polygon center (0 = at center, 1 = at edge)
+                    const dx = Math.abs(sx - pb.cx) / Math.max(1, pb.halfW);
+                    const dy = Math.abs(sy - pb.cy) / Math.max(1, pb.halfH);
+                    const dist = Math.max(dx, dy); // Chebyshev distance
+                    if (dist > 1.5) return 1.0;     // Far from polygon — full brightness
+                    if (dist < 0.8) return 0.12;      // Deep inside polygon — heavily dimmed
+                    // Smooth falloff between 0.8 and 1.5
+                    return 0.12 + (dist - 0.8) / 0.7 * 0.88;
+                };
+
+                // 3) Draw nebula clouds (rotating)
+                this._galaxyNebulae.forEach(neb => {
+                    const nx = cx + Math.cos(neb.angle + skyRotation) * neb.dist;
+                    const ny = cy + Math.sin(neb.angle + skyRotation) * neb.dist;
+                    this.ctx.save();
+                    this.ctx.translate(nx, ny);
+                    this.ctx.rotate(neb.localRotation + skyRotation);
+                    const nebGrad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(neb.rx, neb.ry));
+                    const [r, g, b] = neb.color;
+                    const nebDim = getDimFactor(nx, ny);
+                    nebGrad.addColorStop(0, `rgba(${r},${g},${b},${neb.alpha * 1.8 * nebDim})`);
+                    nebGrad.addColorStop(0.4, `rgba(${r},${g},${b},${neb.alpha * nebDim})`);
+                    nebGrad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+                    this.ctx.fillStyle = nebGrad;
+                    this.ctx.scale(1, neb.ry / Math.max(1, neb.rx));
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, neb.rx, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+
+                // 4) Draw star field — realistic star shapes with slow rotation & polygon dimming
+                this._galaxyStars.forEach(star => {
+                    // Calculate rotated position
+                    const sx = cx + Math.cos(star.angle + skyRotation) * star.dist;
+                    const sy = cy + Math.sin(star.angle + skyRotation) * star.dist;
+                    // Cull stars outside canvas
+                    if (sx < -10 || sx > bgW + 10 || sy < -10 || sy > bgH + 10) return;
+
+                    const twinkle = 0.5 + 0.5 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
+                    const dimFactor = getDimFactor(sx, sy);
+                    const alpha = star.brightness * (0.6 + 0.4 * twinkle) * dimFactor;
+                    const [cr, cg, cb] = star.color;
+                    const colorStr = `rgba(${cr},${cg},${cb},`;
+
+                    if (star.r < 0.7) {
+                        // Tiny stars: simple dot
+                        this.ctx.fillStyle = colorStr + alpha.toFixed(2) + ')';
+                        this.ctx.beginPath();
+                        this.ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    } else {
+                        // Draw realistic star shape with diffraction spikes
+                        this.ctx.save();
+                        this.ctx.translate(sx, sy);
+                        // Soft glow halo behind the star
+                        const glowR = star.r * 3.5;
+                        const glowGrad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+                        glowGrad.addColorStop(0, colorStr + (alpha * 0.35).toFixed(3) + ')');
+                        glowGrad.addColorStop(0.5, colorStr + (alpha * 0.08).toFixed(3) + ')');
+                        glowGrad.addColorStop(1, colorStr + '0)');
+                        this.ctx.fillStyle = glowGrad;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+                        this.ctx.fill();
+
+                        // Star spikes
+                        const spikes = star.spikes;
+                        const outerR = star.r * 2.2;
+                        const innerR = star.r * star.spikeRatio;
+                        this.ctx.beginPath();
+                        for (let s = 0; s < spikes * 2; s++) {
+                            const a = (s * Math.PI) / spikes - Math.PI / 2;
+                            const rad = s % 2 === 0 ? outerR : innerR;
+                            if (s === 0) this.ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+                            else this.ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+                        }
+                        this.ctx.closePath();
+                        this.ctx.fillStyle = colorStr + alpha.toFixed(2) + ')';
+                        this.ctx.fill();
+
+                        // Bright core
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, star.r * 0.45, 0, Math.PI * 2);
+                        this.ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.95).toFixed(2)})`;
+                        this.ctx.fill();
+                        this.ctx.restore();
+                    }
+                });
+
                 // Save context state
                 this.ctx.save();
 
@@ -7270,6 +7478,18 @@
                 }
 
                 this.ctx.restore();
+
+                // Galaxy animation: schedule next frame for twinkling stars (~30fps)
+                if (!this._galaxyAnimRunning) {
+                    this._galaxyAnimRunning = true;
+                    const galaxyTick = () => {
+                        if (this._galaxyAnimRunning) {
+                            this.render(true);
+                            setTimeout(() => requestAnimationFrame(galaxyTick), 33);
+                        }
+                    };
+                    requestAnimationFrame(galaxyTick);
+                }
             }
 
             drawGrid() {
@@ -7379,7 +7599,7 @@
 
                 // Consistent grid colors - ALWAYS use these exact colors
                 // Never change based on selection or any other state
-                const gridColor = isMajor ? '#c0c0c0' : '#d8d8d8';
+                const gridColor = isMajor ? 'rgba(80, 120, 200, 0.2)' : 'rgba(60, 100, 180, 0.12)';
 
                 // Optimize line width calculation - consistent line widths
                 const zoomInv = 1 / this.zoom;
@@ -7460,7 +7680,7 @@
                 // Draw axes only for major grid with consistent visibility
                 if (isMajor && Math.abs(gridSize - this.gridSize) < 0.01) {
                     // Explicitly set axis properties to ensure consistency
-                    this.ctx.strokeStyle = '#999';
+                    this.ctx.strokeStyle = 'rgba(80, 120, 200, 0.3)';
                     this.ctx.lineWidth = Math.max(1.5, Math.min(3.0, 2 * zoomInv));
                     this.ctx.lineCap = 'butt';
                     this.ctx.setLineDash([]); // Ensure solid lines for axes
@@ -7490,8 +7710,8 @@
                     return;
                 }
 
-                // Draw fill
-                this.ctx.fillStyle = polygon.color + '33';
+                // Draw fill — subtle deep space tint
+                this.ctx.fillStyle = polygon.color + '1a';
                 this.ctx.beginPath();
                 this.ctx.moveTo(vertices[0].x, vertices[0].y);
                 for (let i = 1; i < vertices.length; i++) {
@@ -7500,33 +7720,102 @@
                 this.ctx.closePath();
                 this.ctx.fill();
 
-                // Draw stroke
-                this.ctx.strokeStyle = selected ? '#333' : polygon.color;
-                this.ctx.lineWidth = (selected ? 3 : 2) / this.zoom;
+                // Draw stroke — galaxy glow edges
+                this.ctx.save();
+                this.ctx.shadowColor = selected ? 'rgba(160, 200, 255, 0.7)' : polygon.color;
+                this.ctx.shadowBlur = selected ? 14 / this.zoom : 8 / this.zoom;
+                this.ctx.strokeStyle = selected ? 'rgba(180, 210, 255, 0.9)' : polygon.color;
+                this.ctx.lineWidth = (selected ? 2.5 : 1.8) / this.zoom;
                 this.ctx.stroke();
+                this.ctx.restore();
 
-                // Draw vertices
+                // Draw vertices — precise reference-image star replication
                 for (let i = 0; i < vertices.length; i++) {
                     const v = vertices[i];
 
-                    // Normal vertex rendering - enhanced for better dragging visibility
-                    let vertexSize = selected ? 8 : 4;
-                    let vertexFill = selected ? '#fff' : polygon.color;
-                    let vertexStroke = selected ? '#333' : polygon.color;
-
-                    // Make vertex larger when it's being dragged
+                    let vertexSize = selected ? 7 : 4.5;
                     if (this.selectedVertex === v) {
-                        vertexSize = selected ? 10 : 6;
+                        vertexSize = selected ? 9 : 6;
+                    }
+                    const sz = vertexSize / this.zoom;
+
+                    this.ctx.save();
+                    this.ctx.translate(v.x, v.y);
+
+                    // 1) Wide soft outer glow halo
+                    const outerGlowR = sz * 6;
+                    const outerGlow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, outerGlowR);
+                    outerGlow.addColorStop(0, 'rgba(160, 200, 255, 0.35)');
+                    outerGlow.addColorStop(0.15, 'rgba(130, 180, 255, 0.18)');
+                    outerGlow.addColorStop(0.4, 'rgba(100, 150, 255, 0.06)');
+                    outerGlow.addColorStop(1, 'rgba(80, 130, 255, 0)');
+                    this.ctx.fillStyle = outerGlow;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, outerGlowR, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // 2) Inner bright glow
+                    const innerGlowR = sz * 2.5;
+                    const innerGlow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, innerGlowR);
+                    innerGlow.addColorStop(0, 'rgba(200, 225, 255, 0.7)');
+                    innerGlow.addColorStop(0.3, 'rgba(170, 200, 255, 0.3)');
+                    innerGlow.addColorStop(1, 'rgba(140, 180, 255, 0)');
+                    this.ctx.fillStyle = innerGlow;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, innerGlowR, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // 3) Primary 4-point long diffraction spikes (vertical & horizontal cross)
+                    const longSpikeR = sz * 6;   // Long reach like reference
+                    const longSpikeW = sz * 0.12; // Very thin
+                    this.ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
+                    this.ctx.shadowBlur = 8 / this.zoom;
+                    this.ctx.fillStyle = 'rgba(210, 230, 255, 0.85)';
+                    // Draw each spike as a narrow diamond
+                    for (let s = 0; s < 4; s++) {
+                        const angle = s * Math.PI / 2; // 0°, 90°, 180°, 270°
+                        this.ctx.save();
+                        this.ctx.rotate(angle);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, -longSpikeW);        // Left edge at center
+                        this.ctx.lineTo(longSpikeR, 0);          // Tip
+                        this.ctx.lineTo(0, longSpikeW);          // Right edge at center
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        this.ctx.restore();
                     }
 
-                    this.ctx.fillStyle = vertexFill;
-                    this.ctx.strokeStyle = vertexStroke;
-                    this.ctx.lineWidth = 2 / this.zoom;
+                    // 4) Secondary shorter 4-point spikes at 45° (subtle)
+                    const shortSpikeR = sz * 3;
+                    const shortSpikeW = sz * 0.08;
+                    this.ctx.fillStyle = 'rgba(200, 225, 255, 0.45)';
+                    for (let s = 0; s < 4; s++) {
+                        const angle = s * Math.PI / 2 + Math.PI / 4; // 45°, 135°, etc.
+                        this.ctx.save();
+                        this.ctx.rotate(angle);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, -shortSpikeW);
+                        this.ctx.lineTo(shortSpikeR, 0);
+                        this.ctx.lineTo(0, shortSpikeW);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        this.ctx.restore();
+                    }
 
+                    // 5) Blazing white-hot core
+                    this.ctx.shadowColor = 'rgba(220, 240, 255, 1)';
+                    this.ctx.shadowBlur = 14 / this.zoom;
                     this.ctx.beginPath();
-                    this.ctx.arc(v.x, v.y, vertexSize / this.zoom, 0, Math.PI * 2);
+                    this.ctx.arc(0, 0, sz * 0.6, 0, Math.PI * 2);
+                    this.ctx.fillStyle = 'rgba(240, 248, 255, 0.95)';
                     this.ctx.fill();
-                    this.ctx.stroke();
+                    // Innermost hot white point
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, sz * 0.25, 0, Math.PI * 2);
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+                    this.ctx.fill();
+
+                    this.ctx.restore();
                 }
 
                 // Restore context state after drawing polygon
@@ -7592,10 +7881,10 @@
                     gradient.addColorStop(0.5, '#4ade80');  // Green 400
                     gradient.addColorStop(1, '#22c55e');    // Green 500
                 } else {
-                    // Invalid/Drawing: Subtle blue-gray gradient
-                    gradient.addColorStop(0, '#64748b');    // Slate 500
-                    gradient.addColorStop(0.5, '#94a3b8');  // Slate 400
-                    gradient.addColorStop(1, '#64748b');    // Slate 500
+                    // Invalid/Drawing: Dim galaxy blue gradient
+                    gradient.addColorStop(0, 'rgba(80, 120, 200, 0.5)');
+                    gradient.addColorStop(0.5, 'rgba(120, 160, 220, 0.6)');
+                    gradient.addColorStop(1, 'rgba(80, 120, 200, 0.5)');
                 }
 
                 this.ctx.strokeStyle = gradient;
@@ -7659,8 +7948,8 @@
                     this.ctx.shadowColor = 'rgba(34, 197, 94, 0.8)';
                     this.ctx.shadowBlur = 8 / this.zoom;
                 } else {
-                    // Invalid: Subtle gray circle
-                    this.ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+                    // Invalid: Subtle galaxy-blue circle
+                    this.ctx.fillStyle = 'rgba(100, 140, 200, 0.5)';
                     this.ctx.shadowColor = 'transparent';
                     this.ctx.shadowBlur = 0;
                 }

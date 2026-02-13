@@ -1,0 +1,841 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   GALAXY POLYGON THEME — Night-Space Visual Reskin
+   Purely visual overrides. Zero layout/behavior changes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root Color Variables ─────────────────────────────────────────────────── */
+:root {
+    --galaxy-bg-deep: #080c1a;
+    --galaxy-bg-mid: #0d1529;
+    --galaxy-bg-panel: rgba(12, 20, 42, 0.88);
+    --galaxy-bg-panel-solid: #0e1a35;
+    --galaxy-border: rgba(100, 140, 255, 0.18);
+    --galaxy-border-bright: rgba(100, 160, 255, 0.35);
+    --galaxy-text: #d0d8f0;
+    --galaxy-text-bright: #e8eeff;
+    --galaxy-text-dim: #7b8bb5;
+    --galaxy-accent: #4a7cff;
+    --galaxy-accent-glow: rgba(74, 124, 255, 0.4);
+    --galaxy-accent-bright: #6b9fff;
+    --galaxy-star-glow: rgba(180, 210, 255, 0.6);
+    --galaxy-vertex-glow: rgba(120, 180, 255, 0.85);
+    --galaxy-submit-green: #22c55e;
+    --galaxy-submit-glow: rgba(34, 197, 94, 0.35);
+}
+
+/* ── Base / Body / HTML ───────────────────────────────────────────────────── */
+html {
+    background-color: var(--galaxy-bg-deep) !important;
+}
+
+body {
+    background: var(--galaxy-bg-deep) !important;
+    color: var(--galaxy-text) !important;
+}
+
+/* ── App Container ────────────────────────────────────────────────────────── */
+.app-container {
+    background: var(--galaxy-bg-deep) !important;
+}
+
+.main-body-row {
+    background: var(--galaxy-bg-deep) !important;
+}
+
+/* ── Canvas Container (Game Area) ─────────────────────────────────────────── */
+.canvas-container {
+    background: var(--galaxy-bg-deep) !important;
+}
+
+#mainCanvas {
+    background: transparent !important;
+}
+
+/* ── Top Tools Bar ────────────────────────────────────────────────────────── */
+.top-tools-bar {
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+.top-bar-btn {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text-bright) !important;
+    backdrop-filter: blur(12px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.top-bar-btn:hover {
+    background: rgba(20, 35, 70, 0.95) !important;
+    border-color: var(--galaxy-accent) !important;
+    color: var(--galaxy-accent-bright) !important;
+    box-shadow: 0 4px 16px var(--galaxy-accent-glow) !important;
+}
+
+/* Fullscreen button */
+.fullscreen-top-btn {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text-bright) !important;
+    backdrop-filter: blur(12px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fullscreen-top-btn:hover {
+    background: rgba(20, 35, 70, 0.95) !important;
+    border-color: var(--galaxy-accent) !important;
+    color: var(--galaxy-accent-bright) !important;
+    box-shadow: 0 4px 12px var(--galaxy-accent-glow) !important;
+}
+
+.fullscreen-top-btn.active {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 2px 8px var(--galaxy-accent-glow) !important;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────────── */
+.toolbar {
+    background: var(--galaxy-bg-panel) !important;
+    border-bottom: 1px solid var(--galaxy-border) !important;
+    backdrop-filter: blur(14px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.tool-btn {
+    background: rgba(20, 30, 60, 0.7) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.tool-btn:hover {
+    background: rgba(30, 50, 90, 0.9) !important;
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 0 12px var(--galaxy-accent-glow) !important;
+}
+
+.tool-btn.active {
+    background: linear-gradient(135deg, #2a4494 0%, #1e3578 100%) !important;
+    color: white !important;
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 0 14px var(--galaxy-accent-glow) !important;
+}
+
+.tool-btn::after {
+    background: rgba(10, 16, 36, 0.95) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.tool-btn.combine-btn,
+.tool-btn.split-btn {
+    color: var(--galaxy-text-bright) !important;
+}
+
+/* ── Game Controls Panel (Undo/Redo/Submit) ───────────────────────────────── */
+.game-controls-panel {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    backdrop-filter: blur(16px) !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.game-ctrl-btn {
+    background: rgba(18, 28, 58, 0.85) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.game-ctrl-btn:hover:not(:disabled) {
+    background: rgba(25, 40, 80, 0.95) !important;
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 4px 16px var(--galaxy-accent-glow) !important;
+}
+
+.game-ctrl-btn:disabled {
+    opacity: 0.3 !important;
+}
+
+.game-ctrl-btn.submit-btn {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(5, 150, 105, 0.3) 100%) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3) !important;
+    color: rgba(200, 230, 210, 0.7) !important;
+    box-shadow: none !important;
+}
+
+.game-ctrl-btn.submit-btn:hover:not(:disabled) {
+    box-shadow: 0 4px 20px var(--galaxy-submit-glow) !important;
+}
+
+.game-ctrl-btn.submit-btn:disabled {
+    background: rgba(30, 40, 60, 0.6) !important;
+    border-color: rgba(100, 120, 160, 0.15) !important;
+    color: rgba(140, 160, 190, 0.35) !important;
+}
+
+.submit-ready {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 0 20px var(--galaxy-submit-glow), 0 4px 12px rgba(34, 197, 94, 0.4) !important;
+}
+
+/* ── Grid Tools Panel (Zoom/Pan) ──────────────────────────────────────────── */
+.grid-tools-panel {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    backdrop-filter: blur(16px) !important;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.grid-tool-btn {
+    background: rgba(18, 28, 58, 0.85) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.grid-tool-btn:hover {
+    background: rgba(25, 40, 80, 0.95) !important;
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 4px 14px var(--galaxy-accent-glow) !important;
+}
+
+.grid-tool-btn.pan-btn {
+    background: linear-gradient(135deg, #2a4eaa 0%, #1e3a8a 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 2px 10px rgba(42, 78, 170, 0.4) !important;
+}
+
+.grid-tool-btn.pan-btn:hover {
+    box-shadow: 0 4px 18px rgba(42, 78, 170, 0.6) !important;
+    filter: brightness(1.15) !important;
+}
+
+.panel-divider-vertical {
+    background: linear-gradient(to bottom,
+            transparent,
+            rgba(100, 140, 255, 0.2) 20%,
+            rgba(100, 140, 255, 0.2) 80%,
+            transparent) !important;
+}
+
+.toggle-label {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.grid-snap-toggle input[type="checkbox"] {
+    accent-color: var(--galaxy-accent) !important;
+}
+
+/* ── Coordinate Display ───────────────────────────────────────────────────── */
+.coord-display {
+    background: var(--galaxy-bg-panel) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Modals / Overlays ────────────────────────────────────────────────────── */
+.modal-overlay {
+    background: rgba(4, 8, 20, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.modal-content {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.modal-header {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.modal-body {
+    color: var(--galaxy-text) !important;
+}
+
+.modal-close-btn {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.modal-close-btn:hover {
+    background: rgba(40, 60, 100, 0.5) !important;
+    color: white !important;
+}
+
+.modal-btn {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+    color: white !important;
+}
+
+.modal-btn:hover {
+    box-shadow: 0 4px 16px var(--galaxy-accent-glow) !important;
+}
+
+.checkbox-wrapper {
+    color: var(--galaxy-text-dim) !important;
+}
+
+/* ── Shape Selection Grid ─────────────────────────────────────────────────── */
+.shape-option-card {
+    background: rgba(15, 25, 50, 0.8) !important;
+    border: 2px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.shape-option-card:hover {
+    border-color: var(--galaxy-accent) !important;
+    background: rgba(25, 40, 75, 0.9) !important;
+    box-shadow: 0 4px 16px var(--galaxy-accent-glow) !important;
+}
+
+.shape-option-card .shape-name {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.shape-option-card .shape-hint {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.shape-option-card .shape-icon {
+    background: rgba(30, 50, 90, 0.6) !important;
+    color: var(--galaxy-accent-bright) !important;
+}
+
+.shape-shortcut {
+    background: rgba(20, 35, 60, 0.7) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text-dim) !important;
+}
+
+/* ── Tutorial ─────────────────────────────────────────────────────────────── */
+.tutorial-overlay {
+    background: rgba(4, 8, 20, 0.8) !important;
+}
+
+.tutorial-modal {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+.tutorial-content {
+    color: var(--galaxy-text) !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+/* ── App Dialog ───────────────────────────────────────────────────────────── */
+.app-dialog-overlay {
+    background: rgba(4, 8, 20, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.app-dialog-panel {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 26px 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+.app-dialog-header {
+    background: linear-gradient(135deg, #1a3275 0%, #14255a 100%) !important;
+}
+
+.app-dialog-body {
+    color: var(--galaxy-text) !important;
+}
+
+.app-dialog-btn.primary {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+.app-dialog-btn.secondary {
+    background: rgba(25, 40, 70, 0.8) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+/* ── Fun Game Start Overlay (Save/Load Panel) ─────────────────────────────── */
+.fun-game-start-overlay {
+    background: radial-gradient(circle at top, rgba(30, 60, 130, 0.4), rgba(4, 8, 20, 0.88)) !important;
+}
+
+.fun-game-start-panel {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+.fun-game-start-header {
+    background: linear-gradient(135deg, #1a3275 0%, #14255a 100%) !important;
+}
+
+.fun-game-start-body {
+    color: var(--galaxy-text) !important;
+}
+
+.fun-game-start-meta {
+    background: rgba(15, 25, 50, 0.7) !important;
+    color: var(--galaxy-text-bright) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.fun-game-start-slot {
+    background: rgba(15, 25, 50, 0.7) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fun-game-start-slot.active {
+    border-color: var(--galaxy-accent) !important;
+    background: rgba(25, 45, 90, 0.8) !important;
+    box-shadow: 0 12px 24px var(--galaxy-accent-glow) !important;
+}
+
+.fun-game-start-slot-header {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.fun-game-start-slot-status {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.fun-game-start-slot-detail {
+    color: var(--galaxy-text) !important;
+}
+
+.fun-game-start-slot-action {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+.fun-game-start-actions button.primary {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+.fun-game-start-actions button.secondary {
+    background: rgba(25, 40, 70, 0.8) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+/* ── Fun Transition Overlay ───────────────────────────────────────────────── */
+#funTransitionOverlay {
+    background: linear-gradient(135deg, #0d1a3a 0%, #0a1025 100%) !important;
+}
+
+.fun-transition-core {
+    background: rgba(20, 35, 70, 0.3) !important;
+    border: 1px solid rgba(100, 140, 255, 0.15) !important;
+}
+
+/* ── Game Results Overlay ─────────────────────────────────────────────────── */
+.game-results-overlay {
+    background: radial-gradient(circle at top, rgba(30, 60, 130, 0.4), rgba(4, 8, 20, 0.85)) !important;
+}
+
+.game-results-panel {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 26px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+.game-results-panel::before {
+    background: linear-gradient(135deg, rgba(30, 60, 130, 0.1), rgba(80, 40, 120, 0.08)) !important;
+}
+
+.game-results-panel.victory {
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.game-results-panel.failed {
+    border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.game-results-title {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.game-results-subtitle {
+    color: var(--galaxy-text) !important;
+}
+
+.game-results-coin {
+    background: rgba(30, 25, 10, 0.7) !important;
+    border: 1px solid rgba(180, 83, 9, 0.3) !important;
+    color: #f59e0b !important;
+}
+
+.game-results-reason {
+    background: rgba(40, 15, 15, 0.6) !important;
+    border: 1px solid rgba(248, 113, 113, 0.2) !important;
+}
+
+.game-results-badge {
+    background: rgba(15, 30, 50, 0.7) !important;
+    color: #67d8e0 !important;
+    border: 1px solid rgba(103, 216, 224, 0.2) !important;
+}
+
+.game-results-panel.failed .game-results-badge {
+    background: rgba(40, 20, 10, 0.6) !important;
+    color: #f97316 !important;
+    border: 1px solid rgba(249, 115, 22, 0.2) !important;
+}
+
+.game-results-sticker {
+    background: rgba(40, 35, 10, 0.8) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(251, 191, 36, 0.2) !important;
+}
+
+.game-results-panel.failed .game-results-sticker {
+    background: rgba(40, 15, 15, 0.8) !important;
+    color: #fb7185 !important;
+    border: 1px solid rgba(251, 113, 133, 0.2) !important;
+}
+
+.game-results-canvas {
+    background: rgba(8, 12, 26, 0.8) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.game-results-piece-list {
+    background: rgba(15, 22, 45, 0.8) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.game-results-piece-list div {
+    border-bottom-color: rgba(100, 140, 255, 0.1) !important;
+}
+
+.game-results-actions button {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+    color: white !important;
+}
+
+.game-results-actions button.secondary {
+    background: rgba(25, 40, 70, 0.8) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.game-results-breakdown {
+    color: var(--galaxy-text) !important;
+}
+
+/* ── Box Score (Level Select) Overlay ─────────────────────────────────────── */
+.box-score-overlay {
+    background: rgba(4, 8, 20, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+.box-score-panel {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6) !important;
+}
+
+.box-score-header {
+    background: linear-gradient(135deg, #1a3275 0%, #14255a 100%) !important;
+}
+
+.box-score-body {
+    background: linear-gradient(180deg, rgba(10, 18, 38, 0.9) 0%, var(--galaxy-bg-panel-solid) 40%) !important;
+}
+
+.level-preview-panel {
+    background: rgba(8, 12, 26, 0.9) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.level-preview-overlay {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.box-score-slots {
+    color: var(--galaxy-text) !important;
+}
+
+.box-score-slot {
+    background: rgba(15, 22, 45, 0.8) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.box-score-slot.active {
+    border-color: var(--galaxy-accent) !important;
+    background: rgba(25, 40, 80, 0.8) !important;
+    box-shadow: 0 12px 24px var(--galaxy-accent-glow) !important;
+}
+
+.box-score-slot-header {
+    color: var(--galaxy-text-bright) !important;
+}
+
+.box-score-slot-status {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.box-score-slot-date {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.box-score-slot-actions button {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+.box-score-slot-actions button.secondary {
+    background: rgba(25, 40, 70, 0.8) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.box-score-slot-actions button.danger {
+    background: rgba(40, 15, 15, 0.8) !important;
+    color: #fb7185 !important;
+}
+
+.box-score-slot-progress {
+    background: rgba(25, 35, 60, 0.6) !important;
+}
+
+.box-score-slot-badge {
+    background: rgba(20, 35, 70, 0.6) !important;
+    color: var(--galaxy-accent-bright) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.box-score-grid {
+    background: rgba(10, 18, 36, 0.7) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+.box-score-level {
+    background: rgba(15, 22, 45, 0.8) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+}
+
+.box-score-level.selectable:hover {
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 8px 16px var(--galaxy-accent-glow) !important;
+}
+
+.box-score-level.locked {
+    background: rgba(10, 15, 30, 0.6) !important;
+    color: var(--galaxy-text-dim) !important;
+}
+
+.box-score-level.current {
+    border-color: var(--galaxy-submit-green) !important;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
+}
+
+.box-score-level-status {
+    color: var(--galaxy-text-dim) !important;
+}
+
+.box-score-star.empty {
+    color: rgba(100, 120, 160, 0.3) !important;
+}
+
+.box-score-close {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.box-score-close:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ── Panel Dividers ───────────────────────────────────────────────────────── */
+.panel-divider {
+    background: rgba(25, 40, 70, 0.6) !important;
+}
+
+.panel-divider:hover {
+    background: rgba(40, 60, 100, 0.7) !important;
+}
+
+.panel-divider::before {
+    background: rgba(100, 140, 255, 0.3) !important;
+}
+
+/* ── Panel Headers ────────────────────────────────────────────────────────── */
+.panel-header {
+    background: linear-gradient(135deg, #1a3275 0%, #14255a 100%) !important;
+}
+
+.panel-header.dragging {
+    background: linear-gradient(135deg, #1e3a80 0%, #182f68 100%) !important;
+}
+
+/* ── Mobile Sidebar / Backdrop ────────────────────────────────────────────── */
+.sidebar-backdrop {
+    background: rgba(4, 8, 20, 0.7) !important;
+}
+
+.mobile-menu-toggle {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text-bright) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Color Picker ─────────────────────────────────────────────────────────── */
+.color-option.selected {
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 0 0 3px var(--galaxy-accent-glow) !important;
+}
+
+/* ── Scrollbar Overrides ──────────────────────────────────────────────────── */
+.resizable-panel-content::-webkit-scrollbar-track {
+    background: rgba(10, 18, 36, 0.5) !important;
+}
+
+.resizable-panel-content::-webkit-scrollbar-thumb {
+    background: rgba(60, 80, 130, 0.5) !important;
+}
+
+.resizable-panel-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(80, 110, 170, 0.6) !important;
+}
+
+.toolbar::-webkit-scrollbar-thumb {
+    background: rgba(60, 80, 130, 0.4) !important;
+}
+
+.toolbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(80, 110, 170, 0.5) !important;
+}
+
+/* ── Fullscreen Override ──────────────────────────────────────────────────── */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen,
+:-ms-fullscreen {
+    background: var(--galaxy-bg-deep) !important;
+}
+
+body:fullscreen,
+body:-webkit-full-screen,
+body:-moz-full-screen,
+body:-ms-fullscreen {
+    background: var(--galaxy-bg-deep) !important;
+}
+
+/* ── Game Controls (inline / legacy) ──────────────────────────────────────── */
+.game-controls {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    backdrop-filter: blur(12px) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.game-controls button {
+    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
+}
+
+.game-controls button.secondary {
+    background: rgba(25, 40, 70, 0.8) !important;
+    color: var(--galaxy-text) !important;
+    border: 1px solid var(--galaxy-border) !important;
+}
+
+/* ── Game HUD Buttons (injected by game.js) ───────────────────────────────── */
+.game-hud-btn {
+    background: linear-gradient(135deg, #2244aa 0%, #1a3388 100%) !important;
+    border: 1px solid rgba(74, 124, 255, 0.3) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(74, 124, 255, 0.15) !important;
+}
+
+.game-hud-btn:hover {
+    background: linear-gradient(135deg, #2a55cc 0%, #203e99 100%) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(74, 124, 255, 0.3) !important;
+}
+
+/* ── Ambient Particle Canvas (for game area) ──────────────────────────────── */
+#galaxyParticleCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Ensure mainCanvas is above particle layer */
+#mainCanvas {
+    z-index: 1;
+    position: absolute;
+}
+
+/* ── Main Menu (PROTECTED — do not change layout/animations) ──────────────── */
+/* Selective color-only overrides for consistency, preserving all animations */
+#mainMenuOverlay {
+    /* Background handled by bgCanvas, keep the base fallback dark */
+    background: var(--galaxy-bg-deep) !important;
+}
+
+/* Menu buttons get subtle galaxy glass treatment */
+.menu-btn {
+    background: rgba(15, 25, 55, 0.4) !important;
+    border: 1px solid rgba(100, 140, 255, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+.menu-btn:hover {
+    background: rgba(20, 35, 70, 0.5) !important;
+    border-color: rgba(100, 160, 255, 0.35) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 0 20px var(--galaxy-accent-glow) !important;
+}
+
+.menu-btn.fun-mode {
+    border-color: rgba(237, 137, 54, 0.2) !important;
+}
+
+.menu-btn.fun-mode:hover {
+    border-color: rgba(237, 137, 54, 0.5) !important;
+    box-shadow: 0 0 20px rgba(237, 137, 54, 0.2) !important;
+}
+
+/* ── Game Results Stars ──────────────────────────────────────────────────── */
+.game-results-stars {
+    color: #fbbf24 !important;
+}
+
+.game-results-stars span {
+    text-shadow: 0 0 16px rgba(251, 191, 36, 0.4) !important;
+}
+
+/* ── Split Prompt ────────────────────────────────────────────────────────── */
+.split-prompt {
+    background: var(--galaxy-bg-panel) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text-bright) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Tooltip / Toast ─────────────────────────────────────────────────────── */
+.toast-notification,
+.tooltip {
+    background: var(--galaxy-bg-panel-solid) !important;
+    border: 1px solid var(--galaxy-border) !important;
+    color: var(--galaxy-text) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── Selection highlight (for polygon interactions) ──────────────────────── */
+.selection-highlight {
+    border-color: var(--galaxy-accent) !important;
+    box-shadow: 0 0 20px var(--galaxy-accent-glow) !important;
+}

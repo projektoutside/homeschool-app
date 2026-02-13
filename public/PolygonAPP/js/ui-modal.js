@@ -37,7 +37,7 @@ class ModalSystem {
                 #customModalOverlay {
                     position: fixed !important;
                     inset: 0 !important;
-                    background: rgba(15, 23, 42, 0.75) !important;
+                    background: rgba(4, 8, 20, 0.75) !important;
                     backdrop-filter: blur(8px) !important;
                     z-index: 999999 !important;
                     display: none;
@@ -54,12 +54,12 @@ class ModalSystem {
                     pointer-events: auto !important;
                 }
                 .custom-modal-card {
-                    background: white !important;
+                    background: #0e1a35 !important;
                     width: 90%;
                     max-width: 420px;
                     border-radius: 20px;
                     padding: 28px;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
                     transform: scale(0.95);
                     opacity: 0;
                     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -67,7 +67,7 @@ class ModalSystem {
                     flex-direction: column;
                     gap: 20px;
                     text-align: center;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(100, 140, 255, 0.18);
                     pointer-events: auto !important;
                     position: relative;
                     z-index: 1;
@@ -80,14 +80,14 @@ class ModalSystem {
                     font-family: 'Inter', system-ui, sans-serif;
                     font-size: 22px;
                     font-weight: 700;
-                    color: #1e293b;
+                    color: #e0e8ff;
                     margin: 0;
                     line-height: 1.3;
                 }
                 .custom-modal-text {
                     font-family: 'Inter', system-ui, sans-serif;
                     font-size: 16px;
-                    color: #64748b;
+                    color: #7b8bb5;
                     line-height: 1.6;
                     margin: 0;
                 }
@@ -120,22 +120,23 @@ class ModalSystem {
                     transform: translateY(0);
                 }
                 .custom-modal-cancel {
-                    background: #f1f5f9;
-                    color: #64748b;
+                    background: rgba(25, 40, 70, 0.8);
+                    color: #7b8bb5;
+                    border: 1px solid rgba(100, 140, 255, 0.15);
                 }
                 .custom-modal-cancel:hover,
                 .custom-modal-cancel:active {
-                    background: #e2e8f0;
-                    color: #475569;
+                    background: rgba(35, 55, 90, 0.9);
+                    color: #b0c4ff;
                 }
                 .custom-modal-confirm {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, #2244aa 0%, #1a3388 100%);
                     color: white;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                    box-shadow: 0 4px 12px rgba(34, 68, 170, 0.3);
                 }
                 .custom-modal-confirm:hover,
                 .custom-modal-confirm:active {
-                    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                    box-shadow: 0 6px 16px rgba(42, 85, 204, 0.4);
                     opacity: 0.95;
                 }
                 
@@ -175,13 +176,13 @@ class ModalSystem {
                 </div>
             </div>
         `;
-        
+
         // Always append to end of body to ensure it's on top
         document.body.appendChild(this.overlay);
-        
+
         // Force high z-index via inline style as backup
         this.overlay.style.zIndex = '999999';
-        
+
         // Prevent clicks on overlay background from propagating
         this.overlay.addEventListener('click', (e) => {
             if (e.target === this.overlay) {
@@ -194,7 +195,7 @@ class ModalSystem {
                 this.close(false);
             }
         });
-        
+
         // Prevent touch events from passing through
         this.overlay.addEventListener('touchmove', (e) => {
             e.preventDefault();
@@ -203,7 +204,7 @@ class ModalSystem {
         this.initialized = true;
         this._log('Modal system initialized');
     }
-    
+
     /**
      * Ensure the modal is ready and at the end of body
      */
@@ -211,13 +212,13 @@ class ModalSystem {
         if (!this.initialized || !this.overlay || !document.body.contains(this.overlay)) {
             this.init();
         }
-        
+
         // Always move to end of body before showing
         if (this.overlay && this.overlay.parentNode) {
             document.body.appendChild(this.overlay);
         }
     }
-    
+
     /**
      * Add mobile-friendly click handler to a button
      */
@@ -225,26 +226,26 @@ class ModalSystem {
         let lastTime = 0;
         const DEBOUNCE = 300;
         let isProcessing = false;
-        
+
         const wrappedHandler = (e) => {
             if (isProcessing || this.isClosing) return;
-            
+
             e.preventDefault();
             e.stopPropagation();
-            
+
             const now = Date.now();
             if (now - lastTime < DEBOUNCE) return;
             lastTime = now;
             isProcessing = true;
-            
+
             this._log('Button clicked');
             handler();
-            
+
             setTimeout(() => {
                 isProcessing = false;
             }, 100);
         };
-        
+
         // Use both click and pointer events for maximum compatibility
         button.addEventListener('click', wrappedHandler);
         if ('PointerEvent' in window) {
@@ -256,11 +257,11 @@ class ModalSystem {
 
     show(options) {
         this._log(`Showing modal: ${options.title}`);
-        
+
         return new Promise((resolve) => {
             // Ensure modal is ready and at top of z-order
             this._ensureReady();
-            
+
             this.activeResolve = resolve;
             this.isClosing = false;
 
@@ -304,10 +305,10 @@ class ModalSystem {
             this.overlay.style.zIndex = '999999';
             this.overlay.style.pointerEvents = 'auto';
             this.openedAt = Date.now();
-            
+
             // Force reflow
             this.overlay.offsetHeight;
-            
+
             // Add active class for animation
             requestAnimationFrame(() => {
                 this.overlay.classList.add('active');
@@ -318,10 +319,10 @@ class ModalSystem {
 
     close(result) {
         if (!this.overlay || this.isClosing) return;
-        
+
         this._log(`Closing modal with result: ${result}`);
         this.isClosing = true;
-        
+
         this.overlay.classList.remove('active');
 
         setTimeout(() => {
@@ -330,7 +331,7 @@ class ModalSystem {
                 this.overlay.style.pointerEvents = 'none';
             }
             this.isClosing = false;
-            
+
             if (this.activeResolve) {
                 const resolveFunc = this.activeResolve;
                 this.activeResolve = null;

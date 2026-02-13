@@ -574,7 +574,7 @@ class Game {
                 `        starThresholds: { one: ${this.formatLevelNumber(starThresholds.one)}, two: ${this.formatLevelNumber(starThresholds.two)}, three: ${this.formatLevelNumber(starThresholds.three)} }`,
                 '    }'
             ].join('\n');
-            
+
             return tierHeader + codeBlock;
         });
 
@@ -1549,20 +1549,20 @@ class BeginnerMode {
             overlay.style.cssText = `
                 display: none;
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+                background: rgba(4, 8, 20, 0.85); backdrop-filter: blur(8px);
                 z-index: 9999; justify-content: center; align-items: center;
             `;
 
             overlay.innerHTML = `
-                <div class="panel-container" style="background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-                    <div class="panel-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; color: #1e293b;">
+                <div class="panel-container" style="background: #0e1a35; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(100,140,255,0.18);">
+                    <div class="panel-header" style="padding: 20px 24px; border-bottom: 1px solid rgba(100,140,255,0.12); display: flex; justify-content: space-between; align-items: center; background: rgba(15,25,50,0.9); color: #e0e8ff;">
                         <h2 style="margin: 0; font-size: 20px; font-weight: 700; font-family: 'Inter', sans-serif;">Save / Load Game</h2>
-                        <button id="saveLoadClose" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; padding: 4px;">&times;</button>
+                        <button id="saveLoadClose" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #7b8bb5; padding: 4px;">&times;</button>
                     </div>
                     
                     <div class="panel-content" style="padding: 24px; overflow-y: auto;">
-                        <div class="panel-meta" style="margin-bottom: 20px; text-align: center; color: #64748b; background: #f8fafc; padding: 12px; border-radius: 12px; font-size: 14px;">
-                            <div id="saveLoadActiveSlot" style="font-weight: 600; color: #334155; margin-bottom: 4px;">Active Slot: --</div>
+                        <div class="panel-meta" style="margin-bottom: 20px; text-align: center; color: #7b8bb5; background: rgba(20,35,70,0.5); padding: 12px; border-radius: 12px; font-size: 14px; border: 1px solid rgba(100,140,255,0.1);">
+                            <div id="saveLoadActiveSlot" style="font-weight: 600; color: #b0c4ff; margin-bottom: 4px;">Active Slot: --</div>
                             <div id="saveLoadLastSave">Last save: --</div>
                         </div>
 
@@ -1578,32 +1578,33 @@ class BeginnerMode {
             const style = document.createElement('style');
             style.textContent = `
                 .sl-slot {
-                    border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px;
+                    border: 2px solid rgba(100,140,255,0.18); border-radius: 12px; padding: 16px;
                     transition: all 0.2s; cursor: pointer; position: relative;
+                    background: rgba(15,25,50,0.5);
                 }
-                .sl-slot:hover { border-color: #cbd5e1; transform: translateY(-1px); }
-                .sl-slot.active { border-color: #3b82f6; background: #eff6ff; }
+                .sl-slot:hover { border-color: rgba(100,140,255,0.3); transform: translateY(-1px); }
+                .sl-slot.active { border-color: #4a7cff; background: rgba(25,45,90,0.6); }
                 .sl-slot.active::before {
                     content: 'Active'; position: absolute; top: -10px; right: 10px;
-                    background: #3b82f6; color: white; font-size: 10px; font-weight: 700;
+                    background: #4a7cff; color: white; font-size: 10px; font-weight: 700;
                     padding: 2px 8px; border-radius: 10px;
                 }
                 .sl-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-                .sl-title { font-weight: 700; color: #334155; }
+                .sl-title { font-weight: 700; color: #e0e8ff; }
                 .sl-status { font-size: 12px; font-weight: 600; }
-                .sl-details { font-size: 13px; color: #64748b; margin-bottom: 12px; display: flex; gap: 10px; }
+                .sl-details { font-size: 13px; color: #7b8bb5; margin-bottom: 12px; display: flex; gap: 10px; }
                 .sl-actions { display: flex; gap: 8px; margin-top: 12px; }
                 .sl-actions button {
-                    flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0;
-                    background: white; font-weight: 600; font-size: 13px; cursor: pointer;
-                    transition: all 0.2s;
+                    flex: 1; padding: 8px; border-radius: 8px; border: 1px solid rgba(100,140,255,0.18);
+                    background: rgba(20,35,70,0.7); font-weight: 600; font-size: 13px; cursor: pointer;
+                    transition: all 0.2s; color: #b0c4ff;
                 }
-                .sl-actions button:hover:not(:disabled) { background: #f1f5f9; }
-                .sl-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
-                .sl-actions button.primary { background: #3b82f6; color: white; border-color: #3b82f6; }
-                .sl-actions button.primary:hover:not(:disabled) { background: #2563eb; }
-                .sl-actions button.danger { color: #ef4444; border-color: #fecaca; }
-                .sl-actions button.danger:hover:not(:disabled) { background: #fef2f2; }
+                .sl-actions button:hover:not(:disabled) { background: rgba(30,50,90,0.8); }
+                .sl-actions button:disabled { opacity: 0.3; cursor: not-allowed; }
+                .sl-actions button.primary { background: linear-gradient(135deg, #2244aa, #1a3388); color: white; border-color: rgba(74,124,255,0.3); }
+                .sl-actions button.primary:hover:not(:disabled) { background: linear-gradient(135deg, #2a55cc, #203e99); }
+                .sl-actions button.danger { color: #f87171; border-color: rgba(248,113,113,0.2); }
+                .sl-actions button.danger:hover:not(:disabled) { background: rgba(40,15,15,0.5); }
             `;
             document.head.appendChild(style);
         }
@@ -1637,7 +1638,7 @@ class BeginnerMode {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(15, 23, 42, 0.75);
+                background: rgba(4, 8, 20, 0.75);
                 backdrop-filter: blur(6px);
                 z-index: 9998;
                 justify-content: center;
@@ -1645,15 +1646,15 @@ class BeginnerMode {
             `;
 
             overlay.innerHTML = `
-                <div style="background: white; border-radius: 20px; width: min(92vw, 360px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow: hidden;">
-                    <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                        <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #0f172a;">Options</h3>
-                        <button id="gameOptionsClose" style="background: none; border: none; color: #64748b; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+                <div style="background: #0e1a35; border-radius: 20px; width: min(92vw, 360px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid rgba(100,140,255,0.18);">
+                    <div style="padding: 18px 20px; border-bottom: 1px solid rgba(100,140,255,0.12); display: flex; align-items: center; justify-content: space-between;">
+                        <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #e0e8ff;">Options</h3>
+                        <button id="gameOptionsClose" style="background: none; border: none; color: #7b8bb5; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
                     </div>
                     <div style="padding: 16px; display: grid; gap: 10px;">
-                        <button id="gameOptionsMenuBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">🏠 Menu</button>
-                        <button id="gameOptionsSaveLoadBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">💾 Save / Load</button>
-                        <button id="gameOptionsSettingsBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">⚙️ Settings</button>
+                        <button id="gameOptionsMenuBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(100,140,255,0.18); background: rgba(20,35,70,0.7); color: #e0e8ff; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">🏠 Menu</button>
+                        <button id="gameOptionsSaveLoadBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(100,140,255,0.18); background: rgba(20,35,70,0.7); color: #e0e8ff; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">💾 Save / Load</button>
+                        <button id="gameOptionsSettingsBtn" style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(100,140,255,0.18); background: rgba(20,35,70,0.7); color: #e0e8ff; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;">⚙️ Settings</button>
                     </div>
                 </div>
             `;
@@ -1724,7 +1725,7 @@ class BeginnerMode {
                     width: 100%;
                     height: 6px;
                     border-radius: 3px;
-                    background: #e2e8f0;
+                    background: rgba(30, 45, 80, 0.8);
                     outline: none;
                     margin: 0;
                     cursor: pointer;
@@ -1736,8 +1737,8 @@ class BeginnerMode {
                     width: 20px;
                     height: 20px;
                     border-radius: 50%;
-                    background: #3b82f6;
-                    box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+                    background: #4a7cff;
+                    box-shadow: 0 2px 6px rgba(74,124,255,0.4);
                     cursor: pointer;
                     transition: transform 0.1s;
                     margin-top: -7px; /* (6px - 20px) / 2 */
@@ -1747,7 +1748,7 @@ class BeginnerMode {
                 }
                 .aaa-slider::-webkit-slider-thumb:active {
                     transform: scale(0.95);
-                    background: #2563eb;
+                    background: #3b6ef5;
                 }
                 /* Fill Track Hack for WebKit */
                 .aaa-slider-fill {
@@ -1755,7 +1756,7 @@ class BeginnerMode {
                     top: 50%;
                     left: 0;
                     height: 6px;
-                    background: #3b82f6;
+                    background: #4a7cff;
                     border-radius: 3px;
                     transform: translateY(-50%);
                     pointer-events: none;
@@ -1772,15 +1773,15 @@ class BeginnerMode {
         overlay.style.cssText = `
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+            background: rgba(4, 8, 20, 0.85); backdrop-filter: blur(8px);
             z-index: 10000; justify-content: center; align-items: center;
         `;
 
         overlay.innerHTML = `
-            <div style="background: white; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); overflow: hidden; transform: scale(0.95); transition: transform 0.2s;">
-                <div style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
-                    <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: #0f172a;">Settings</h3>
-                    <button id="gameSettingsClose" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+            <div style="background: #0e1a35; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); overflow: hidden; transform: scale(0.95); transition: transform 0.2s; border: 1px solid rgba(100,140,255,0.18);">
+                <div style="padding: 20px 24px; border-bottom: 1px solid rgba(100,140,255,0.12); display: flex; justify-content: space-between; align-items: center; background: rgba(15,25,50,0.9);">
+                    <h3 style="margin: 0; font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; color: #e0e8ff;">Settings</h3>
+                    <button id="gameSettingsClose" style="background: rgba(25,40,70,0.8); border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; color: #7b8bb5; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -1789,8 +1790,8 @@ class BeginnerMode {
                     <!-- Music Control -->
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
-                            <span style="font-weight: 600; color: #334155; font-size: 15px;">Music</span>
-                            <span id="gameSettingsMusicVal" style="font-weight: 700; color: #3b82f6; font-size: 14px;">70%</span>
+                            <span style="font-weight: 600; color: #b0c4ff; font-size: 15px;">Music</span>
+                            <span id="gameSettingsMusicVal" style="font-weight: 700; color: #4a7cff; font-size: 14px;">70%</span>
                         </div>
                         <div class="aaa-slider-container">
                             <div id="gameSettingsMusicFill" class="aaa-slider-fill" style="width: 70%"></div>
@@ -1801,8 +1802,8 @@ class BeginnerMode {
                     <!-- SFX Control -->
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
-                            <span style="font-weight: 600; color: #334155; font-size: 15px;">Sound Effects</span>
-                            <span id="gameSettingsSfxVal" style="font-weight: 700; color: #3b82f6; font-size: 14px;">75%</span>
+                            <span style="font-weight: 600; color: #b0c4ff; font-size: 15px;">Sound Effects</span>
+                            <span id="gameSettingsSfxVal" style="font-weight: 700; color: #4a7cff; font-size: 14px;">75%</span>
                         </div>
                         <div class="aaa-slider-container">
                             <div id="gameSettingsSfxFill" class="aaa-slider-fill" style="width: 75%"></div>
@@ -1811,17 +1812,17 @@ class BeginnerMode {
                     </div>
 
                     <!-- Mute Toggle -->
-                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 12px; cursor: pointer; user-select: none;">
-                        <span style="font-weight: 600; color: #334155; font-size: 15px; display: flex; align-items: center; gap: 10px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(20,35,70,0.7); border-radius: 12px; cursor: pointer; user-select: none; border: 1px solid rgba(100,140,255,0.12);">
+                        <span style="font-weight: 600; color: #b0c4ff; font-size: 15px; display: flex; align-items: center; gap: 10px;">
                             <span id="muteAudioIcon" style="font-size: 18px;">🔊</span> Mute Audio
                         </span>
                         <div style="position: relative; width: 44px; height: 24px;">
                             <input id="gameSettingsMute" type="checkbox" style="opacity: 0; width: 0; height: 0;" />
-                            <span class="mute-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px;"></span>
-                            <span class="mute-knob" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>
+                            <span class="mute-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(40,55,90,0.8); transition: .4s; border-radius: 24px;"></span>
+                            <span class="mute-knob" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #b0c4ff; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
                         </div>
                         <style>
-                            input:checked + .mute-slider { background-color: #3b82f6; }
+                            input:checked + .mute-slider { background-color: #4a7cff; }
                             input:checked + .mute-slider + .mute-knob { transform: translateX(20px); }
                         </style>
                     </label>
@@ -2513,8 +2514,8 @@ class BeginnerMode {
         const overlay = document.createElement('div');
         overlay.id = 'safetyPopup';
         overlay.style.cssText = `
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px); z-index: 2147483647;
+            position: fixed; inset: 0; background: rgba(4, 8, 20, 0.75);
+            backdrop-filter: blur(8px); z-index: 2147483647;
             display: flex; align-items: center; justify-content: center;
             font-family: 'Inter', system-ui, sans-serif;
             animation: fadeIn 0.2s ease-out;
@@ -2522,23 +2523,24 @@ class BeginnerMode {
 
         const card = document.createElement('div');
         card.style.cssText = `
-            background: white; width: 90%; max-width: 400px;
+            background: #0e1a35; width: 90%; max-width: 400px;
             border-radius: 20px; padding: 24px;
             position: relative; z-index: 2147483647;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(100, 140, 255, 0.18);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
             text-align: center;
         `;
 
         const title = document.createElement('h3');
         title.textContent = "Replay Level?";
         title.style.cssText = `
-            margin: 0 0 12px 0; color: #1e293b; font-size: 20px; font-weight: 700;
+            margin: 0 0 12px 0; color: #e0e8ff; font-size: 20px; font-weight: 700;
         `;
 
         const text = document.createElement('p');
         text.textContent = message;
         text.style.cssText = `
-            margin: 0 0 24px 0; color: #64748b; font-size: 15px; line-height: 1.5;
+            margin: 0 0 24px 0; color: #7b8bb5; font-size: 15px; line-height: 1.5;
         `;
 
         const btnGroup = document.createElement('div');
@@ -2550,16 +2552,16 @@ class BeginnerMode {
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = "Cancel";
-        cancelBtn.style.cssText = btnBase + `background: #f1f5f9; color: #64748b;`;
-        cancelBtn.onmouseenter = () => cancelBtn.style.background = '#e2e8f0';
-        cancelBtn.onmouseleave = () => cancelBtn.style.background = '#f1f5f9';
+        cancelBtn.style.cssText = btnBase + `background: rgba(25, 40, 70, 0.8); color: #7b8bb5; border: 1px solid rgba(100, 140, 255, 0.15);`;
+        cancelBtn.onmouseenter = () => cancelBtn.style.background = 'rgba(35, 55, 90, 0.9)';
+        cancelBtn.onmouseleave = () => cancelBtn.style.background = 'rgba(25, 40, 70, 0.8)';
         cancelBtn.onclick = () => overlay.remove();
 
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = "Replay";
-        confirmBtn.style.cssText = btnBase + `background: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);`;
-        confirmBtn.onmouseenter = () => confirmBtn.style.background = '#2563eb';
-        confirmBtn.onmouseleave = () => confirmBtn.style.background = '#3b82f6';
+        confirmBtn.style.cssText = btnBase + `background: linear-gradient(135deg, #2244aa, #1a3388); color: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);`;
+        confirmBtn.onmouseenter = () => confirmBtn.style.background = 'linear-gradient(135deg, #2a55cc, #203e99)';
+        confirmBtn.onmouseleave = () => confirmBtn.style.background = 'linear-gradient(135deg, #2244aa, #1a3388)';
         confirmBtn.onclick = () => {
             overlay.remove();
             if (onConfirm) onConfirm();
@@ -2736,14 +2738,14 @@ class BeginnerMode {
                 skipBtn.id = 'gameSkipBtn';
                 skipBtn.innerHTML = '<span style="font-size: 16px;">⏭️</span> Skip';
                 skipBtn.style.cssText = `
-                    background: #f1f5f9;
-                    border: 1px solid #cbd5e1;
+                    background: rgba(25, 40, 70, 0.8);
+                    border: 1px solid rgba(100, 140, 255, 0.18);
                     padding: 8px 16px;
                     border-radius: 12px;
                     font-family: 'Inter', sans-serif;
                     font-weight: 600;
                     font-size: 14px;
-                    color: #475569;
+                    color: #7b8bb5;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
@@ -2810,8 +2812,8 @@ class BeginnerMode {
                 style.id = 'hud-btn-styles';
                 style.textContent = `
                     .game-hud-btn {
-                        background: #3b82f6 !important;
-                        border: 1px solid #2563eb !important;
+                        background: linear-gradient(135deg, #2244aa 0%, #1a3388 100%) !important;
+                        border: 1px solid rgba(74, 124, 255, 0.3) !important;
                         padding: 8px 16px;
                         border-radius: 12px;
                         font-family: 'Inter', sans-serif;
@@ -2819,7 +2821,7 @@ class BeginnerMode {
                         font-size: 14px;
                         color: white !important;
                         cursor: pointer;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(74, 124, 255, 0.15);
                         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                         display: flex;
                         align-items: center;
@@ -2827,8 +2829,8 @@ class BeginnerMode {
                     }
                     .game-hud-btn:hover {
                         transform: scale(1.1);
-                        background: #2563eb !important;
-                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+                        background: linear-gradient(135deg, #2a55cc 0%, #203e99 100%) !important;
+                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(74, 124, 255, 0.3);
                         z-index: 10;
                     }
                     .game-hud-btn:active {
@@ -2897,44 +2899,44 @@ class BeginnerMode {
         if (rightSide) {
             rightSide.innerHTML = `
                 <div style="
-                    background: rgba(255, 255, 255, 0.95);
-                    backdrop-filter: blur(8px);
+                    background: rgba(12, 20, 42, 0.88);
+                    backdrop-filter: blur(14px);
                     padding: 16px 20px;
                     border-radius: 16px;
-                    border: 1px solid rgba(226, 232, 240, 0.9);
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    border: 1px solid rgba(100, 140, 255, 0.18);
+                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
                     display: flex;
                     flex-direction: column;
                     gap: 6px;
                 ">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
-                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lines</span>
-                        <span style="font-size: 16px; font-weight: 800; color: ${this.linesUsed > this.maxLines ? '#e11d48' : '#0f172a'}">${this.linesUsed} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.maxLines}</span>
+                        <span style="font-size: 11px; color: #7b8bb5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lines</span>
+                        <span style="font-size: 16px; font-weight: 800; color: ${this.linesUsed > this.maxLines ? '#f87171' : '#e0e8ff'}">${this.linesUsed} <span style="color: #4a5f8a; font-weight: 600;">/</span> ${this.maxLines}</span>
                     </div>
-                    <div style="width: 100%; height: 1px; background: #e2e8f0;"></div>
+                    <div style="width: 100%; height: 1px; background: rgba(100, 140, 255, 0.12);"></div>
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: 'Inter', sans-serif;">
-                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Pieces</span>
-                        <span style="font-size: 16px; font-weight: 800; color: ${piecesCount !== this.targetPieces ? '#0f172a' : '#16a34a'}">${piecesCount} <span style="color: #94a3b8; font-weight: 600;">/</span> ${this.targetPieces}</span>
+                        <span style="font-size: 11px; color: #7b8bb5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Pieces</span>
+                        <span style="font-size: 16px; font-weight: 800; color: ${piecesCount !== this.targetPieces ? '#e0e8ff' : '#4ade80'}">${piecesCount} <span style="color: #4a5f8a; font-weight: 600;">/</span> ${this.targetPieces}</span>
                     </div>
                 </div>
 
                 <div style="
-                    background: rgba(255, 255, 255, 0.95);
-                    backdrop-filter: blur(8px);
+                    background: rgba(12, 20, 42, 0.88);
+                    backdrop-filter: blur(14px);
                     padding: 12px 16px;
                     border-radius: 14px;
-                    border: 1px solid rgba(226, 232, 240, 0.9);
-                    box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.08), 0 3px 5px -2px rgba(0, 0, 0, 0.05);
+                    border: 1px solid rgba(100, 140, 255, 0.18);
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     gap: 16px;
                     font-family: 'Inter', sans-serif;
                 ">
-                    <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Grid Snap</span>
+                    <span style="font-size: 11px; color: #7b8bb5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Grid Snap</span>
                     <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="gameGridSnapToggle" style="width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6;">
-                        <span id="gameGridSnapLabel" style="font-size: 13px; font-weight: 700; color: #0f172a; min-width: 24px; text-align: right;">On</span>
+                        <input type="checkbox" id="gameGridSnapToggle" style="width: 16px; height: 16px; cursor: pointer; accent-color: #4a7cff;">
+                        <span id="gameGridSnapLabel" style="font-size: 13px; font-weight: 700; color: #e0e8ff; min-width: 24px; text-align: right;">On</span>
                     </label>
                 </div>
             `;
@@ -3297,7 +3299,7 @@ class BeginnerMode {
                 const totalText = document.createElement('div');
                 totalText.style.cssText = `
                     width: 100%; text-align: center; font-size: 14px; 
-                    color: #64748b; font-weight: 600; margin-top: 4px;
+                    color: #7b8bb5; font-weight: 600; margin-top: 4px;
                 `;
                 totalText.innerHTML = `Total Score: <span style="color: #f59e0b;">★ ${totalStars}</span>`;
                 starContainer.appendChild(totalText);
@@ -3342,32 +3344,32 @@ class BeginnerMode {
                     ? piecePercents
                         .map((p, idx) => {
                             const safe = Number.isFinite(Number(p)) ? Number(p).toFixed(1) : '0.0';
-                            return `<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-weight:700;font-size:12px;">P${idx + 1}: ${safe}%</span>`;
+                            return `<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(20,35,70,0.7);border:1px solid rgba(100,140,255,0.18);color:#b0c4ff;font-weight:700;font-size:12px;">P${idx + 1}: ${safe}%</span>`;
                         })
                         .join('')
-                    : '<span style="color:#64748b;font-size:12px;">No piece percentages detected.</span>';
+                    : '<span style="color:#7b8bb5;font-size:12px;">No piece percentages detected.</span>';
 
                 const starRuleRow = (label, limit, passed) => {
-                    const tone = passed ? '#15803d' : '#b91c1c';
+                    const tone = passed ? '#4ade80' : '#f87171';
                     const bg = passed ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.10)';
                     const icon = passed ? '✓' : '✕';
                     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;background:${bg};font-size:12px;">
-                        <span style="font-weight:700;color:#334155;">${label}</span>
+                        <span style="font-weight:700;color:#b0c4ff;">${label}</span>
                         <span style="font-weight:700;color:${tone};">${icon} ≤ ${limit.toFixed(2)}%</span>
                     </div>`;
                 };
 
                 list.innerHTML = `
-                    <div style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;flex-direction:column;gap:10px;">
-                        <div style="font-weight:800;color:#0f172a;font-size:14px;">Score Breakdown</div>
+                    <div style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(12,20,42,0.88);border:1px solid rgba(100,140,255,0.15);display:flex;flex-direction:column;gap:10px;">
+                        <div style="font-weight:800;color:#e0e8ff;font-size:14px;">Score Breakdown</div>
 
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
                             ${piecesHtml}
                         </div>
 
-                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#ffffff;border:1px solid #e2e8f0;">
-                            <span style="font-size:12px;color:#475569;font-weight:700;">Differential</span>
-                            <span style="font-size:13px;color:#0f172a;font-weight:800;">${diffPct.toFixed(2)}%</span>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:rgba(15,25,50,0.7);border:1px solid rgba(100,140,255,0.12);">
+                            <span style="font-size:12px;color:#7b8bb5;font-weight:700;">Differential</span>
+                            <span style="font-size:13px;color:#e0e8ff;font-weight:800;">${diffPct.toFixed(2)}%</span>
                         </div>
 
                         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -3376,9 +3378,9 @@ class BeginnerMode {
                             ${starRuleRow('1★ Rating', tOne, didPassOne)}
                         </div>
 
-                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;">
-                            <span style="font-size:12px;color:#9a3412;font-weight:700;">Achieved</span>
-                            <span style="font-size:13px;color:#7c2d12;font-weight:900;">${achievedLabel}</span>
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:rgba(40,30,10,0.6);border:1px solid rgba(251,191,36,0.2);">
+                            <span style="font-size:12px;color:#f59e0b;font-weight:700;">Achieved</span>
+                            <span style="font-size:13px;color:#fbbf24;font-weight:900;">${achievedLabel}</span>
                         </div>
                     </div>
                 `;
@@ -3702,7 +3704,7 @@ class DevManager {
         const step = Number(this.creatorState.zoomStep) || 0.15;
         const max = Number(this.creatorState.maxZoomLevel) || 2.4;
         const next = this.clampValue(current + step, Number(this.creatorState.minZoomLevel) || 0.6, max);
-        
+
         this.creatorState.zoomLevel = next;
         this.creatorViewDirty = true;
         this.updateCreatorInfo();
@@ -4073,7 +4075,7 @@ class DevManager {
             #devManagerPanel .dev-right{ padding:6px 10px 10px 10px; display:flex; flex-direction:column; gap:8px; min-height:0; }
             #devManagerPanel .dev-canvas-wrap{ position:relative; min-height:0; flex:1; }
             #devManagerPanel .dev-canvas-tools{ position:absolute; top:10px; left:10px; display:flex; gap:10px; z-index:3; pointer-events:auto; }
-            #devManagerPanel .dev-canvas-tools button{ width:42px; height:34px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.96); border:1px solid #cbd5e1; color:#475569; border-radius:14px; padding:0; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(2,6,23,.15); }
+            #devManagerPanel .dev-canvas-tools button{ width:42px; height:34px; display:flex; align-items:center; justify-content:center; background:rgba(12,20,42,0.85); border:1px solid rgba(100,140,255,0.2); color:#b0c4ff; border-radius:14px; padding:0; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.3); backdrop-filter:blur(8px); }
             #devManagerPanel .dev-canvas-tools button:disabled{ opacity:.45; cursor:not-allowed; }
             #devManagerPanel .lc-control-group{ background:#111c33; border:1px solid #334155; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px; }
             #devManagerPanel .lc-label{ font-size:12px; color:#cbd5e1; }
@@ -4488,7 +4490,7 @@ class DevManager {
             overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:12000;display:flex;align-items:center;justify-content:center;';
             const card = document.createElement('div');
             card.style.cssText = 'background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:12px;padding:20px;width:min(800px, 90vw);max-height:80vh;display:flex;flex-direction:column;gap:16px;';
-            
+
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;font-size:18px;color:#38bdf8;">Standard Polygons</h3>
@@ -4509,26 +4511,26 @@ class DevManager {
             ];
 
             const grid = card.querySelector('#stdPolyGrid');
-            
+
             shapes.forEach(shape => {
                 const item = document.createElement('div');
                 item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;transition:all 0.2s;';
                 item.onmouseenter = () => { item.style.background = '#334155'; item.style.borderColor = '#64748b'; };
                 item.onmouseleave = () => { item.style.background = '#1e293b'; item.style.borderColor = '#334155'; };
-                
+
                 const cvs = document.createElement('canvas');
                 cvs.width = 80;
                 cvs.height = 80;
                 const ctx = cvs.getContext('2d');
-                
+
                 const cx = 40;
                 const cy = 40;
                 const radius = 30;
-                
+
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                
+
                 for (let i = 0; i < shape.vertices; i++) {
                     const angle = (i * 2 * Math.PI / shape.vertices) - Math.PI / 2;
                     const x = cx + radius * Math.cos(angle);
@@ -4545,16 +4547,16 @@ class DevManager {
                 label.textContent = shape.name;
                 label.style.fontSize = '12px';
                 label.style.textAlign = 'center';
-                
+
                 item.appendChild(cvs);
                 item.appendChild(label);
-                
+
                 item.onclick = () => {
                     this.createStandardPolygon(shape.vertices);
                     overlay.remove();
                     resolve();
                 };
-                
+
                 grid.appendChild(item);
             });
 
@@ -4574,13 +4576,13 @@ class DevManager {
         const cx = 0;
         const cy = 0;
         const radius = 120;
-        
+
         const out = [];
         for (let i = 0; i < sides; i++) {
             const angle = (i * 2 * Math.PI / sides) - Math.PI / 2;
-            out.push({ 
-                x: cx + Math.cos(angle) * radius, 
-                y: cy + Math.sin(angle) * radius 
+            out.push({
+                x: cx + Math.cos(angle) * radius,
+                y: cy + Math.sin(angle) * radius
             });
         }
 
@@ -4591,10 +4593,10 @@ class DevManager {
         this.creatorState.customMouseWorld = null;
         this.creatorState.customDrawError = '';
         this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
-        
+
         const vertsRange = this.panel ? this.panel.querySelector('#devVerticesRange') : null;
         if (vertsRange) vertsRange.value = sides;
-        
+
         this.creatorViewDirty = true;
         this.syncCreatorControls();
         this.syncCreatorControlText();
@@ -5316,12 +5318,12 @@ class DevManager {
         this.creatorState.customDrawError = '';
         this.creatorState.lastSolveMeta = null;
         this.creatorState.lastSolveDiagnostics = null;
-        
+
         // Reset View
         this.creatorState.zoomLevel = this.creatorState.zoomLevelDefault || 1;
         this.creatorView = { scale: 1, offsetX: 0, offsetY: 0 };
         this.creatorViewDirty = true;
-        
+
         this.computeAndStoreCreatorBoundary(this.creatorState.vertices);
         this.syncCreatorControlText();
         this.updateCreatorInfo();
@@ -5671,9 +5673,159 @@ class DevManager {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, w, h);
 
-        // Match gameplay viewport feel (light canvas + subtle grid)
-        ctx.fillStyle = '#f8fafc';
+        // Galaxy theme: deep space background
+        const spaceBg = ctx.createRadialGradient(w * 0.5, h * 0.3, 0, w * 0.5, h * 0.5, w * 0.85);
+        spaceBg.addColorStop(0, '#111d3a');
+        spaceBg.addColorStop(0.35, '#0b1228');
+        spaceBg.addColorStop(0.7, '#070e20');
+        spaceBg.addColorStop(1, '#040810');
+        ctx.fillStyle = spaceBg;
         ctx.fillRect(0, 0, w, h);
+
+        // Galaxy stars & nebula for DevManager canvas (lazy init)
+        if (!this._devGalaxyStars || this._devGalaxyW !== w || this._devGalaxyH !== h) {
+            this._devGalaxyW = w;
+            this._devGalaxyH = h;
+            const dcx = w * 0.5, dcy = h * 0.5;
+            const dmaxR = Math.sqrt(dcx * dcx + dcy * dcy) * 1.3;
+            const ddeadR = Math.min(w, h) * 0.22;
+            const starCount = Math.min(300, Math.max(100, Math.floor(w * h / 3500)));
+            this._devGalaxyStars = [];
+            for (let i = 0; i < starCount; i++) {
+                const br = Math.random();
+                const isLarge = br > 0.85;
+                const r = isLarge ? (0.9 + Math.random() * 1.2) : (0.3 + Math.random() * 0.7);
+                let dist = r > 1.0 ? (ddeadR + Math.random() * (dmaxR - ddeadR)) : Math.random() * dmaxR;
+                this._devGalaxyStars.push({
+                    dist: dist, angle: Math.random() * Math.PI * 2,
+                    r: r, spikes: isLarge ? 4 : 4,
+                    brightness: 0.3 + br * 0.7,
+                    twinkleSpeed: 0.5 + Math.random() * 2.5,
+                    twinkleOffset: Math.random() * Math.PI * 2,
+                    spikeRatio: 0.3 + Math.random() * 0.25,
+                    color: br > 0.9 ? [180, 210, 255] : br > 0.7 ? [200, 220, 255] : [255, 255, 255]
+                });
+            }
+            this._devGalaxyNebulae = [];
+            const nebColors = [[30, 50, 120], [50, 30, 100], [20, 60, 130]];
+            for (let i = 0; i < 3; i++) {
+                const c = nebColors[i];
+                const ndist = Math.min(w, h) * (0.2 + Math.random() * 0.5);
+                this._devGalaxyNebulae.push({
+                    dist: ndist, angle: Math.random() * Math.PI * 2,
+                    rx: w * (0.12 + Math.random() * 0.2), ry: h * (0.1 + Math.random() * 0.15),
+                    color: c, alpha: 0.04 + Math.random() * 0.05,
+                    localRotation: Math.random() * Math.PI
+                });
+            }
+        }
+
+        // Rotation
+        const devTime = performance.now() * 0.001;
+        const devSkyRot = devTime * 0.002; // Gentle drift matching main canvas
+        const devCx = w * 0.5, devCy = h * 0.5;
+
+        // Compute polygon screen-space bounds for dimming
+        let polyScreenBounds = null;
+        if (this.creatorState.vertices && this.creatorState.vertices.length > 0) {
+            const view = this.creatorView || { scale: 1, offsetX: 0, offsetY: 0 };
+            let minSX = Infinity, maxSX = -Infinity, minSY = Infinity, maxSY = -Infinity;
+            const halfW = w * 0.5, halfH = h * 0.5;
+            // Vertices are centered at (0,0) in world space typically, view applies offset/scale
+            for (const v of this.creatorState.vertices) {
+                const screenX = halfW + view.offsetX + v.x * view.scale;
+                const screenY = halfH + view.offsetY + v.y * view.scale;
+                if (screenX < minSX) minSX = screenX;
+                if (screenX > maxSX) maxSX = screenX;
+                if (screenY < minSY) minSY = screenY;
+                if (screenY > maxSY) maxSY = screenY;
+            }
+            if (isFinite(minSX)) {
+                const margin = Math.min(w, h) * 0.08;
+                polyScreenBounds = {
+                    cx: (minSX + maxSX) * 0.5,
+                    cy: (minSY + maxSY) * 0.5,
+                    halfW: (maxSX - minSX) * 0.5 + margin,
+                    halfH: (maxSY - minSY) * 0.5 + margin
+                };
+            }
+        }
+
+        // Helper: get dimming factor
+        const getDevDimFactor = (sx, sy) => {
+            if (!polyScreenBounds) return 1.0;
+            const pb = polyScreenBounds;
+            const dx = Math.abs(sx - pb.cx) / Math.max(1, pb.halfW);
+            const dy = Math.abs(sy - pb.cy) / Math.max(1, pb.halfH);
+            const dist = Math.max(dx, dy);
+            if (dist > 1.5) return 1.0;
+            if (dist < 0.8) return 0.12;
+            return 0.12 + (dist - 0.8) / 0.7 * 0.88;
+        };
+
+        // Draw nebulae (rotating) with dimming
+        this._devGalaxyNebulae.forEach(neb => {
+            const nx = devCx + Math.cos(neb.angle + devSkyRot) * neb.dist;
+            const ny = devCy + Math.sin(neb.angle + devSkyRot) * neb.dist;
+            ctx.save();
+            ctx.translate(nx, ny);
+            ctx.rotate(neb.localRotation + devSkyRot);
+            const ng = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(neb.rx, neb.ry));
+            const [cr, cg, cb] = neb.color;
+            const nebDim = getDevDimFactor(nx, ny);
+            ng.addColorStop(0, `rgba(${cr},${cg},${cb},${neb.alpha * 1.5 * nebDim})`);
+            ng.addColorStop(0.5, `rgba(${cr},${cg},${cb},${neb.alpha * 0.5 * nebDim})`);
+            ng.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+            ctx.fillStyle = ng;
+            ctx.scale(1, neb.ry / Math.max(1, neb.rx));
+            ctx.beginPath();
+            ctx.arc(0, 0, neb.rx, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Draw stars — realistic star shapes with rotation & dimming
+        this._devGalaxyStars.forEach(star => {
+            const sx = devCx + Math.cos(star.angle + devSkyRot) * star.dist;
+            const sy = devCy + Math.sin(star.angle + devSkyRot) * star.dist;
+            if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) return;
+            const tw = 0.5 + 0.5 * Math.sin(devTime * star.twinkleSpeed + star.twinkleOffset);
+            const dimFactor = getDevDimFactor(sx, sy);
+            const a = star.brightness * (0.6 + 0.4 * tw) * dimFactor;
+            const [scr, scg, scb] = star.color;
+            const cs = `rgba(${scr},${scg},${scb},`;
+            if (star.r < 0.7) {
+                ctx.fillStyle = cs + a.toFixed(2) + ')';
+                ctx.beginPath();
+                ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.save();
+                ctx.translate(sx, sy);
+                const gr = star.r * 3.5;
+                const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, gr);
+                gg.addColorStop(0, cs + (a * 0.35).toFixed(3) + ')');
+                gg.addColorStop(0.5, cs + (a * 0.08).toFixed(3) + ')');
+                gg.addColorStop(1, cs + '0)');
+                ctx.fillStyle = gg;
+                ctx.beginPath(); ctx.arc(0, 0, gr, 0, Math.PI * 2); ctx.fill();
+                const sp = star.spikes, oR = star.r * 2.2, iR = star.r * star.spikeRatio;
+                ctx.beginPath();
+                for (let s = 0; s < sp * 2; s++) {
+                    const ang = (s * Math.PI) / sp - Math.PI / 2;
+                    const rad = s % 2 === 0 ? oR : iR;
+                    if (s === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+                    else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+                }
+                ctx.closePath();
+                ctx.fillStyle = cs + a.toFixed(2) + ')';
+                ctx.fill();
+                ctx.beginPath(); ctx.arc(0, 0, star.r * 0.45, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${(a * 0.95).toFixed(2)})`;
+                ctx.fill();
+                ctx.restore();
+            }
+        });
 
         if (this.creatorState.vertices.length < 1) {
             this.creatorView = { scale: 1, offsetX: 0, offsetY: 0 };
@@ -5698,8 +5850,8 @@ class DevManager {
         ctx.translate(this.creatorView.offsetX, this.creatorView.offsetY);
         ctx.scale(this.creatorView.scale, this.creatorView.scale);
 
-        // World-space grid so it behaves like gameplay grid under zoom/pan.
-        ctx.strokeStyle = '#e2e8f0';
+        // Galaxy-themed grid lines
+        ctx.strokeStyle = 'rgba(80, 120, 200, 0.15)';
         ctx.lineWidth = 1 / viewScale;
         const startX = Math.floor(minWorldX / g) * g;
         const endX = Math.ceil(maxWorldX / g) * g;
@@ -5720,9 +5872,9 @@ class DevManager {
 
         if (boundary) {
             ctx.save();
-            // Blue highlighted gameplay viewport contract.
-            ctx.fillStyle = 'rgba(59,130,246,0.12)';
-            ctx.strokeStyle = 'rgba(37,99,235,0.9)';
+            // Galaxy-themed boundary highlight
+            ctx.fillStyle = 'rgba(74,124,255,0.08)';
+            ctx.strokeStyle = 'rgba(74,124,255,0.5)';
             ctx.lineWidth = 1.3 / Math.max(0.001, this.creatorView.scale);
             ctx.setLineDash([]);
             ctx.fillRect(boundary.x, boundary.y, boundary.width, boundary.height);
@@ -5885,7 +6037,7 @@ class DevManager {
             ctx.beginPath();
             ctx.moveTo(verts[0].x, verts[0].y);
             for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
-            ctx.strokeStyle = '#000000';
+            ctx.strokeStyle = 'rgba(160, 200, 255, 0.9)';
             ctx.lineWidth = 2.2 / Math.max(0.001, this.creatorView.scale);
             ctx.stroke();
 
@@ -5895,20 +6047,88 @@ class DevManager {
                 ctx.beginPath();
                 ctx.moveTo(last.x, last.y);
                 ctx.lineTo(mouse.x, mouse.y);
-                ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+                ctx.strokeStyle = 'rgba(160, 200, 255, 0.5)';
                 ctx.lineWidth = 2 / Math.max(0.001, this.creatorView.scale);
                 ctx.stroke();
             }
         }
         verts.forEach((v, i) => {
+            const sz = (this.creatorState.hoverVertexIndex === i ? 7 : 5) / Math.max(0.001, this.creatorView.scale);
+            ctx.save();
+            ctx.translate(v.x, v.y);
+
+            // 1) Wide soft outer glow halo
+            const outerGlowR = sz * 6;
+            const outerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, outerGlowR);
+            outerGlow.addColorStop(0, 'rgba(160, 200, 255, 0.35)');
+            outerGlow.addColorStop(0.15, 'rgba(130, 180, 255, 0.18)');
+            outerGlow.addColorStop(0.4, 'rgba(100, 150, 255, 0.06)');
+            outerGlow.addColorStop(1, 'rgba(80, 130, 255, 0)');
+            ctx.fillStyle = outerGlow;
             ctx.beginPath();
-            const radius = (this.creatorState.hoverVertexIndex === i ? 6 : 5) / Math.max(0.001, this.creatorView.scale);
-            ctx.arc(v.x, v.y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#f8fafc';
+            ctx.arc(0, 0, outerGlowR, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#0ea5e9';
-            ctx.lineWidth = 2 / Math.max(0.001, this.creatorView.scale);
-            ctx.stroke();
+
+            // 2) Inner bright glow
+            const innerGlowR = sz * 2.5;
+            const innerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, innerGlowR);
+            innerGlow.addColorStop(0, 'rgba(200, 225, 255, 0.7)');
+            innerGlow.addColorStop(0.3, 'rgba(170, 200, 255, 0.3)');
+            innerGlow.addColorStop(1, 'rgba(140, 180, 255, 0)');
+            ctx.fillStyle = innerGlow;
+            ctx.beginPath();
+            ctx.arc(0, 0, innerGlowR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3) Primary 4-point long diffraction spikes
+            const longSpikeR = sz * 6;
+            const longSpikeW = sz * 0.12;
+            ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
+            ctx.shadowBlur = 8 / Math.max(0.001, this.creatorView.scale);
+            ctx.fillStyle = 'rgba(210, 230, 255, 0.85)';
+            for (let s = 0; s < 4; s++) {
+                const angle = s * Math.PI / 2;
+                ctx.save();
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, -longSpikeW);
+                ctx.lineTo(longSpikeR, 0);
+                ctx.lineTo(0, longSpikeW);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 4) Secondary shorter spikes at 45°
+            const shortSpikeR = sz * 3;
+            const shortSpikeW = sz * 0.08;
+            ctx.fillStyle = 'rgba(200, 225, 255, 0.45)';
+            for (let s = 0; s < 4; s++) {
+                const angle = s * Math.PI / 2 + Math.PI / 4;
+                ctx.save();
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, -shortSpikeW);
+                ctx.lineTo(shortSpikeR, 0);
+                ctx.lineTo(0, shortSpikeW);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 5) Blazing white-hot core
+            ctx.shadowColor = 'rgba(220, 240, 255, 1)';
+            ctx.shadowBlur = 12 / Math.max(0.001, this.creatorView.scale);
+            ctx.beginPath();
+            ctx.arc(0, 0, sz * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(240, 248, 255, 0.95)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, 0, sz * 0.25, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+            ctx.fill();
+
+            ctx.restore();
         });
 
         if (this.creatorState.drawCustomMode && this.creatorState.vertices.length > 0) {
@@ -6282,7 +6502,7 @@ class DevManager {
         const pieceDiffFromLargest = maxA > 0
             ? areas.map(a => ((maxA - a) / maxA) * 100)
             : areas.map(() => 0);
-        
+
         // Tolerance check: stricter in strict mode
         const toleranceEps = strictMode ? 1e-4 : 1e-2;
         const allWithinThreshold = Number.isFinite(diffPct) && diffPct <= thresholdUsed + toleranceEps;
@@ -6292,7 +6512,7 @@ class DevManager {
         let absSum = 0;
         let worst = 0;
         let sliverPenalty = 0;
-        
+
         // Dynamic sliver threshold based on ideal area
         const sliverThreshold = ideal * (strictMode ? 0.15 : 0.08);
 
@@ -6315,31 +6535,31 @@ class DevManager {
             && sliverPenalty === 0; // Slivers are never valid in robust mode
 
         let score = 0;
-        
+
         // Primary: Must satisfy line crossing constraint
         if (!allLinesCross) score += 1e14;
-        
+
         // Primary: Must match target piece count
         score += countDelta * 1e12;
-        
+
         // Secondary: Topology cleanliness (no ghost pieces)
         score += topologyPenalty * 1e10;
-        
+
         // Secondary: Sliver avoidance
         score += sliverPenalty * 1e9;
-        
+
         // Tertiary: Equality (diffPct)
         // If we are not within threshold, penalize heavily based on how far off we are
         if (!allWithinThreshold && Number.isFinite(diffPct)) {
             score += Math.max(0, diffPct - thresholdUsed) * 1e7;
         }
-        
+
         // Minimize the diffPct itself
         score += (Number.isFinite(diffPct) ? diffPct : 1e6) * 1e5;
-        
+
         // Minimize variance (Standard Deviation)
         score += stdPct * 1e3;
-        
+
         // Minimize worst outlier
         score += worst * 1e4;
 
@@ -6386,17 +6606,17 @@ class DevManager {
             const totalArea = Math.abs(Geometry.getArea(vertices));
             const objectiveIsFrontier = objective === 'frontier';
             const strictMode = !!this.creatorState.strictMode;
-            
+
             // Increased iteration counts for better exhaustion
             const baseIter = objectiveIsFrontier ? 2000 : 1200;
             const effortScale = objectiveIsFrontier ? 600 : 450;
             const strictBoost = strictMode ? 2.5 : 1;
             let maxIter = Math.max(baseIter, Math.floor(effort * effortScale * strictBoost));
-            
+
             // Larger batch and elite sizes
             const batchSize = strictMode ? 100 : 75;
             const eliteSize = strictMode ? 25 : 16;
-            
+
             const bounds = this.getVerticesBounds(vertices);
             const elite = [];
             const diagnostics = {
@@ -6430,7 +6650,7 @@ class DevManager {
                     const worst = elite[elite.length - 1];
                     if (!isBetter(candidate, worst)) return;
                 }
-                
+
                 elite.push(candidate);
                 elite.sort((a, b) => this.compareDetailedCandidate(a, b, compareMode));
                 if (elite.length > eliteSize) elite.length = eliteSize;
@@ -6475,16 +6695,16 @@ class DevManager {
 
                 // If we found a valid solution in target mode, we can switch to refinement early
                 // but keep searching for better quality (lower diffPct)
-                
+
                 const currentBatch = refinementPhase ? (batchSize / 2) : batchSize;
 
                 for (let b = 0; b < currentBatch; b++) {
                     iter++;
                     const prog = Math.min(1, iter / maxIter);
-                    
+
                     // Adaptive mutation rate
                     let step = Math.max(0.005, (objectiveIsFrontier ? 0.45 : 0.35) * (1 - prog));
-                    
+
                     // Stagnation breaker
                     if (diagnostics.plateauStreak > (strictMode ? 500 : 300)) {
                         step = 0.5; // Big jump
@@ -6500,11 +6720,11 @@ class DevManager {
                     if (!parent) continue;
 
                     let childGenome;
-                    
+
                     // Crossover / Mutation Logic
                     if (iter % 300 === 0 && rng.next() < 0.3 && guidedFamilies.length > 0) {
                         // Injection from guided families
-                         childGenome = this.cloneGenome(guidedFamilies[Math.floor(rng.next() * guidedFamilies.length)]);
+                        childGenome = this.cloneGenome(guidedFamilies[Math.floor(rng.next() * guidedFamilies.length)]);
                     } else if (rng.next() < 0.05) {
                         // Total random injection
                         childGenome = this.makeRandomGenome(numLines, rng, vertices);
@@ -6513,7 +6733,7 @@ class DevManager {
                         // In refinement, we use very small steps
                         const effectiveStep = refinementPhase ? 0.005 : step;
                         const hardMutate = !refinementPhase && rng.next() < (best.valid ? 0.15 : 0.35);
-                        
+
                         childGenome = this.mutateGenome(parent.lines.map(line => {
                             // Reconstruct genome from lines (theta, d)
                             // Note: evaluateGenome converts genome -> lines, we need lines -> genome here or store genome in candidate
@@ -6536,7 +6756,7 @@ class DevManager {
                     }
 
                     const result = this.evaluateGenome(childGenome, vertices, targetPieces, thresholdPct, totalArea, bounds);
-                    
+
                     diagnostics.evaluations++;
                     if (result.allLinesCross) diagnostics.crossingCount++;
                     if (result.valid) diagnostics.validCount++;
@@ -6575,7 +6795,7 @@ class DevManager {
                     } else {
                         diagnostics.plateauStreak++;
                     }
-                    
+
                     if (diagnostics.plateauStreak > diagnostics.maxPlateauStreak) {
                         diagnostics.maxPlateauStreak = diagnostics.plateauStreak;
                     }
@@ -6599,7 +6819,7 @@ class DevManager {
                     refinementPhase = true;
                     iter = 0;
                     // Short, focused refinement
-                    maxIter = 400; 
+                    maxIter = 400;
                     // Reset elite to just the best one to focus search
                     elite.length = 0;
                     pushElite(best);
@@ -6774,7 +6994,7 @@ class DevManager {
                     // Normal mode: 7 attempts
                     const attemptsForTarget = this.creatorState.strictMode ? 12 : 7;
                     let bestForTarget = null;
-                    
+
                     for (let attempt = 1; attempt <= attemptsForTarget; attempt++) {
                         const result = await this.solveForTargetPiecesAsync({
                             vertices,
@@ -6807,13 +7027,13 @@ class DevManager {
                         if (!result || this.creatorState.solveRunId !== runId) return;
                         mergeAttemptDiagnostics('auto-target-scan', target, attempt, result);
                         if (!bestAttempt || this.compareDetailedCandidate(result, bestAttempt, 'target') < 0) bestAttempt = result;
-                        
+
                         // Keep the best valid result for this target count
                         if (!bestForTarget || this.compareDetailedCandidate(result, bestForTarget, 'target') < 0) {
-                             bestForTarget = result;
+                            bestForTarget = result;
                         }
                     }
-                    
+
                     if (bestForTarget && bestForTarget.valid) {
                         chosen = bestForTarget.lines;
                         foundValid = true;
