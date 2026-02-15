@@ -20,7 +20,7 @@
         0 8px 32px rgba(0, 0, 0, 0.35),
         inset 0 1px 1px rgba(255, 255, 255, 0.2);
     
-    z-index: 999;
+    z-index: 10010;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.4s ease, width 0.4s ease, padding 0.4s ease; /* Bouncy slide */
     box-sizing: border-box;
     align-items: center;
@@ -81,12 +81,16 @@
     left: 0;
     transform: translateX(calc(-100% + 24px)); /* Hide almost completely */
     width: min(980px, calc(100vw - 1.5rem)); 
-    background: rgba(15, 23, 42, 0.95);
-    border-color: rgba(255, 255, 255, 0.3);
-    pointer-events: auto;
+    background: transparent;
+    border-color: transparent;
+    pointer-events: none;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    border-radius: 0 24px 24px 0; /* Only round right side when docked left */
+    box-shadow: none;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    z-index: 10010; /* Keep the original gray restore line above the gold dock */
+    -webkit-tap-highlight-color: transparent;
 }
 
 .bottom-navigation-dock.minimized .nav-content-container {
@@ -112,8 +116,10 @@
     padding-right: 0;
     opacity: 0;
     transition: opacity 0.3s ease;
-    z-index: 1001;
+    z-index: 10011;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
 .bottom-navigation-dock.minimized .nav-restore-handle {
@@ -121,12 +127,27 @@
     pointer-events: auto;
 }
 
+.bottom-navigation-dock.stats-minimized-active .nav-restore-handle {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .nav-restore-line {
     width: 6px;
     height: 48px;
     background-color: rgba(255, 255, 255, 0.7);
     border-radius: 99px;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); /* Glow effect */
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+.nav-restore-handle:focus,
+.nav-restore-handle:active,
+.nav-restore-line:focus,
+.nav-restore-line:active {
+    outline: none;
+    box-shadow: none;
 }
 
 /* Minimize Toggle Button */
@@ -294,6 +315,173 @@
     box-shadow: 0 0 6px rgba(244, 114, 182, 0.6);
 }
 
+/* STATS DOCK (appears once main nav is minimized) */
+.bottom-stats-dock {
+    position: fixed;
+    left: 0;
+    bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+    width: min(980px, calc(100vw - 1.5rem - 24px));
+    min-height: 84px;
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    padding-right: 3.2rem;
+    box-sizing: border-box;
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
+    border: 2px solid rgba(250, 204, 21, 0.58);
+    border-top-color: rgba(254, 240, 138, 0.85);
+    border-radius: 24px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.35),
+        inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    z-index: 10005;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, padding 0.4s ease;
+    touch-action: pan-y;
+    pointer-events: none;
+}
+
+.bottom-stats-dock.hidden {
+    transform: translateX(105vw);
+}
+
+.bottom-stats-dock.visible {
+    transform: translateX(24px);
+    pointer-events: auto;
+}
+
+.stats-content {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.stats-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    color: #f8fafc;
+    font-family: var(--font-display);
+}
+
+.stats-icon {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.stats-label {
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.stats-text {
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    font-size: 1.22rem;
+}
+
+.stats-item-right {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.bottom-stats-dock.minimized {
+    transform: translateX(calc(-100% + 24px));
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.bottom-stats-dock.minimized .stats-content {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.stats-restore-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    outline: none;
+}
+
+.bottom-stats-dock.minimized .stats-restore-handle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.stats-restore-line {
+    width: 6px;
+    height: 48px;
+    background-color: rgba(250, 204, 21, 0.95);
+    border-radius: 99px;
+    box-shadow: none;
+    opacity: 1;
+    transition: opacity 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stats-restore-handle:focus,
+.stats-restore-handle:active,
+.stats-restore-line:focus,
+.stats-restore-line:active {
+    outline: none;
+    box-shadow: none;
+}
+
+.bottom-stats-dock.minimized.dormant .stats-restore-line {
+    opacity: 0.3;
+    background-color: rgba(250, 204, 21, 0.72);
+    box-shadow: 0 0 6px rgba(250, 204, 21, 0.28);
+}
+
+.bottom-stats-dock.minimized.pulse .stats-restore-line {
+    animation: stats-line-pulse-dim 0.95s ease-out 1;
+}
+
+.bottom-stats-dock.minimized.awake .stats-restore-line {
+    opacity: 1;
+    background-color: rgba(254, 240, 138, 1);
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.75);
+}
+
+@keyframes stats-line-pulse-dim {
+    0% {
+        opacity: 0.95;
+        background-color: rgba(250, 204, 21, 0.95);
+        box-shadow: 0 0 0 rgba(250, 204, 21, 0);
+    }
+    32% {
+        opacity: 1;
+        background-color: rgba(254, 240, 138, 1);
+        box-shadow: 0 0 18px rgba(250, 204, 21, 0.9);
+    }
+    100% {
+        opacity: 0.3;
+        background-color: rgba(250, 204, 21, 0.72);
+        box-shadow: 0 0 6px rgba(250, 204, 21, 0.28);
+    }
+}
+
 /* Media Queries */
 @media (max-width: 480px) {
     .bottom-navigation-dock {
@@ -337,6 +525,22 @@
     
     .nav-minimize-btn {
         right: -14px;
+    }
+
+    .bottom-stats-dock {
+        width: calc(100vw - 1rem - 24px);
+        min-height: 68px;
+        padding: 0.5rem;
+        padding-right: 2.5rem;
+    }
+
+    .stats-content {
+        gap: 0.55rem;
+    }
+
+    .stats-label,
+    .stats-text {
+        font-size: 0.96rem;
     }
 }
 
@@ -488,5 +692,3 @@
         font-size: 0.9rem;
     }
 }
-
-

@@ -15,16 +15,74 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const { user } = useAuth();
     
     const [isMinimized, setIsMinimized] = useState(false);
+    const [isStatsMinimized, setIsStatsMinimized] = useState(false);
+    const [isStatsLineDormant, setIsStatsLineDormant] = useState(false);
+    const [isStatsLinePulsing, setIsStatsLinePulsing] = useState(false);
+    const [isStatsLineAwakeFlash, setIsStatsLineAwakeFlash] = useState(false);
     const [expandedMode, setExpandedMode] = useState(false);
     const [failedGameIconIds, setFailedGameIconIds] = useState<Set<string>>(new Set());
     const sliderRef = useRef<HTMLDivElement>(null);
+    const statsTouchStartX = useRef<number | null>(null);
+    const hasStatsSwiped = useRef<boolean>(false);
+    const statsPulseTimeoutRef = useRef<number | null>(null);
+    const statsAwakeFlashTimeoutRef = useRef<number | null>(null);
+    const statsAutoDimTimeoutRef = useRef<number | null>(null);
+    const wasFullscreenLikeActiveRef = useRef<boolean>(false);
+    const lastFullscreenActivationKeyRef = useRef<string>('');
+    const isStatsMinimizedRef = useRef<boolean>(false);
+    const prevIsStatsMinimizedRef = useRef<boolean>(false);
     
-    // Reset expanded mode when minimized
+    // Sync dependent dock states when main dock toggles
     useEffect(() => {
         if (isMinimized) {
             setExpandedMode(false);
+            setIsStatsMinimized(false);
+        } else {
+            setIsStatsMinimized(false);
+            setIsStatsLineDormant(false);
+            setIsStatsLinePulsing(false);
+            setIsStatsLineAwakeFlash(false);
         }
     }, [isMinimized]);
+
+    // Always clear dormant/pulse state when stats panel is opened.
+    useEffect(() => {
+        isStatsMinimizedRef.current = isStatsMinimized;
+        if (!isStatsMinimized) {
+            setIsStatsLineDormant(false);
+            setIsStatsLinePulsing(false);
+            setIsStatsLineAwakeFlash(false);
+            if (statsAwakeFlashTimeoutRef.current !== null) {
+                window.clearTimeout(statsAwakeFlashTimeoutRef.current);
+                statsAwakeFlashTimeoutRef.current = null;
+            }
+            if (statsAutoDimTimeoutRef.current !== null) {
+                window.clearTimeout(statsAutoDimTimeoutRef.current);
+                statsAutoDimTimeoutRef.current = null;
+            }
+        }
+    }, [isStatsMinimized]);
+
+    // When user minimizes the gold panel again, auto-dim after inactivity.
+    useEffect(() => {
+        const justMinimized = isStatsMinimized && !prevIsStatsMinimizedRef.current;
+        prevIsStatsMinimizedRef.current = isStatsMinimized;
+
+        if (!justMinimized) return;
+
+        if (statsAutoDimTimeoutRef.current !== null) {
+            window.clearTimeout(statsAutoDimTimeoutRef.current);
+        }
+
+        statsAutoDimTimeoutRef.current = window.setTimeout(() => {
+            if (isStatsMinimizedRef.current) {
+                setIsStatsLineDormant(true);
+                setIsStatsLinePulsing(false);
+                setIsStatsLineAwakeFlash(false);
+            }
+            statsAutoDimTimeoutRef.current = null;
+        }, 2500);
+    }, [isStatsMinimized]);
 
     // Scroll to end when entering expanded mode
     useEffect(() => {
@@ -112,6 +170,220 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         }
     };
 
+    const onStatsTouchStart = (e: React.TouchEvent) => {
+        statsTouchStartX.current = e.targetTouches[0].clientX;
+        hasStatsSwiped.current = false;
+        if (statsAutoDimTimeoutRef.current !== null) {
+            window.clearTimeout(statsAutoDimTimeoutRef.current);
+            statsAutoDimTimeoutRef.current = null;
+        }
+    };
+
+    const onStatsTouchMove = (e: React.TouchEvent) => {
+        if (statsTouchStartX.current === null) return;
+
+        const currentX = e.targetTouches[0].clientX;
+        const diff = statsTouchStartX.current - currentX;
+
+        if (Math.abs(diff) > clickBlockThreshold) {
+            hasStatsSwiped.current = true;
+        }
+
+        // Minimize stats dock
+        if (diff > minSwipeDistance && !isStatsMinimized) {
+            setIsStatsMinimized(true);
+            statsTouchStartX.current = null;
+            return;
+        }
+
+        // Restore stats dock
+        if (diff < -minSwipeDistance && isStatsMinimized) {
+            // Hidden/dormant state requires a tap first to re-arm the line.
+            if (isStatsLineDormant) {
+                return;
+            }
+            setIsStatsMinimized(false);
+            statsTouchStartX.current = null;
+        }
+    };
+
+    const onStatsTouchEnd = () => {
+        statsTouchStartX.current = null;
+        // Ensure the first tap after a swipe can wake the dormant line.
+        hasStatsSwiped.current = false;
+    };
+
+    const handleStatsClickCapture = (e: React.MouseEvent) => {
+        if (hasStatsSwiped.current) {
+            e.stopPropagation();
+            e.preventDefault();
+            hasStatsSwiped.current = false;
+        }
+    };
+
+    useEffect(() => {
+        const getFullscreenLikeState = () => {
+            const doc = document as Document & {
+                webkitFullscreenElement?: Element | null;
+                mozFullScreenElement?: Element | null;
+                msFullscreenElement?: Element | null;
+            };
+
+            const browserFullscreen = !!(
+                doc.fullscreenElement ||
+                doc.webkitFullscreenElement ||
+                doc.mozFullScreenElement ||
+                doc.msFullscreenElement
+            );
+
+            const routeFullscreenLike =
+                location.pathname.startsWith('/play/') ||
+                location.pathname.startsWith('/open/');
+
+            const pageFullscreenLike = !!document.querySelector(
+                '.html-viewer-page.is-fullscreen, .viewer-page.fullscreen-mode, .iframe-container.fullscreen-active'
+            );
+
+            const isNowFullscreenLike = browserFullscreen || routeFullscreenLike || pageFullscreenLike;
+            const activationKey = routeFullscreenLike
+                ? `${location.pathname}${location.search}`
+                : isNowFullscreenLike
+                    ? 'fullscreen-context'
+                    : '';
+
+            return { isNowFullscreenLike, routeFullscreenLike, activationKey };
+        };
+
+        const triggerDormantPulse = () => {
+            setIsStatsLineDormant(false);
+            setIsStatsLinePulsing(true);
+
+            if (statsPulseTimeoutRef.current !== null) {
+                window.clearTimeout(statsPulseTimeoutRef.current);
+            }
+
+            statsPulseTimeoutRef.current = window.setTimeout(() => {
+                setIsStatsLinePulsing(false);
+                setIsStatsLineDormant(true);
+                statsPulseTimeoutRef.current = null;
+            }, 950);
+        };
+
+        const evaluateFullscreenTransition = () => {
+            const { isNowFullscreenLike, routeFullscreenLike, activationKey } = getFullscreenLikeState();
+            const isNewRouteActivation =
+                routeFullscreenLike &&
+                activationKey !== '' &&
+                activationKey !== lastFullscreenActivationKeyRef.current;
+
+            if (
+                isMinimized &&
+                isStatsMinimized &&
+                (
+                    (isNowFullscreenLike && !wasFullscreenLikeActiveRef.current) ||
+                    isNewRouteActivation
+                )
+            ) {
+                triggerDormantPulse();
+            }
+
+            wasFullscreenLikeActiveRef.current = isNowFullscreenLike;
+            lastFullscreenActivationKeyRef.current = activationKey;
+        };
+
+        evaluateFullscreenTransition();
+
+        const onFullscreenChange = () => evaluateFullscreenTransition();
+        const fullscreenEvents = [
+            'fullscreenchange',
+            'webkitfullscreenchange',
+            'mozfullscreenchange',
+            'MSFullscreenChange'
+        ];
+
+        fullscreenEvents.forEach(eventName => {
+            document.addEventListener(eventName, onFullscreenChange);
+        });
+
+        const mutationObserver = new MutationObserver(() => {
+            evaluateFullscreenTransition();
+        });
+
+        mutationObserver.observe(document.body, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
+
+        return () => {
+            fullscreenEvents.forEach(eventName => {
+                document.removeEventListener(eventName, onFullscreenChange);
+            });
+            mutationObserver.disconnect();
+        };
+    }, [location.pathname, location.search, isMinimized, isStatsMinimized]);
+
+    useEffect(() => {
+        return () => {
+            if (statsPulseTimeoutRef.current !== null) {
+                window.clearTimeout(statsPulseTimeoutRef.current);
+            }
+            if (statsAwakeFlashTimeoutRef.current !== null) {
+                window.clearTimeout(statsAwakeFlashTimeoutRef.current);
+            }
+            if (statsAutoDimTimeoutRef.current !== null) {
+                window.clearTimeout(statsAutoDimTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Keep the yellow line visible by preventing iframe/container-only fullscreen
+    // while the line-only mode is active.
+    useEffect(() => {
+        if (!isMinimized || !isStatsMinimized) return;
+
+        const getFullscreenElement = () => {
+            const doc = document as Document & {
+                webkitFullscreenElement?: Element | null;
+                mozFullScreenElement?: Element | null;
+                msFullscreenElement?: Element | null;
+            };
+            return doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement || null;
+        };
+
+        const exitAnyFullscreen = async () => {
+            const doc = document as Document & {
+                webkitExitFullscreen?: () => Promise<void>;
+                mozCancelFullScreen?: () => Promise<void>;
+                msExitFullscreen?: () => Promise<void>;
+            };
+            try {
+                if (document.exitFullscreen) await document.exitFullscreen();
+                else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+                else if (doc.mozCancelFullScreen) await doc.mozCancelFullScreen();
+                else if (doc.msExitFullscreen) await doc.msExitFullscreen();
+            } catch {
+                // noop
+            }
+        };
+
+        const ensureOverlayCompatibleFullscreen = () => {
+            const fsElement = getFullscreenElement();
+            if (fsElement && fsElement !== document.documentElement) {
+                void exitAnyFullscreen();
+            }
+        };
+
+        ensureOverlayCompatibleFullscreen();
+
+        const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        events.forEach(eventName => document.addEventListener(eventName, ensureOverlayCompatibleFullscreen));
+
+        return () => {
+            events.forEach(eventName => document.removeEventListener(eventName, ensureOverlayCompatibleFullscreen));
+        };
+    }, [isMinimized, isStatsMinimized]);
+
     const userDisplayName = (user?.user_metadata?.home_label as string | undefined)?.trim()
         || (user?.user_metadata?.username as string | undefined)?.trim()
         || user?.email?.split('@')[0]
@@ -130,14 +402,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const games = CONTENT_ITEMS.filter(item => item.type === 'game');
 
     return (
-        <nav 
-            className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''} ${expandedMode ? 'expanded' : ''}`} 
-            aria-label="Main navigation"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onClickCapture={handleClickCapture}
-        >
+        <>
+            <nav 
+                className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''} ${expandedMode ? 'expanded' : ''} ${isStatsMinimized ? 'stats-minimized-active' : ''}`} 
+                aria-label="Main navigation"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                onClickCapture={handleClickCapture}
+            >
             {/* Restore Handle (Thin Line) - Visible only when minimized */}
             <div 
                 className="nav-restore-handle" 
@@ -290,22 +563,75 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             </div>
 
             {/* Minimize Toggle (Vertical Line) */}
-            <button
-                type="button"
-                className="nav-minimize-btn"
-                onClick={(e) => {
-                    if (expandedMode) {
-                        setExpandedMode(false); // Close expand first
-                    } else {
-                        setIsMinimized(!isMinimized);
-                    }
-                    e.stopPropagation();
-                }}
-                aria-label={isMinimized ? "Restore navigation" : (expandedMode ? "Close slider" : "Minimize navigation")}
-                title={isMinimized ? "Restore" : (expandedMode ? "Close" : "Minimize")}
+                <button
+                    type="button"
+                    className="nav-minimize-btn"
+                    onClick={(e) => {
+                        if (expandedMode) {
+                            setExpandedMode(false); // Close expand first
+                        } else {
+                            setIsMinimized(!isMinimized);
+                        }
+                        e.stopPropagation();
+                    }}
+                    aria-label={isMinimized ? "Restore navigation" : (expandedMode ? "Close slider" : "Minimize navigation")}
+                    title={isMinimized ? "Restore" : (expandedMode ? "Close" : "Minimize")}
+                >
+                    <div className="nav-minimize-line"></div>
+                </button>
+            </nav>
+
+            <aside
+                className={`bottom-stats-dock ${isMinimized ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
+                aria-label="User stats"
+                aria-hidden={!isMinimized}
+                onTouchStart={onStatsTouchStart}
+                onTouchMove={onStatsTouchMove}
+                onTouchEnd={onStatsTouchEnd}
+                onClickCapture={handleStatsClickCapture}
             >
-                <div className="nav-minimize-line"></div>
-            </button>
-        </nav>
+                    <div
+                        className="stats-restore-handle"
+                        aria-hidden={!isStatsMinimized || !isMinimized}
+                        onClick={(e) => {
+                            if (isStatsMinimized && isMinimized) {
+                                if (isStatsLineDormant) {
+                                    setIsStatsLineDormant(false);
+                                    setIsStatsLinePulsing(false);
+                                    setIsStatsLineAwakeFlash(true);
+                                    if (statsAwakeFlashTimeoutRef.current !== null) {
+                                        window.clearTimeout(statsAwakeFlashTimeoutRef.current);
+                                    }
+                                    statsAwakeFlashTimeoutRef.current = window.setTimeout(() => {
+                                        if (isStatsMinimizedRef.current) {
+                                            setIsStatsLineAwakeFlash(false);
+                                            setIsStatsLineDormant(true);
+                                        }
+                                        statsAwakeFlashTimeoutRef.current = null;
+                                    }, 2500);
+                                    e.stopPropagation();
+                                    return;
+                                }
+                                // In minimized-line mode, opening is swipe-only.
+                                e.stopPropagation();
+                            }
+                        }}
+                        title="Slide right or click to restore stats"
+                    >
+                        <div className="stats-restore-line"></div>
+                    </div>
+
+                    <div className="stats-content">
+                        <div className="stats-item stats-item-left">
+                            <span className="stats-icon" aria-hidden="true">🥈</span>
+                            <span className="stats-text">99</span>
+                        </div>
+                        <div className="stats-item stats-item-right">
+                            <span className="stats-label">Total Points:</span>
+                            <span className="stats-text">123456</span>
+                        </div>
+                    </div>
+                </aside>
+        </>
     );
 };

@@ -64,14 +64,12 @@ const ViewerPage: React.FC = () => {
     }, []);
 
     const enterFullscreen = useCallback(async () => {
-        const element = viewerContainerRef.current;
-        if (!element) return;
+        const element = document.documentElement as FullscreenHTMLElementType;
         try {
-            const el = element as FullscreenHTMLElementType;
-            if (el.requestFullscreen) await el.requestFullscreen();
-            else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-            else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
-            else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+            if (element.requestFullscreen) await element.requestFullscreen();
+            else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
+            else if (element.mozRequestFullScreen) await element.mozRequestFullScreen();
+            else if (element.msRequestFullscreen) await element.msRequestFullscreen();
         } catch {
             // ignore
         }

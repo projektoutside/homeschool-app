@@ -3270,9 +3270,13 @@ class BeginnerMode {
             sticker.textContent = isVictory ? '🎉 Awesome!' : '💪 You got this!';
         }
         if (badges) {
-            badges.innerHTML = isVictory
-                ? '<span class="game-results-badge">🏆 Level Clear</span><span class="game-results-badge">✨ Star Power</span><span class="game-results-badge">🎯 Nice Cuts</span>'
-                : '<span class="game-results-badge">🧩 Practice Time</span><span class="game-results-badge">🌈 Keep Trying</span>';
+            if (isVictory) {
+                badges.innerHTML = '';
+                badges.style.display = 'none';
+            } else {
+                badges.innerHTML = '<span class="game-results-badge">🧩 Practice Time</span><span class="game-results-badge">🌈 Keep Trying</span>';
+                badges.style.display = 'flex';
+            }
         }
 
 

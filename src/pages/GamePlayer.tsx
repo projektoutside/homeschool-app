@@ -32,9 +32,7 @@ const GamePlayer: React.FC = () => {
     const isImmersiveType = item?.type === 'game' || item?.type === 'tool';
 
     const enterFullscreen = useCallback(async () => {
-        if (!containerRef.current) return;
-
-        const element = containerRef.current as FullscreenHTMLElementType;
+        const element = document.documentElement as FullscreenHTMLElementType;
         try {
             if (element.requestFullscreen) {
                 await element.requestFullscreen();
