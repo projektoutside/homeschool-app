@@ -7730,9 +7730,10 @@
                 for (let i = 0; i < vertices.length; i++) {
                     const v = vertices[i];
 
-                    let vertexSize = selected ? 7 : 4.5;
+                    const baseVertexSize = selected ? 6 : 4;
+                    let vertexSize = baseVertexSize;
                     if (this.selectedVertex === v) {
-                        vertexSize = selected ? 9 : 6;
+                        vertexSize = baseVertexSize + 2;
                     }
                     const sz = vertexSize / this.zoom;
 

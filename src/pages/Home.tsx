@@ -168,6 +168,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     const holdTargetRef = useRef<HoldTargetState | null>(null);
     const holdStartRef = useRef<number | null>(null);
     const holdCompletedRef = useRef(false);
+    const pendingLaunchGameRef = useRef<ContentItem | null>(null);
 
     const [position, setPosition] = useState(0);
     const [iconSize, setIconSize] = useState(84);
@@ -228,6 +229,11 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
         setHoldVisual(null);
     }, [favoriteActionMode, onFavoriteHoldAction, triggerHoldFeedback]);
 
+    const shouldBlockGameLaunch = useCallback(() => {
+        if (Date.now() < suppressClickUntilRef.current) return true;
+        return !!dragStateRef.current?.moved;
+    }, []);
+
     const startHoldProcess = useCallback((event: React.PointerEvent<HTMLButtonElement>, game: ContentItem) => {
         if (favoriteActionMode === 'none') return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -259,6 +265,11 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
 
         holdFrameRef.current = requestAnimationFrame(update);
     }, [completeHoldAction, favoriteActionMode, stopHoldProcess]);
+
+    const handleGamePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>, game: ContentItem) => {
+        pendingLaunchGameRef.current = game;
+        startHoldProcess(event, game);
+    }, [startHoldProcess]);
 
     const endHoldProcess = useCallback((pointerId: number) => {
         const holdTarget = holdTargetRef.current;
@@ -363,6 +374,9 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
 
     const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (games.length <= 1) return;
+        if (!(event.target instanceof Element) || !event.target.closest('.arcade-app-item')) {
+            pendingLaunchGameRef.current = null;
+        }
 
         stopAnimation();
         flushPointerFrame();
@@ -407,6 +421,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
         dragState.lastTime = now;
         if (Math.abs(deltaX) > 10) {
             dragState.moved = true;
+            pendingLaunchGameRef.current = null;
             stopHoldProcess();
         }
     }, [maxIndex, setPositionValue, spacing, stopHoldProcess]);
@@ -427,7 +442,13 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
         flushPointerFrame();
         dragStateRef.current = null;
 
+        if (event.type === 'pointercancel') {
+            pendingLaunchGameRef.current = null;
+            return;
+        }
+
         if (dragState.moved) {
+            pendingLaunchGameRef.current = null;
             suppressClickUntilRef.current = Date.now() + 140;
             startInertiaAnimation(velocityRef.current);
             return;
@@ -449,13 +470,23 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     }, [maxIndex, startSnapAnimation, stopAnimation]);
 
     const handleContextMenu = useCallback((event: React.MouseEvent) => {
+        pendingLaunchGameRef.current = null;
         event.preventDefault();
     }, []);
 
     const handleGameClick = useCallback((game: ContentItem) => {
-        if (Date.now() < suppressClickUntilRef.current || dragStateRef.current) return;
+        pendingLaunchGameRef.current = null;
+        if (shouldBlockGameLaunch()) return;
         onLaunchGame(game);
-    }, [onLaunchGame]);
+    }, [onLaunchGame, shouldBlockGameLaunch]);
+
+    const handleViewportClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.target !== event.currentTarget) return;
+        const pendingGame = pendingLaunchGameRef.current;
+        pendingLaunchGameRef.current = null;
+        if (!pendingGame || shouldBlockGameLaunch()) return;
+        onLaunchGame(pendingGame);
+    }, [onLaunchGame, shouldBlockGameLaunch]);
 
     useLayoutEffect(() => {
         const viewport = viewportRef.current;
@@ -598,6 +629,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
                     onPointerUp={handlePointerRelease}
                     onPointerCancel={handlePointerRelease}
                     onKeyDown={handleKeyDown}
+                    onClick={handleViewportClick}
                     onContextMenu={handleContextMenu}
                     tabIndex={0}
                     role="listbox"
@@ -634,7 +666,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
                                     className={`arcade-app-item ${isFocused ? 'is-focused' : ''}`}
                                     style={itemStyle}
                                     onClick={() => handleGameClick(game)}
-                                    onPointerDown={(event) => startHoldProcess(event, game)}
+                                    onPointerDown={(event) => handleGamePointerDown(event, game)}
                                     title={game.title}
                                     aria-label={game.title}
                                 >

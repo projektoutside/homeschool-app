@@ -6057,7 +6057,7 @@ class DevManager {
             }
         }
         verts.forEach((v, i) => {
-            const sz = (this.creatorState.hoverVertexIndex === i ? 7 : 5) / Math.max(0.001, this.creatorView.scale);
+            const sz = (this.creatorState.hoverVertexIndex === i ? 6 : 4) / Math.max(0.001, this.creatorView.scale);
             ctx.save();
             ctx.translate(v.x, v.y);
 
