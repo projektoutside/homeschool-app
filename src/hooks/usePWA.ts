@@ -64,6 +64,7 @@ interface UsePWAReturn {
  * Handles installation, fullscreen mode, auto-updates, and offline support
  */
 export function usePWA(): UsePWAReturn {
+  const SW_SCRIPT_VERSION = '2026-02-18-1';
   // Install state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -234,7 +235,7 @@ export function usePWA(): UsePWAReturn {
   // Register service worker
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
+      const swUrl = `${import.meta.env.BASE_URL}service-worker.js?v=${encodeURIComponent(SW_SCRIPT_VERSION)}`;
 
       const onControllerChange = () => {
         // Auto-refresh once when a new SW takes control.

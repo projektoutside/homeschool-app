@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Quiz</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #070e15;
+      color: #e8f2ff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .close-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 100;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(8,20,32,0.85);
+      color: #e8f2ff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .close-btn:hover { background: rgba(30,60,100,0.9); border-color: rgba(255,255,255,0.5); }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; align-items: center; gap: 1.25rem; width: 100%; max-width: 420px; text-align: center; }
+    .screen.active { display: flex; }
+
+    /* ── Start screen ── */
+    .laptop-icon { font-size: 3.5rem; }
+    h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; color: #c8e0ff; }
+    .subtitle { font-size: 1rem; color: #6a9ecf; line-height: 1.5; }
+
+    .ops-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      width: 100%;
+    }
+    .op-btn {
+      padding: 0.65rem 0;
+      border-radius: 0.6rem;
+      border: 2px solid rgba(100,160,230,0.25);
+      background: rgba(20,45,80,0.6);
+      color: #a0c8f0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .op-btn.selected {
+      border-color: #4d9fff;
+      background: rgba(40,100,200,0.5);
+      color: #e8f2ff;
+    }
+    .op-btn:hover { border-color: rgba(100,160,230,0.6); }
+
+    .primary-btn {
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 0.7rem;
+      border: none;
+      background: linear-gradient(135deg, #1a5cad, #0e3d7a);
+      color: #e8f2ff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .primary-btn:hover { opacity: 0.9; }
+    .primary-btn:active { transform: scale(0.98); }
+    .primary-btn:disabled { opacity: 0.4; cursor: default; }
+
+    label { font-size: 0.85rem; color: #5a8abf; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Game screen ── */
+    .timer-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      background: #4d9fff;
+      border-radius: 99px;
+      transition: width 0.25s linear, background 0.5s;
+    }
+    .timer-bar.urgent { background: #e05050; }
+
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #5a8abf;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .hud span { color: #a0c8f0; font-weight: 700; }
+
+    .question-box {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: #c8e0ff;
+      letter-spacing: -0.02em;
+      min-height: 3.5rem;
+    }
+
+    .answer-input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border-radius: 0.7rem;
+      border: 2px solid rgba(100,160,230,0.3);
+      background: rgba(10,28,52,0.8);
+      color: #e8f2ff;
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .answer-input:focus { border-color: #4d9fff; }
+    .answer-input.correct { border-color: #40c070; background: rgba(20,80,40,0.4); }
+    .answer-input.wrong   { border-color: #e05050; background: rgba(80,20,20,0.4); }
+
+    .feedback {
+      font-size: 1rem;
+      font-weight: 600;
+      min-height: 1.4rem;
+      color: #40c070;
+    }
+    .feedback.wrong { color: #e05050; }
+
+    /* ── Results screen ── */
+    .score-big { font-size: 4rem; font-weight: 900; color: #4d9fff; }
+    .score-label { font-size: 1rem; color: #6a9ecf; }
+    .results-detail { font-size: 0.95rem; color: #5a8abf; line-height: 1.8; }
+    .results-detail strong { color: #a0c8f0; }
+  </style>
+</head>
+<body>
+
+  <button class="close-btn" id="closeBtn" type="button" aria-label="Close game">✕</button>
+
+  <!-- ── Start screen ── -->
+  <div class="screen active" id="startScreen">
+    <div class="laptop-icon">💻</div>
+    <h1>Math Quiz</h1>
+    <p class="subtitle">30 seconds. How many can you get?</p>
+
+    <label>Choose operations</label>
+    <div class="ops-grid">
+      <button class="op-btn selected" data-op="+" type="button">＋</button>
+      <button class="op-btn selected" data-op="-" type="button">－</button>
+      <button class="op-btn" data-op="×" type="button">×</button>
+    </div>
+
+    <button class="primary-btn" id="startBtn" type="button">Start!</button>
+  </div>
+
+  <!-- ── Game screen ── -->
+  <div class="screen" id="gameScreen">
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+    <div class="hud">
+      <div>Time <span id="timeLeft">30</span>s</div>
+      <div>Score <span id="scoreDisplay">0</span></div>
+    </div>
+    <div class="question-box" id="questionBox">? + ? = ?</div>
+    <input class="answer-input" id="answerInput" type="number" inputmode="numeric" autocomplete="off" placeholder="?" />
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- ── Results screen ── -->
+  <div class="screen" id="resultsScreen">
+    <div class="laptop-icon">🏆</div>
+    <h1>Time's Up!</h1>
+    <div class="score-big" id="finalScore">0</div>
+    <p class="score-label">questions correct</p>
+    <p class="results-detail" id="resultsDetail"></p>
+    <button class="primary-btn" id="playAgainBtn" type="button">Play Again</button>
+  </div>
+
+  <script>
+    // ── Close ──────────────────────────────────────────────────────
+    function closeGame() {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: "LAHS_GAME_CLOSE" }, "*");
+      } else {
+        history.back();
+      }
+    }
+    document.getElementById("closeBtn").addEventListener("click", closeGame);
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeGame();
+    });
+
+    // Hide the in-game close button when running inside the parent classroom iframe
+    // (the parent provides its own close button — two circles would appear otherwise)
+    if (window.parent !== window) {
+      var _cb = document.getElementById("closeBtn");
+      if (_cb) _cb.hidden = true;
+    }
+
+    // ── State ─────────────────────────────────────────────────────
+    const TOTAL_TIME_S = 30;
+    let selectedOps = ["+", "-"];
+    let score = 0;
+    let attempted = 0;
+    let correctA = 0;
+    let timeLeft = TOTAL_TIME_S;
+    let timerInterval = null;
+    let currentAnswer = 0;
+    let feedbackTimeout = null;
+
+    // ── Op toggle ─────────────────────────────────────────────────
+    document.querySelectorAll(".op-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const op = btn.dataset.op;
+        if (selectedOps.includes(op)) {
+          if (selectedOps.length === 1) return; // keep at least one
+          selectedOps = selectedOps.filter(function (o) { return o !== op; });
+          btn.classList.remove("selected");
+        } else {
+          selectedOps.push(op);
+          btn.classList.add("selected");
+        }
+      });
+    });
+
+    // ── Start ──────────────────────────────────────────────────────
+    document.getElementById("startBtn").addEventListener("click", startGame);
+    document.getElementById("playAgainBtn").addEventListener("click", startGame);
+
+    function startGame() {
+      score = 0;
+      attempted = 0;
+      correctA = 0;
+      timeLeft = TOTAL_TIME_S;
+      showScreen("gameScreen");
+      document.getElementById("scoreDisplay").textContent = "0";
+      document.getElementById("answerInput").value = "";
+      document.getElementById("feedback").textContent = "";
+      updateTimerBar();
+      nextQuestion();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(tick, 1000);
+      document.getElementById("answerInput").focus();
+    }
+
+    function tick() {
+      timeLeft--;
+      document.getElementById("timeLeft").textContent = timeLeft;
+      updateTimerBar();
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        endGame();
+      }
+    }
+
+    function updateTimerBar() {
+      const pct = (timeLeft / TOTAL_TIME_S) * 100;
+      const bar = document.getElementById("timerBar");
+      bar.style.width = pct + "%";
+      if (pct <= 30) bar.classList.add("urgent");
+      else bar.classList.remove("urgent");
+    }
+
+    // ── Question generation ────────────────────────────────────────
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function nextQuestion() {
+      const op = selectedOps[Math.floor(Math.random() * selectedOps.length)];
+      let a, b, answer;
+      if (op === "+") {
+        a = randInt(1, 20); b = randInt(1, 20); answer = a + b;
+      } else if (op === "-") {
+        a = randInt(1, 20); b = randInt(1, a); answer = a - b;
+      } else {
+        a = randInt(1, 10); b = randInt(1, 10); answer = a * b;
+      }
+      currentAnswer = answer;
+      document.getElementById("questionBox").textContent = a + " " + op + " " + b + " = ?";
+      document.getElementById("answerInput").value = "";
+      document.getElementById("answerInput").className = "answer-input";
+    }
+
+    // ── Answer handling ────────────────────────────────────────────
+    document.getElementById("answerInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") checkAnswer();
+    });
+
+    // Auto-submit when 3 digits entered (for multi-digit answers)
+    document.getElementById("answerInput").addEventListener("input", function () {
+      const val = this.value.replace("-", "");
+      if (val.length >= 3) checkAnswer();
+    });
+
+    function checkAnswer() {
+      const raw = document.getElementById("answerInput").value.trim();
+      if (raw === "") return;
+      const guess = parseInt(raw, 10);
+      if (isNaN(guess)) return;
+      attempted++;
+      const fb = document.getElementById("feedback");
+      clearTimeout(feedbackTimeout);
+      if (guess === currentAnswer) {
+        score++;
+        correctA++;
+        document.getElementById("scoreDisplay").textContent = score;
+        document.getElementById("answerInput").classList.add("correct");
+        fb.textContent = "✓ Correct!";
+        fb.className = "feedback";
+      } else {
+        document.getElementById("answerInput").classList.add("wrong");
+        fb.textContent = "✗ " + currentAnswer;
+        fb.className = "feedback wrong";
+      }
+      feedbackTimeout = setTimeout(function () {
+        nextQuestion();
+        document.getElementById("feedback").textContent = "";
+        document.getElementById("answerInput").focus();
+      }, 420);
+    }
+
+    // ── End game ──────────────────────────────────────────────────
+    function endGame() {
+      clearInterval(timerInterval);
+      document.getElementById("finalScore").textContent = correctA;
+      const wrong = attempted - correctA;
+      document.getElementById("resultsDetail").innerHTML =
+        "<strong>" + attempted + "</strong> attempted &nbsp;·&nbsp; " +
+        "<strong>" + correctA + "</strong> correct &nbsp;·&nbsp; " +
+        "<strong>" + wrong + "</strong> wrong";
+      showScreen("resultsScreen");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(function (s) { s.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+    }
+  </script>
+</body>
+</html>

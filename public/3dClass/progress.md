@@ -1,0 +1,66 @@
+Original prompt: lets make sure that we only have the index.html for the main game play, and the manager.html for the editing the UI components of the main game, lets remove the classroom_game.html since we dont need it anymore, and then i want you to focus on changing the arrow buttons at the bottom of the main game so that we dont need those buttons anymore but instead users can actually just slide the UI left and right with their fingers or mouse just like real phone apps , to make it more simpler and user friend, and more intuitive
+
+- Started: consolidate gameplay into index, keep manager entry point, remove classroom_game, replace arrow panning with swipe/drag.
+- Completed: replaced redirect-only `index.html` with full gameplay page previously in `classroom_game.html`.
+- Completed: updated `manager.html` to redirect to `index.html?manager=1&manager_ui=1` for editing mode.
+- Completed: removed bottom portrait arrow controls and introduced direct scene swipe/drag panning (touch + mouse) with click-suppression after drag.
+- Completed: manager UI visibility now defaults off for normal gameplay unless manager params are explicitly enabled.
+- Completed: deleted `classroom_game.html`.
+- Validation: `node` syntax check passes for inline script in `index.html`.
+- Validation: repo search confirms no remaining `classroom_game.html` references except this progress log.
+- TODO: manually verify swipe feel on real mobile and desktop drag sensitivity; tune `PAN_DRAG_THRESHOLD_PX` or pan range if needed.
+- Refinement: manager toggle button is now hidden by default in markup and only revealed when manager UI is enabled.
+- Requested follow-up: improve slider smoothness to world-class feel.
+- Performance: panning now batches DOM updates with `requestAnimationFrame` (`queuePanCommit` + `commitPanOffset`) instead of applying on every pointer event.
+- Motion quality: added inertial momentum with velocity smoothing and decay (`startPanInertia` / `stepPanInertia`) for native-app-like glide.
+- Stability: pending pan frame is flushed on release to avoid end-of-gesture jumps.
+- Performance: hotspot DOM nodes are cached in `hotspotElementsById` and reused; hotspot layout now computes stage/background metrics once per frame for all items.
+- Verification: Playwright portrait drag changed background object-position from `52% 50%` to `82% 50%`, modal remained hidden during drag, manager mode still opens via `manager.html`.
+- New intro: replaced loading-phase UX with a full-screen first-person hallway + classroom-door opening animation overlay in `index.html`.
+- Intro timing: default run is ~1.24s plus 220ms fade; reduced-motion path is short (~420ms plus fade) to respect accessibility while still showing a quick transition.
+- Integration: app now boots through `runBootstrapSequence()` so initialization runs under the intro and the overlay exits only after init is complete.
+- Visual detail: added school-hall cues (ceiling lights, locker-like side walls, wood floor perspective, and `Room 204` sign) for a classroom entry vibe.
+- Validation: Chrome DevTools reload checks confirm intro element is present/then hidden, hotspots render after intro (`.hotspot` count > 0), and console is clean.
+- Intro refinement: upgraded door materials/hardware (wood grain layering, jamb depth, frame bevel, hinges, lever handle, glass reflections, kick panel) for a more realistic school-door look.
+- Framing update: intro door now uses viewport-safe sizing variables (`svh` + safe-area insets) so the doorway scales to near full display height across phones/tablets/desktops.
+- Eye-level update: doorway anchor moved to center-eye framing and camera dolly now avoids vertical drift to preserve eye-level perspective during the short open animation.
+- Validation: portrait + landscape screenshot checks looked correct; post-intro state still hides overlay and keeps hotspots active with no console errors.
+- New request: replicate attached classroom-door reference more faithfully and animate as FPOV door-open walk-in with black fade.
+- Visual pass: rebuilt `door-intro` art direction in `index.html` (orange wood slab, dark red frame, `CLASSROOM` plaque, window classroom vignette, silver plate handle, metal kickplate, hallway side walls/boards).
+- Motion pass: retimed intro for longer first-person travel (`INTRO_ANIMATION_DURATION_MS` 2420ms), door swing to ~-112deg, forward dolly scaling, and progressive blackout while moving through the doorway.
+- Transition pass: fade-out duration aligned to 320ms so blackout hands off cleanly into gameplay bootstrap without stutter.
+- Regression guard: fixed mirrored text/hardware on the open-door backface by hiding child backfaces while preserving door-body visibility.
+- Validation: inline script syntax passes via Node function parse; DevTools runtime sampling confirms door transform progression + fade opacity ramp; only console noise is missing `/favicon.ico` (404, non-blocking).
+- New request: replace flat/CSS intro with true 3D engine-based cinematic door entry and seamless handoff to gameplay background.
+- Engine migration: added local Three.js runtime (`scripts/three.min.js`) and swapped intro shell markup to a dedicated WebGL stage (`#doorIntroStage`) plus blackout layer (`#doorIntroFade`).
+- Intro runtime: implemented generated PBR-style textures/materials (wood, plaque, floor, ceiling), 3D corridor geometry, hinged door + handle + kickplate, classroom portal plane, and first-person camera path in `createThreeDoorIntroRuntime`.
+- Seamless transition: intro now textures the door window + portal with `NEWmainbackground.png` candidate set (version-aware) so what appears through the door matches the app scene before overlay handoff.
+- Accessibility: reduced-motion path still supported via shorter intro duration; normal path increased to ~2.8s for cinematic swing/open/walk cadence.
+- Resilience: removed CDN dependency after `unpkg` load failures and added runtime fallback behavior so intro completion cannot stall app boot.
+- Validation: local server + DevTools confirms `scripts/three.min.js` loads, Three runtime starts, intro completes and hides overlay; remaining console noise is non-blocking `favicon.ico` 404 plus Three legacy build warning.
+- Portal fidelity request: intro portal now updates from a live HTML scene snapshot (background + hotspot images) instead of staying on static `NEWmainbackground.png`.
+- Implementation detail: added `captureSceneSnapshotCanvas(...)`, runtime method `applyPortalCanvasSnapshot(...)`, retry loop inside `createDoorIntroController()`, and a post-`initializeApp()` snapshot refresh before intro completion.
+- Bugfix request: manager was not detecting newly added `Worksheets.png`.
+- Root cause: persisted embedded/remote `componentFiles` lists could override newer manifest-discovered files; additionally `dist/3dClass/ComponentImages` was out-of-sync with `public/3dClass/ComponentImages`.
+- Fix: added `mergeComponentFileSources(...)` and applied union-merge behavior in `initializeInteractiveObjects`, `hydrateLayoutFromEmbeddedState`, and `applyRemoteSnapshot` so manifest files are always preserved.
+- Auth transition fix: when manager access toggles on, code now forces `refreshInteractiveObjects(true)` immediately instead of waiting for periodic refresh.
+- Build/runtime sync fix: updated `scripts/sync-component-manifest.mjs` to mirror PNG files + manifest files into `dist/3dClass/ComponentImages`; ran `npm run sync:components` and verified both manifests now include `Worksheets.png`.
+- Follow-up verification: after adding `Globe.png`, re-ran `npm run sync:components`; verified `public` + `dist` manifests both list `Globe.png` and `Worksheets.png`.
+- Runtime check: manager auth simulation on `index.html?manager=1&manager_ui=1` now yields manager options `component-globe` + `component-worksheets` and hotspot count `4`.
+- Root cause (latest): manager route was still loading stale `dist/3dClass/index.html` (older embedded `componentFiles` + older runtime path), so new component PNGs were not consistently visible.
+- Hard fix: synced `dist/3dClass/index.html` + `dist/3dClass/manager.html` from `public/3dClass`, copied `scripts/three.min.js` into `dist/3dClass/scripts`, and expanded embedded `componentFiles` baseline to include `Globe.png` and `Worksheets.png`.
+- Cache bust: bumped app/manager version token to `2026-02-18-1` (`src/pages/ClassroomPage.tsx`, `public/3dClass/manager.html`, `dist/3dClass/manager.html`) to force fresh manager load.
+- Additional root cause: compiled production bundle was stale (`dist/assets/ClassroomPage-*.js` still had `2026-02-17-5`) until full rebuild.
+- Build sync: ran full `npm run build` so `dist` now points to fresh classroom bundle (`ClassroomPage-Cb5gakZ0.js`) and updated `/3dClass/index.html`.
+- Cache hardening: updated service worker script/versioning so clients refresh reliably (`public/service-worker.js` -> `v1.0.5`, cache `homeschool-hub-v1.0.5`), plus `/3dClass/` added to live-content network-first paths.
+- Cache hardening (follow-up): service worker now forces `cache: 'no-store'` for all `/3dClass/` requests (including HTML) before caching response, preventing stale iframe payload reuse.
+- SW update trigger: `usePWA` now registers with `service-worker.js?v=2026-02-18-1` to force browser update pickup on stale installs.
+- Runtime validation: clean static serve of `dist` at `http://127.0.0.1:4173/3dClass/index.html?manager=1&manager_ui=1&v=2026-02-18-1` shows manager options `[component-globe, laptop, component-redbackpack, component-worksheets]`.
+- Dev-mode root cause: `public/3dClass/npm run dev` was launching legacy `vite-app` (`vite-app/src/main.ts`) that hardcoded only Laptop + Redbackpack.
+- Dev launcher fix: updated `public/3dClass/scripts/dev.mjs` to start the real project dev server (`npm --prefix ../.. run dev -- --host`) while still running manifest watch.
+- Dev verification: after launching from `public/3dClass`, `http://127.0.0.1:5173/3dClass/index.html?manager=1&manager_ui=1&v=2026-02-18-1` shows manager options `[component-globe, laptop, component-redbackpack, component-worksheets]`.
+- Manager-edit fix (dev direct): added localhost/file standalone manager-access override in `public/3dClass/index.html` so `?manager=1&manager_ui=1` works without parent auth messaging.
+- Validation: on `npm run dev`, manager opens active by default, width edits apply, and `Save & Lock` persists into embedded state via `/api/classroom-3d/save-index-state`.
+- UX cleanup: local standalone dev now enables manager UI by default (even without query params), so `http://localhost:5173/3dClass/index.html` can open manager directly via the Manager button/F2.
+- Startup lag reduction: shortened intro timings (`1700ms` normal / `450ms` reduced / `180ms` fade) and added intro auto-skip for manager sessions + standalone localhost/file sessions.
+- Verification: on dev localhost, plain `/3dClass/index.html` shows 4 components with manager toggle available and no intro delay; manager query path still auto-opens editing mode with intro skipped.

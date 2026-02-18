@@ -1,0 +1,12 @@
+{
+  "laptop": {
+    "left": 16,
+    "top": 59,
+    "width": 20
+  },
+  "redbackpack": {
+    "left": 72,
+    "top": 56,
+    "width": 12
+  }
+}

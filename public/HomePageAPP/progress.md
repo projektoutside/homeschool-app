@@ -1,0 +1,32 @@
+Original prompt: when the box lands onto the bottom screen, can you have it kinda shake and rattle, have it wiggle every 2.5 seconds until the user clicks on it to activate open. when the user clicks on the box can you make it feel alive, when the box feels a touch or a click it should react to the initial touch, maybe show it squeezed instantly when the user first clicks touchs it then once the user releases then activate the opening box scene, make it feel alive and interacting with you.
+
+- Added landed rattle/wiggle timing and press reaction config in index.html.
+- Added pointer down/up/cancel flow so press state starts on touch and opening triggers on release.
+- Added landed update logic for periodic rattle pulse + idle bob + press squeeze/sink/tilt.
+- Pending validation: run Playwright action loop and inspect screenshot/text output for visual correctness and interaction sequence.
+- Tuned touch response: pressDepth now snaps to 1 on pointer-down so squeeze appears immediately before release-to-open.
+- Added opening-phase press carryover so quick taps keep tactile squeeze continuity into opening (`openStartPressDepth`).
+- Added release recovery/rebound tuning (`pressReleaseRecover`, `pressReleaseRebound`) to remove abrupt scale snap on click release.
+- Removed immediate hard reset of mystery box scale/position at open start; opening animation now eases from pressed state.
+- Validation: Playwright run against `http://127.0.0.1:4173/index.html` with mouse down/up burst produced no new console errors (only existing preload warning).
+- Updated `updateMysteryGroundShadows()` so landed-phase box wiggle (yaw/pitch/roll) drives synchronized shadow offset + twist for core/tail/contact shadows.
+- Added config knobs: `shadowWigglePositionStrength` and `shadowWiggleTwistStrength`.
+- Validation: page reload + runtime check showed no new console errors (existing preload warning unchanged).
+- Follow-up prompt: center all wing props perfectly in the prop viewer (wing-only catalog).
+- Updated preview bounds pipeline in `index.html`: `computeSafeObjectBounds(object3D, options)` now supports visibility-aware traversal and optional point exclusion.
+- Updated `computePreviewObjectBounds(...)` to use visibility-aware, point-excluded bounds for `wingSet` previews.
+- Tuned `PREVIEW_ITEM_FIT_OVERRIDES` wing framing for `alphaWings`, `rainbowWings`, `omegaWings`, and `roboticWings` with positive `yOffsetRatio` values and adjusted depth offsets.
+- Enabled item-fit override offsets for wing previews by applying override offsets regardless of category in `placeObjectInPreviewViewport(...)`.
+- Validation: captured per-wing viewport screenshots after tuning (`.codex-debug/*-preview-v4.png`) and confirmed all four wing props are visibly centered in frame with no missing rainbow preview.
+- Validation: ran Playwright client script twice (`web_game_playwright_client.js`) after changes; no new console errors observed (existing preload warning only).
+- Bugfix prompt: intermittent lag when clicking mystery box to open.
+- Root cause identified in reveal click path: `revealMysteryReward()` -> `stashPropInInventory(..., { deferRender: true })` -> `scheduleInventoryRender()` -> `renderInventoryList()` while inventory panel is hidden.
+- Hidden inventory render was still building/attaching thumbnail tasks (WebGL thumbnail generation via `renderItemThumbImageUrl()`), causing click-time main-thread spikes.
+- Added lazy inventory rendering guard:
+  - `inventoryRenderDirty` flag + `isInventoryPanelOpen()` helper.
+  - `scheduleInventoryRender()` now marks dirty and exits when inventory panel is closed.
+  - `renderInventoryList()` now bails out when panel is closed and marks dirty.
+  - `setActiveInventoryCategory()` now renders when panel is open or dirty.
+- Validation:
+  - Playwright client run completed after patch with no new console errors (existing preload warning only).
+  - Manual interaction check: inventory open/close flow still works.

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Main Background</title>
+  <style>
+    :root {
+      --frame: #0f1c28;
+      --edge: #3d5d78;
+      --text: #eef5ff;
+      --panel: rgba(13, 24, 35, 0.72);
+      --focus: #d8ecff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 15% 20%, #294861, transparent 32%), radial-gradient(circle at 86% 75%, #263f54, transparent 28%), linear-gradient(165deg, #1d2f3f, #0f1720);
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+    }
+
+    .stage {
+      width: min(1320px, 96vw);
+      aspect-ratio: 16 / 9;
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--edge);
+      box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42);
+      background: #0b141e;
+    }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .hotspot {
+      position: absolute;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      transition: transform .18s ease;
+      text-decoration: none;
+    }
+
+    .hotspot:hover { transform: translateY(-2px) scale(1.02); }
+
+    .hotspot:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+      border-radius: 10px;
+    }
+
+    .hotspot img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 7px rgba(255, 222, 145, 0.42));
+    }
+
+    .laptop { left: 16%; top: 59%; width: 20%; }
+    .redbackpack { left: 72%; top: 56%; width: 12%; }
+
+    .hud {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--panel);
+      border: 1px solid rgba(157, 206, 240, 0.34);
+      backdrop-filter: blur(2px);
+      font-size: .92rem;
+    }
+
+    .hud a { color: #9ed3ff; }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <img class="bg" src="../NEWmainbackground.png" alt="Classroom main background" />
+
+    <a class="hotspot laptop" href="../Laptop/index.html" aria-label="Open laptop">
+      <img src="../Laptop.png" alt="Laptop" />
+    </a>
+
+    <a class="hotspot redbackpack" href="../Redbackpack/index.html" aria-label="Open red backpack">
+      <img src="../Redbackpack.png" alt="Red backpack" />
+    </a>
+
+    <div class="hud">
+      <span>MainBackground home</span>
+      <a href="../index.html">Back to manager</a>
+    </div>
+  </main>
+</body>
+</html>

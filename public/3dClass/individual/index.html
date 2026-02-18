@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Project Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Image Project Manager</h1>
+    <p>Use the tabs to browse your clickable PNGs or manage your project files.</p>
+
+    <div class="tab-nav" role="tablist" aria-label="Main tabs">
+      <button class="tab-btn is-active" type="button" data-tab="gallery">Gallery</button>
+      <button class="tab-btn" type="button" data-tab="manager">Manager</button>
+    </div>
+
+    <section id="panel-gallery" class="tab-panel" role="tabpanel">
+      <div id="gallery" class="grid" aria-live="polite"></div>
+      <p id="status" class="message">Loading images...</p>
+    </section>
+
+    <section id="panel-manager" class="tab-panel" role="tabpanel" hidden>
+      <div class="manager-grid">
+        <section class="card">
+          <h2>Project folder link</h2>
+          <p class="hint">Connect your local <strong>individual</strong> folder once to enable direct file writes.</p>
+          <div class="row-inline">
+            <button id="pick-root-folder" type="button">Connect individual folder</button>
+            <span id="root-folder-status" class="badge">Not connected</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Upload PNG entries</h2>
+          <p class="hint">Upload one or many PNG files. They become new gallery cards and map to folders with matching names.</p>
+          <input id="upload-png" type="file" accept="image/png" multiple />
+        </section>
+
+        <section class="card manager-table-card">
+          <h2>Manage manifest entries</h2>
+          <div class="table-wrap">
+            <table id="manifest-table">
+              <thead>
+                <tr>
+                  <th>PNG</th>
+                  <th>Label</th>
+                  <th>Link target</th>
+                  <th>Project files</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="manifest-body"></tbody>
+            </table>
+          </div>
+
+          <div class="row-inline toolbar">
+            <button id="add-entry" type="button">Add custom entry</button>
+            <button id="download-manifest" type="button" class="secondary">Download manifest</button>
+            <button id="save-manifest" type="button" class="secondary">Save manifest to connected folder</button>
+          </div>
+        </section>
+      </div>
+
+      <p id="manager-status" class="message">No changes yet.</p>
+    </section>
+  </main>
+
+  <script src="image-manifest.bootstrap.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,6 +1,10 @@
 .user-home-page {
+  --home-dock-clearance: calc(6.25rem + env(safe-area-inset-bottom, 0px));
+  --home-inline-padding: 0.45rem;
+  --home-top-padding: 0.45rem;
   width: 100%;
-  min-height: calc(100dvh - 1rem);
+  height: 100%;
+  min-height: 100%;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background:
@@ -9,23 +13,91 @@
     linear-gradient(165deg, #0f1b33 0%, #0b1224 55%, #090f1e 100%);
   position: relative;
   overflow: clip;
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--home-top-padding) var(--home-inline-padding) var(--home-dock-clearance);
 }
 
-.user-home-placeholder {
-  min-height: calc(100dvh - 12rem);
+.user-home-app-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(2, 6, 23, 0.7);
+}
+
+@media (orientation: portrait) {
+  .user-home-page {
+    --home-dock-clearance: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    --home-inline-padding: max(0px, env(safe-area-inset-left, 0px));
+    --home-top-padding: max(0px, env(safe-area-inset-top, 0px));
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .user-home-app-shell {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
+.user-home-app-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #020617;
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.user-home-app-frame.is-loading {
+  opacity: 0;
+}
+
+.user-home-app-loading,
+.user-home-app-error {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 1.5rem;
+  color: #e2e8f0;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 4px 18px rgba(15, 23, 42, 0.55);
 }
 
-.user-home-placeholder h1 {
-  margin: 0;
-  font-size: clamp(1.4rem, 3.8vw, 2.1rem);
-  color: #e2e8f0;
-  text-shadow: 0 4px 18px rgba(15, 23, 42, 0.55);
+.user-home-app-loading {
+  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.24), rgba(2, 6, 23, 0.92));
+}
+
+.user-home-app-error {
+  background: rgba(2, 6, 23, 0.9);
+  color: #fca5a5;
+}
+
+/* Match Classroom tab shell sizing and panel behavior exactly */
+.user-home-os-area {
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.user-home-os-area .user-home-app-shell {
+  flex: 1 1 auto;
+  min-height: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: 0;
 }
 
 .user-home-bottom-tabs {
@@ -296,8 +368,13 @@
 
 @media (max-width: 640px) {
   .user-home-page {
-    min-height: calc(100dvh - 0.5rem);
-    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+    --home-dock-clearance: calc(5.8rem + env(safe-area-inset-bottom, 0px));
+    --home-inline-padding: 0.35rem;
+    --home-top-padding: 0.35rem;
+  }
+
+  .user-home-app-shell {
+    border-radius: 14px;
   }
 
   .user-home-bottom-tabs {
@@ -318,5 +395,9 @@
   .user-home-settings-square {
     width: 4px;
     height: 4px;
+  }
+
+  .user-home-os-area {
+    padding: 0;
   }
 }

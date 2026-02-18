@@ -4,11 +4,128 @@ import react from '@vitejs/plugin-react'
 import fs from 'fs';
 import path from 'path';
 
+const CLASSROOM_INDEX_FILE = path.resolve(__dirname, 'public/3dClass/index.html');
+const CLASSROOM_EMBEDDED_STATE_START = '<!-- CLASSROOM_EMBEDDED_STATE_START -->';
+const CLASSROOM_EMBEDDED_STATE_END = '<!-- CLASSROOM_EMBEDDED_STATE_END -->';
+
+type ClassroomLayoutEntry = {
+  left: number;
+  top: number;
+  width: number;
+};
+
+type ClassroomEmbeddedState = {
+  layout: Record<string, ClassroomLayoutEntry>;
+  locked: boolean;
+  componentFiles: string[];
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+const sanitizeClassroomEmbeddedState = (rawState: unknown): ClassroomEmbeddedState | null => {
+  if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
+    return null;
+  }
+
+  const record = rawState as Record<string, unknown>;
+  const rawLayout = record.layout;
+  if (!rawLayout || typeof rawLayout !== 'object' || Array.isArray(rawLayout)) {
+    return null;
+  }
+
+  const layout: Record<string, ClassroomLayoutEntry> = {};
+  Object.entries(rawLayout as Record<string, unknown>).forEach(([key, value]) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return;
+    }
+    const entry = value as Record<string, unknown>;
+    const left = Number(entry.left);
+    const top = Number(entry.top);
+    const width = Number(entry.width);
+    if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(width)) {
+      return;
+    }
+    layout[key] = {
+      left: clamp(left, 0, 95),
+      top: clamp(top, 0, 95),
+      width: clamp(width, 6, 60),
+    };
+  });
+
+  const componentFiles = Array.isArray(record.componentFiles)
+    ? record.componentFiles
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0)
+    : [];
+
+  return {
+    layout,
+    locked: typeof record.locked === 'boolean' ? record.locked : true,
+    componentFiles,
+  };
+};
+
+const injectClassroomStateIntoIndex = (indexHtml: string, state: ClassroomEmbeddedState): string => {
+  const replacementBlock = `${CLASSROOM_EMBEDDED_STATE_START}
+  <script id="classroomEmbeddedState" type="application/json">
+${JSON.stringify(state, null, 2)}
+  </script>
+  ${CLASSROOM_EMBEDDED_STATE_END}`;
+
+  const markerPattern = /<!-- CLASSROOM_EMBEDDED_STATE_START -->[\s\S]*?<!-- CLASSROOM_EMBEDDED_STATE_END -->/;
+  if (!markerPattern.test(indexHtml)) {
+    throw new Error('Embedded classroom state block markers were not found in public/3dClass/index.html.');
+  }
+  return indexHtml.replace(markerPattern, replacementBlock);
+};
+
 // Custom middleware to save content to files
 const contentManagerPlugin = () => {
   return {
     name: 'content-manager',
     configureServer(server: any) {
+      server.middlewares.use('/api/classroom-3d/save-index-state', async (req: any, res: any, next: any) => {
+        if (req.method !== 'POST') {
+          next();
+          return;
+        }
+
+        let body = '';
+        req.on('data', (chunk: any) => {
+          body += chunk.toString();
+        });
+        req.on('end', () => {
+          try {
+            if (!fs.existsSync(CLASSROOM_INDEX_FILE)) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: 'Classroom index file was not found.' }));
+              return;
+            }
+
+            const payload = body ? JSON.parse(body) : {};
+            const nextState = sanitizeClassroomEmbeddedState(payload?.state);
+            if (!nextState) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: 'Invalid classroom state payload.' }));
+              return;
+            }
+
+            const currentHtml = fs.readFileSync(CLASSROOM_INDEX_FILE, 'utf-8');
+            const updatedHtml = injectClassroomStateIntoIndex(currentHtml, nextState);
+            fs.writeFileSync(CLASSROOM_INDEX_FILE, updatedHtml, 'utf-8');
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, state: nextState }));
+          } catch (error) {
+            console.error(error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: 'Failed to persist classroom state to index.html.' }));
+          }
+        });
+      });
+
       server.middlewares.use('/api/save-content', async (req: any, res: any, next: any) => {
         if (req.method === 'POST') {
           let body = '';

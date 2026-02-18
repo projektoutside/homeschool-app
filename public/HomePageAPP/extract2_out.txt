@@ -1,0 +1,428 @@
+=== previewState + PREVIEW_ITEM_FIT_OVERRIDES start (lines 7012-7100) ===
+7012:         const previewState = {
+7013:             open: false,
+7014:             propKey: null,
+7015:             object: null,
+7016:             label: null,
+7017:             rotateY: 0,
+7018:             rotateX: 0,
+7019:             hasStandaloneMesh: false,
+7020:             viewMode: 'item',
+7021:             fitCategory: null,
+7022:             fitPropKey: null,
+7023:             autoSpinPauseUntilMs: 0
+7024:         };
+7025:         const previewDragState = {
+7026:             active: false,
+7027:             pointerId: null,
+7028:             lastX: 0,
+7029:             lastY: 0
+7030:         };
+7031:         const PREVIEW_ITEM_FIT_OVERRIDES = Object.freeze({
+7032:             devilHorns: Object.freeze({
+7033:                 yOffsetRatio: -0.085,
+7034:                 zOffsetRatio: 0.02,
+7035:                 distanceMultiplier: 1.08
+7036:             }),
+7037:             ramHorns: Object.freeze({
+7038:                 yOffsetRatio: -0.075,
+7039:                 zOffsetRatio: 0.018,
+7040:                 distanceMultiplier: 1.1
+7041:             }),
+7042:             unicornHorn: Object.freeze({
+7043:                 yOffsetRatio: -0.16,
+7044:                 zOffsetRatio: 0.02,
+7045:                 distanceMultiplier: 1.2
+7046:             }),
+7047:             alphaWings: Object.freeze({
+7048:                 yOffsetRatio: -0.13,
+7049:                 zOffsetRatio: 0.032,
+7050:                 distanceMultiplier: 1.26
+7051:             }),
+7052:             omegaWings: Object.freeze({
+7053:                 yOffsetRatio: -0.16,
+7054:                 zOffsetRatio: 0.036,
+7055:                 distanceMultiplier: 1.2
+7056:             }),
+7057:             rainbowWings: Object.freeze({
+7058:                 yOffsetRatio: -0.14,
+7059:                 zOffsetRatio: 0.04,
+7060:                 distanceMultiplier: 1.34
+7061:             }),
+7062:             wizardHat: Object.freeze({
+7063:                 yOffsetRatio: -0.13,
+7064:                 zOffsetRatio: 0.024,
+7065:                 distanceMultiplier: 1.16
+7066:             })
+7067:         });
+7068:         const MYSTERY_SIGN_RETURN_AFTER_PANEL_CLOSE_MS = 190;
+7069:         let mysterySignReturnPendingAfterPanelClose = false;
+7070:         let mysterySignReturnAfterPanelTimer = null;
+7071:         const MYSTERY_HANGING_SIGN_CONFIG = Object.freeze({
+7072:             segmentCount: 16,
+7073:             gravity: 1650,
+7074:             damping: 0.992,
+7075:             solverIterations: 8,
+7076:             ropeLengthViewportRatio: 0.188,
+7077:             minRopeLength: 130,
+7078:             maxRopeLength: 238,
+7079:             anchorOffscreenMin: 42,
+7080:             anchorOffscreenViewportRatio: 0.055,
+7081:             windLateralForce: 176,
+7082:             windGustForce: 58,
+7083:             angularStiffness: 8.25,
+7084:             angularDamping: 3.85
+7085:         });
+7086:         const MYSTERY_SIGN_SLINGSHOT_CONFIG = Object.freeze({
+7087:             minPullPx: 34,
+7088:             maxPullPx: 180,
+7089:             launchHeightMultiplier: 1.35,
+7090:             launchHeightMin: 340,
+7091:             pullHeightBonus: 0.55,
+7092:             launchDuration: 0.58,
+7093:             returnDuration: 0.82,
+7094:             returnSpringStiffness: 120,
+7095:             returnSpringDamping: 22,
+7096:             returnSettleDistancePx: 0.35,
+7097:             returnSettleSpeedPx: 8
+7098:         });
+7099:         const mysteryHangingSign = {
+7100:             enabled: Boolean(
+
+=== PREVIEW_ITEM_FIT_OVERRIDES (lines 7031-7110) ===
+7031:         const PREVIEW_ITEM_FIT_OVERRIDES = Object.freeze({
+7032:             devilHorns: Object.freeze({
+7033:                 yOffsetRatio: -0.085,
+7034:                 zOffsetRatio: 0.02,
+7035:                 distanceMultiplier: 1.08
+7036:             }),
+7037:             ramHorns: Object.freeze({
+7038:                 yOffsetRatio: -0.075,
+7039:                 zOffsetRatio: 0.018,
+7040:                 distanceMultiplier: 1.1
+7041:             }),
+7042:             unicornHorn: Object.freeze({
+7043:                 yOffsetRatio: -0.16,
+7044:                 zOffsetRatio: 0.02,
+7045:                 distanceMultiplier: 1.2
+7046:             }),
+7047:             alphaWings: Object.freeze({
+7048:                 yOffsetRatio: -0.13,
+7049:                 zOffsetRatio: 0.032,
+7050:                 distanceMultiplier: 1.26
+7051:             }),
+7052:             omegaWings: Object.freeze({
+7053:                 yOffsetRatio: -0.16,
+7054:                 zOffsetRatio: 0.036,
+7055:                 distanceMultiplier: 1.2
+7056:             }),
+7057:             rainbowWings: Object.freeze({
+7058:                 yOffsetRatio: -0.14,
+7059:                 zOffsetRatio: 0.04,
+7060:                 distanceMultiplier: 1.34
+7061:             }),
+7062:             wizardHat: Object.freeze({
+7063:                 yOffsetRatio: -0.13,
+7064:                 zOffsetRatio: 0.024,
+7065:                 distanceMultiplier: 1.16
+7066:             })
+7067:         });
+7068:         const MYSTERY_SIGN_RETURN_AFTER_PANEL_CLOSE_MS = 190;
+7069:         let mysterySignReturnPendingAfterPanelClose = false;
+7070:         let mysterySignReturnAfterPanelTimer = null;
+7071:         const MYSTERY_HANGING_SIGN_CONFIG = Object.freeze({
+7072:             segmentCount: 16,
+7073:             gravity: 1650,
+7074:             damping: 0.992,
+7075:             solverIterations: 8,
+7076:             ropeLengthViewportRatio: 0.188,
+7077:             minRopeLength: 130,
+7078:             maxRopeLength: 238,
+7079:             anchorOffscreenMin: 42,
+7080:             anchorOffscreenViewportRatio: 0.055,
+7081:             windLateralForce: 176,
+7082:             windGustForce: 58,
+7083:             angularStiffness: 8.25,
+7084:             angularDamping: 3.85
+7085:         });
+7086:         const MYSTERY_SIGN_SLINGSHOT_CONFIG = Object.freeze({
+7087:             minPullPx: 34,
+7088:             maxPullPx: 180,
+7089:             launchHeightMultiplier: 1.35,
+7090:             launchHeightMin: 340,
+7091:             pullHeightBonus: 0.55,
+7092:             launchDuration: 0.58,
+7093:             returnDuration: 0.82,
+7094:             returnSpringStiffness: 120,
+7095:             returnSpringDamping: 22,
+7096:             returnSettleDistancePx: 0.35,
+7097:             returnSettleSpeedPx: 8
+7098:         });
+7099:         const mysteryHangingSign = {
+7100:             enabled: Boolean(
+7101:                 mysteryHangingSignLayer &&
+7102:                 mysteryHangingSignSvg &&
+7103:                 mysteryHangingSignPath &&
+7104:                 mysteryHangingSignAnchor &&
+7105:                 mysterySignKnot &&
+7106:                 mysteryScrollSign
+7107:             ),
+7108:             anchorX: 0,
+7109:             anchorY: 0,
+7110:             ropeLength: 0,
+
+=== computeSafeObjectBounds (lines 8440-8530) ===
+8440:         function computeSafeObjectBounds(object3D) {
+8441:             if (!object3D) {
+8442:                 return null;
+8443:             }
+8444:             object3D.updateMatrixWorld(true);
+8445: 
+8446:             // Primary bounds path: rely on Three.js scene-graph bounds to avoid
+8447:             // missing nested transforms/geometry in custom traversal.
+8448:             const nativeBounds = new THREE.Box3().setFromObject(object3D);
+8449:             if (!nativeBounds.isEmpty()) {
+8450:                 const nativeMin = nativeBounds.min;
+8451:                 const nativeMax = nativeBounds.max;
+8452:                 if (
+8453:                     Number.isFinite(nativeMin.x) && Number.isFinite(nativeMin.y) && Number.isFinite(nativeMin.z) &&
+8454:                     Number.isFinite(nativeMax.x) && Number.isFinite(nativeMax.y) && Number.isFinite(nativeMax.z)
+8455:                 ) {
+8456:                     return nativeBounds;
+8457:                 }
+8458:             }
+8459: 
+8460:             const bounds = new THREE.Box3();
+8461:             const worldPoint = new THREE.Vector3();
+8462:             const boxPoint = new THREE.Vector3();
+8463: 
+8464:             object3D.traverse((node) => {
+8465:                 if (!node || !node.geometry || !node.visible) {
+8466:                     return;
+8467:                 }
+8468:                 if (
+8469:                     !node.isMesh &&
+8470:                     !node.isLine &&
+8471:                     !node.isPoints &&
+8472:                     !node.isLineSegments &&
+8473:                     !node.isLineLoop &&
+8474:                     !node.isLineStrip &&
+8475:                     !node.isInstancedMesh
+8476:                 ) {
+8477:                     return;
+8478:                 }
+8479:                 const position = node.geometry.attributes?.position;
+8480:                 if (!position?.array) {
+8481:                     return;
+8482:                 }
+8483:                 const arr = position.array;
+8484:                 const matrixElements = node.matrixWorld?.elements;
+8485:                 const matrixFinite = matrixElements ? matrixElements.every((value) => Number.isFinite(value)) : false;
+8486:                 for (let i = 0; i < arr.length; i += 3) {
+8487:                     const x = arr[i];
+8488:                     const y = arr[i + 1];
+8489:                     const z = arr[i + 2];
+8490:                     if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+8491:                         continue;
+8492:                     }
+8493:                     worldPoint.fromArray(arr, i).applyMatrix4(node.matrixWorld);
+8494:                     if (!Number.isFinite(worldPoint.x) || !Number.isFinite(worldPoint.y) || !Number.isFinite(worldPoint.z)) {
+8495:                         continue;
+8496:                     }
+8497:                     bounds.expandByPoint(worldPoint);
+8498:                 }
+8499: 
+8500:                 if (bounds.isEmpty() && node.geometry.boundingBox) {
+8501:                     const cachedBox = node.geometry.boundingBox;
+8502:                     if (!cachedBox.isEmpty() && Number.isFinite(cachedBox.min.x) && Number.isFinite(cachedBox.min.y) && Number.isFinite(cachedBox.min.z) &&
+8503:                         Number.isFinite(cachedBox.max.x) && Number.isFinite(cachedBox.max.y) && Number.isFinite(cachedBox.max.z)) {
+8504:                         if (!matrixFinite) {
+8505:                             boxPoint.set(cachedBox.min.x, cachedBox.min.y, cachedBox.min.z);
+8506:                         } else {
+8507:                             boxPoint.set(cachedBox.min.x, cachedBox.min.y, cachedBox.min.z).applyMatrix4(node.matrixWorld);
+8508:                         }
+8509:                         if (Number.isFinite(boxPoint.x) && Number.isFinite(boxPoint.y) && Number.isFinite(boxPoint.z)) {
+8510:                             bounds.expandByPoint(boxPoint);
+8511:                         }
+8512:                         if (!matrixFinite) {
+8513:                             boxPoint.set(cachedBox.min.x, cachedBox.min.y, cachedBox.max.z);
+8514:                         } else {
+8515:                             boxPoint.set(cachedBox.min.x, cachedBox.min.y, cachedBox.max.z).applyMatrix4(node.matrixWorld);
+8516:                         }
+8517:                         if (Number.isFinite(boxPoint.x) && Number.isFinite(boxPoint.y) && Number.isFinite(boxPoint.z)) {
+8518:                             bounds.expandByPoint(boxPoint);
+8519:                         }
+8520:                         if (!matrixFinite) {
+8521:                             boxPoint.set(cachedBox.min.x, cachedBox.max.y, cachedBox.min.z);
+8522:                         } else {
+8523:                             boxPoint.set(cachedBox.min.x, cachedBox.max.y, cachedBox.min.z).applyMatrix4(node.matrixWorld);
+8524:                         }
+8525:                         if (Number.isFinite(boxPoint.x) && Number.isFinite(boxPoint.y) && Number.isFinite(boxPoint.z)) {
+8526:                             bounds.expandByPoint(boxPoint);
+8527:                         }
+8528:                         if (!matrixFinite) {
+8529:                             boxPoint.set(cachedBox.min.x, cachedBox.max.y, cachedBox.max.z);
+8530:                         } else {
+
+=== getFiniteSizeVector + getPreviewFitConfig (lines 8876-8960) ===
+8876:         function getFiniteSizeVector(size, fallback = 1) {
+8877:             const safeX = Number.isFinite(size?.x) ? Math.abs(size.x) : fallback;
+8878:             const safeY = Number.isFinite(size?.y) ? Math.abs(size.y) : fallback;
+8879:             const safeZ = Number.isFinite(size?.z) ? Math.abs(size.z) : fallback;
+8880:             return new THREE.Vector3(
+8881:                 Math.max(safeX, 0.001),
+8882:                 Math.max(safeY, 0.001),
+8883:                 Math.max(safeZ, 0.001)
+8884:             );
+8885:         }
+8886: 
+8887:         function getPreviewFitConfig(mode, categoryKey = null) {
+8888:             const isCharacterMode = mode === 'character';
+8889:             if (isCharacterMode) {
+8890:                 return {
+8891:                     framePadding: 0.8,
+8892:                     baseScale: 2.45,
+8893:                     maxScale: 1.26,
+8894:                     minScale: 0.05,
+8895:                     minDistance: 1.55,
+8896:                     preferredDistance: 4.15,
+8897:                     depthDistanceScale: 0.96,
+8898:                     depthReferenceWeight: 0.86,
+8899:                     cameraLiftBase: 0.42,
+8900:                     cameraLiftScale: 0.08,
+8901:                     lookYOffset: -0.12
+8902:                 };
+8903:             }
+8904: 
+8905:             const itemBase = {
+8906:                 framePadding: 0.68,
+8907:                 baseScale: 1.95,
+8908:                 maxScale: 3.2,
+8909:                 minScale: 0.03,
+8910:                 minDistance: 0.95,
+8911:                 preferredDistance: 2.85,
+8912:                 depthDistanceScale: 0.84,
+8913:                 depthReferenceWeight: 0.72,
+8914:                 cameraLiftBase: 0,
+8915:                 cameraLiftScale: 0,
+8916:                 lookYOffset: 0
+8917:             };
+8918: 
+8919:             if (categoryKey === 'headWear') {
+8920:                 return {
+8921:                     ...itemBase,
+8922:                     framePadding: 0.62,
+8923:                     preferredDistance: 3.2,
+8924:                     baseScale: 1.72,
+8925:                     maxScale: 2.45,
+8926:                     depthReferenceWeight: 0.82
+8927:                 };
+8928:             }
+8929:             if (categoryKey === 'wingSet') {
+8930:                 return {
+8931:                     ...itemBase,
+8932:                     framePadding: 0.6,
+8933:                     preferredDistance: 3.45,
+8934:                     baseScale: 1.8,
+8935:                     maxScale: 2.35,
+8936:                     depthDistanceScale: 0.9,
+8937:                     depthReferenceWeight: 0.86
+8938:                 };
+8939:             }
+8940:             if (categoryKey === 'body') {
+8941:                 return {
+8942:                     ...itemBase,
+8943:                     framePadding: 0.64,
+8944:                     preferredDistance: 3.05,
+8945:                     baseScale: 1.86,
+8946:                     maxScale: 2.2,
+8947:                     depthReferenceWeight: 0.8
+8948:                 };
+8949:             }
+8950:             if (categoryKey === 'eyes') {
+8951:                 return {
+8952:                     ...itemBase,
+8953:                     framePadding: 0.66,
+8954:                     preferredDistance: 2.35,
+8955:                     baseScale: 2.55,
+8956:                     maxScale: 4.6,
+8957:                     minScale: 0.06,
+8958:                     depthReferenceWeight: 0.66
+8959:                 };
+8960:             }
+
+=== computePreviewCameraDistanceForScale + computePreviewAutoFit (lines 8964-9036) ===
+8964:         function computePreviewCameraDistanceForScale(mode, safeSize, scale, categoryKey = null) {
+8965:             const cfg = getPreviewFitConfig(mode, categoryKey);
+8966:             const aspect = Math.max(0.35, previewCamera.aspect || 1);
+8967:             const halfFov = Math.max(0.01, THREE.MathUtils.degToRad(previewCamera.fov || 34) / 2);
+8968:             const halfTan = Math.max(0.002, Math.tan(halfFov));
+8969:             const pad = Math.max(0.2, Math.min(0.98, cfg.framePadding));
+8970: 
+8971:             const reqHeight = (safeSize.y * scale) / (2 * halfTan * pad);
+8972:             const reqWidth = (safeSize.x * scale) / (2 * halfTan * aspect * pad);
+8973:             const reqDepth = safeSize.z * scale * (cfg.depthDistanceScale ?? 0.85);
+8974:             return Math.max(cfg.minDistance, reqHeight, reqWidth, reqDepth);
+8975:         }
+8976: 
+8977:         function computePreviewAutoFit(mode, size, categoryKey = null) {
+8978:             const cfg = getPreviewFitConfig(mode, categoryKey);
+8979:             const safeSize = getFiniteSizeVector(size, 1);
+8980:             const aspect = Math.max(0.35, previewCamera.aspect || 1);
+8981:             const halfFov = Math.max(0.01, THREE.MathUtils.degToRad(previewCamera.fov || 34) / 2);
+8982:             const halfTan = Math.max(0.002, Math.tan(halfFov));
+8983:             const pad = Math.max(0.2, Math.min(0.98, cfg.framePadding));
+8984: 
+8985:             const preferredDistance = Math.max(cfg.minDistance, cfg.preferredDistance || cfg.minDistance);
+8986:             const fitHeightAtPreferred = 2 * preferredDistance * halfTan * pad;
+8987:             const fitWidthAtPreferred = fitHeightAtPreferred * aspect;
+8988:             const fitScaleFromFrustum = Math.min(
+8989:                 fitWidthAtPreferred / Math.max(0.001, safeSize.x),
+8990:                 fitHeightAtPreferred / Math.max(0.001, safeSize.y)
+8991:             );
+8992: 
+8993:             const referenceDimension = Math.max(
+8994:                 safeSize.x,
+8995:                 safeSize.y,
+8996:                 safeSize.z * (cfg.depthReferenceWeight ?? 0.72)
+8997:             );
+8998:             const fitScaleFromReference = cfg.baseScale / Math.max(0.001, referenceDimension);
+8999:             let scale = Math.min(fitScaleFromFrustum, fitScaleFromReference);
+9000:             if (!Number.isFinite(scale) || scale <= 0) {
+9001:                 scale = 1;
+9002:             }
+9003:             scale = THREE.MathUtils.clamp(scale, cfg.minScale, cfg.maxScale);
+9004: 
+9005:             const distance = Math.max(
+9006:                 preferredDistance * 0.9,
+9007:                 computePreviewCameraDistanceForScale(mode, safeSize, scale, categoryKey)
+9008:             );
+9009: 
+9010:             return {
+9011:                 scale,
+9012:                 distance,
+9013:                 size: safeSize
+9014:             };
+9015:         }
+9016: 
+9017:         function updatePreviewStageForObject(mode, size, scale = 1) {
+9018:             if (!previewStageShadow || !previewStageRing) {
+9019:                 return;
+9020:             }
+9021:             const safeSize = getFiniteSizeVector(size, 1);
+9022:             const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+9023:             const isCharacterMode = mode === 'character';
+9024:             const footprint = Math.max(safeSize.x, safeSize.z) * safeScale;
+9025:             const stageRadius = THREE.MathUtils.clamp(footprint * (isCharacterMode ? 0.72 : 0.66), 0.56, 2.32);
+9026:             const floorY = -(safeSize.y * safeScale * 0.5) - (isCharacterMode ? 0.09 : 0.04);
+9027:             previewStageShadow.scale.set(stageRadius * 1.34, stageRadius * 1.34, 1);
+9028:             previewStageShadow.position.y = floorY;
+9029:             previewStageRing.scale.set(stageRadius, stageRadius, 1);
+9030:             previewStageRing.position.y = floorY + 0.004;
+9031:             if (previewStageRing.material && Number.isFinite(previewStageRing.material.opacity)) {
+9032:                 previewStageRing.material.opacity = isCharacterMode ? 0.17 : 0.24;
+9033:             }
+9034:         }
+9035: 
+9036:         function setPreviewCameraForObjectMode(mode, size, scale = 1, forcedDistance = null, categoryKey = null) {
+

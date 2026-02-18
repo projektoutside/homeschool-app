@@ -1,0 +1,54 @@
+.classroom-app-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+}
+
+.classroom-app-area {
+    display: flex;
+    flex: 1 1 auto;
+    padding: 0;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.classroom-app-shell {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    border-radius: 0;
+    border: 0;
+    overflow: hidden;
+    background: #020617;
+}
+
+.classroom-app-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #020617;
+    opacity: 1;
+    transition: opacity 180ms ease;
+}
+
+.classroom-app-frame.is-loading {
+    opacity: 0;
+}
+
+.classroom-app-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem;
+    color: #e2e8f0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.22), rgba(2, 6, 23, 0.95));
+}

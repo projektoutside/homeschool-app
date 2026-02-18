@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { usePWA } from './hooks/usePWA';
 import { UpdateNotification } from './components/UpdateNotification';
 import { useAuth } from './context/AuthContext';
+import { buildAssetPath } from './utils/pathUtils';
 import './App.css';
 import './components/ErrorBoundary.css';
 
@@ -17,7 +18,6 @@ const Viewer = React.lazy(() => import('./pages/Viewer'));
 const HTMLViewer = React.lazy(() => import('./pages/HTMLViewer'));
 const InstallPage = React.lazy(() => import('./pages/InstallPage'));
 const AuthPage = React.lazy(() => import('./pages/AuthPage'));
-const UserHomePage = React.lazy(() => import('./pages/UserHomePage'));
 const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage'));
 
 // Loading component with accessibility
@@ -99,9 +99,65 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
     return <>{children}</>;
 };
 
+const HomeProfileRouteShell = () => <div />;
+
+const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
+const HOME_PAGE_APP_VERSION = '2026-02-15-3';
+
 const App: React.FC = () => {
     const { user, loading } = useAuth();
     const pwa = usePWA();
+    const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOME_PAGE_APP_VERSION}`);
+
+    useEffect(() => {
+        if (loading || !user) return;
+
+        const preconnectHref = `${window.location.origin}/`;
+        const preconnectRel = document.querySelector<HTMLLinkElement>(
+            'link[data-prefetch="homeschool-home-app-preconnect"]',
+        );
+        if (!preconnectRel) {
+            const preconnectLink = document.createElement('link');
+            preconnectLink.rel = 'preconnect';
+            preconnectLink.href = preconnectHref;
+            preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-preconnect');
+            document.head.appendChild(preconnectLink);
+        }
+
+        const preloadRel = document.querySelector<HTMLLinkElement>(
+            'link[data-prefetch="homeschool-home-app-preload"]',
+        );
+        if (!preloadRel) {
+            const preloadLink = document.createElement('link');
+            preloadLink.rel = 'preload';
+            preloadLink.as = 'document';
+            preloadLink.href = homePageAppUrl;
+            preloadLink.setAttribute('data-prefetch', 'homeschool-home-app-preload');
+            preloadLink.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(preloadLink);
+        }
+
+        const prefetchRel = document.querySelector<HTMLLinkElement>(
+            'link[data-prefetch="homeschool-home-app-prefetch"]',
+        );
+        if (!prefetchRel) {
+            const prefetchLink = document.createElement('link');
+            prefetchLink.rel = 'prefetch';
+            prefetchLink.as = 'document';
+            prefetchLink.href = homePageAppUrl;
+            prefetchLink.setAttribute('data-prefetch', 'homeschool-home-app-prefetch');
+            document.head.appendChild(prefetchLink);
+        }
+    }, [homePageAppUrl, loading, user]);
+
+    useEffect(() => {
+        return () => {
+            document
+                .querySelectorAll<HTMLLinkElement>('link[data-prefetch^="homeschool-home-app-"]')
+                .forEach((link) => link.remove());
+        };
+    }, []);
+
 
     // Use the same base path as Vite config
     // BASE_URL from Vite includes the trailing slash, but React Router basename shouldn't
@@ -130,8 +186,8 @@ const App: React.FC = () => {
                                 <Route path="open/:id" element={<RequireAuth user={user} loading={loading}><GamePlayer /></RequireAuth>} />
                                 <Route path="manager" element={<RequireAuth user={user} loading={loading}><ManagerPage /></RequireAuth>} />
                                 <Route path="resource/:id" element={<RequireAuth user={user} loading={loading}><Viewer /></RequireAuth>} />
-                                <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
-                                <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><UserHomePage /></RequireAuth>} />
+                            <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
+                                <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><HomeProfileRouteShell /></RequireAuth>} />
                                 <Route path="classroom" element={<RequireAuth user={user} loading={loading}><ClassroomPage /></RequireAuth>} />
                                 <Route path="*" element={<Navigate to="/home-profile" replace />} />
                             </Route>

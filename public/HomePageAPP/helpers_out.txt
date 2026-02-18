@@ -1,0 +1,12 @@
+Total lines: 14079
+7012:         const previewState = {
+7031:         const PREVIEW_ITEM_FIT_OVERRIDES = Object.freeze({
+8101:         function hasFiniteRenderableGeometry(object3D) {
+8176:         function sanitizeFiniteNumber(value, fallback) {
+8298:         function sanitizePreviewInvalidGeometry(object3D) {
+8440:         function computeSafeObjectBounds(object3D) {
+8876:         function getFiniteSizeVector(size, fallback = 1) {
+8887:         function getPreviewFitConfig(mode, categoryKey = null) {
+8964:         function computePreviewCameraDistanceForScale(mode, safeSize, scale, categoryKey = null) {
+8977:         function computePreviewAutoFit(mode, size, categoryKey = null) {
+9103:                         const override = normalizedPropKey ? PREVIEW_ITEM_FIT_OVERRIDES[normalizedPropKey] : null;

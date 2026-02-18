@@ -1,11 +1,11 @@
 /**
  * Service Worker for La's Homeschool Hub App
  * Provides offline support, caching, and auto-update functionality
- * @version 1.0.4
+ * @version 1.0.5
  */
 
-const CACHE_NAME = 'homeschool-hub-v1.0.4';
-const SW_VERSION = '1.0.4';
+const CACHE_NAME = 'homeschool-hub-v1.0.5';
+const SW_VERSION = '1.0.5';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -71,6 +71,7 @@ const shouldSkip = (url) => {
 };
 
 const LIVE_CONTENT_SEGMENTS = [
+  '/3dClass/',
   '/PolygonAPP/',
   '/Games/',
   '/Worksheets/',
@@ -99,7 +100,7 @@ self.addEventListener('fetch', (event) => {
   // STRATEGY 1: Network First for HTML/Navigation + mutable game/worksheet/tool assets
   // We want the latest entry point always, falling back to cache if offline.
   if (isHtmlRequest || isLiveContentRequest) {
-    const networkRequest = (isLiveContentRequest && !isHtmlRequest)
+    const networkRequest = isLiveContentRequest
       ? new Request(event.request, { cache: 'no-store' })
       : event.request;
 

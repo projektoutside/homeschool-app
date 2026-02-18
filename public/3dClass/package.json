@@ -1,0 +1,14 @@
+{
+  "name": "new3dclass-workspace",
+  "private": true,
+  "scripts": {
+    "sync:components": "node ./scripts/sync-component-manifest.mjs",
+    "sync:components:watch": "node ./scripts/sync-component-manifest.mjs --watch",
+    "predev": "npm run sync:components",
+    "prebuild": "npm run sync:components",
+    "prepreview": "npm run sync:components",
+    "dev": "node ./scripts/dev.mjs",
+    "build": "npm --prefix ./vite-app run build",
+    "preview": "npm --prefix ./vite-app run preview"
+  }
+}

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
 import './BottomNavigation.css';
@@ -12,7 +11,6 @@ interface BottomNavigationProps {
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useAuth();
     
     const [isMinimized, setIsMinimized] = useState(false);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
@@ -384,11 +382,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         };
     }, [isMinimized, isStatsMinimized]);
 
-    const userDisplayName = (user?.user_metadata?.home_label as string | undefined)?.trim()
-        || (user?.user_metadata?.username as string | undefined)?.trim()
-        || user?.email?.split('@')[0]
-        || 'HOME';
-
     // Helper to determine active state
     const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
     const isGamesActive = location.pathname === '/apps' && new URLSearchParams(location.search).get('tab')?.toLowerCase() === 'game';
@@ -450,11 +443,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         type="button"
                         className={`nav-tab-btn ${isHomeActive ? 'active' : ''}`}
                         onClick={() => navigate('/home-profile')}
-                        aria-label={`Open ${userDisplayName} home`}
+                        aria-label="Homepage"
                         tabIndex={expandedMode ? -1 : 0}
                     >
                         <span className="nav-tab-icon" aria-hidden="true">🏠</span>
-                        <span>{userDisplayName}</span>
+                        <span>Homepage</span>
                     </button>
 
                     <button

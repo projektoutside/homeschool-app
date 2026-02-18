@@ -1,0 +1,4999 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Classroom Minigame Hub</title>
+  <style>
+    :root {
+      --bg-deep: #0f1720;
+      --bg-mid: #1d2f3f;
+      --panel: #122131;
+      --panel-edge: #2f4d66;
+      --text: #eef5ff;
+      --muted: #b7c7d8;
+      --accent: #ffb703;
+      --accent-strong: #fb8500;
+      --ok: #8ecae6;
+      --focus: #e1f3ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: block;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #0b141e;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100%;
+      height: 100%;
+      display: block;
+      gap: 14px;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #1a3144, #11212f);
+      border: 1px solid #365269;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 2vw, 1.5rem);
+      letter-spacing: 0.03em;
+    }
+
+    .hud p {
+      margin: 0;
+      color: var(--muted);
+      text-align: right;
+      font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+    }
+
+    .tool-btn {
+      font: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: transform 160ms ease, background-color 160ms ease;
+    }
+
+    .tool-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .tool-btn:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .tool-btn.warn {
+      border-color: rgba(255, 185, 120, 0.45);
+      color: #ffe9d4;
+      background: rgba(251, 133, 0, 0.22);
+    }
+
+    .scene-wrap {
+      border-radius: 0;
+      overflow: hidden;
+      border: 0;
+      box-shadow: none;
+      background: #0b141e;
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+      align-self: stretch;
+    }
+
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      isolation: isolate;
+    }
+
+    .scene.pan-enabled {
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .scene.pan-enabled.panning {
+      cursor: grabbing;
+    }
+
+    .scene img.scene-bg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+    }
+
+    @media (orientation: portrait) {
+      .scene img.scene-bg {
+        object-position: 52% 50%;
+      }
+    }
+
+    .hotspot-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      will-change: transform;
+    }
+
+    .hotspot {
+      position: absolute;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 180ms ease, filter 180ms ease;
+      transform-origin: center bottom;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .scene.pan-enabled .hotspot {
+      touch-action: none;
+    }
+
+    .hotspot:hover {
+      transform: translateY(-2px) scale(1.02);
+      filter: saturate(1.06);
+    }
+
+    .hotspot:focus {
+      outline: none;
+    }
+
+    .hotspot:focus-visible {
+      outline: none;
+      box-shadow:
+        0 0 0 2px rgba(225, 243, 255, 0.72),
+        0 0 14px rgba(255, 222, 145, 0.5);
+    }
+
+    .hotspot img {
+      position: relative;
+      z-index: 2;
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      filter:
+        drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+        drop-shadow(0 0 8px rgba(255, 222, 145, 0.34));
+      transition: filter 180ms ease;
+    }
+
+    .hotspot::before {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: auto 12% 4% 14%;
+      height: 12%;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.34);
+      filter: blur(8px);
+      transform: scaleX(1.03);
+      pointer-events: none;
+    }
+
+    .hotspot::after {
+      content: "";
+      position: absolute;
+      inset: 14% 9% 16% 9%;
+      z-index: 0;
+      border-radius: 999px;
+      background: radial-gradient(
+        circle at 50% 48%,
+        rgba(255, 222, 145, 0.32) 0%,
+        rgba(255, 222, 145, 0.14) 48%,
+        rgba(255, 222, 145, 0) 78%
+      );
+      filter: blur(7px);
+      opacity: 0.64;
+      transform: scale(1);
+      transition: opacity 180ms ease, transform 180ms ease;
+      pointer-events: none;
+    }
+
+    .hotspot:hover::after,
+    .hotspot:focus-visible::after {
+      opacity: 0.84;
+      transform: scale(1.05);
+    }
+
+    .hotspot:hover img,
+    .hotspot:focus-visible img {
+      filter:
+        drop-shadow(0 5px 6px rgba(0, 0, 0, 0.38))
+        drop-shadow(0 0 12px rgba(255, 222, 145, 0.56));
+    }
+
+    .hotspot-laptop {
+      left: 15.9%;
+      top: 59.5%;
+      width: 20.1%;
+    }
+
+    .scene.manager-active .hotspot {
+      cursor: grab;
+      touch-action: none;
+      transition: none;
+    }
+
+    .scene.manager-active .hotspot:hover {
+      transform: none;
+      filter: none;
+    }
+
+    .scene.manager-active .hotspot::after {
+      opacity: 0.65;
+    }
+
+    .manager-panel {
+      position: fixed;
+      left: 18px;
+      top: 18px;
+      z-index: 120;
+      width: 230px;
+      border-radius: 12px;
+      background: rgba(8, 31, 48, 0.96);
+      border: 1px solid rgba(157, 206, 240, 0.4);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(3px);
+      user-select: none;
+      will-change: left, top;
+    }
+
+    .manager-toggle-launch {
+      position: fixed;
+      right: 16px;
+      top: 16px;
+      z-index: 130;
+      border: 1px solid rgba(157, 206, 240, 0.45);
+      border-radius: 10px;
+      background: rgba(8, 31, 48, 0.92);
+      color: #e7f3ff;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .manager-toggle-launch:hover {
+      background: rgba(13, 44, 67, 0.96);
+    }
+
+    .manager-toggle-launch:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .manager-panel[hidden] {
+      display: none;
+    }
+
+    .manager-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      cursor: grab;
+      touch-action: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
+    }
+
+    .manager-panel-title {
+      margin: 0;
+      font-size: 0.92rem;
+      color: #d7f0ff;
+    }
+
+    .manager-panel-body {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .manager-status {
+      margin: 0;
+      color: #cde2f5;
+      font-size: 0.8rem;
+      min-height: 1.2em;
+    }
+
+    .manager-fieldset {
+      display: grid;
+      gap: 6px;
+    }
+
+    .manager-label {
+      display: block;
+      font-size: 0.77rem;
+      color: #d4ecff;
+    }
+
+    .manager-panel select,
+    .manager-panel input[type="range"] {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .manager-panel select {
+      padding: 5px 7px;
+      color: #111111;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .manager-panel select option {
+      color: #111111;
+      background: #ffffff;
+    }
+
+    .manager-size-readout {
+      margin: 0;
+      color: #e6f2ff;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .tiny-btn {
+      font: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 5px 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .tiny-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .tiny-btn:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .tiny-btn.warn {
+      border-color: rgba(255, 185, 120, 0.45);
+      color: #ffe9d4;
+      background: rgba(251, 133, 0, 0.22);
+    }
+
+    .tiny-btn.close-btn {
+      border-color: rgba(255, 176, 166, 0.4);
+      background: rgba(255, 176, 166, 0.12);
+      color: #ffe9db;
+      padding: 4px 8px;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .scene.manager-active .hotspot.dragging {
+      cursor: grabbing;
+      z-index: 10;
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    .scene.manager-active .hotspot.selected {
+      outline: none;
+      box-shadow:
+        0 0 0 2px rgba(255, 214, 102, 0.62),
+        0 0 18px rgba(255, 214, 102, 0.52);
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(6, 12, 17, 0.72);
+      backdrop-filter: blur(3px);
+    }
+
+    .panel {
+      width: min(94vw, 560px);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #112a3c, #0c1d2a);
+      border: 1px solid var(--panel-edge);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: clamp(1.1rem, 3vw, 1.35rem);
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 8px 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--ok);
+    }
+
+    .question {
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      min-height: 68px;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      text-align: center;
+      font-size: clamp(1rem, 3.2vw, 1.4rem);
+      letter-spacing: 0.03em;
+    }
+
+    .answer-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .answer-form input {
+      flex: 1;
+      min-width: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 1rem;
+      padding: 10px;
+      outline: none;
+    }
+
+    .answer-form input:focus {
+      border-color: #a6d6ff;
+      box-shadow: 0 0 0 2px rgba(109, 184, 255, 0.25);
+    }
+
+    button {
+      font: inherit;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      color: #061322;
+      background: linear-gradient(180deg, #ffd166, #ffb703);
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .panel .ghost {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .panel .close {
+      padding: 8px 10px;
+      background: linear-gradient(180deg, #ffb4a2, #fb8500);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .result {
+      margin: 0;
+      min-height: 1.2em;
+      color: #ffe7a5;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 0;
+      }
+
+      .hud {
+        display: grid;
+        gap: 10px;
+      }
+
+      .hud p {
+        width: 100%;
+        text-align: left;
+      }
+    }
+
+    /* ── Fullscreen Game Frame ──────────────────────────────── */
+    .game-frame-modal[hidden] {
+      display: none;
+    }
+
+    .game-frame-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: #070e15;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .game-frame-iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      display: block;
+    }
+
+    .game-frame-close {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 201;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(8, 20, 32, 0.82);
+      color: #e8f2ff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      backdrop-filter: blur(6px);
+      transition: background 150ms ease;
+    }
+
+    .game-frame-close:hover {
+      background: rgba(20, 44, 66, 0.95);
+    }
+
+    body.intro-active {
+      overscroll-behavior: none;
+    }
+
+    .door-intro[hidden] {
+      display: none;
+    }
+
+    .door-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 380;
+      overflow: hidden;
+      pointer-events: auto;
+      opacity: 1;
+      --intro-safe-top: max(12px, env(safe-area-inset-top));
+      --intro-safe-bottom: max(12px, env(safe-area-inset-bottom));
+      --door-usable-height: calc(100svh - var(--intro-safe-top) - var(--intro-safe-bottom));
+      --door-height: clamp(340px, calc(var(--door-usable-height) * 0.94), 2200px);
+      --door-width: clamp(220px, calc(var(--door-height) * 0.48), min(92svw, 860px));
+      --eye-level-offset: calc((var(--intro-safe-top) - var(--intro-safe-bottom)) * 0.16);
+      background:
+        radial-gradient(circle at 50% 9%, rgba(255, 252, 242, 0.58), rgba(255, 252, 242, 0) 42%),
+        linear-gradient(180deg, #f3eee7 0%, #f0e8de 48%, #eee4d7 100%);
+      transition: opacity 320ms ease-out;
+      perspective: 2200px;
+      transform-style: preserve-3d;
+    }
+
+    .door-intro.is-leaving {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .door-intro::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 11%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 66%),
+        repeating-linear-gradient(
+          95deg,
+          rgba(122, 86, 58, 0.03) 0 3.8%,
+          rgba(122, 86, 58, 0) 3.8% 9%
+        );
+      opacity: 0.74;
+    }
+
+    .door-intro::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0) 28%, rgba(0, 0, 0, 0.26) 92%),
+        linear-gradient(180deg, rgba(20, 17, 14, 0), rgba(20, 17, 14, 0.24));
+    }
+
+    .door-intro-camera {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+
+    .door-intro-ceiling {
+      position: absolute;
+      left: -2%;
+      right: -2%;
+      top: -5%;
+      height: 31%;
+      border-radius: 0;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.74) 0% 16%,
+          rgba(228, 221, 212, 0.74) 16% 32%
+        ),
+        linear-gradient(180deg, rgba(250, 247, 242, 0.95), rgba(223, 213, 200, 0.75));
+      box-shadow: inset 0 -6px 16px rgba(0, 0, 0, 0.14);
+      opacity: 0.94;
+      transform: perspective(980px) rotateX(74deg);
+      transform-origin: top center;
+    }
+
+    .door-intro-wall {
+      position: absolute;
+      top: -2%;
+      bottom: -2%;
+      width: clamp(18%, 24vw, 30%);
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+      background:
+        linear-gradient(180deg, #f3ece3 0% 58%, #a5b9c9 58% 94%, #24303d 94% 100%);
+    }
+
+    .door-intro-wall::before {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      top: 18%;
+      height: 24%;
+      border: 4px solid #96592f;
+      border-radius: 2px;
+      background: #bf8754;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.28);
+    }
+
+    .door-intro-wall::after {
+      content: "";
+      position: absolute;
+      left: 18%;
+      width: 64%;
+      top: 23%;
+      height: 16%;
+      background:
+        linear-gradient(165deg, #27a9ff, #27a9ff) 0 20% / 24% 43% no-repeat,
+        linear-gradient(165deg, #f7e248, #f7e248) 34% 52% / 26% 42% no-repeat,
+        linear-gradient(165deg, #fd6c63, #fd6c63) 72% 58% / 24% 39% no-repeat,
+        radial-gradient(circle at 8% 0%, #24d54c 0 11%, transparent 12%);
+    }
+
+    .door-intro-wall.left {
+      left: -4%;
+      transform: perspective(1300px) rotateY(25deg);
+      transform-origin: left center;
+    }
+
+    .door-intro-wall.right {
+      right: -4%;
+      transform: perspective(1300px) rotateY(-25deg);
+      transform-origin: right center;
+    }
+
+    .door-intro-floor {
+      position: absolute;
+      left: -12%;
+      right: -12%;
+      bottom: -24%;
+      height: 56%;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(244, 193, 142, 0.95), rgba(187, 130, 83, 0.98)),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 224, 177, 0.4) 0% 2.4%,
+          rgba(128, 85, 51, 0.2) 2.4% 12%
+        ),
+        repeating-linear-gradient(
+          0deg,
+          rgba(255, 225, 179, 0.12) 0% 8%,
+          rgba(98, 69, 40, 0.12) 8% 12%
+        );
+      transform: perspective(1240px) rotateX(78deg);
+      transform-origin: bottom center;
+      box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.3);
+    }
+
+    .door-intro-doorway {
+      position: absolute;
+      left: 50%;
+      top: calc(50% + var(--eye-level-offset));
+      width: var(--door-width);
+      height: var(--door-height);
+      max-height: calc(100svh - var(--intro-safe-top) - var(--intro-safe-bottom));
+      transform: translate(-50%, -50%);
+      perspective: 2200px;
+      transform-style: preserve-3d;
+      filter: drop-shadow(0 22px 32px rgba(0, 0, 0, 0.45));
+    }
+
+    .door-intro-doorway::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 2px;
+      border: clamp(16px, 1.6vw, 24px) solid #7b2f19;
+      box-shadow:
+        inset 0 0 0 1px rgba(171, 83, 45, 0.76),
+        inset 0 -6px 14px rgba(61, 17, 6, 0.5);
+      pointer-events: none;
+    }
+
+    .door-intro-room-sign {
+      position: absolute;
+      left: 50%;
+      top: clamp(14px, 1.6vw, 26px);
+      transform: translateX(-50%);
+      width: min(72%, 420px);
+      padding: clamp(6px, 0.8vw, 12px) clamp(16px, 1.6vw, 28px);
+      border-radius: 4px;
+      border: 1px solid #7d7f82;
+      background: linear-gradient(180deg, #f3f3f4, #d8d8da);
+      color: #2f2f31;
+      font-size: clamp(0.9rem, 1.55vw, 2rem);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+        0 1px 3px rgba(0, 0, 0, 0.26);
+    }
+
+    .door-intro-room-sign::before,
+    .door-intro-room-sign::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: clamp(5px, 0.45vw, 8px);
+      height: clamp(5px, 0.45vw, 8px);
+      border-radius: 50%;
+      background: #7a7d82;
+      transform: translateY(-50%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .door-intro-room-sign::before {
+      left: clamp(7px, 0.8vw, 12px);
+    }
+
+    .door-intro-room-sign::after {
+      right: clamp(7px, 0.8vw, 12px);
+    }
+
+    .door-intro-door-glow {
+      position: absolute;
+      inset: clamp(18px, 1.6vw, 26px);
+      border-radius: 2px;
+      background:
+        radial-gradient(circle at 53% 42%, rgba(247, 253, 255, 0.92), rgba(246, 224, 170, 0.7) 44%, rgba(237, 196, 128, 0.08) 76%),
+        linear-gradient(180deg, rgba(252, 250, 242, 0.5), rgba(241, 219, 181, 0.3));
+      opacity: 0.06;
+      transform: translateZ(-18px);
+    }
+
+    .door-intro-frame {
+      position: absolute;
+      inset: clamp(12px, 1.1vw, 18px);
+      border-radius: 1px;
+      border: clamp(7px, 0.8vw, 12px) solid #66250f;
+      box-shadow:
+        inset 0 0 0 1px rgba(153, 64, 32, 0.7),
+        0 8px 14px rgba(0, 0, 0, 0.28);
+      background:
+        linear-gradient(180deg, rgba(132, 58, 30, 0.84), rgba(95, 38, 17, 0.72)),
+        repeating-linear-gradient(
+          90deg,
+          rgba(177, 94, 56, 0.2) 0% 8%,
+          rgba(82, 31, 14, 0.1) 8% 16%
+        );
+      pointer-events: none;
+    }
+
+    .door-intro-frame::before {
+      content: "";
+      position: absolute;
+      inset: clamp(5px, 0.55vw, 8px);
+      border-radius: 1px;
+      box-shadow: inset 0 0 0 1px rgba(32, 11, 4, 0.35);
+      background: linear-gradient(180deg, rgba(72, 24, 8, 0.25), rgba(72, 24, 8, 0.1));
+    }
+
+    .door-intro-frame::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: -2.2%;
+      bottom: 0;
+      width: 2.2%;
+      background: linear-gradient(180deg, rgba(96, 39, 18, 0.92), rgba(61, 22, 8, 0.96));
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.35);
+    }
+
+    .door-intro-door {
+      position: absolute;
+      inset: clamp(18px, 1.6vw, 26px);
+      border-radius: 1px;
+      border: 1px solid rgba(118, 55, 19, 0.6);
+      transform-style: preserve-3d;
+      transform-origin: 3.2% 50%;
+      background:
+        linear-gradient(90deg, #bc600d 0%, #dd7f11 18%, #cf6f08 38%, #d7790f 55%, #ca6807 74%, #df8612 100%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(227, 150, 74, 0.24) 0% 2.6%,
+          rgba(181, 109, 44, 0.18) 2.6% 4.9%,
+          rgba(107, 60, 26, 0.14) 4.9% 7.8%
+        ),
+        repeating-linear-gradient(
+          180deg,
+          rgba(255, 196, 124, 0.17) 0% 14%,
+          rgba(145, 76, 31, 0.1) 14% 23%
+        );
+      box-shadow:
+        inset -20px 0 24px rgba(0, 0, 0, 0.36),
+        inset 0 0 0 1px rgba(255, 194, 127, 0.28);
+      will-change: transform;
+    }
+
+    .door-intro-door > * {
+      backface-visibility: hidden;
+    }
+
+    .door-intro-door::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 62%, rgba(170, 98, 47, 0.14), transparent 42%),
+        radial-gradient(ellipse at 78% 70%, rgba(147, 74, 34, 0.14), transparent 44%);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+
+    .door-intro-door::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: clamp(4px, 0.45vw, 7px);
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(95, 41, 14, 0.68), rgba(54, 20, 7, 0.68));
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .door-intro-door-window {
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      top: 30%;
+      height: 20.5%;
+      border-radius: 2px;
+      border: clamp(8px, 0.9vw, 14px) solid #8f3e1e;
+      background:
+        linear-gradient(155deg, rgba(229, 241, 255, 0.46), rgba(160, 184, 208, 0.24)),
+        linear-gradient(180deg, rgba(47, 73, 98, 0.36), rgba(24, 39, 55, 0.18));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 223, 176, 0.6),
+        0 3px 10px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .door-intro-window-scene {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #f5f5f4 0% 57%, #d8bb8b 57% 100%);
+    }
+
+    .door-intro-door-window::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 52%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(146, 177, 208, 0.08) 0% 8%,
+          rgba(26, 49, 72, 0.02) 8% 14%
+        );
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .door-intro-door-window::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(168, 76, 35, 0.5);
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.18);
+      z-index: 1;
+    }
+
+    .door-intro-window-light {
+      position: absolute;
+      top: 8%;
+      width: 20%;
+      height: 8%;
+      border-radius: 2px;
+      background: linear-gradient(180deg, #ffffff, #dce4ea);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+      transform: skewX(-24deg);
+    }
+
+    .door-intro-window-light.light-a {
+      left: 16%;
+    }
+
+    .door-intro-window-light.light-b {
+      right: 16%;
+    }
+
+    .door-intro-window-board {
+      position: absolute;
+      left: 27%;
+      right: 17%;
+      top: 34%;
+      height: 23%;
+      border: 2px solid #bb7a41;
+      background: #2f744d;
+      box-shadow: inset 0 0 0 1px rgba(23, 56, 36, 0.35);
+    }
+
+    .door-intro-window-shelf {
+      position: absolute;
+      right: 4%;
+      top: 24%;
+      width: 11%;
+      bottom: 20%;
+      border-radius: 1px;
+      border: 1px solid rgba(102, 63, 33, 0.75);
+      background:
+        repeating-linear-gradient(
+          180deg,
+          #ce8a40 0% 15%,
+          #8a572a 15% 21%
+        );
+      box-shadow: inset 0 0 0 1px rgba(255, 223, 176, 0.18);
+    }
+
+    .door-intro-window-desks {
+      position: absolute;
+      left: 11%;
+      right: 14%;
+      bottom: 8%;
+      height: 28%;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(238, 183, 64, 0.95) 0% 14%,
+          rgba(31, 48, 62, 0.36) 14% 23%,
+          rgba(231, 174, 55, 0.9) 23% 37%
+        ),
+        repeating-linear-gradient(
+          90deg,
+          rgba(245, 198, 89, 0.84) 0% 10%,
+          rgba(43, 57, 72, 0) 10% 18%
+        );
+    }
+
+    .door-intro-handle {
+      position: absolute;
+      right: 7.8%;
+      top: 54%;
+      width: clamp(42px, 3.4vw, 58px);
+      height: clamp(84px, 8.4vw, 124px);
+      border-radius: 4px;
+      background: linear-gradient(150deg, #dfe2e6 0%, #a8b0b7 46%, #7f8791 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.44),
+        0 2px 7px rgba(0, 0, 0, 0.36);
+      transform-origin: 8% 50%;
+      will-change: transform;
+    }
+
+    .door-intro-handle::before {
+      content: "";
+      position: absolute;
+      left: 12%;
+      top: 50%;
+      width: clamp(50px, 6.2vw, 88px);
+      height: clamp(14px, 1.2vw, 20px);
+      border-radius: 999px;
+      transform: translateY(-50%);
+      background: linear-gradient(180deg, #e5e8ec, #8f98a2);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+        0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+
+    .door-intro-handle::after {
+      content: "";
+      position: absolute;
+      left: 22%;
+      top: 40%;
+      width: clamp(10px, 1vw, 14px);
+      height: clamp(22px, 2.2vw, 34px);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #d8dde2, #8f98a1);
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .door-intro-hinge {
+      position: absolute;
+      left: 1.3%;
+      width: clamp(6px, 0.6vw, 10px);
+      height: clamp(36px, 4.2vh, 58px);
+      border-radius: 2px;
+      background: linear-gradient(180deg, #9a4f25, #62260f);
+      box-shadow:
+        inset 0 0 0 1px rgba(191, 102, 59, 0.46),
+        0 1px 3px rgba(0, 0, 0, 0.35);
+      opacity: 0.92;
+    }
+
+    .door-intro-hinge.top {
+      top: 26%;
+    }
+
+    .door-intro-hinge.mid {
+      top: 46%;
+    }
+
+    .door-intro-hinge.bottom {
+      top: 66%;
+    }
+
+    .door-intro-kickplate {
+      position: absolute;
+      left: 4.8%;
+      right: 4.8%;
+      bottom: 2.5%;
+      height: 9.5%;
+      border-radius: 1px;
+      border: 1px solid rgba(104, 111, 116, 0.9);
+      background: linear-gradient(160deg, #c8cdd2 0%, #9ea5ad 45%, #7d838c 100%);
+      box-shadow: inset 0 0 0 1px rgba(244, 248, 252, 0.36);
+    }
+
+    .door-intro-threshold {
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      bottom: -8px;
+      height: clamp(9px, 1vw, 13px);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.48);
+      filter: blur(3px);
+      opacity: 0.7;
+    }
+
+    .door-intro.is-playing .door-intro-camera {
+      animation: intro-camera-dolly 2420ms cubic-bezier(0.2, 0.68, 0.16, 1) forwards;
+    }
+
+    .door-intro.is-playing .door-intro-ceiling {
+      animation: intro-ceiling-pass 2360ms ease-out forwards;
+    }
+
+    .door-intro.is-playing .door-intro-wall.left {
+      animation: intro-wall-left-pass 2360ms ease-out forwards;
+    }
+
+    .door-intro.is-playing .door-intro-wall.right {
+      animation: intro-wall-right-pass 2360ms ease-out forwards;
+    }
+
+    .door-intro.is-playing .door-intro-floor {
+      animation: intro-floor-pass 2380ms ease-out forwards;
+    }
+
+    .door-intro.is-playing .door-intro-door {
+      animation: intro-door-open 1500ms cubic-bezier(0.2, 0.88, 0.2, 1) 220ms forwards;
+    }
+
+    .door-intro.is-playing .door-intro-door-glow {
+      animation: intro-room-glow 1500ms ease-out 260ms forwards;
+    }
+
+    .door-intro.is-playing .door-intro-handle {
+      animation: intro-handle-turn 560ms ease-in-out 160ms;
+    }
+
+    .door-intro.is-playing .door-intro-fade {
+      animation: intro-blackout 2420ms linear forwards;
+    }
+
+    .door-intro.is-reduced .door-intro-camera {
+      transform: scale(1.035);
+    }
+
+    .door-intro.is-reduced .door-intro-door {
+      transform: rotateY(-108deg);
+    }
+
+    .door-intro.is-reduced .door-intro-door-glow {
+      opacity: 0.96;
+    }
+
+    .door-intro.is-reduced .door-intro-fade {
+      opacity: 0.88;
+    }
+
+    .door-intro-fade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: #000;
+      opacity: 0;
+    }
+
+    @keyframes intro-camera-dolly {
+      0% {
+        transform: scale(1) translate3d(0, 0, 0);
+      }
+      45% {
+        transform: scale(1.055) translate3d(0.06svw, 0.08svh, 0);
+      }
+      74% {
+        transform: scale(1.13) translate3d(0.02svw, 0.16svh, 0);
+      }
+      100% {
+        transform: scale(1.23) translate3d(0, 0.24svh, 0);
+      }
+    }
+
+    @keyframes intro-ceiling-pass {
+      0% {
+        opacity: 0.88;
+        transform: perspective(980px) rotateX(74deg);
+      }
+      100% {
+        opacity: 0.16;
+        transform: perspective(980px) rotateX(74deg) translateY(-22%);
+      }
+    }
+
+    @keyframes intro-wall-left-pass {
+      0% {
+        transform: perspective(1300px) rotateY(25deg);
+      }
+      100% {
+        transform: perspective(1300px) rotateY(28deg) translateX(-12%);
+      }
+    }
+
+    @keyframes intro-wall-right-pass {
+      0% {
+        transform: perspective(1300px) rotateY(-25deg);
+      }
+      100% {
+        transform: perspective(1300px) rotateY(-28deg) translateX(12%);
+      }
+    }
+
+    @keyframes intro-floor-pass {
+      0% {
+        transform: perspective(1240px) rotateX(78deg) translateY(0);
+      }
+      100% {
+        transform: perspective(1240px) rotateX(78deg) translateY(12%);
+      }
+    }
+
+    @keyframes intro-door-open {
+      0% {
+        transform: rotateY(0deg);
+      }
+      30% {
+        transform: rotateY(-22deg);
+      }
+      64% {
+        transform: rotateY(-86deg);
+      }
+      100% {
+        transform: rotateY(-112deg);
+      }
+    }
+
+    @keyframes intro-room-glow {
+      0% {
+        opacity: 0.06;
+      }
+      56% {
+        opacity: 0.46;
+      }
+      100% {
+        opacity: 0.98;
+      }
+    }
+
+    @keyframes intro-handle-turn {
+      0% {
+        transform: rotate(0deg);
+      }
+      40% {
+        transform: rotate(-18deg);
+      }
+      72% {
+        transform: rotate(-12deg);
+      }
+      100% {
+        transform: rotate(0deg);
+      }
+    }
+
+    @keyframes intro-blackout {
+      0% {
+        opacity: 0;
+      }
+      58% {
+        opacity: 0;
+      }
+      72% {
+        opacity: 0.14;
+      }
+      84% {
+        opacity: 0.46;
+      }
+      93% {
+        opacity: 0.78;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .door-intro {
+        --door-height: clamp(340px, calc(var(--door-usable-height) * 0.91), 2200px);
+      }
+
+      .door-intro-wall {
+        width: clamp(16%, 22vw, 27%);
+      }
+
+      .door-intro-room-sign {
+        width: min(80%, 360px);
+        font-size: clamp(0.8rem, 3.8vw, 1.2rem);
+      }
+
+      .door-intro-door-window {
+        left: 16%;
+        right: 16%;
+        top: 29%;
+        height: 20%;
+      }
+    }
+
+    /* Three.js intro override */
+    .door-intro {
+      background: #070707;
+      perspective: none;
+      transform-style: flat;
+      transition: opacity 280ms ease-out;
+    }
+
+    .door-intro::before,
+    .door-intro::after {
+      display: none;
+    }
+
+    .door-intro-stage {
+      position: absolute;
+      inset: 0;
+      background: #070707;
+    }
+
+    .door-intro-stage canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .door-intro-fade {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      will-change: opacity;
+    }
+
+    /* ── Shape-precise hotspot glow pulse ──────────────────────
+       drop-shadow() respects PNG alpha — glow follows the exact
+       outline of each image, not its bounding box.
+    ─────────────────────────────────────────────────────────── */
+    @keyframes hotspot-glow-pulse {
+      0%   {
+        transform: scale(1);
+        filter:
+          drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 0px rgba(90, 200, 255, 0));
+      }
+      18%  {
+        transform: scale(1.055);
+        filter:
+          drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 7px  rgba(90, 200, 255, 0.9))
+          drop-shadow(0 0 16px rgba(90, 200, 255, 0.5))
+          drop-shadow(0 0 3px  rgba(255, 255, 255, 0.4));
+      }
+      50%  {
+        transform: scale(1.01);
+        filter:
+          drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 4px rgba(90, 200, 255, 0.35));
+      }
+      72%  {
+        transform: scale(1.045);
+        filter:
+          drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 8px  rgba(90, 200, 255, 0.82))
+          drop-shadow(0 0 18px rgba(90, 200, 255, 0.44))
+          drop-shadow(0 0 3px  rgba(255, 255, 255, 0.32));
+      }
+      100% {
+        transform: scale(1);
+        filter:
+          drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 8px rgba(255, 222, 145, 0.34))
+          drop-shadow(0 0 0px rgba(90, 200, 255, 0));
+      }
+    }
+
+    /* Applied programmatically; !important overrides the base
+       filter AND transform for the duration of the animation  */
+    .hotspot.glow-active img {
+      animation: hotspot-glow-pulse 1.8s ease-in-out forwards !important;
+      transform-origin: center bottom;
+    }
+
+    /* Prevent the animation from fighting hover/focus states  */
+    .hotspot.glow-active:hover img,
+    .hotspot.glow-active:focus-visible img {
+      animation: hotspot-glow-pulse 1.8s ease-in-out forwards !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="door-intro" id="doorIntro" aria-hidden="true" hidden>
+    <div class="door-intro-stage" id="doorIntroStage" aria-hidden="true"></div>
+    <div class="door-intro-fade" id="doorIntroFade"></div>
+  </div>
+  <div class="app">
+    <div class="scene-wrap">
+      <div class="scene" id="scene">
+        <img class="scene-bg" id="mainBackground" src="NEWmainbackground.png" alt="Classroom scene background" />
+        <div class="hotspot-layer" id="hotspotLayer" aria-label="Interactive objects"></div>
+      </div>
+    </div>
+  </div>
+  <button id="managerToggleBtn" class="manager-toggle-launch" type="button" aria-label="Toggle manager panel" hidden>Manager</button>
+
+  <section class="manager-panel" id="managerPanel" hidden aria-live="polite">
+    <header class="manager-panel-header" id="managerPanelHeader">
+      <h2 class="manager-panel-title">Manager Tool</h2>
+      <button id="closeManagerPanel" class="tiny-btn close-btn" type="button" aria-label="Close manager panel">×</button>
+    </header>
+    <div class="manager-panel-body">
+      <p id="managerStatus" class="manager-status">Manager closed.</p>
+      <div class="manager-fieldset">
+        <label class="manager-label" for="managerTarget">Component</label>
+        <select id="managerTarget"></select>
+        <label class="manager-label" for="managerSizeRange">Size</label>
+        <p id="managerSizeReadout" class="manager-size-readout">
+          <span>Width:</span>
+          <span id="managerSizeValue">20.1%</span>
+        </p>
+        <input id="managerSizeRange" type="range" min="6" max="60" step="0.1" value="20.1" />
+      </div>
+      <button id="saveLayout" class="tiny-btn" type="button">Save &amp; Lock</button>
+      <button id="resetLayout" class="tiny-btn warn" type="button">Reset Layout</button>
+    </div>
+  </section>
+
+  <div class="modal" id="minigameModal" hidden>
+    <section class="panel" role="dialog" aria-modal="true" aria-labelledby="gameTitle">
+      <div class="panel-head">
+        <h2 id="gameTitle">Laptop Minigame</h2>
+        <button id="closeModal" class="close" type="button">Close</button>
+      </div>
+      <p id="gameSubtitle">Solve as many equations as you can before the timer ends.</p>
+      <div class="status">
+        <span id="timer">Time: 30s</span>
+        <span id="score">Score: 0</span>
+      </div>
+      <div class="question" id="question">Press Start to begin.</div>
+      <form class="answer-form" id="answerForm">
+        <input id="answerInput" type="number" inputmode="numeric" step="1" placeholder="Type answer" disabled required />
+        <button id="submitAnswer" type="submit" disabled>Submit</button>
+      </form>
+      <div class="action-row">
+        <button id="startBtn" type="button">Start</button>
+        <button id="restartBtn" type="button" class="ghost" hidden>Play Again</button>
+      </div>
+      <p class="result" id="resultText"></p>
+    </section>
+  </div>
+
+  <!-- GAME FRAME: opens each component's isolated game page in a fullscreen overlay -->
+  <div class="game-frame-modal" id="gameFrameModal" hidden>
+    <iframe id="gameFrameIframe" class="game-frame-iframe" title="Game" allowfullscreen></iframe>
+    <button id="closeGameFrameBtn" class="game-frame-close" type="button" aria-label="Close game">✕</button>
+  </div>
+
+  <!-- CLASSROOM_EMBEDDED_STATE_START -->
+  <script id="classroomEmbeddedState" type="application/json">
+{
+  "layout": {
+    "component-globe": {
+      "left": 72.11,
+      "top": 38.38,
+      "width": 6
+    },
+    "laptop": {
+      "left": 39.96,
+      "top": 47.59,
+      "width": 6
+    },
+    "component-redbackpack": {
+      "left": 43.82,
+      "top": 68.74,
+      "width": 7.2
+    },
+    "component-worksheets": {
+      "left": 31.82,
+      "top": 21.72,
+      "width": 13.1
+    }
+  },
+  "locked": true,
+  "componentFiles": [
+    "Globe.png",
+    "Laptop.png",
+    "Redbackpack.png",
+    "Worksheets.png"
+  ]
+}
+  </script>
+  <!-- CLASSROOM_EMBEDDED_STATE_END -->
+
+  <script src="scripts/three.min.js"></script>
+  <script src="ComponentImages/image-manifest.bootstrap.js?v=2026-02-18-1"></script>
+  <script>
+    (function () {
+      const STORAGE_LAYOUT_KEY = "classroomQuest.layout.v1";
+      const STORAGE_LOCK_KEY = "classroomQuest.layoutLocked.v1";
+      const STORAGE_COMPONENT_FILES_KEY = "classroomQuest.componentFiles.v1";
+      const EMBEDDED_STATE_SCRIPT_ID = "classroomEmbeddedState";
+      const EMBEDDED_STATE_SAVE_ENDPOINT = "/api/classroom-3d/save-index-state";
+      const ASSET_VERSION_TOKEN = getAssetVersionToken();
+      const CLASSROOM_SYNC_SCOPE = "classroom-3d";
+      const CLASSROOM_MESSAGE_AUTH_SYNC = "LAHS_CLASSROOM_AUTH_SYNC";
+      const CLASSROOM_MESSAGE_AUTH_REQUEST = "LAHS_CLASSROOM_AUTH_REQUEST";
+      const CLASSROOM_MESSAGE_READY = "LAHS_CLASSROOM_READY";
+      const CLASSROOM_MESSAGE_STATE_REQUEST = "LAHS_CLASSROOM_STATE_REQUEST";
+      const CLASSROOM_MESSAGE_STATE_SYNC = "LAHS_CLASSROOM_STATE_SYNC";
+      const CLASSROOM_MESSAGE_STATE_SAVE = "LAHS_CLASSROOM_STATE_SAVE";
+      const CLASSROOM_REMOTE_SAVE_DEBOUNCE_MS = 350;
+      const CLASSROOM_INITIAL_SYNC_WAIT_MS = 850;
+      const PORTRAIT_COMPONENT_SCALE = 1;
+      const PORTRAIT_BACKGROUND_POSITION_PERCENT = 52;
+      const LANDSCAPE_BACKGROUND_POSITION_PERCENT = 50;
+      const PORTRAIT_PAN_MIN_POSITION_PERCENT = 0;
+      const PORTRAIT_PAN_MAX_POSITION_PERCENT = 100;
+      const PAN_DRAG_GAIN = 1.6;
+      const PAN_DRAG_THRESHOLD_PX = 1;
+      const HOTSPOT_CLICK_SUPPRESSION_MS = 240;
+      const PAN_INERTIA_DECAY_PER_SECOND = 4.8;
+      const PAN_INERTIA_MIN_VELOCITY_PERCENT_PER_MS = 0.0009;
+      const PAN_INERTIA_MAX_VELOCITY_PERCENT_PER_MS = 0.3;
+      const PAN_VELOCITY_SMOOTHING = 0.2;
+      const PAN_RELEASE_VELOCITY_BOOST = 1.0;
+      const PAN_FLICK_MIN_VELOCITY_PERCENT_PER_MS = 0.012;
+      const PAN_RELEASE_IDLE_MS = 48;
+      const PAN_EDGE_EPSILON_PERCENT = 0.01;
+      const INTRO_ANIMATION_DURATION_MS = 1700;
+      const INTRO_REDUCED_DURATION_MS = 450;
+      const INTRO_FADE_DURATION_MS = 180;
+      const REQUESTED_AUTO_MANAGER_MODE = shouldAutoOpenManagerMode();
+      const REQUESTED_MANAGER_UI = shouldRequestManagerUi();
+      const SHOULD_SKIP_INTRO = shouldSkipIntroSequence();
+      let managerAccessGranted = shouldEnableStandaloneDevManagerAccess();
+      let AUTO_MANAGER_MODE = false;
+      let MANAGER_UI_ENABLED = false;
+      applyManagerAccessState();
+
+      function shouldAutoOpenManagerMode() {
+        const params = new URLSearchParams(window.location.search || "");
+        const value = String(params.get("manager") || "").toLowerCase();
+        return value === "1" || value === "true" || value === "yes" || value === "on";
+      }
+
+      function getAssetVersionToken() {
+        const params = new URLSearchParams(window.location.search || "");
+        const version = String(params.get("v") || params.get("version") || "").trim();
+        return version;
+      }
+
+      function appendVersionToken(path, token) {
+        const normalizedPath = String(path || "");
+        if (!normalizedPath || !token) {
+          return normalizedPath;
+        }
+        const separator = normalizedPath.indexOf("?") === -1 ? "?" : "&";
+        return normalizedPath + separator + "v=" + encodeURIComponent(String(token));
+      }
+
+      function getVersionedBackgroundCandidates(isPortrait = isPortraitViewport()) {
+        const baseCandidates = getBackgroundCandidates(isPortrait);
+        if (!ASSET_VERSION_TOKEN) {
+          return baseCandidates;
+        }
+        const withVersion = baseCandidates.map(function (path) {
+          return appendVersionToken(path, ASSET_VERSION_TOKEN);
+        });
+        return uniqueStrings(withVersion.concat(baseCandidates));
+      }
+
+      function shouldRequestManagerUi() {
+        if (REQUESTED_AUTO_MANAGER_MODE) {
+          return true;
+        }
+        const params = new URLSearchParams(window.location.search || "");
+        const managerUiValue = String(params.get("manager_ui") || params.get("managerui") || "").toLowerCase();
+        if (managerUiValue === "0" || managerUiValue === "false" || managerUiValue === "no" || managerUiValue === "off") {
+          return false;
+        }
+        if (managerUiValue === "1" || managerUiValue === "true" || managerUiValue === "yes" || managerUiValue === "on") {
+          return true;
+        }
+        const hideManagerValue = String(params.get("hide_manager") || params.get("hidemanager") || "").toLowerCase();
+        if (hideManagerValue === "1" || hideManagerValue === "true" || hideManagerValue === "yes" || hideManagerValue === "on") {
+          return false;
+        }
+        if (isStandaloneLocalDevContext()) {
+          return true;
+        }
+        return false;
+      }
+
+      function isLocalDevHost() {
+        const host = String(window.location.hostname || "").toLowerCase();
+        return (
+          host === "localhost"
+          || host === "127.0.0.1"
+          || host === "::1"
+        );
+      }
+
+      function isStandaloneLocalDevContext() {
+        if (window.parent !== window) {
+          return false;
+        }
+        if (window.location.protocol === "file:") {
+          return true;
+        }
+        return isLocalDevHost();
+      }
+
+      function shouldEnableStandaloneDevManagerAccess() {
+        if (!REQUESTED_MANAGER_UI) {
+          return false;
+        }
+        return isStandaloneLocalDevContext();
+      }
+
+      function shouldSkipIntroSequence() {
+        const params = new URLSearchParams(window.location.search || "");
+        const introValue = String(params.get("intro") || params.get("skip_intro") || "").toLowerCase();
+        if (
+          introValue === "0"
+          || introValue === "false"
+          || introValue === "no"
+          || introValue === "off"
+          || introValue === "skip"
+        ) {
+          return true;
+        }
+        if (
+          introValue === "1"
+          || introValue === "true"
+          || introValue === "yes"
+          || introValue === "on"
+        ) {
+          return false;
+        }
+        if (REQUESTED_MANAGER_UI) {
+          return true;
+        }
+        return isStandaloneLocalDevContext();
+      }
+
+      function applyManagerAccessState() {
+        MANAGER_UI_ENABLED = managerAccessGranted && REQUESTED_MANAGER_UI;
+        AUTO_MANAGER_MODE = managerAccessGranted && REQUESTED_AUTO_MANAGER_MODE;
+      }
+
+      function waitForMs(durationMs) {
+        return new Promise(function (resolve) {
+          setTimeout(resolve, durationMs);
+        });
+      }
+
+      function clamp01(value) {
+        return Math.max(0, Math.min(1, Number(value) || 0));
+      }
+
+      function lerp(from, to, t) {
+        return from + (to - from) * t;
+      }
+
+      function easeInCubic(t) {
+        const x = clamp01(t);
+        return x * x * x;
+      }
+
+      function easeOutCubic(t) {
+        const x = clamp01(t);
+        return 1 - Math.pow(1 - x, 3);
+      }
+
+      function easeInOutCubic(t) {
+        const x = clamp01(t);
+        if (x < 0.5) {
+          return 4 * x * x * x;
+        }
+        return 1 - Math.pow(-2 * x + 2, 3) / 2;
+      }
+
+      function createWoodTexture(THREE_REF, width, height, palette) {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return null;
+        }
+
+        const base = ctx.createLinearGradient(0, 0, width, 0);
+        base.addColorStop(0, palette.baseA);
+        base.addColorStop(0.5, palette.baseB);
+        base.addColorStop(1, palette.baseC);
+        ctx.fillStyle = base;
+        ctx.fillRect(0, 0, width, height);
+
+        for (let x = 0; x < width; x += 3) {
+          const alpha = 0.03 + Math.random() * 0.08;
+          ctx.fillStyle = "rgba(64, 28, 10, " + alpha.toFixed(3) + ")";
+          ctx.fillRect(x, 0, 1 + (Math.random() * 2), height);
+        }
+
+        for (let i = 0; i < 26; i += 1) {
+          const knotX = Math.random() * width;
+          const knotY = Math.random() * height;
+          const knotW = 18 + Math.random() * 44;
+          const knotH = 32 + Math.random() * 86;
+          ctx.strokeStyle = "rgba(84, 34, 14, 0.22)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(knotX, knotY, knotW * 0.5, knotH * 0.5, Math.random() * Math.PI, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        const texture = new THREE_REF.CanvasTexture(canvas);
+        texture.colorSpace = THREE_REF.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function createCeilingTileTexture(THREE_REF) {
+        const size = 512;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return null;
+        }
+
+        ctx.fillStyle = "#efe9df";
+        ctx.fillRect(0, 0, size, size);
+        ctx.strokeStyle = "rgba(138, 127, 114, 0.33)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i <= size; i += 64) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, size);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(size, i);
+          ctx.stroke();
+        }
+
+        const texture = new THREE_REF.CanvasTexture(canvas);
+        texture.wrapS = THREE_REF.RepeatWrapping;
+        texture.wrapT = THREE_REF.RepeatWrapping;
+        texture.repeat.set(3.5, 3.5);
+        texture.colorSpace = THREE_REF.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function createFloorTexture(THREE_REF) {
+        const size = 768;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return null;
+        }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, size);
+        gradient.addColorStop(0, "#e6b680");
+        gradient.addColorStop(1, "#ca8c5b");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+
+        for (let i = 0; i < 5200; i += 1) {
+          const x = Math.random() * size;
+          const y = Math.random() * size;
+          const alpha = 0.04 + Math.random() * 0.12;
+          const radius = 0.4 + Math.random() * 1.4;
+          ctx.fillStyle = "rgba(110, 68, 34, " + alpha.toFixed(3) + ")";
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const texture = new THREE_REF.CanvasTexture(canvas);
+        texture.wrapS = THREE_REF.RepeatWrapping;
+        texture.wrapT = THREE_REF.RepeatWrapping;
+        texture.repeat.set(3.6, 5.4);
+        texture.colorSpace = THREE_REF.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function createClassroomSignTexture(THREE_REF, label) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1024;
+        canvas.height = 256;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return null;
+        }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, "#f3f3f4");
+        gradient.addColorStop(1, "#d8d8da");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "#828488";
+        ctx.lineWidth = 8;
+        ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+
+        ctx.fillStyle = "#3a3a3d";
+        ctx.font = "700 112px Trebuchet MS, Segoe UI, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, canvas.width / 2, canvas.height / 2 + 4);
+
+        ctx.fillStyle = "#777c82";
+        ctx.beginPath();
+        ctx.arc(58, canvas.height / 2, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(canvas.width - 58, canvas.height / 2, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        const texture = new THREE_REF.CanvasTexture(canvas);
+        texture.colorSpace = THREE_REF.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function loadTextureFromCandidates(loader, candidates) {
+        const queue = Array.isArray(candidates) ? candidates.slice() : [];
+        return new Promise(function (resolve, reject) {
+          function tryNext() {
+            if (!queue.length) {
+              reject(new Error("No texture candidates resolved."));
+              return;
+            }
+            const candidate = queue.shift();
+            loader.load(
+              candidate,
+              function (texture) {
+                resolve(texture);
+              },
+              undefined,
+              function () {
+                tryNext();
+              }
+            );
+          }
+          tryNext();
+        });
+      }
+
+      function captureSceneSnapshotCanvas(sceneElement, backgroundImageElement, hotspotLayerElement) {
+        if (!sceneElement || !backgroundImageElement || !backgroundImageElement.complete || !backgroundImageElement.naturalWidth) {
+          return null;
+        }
+
+        const sceneRect = sceneElement.getBoundingClientRect();
+        if (!sceneRect.width || !sceneRect.height) {
+          return null;
+        }
+
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.6);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(2, Math.round(sceneRect.width * pixelRatio));
+        canvas.height = Math.max(2, Math.round(sceneRect.height * pixelRatio));
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return null;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.scale(pixelRatio, pixelRatio);
+
+        const backgroundRect = backgroundImageElement.getBoundingClientRect();
+        if (backgroundRect.width > 0 && backgroundRect.height > 0) {
+          ctx.drawImage(
+            backgroundImageElement,
+            backgroundRect.left - sceneRect.left,
+            backgroundRect.top - sceneRect.top,
+            backgroundRect.width,
+            backgroundRect.height
+          );
+        }
+
+        if (hotspotLayerElement) {
+          const hotspotImages = hotspotLayerElement.querySelectorAll(".hotspot img");
+          hotspotImages.forEach(function (hotspotImage) {
+            if (!(hotspotImage instanceof HTMLImageElement) || !hotspotImage.complete || !hotspotImage.naturalWidth) {
+              return;
+            }
+            const imageRect = hotspotImage.getBoundingClientRect();
+            if (imageRect.width <= 0 || imageRect.height <= 0) {
+              return;
+            }
+            const hotspot = hotspotImage.closest(".hotspot");
+            if (hotspot) {
+              const hotspotStyle = window.getComputedStyle(hotspot);
+              if (hotspotStyle.display === "none" || hotspotStyle.visibility === "hidden" || Number(hotspotStyle.opacity || 1) <= 0) {
+                return;
+              }
+            }
+            const imageStyle = window.getComputedStyle(hotspotImage);
+            const opacity = clamp01(Number(imageStyle.opacity || 1));
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(
+              hotspotImage,
+              imageRect.left - sceneRect.left,
+              imageRect.top - sceneRect.top,
+              imageRect.width,
+              imageRect.height
+            );
+            ctx.restore();
+          });
+        }
+
+        return canvas;
+      }
+
+      function createThreeDoorIntroRuntime(options) {
+        const THREE_REF = window.THREE;
+        if (!THREE_REF || !options || !options.container) {
+          return null;
+        }
+
+        const container = options.container;
+        const fadeLayer = options.fadeLayer || null;
+        const durationMs = Math.max(240, Number(options.durationMs) || INTRO_ANIMATION_DURATION_MS);
+        const reduceMotion = Boolean(options.reduceMotion);
+        const textureCandidates = Array.isArray(options.textureCandidates) ? options.textureCandidates : [];
+
+        const renderer = new THREE_REF.WebGLRenderer({
+          antialias: true,
+          alpha: false,
+          powerPreference: "high-performance"
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE_REF.SRGBColorSpace;
+        renderer.toneMapping = THREE_REF.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.03;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE_REF.PCFSoftShadowMap;
+
+        container.textContent = "";
+        container.appendChild(renderer.domElement);
+
+        const scene3d = new THREE_REF.Scene();
+        scene3d.background = new THREE_REF.Color(0xefe7dc);
+
+        const camera = new THREE_REF.PerspectiveCamera(53, 1, 0.05, 80);
+        camera.position.set(0, 1.47, 1.95);
+        camera.lookAt(0, 1.35, -2.2);
+
+        const hemiLight = new THREE_REF.HemisphereLight(0xfff7eb, 0x7c95ac, 0.8);
+        scene3d.add(hemiLight);
+
+        const keyLight = new THREE_REF.DirectionalLight(0xffffff, 1.22);
+        keyLight.position.set(1.8, 3.6, 2.2);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 20;
+        keyLight.shadow.camera.left = -4;
+        keyLight.shadow.camera.right = 4;
+        keyLight.shadow.camera.top = 4;
+        keyLight.shadow.camera.bottom = -4;
+        scene3d.add(keyLight);
+
+        const fillLight = new THREE_REF.PointLight(0xffe8cc, 0.34, 16, 2);
+        fillLight.position.set(-2.1, 2.3, 1.1);
+        scene3d.add(fillLight);
+
+        const floorTexture = createFloorTexture(THREE_REF);
+        const ceilingTexture = createCeilingTileTexture(THREE_REF);
+        const doorWoodTexture = createWoodTexture(THREE_REF, 1024, 2048, {
+          baseA: "#ba610e",
+          baseB: "#e08613",
+          baseC: "#c96f0b"
+        });
+        const frameWoodTexture = createWoodTexture(THREE_REF, 512, 1024, {
+          baseA: "#6c2411",
+          baseB: "#8a3318",
+          baseC: "#5f1f0f"
+        });
+        const signTexture = createClassroomSignTexture(THREE_REF, "CLASSROOM");
+
+        const wallUpperMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xefe8df,
+          roughness: 0.95
+        });
+        const wallLowerMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xa5b8c7,
+          roughness: 0.88
+        });
+        const baseTrimMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0x1d2f43,
+          roughness: 0.52,
+          metalness: 0.08
+        });
+        const floorMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xe2b17a,
+          map: floorTexture || null,
+          roughness: 0.89,
+          metalness: 0
+        });
+        const ceilingMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xf0eadf,
+          map: ceilingTexture || null,
+          roughness: 0.9,
+          metalness: 0
+        });
+        const boardFrameMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0x92592f,
+          roughness: 0.74
+        });
+        const corkMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xb48356,
+          roughness: 0.96
+        });
+        const frameMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0x7f2f17,
+          map: frameWoodTexture || null,
+          roughness: 0.78,
+          metalness: 0
+        });
+        const doorMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xd6740b,
+          map: doorWoodTexture || null,
+          roughness: 0.7,
+          metalness: 0
+        });
+        const signMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xffffff,
+          map: signTexture || null,
+          roughness: 0.38,
+          metalness: 0.2
+        });
+        const windowFrameMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0x8f3e1e,
+          roughness: 0.65,
+          metalness: 0
+        });
+        const portalMaterial = new THREE_REF.MeshBasicMaterial({
+          color: 0xaec4d8
+        });
+        const windowSceneMaterial = new THREE_REF.MeshBasicMaterial({
+          color: 0xa8bfd3
+        });
+        const glassTintMaterial = new THREE_REF.MeshPhysicalMaterial({
+          color: 0xffffff,
+          roughness: 0.02,
+          metalness: 0,
+          transmission: 0.72,
+          thickness: 0.02,
+          transparent: true,
+          opacity: 0.3
+        });
+        const metalMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xa7afb8,
+          roughness: 0.28,
+          metalness: 0.92
+        });
+        const kickMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xaab1ba,
+          roughness: 0.2,
+          metalness: 0.95
+        });
+        const shadowMaterial = new THREE_REF.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: 0.18
+        });
+        const defaultBackgroundColor = new THREE_REF.Color(0xefe7dc);
+
+        let activePortalTexture = null;
+        let activeWindowTexture = null;
+
+        function disposeOwnedTexture(texture) {
+          if (texture && typeof texture.dispose === "function") {
+            texture.dispose();
+          }
+        }
+
+        function applyPortalTexture(texture, options) {
+          if (!texture) {
+            return;
+          }
+          const settings = options || {};
+
+          if (activePortalTexture && activePortalTexture !== texture) {
+            if (scene3d.background === activePortalTexture) {
+              scene3d.background = defaultBackgroundColor;
+            }
+            disposeOwnedTexture(activePortalTexture);
+          }
+
+          texture.colorSpace = THREE_REF.SRGBColorSpace;
+          texture.needsUpdate = true;
+
+          scene3d.background = texture;
+          portalMaterial.map = texture;
+          portalMaterial.color.setHex(0xffffff);
+          portalMaterial.needsUpdate = true;
+          activePortalTexture = texture;
+
+          if (activeWindowTexture && activeWindowTexture !== texture) {
+            disposeOwnedTexture(activeWindowTexture);
+          }
+          const windowTexture = texture.clone();
+          windowTexture.needsUpdate = true;
+          windowTexture.wrapS = THREE_REF.ClampToEdgeWrapping;
+          windowTexture.wrapT = THREE_REF.ClampToEdgeWrapping;
+          windowTexture.colorSpace = THREE_REF.SRGBColorSpace;
+          windowTexture.repeat.set(
+            settings.windowRepeatX || 0.72,
+            settings.windowRepeatY || 0.56
+          );
+          windowTexture.offset.set(
+            settings.windowOffsetX || 0.14,
+            settings.windowOffsetY || 0.23
+          );
+          windowSceneMaterial.map = windowTexture;
+          windowSceneMaterial.color.setHex(0xffffff);
+          windowSceneMaterial.needsUpdate = true;
+          activeWindowTexture = windowTexture;
+        }
+
+        const floor = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.8, 10.6), floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(0, 0, -1.9);
+        floor.receiveShadow = true;
+        scene3d.add(floor);
+
+        const ceiling = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.4, 9.2), ceilingMaterial);
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.set(0, 2.9, -1.9);
+        scene3d.add(ceiling);
+
+        function addSideWall(xPosition, yRotation) {
+          const upper = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 2.2), wallUpperMaterial);
+          upper.position.set(xPosition, 1.8, -1.85);
+          upper.rotation.y = yRotation;
+          scene3d.add(upper);
+
+          const lower = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 0.94), wallLowerMaterial);
+          lower.position.set(xPosition + (xPosition < 0 ? 0.004 : -0.004), 0.72, -1.85);
+          lower.rotation.y = yRotation;
+          scene3d.add(lower);
+
+          const base = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 0.14), baseTrimMaterial);
+          base.position.set(xPosition + (xPosition < 0 ? 0.008 : -0.008), 0.14, -1.85);
+          base.rotation.y = yRotation;
+          scene3d.add(base);
+        }
+
+        addSideWall(-2.35, Math.PI / 2);
+        addSideWall(2.35, -Math.PI / 2);
+
+        function createBulletinBoard(x, z, rotationY) {
+          const boardGroup = new THREE_REF.Group();
+          boardGroup.position.set(x, 1.6, z);
+          boardGroup.rotation.y = rotationY;
+
+          const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(1.42, 0.9, 0.06), boardFrameMaterial);
+          boardGroup.add(frame);
+
+          const cork = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(1.3, 0.78, 0.04), corkMaterial);
+          cork.position.z = 0.02;
+          boardGroup.add(cork);
+
+          const noteColors = [0x24d44b, 0x2f9fe8, 0xf2d947, 0xf06463];
+          for (let i = 0; i < noteColors.length; i += 1) {
+            const sticky = new THREE_REF.Mesh(
+              new THREE_REF.PlaneGeometry(0.2, 0.2),
+              new THREE_REF.MeshStandardMaterial({
+                color: noteColors[i],
+                roughness: 0.6,
+                metalness: 0
+              })
+            );
+            sticky.position.set(-0.46 + (i * 0.23), 0.08 - (i * 0.03), 0.052);
+            sticky.rotation.z = (-0.08 + (i * 0.05));
+            boardGroup.add(sticky);
+          }
+
+          scene3d.add(boardGroup);
+        }
+
+        createBulletinBoard(-2.18, -0.72, Math.PI / 2);
+        createBulletinBoard(2.18, -0.72, -Math.PI / 2);
+
+        const doorwayZ = -2.25;
+        const doorWidth = 1.08;
+        const doorHeight = 2.08;
+        const doorThickness = 0.046;
+        const frameThickness = 0.14;
+        const frameDepth = 0.2;
+
+        const doorwayGroup = new THREE_REF.Group();
+        doorwayGroup.position.set(0, 0, doorwayZ);
+        scene3d.add(doorwayGroup);
+
+        const leftFrame = new THREE_REF.Mesh(
+          new THREE_REF.BoxGeometry(frameThickness, doorHeight + frameThickness, frameDepth),
+          frameMaterial
+        );
+        leftFrame.position.set(-(doorWidth + frameThickness) / 2, (doorHeight + frameThickness) / 2, 0);
+        leftFrame.castShadow = true;
+        doorwayGroup.add(leftFrame);
+
+        const rightFrame = leftFrame.clone();
+        rightFrame.position.x = (doorWidth + frameThickness) / 2;
+        doorwayGroup.add(rightFrame);
+
+        const topFrame = new THREE_REF.Mesh(
+          new THREE_REF.BoxGeometry(doorWidth + (frameThickness * 2), frameThickness, frameDepth),
+          frameMaterial
+        );
+        topFrame.position.set(0, doorHeight + (frameThickness / 2), 0);
+        topFrame.castShadow = true;
+        doorwayGroup.add(topFrame);
+
+        const portalPlane = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(4.6, 2.6), portalMaterial);
+        portalPlane.position.set(0, 1.33, doorwayZ - 1.6);
+        scene3d.add(portalPlane);
+
+        const softShadow = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(1.28, 0.14), shadowMaterial);
+        softShadow.rotation.x = -Math.PI / 2;
+        softShadow.position.set(0, 0.01, doorwayZ + 0.1);
+        scene3d.add(softShadow);
+
+        const doorPivot = new THREE_REF.Group();
+        doorPivot.position.set(-doorWidth / 2, 0.02, frameDepth * 0.26);
+        doorwayGroup.add(doorPivot);
+
+        const doorMesh = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(doorWidth, doorHeight, doorThickness), doorMaterial);
+        doorMesh.position.set(doorWidth / 2, doorHeight / 2, 0);
+        doorMesh.castShadow = true;
+        doorMesh.receiveShadow = true;
+        doorPivot.add(doorMesh);
+
+        const signMesh = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.72, 0.16), signMaterial);
+        signMesh.position.set(0, 0.82, (doorThickness / 2) + 0.004);
+        doorMesh.add(signMesh);
+
+        const windowFrame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.68, 0.48, 0.028), windowFrameMaterial);
+        windowFrame.position.set(0, 0.28, (doorThickness / 2) + 0.008);
+        doorMesh.add(windowFrame);
+
+        const windowScene = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.58, 0.38), windowSceneMaterial);
+        windowScene.position.set(0, 0.28, (doorThickness / 2) + 0.022);
+        doorMesh.add(windowScene);
+
+        const glassTint = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.58, 0.38), glassTintMaterial);
+        glassTint.position.set(0, 0.28, (doorThickness / 2) + 0.026);
+        doorMesh.add(glassTint);
+
+        const kickplate = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.9, 0.22, 0.01), kickMaterial);
+        kickplate.position.set(0, -0.86, (doorThickness / 2) + 0.012);
+        doorMesh.add(kickplate);
+
+        const handlePlate = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.12, 0.38, 0.012), metalMaterial);
+        handlePlate.position.set(doorWidth * 0.38, -0.2, (doorThickness / 2) + 0.016);
+        doorMesh.add(handlePlate);
+
+        const handlePivot = new THREE_REF.Group();
+        handlePivot.position.set(doorWidth * 0.34, -0.2, (doorThickness / 2) + 0.028);
+        doorMesh.add(handlePivot);
+
+        const handleKnob = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.03, 0.03, 0.02, 16), metalMaterial);
+        handleKnob.rotation.x = Math.PI / 2;
+        handlePivot.add(handleKnob);
+
+        const handleLever = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.014, 0.016, 0.24, 22), metalMaterial);
+        handleLever.rotation.z = Math.PI / 2;
+        handleLever.position.set(0.13, 0, 0);
+        handlePivot.add(handleLever);
+
+        const hingeMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0x8f4f28,
+          roughness: 0.44,
+          metalness: 0.2
+        });
+        const hingeGeometry = new THREE_REF.BoxGeometry(0.022, 0.12, 0.02);
+        const hingeOffsets = [0.66, 0.18, -0.36];
+        hingeOffsets.forEach(function (offsetY) {
+          const hinge = new THREE_REF.Mesh(hingeGeometry, hingeMaterial);
+          hinge.position.set(-doorWidth / 2 + 0.01, offsetY, (doorThickness / 2) + 0.011);
+          doorMesh.add(hinge);
+        });
+
+        const ceilingLightGeometry = new THREE_REF.BoxGeometry(0.52, 0.03, 0.22);
+        const ceilingLightMaterial = new THREE_REF.MeshStandardMaterial({
+          color: 0xe8edf2,
+          emissive: 0xbec7d0,
+          emissiveIntensity: 0.5,
+          roughness: 0.24
+        });
+        const ceilingLightA = new THREE_REF.Mesh(ceilingLightGeometry, ceilingLightMaterial);
+        ceilingLightA.position.set(-0.9, 2.72, -0.78);
+        scene3d.add(ceilingLightA);
+        const ceilingLightB = ceilingLightA.clone();
+        ceilingLightB.position.x = 0.9;
+        scene3d.add(ceilingLightB);
+
+        let animationFrameId = null;
+        let disposed = false;
+        let resolveDone;
+        const donePromise = new Promise(function (resolve) {
+          resolveDone = resolve;
+        });
+        const startTimeMs = performance.now();
+
+        function setFadeProgress(progress) {
+          if (!fadeLayer) {
+            return;
+          }
+          fadeLayer.style.opacity = String(clamp01(progress));
+        }
+
+        function handleResize() {
+          const width = Math.max(1, container.clientWidth || window.innerWidth || 1);
+          const height = Math.max(1, container.clientHeight || window.innerHeight || 1);
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+
+        function frame(nowMs) {
+          if (disposed) {
+            return;
+          }
+
+          const elapsedMs = nowMs - startTimeMs;
+          const t = clamp01(elapsedMs / durationMs);
+
+          const doorOpenProgress = easeOutCubic(clamp01((t - 0.1) / 0.52));
+          doorPivot.rotation.y = -1.95 * doorOpenProgress;
+
+          const handleDown = clamp01((t - 0.06) / 0.18);
+          const handleReset = clamp01((t - 0.24) / 0.2);
+          handlePivot.rotation.z = -0.36 * (handleDown - handleReset);
+
+          const walkProgressPrimary = easeInOutCubic(clamp01((t - 0.08) / 0.66));
+          const walkProgressPush = easeInCubic(clamp01((t - 0.68) / 0.32));
+          const bob = reduceMotion ? 0 : Math.sin((t * Math.PI) * 6) * 0.014 * (1 - t);
+
+          camera.position.set(
+            lerp(0, -0.1, walkProgressPrimary),
+            1.47 + bob,
+            lerp(1.95, -1.2, walkProgressPrimary) + lerp(0, -0.72, walkProgressPush)
+          );
+
+          const lookProgress = easeInOutCubic(clamp01((t - 0.12) / 0.88));
+          camera.lookAt(
+            lerp(0, -0.14, lookProgress),
+            lerp(1.35, 1.26, lookProgress),
+            lerp(doorwayZ - 0.2, doorwayZ - 2.7, lookProgress)
+          );
+
+          const fadeProgress = clamp01((t - 0.74) / 0.26);
+          setFadeProgress(Math.pow(fadeProgress, 1.65));
+
+          renderer.render(scene3d, camera);
+
+          if (t >= 1) {
+            resolveDone();
+            return;
+          }
+          animationFrameId = requestAnimationFrame(frame);
+        }
+
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        setFadeProgress(0);
+
+        if (textureCandidates.length) {
+          const textureLoader = new THREE_REF.TextureLoader();
+          loadTextureFromCandidates(textureLoader, textureCandidates)
+            .then(function (loadedTexture) {
+              applyPortalTexture(loadedTexture, {
+                windowRepeatX: 0.72,
+                windowRepeatY: 0.56,
+                windowOffsetX: 0.14,
+                windowOffsetY: 0.23
+              });
+            })
+            .catch(function () {
+              // Keep built-in colors if background image loading fails.
+            });
+        }
+
+        animationFrameId = requestAnimationFrame(frame);
+
+        return {
+          donePromise: donePromise,
+          applyPortalCanvasSnapshot: function (snapshotCanvas) {
+            if (disposed || !snapshotCanvas) {
+              return false;
+            }
+            const snapshotTexture = new THREE_REF.CanvasTexture(snapshotCanvas);
+            applyPortalTexture(snapshotTexture, {
+              windowRepeatX: 0.64,
+              windowRepeatY: 0.56,
+              windowOffsetX: 0.18,
+              windowOffsetY: 0.24
+            });
+            return true;
+          },
+          dispose: function () {
+            if (disposed) {
+              return;
+            }
+            disposed = true;
+            if (animationFrameId !== null) {
+              cancelAnimationFrame(animationFrameId);
+            }
+            window.removeEventListener("resize", handleResize);
+            if (container.contains(renderer.domElement)) {
+              container.removeChild(renderer.domElement);
+            }
+            renderer.dispose();
+
+            const disposedTextures = new Set();
+            scene3d.traverse(function (node) {
+              if (node.geometry && typeof node.geometry.dispose === "function") {
+                node.geometry.dispose();
+              }
+              if (!node.material) {
+                return;
+              }
+              const materials = Array.isArray(node.material) ? node.material : [node.material];
+              materials.forEach(function (material) {
+                if (!material || typeof material.dispose !== "function") {
+                  return;
+                }
+                [
+                  "map",
+                  "normalMap",
+                  "roughnessMap",
+                  "metalnessMap",
+                  "aoMap",
+                  "emissiveMap",
+                  "alphaMap",
+                  "transmissionMap"
+                ].forEach(function (key) {
+                  const texture = material[key];
+                  if (texture && typeof texture.dispose === "function" && !disposedTextures.has(texture)) {
+                    disposedTextures.add(texture);
+                    texture.dispose();
+                  }
+                });
+                material.dispose();
+              });
+            });
+          }
+        };
+      }
+
+      function createDoorIntroController() {
+        if (!doorIntro) {
+          return {
+            refreshPortalSnapshot: function () {
+              return false;
+            },
+            complete: function () {
+              return Promise.resolve();
+            }
+          };
+        }
+
+        if (SHOULD_SKIP_INTRO) {
+          doorIntro.hidden = true;
+          doorIntro.classList.remove("is-leaving");
+          if (doorIntroFade) {
+            doorIntroFade.style.opacity = "0";
+          }
+          document.body.classList.remove("intro-active");
+          return {
+            refreshPortalSnapshot: function () {
+              return false;
+            },
+            complete: function () {
+              return Promise.resolve();
+            }
+          };
+        }
+
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const introDurationMs = reduceMotion ? INTRO_REDUCED_DURATION_MS : INTRO_ANIMATION_DURATION_MS;
+        let finished = false;
+        let runtime = null;
+        let snapshotRetryTimerId = null;
+        let snapshotRetryCount = 0;
+        const SNAPSHOT_MAX_RETRIES = 18;
+        const SNAPSHOT_RETRY_MS = 120;
+        let introMinDurationPromise = waitForMs(introDurationMs);
+
+        function clearSnapshotRetry() {
+          if (snapshotRetryTimerId !== null) {
+            clearTimeout(snapshotRetryTimerId);
+            snapshotRetryTimerId = null;
+          }
+        }
+
+        function refreshPortalSnapshot() {
+          if (!runtime || typeof runtime.applyPortalCanvasSnapshot !== "function") {
+            return false;
+          }
+          const snapshotCanvas = captureSceneSnapshotCanvas(scene, mainBackground, hotspotLayer);
+          if (!snapshotCanvas) {
+            return false;
+          }
+          return runtime.applyPortalCanvasSnapshot(snapshotCanvas);
+        }
+
+        function queueSnapshotRetryLoop() {
+          clearSnapshotRetry();
+          snapshotRetryCount = 0;
+          const trySnapshot = function () {
+            if (finished) {
+              return;
+            }
+            if (refreshPortalSnapshot()) {
+              return;
+            }
+            snapshotRetryCount += 1;
+            if (snapshotRetryCount >= SNAPSHOT_MAX_RETRIES) {
+              return;
+            }
+            snapshotRetryTimerId = setTimeout(trySnapshot, SNAPSHOT_RETRY_MS);
+          };
+          trySnapshot();
+        }
+
+        doorIntro.hidden = false;
+        doorIntro.classList.remove("is-leaving");
+        document.body.classList.add("intro-active");
+        if (doorIntroFade) {
+          doorIntroFade.style.opacity = "0";
+        }
+
+        try {
+          runtime = createThreeDoorIntroRuntime({
+            container: doorIntroStage,
+            fadeLayer: doorIntroFade,
+            durationMs: introDurationMs,
+            reduceMotion: reduceMotion,
+            textureCandidates: getVersionedBackgroundCandidates(false)
+          });
+          if (runtime && runtime.donePromise) {
+            introMinDurationPromise = runtime.donePromise;
+            queueSnapshotRetryLoop();
+          }
+        } catch (error) {
+          console.warn("Three.js intro runtime failed; using fallback fade.", error);
+        }
+
+        return {
+          refreshPortalSnapshot: refreshPortalSnapshot,
+          complete: async function () {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            clearSnapshotRetry();
+            await introMinDurationPromise;
+            if (runtime && typeof runtime.dispose === "function") {
+              runtime.dispose();
+            }
+            doorIntro.classList.add("is-leaving");
+            await waitForMs(INTRO_FADE_DURATION_MS);
+            if (doorIntroFade) {
+              doorIntroFade.style.opacity = "0";
+            }
+            doorIntro.hidden = true;
+            doorIntro.classList.remove("is-leaving");
+            document.body.classList.remove("intro-active");
+          }
+        };
+      }
+
+      function isPortraitViewport() {
+        return window.matchMedia("(orientation: portrait)").matches;
+      }
+
+      function getBackgroundCandidates(isPortrait = isPortraitViewport()) {
+        return isPortrait
+          ? [
+            "NEWmainbackground.png",
+            "newmainbackground.png",
+            "NewMainBackground.png"
+          ]
+          : [
+            "NEWmainbackground.png",
+            "newmainbackground.png",
+            "NewMainBackground.png"
+          ];
+      }
+
+      const COMPONENT_IMAGE_DIR = "ComponentImages";
+      const COMPONENT_IMAGE_MANIFEST_PATH = COMPONENT_IMAGE_DIR + "/image-manifest.json";
+      const PANEL_DRAG_THRESHOLD_PX = 3;
+      const COMPONENT_AUTO_REFRESH_INTERVAL_MS = 5000;
+      const GENERIC_COMPONENT_LAYOUTS = [
+        { left: 15.9, top: 59.5, width: 20.1 },
+        { left: 40, top: 58, width: 18 },
+        { left: 63, top: 56, width: 18 },
+        { left: 25, top: 45, width: 16.5 },
+        { left: 52, top: 43, width: 16.5 }
+      ];
+
+      const BUILT_IN_OBJECTS = [
+        {
+          id: "laptop",
+          label: "Open laptop minigame",
+          className: "hotspot hotspot-laptop",
+          imageCandidates: [
+            "Laptop.png",
+            "Laptop2.png",
+            "Laptop4.png",
+            "laptop.png",
+            "laptop2.png",
+            "laptop4.png"
+          ],
+          minigame: "laptopMath",
+          defaultLayout: {
+            left: 15.9,
+            top: 59.5,
+            width: 20.1
+          }
+        }
+      ];
+      let interactiveObjects = createBuiltInInteractiveObjects();
+
+      const doorIntro = document.getElementById("doorIntro");
+      const doorIntroStage = document.getElementById("doorIntroStage");
+      const doorIntroFade = document.getElementById("doorIntroFade");
+      const scene = document.getElementById("scene");
+      const hotspotLayer = document.getElementById("hotspotLayer");
+      const mainBackground = document.getElementById("mainBackground");
+      const saveLayoutBtn = document.getElementById("saveLayout");
+      const resetLayoutBtn = document.getElementById("resetLayout");
+      const managerPanel = document.getElementById("managerPanel");
+      const managerPanelHeader = document.getElementById("managerPanelHeader");
+      const closeManagerPanelBtn = document.getElementById("closeManagerPanel");
+      const managerToggleBtn = document.getElementById("managerToggleBtn");
+      const managerStatus = document.getElementById("managerStatus");
+      const managerTarget = document.getElementById("managerTarget");
+      const managerSizeRange = document.getElementById("managerSizeRange");
+      const managerSizeValue = document.getElementById("managerSizeValue");
+
+      const minigameModal = document.getElementById("minigameModal");
+      const closeModalBtn = document.getElementById("closeModal");
+      const questionEl = document.getElementById("question");
+      const scoreEl = document.getElementById("score");
+      const timerEl = document.getElementById("timer");
+      const resultTextEl = document.getElementById("resultText");
+      const answerForm = document.getElementById("answerForm");
+      const answerInput = document.getElementById("answerInput");
+      const submitAnswerBtn = document.getElementById("submitAnswer");
+      const startBtn = document.getElementById("startBtn");
+      const restartBtn = document.getElementById("restartBtn");
+      const gameFrameModal = document.getElementById("gameFrameModal");
+      const gameFrameIframe = document.getElementById("gameFrameIframe");
+      const closeGameFrameBtn = document.getElementById("closeGameFrameBtn");
+
+      let timerId = null;
+      let secondsLeft = 30;
+      let score = 0;
+      let currentQuestion = null;
+      let gameRunning = false;
+
+      let managerMode = false;
+      let layoutLocked = true;
+      let activeDrag = null;
+      let layoutState = createDefaultLayoutState();
+      let selectedObjectId = null;
+      let activeBackgroundRect = null;
+      let panelDrag = null;
+      let portraitPanOffsetPercent = 0;
+      let scenePanDrag = null;
+      let suppressHotspotClickUntilMs = 0;
+      let panQueuedOffsetPercent = portraitPanOffsetPercent;
+      let panCommitFrameId = null;
+      let panInertiaFrameId = null;
+      let panInertiaLastFrameMs = 0;
+      let panInertiaVelocityPercentPerMs = 0;
+      let hotspotPanAnchorOffsetPercent = 0;
+      let hotspotPanPixelsPerOffsetPercent = 0;
+      let hotspotPanTransformPx = 0;
+      let backgroundStageWidthPx = 0;
+      let backgroundStageHeightPx = 0;
+      let backgroundRenderWidthPx = 0;
+      let backgroundRenderHeightPx = 0;
+      let backgroundTranslateXPx = 0;
+      let backgroundTranslateYPx = 0;
+      let viewportRefreshFrameId = null;
+      let viewportRefreshForceLoad = false;
+      let fallbackTouchPointerId = null;
+      let backgroundMode = isPortraitViewport() ? "portrait" : "landscape";
+      let componentCatalogSignature = "";
+      let componentFileCatalog = [];
+      let componentImageCacheBust = String(Date.now());
+      let componentRefreshTimerId = null;
+      let componentRefreshInFlight = false;
+      let remoteSaveTimerId = null;
+      let remoteSyncEnabled = false;
+      let remoteUsername = "";
+      let remoteApplyInProgress = false;
+      let hasUiInitialized = false;
+      let pendingRemoteState = null;
+      let initialSyncResolved = false;
+      let initialSyncResolver = null;
+      let lastRemoteStateSignature = "";
+      const iframeClientId = "classroom3d-" + Math.random().toString(36).slice(2, 10);
+      const hotspotElementsById = new Map();
+      const SUPPORTS_POINTER_EVENTS = typeof window.PointerEvent === "function";
+
+      if (!MANAGER_UI_ENABLED) {
+        managerToggleBtn.hidden = true;
+        managerPanel.hidden = true;
+        saveLayoutBtn.hidden = true;
+        resetLayoutBtn.hidden = true;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function uniqueStrings(values) {
+        const seen = new Set();
+        const result = [];
+        values.forEach(function (value) {
+          if (typeof value !== "string") {
+            return;
+          }
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return;
+          }
+          const key = trimmed.toLowerCase();
+          if (seen.has(key)) {
+            return;
+          }
+          seen.add(key);
+          result.push(trimmed);
+        });
+        return result;
+      }
+
+      function extractFileName(value) {
+        if (typeof value !== "string") {
+          return "";
+        }
+        const normalized = value
+          .split("?")[0]
+          .split("#")[0]
+          .replace(/\\/g, "/");
+        const parts = normalized.split("/");
+        return (parts[parts.length - 1] || "").trim();
+      }
+
+      function stripImageExtension(fileName) {
+        return String(fileName || "").replace(/\.[^.]+$/, "");
+      }
+
+      function toTitleWords(fileName) {
+        const normalized = stripImageExtension(fileName)
+          .replace(/[_-]+/g, " ")
+          .replace(/([a-z])([A-Z])/g, "$1 $2")
+          .trim();
+        if (!normalized) {
+          return "Component";
+        }
+        return normalized
+          .split(/\s+/)
+          .map(function (word) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          })
+          .join(" ");
+      }
+
+      function createUniqueComponentId(fileName, usedIds) {
+        const slug = stripImageExtension(fileName)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        const baseId = "component-" + (slug || "image");
+        let id = baseId;
+        let index = 2;
+        while (usedIds.has(id)) {
+          id = baseId + "-" + index;
+          index += 1;
+        }
+        usedIds.add(id);
+        return id;
+      }
+
+      function isBackgroundFileName(fileName) {
+        const normalized = String(fileName || "").toLowerCase();
+        if (!normalized) {
+          return false;
+        }
+        const backgrounds = getBackgroundCandidates(true)
+          .concat(getBackgroundCandidates(false))
+          .map(function (name) {
+            return String(name || "").toLowerCase();
+          });
+        if (backgrounds.indexOf(normalized) !== -1) {
+          return true;
+        }
+        return /^newmainbackground\d*\.png$/i.test(normalized);
+      }
+
+      function isComponentImageFile(fileName) {
+        if (!/\.png$/i.test(String(fileName || ""))) {
+          return false;
+        }
+        return !isBackgroundFileName(fileName);
+      }
+
+      function componentImagePath(fileName, cacheToken) {
+        const base = encodeURI(COMPONENT_IMAGE_DIR + "/" + fileName);
+        if (!cacheToken) {
+          return base;
+        }
+        return base + "?v=" + encodeURIComponent(String(cacheToken));
+      }
+
+      function createBuiltInInteractiveObjects() {
+        return BUILT_IN_OBJECTS.map(function (obj) {
+          return {
+            id: obj.id,
+            label: obj.label,
+            className: obj.className,
+            imageCandidates: obj.imageCandidates.slice(),
+            minigame: obj.minigame,
+            componentFileName: "",
+            defaultLayout: {
+              left: obj.defaultLayout.left,
+              top: obj.defaultLayout.top,
+              width: obj.defaultLayout.width
+            }
+          };
+        });
+      }
+
+      function genericDefaultLayout(index) {
+        const template = GENERIC_COMPONENT_LAYOUTS[index % GENERIC_COMPONENT_LAYOUTS.length];
+        const row = Math.floor(index / GENERIC_COMPONENT_LAYOUTS.length);
+        return {
+          left: clamp(template.left + row * 2.5, 8, 88),
+          top: clamp(template.top - row * 4, 25, 88),
+          width: clamp(template.width, 6, 60)
+        };
+      }
+
+      function createGenericComponentObject(fileName, index, usedIds, cacheToken) {
+        return {
+          id: createUniqueComponentId(fileName, usedIds),
+          label: toTitleWords(fileName) + " component",
+          className: "hotspot",
+          imageCandidates: uniqueStrings([componentImagePath(fileName, cacheToken), componentImagePath(fileName), fileName]),
+          minigame: null,
+          componentFileName: fileName,
+          defaultLayout: genericDefaultLayout(index)
+        };
+      }
+
+      async function loadComponentManifestEntries() {
+        try {
+          const response = await fetch(COMPONENT_IMAGE_MANIFEST_PATH, { cache: "no-store" });
+          if (!response.ok) {
+            return [];
+          }
+          const payload = await response.json();
+          return Array.isArray(payload) ? payload : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      async function loadComponentDirectoryEntries() {
+        try {
+          const response = await fetch(COMPONENT_IMAGE_DIR + "/", { cache: "no-store" });
+          if (!response.ok) {
+            return [];
+          }
+          const html = await response.text();
+          if (!html) {
+            return [];
+          }
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const links = Array.prototype.slice.call(doc.querySelectorAll("a[href]"));
+          return links
+            .map(function (link) {
+              return link.getAttribute("href") || "";
+            })
+            .filter(Boolean);
+        } catch (error) {
+          return [];
+        }
+      }
+
+      async function discoverComponentImages() {
+        const manifestEntries = await loadComponentManifestEntries();
+        const listingEntries = await loadComponentDirectoryEntries();
+        const bootstrapManifestEntries = readBootstrapManifestComponentFiles();
+        const merged = manifestEntries
+          .concat(bootstrapManifestEntries)
+          .concat(listingEntries);
+
+        return normalizeComponentFiles(merged);
+      }
+
+      function readBootstrapManifestComponentFiles() {
+        const componentBootstrapManifest = Array.isArray(window.__COMPONENT_IMAGE_MANIFEST__)
+          ? window.__COMPONENT_IMAGE_MANIFEST__
+          : [];
+        const legacyManifest = Array.isArray(window.__IMAGE_MANIFEST__) ? window.__IMAGE_MANIFEST__ : [];
+        return normalizeComponentFiles(componentBootstrapManifest.concat(legacyManifest));
+      }
+
+      function normalizeComponentFiles(entries) {
+        const seen = new Set();
+        const files = [];
+        (entries || []).forEach(function (entry) {
+          const fileName = extractFileName(entry);
+          const normalized = fileName.toLowerCase();
+          if (!isComponentImageFile(fileName) || seen.has(normalized)) {
+            return;
+          }
+          seen.add(normalized);
+          files.push(fileName);
+        });
+
+        return files.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { sensitivity: "base" });
+        });
+      }
+
+      function mergeComponentFileSources() {
+        const merged = [];
+        for (let index = 0; index < arguments.length; index += 1) {
+          const source = arguments[index];
+          if (!Array.isArray(source) || !source.length) {
+            continue;
+          }
+          merged.push.apply(merged, source);
+        }
+        return normalizeComponentFiles(merged);
+      }
+
+      function readSavedComponentFiles() {
+        const saved = readFromStorage(STORAGE_COMPONENT_FILES_KEY);
+        if (!Array.isArray(saved)) {
+          return [];
+        }
+        return normalizeComponentFiles(saved);
+      }
+
+      function readEmbeddedComponentFiles() {
+        const embedded = readEmbeddedStateSnapshot();
+        if (!embedded || !Array.isArray(embedded.componentFiles)) {
+          return [];
+        }
+        return normalizeComponentFiles(embedded.componentFiles);
+      }
+
+      function saveComponentFiles() {
+        saveToStorage(STORAGE_COMPONENT_FILES_KEY, componentFileCatalog.slice());
+      }
+
+      function buildInteractiveObjectsFromFiles(files, cacheToken) {
+        const builtIn = createBuiltInInteractiveObjects();
+        if (!files.length) {
+          return builtIn;
+        }
+
+        const byBuiltInFile = {};
+        builtIn.forEach(function (obj) {
+          const key = extractFileName(obj.imageCandidates[0]).toLowerCase();
+          byBuiltInFile[key] = obj;
+        });
+
+        const objects = [];
+        const usedIds = new Set();
+        files.forEach(function (fileName, index) {
+          const builtInMatch = byBuiltInFile[fileName.toLowerCase()];
+          if (builtInMatch) {
+            const mergedBuiltIn = {
+              id: builtInMatch.id,
+              label: builtInMatch.label,
+              className: builtInMatch.className,
+              imageCandidates: uniqueStrings(
+                [componentImagePath(fileName, cacheToken), componentImagePath(fileName)].concat(builtInMatch.imageCandidates)
+              ),
+              minigame: builtInMatch.minigame,
+              componentFileName: fileName,
+              defaultLayout: {
+                left: builtInMatch.defaultLayout.left,
+                top: builtInMatch.defaultLayout.top,
+                width: builtInMatch.defaultLayout.width
+              }
+            };
+            if (!usedIds.has(mergedBuiltIn.id)) {
+              usedIds.add(mergedBuiltIn.id);
+              objects.push(mergedBuiltIn);
+            }
+            return;
+          }
+          objects.push(createGenericComponentObject(fileName, index, usedIds, cacheToken));
+        });
+
+        return objects.length ? objects : builtIn;
+      }
+
+      function componentFileListSignature(files) {
+        return files
+          .map(function (fileName) {
+            return String(fileName || "").toLowerCase();
+          })
+          .join("|");
+      }
+
+      function mergeLayoutStateWithPrevious(previousLayoutState) {
+        const merged = {};
+        const defaults = createDefaultLayoutState();
+        interactiveObjects.forEach(function (obj) {
+          const defaultsForObject = defaults[obj.id];
+          const previous = previousLayoutState && previousLayoutState[obj.id];
+          if (previous && typeof previous === "object") {
+            const left = Number(previous.left);
+            const top = Number(previous.top);
+            const width = Number(previous.width);
+            merged[obj.id] = {
+              left: Number.isFinite(left) ? clamp(left, 0, 95) : defaultsForObject.left,
+              top: Number.isFinite(top) ? clamp(top, 0, 95) : defaultsForObject.top,
+              width: Number.isFinite(width) ? clamp(width, 6, 60) : defaultsForObject.width
+            };
+            return;
+          }
+          merged[obj.id] = {
+            left: defaultsForObject.left,
+            top: defaultsForObject.top,
+            width: defaultsForObject.width
+          };
+        });
+        return merged;
+      }
+
+      function refreshHotspotImageSources() {
+        interactiveObjects.forEach(function (obj) {
+          if (!obj.componentFileName) {
+            return;
+          }
+          const hotspot = document.querySelector('[data-object-id="' + obj.id + '"]');
+          if (!hotspot) {
+            return;
+          }
+          const sprite = hotspot.querySelector("img");
+          if (!sprite) {
+            return;
+          }
+          const refreshedCandidates = uniqueStrings(
+            [componentImagePath(obj.componentFileName, componentImageCacheBust)]
+              .concat(obj.imageCandidates || [])
+          );
+          obj.imageCandidates = refreshedCandidates;
+          applyImageWithFallback(sprite, refreshedCandidates);
+        });
+      }
+
+      async function refreshInteractiveObjects(forceRebuild) {
+        if (componentRefreshInFlight) {
+          return false;
+        }
+        componentRefreshInFlight = true;
+        try {
+          const discoveredFiles = await discoverComponentImages();
+          componentFileCatalog = discoveredFiles.slice();
+          const nextSignature = componentFileListSignature(discoveredFiles);
+          const shouldRebuild = Boolean(forceRebuild) || nextSignature !== componentCatalogSignature;
+          componentImageCacheBust = String(Date.now());
+
+          if (!shouldRebuild) {
+            refreshHotspotImageSources();
+            return false;
+          }
+
+          if (activeDrag) {
+            endDrag({ pointerId: activeDrag.pointerId });
+          }
+          if (panelDrag) {
+            endPanelDrag({ pointerId: panelDrag.pointerId });
+          }
+
+          const previousLayoutState = layoutState;
+          const previousSelectedObjectId = selectedObjectId;
+
+          interactiveObjects = buildInteractiveObjectsFromFiles(discoveredFiles, componentImageCacheBust);
+          componentCatalogSignature = nextSignature;
+          layoutState = mergeLayoutStateWithPrevious(previousLayoutState);
+
+          buildManagerTargets();
+          if (previousSelectedObjectId && layoutState[previousSelectedObjectId]) {
+            selectedObjectId = previousSelectedObjectId;
+          }
+
+          renderHotspots();
+          refreshBackgroundRect();
+          applyLayoutToAllHotspots();
+
+          if (selectedObjectId && layoutState[selectedObjectId]) {
+            setSelectedObject(selectedObjectId);
+          }
+          if (managerMode) {
+            managerStatus.textContent = "Components auto-updated from " + COMPONENT_IMAGE_DIR + ".";
+          }
+          return true;
+        } finally {
+          componentRefreshInFlight = false;
+        }
+      }
+
+      function handleComponentRefreshFocus() {
+        refreshInteractiveObjects(false);
+      }
+
+      function handleComponentRefreshVisibility() {
+        if (!document.hidden) {
+          refreshInteractiveObjects(false);
+        }
+      }
+
+      function startComponentAutoRefresh() {
+        if (!MANAGER_UI_ENABLED) {
+          return;
+        }
+        if (componentRefreshTimerId !== null) {
+          clearInterval(componentRefreshTimerId);
+        }
+        componentRefreshTimerId = setInterval(function () {
+          refreshInteractiveObjects(false);
+        }, COMPONENT_AUTO_REFRESH_INTERVAL_MS);
+        window.addEventListener("focus", handleComponentRefreshFocus);
+        document.addEventListener("visibilitychange", handleComponentRefreshVisibility);
+      }
+
+      function stopComponentAutoRefresh() {
+        if (componentRefreshTimerId !== null) {
+          clearInterval(componentRefreshTimerId);
+          componentRefreshTimerId = null;
+        }
+        window.removeEventListener("focus", handleComponentRefreshFocus);
+        document.removeEventListener("visibilitychange", handleComponentRefreshVisibility);
+      }
+
+      async function initializeInteractiveObjects() {
+        if (!MANAGER_UI_ENABLED) {
+          const embeddedFiles = readEmbeddedComponentFiles();
+          const savedFiles = readSavedComponentFiles();
+          const bootstrapFiles = readBootstrapManifestComponentFiles();
+          const baseFiles = mergeComponentFileSources(embeddedFiles, savedFiles, bootstrapFiles);
+          componentFileCatalog = baseFiles.slice();
+          componentCatalogSignature = componentFileListSignature(baseFiles);
+          componentImageCacheBust = String(Date.now());
+          interactiveObjects = buildInteractiveObjectsFromFiles(baseFiles, componentImageCacheBust);
+          layoutState = createDefaultLayoutState();
+          return;
+        }
+        await refreshInteractiveObjects(true);
+      }
+
+      function isEditableTarget(target) {
+        if (!target) {
+          return false;
+        }
+        const tag = target.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+      }
+
+      function sceneRect() {
+        return scene.getBoundingClientRect();
+      }
+
+      function getComponentScale() {
+        return isPortraitViewport() ? PORTRAIT_COMPONENT_SCALE : 1;
+      }
+
+      function getPortraitPanRange() {
+        const minOffsetPercent = PORTRAIT_PAN_MIN_POSITION_PERCENT - PORTRAIT_BACKGROUND_POSITION_PERCENT;
+        const maxOffsetPercent = PORTRAIT_PAN_MAX_POSITION_PERCENT - PORTRAIT_BACKGROUND_POSITION_PERCENT;
+        return {
+          minOffsetPercent: Math.min(minOffsetPercent, maxOffsetPercent),
+          maxOffsetPercent: Math.max(minOffsetPercent, maxOffsetPercent),
+          spanPercent: Math.abs(maxOffsetPercent - minOffsetPercent)
+        };
+      }
+
+      function getPortraitObjectPositionPercent() {
+        if (!isPortraitViewport()) {
+          return LANDSCAPE_BACKGROUND_POSITION_PERCENT;
+        }
+        return clamp(
+          PORTRAIT_BACKGROUND_POSITION_PERCENT + portraitPanOffsetPercent,
+          PORTRAIT_PAN_MIN_POSITION_PERCENT,
+          PORTRAIT_PAN_MAX_POSITION_PERCENT
+        );
+      }
+
+      function refreshBackgroundRenderMetrics() {
+        const stage = sceneRect();
+        backgroundStageWidthPx = Math.max(stage.width, 1);
+        backgroundStageHeightPx = Math.max(stage.height, 1);
+
+        const naturalWidth = mainBackground.naturalWidth;
+        const naturalHeight = mainBackground.naturalHeight;
+
+        if (!naturalWidth || !naturalHeight) {
+          backgroundRenderWidthPx = backgroundStageWidthPx;
+          backgroundRenderHeightPx = backgroundStageHeightPx;
+          return;
+        }
+
+        const scale = Math.max(
+          backgroundStageWidthPx / naturalWidth,
+          backgroundStageHeightPx / naturalHeight
+        );
+        backgroundRenderWidthPx = naturalWidth * scale;
+        backgroundRenderHeightPx = naturalHeight * scale;
+      }
+
+      function getBackgroundRect() {
+        const stage = sceneRect();
+        return {
+          left: stage.left + backgroundTranslateXPx,
+          top: stage.top + backgroundTranslateYPx,
+          width: backgroundRenderWidthPx || stage.width,
+          height: backgroundRenderHeightPx || stage.height
+        };
+      }
+
+      function refreshBackgroundRect() {
+        refreshBackgroundRenderMetrics();
+        applyPortraitPan();
+        activeBackgroundRect = getBackgroundRect();
+      }
+
+      function applyLayoutToHotspotWithMetrics(hotspot, objectId, bounds, stage, componentScale) {
+        const layout = layoutState[objectId];
+        if (!layout || !hotspot || stage.width === 0 || stage.height === 0 || bounds.width === 0 || bounds.height === 0) {
+          return;
+        }
+
+        const left = bounds.left + (layout.left / 100) * bounds.width;
+        const top = bounds.top + (layout.top / 100) * bounds.height;
+        const width = (layout.width / 100) * bounds.width * componentScale;
+
+        hotspot.style.left = ((left - stage.left) / stage.width * 100) + "%";
+        hotspot.style.top = ((top - stage.top) / stage.height * 100) + "%";
+        hotspot.style.width = (width / stage.width) * 100 + "%";
+      }
+
+      function applyLayoutToHotspot(hotspot, objectId) {
+        const bounds = activeBackgroundRect || getBackgroundRect();
+        const stage = sceneRect();
+        const componentScale = getComponentScale();
+        applyLayoutToHotspotWithMetrics(hotspot, objectId, bounds, stage, componentScale);
+      }
+
+      function setSelectedObject(objectId) {
+        if (!layoutState[objectId]) {
+          return;
+        }
+        const previous = hotspotElementsById.get(selectedObjectId) || document.querySelector('[data-object-id="' + selectedObjectId + '"]');
+        const next = hotspotElementsById.get(objectId) || document.querySelector('[data-object-id="' + objectId + '"]');
+        if (previous && selectedObjectId && !hotspotElementsById.has(selectedObjectId)) {
+          hotspotElementsById.set(selectedObjectId, previous);
+        }
+        if (next && objectId && !hotspotElementsById.has(objectId)) {
+          hotspotElementsById.set(objectId, next);
+        }
+        if (previous) {
+          previous.classList.remove("selected");
+        }
+        if (next) {
+          next.classList.add("selected");
+        }
+        selectedObjectId = objectId;
+        if (managerTarget) {
+          managerTarget.value = objectId;
+        }
+        const layout = layoutState[objectId];
+        const nextWidth = typeof layout.width === "number" ? layout.width : 20;
+        managerSizeRange.value = String(nextWidth);
+        managerSizeValue.textContent = nextWidth.toFixed(1) + "%";
+      }
+
+      function updateManagerSelectionEnabled(enabled) {
+        managerTarget.disabled = !enabled;
+        managerSizeRange.disabled = !enabled;
+      }
+
+      function updateManagerUi() {
+        if (!MANAGER_UI_ENABLED) {
+          managerMode = false;
+          scene.classList.remove("manager-active");
+          managerToggleBtn.hidden = true;
+          managerPanel.hidden = true;
+          saveLayoutBtn.hidden = true;
+          resetLayoutBtn.hidden = true;
+          updateManagerSelectionEnabled(false);
+          stopComponentAutoRefresh();
+          refreshScenePanState();
+          return;
+        }
+        scene.classList.toggle("manager-active", managerMode);
+        managerToggleBtn.hidden = false;
+        managerPanel.hidden = !managerMode;
+        saveLayoutBtn.hidden = !managerMode;
+        resetLayoutBtn.hidden = !managerMode;
+        updateManagerSelectionEnabled(managerMode);
+        if (componentRefreshTimerId === null) {
+          startComponentAutoRefresh();
+        }
+        refreshScenePanState();
+
+        if (managerMode) {
+          managerStatus.textContent = "Manager mode active. Drag hotspots, then Save & Lock.";
+          return;
+        }
+
+        managerStatus.textContent = layoutLocked ? "Manager locked." : "Manager unlocked.";
+      }
+
+      function updateComponentWidth(objectId, nextWidth) {
+        const layout = layoutState[objectId];
+        if (!layout) {
+          return;
+        }
+        const width = clamp(Number(nextWidth), 6, 60);
+        layout.width = Number(width.toFixed(2));
+        const hotspot = hotspotElementsById.get(objectId) || document.querySelector('[data-object-id="' + objectId + '"]');
+        if (hotspot && !hotspotElementsById.has(objectId)) {
+          hotspotElementsById.set(objectId, hotspot);
+        }
+        if (hotspot) {
+          applyLayoutToHotspot(hotspot, objectId);
+        }
+        managerSizeValue.textContent = layout.width.toFixed(1) + "%";
+        if (selectedObjectId) {
+          managerStatus.textContent = selectedObjectId + " width: " + layout.width.toFixed(2) + "%";
+        }
+      }
+
+      function applyLayoutToAllHotspots() {
+        const stage = sceneRect();
+        const bounds = getBackgroundRect();
+        const componentScale = getComponentScale();
+        activeBackgroundRect = bounds;
+        interactiveObjects.forEach(function (obj) {
+          const hotspot = hotspotElementsById.get(obj.id) || document.querySelector('[data-object-id="' + obj.id + '"]');
+          if (hotspot && !hotspotElementsById.has(obj.id)) {
+            hotspotElementsById.set(obj.id, hotspot);
+          }
+          if (hotspot) {
+            applyLayoutToHotspotWithMetrics(hotspot, obj.id, bounds, stage, componentScale);
+          }
+        });
+        hotspotPanAnchorOffsetPercent = portraitPanOffsetPercent;
+        if (isPortraitViewport() && !managerMode) {
+          hotspotPanPixelsPerOffsetPercent = (stage.width - bounds.width) / 100;
+        } else {
+          hotspotPanPixelsPerOffsetPercent = 0;
+        }
+        hotspotLayer.style.transform = "";
+        hotspotPanTransformPx = 0;
+      }
+
+      function buildManagerTargets() {
+        const prev = managerTarget.value;
+        managerTarget.innerHTML = "";
+        interactiveObjects.forEach(function (obj) {
+          const option = document.createElement("option");
+          option.value = obj.id;
+          option.textContent = obj.label;
+          managerTarget.appendChild(option);
+        });
+        selectedObjectId = null;
+        if (prev && layoutState[prev]) {
+          selectedObjectId = prev;
+        } else if (interactiveObjects.length > 0) {
+          selectedObjectId = interactiveObjects[0].id;
+        }
+        managerTarget.value = selectedObjectId || "";
+        if (selectedObjectId) {
+          setSelectedObject(selectedObjectId);
+        } else {
+          managerSizeValue.textContent = "—";
+          managerSizeRange.value = "20.1";
+        }
+      }
+
+      function applyPortraitPan() {
+        if (
+          backgroundStageWidthPx <= 0
+          || backgroundStageHeightPx <= 0
+          || backgroundRenderWidthPx <= 0
+          || backgroundRenderHeightPx <= 0
+        ) {
+          refreshBackgroundRenderMetrics();
+        }
+        const isPortrait = isPortraitViewport();
+        const objectPositionX = isPortrait
+          ? getPortraitObjectPositionPercent()
+          : LANDSCAPE_BACKGROUND_POSITION_PERCENT;
+        const renderWidth = Math.max(backgroundRenderWidthPx, backgroundStageWidthPx);
+        const renderHeight = Math.max(backgroundRenderHeightPx, backgroundStageHeightPx);
+        backgroundTranslateXPx = (backgroundStageWidthPx - renderWidth) * (objectPositionX / 100);
+        backgroundTranslateYPx = (backgroundStageHeightPx - renderHeight) * (LANDSCAPE_BACKGROUND_POSITION_PERCENT / 100);
+        mainBackground.style.width = renderWidth.toFixed(3) + "px";
+        mainBackground.style.height = renderHeight.toFixed(3) + "px";
+        mainBackground.style.objectPosition = "50% 50%";
+        mainBackground.style.transform = "translate3d(" + backgroundTranslateXPx.toFixed(3) + "px, " + backgroundTranslateYPx.toFixed(3) + "px, 0)";
+      }
+
+      function applyHotspotPanTransform() {
+        if (!isPortraitViewport() || managerMode) {
+          hotspotLayer.style.transform = "";
+          hotspotPanTransformPx = 0;
+          return;
+        }
+        const deltaOffsetPercent = portraitPanOffsetPercent - hotspotPanAnchorOffsetPercent;
+        const nextShiftPx = deltaOffsetPercent * hotspotPanPixelsPerOffsetPercent;
+        if (!Number.isFinite(nextShiftPx)) {
+          return;
+        }
+        if (Math.abs(nextShiftPx - hotspotPanTransformPx) < 0.05) {
+          return;
+        }
+        hotspotPanTransformPx = nextShiftPx;
+        hotspotLayer.style.transform = "translate3d(" + nextShiftPx.toFixed(3) + "px, 0, 0)";
+      }
+
+      function stopPanMotion(cancelQueuedCommit = false) {
+        if (panInertiaFrameId !== null) {
+          cancelAnimationFrame(panInertiaFrameId);
+          panInertiaFrameId = null;
+        }
+        panInertiaLastFrameMs = 0;
+        panInertiaVelocityPercentPerMs = 0;
+        if (cancelQueuedCommit && panCommitFrameId !== null) {
+          cancelAnimationFrame(panCommitFrameId);
+          panCommitFrameId = null;
+          panQueuedOffsetPercent = portraitPanOffsetPercent;
+        }
+      }
+
+      function commitPanOffset(nextOffsetPercent) {
+        const panRange = getPortraitPanRange();
+        const clampedOffsetPercent = clamp(
+          nextOffsetPercent,
+          panRange.minOffsetPercent,
+          panRange.maxOffsetPercent
+        );
+        if (clampedOffsetPercent === portraitPanOffsetPercent) {
+          return false;
+        }
+        portraitPanOffsetPercent = clampedOffsetPercent;
+        applyPortraitPan();
+        applyHotspotPanTransform();
+        return true;
+      }
+
+      function queuePanCommit(nextOffsetPercent) {
+        const panRange = getPortraitPanRange();
+        panQueuedOffsetPercent = clamp(
+          nextOffsetPercent,
+          panRange.minOffsetPercent,
+          panRange.maxOffsetPercent
+        );
+        if (panCommitFrameId !== null) {
+          return;
+        }
+        panCommitFrameId = requestAnimationFrame(function () {
+          panCommitFrameId = null;
+          commitPanOffset(panQueuedOffsetPercent);
+        });
+      }
+
+      function flushQueuedPanCommit() {
+        if (panCommitFrameId !== null) {
+          cancelAnimationFrame(panCommitFrameId);
+          panCommitFrameId = null;
+        }
+        commitPanOffset(panQueuedOffsetPercent);
+      }
+
+      function stepPanInertia(timeMs) {
+        if (!isPortraitViewport() || managerMode) {
+          stopPanMotion(true);
+          return;
+        }
+        if (panInertiaLastFrameMs === 0) {
+          panInertiaLastFrameMs = timeMs;
+          panInertiaFrameId = requestAnimationFrame(stepPanInertia);
+          return;
+        }
+        const dtMs = Math.min(48, Math.max(0, timeMs - panInertiaLastFrameMs));
+        panInertiaLastFrameMs = timeMs;
+        if (dtMs <= 0) {
+          panInertiaFrameId = requestAnimationFrame(stepPanInertia);
+          return;
+        }
+
+        const decay = Math.exp(-PAN_INERTIA_DECAY_PER_SECOND * (dtMs / 1000));
+        panInertiaVelocityPercentPerMs *= decay;
+        if (Math.abs(panInertiaVelocityPercentPerMs) < PAN_INERTIA_MIN_VELOCITY_PERCENT_PER_MS) {
+          stopPanMotion(true);
+          return;
+        }
+
+        const nextOffsetPercent = portraitPanOffsetPercent + panInertiaVelocityPercentPerMs * dtMs;
+        const moved = commitPanOffset(nextOffsetPercent);
+        const panRange = getPortraitPanRange();
+        const atLeftEdge = portraitPanOffsetPercent <= panRange.minOffsetPercent + PAN_EDGE_EPSILON_PERCENT;
+        const atRightEdge = portraitPanOffsetPercent >= panRange.maxOffsetPercent - PAN_EDGE_EPSILON_PERCENT;
+        if (!moved || atLeftEdge || atRightEdge) {
+          stopPanMotion(true);
+          return;
+        }
+
+        panInertiaFrameId = requestAnimationFrame(stepPanInertia);
+      }
+
+      function startPanInertia(initialVelocityPercentPerMs) {
+        const clampedVelocity = clamp(
+          initialVelocityPercentPerMs,
+          -PAN_INERTIA_MAX_VELOCITY_PERCENT_PER_MS,
+          PAN_INERTIA_MAX_VELOCITY_PERCENT_PER_MS
+        );
+        if (Math.abs(clampedVelocity) < PAN_FLICK_MIN_VELOCITY_PERCENT_PER_MS) {
+          stopPanMotion(true);
+          return;
+        }
+        stopPanMotion(true);
+        panInertiaVelocityPercentPerMs = clampedVelocity;
+        panInertiaLastFrameMs = 0;
+        panInertiaFrameId = requestAnimationFrame(stepPanInertia);
+      }
+
+      function refreshScenePanState() {
+        const panEnabled = isPortraitViewport() && !managerMode;
+        const wasPanEnabled = scene.classList.contains("pan-enabled");
+        scene.classList.toggle("pan-enabled", panEnabled);
+        if (!panEnabled) {
+          stopPanMotion(true);
+        }
+        if (!panEnabled && scenePanDrag) {
+          if (scenePanDrag.captured && scene.hasPointerCapture(scenePanDrag.pointerId)) {
+            scene.releasePointerCapture(scenePanDrag.pointerId);
+          }
+          scene.classList.remove("panning");
+          scenePanDrag = null;
+        }
+        const shouldRebaseHotspots = (panEnabled !== wasPanEnabled)
+          || (!panEnabled && hotspotPanTransformPx !== 0);
+        if (shouldRebaseHotspots) {
+          refreshBackgroundRect();
+          applyLayoutToAllHotspots();
+        }
+      }
+
+      function shouldSuppressHotspotClick() {
+        return performance.now() < suppressHotspotClickUntilMs;
+      }
+
+      function beginScenePan(event) {
+        if (managerMode || !isPortraitViewport()) {
+          return;
+        }
+        if (event.button !== undefined && event.button !== 0) {
+          return;
+        }
+        if (isEditableTarget(event.target)) {
+          return;
+        }
+        stopPanMotion(true);
+        // Ensure render metrics are current before snapshotting pixel state
+        refreshBackgroundRenderMetrics();
+        const nowMs = performance.now();
+        const panRange = getPortraitPanRange();
+        // Compute the pixel translate range (stage width minus render width — always <= 0)
+        const renderWidth = Math.max(backgroundRenderWidthPx, backgroundStageWidthPx);
+        const translateRangePx = backgroundStageWidthPx - renderWidth;
+        scenePanDrag = {
+          pointerId: event.pointerId,
+          startClientX: event.clientX,
+          // Snapshot background's current pixel position so we can map finger→image 1:1
+          startTranslateXPx: backgroundTranslateXPx,
+          translateRangePx: translateRangePx,
+          liveOffsetPercent: portraitPanOffsetPercent,
+          panRangeMinOffsetPercent: panRange.minOffsetPercent,
+          panRangeMaxOffsetPercent: panRange.maxOffsetPercent,
+          lastSampleTimeMs: nowMs,
+          lastSampleOffsetPercent: portraitPanOffsetPercent,
+          velocityPercentPerMs: 0,
+          moved: false,
+          captured: false
+        };
+        scene.classList.add("panning");
+        try {
+          scene.setPointerCapture(event.pointerId);
+          scenePanDrag.captured = true;
+        } catch (error) {
+          scenePanDrag.captured = false;
+        }
+      }
+
+      function moveScenePan(event) {
+        if (!scenePanDrag || event.pointerId !== scenePanDrag.pointerId) {
+          return;
+        }
+        if (managerMode || !isPortraitViewport()) {
+          endScenePan(event);
+          return;
+        }
+
+        const coalesced = typeof event.getCoalescedEvents === "function"
+          ? event.getCoalescedEvents()
+          : null;
+        const samples = coalesced && coalesced.length ? coalesced : [event];
+        let processedAny = false;
+
+        for (let index = 0; index < samples.length; index += 1) {
+          const sample = samples[index];
+          // Use absolute delta from drag-start for perfect 1:1 finger→image mapping
+          const totalDeltaXPx = sample.clientX - scenePanDrag.startClientX;
+          if (!scenePanDrag.moved && Math.abs(totalDeltaXPx) <= PAN_DRAG_THRESHOLD_PX) {
+            continue;
+          }
+          if (!scenePanDrag.moved) {
+            scenePanDrag.moved = true;
+          }
+
+          // Map finger delta directly to background pixel position, then convert to offset %
+          const translateRange = scenePanDrag.translateRangePx; // <= 0
+          const rawTranslateXPx = scenePanDrag.startTranslateXPx + totalDeltaXPx;
+          const nextTranslateXPx = clamp(
+            rawTranslateXPx,
+            Math.min(translateRange, 0),
+            Math.max(translateRange, 0)
+          );
+          // Invert the applyPortraitPan formula to get objectPositionX
+          // backgroundTranslateXPx = (stage - render) * (objectPos / 100)
+          // → objectPos = translateX / (stage - render) * 100
+          const nextObjectPositionX = translateRange !== 0
+            ? (nextTranslateXPx / translateRange) * 100
+            : PORTRAIT_BACKGROUND_POSITION_PERCENT;
+          const nextOffsetPercent = clamp(
+            nextObjectPositionX - PORTRAIT_BACKGROUND_POSITION_PERCENT,
+            scenePanDrag.panRangeMinOffsetPercent,
+            scenePanDrag.panRangeMaxOffsetPercent
+          );
+
+          if (nextOffsetPercent === scenePanDrag.liveOffsetPercent) {
+            continue;
+          }
+          scenePanDrag.liveOffsetPercent = nextOffsetPercent;
+          panQueuedOffsetPercent = nextOffsetPercent;
+
+          const nowMs = performance.now();
+          const dtMs = nowMs - scenePanDrag.lastSampleTimeMs;
+          if (dtMs > 0) {
+            const sampledVelocity = (nextOffsetPercent - scenePanDrag.lastSampleOffsetPercent) / dtMs;
+            scenePanDrag.velocityPercentPerMs = (scenePanDrag.velocityPercentPerMs * PAN_VELOCITY_SMOOTHING)
+              + (sampledVelocity * (1 - PAN_VELOCITY_SMOOTHING));
+            scenePanDrag.lastSampleTimeMs = nowMs;
+            scenePanDrag.lastSampleOffsetPercent = nextOffsetPercent;
+          }
+          processedAny = true;
+        }
+
+        if (!processedAny) {
+          return;
+        }
+        queuePanCommit(scenePanDrag.liveOffsetPercent);
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+      }
+
+      function endScenePan(event) {
+        if (!scenePanDrag || event.pointerId !== scenePanDrag.pointerId) {
+          return;
+        }
+        if (scenePanDrag.captured && scene.hasPointerCapture(event.pointerId)) {
+          scene.releasePointerCapture(event.pointerId);
+        }
+        if (scenePanDrag.moved) {
+          flushQueuedPanCommit();
+          suppressHotspotClickUntilMs = performance.now() + HOTSPOT_CLICK_SUPPRESSION_MS;
+          const idleSinceLastMoveMs = performance.now() - scenePanDrag.lastSampleTimeMs;
+          const releaseVelocity = idleSinceLastMoveMs > PAN_RELEASE_IDLE_MS
+            ? 0
+            : scenePanDrag.velocityPercentPerMs;
+          startPanInertia(releaseVelocity * PAN_RELEASE_VELOCITY_BOOST);
+        } else {
+          stopPanMotion(true);
+        }
+        scene.classList.remove("panning");
+        scenePanDrag = null;
+      }
+
+      function findTouchById(touchList, id) {
+        if (!touchList) {
+          return null;
+        }
+        for (let index = 0; index < touchList.length; index += 1) {
+          const touch = touchList[index];
+          if (touch && touch.identifier === id) {
+            return touch;
+          }
+        }
+        return null;
+      }
+
+      function beginScenePanTouch(event) {
+        if (SUPPORTS_POINTER_EVENTS || fallbackTouchPointerId !== null) {
+          return;
+        }
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) {
+          return;
+        }
+        fallbackTouchPointerId = touch.identifier;
+        beginScenePan({
+          pointerId: touch.identifier,
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          button: 0,
+          target: event.target
+        });
+      }
+
+      function moveScenePanTouch(event) {
+        if (SUPPORTS_POINTER_EVENTS || fallbackTouchPointerId === null) {
+          return;
+        }
+        const touch = findTouchById(event.touches, fallbackTouchPointerId)
+          || findTouchById(event.changedTouches, fallbackTouchPointerId);
+        if (!touch) {
+          return;
+        }
+        moveScenePan({
+          pointerId: fallbackTouchPointerId,
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          target: event.target,
+          cancelable: event.cancelable
+        });
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+      }
+
+      function endScenePanTouch(event) {
+        if (SUPPORTS_POINTER_EVENTS || fallbackTouchPointerId === null) {
+          return;
+        }
+        const touch = findTouchById(event.changedTouches, fallbackTouchPointerId);
+        if (!touch && event.type !== "touchcancel") {
+          return;
+        }
+        endScenePan({
+          pointerId: fallbackTouchPointerId,
+          type: event.type
+        });
+        fallbackTouchPointerId = null;
+      }
+
+      function applyImageWithFallback(img, candidates) {
+        let index = 0;
+        const tryNext = function () {
+          if (index >= candidates.length) {
+            return;
+          }
+          img.onerror = tryNext;
+          img.src = candidates[index];
+          index += 1;
+        };
+
+        tryNext();
+      }
+
+      function syncBackgroundForViewport(forceLoad = false) {
+        const isPortrait = isPortraitViewport();
+        const mode = isPortrait ? "portrait" : "landscape";
+        mainBackground.style.objectFit = "cover";
+        if (!isPortrait) {
+          portraitPanOffsetPercent = 0;
+        }
+        refreshBackgroundRenderMetrics();
+        applyPortraitPan();
+        refreshScenePanState();
+
+        if (!forceLoad && mode === backgroundMode) {
+          return;
+        }
+
+        backgroundMode = mode;
+        applyImageWithFallback(mainBackground, getVersionedBackgroundCandidates(isPortrait));
+      }
+
+      function performViewportRefresh(forceLoad = false) {
+        const nextViewportMode = isPortraitViewport() ? "portrait" : "landscape";
+        const switchedViewportMode = nextViewportMode !== backgroundMode;
+        syncBackgroundForViewport(forceLoad);
+        refreshBackgroundRect();
+        applyLayoutToAllHotspots();
+        if (switchedViewportMode) {
+          forceManagerLock();
+        }
+      }
+
+      function scheduleViewportRefresh(forceLoad = false) {
+        viewportRefreshForceLoad = viewportRefreshForceLoad || forceLoad;
+        if (viewportRefreshFrameId !== null) {
+          return;
+        }
+        viewportRefreshFrameId = requestAnimationFrame(function () {
+          const shouldForceLoad = viewportRefreshForceLoad;
+          viewportRefreshFrameId = null;
+          viewportRefreshForceLoad = false;
+          performViewportRefresh(shouldForceLoad);
+        });
+      }
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function makeQuestion() {
+        const mode = randomInt(1, 3);
+        if (mode === 1) {
+          const a = randomInt(5, 39);
+          const b = randomInt(2, 16);
+          return { prompt: a + " + " + b + " = ?", answer: a + b };
+        }
+        if (mode === 2) {
+          const a = randomInt(15, 45);
+          const b = randomInt(4, 14);
+          return { prompt: a + " - " + b + " = ?", answer: a - b };
+        }
+        const a = randomInt(3, 12);
+        const b = randomInt(3, 12);
+        return { prompt: a + " x " + b + " = ?", answer: a * b };
+      }
+
+      function createDefaultLayoutState() {
+        const state = {};
+        interactiveObjects.forEach(function (obj) {
+          const fallback = genericDefaultLayout(0);
+          const defaults = obj.defaultLayout || fallback;
+          state[obj.id] = {
+            left: Number(defaults.left),
+            top: Number(defaults.top),
+            width: Number(defaults.width)
+          };
+        });
+        return state;
+      }
+
+      function sanitizeLayoutSnapshot(rawLayout, defaults) {
+        const nextLayout = {};
+        const source = rawLayout && typeof rawLayout === "object" ? rawLayout : {};
+        interactiveObjects.forEach(function (obj) {
+          const defaultEntry = defaults[obj.id];
+          const rawEntry = source[obj.id];
+          if (!rawEntry || typeof rawEntry !== "object") {
+            nextLayout[obj.id] = {
+              left: defaultEntry.left,
+              top: defaultEntry.top,
+              width: defaultEntry.width
+            };
+            return;
+          }
+
+          const left = Number(rawEntry.left);
+          const top = Number(rawEntry.top);
+          const width = Number(rawEntry.width);
+          nextLayout[obj.id] = {
+            left: Number.isFinite(left) ? clamp(left, 0, 95) : defaultEntry.left,
+            top: Number.isFinite(top) ? clamp(top, 0, 95) : defaultEntry.top,
+            width: Number.isFinite(width) ? clamp(width, 6, 60) : defaultEntry.width
+          };
+        });
+        return nextLayout;
+      }
+
+      function sanitizeLooseLayout(rawLayout) {
+        const source = rawLayout && typeof rawLayout === "object" ? rawLayout : {};
+        const nextLayout = {};
+        Object.keys(source).forEach(function (objectId) {
+          const rawEntry = source[objectId];
+          if (!rawEntry || typeof rawEntry !== "object") {
+            return;
+          }
+
+          const left = Number(rawEntry.left);
+          const top = Number(rawEntry.top);
+          const width = Number(rawEntry.width);
+          if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(width)) {
+            return;
+          }
+
+          nextLayout[objectId] = {
+            left: clamp(left, 0, 95),
+            top: clamp(top, 0, 95),
+            width: clamp(width, 6, 60)
+          };
+        });
+        return nextLayout;
+      }
+
+      function buildPersistedClassroomState() {
+        return {
+          layout: layoutState,
+          locked: layoutLocked,
+          componentFiles: componentFileCatalog.slice()
+        };
+      }
+
+      function stateSignature(state) {
+        try {
+          return JSON.stringify(state);
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function parsePersistedClassroomState(rawState) {
+        if (!rawState || typeof rawState !== "object") {
+          return null;
+        }
+        const safeLayout = sanitizeLooseLayout(rawState.layout);
+        const safeComponentFiles = Array.isArray(rawState.componentFiles)
+          ? normalizeComponentFiles(rawState.componentFiles)
+          : [];
+        const safeLocked = typeof rawState.locked === "boolean" ? rawState.locked : true;
+
+        return {
+          layout: safeLayout,
+          locked: safeLocked,
+          componentFiles: safeComponentFiles
+        };
+      }
+
+      function getEmbeddedStateElement() {
+        return document.getElementById(EMBEDDED_STATE_SCRIPT_ID);
+      }
+
+      function readEmbeddedStateSnapshot() {
+        const scriptEl = getEmbeddedStateElement();
+        if (!scriptEl) {
+          return null;
+        }
+        const raw = String(scriptEl.textContent || "").trim();
+        if (!raw) {
+          return null;
+        }
+        try {
+          const parsed = JSON.parse(raw);
+          return parsePersistedClassroomState(parsed);
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function writeEmbeddedStateSnapshot(snapshot) {
+        if (!snapshot) {
+          return;
+        }
+        const scriptEl = getEmbeddedStateElement();
+        if (!scriptEl) {
+          return;
+        }
+        scriptEl.textContent = "\n" + JSON.stringify(snapshot, null, 2) + "\n";
+      }
+
+      async function persistSnapshotIntoIndexHtml(snapshot, reason) {
+        if (!snapshot) {
+          return false;
+        }
+        writeEmbeddedStateSnapshot(snapshot);
+        try {
+          const response = await fetch(EMBEDDED_STATE_SAVE_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              state: snapshot,
+              reason: reason || "manager-save"
+            })
+          });
+          if (!response.ok) {
+            return false;
+          }
+          const payload = await response.json();
+          const normalized = parsePersistedClassroomState(payload && payload.state);
+          if (normalized) {
+            writeEmbeddedStateSnapshot(normalized);
+          }
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function postMessageToParent(type, payload) {
+        if (!window.parent || window.parent === window) {
+          return;
+        }
+        window.parent.postMessage(
+          {
+            scope: CLASSROOM_SYNC_SCOPE,
+            type: type,
+            payload: payload || {}
+          },
+          window.location.origin
+        );
+      }
+
+      function requestParentSync() {
+        postMessageToParent(CLASSROOM_MESSAGE_READY, {
+          clientId: iframeClientId
+        });
+        postMessageToParent(CLASSROOM_MESSAGE_AUTH_REQUEST, {
+          clientId: iframeClientId
+        });
+        postMessageToParent(CLASSROOM_MESSAGE_STATE_REQUEST, {
+          clientId: iframeClientId
+        });
+      }
+
+      function resolveInitialSyncWait() {
+        if (initialSyncResolved) {
+          return;
+        }
+        initialSyncResolved = true;
+        if (typeof initialSyncResolver === "function") {
+          initialSyncResolver();
+          initialSyncResolver = null;
+        }
+      }
+
+      function waitForInitialSync() {
+        return new Promise(function (resolve) {
+          if (initialSyncResolved) {
+            resolve();
+            return;
+          }
+          initialSyncResolver = resolve;
+          window.setTimeout(function () {
+            resolveInitialSyncWait();
+          }, CLASSROOM_INITIAL_SYNC_WAIT_MS);
+        });
+      }
+
+      function queueRemoteStateSave(reason) {
+        if (!remoteSyncEnabled || !managerAccessGranted || remoteApplyInProgress) {
+          return;
+        }
+
+        if (remoteSaveTimerId !== null) {
+          clearTimeout(remoteSaveTimerId);
+        }
+
+        remoteSaveTimerId = window.setTimeout(function () {
+          remoteSaveTimerId = null;
+          const snapshot = buildPersistedClassroomState();
+          const signature = stateSignature(snapshot);
+          if (!signature || signature === lastRemoteStateSignature) {
+            return;
+          }
+
+          lastRemoteStateSignature = signature;
+          postMessageToParent(CLASSROOM_MESSAGE_STATE_SAVE, {
+            clientId: iframeClientId,
+            reason: reason || "update",
+            username: remoteUsername || "",
+            state: snapshot
+          });
+        }, CLASSROOM_REMOTE_SAVE_DEBOUNCE_MS);
+      }
+
+      function applyLayoutSnapshot(savedLayout, savedLockState) {
+        const defaults = createDefaultLayoutState();
+        layoutState = sanitizeLayoutSnapshot(savedLayout, defaults);
+        if (typeof savedLockState === "boolean") {
+          layoutLocked = savedLockState;
+        }
+      }
+
+      function mirrorSnapshotToLocalStorage(snapshot) {
+        if (!snapshot) {
+          return;
+        }
+        saveToStorage(STORAGE_LAYOUT_KEY, snapshot.layout);
+        saveToStorage(STORAGE_LOCK_KEY, snapshot.locked);
+        saveToStorage(STORAGE_COMPONENT_FILES_KEY, snapshot.componentFiles);
+      }
+
+      async function applyRemoteSnapshot(snapshot, source) {
+        const parsed = parsePersistedClassroomState(snapshot);
+        if (!parsed) {
+          return;
+        }
+        parsed.componentFiles = mergeComponentFileSources(
+          parsed.componentFiles,
+          readBootstrapManifestComponentFiles(),
+          componentFileCatalog
+        );
+
+        const nextSignature = stateSignature(parsed);
+        if (nextSignature && nextSignature === lastRemoteStateSignature) {
+          return;
+        }
+
+        lastRemoteStateSignature = nextSignature;
+        remoteApplyInProgress = true;
+        try {
+          pendingRemoteState = parsed;
+          mirrorSnapshotToLocalStorage(parsed);
+          writeEmbeddedStateSnapshot(parsed);
+          componentFileCatalog = parsed.componentFiles.slice();
+          componentCatalogSignature = componentFileListSignature(componentFileCatalog);
+          if (!hasUiInitialized) {
+            return;
+          }
+
+          if (activeDrag) {
+            endDrag({ pointerId: activeDrag.pointerId });
+          }
+          if (panelDrag) {
+            endPanelDrag({ pointerId: panelDrag.pointerId });
+          }
+
+          componentImageCacheBust = String(Date.now());
+          interactiveObjects = buildInteractiveObjectsFromFiles(componentFileCatalog, componentImageCacheBust);
+          applyLayoutSnapshot(parsed.layout, parsed.locked);
+          buildManagerTargets();
+          renderHotspots();
+          refreshBackgroundRect();
+          applyLayoutToAllHotspots();
+          updateManagerUi();
+          if (managerMode) {
+            managerStatus.textContent = "Live update received from " + (source || "cloud") + ".";
+          }
+        } finally {
+          remoteApplyInProgress = false;
+        }
+      }
+
+      function handleParentMessage(event) {
+        if (event.origin !== window.location.origin) {
+          return;
+        }
+        const message = event.data;
+        if (!message || message.scope !== CLASSROOM_SYNC_SCOPE || typeof message.type !== "string") {
+          return;
+        }
+
+        if (message.type === CLASSROOM_MESSAGE_AUTH_SYNC) {
+          const payload = message.payload && typeof message.payload === "object" ? message.payload : {};
+          const nextUserId = payload.userId;
+          const nextUsername = payload.username;
+          const wasManagerAccessGranted = managerAccessGranted;
+          managerAccessGranted = Boolean(payload.isManager);
+          applyManagerAccessState();
+          remoteSyncEnabled = typeof nextUserId === "string" && nextUserId.length > 0;
+          remoteUsername = typeof nextUsername === "string" ? nextUsername : "";
+          if (hasUiInitialized && wasManagerAccessGranted !== managerAccessGranted) {
+            if (!MANAGER_UI_ENABLED && managerMode) {
+              setManagerMode(false);
+            } else if (MANAGER_UI_ENABLED && AUTO_MANAGER_MODE && !managerMode) {
+              setManagerMode(true);
+            }
+            updateManagerUi();
+            if (MANAGER_UI_ENABLED) {
+              void refreshInteractiveObjects(true);
+            }
+          }
+          resolveInitialSyncWait();
+          return;
+        }
+
+        if (message.type === CLASSROOM_MESSAGE_STATE_SYNC) {
+          const payload = message.payload && typeof message.payload === "object" ? message.payload : {};
+          const remoteState = payload.state;
+          const source = typeof payload.source === "string" ? payload.source : "cloud";
+          void applyRemoteSnapshot(remoteState, source);
+          resolveInitialSyncWait();
+        }
+      }
+
+      window.addEventListener("message", handleParentMessage);
+
+      function readFromStorage(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) {
+            return null;
+          }
+          return JSON.parse(raw);
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function saveToStorage(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+          return;
+        }
+        if (
+          key === STORAGE_LAYOUT_KEY
+          || key === STORAGE_LOCK_KEY
+          || key === STORAGE_COMPONENT_FILES_KEY
+        ) {
+          queueRemoteStateSave("storage-write");
+        }
+      }
+
+      function hydrateLayoutFromStorage() {
+        const savedLayout = readFromStorage(STORAGE_LAYOUT_KEY);
+        const savedLockState = readFromStorage(STORAGE_LOCK_KEY);
+        applyLayoutSnapshot(savedLayout, savedLockState);
+      }
+
+      function hydrateLayoutFromEmbeddedState() {
+        const embedded = readEmbeddedStateSnapshot();
+        if (!embedded) {
+          return false;
+        }
+        applyLayoutSnapshot(embedded.layout, embedded.locked);
+        const mergedComponentFiles = mergeComponentFileSources(
+          embedded.componentFiles,
+          readSavedComponentFiles(),
+          readBootstrapManifestComponentFiles(),
+          componentFileCatalog
+        );
+        if (mergedComponentFiles.length) {
+          componentFileCatalog = mergedComponentFiles.slice();
+          componentCatalogSignature = componentFileListSignature(componentFileCatalog);
+        }
+        mirrorSnapshotToLocalStorage({
+          layout: embedded.layout,
+          locked: embedded.locked,
+          componentFiles: mergedComponentFiles.length ? mergedComponentFiles : embedded.componentFiles
+        });
+        return true;
+      }
+
+
+      function beginDrag(event, objectId) {
+        if (!managerMode) {
+          return;
+        }
+        if (event.button !== undefined && event.button !== 0) {
+          return;
+        }
+        setSelectedObject(objectId);
+        event.preventDefault();
+        const hotspot = event.currentTarget;
+        const bounds = activeBackgroundRect || getBackgroundRect();
+        const hotspotRect = hotspot.getBoundingClientRect();
+        const layout = layoutState[objectId];
+        const currentWidthPx = (layout.width / 100) * bounds.width * getComponentScale();
+        const scale = Math.max(0.001, currentWidthPx / Math.max(1, hotspotRect.width));
+        const widthPx = hotspotRect.width * scale;
+        const heightPx = hotspotRect.height * scale;
+        const leftPx = bounds.left + (layout.left / 100) * bounds.width;
+        const topPx = bounds.top + (layout.top / 100) * bounds.height;
+        const stage = sceneRect();
+
+        activeDrag = {
+          objectId: objectId,
+          pointerId: event.pointerId,
+          hotspot: hotspot,
+          widthPx: widthPx,
+          heightPx: heightPx,
+          pointerStart: {
+            left: clamp(leftPx - event.clientX, -widthPx, widthPx),
+            top: clamp(topPx - event.clientY, -heightPx, heightPx)
+          },
+          bgMin: {
+            left: bounds.left,
+            top: bounds.top
+          },
+          bgMax: {
+            left: bounds.left + bounds.width - widthPx,
+            top: bounds.top + bounds.height - heightPx
+          },
+          stage: stage
+        };
+
+        hotspot.classList.add("dragging");
+        hotspot.setPointerCapture(event.pointerId);
+      }
+
+      function moveDrag(event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) {
+          return;
+        }
+        const bounds = activeBackgroundRect || getBackgroundRect();
+        const objectLayout = layoutState[activeDrag.objectId];
+        if (!objectLayout) {
+          return;
+        }
+
+        const leftPx = clamp(
+          event.clientX + activeDrag.pointerStart.left,
+          bounds.left,
+          bounds.left + bounds.width - activeDrag.widthPx
+        );
+        const topPx = clamp(
+          event.clientY + activeDrag.pointerStart.top,
+          bounds.top,
+          bounds.top + bounds.height - activeDrag.heightPx
+        );
+
+        const stage = activeDrag.stage || sceneRect();
+        objectLayout.left = Number(((leftPx - bounds.left) / bounds.width * 100).toFixed(2));
+        objectLayout.top = Number(((topPx - bounds.top) / bounds.height * 100).toFixed(2));
+        objectLayout.left = clamp(objectLayout.left, 0, 100);
+        objectLayout.top = clamp(objectLayout.top, 0, 100);
+
+        applyLayoutToHotspot(activeDrag.hotspot, activeDrag.objectId);
+
+        managerStatus.textContent = activeDrag.objectId + " position: x " + objectLayout.left.toFixed(2) + "%, y " + objectLayout.top.toFixed(2) + "%";
+      }
+
+      function endDrag(event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) {
+          return;
+        }
+        if (activeDrag.hotspot.hasPointerCapture(event.pointerId)) {
+          activeDrag.hotspot.releasePointerCapture(event.pointerId);
+        }
+        activeDrag.hotspot.classList.remove("dragging");
+        activeDrag = null;
+      }
+
+      function setManagerMode(nextMode) {
+        if (!MANAGER_UI_ENABLED) {
+          managerMode = false;
+          updateManagerUi();
+          return;
+        }
+        managerMode = nextMode;
+        if (managerMode && !selectedObjectId) {
+          buildManagerTargets();
+        }
+        if (managerMode) {
+          layoutLocked = false;
+          saveToStorage(STORAGE_LOCK_KEY, layoutLocked);
+        } else if (activeDrag) {
+          endDrag({ pointerId: activeDrag.pointerId });
+        }
+        if (!managerMode && panelDrag) {
+          endPanelDrag({ pointerId: panelDrag.pointerId });
+        }
+        updateManagerUi();
+      }
+
+      function forceManagerLock() {
+        if (!managerMode && layoutLocked) {
+          return;
+        }
+        layoutLocked = true;
+        saveToStorage(STORAGE_LOCK_KEY, layoutLocked);
+        if (managerMode) {
+          setManagerMode(false);
+          return;
+        }
+        updateManagerUi();
+      }
+
+      function beginPanelDrag(event) {
+        if (!managerMode) {
+          return;
+        }
+        if (event.button !== undefined && event.button !== 0) {
+          return;
+        }
+        if (event.target && event.target.id === "closeManagerPanel") {
+          return;
+        }
+        const panelRect = managerPanel.getBoundingClientRect();
+        panelDrag = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          left: panelRect.left,
+          top: panelRect.top,
+          moved: false,
+          nextLeft: panelRect.left,
+          nextTop: panelRect.top,
+          framePending: false
+        };
+        event.preventDefault();
+        managerPanelHeader.style.cursor = "grabbing";
+        managerPanelHeader.setPointerCapture(event.pointerId);
+      }
+
+      function movePanelDrag(event) {
+        if (!panelDrag || event.pointerId !== panelDrag.pointerId) {
+          return;
+        }
+        const dx = event.clientX - panelDrag.startX;
+        const dy = event.clientY - panelDrag.startY;
+        if (!panelDrag.moved && Math.abs(dx) + Math.abs(dy) < PANEL_DRAG_THRESHOLD_PX) {
+          return;
+        }
+        panelDrag.moved = true;
+        panelDrag.nextLeft = clamp(
+          panelDrag.left + dx,
+          0,
+          Math.max(0, window.innerWidth - managerPanel.offsetWidth)
+        );
+        panelDrag.nextTop = clamp(
+          panelDrag.top + dy,
+          0,
+          Math.max(0, window.innerHeight - managerPanel.offsetHeight)
+        );
+        if (panelDrag.framePending) {
+          return;
+        }
+        panelDrag.framePending = true;
+        requestAnimationFrame(function () {
+          if (!panelDrag) {
+            return;
+          }
+          managerPanel.style.left = panelDrag.nextLeft + "px";
+          managerPanel.style.top = panelDrag.nextTop + "px";
+          panelDrag.framePending = false;
+        });
+      }
+
+      function endPanelDrag(event) {
+        if (!panelDrag || event.pointerId !== panelDrag.pointerId) {
+          return;
+        }
+        if (event.type !== "lostpointercapture" && managerPanelHeader.hasPointerCapture(event.pointerId)) {
+          managerPanelHeader.releasePointerCapture(event.pointerId);
+        }
+        managerPanel.style.left = panelDrag.nextLeft + "px";
+        managerPanel.style.top = panelDrag.nextTop + "px";
+        panelDrag = null;
+        managerPanelHeader.style.cursor = "grab";
+      }
+
+      function renderHotspots() {
+        hotspotLayer.innerHTML = "";
+        hotspotElementsById.clear();
+        interactiveObjects.forEach(function (obj) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = obj.className || "hotspot";
+          btn.id = obj.id + "Hotspot";
+          btn.dataset.objectId = obj.id;
+          if (obj.id === selectedObjectId) {
+            btn.classList.add("selected");
+          }
+          btn.setAttribute("aria-label", obj.label);
+          btn.title = obj.label;
+          applyLayoutToHotspot(btn, obj.id);
+
+          const sprite = document.createElement("img");
+          sprite.alt = "";
+          applyImageWithFallback(sprite, obj.imageCandidates);
+          btn.appendChild(sprite);
+
+          btn.addEventListener("click", function (event) {
+            setSelectedObject(obj.id);
+            if (managerMode) {
+              event.preventDefault();
+              return;
+            }
+            if (shouldSuppressHotspotClick()) {
+              event.preventDefault();
+              return;
+            }
+            openGameFrame("games/" + getGameSlug(obj) + "/index.html");
+          });
+          btn.addEventListener("pointerdown", function (event) {
+            beginDrag(event, obj.id);
+          });
+          btn.addEventListener("pointermove", moveDrag);
+          btn.addEventListener("pointerup", endDrag);
+          btn.addEventListener("pointercancel", endDrag);
+          hotspotElementsById.set(obj.id, btn);
+          hotspotLayer.appendChild(btn);
+        });
+      }
+
+      function resetGameUi() {
+        secondsLeft = 30;
+        score = 0;
+        currentQuestion = null;
+        gameRunning = false;
+        timerEl.textContent = "Time: 30s";
+        scoreEl.textContent = "Score: 0";
+        questionEl.textContent = "Press Start to begin.";
+        resultTextEl.textContent = "";
+        answerInput.value = "";
+        answerInput.disabled = true;
+        submitAnswerBtn.disabled = true;
+        startBtn.hidden = false;
+        restartBtn.hidden = true;
+      }
+
+      function nextQuestion() {
+        currentQuestion = makeQuestion();
+        questionEl.textContent = currentQuestion.prompt;
+      }
+
+      function finishGame() {
+        gameRunning = false;
+        clearInterval(timerId);
+        timerId = null;
+        answerInput.disabled = true;
+        submitAnswerBtn.disabled = true;
+        restartBtn.hidden = false;
+
+        let grade = "Keep practicing.";
+        if (score >= 10) {
+          grade = "Excellent speed.";
+        } else if (score >= 7) {
+          grade = "Great run.";
+        } else if (score >= 4) {
+          grade = "Solid effort.";
+        }
+
+        questionEl.textContent = "Time is up.";
+        resultTextEl.textContent = "Final score: " + score + ". " + grade;
+      }
+
+      function startGame() {
+        resetGameUi();
+        gameRunning = true;
+        answerInput.disabled = false;
+        submitAnswerBtn.disabled = false;
+        startBtn.hidden = true;
+        answerInput.focus();
+        nextQuestion();
+
+        timerId = setInterval(function () {
+          secondsLeft -= 1;
+          timerEl.textContent = "Time: " + secondsLeft + "s";
+          if (secondsLeft <= 0) {
+            finishGame();
+          }
+        }, 1000);
+      }
+
+      function openMinigame(mode) {
+        if (mode !== "laptopMath") {
+          return;
+        }
+        minigameModal.hidden = false;
+        resetGameUi();
+      }
+
+      function closeMinigame() {
+        clearInterval(timerId);
+        timerId = null;
+        minigameModal.hidden = true;
+      }
+
+      // ── Game Frame ────────────────────────────────────────────
+      // Derive the games/ folder slug from a component object.
+      // Convention: ComponentImages/Laptop.png → games/laptop/index.html
+      //             ComponentImages/RedBackpack.png → games/redbackpack/index.html
+      function getGameSlug(obj) {
+        const base = obj.componentFileName
+          ? obj.componentFileName.replace(/\.[^.]+$/, "")
+          : obj.id;
+        return base.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      }
+
+      function openGameFrame(url) {
+        gameFrameIframe.src = url;
+        gameFrameModal.hidden = false;
+      }
+
+      function closeGameFrame() {
+        gameFrameModal.hidden = true;
+        gameFrameIframe.src = "";
+      }
+
+      async function persistCurrentSnapshotToIndex(reason) {
+        const snapshot = buildPersistedClassroomState();
+        const persisted = await persistSnapshotIntoIndexHtml(snapshot, reason);
+        if (managerMode) {
+          managerStatus.textContent = persisted
+            ? "Saved and embedded into index.html."
+            : "Saved locally, but index.html write endpoint is unavailable.";
+        }
+        return persisted;
+      }
+
+      async function saveAndLockLayout() {
+        saveToStorage(STORAGE_LAYOUT_KEY, layoutState);
+        saveComponentFiles();
+        layoutLocked = true;
+        saveToStorage(STORAGE_LOCK_KEY, layoutLocked);
+        await persistCurrentSnapshotToIndex("save-lock");
+        setManagerMode(false);
+      }
+
+      async function resetLayoutToDefault() {
+        layoutState = createDefaultLayoutState();
+        applyLayoutToAllHotspots();
+        saveToStorage(STORAGE_LAYOUT_KEY, layoutState);
+        saveComponentFiles();
+        layoutLocked = true;
+        saveToStorage(STORAGE_LOCK_KEY, layoutLocked);
+        await persistCurrentSnapshotToIndex("reset-default");
+        setManagerMode(false);
+      }
+
+      closeGameFrameBtn.addEventListener("click", closeGameFrame);
+      // Games can close themselves by posting: window.parent.postMessage({ type: "LAHS_GAME_CLOSE" }, "*")
+      window.addEventListener("message", function (messageEvent) {
+        if (messageEvent.data && messageEvent.data.type === "LAHS_GAME_CLOSE") {
+          closeGameFrame();
+        }
+      });
+      closeModalBtn.addEventListener("click", closeMinigame);
+      startBtn.addEventListener("click", startGame);
+      restartBtn.addEventListener("click", startGame);
+      saveLayoutBtn.addEventListener("click", saveAndLockLayout);
+      resetLayoutBtn.addEventListener("click", resetLayoutToDefault);
+      scene.addEventListener("pointerdown", beginScenePan);
+      scene.addEventListener("pointermove", moveScenePan);
+      scene.addEventListener("pointerup", endScenePan);
+      scene.addEventListener("pointercancel", endScenePan);
+      scene.addEventListener("lostpointercapture", endScenePan);
+      if (!SUPPORTS_POINTER_EVENTS) {
+        scene.addEventListener("touchstart", beginScenePanTouch, { passive: true });
+        scene.addEventListener("touchmove", moveScenePanTouch, { passive: false });
+        scene.addEventListener("touchend", endScenePanTouch, { passive: true });
+        scene.addEventListener("touchcancel", endScenePanTouch, { passive: true });
+        window.addEventListener("touchmove", moveScenePanTouch, { passive: false });
+        window.addEventListener("touchend", endScenePanTouch, { passive: true });
+        window.addEventListener("touchcancel", endScenePanTouch, { passive: true });
+      }
+      managerTarget.addEventListener("change", function () {
+        if (!managerMode) {
+          return;
+        }
+        setSelectedObject(managerTarget.value);
+      });
+      managerSizeRange.addEventListener("input", function () {
+        if (!managerMode || !selectedObjectId) {
+          return;
+        }
+        updateComponentWidth(selectedObjectId, Number(managerSizeRange.value));
+      });
+      closeManagerPanelBtn.addEventListener("click", function () {
+        setManagerMode(false);
+      });
+      managerPanelHeader.addEventListener("pointerdown", beginPanelDrag);
+      managerPanelHeader.addEventListener("pointermove", movePanelDrag);
+      managerPanelHeader.addEventListener("pointerup", endPanelDrag);
+      managerPanelHeader.addEventListener("pointercancel", endPanelDrag);
+      managerPanelHeader.addEventListener("lostpointercapture", endPanelDrag);
+      window.addEventListener("pointerup", endScenePan);
+      window.addEventListener("pointercancel", endScenePan);
+
+      answerForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!gameRunning || !currentQuestion) {
+          return;
+        }
+
+        const userAnswer = Number(answerInput.value);
+        if (Number.isFinite(userAnswer) && userAnswer === currentQuestion.answer) {
+          score += 1;
+          scoreEl.textContent = "Score: " + score;
+          resultTextEl.textContent = "Correct.";
+        } else {
+          resultTextEl.textContent = "Not quite. Correct was " + currentQuestion.answer + ".";
+        }
+
+        answerInput.value = "";
+        nextQuestion();
+        answerInput.focus();
+      });
+
+      minigameModal.addEventListener("click", function (event) {
+        if (event.target === minigameModal) {
+          closeMinigame();
+        }
+      });
+
+      function handleManagerHotkey(event) {
+        if (!MANAGER_UI_ENABLED) {
+          return;
+        }
+        if (isEditableTarget(event.target)) {
+          return;
+        }
+        const key = event.key ? event.key.toLowerCase() : "";
+        const primary = event.ctrlKey && event.shiftKey && (event.code === "KeyD" || key === "d");
+        const fallback = (event.altKey && event.shiftKey && key === "d") || event.code === "F2";
+        if (primary || fallback) {
+          setManagerMode(!managerMode);
+          event.preventDefault();
+        }
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !gameFrameModal.hidden) {
+          closeGameFrame();
+          return;
+        }
+        if (event.key === "Escape" && !minigameModal.hidden) {
+          closeMinigame();
+          return;
+        }
+        if (event.key === "Escape" && managerMode) {
+          setManagerMode(false);
+          return;
+        }
+        handleManagerHotkey(event);
+      });
+
+      managerToggleBtn.addEventListener("click", function () {
+        setManagerMode(!managerMode);
+      });
+
+      mainBackground.addEventListener("load", function () {
+        refreshBackgroundRect();
+        applyLayoutToAllHotspots();
+      });
+
+      window.addEventListener("resize", function () {
+        scheduleViewportRefresh(false);
+      });
+      window.addEventListener("orientationchange", function () {
+        scheduleViewportRefresh(true);
+      });
+
+      async function initializeApp() {
+        requestParentSync();
+        await waitForInitialSync();
+        await initializeInteractiveObjects();
+        if (!hydrateLayoutFromEmbeddedState()) {
+          hydrateLayoutFromStorage();
+        }
+        buildManagerTargets();
+        syncBackgroundForViewport(true);
+        renderHotspots();
+        refreshBackgroundRect();
+        applyLayoutToAllHotspots();
+        updateManagerUi();
+        hasUiInitialized = true;
+        if (pendingRemoteState) {
+          const snapshot = pendingRemoteState;
+          pendingRemoteState = null;
+          await applyRemoteSnapshot(snapshot, "initial");
+        }
+        queueRemoteStateSave("bootstrap");
+        if (AUTO_MANAGER_MODE && MANAGER_UI_ENABLED) {
+          setManagerMode(true);
+        }
+      }
+
+      // ── Hotspot awareness glow ────────────────────────────────
+      // Uses CSS drop-shadow animation on the <img> inside each
+      // hotspot so the glow follows the exact alpha-channel shape
+      // of the PNG — no bounding-box bleed onto nearby items.
+      //
+      // Triggers:
+      //   • Whenever the user touches / drags the background
+      //   • Every 15 s of idle (no scene interaction)
+
+      const GLOW_IDLE_INTERVAL_MS = 15000;   // idle pulse period
+      const GLOW_ANIM_DURATION_MS = 1800;    // must match CSS animation duration
+      let glowIdleTimerId = null;
+      let glowAnimFrameId = null;
+      let glowTriggeredByMove = false;       // debounce: only fire once per drag
+
+      function triggerHotspotGlow() {
+        // Skip while manager is open — glowing during drag editing is distracting
+        if (managerMode) {
+          return;
+        }
+        // Collect all live hotspot elements
+        const hotspots = hotspotLayer.querySelectorAll(".hotspot");
+        if (!hotspots.length) {
+          return;
+        }
+        // Cancel any pending re-add from a previous trigger
+        if (glowAnimFrameId !== null) {
+          cancelAnimationFrame(glowAnimFrameId);
+          glowAnimFrameId = null;
+        }
+        // Remove the class first (force a clean restart if already animating)
+        hotspots.forEach(function (el) {
+          el.classList.remove("glow-active");
+        });
+        // Re-add on the next frame so the browser registers the class removal
+        glowAnimFrameId = requestAnimationFrame(function () {
+          glowAnimFrameId = null;
+          const fresh = hotspotLayer.querySelectorAll(".hotspot");
+          fresh.forEach(function (el) {
+            el.classList.add("glow-active");
+          });
+          // Clean up the class after the animation completes so hover/focus
+          // filters can operate normally again
+          setTimeout(function () {
+            const done = hotspotLayer.querySelectorAll(".hotspot.glow-active");
+            done.forEach(function (el) {
+              el.classList.remove("glow-active");
+            });
+          }, GLOW_ANIM_DURATION_MS + 50);
+        });
+      }
+
+      function resetGlowIdleTimer() {
+        if (glowIdleTimerId !== null) {
+          clearTimeout(glowIdleTimerId);
+        }
+        glowIdleTimerId = setTimeout(function fireIdleGlow() {
+          triggerHotspotGlow();
+          // Re-arm for the next idle window
+          glowIdleTimerId = setTimeout(fireIdleGlow, GLOW_IDLE_INTERVAL_MS);
+        }, GLOW_IDLE_INTERVAL_MS);
+      }
+
+      // Hook into pan start: on every pointerdown on the scene reset the idle
+      // timer and arm the "first-move" flag so we fire glow exactly once per drag.
+      scene.addEventListener("pointerdown", function () {
+        glowTriggeredByMove = false;
+        resetGlowIdleTimer();
+      }, { capture: true, passive: true });
+
+      // Hook into pan move: fire glow the first time the finger actually moves.
+      scene.addEventListener("pointermove", function (event) {
+        if (glowTriggeredByMove) {
+          return;
+        }
+        // Only respond when a drag is genuinely in progress
+        if (!scenePanDrag || event.pointerId !== scenePanDrag.pointerId) {
+          return;
+        }
+        glowTriggeredByMove = true;
+        triggerHotspotGlow();
+      }, { capture: true, passive: true });
+
+      // Touch fallback (non-Pointer Events browsers)
+      if (!SUPPORTS_POINTER_EVENTS) {
+        scene.addEventListener("touchstart", function () {
+          glowTriggeredByMove = false;
+          resetGlowIdleTimer();
+        }, { capture: true, passive: true });
+
+        scene.addEventListener("touchmove", function () {
+          if (glowTriggeredByMove) {
+            return;
+          }
+          glowTriggeredByMove = true;
+          triggerHotspotGlow();
+        }, { capture: true, passive: true });
+      }
+
+      // Kick off the first idle timer once the page is ready
+      resetGlowIdleTimer();
+      // ── End hotspot awareness glow ────────────────────────────
+
+      async function runBootstrapSequence() {
+        const introController = createDoorIntroController();
+        try {
+          await initializeApp();
+          if (introController && typeof introController.refreshPortalSnapshot === "function") {
+            introController.refreshPortalSnapshot();
+          }
+        } catch (error) {
+          console.error("Classroom initialization failed.", error);
+        } finally {
+          await introController.complete();
+        }
+      }
+
+      runBootstrapSequence();
+    })();
+  </script>
+</body>
+</html>
+
+
+
+

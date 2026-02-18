@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manager Mode</title>
+    <script>
+    (function () {
+      const APP_VERSION = "2026-02-18-1";
+      const target = new URL("../classroom", window.location.href);
+      const params = new URLSearchParams(window.location.search || "");
+      params.set("manager", "1");
+      params.set("manager_ui", "1");
+      params.set("v", APP_VERSION);
+      target.search = params.toString();
+      if (window.location.hash) {
+        target.hash = window.location.hash;
+      }
+      window.location.replace(target.toString());
+    })();
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>
+      JavaScript is required for automatic redirect.
+      <a href="../classroom?manager=1&manager_ui=1&v=2026-02-18-1">Open manager mode</a>.
+    </p>
+  </noscript>
+</body>
+</html>
