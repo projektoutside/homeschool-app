@@ -18,6 +18,9 @@ const CLASSROOM_MESSAGE_STATE_REQUEST = 'LAHS_CLASSROOM_STATE_REQUEST';
 const CLASSROOM_MESSAGE_STATE_SYNC = 'LAHS_CLASSROOM_STATE_SYNC';
 const CLASSROOM_MESSAGE_STATE_SAVE = 'LAHS_CLASSROOM_STATE_SAVE';
 const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
+const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
+const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
+const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 8000;
 
 type ClassroomLayoutEntry = {
     left: number;
@@ -169,8 +172,10 @@ const ClassroomPage: React.FC = () => {
     const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(true);
+    const [isFrameLoaded, setIsFrameLoaded] = useState(false);
+    const [isDoorIntroComplete, setIsDoorIntroComplete] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const introFrameRef = useRef<HTMLIFrameElement | null>(null);
     const pendingStateRef = useRef<ClassroomPersistedState | null>(null);
     const pendingSaveTimerRef = useRef<number | null>(null);
     const lastPersistedSignatureRef = useRef<string>('');
@@ -183,6 +188,7 @@ const ClassroomPage: React.FC = () => {
         () => {
             const params = new URLSearchParams();
             params.set('v', CLASSROOM_APP_VERSION);
+            params.set('intro', '0');
             if (hasManagerAccess && managerRequested) {
                 params.set('manager', '1');
                 params.set('manager_ui', '1');
@@ -191,6 +197,12 @@ const ClassroomPage: React.FC = () => {
         },
         [hasManagerAccess, managerRequested],
     );
+    const doorIntroPath = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('v', CLASSROOM_APP_VERSION);
+        return buildAssetPath(`3dClass/door-intro.html?${params.toString()}`);
+    }, []);
+    const isTransitionComplete = isFrameLoaded && isDoorIntroComplete;
 
     useEffect(() => {
         if (managerRequested && !hasManagerAccess) {
@@ -392,6 +404,28 @@ const ClassroomPage: React.FC = () => {
         return () => window.removeEventListener('message', handleClassroomMessage);
     }, [handleClassroomMessage]);
 
+    const handleDoorIntroMessage = useCallback((event: MessageEvent<unknown>) => {
+        if (event.origin !== window.location.origin) {
+            return;
+        }
+
+        if (!introFrameRef.current?.contentWindow || event.source !== introFrameRef.current.contentWindow) {
+            return;
+        }
+
+        const message = event.data as IncomingIframeMessage;
+        if (!message || message.scope !== CLASSROOM_DOOR_INTRO_SCOPE || message.type !== CLASSROOM_DOOR_INTRO_DONE) {
+            return;
+        }
+
+        setIsDoorIntroComplete(true);
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener('message', handleDoorIntroMessage);
+        return () => window.removeEventListener('message', handleDoorIntroMessage);
+    }, [handleDoorIntroMessage]);
+
     useEffect(() => {
         if (!supabase || !user) {
             return;
@@ -436,19 +470,20 @@ const ClassroomPage: React.FC = () => {
     }, [syncAuthToClassroom, syncLatestStateToClassroom, user]);
 
     const handleFrameLoad = useCallback(() => {
-        setIsLoading(false);
+        setIsFrameLoaded(true);
         syncAuthToClassroom();
         void syncLatestStateToClassroom('frame-load');
     }, [syncAuthToClassroom, syncLatestStateToClassroom]);
 
     useEffect(() => {
-        setIsLoading(true);
-        const timeoutId = window.setTimeout(() => {
-            setIsLoading(false);
-        }, 10000);
+        setIsFrameLoaded(false);
+        setIsDoorIntroComplete(false);
+        const introFallbackId = window.setTimeout(() => {
+            setIsDoorIntroComplete(true);
+        }, CLASSROOM_DOOR_INTRO_FALLBACK_MS);
 
-        return () => window.clearTimeout(timeoutId);
-    }, [launchPath]);
+        return () => window.clearTimeout(introFallbackId);
+    }, [doorIntroPath, launchPath]);
 
     useEffect(() => () => {
         if (pendingSaveTimerRef.current !== null) {
@@ -460,21 +495,32 @@ const ClassroomPage: React.FC = () => {
         <div className="os-desktop-shell classroom-app-page">
             <section className="os-icon-area classroom-app-area" aria-label="Classroom app">
                 <div className="classroom-app-shell">
-                    {isLoading ? (
-                        <div className="classroom-app-loading" aria-live="polite">
-                            Loading classroom...
-                        </div>
-                    ) : null}
                     <iframe
                         ref={iframeRef}
                         src={launchPath}
                         title="Classroom App"
-                        className={`classroom-app-frame ${isLoading ? 'is-loading' : ''}`}
+                        className={`classroom-app-frame ${isTransitionComplete ? '' : 'is-loading'}`}
                         allow="fullscreen; autoplay; microphone; camera"
                         allowFullScreen
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                         onLoad={handleFrameLoad}
                     />
+                    {!isTransitionComplete ? (
+                        <div className="classroom-door-intro-layer" aria-hidden={false}>
+                            <iframe
+                                ref={introFrameRef}
+                                src={doorIntroPath}
+                                title="Classroom Door Intro"
+                                className="classroom-door-intro-frame"
+                                sandbox="allow-same-origin allow-scripts"
+                            />
+                            {isDoorIntroComplete && !isFrameLoaded ? (
+                                <div className="classroom-app-loading classroom-app-loading-overlay" aria-live="polite">
+                                    Loading classroom...
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
                 </div>
             </section>
         </div>

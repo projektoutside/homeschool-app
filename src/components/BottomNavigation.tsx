@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
@@ -7,6 +7,9 @@ import './BottomNavigation.css';
 interface BottomNavigationProps {
     onOpenSettings: () => void;
 }
+
+const HOME_TRANSITION_FADE_IN_MS = 220;
+const HOME_TRANSITION_FADE_OUT_MS = 280;
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings }) => {
     const navigate = useNavigate();
@@ -29,6 +32,71 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const lastFullscreenActivationKeyRef = useRef<string>('');
     const isStatsMinimizedRef = useRef<boolean>(false);
     const prevIsStatsMinimizedRef = useRef<boolean>(false);
+    const [homeTransitionPhase, setHomeTransitionPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
+    const homeTransitionPendingNavRef = useRef<boolean>(false);
+    const homeTransitionFadeInTimerRef = useRef<number | null>(null);
+    const homeTransitionFadeOutTimerRef = useRef<number | null>(null);
+
+    const clearHomeTransitionTimers = useCallback(() => {
+        if (homeTransitionFadeInTimerRef.current !== null) {
+            window.clearTimeout(homeTransitionFadeInTimerRef.current);
+            homeTransitionFadeInTimerRef.current = null;
+        }
+        if (homeTransitionFadeOutTimerRef.current !== null) {
+            window.clearTimeout(homeTransitionFadeOutTimerRef.current);
+            homeTransitionFadeOutTimerRef.current = null;
+        }
+    }, []);
+
+    const startHomepageTransition = useCallback(() => {
+        if (homeTransitionPhase !== 'idle') {
+            return;
+        }
+
+        clearHomeTransitionTimers();
+        homeTransitionPendingNavRef.current = true;
+        setHomeTransitionPhase('fading-in');
+
+        homeTransitionFadeInTimerRef.current = window.setTimeout(() => {
+            homeTransitionFadeInTimerRef.current = null;
+            const isAlreadyHome = location.pathname === '/home-profile' || location.pathname === '/';
+            if (isAlreadyHome) {
+                homeTransitionPendingNavRef.current = false;
+                setHomeTransitionPhase('fading-out');
+                return;
+            }
+            navigate('/home-profile');
+        }, HOME_TRANSITION_FADE_IN_MS);
+    }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
+
+    useEffect(() => {
+        if (!homeTransitionPendingNavRef.current) {
+            return;
+        }
+
+        const isHomeRoute = location.pathname === '/home-profile' || location.pathname === '/';
+        if (!isHomeRoute) {
+            return;
+        }
+
+        homeTransitionPendingNavRef.current = false;
+        setHomeTransitionPhase('fading-out');
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (homeTransitionPhase !== 'fading-out') {
+            return;
+        }
+
+        if (homeTransitionFadeOutTimerRef.current !== null) {
+            window.clearTimeout(homeTransitionFadeOutTimerRef.current);
+        }
+
+        homeTransitionFadeOutTimerRef.current = window.setTimeout(() => {
+            homeTransitionFadeOutTimerRef.current = null;
+            setHomeTransitionPhase('idle');
+        }, HOME_TRANSITION_FADE_OUT_MS);
+    }, [homeTransitionPhase]);
     
     // Sync dependent dock states when main dock toggles
     useEffect(() => {
@@ -332,8 +400,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             if (statsAutoDimTimeoutRef.current !== null) {
                 window.clearTimeout(statsAutoDimTimeoutRef.current);
             }
+            clearHomeTransitionTimers();
         };
-    }, []);
+    }, [clearHomeTransitionTimers]);
 
     // Keep the yellow line visible by preventing iframe/container-only fullscreen
     // while the line-only mode is active.
@@ -442,7 +511,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                     <button
                         type="button"
                         className={`nav-tab-btn ${isHomeActive ? 'active' : ''}`}
-                        onClick={() => navigate('/home-profile')}
+                        onClick={startHomepageTransition}
                         aria-label="Homepage"
                         tabIndex={expandedMode ? -1 : 0}
                     >
@@ -625,6 +694,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         </div>
                     </div>
                 </aside>
+            <div
+                className={`homepage-transition-overlay ${homeTransitionPhase === 'idle' ? '' : 'is-active'} ${homeTransitionPhase === 'fading-out' ? 'is-fading-out' : ''}`}
+                aria-hidden="true"
+            />
         </>
     );
 };

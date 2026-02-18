@@ -6,7 +6,7 @@ import './Home.css';
 import './UserHomePage.css';
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-02-15-3';
+const HOME_PAGE_APP_VERSION = '2026-02-18-1';
 
 const UserHomePage: React.FC = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);

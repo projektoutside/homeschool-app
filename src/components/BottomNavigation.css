@@ -27,6 +27,26 @@
     touch-action: pan-y;
 }
 
+.homepage-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 260ms ease-in-out;
+    will-change: opacity;
+}
+
+.homepage-transition-overlay.is-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.homepage-transition-overlay.is-active.is-fading-out {
+    opacity: 0;
+}
+
 /* View Stack */
 .dock-view-stack {
     display: grid;

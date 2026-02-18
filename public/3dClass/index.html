@@ -4975,16 +4975,10 @@
       // ── End hotspot awareness glow ────────────────────────────
 
       async function runBootstrapSequence() {
-        const introController = createDoorIntroController();
         try {
           await initializeApp();
-          if (introController && typeof introController.refreshPortalSnapshot === "function") {
-            introController.refreshPortalSnapshot();
-          }
         } catch (error) {
           console.error("Classroom initialization failed.", error);
-        } finally {
-          await introController.complete();
         }
       }
 

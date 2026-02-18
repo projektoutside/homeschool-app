@@ -136,7 +136,7 @@
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 50;
+            z-index: 60;
             box-sizing: border-box;
             max-width: 100vw;
             padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 14px calc(14px + env(safe-area-inset-left));
@@ -153,11 +153,11 @@
             z-index: 38;
             pointer-events: none;
             overflow: hidden;
-            --mystery-rope-width: clamp(1.33px, calc(0.24vw / 1.5), 2.53px);
-            --mystery-sign-width: clamp(200px, calc(34vw / 1.5), 328px);
-            --mystery-sign-height: clamp(158px, calc(28vw / 1.5), 265px);
-            --mystery-knot-width: clamp(12px, calc(2.25vw / 1.5), 20px);
-            --mystery-knot-height: clamp(10px, calc(1.95vw / 1.5), 17px);
+            --mystery-rope-width: clamp(1.18px, calc(0.21vw / 1.5), 2.2px);
+            --mystery-sign-width: clamp(182px, calc(31vw / 1.5), 300px);
+            --mystery-sign-height: clamp(144px, calc(25.5vw / 1.5), 242px);
+            --mystery-knot-width: clamp(11px, calc(2.05vw / 1.5), 18px);
+            --mystery-knot-height: clamp(9px, calc(1.72vw / 1.5), 15px);
             opacity: 0;
             visibility: hidden;
             transition: opacity 320ms ease-out;
@@ -296,13 +296,13 @@
             z-index: 4;
             pointer-events: auto;
             cursor: grab;
-            filter: drop-shadow(0 0 14px rgba(255, 195, 88, 0.2));
+            filter: none;
             transition: filter 180ms ease;
         }
 
         #mystery-scroll-sign:active {
             cursor: grabbing;
-            filter: drop-shadow(0 0 18px rgba(255, 195, 88, 0.28));
+            filter: none;
         }
 
         #mystery-sign-knot {
@@ -316,14 +316,14 @@
             height: 100%;
             display: block;
             pointer-events: none;
-            filter: drop-shadow(0 15px 18px rgba(0, 0, 0, 0.34)) drop-shadow(0 7px 9px rgba(0, 0, 0, 0.18));
+            filter: none;
         }
 
         #mystery-scroll-sign .scroll-text {
             position: relative;
             z-index: 3;
             left: 50%;
-            top: 42%;
+            top: 38%;
             width: 62%;
             transform: translateX(-50%);
             display: flex;
@@ -331,6 +331,43 @@
             align-items: center;
             gap: clamp(2px, 0.35vw, 5px);
             pointer-events: none;
+        }
+
+        #mystery-scroll-sign .scroll-chevron-row {
+            position: absolute;
+            left: 50%;
+            bottom: clamp(14px, calc(var(--mystery-sign-height) * 0.11), 25px);
+            width: clamp(58px, calc(var(--mystery-sign-width) * 0.48), 126px);
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        #mystery-scroll-sign .scroll-chevron {
+            width: clamp(16px, calc(var(--mystery-sign-width) * 0.13), 30px);
+            height: auto;
+            display: block;
+            overflow: visible;
+            filter: none;
+        }
+
+        #mystery-scroll-sign .scroll-chevron .chevron-main {
+            fill: none;
+            stroke: rgba(5, 20, 74, 0.98);
+            stroke-width: 2.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #mystery-scroll-sign .scroll-chevron .chevron-glow {
+            fill: none;
+            stroke: rgba(77, 165, 255, 0.76);
+            stroke-width: 1.35;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         #mystery-scroll-sign .line-top,
@@ -348,7 +385,7 @@
         }
 
         #mystery-scroll-sign .line-top {
-            font-size: clamp(18px, 2.1vw, 32px);
+            font-size: clamp(16px, calc(var(--mystery-sign-width) * 0.178), 32px);
             font-weight: 700;
             color: #4b2b10;
             text-shadow:
@@ -358,7 +395,7 @@
         }
 
         #mystery-scroll-sign .line-bottom {
-            font-size: clamp(14px, 1.5vw, 24px);
+            font-size: clamp(12px, calc(var(--mystery-sign-width) * 0.134), 24px);
             font-weight: 600;
             color: #5d3515;
             transform: translateY(-2px);
@@ -371,7 +408,6 @@
         .hud-box,
         .hud-btn,
         .store-panel,
-        .inventory-panel,
         .prop-preview-panel {
             pointer-events: auto;
             box-sizing: border-box;
@@ -414,6 +450,8 @@
             align-items: center;
             justify-content: center;
             gap: 0.3ch;
+            position: relative;
+            z-index: 65;
             min-width: clamp(142px, 18.5vw, 214px);
             padding: clamp(10px, 1.1vw, 14px) clamp(14px, 1.45vw, 20px);
             border-radius: 18px;
@@ -434,12 +472,7 @@
                 linear-gradient(160deg, rgba(30, 41, 59, 0.98), rgba(17, 24, 39, 0.96) 56%, rgba(10, 18, 34, 0.98));
             background-size: 250% 100%, 100% 100%, 100% 100%, 100% 100%;
             background-position: 210% 0, 0 0, 0 0, 0 0;
-            box-shadow:
-                0 14px 30px rgba(0, 0, 0, 0.48),
-                inset 0 1px 0 rgba(255, 255, 255, 0.22),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.42),
-                0 0 0 1px rgba(251, 191, 36, 0.18),
-                0 0 22px rgba(251, 191, 36, 0.22);
+            box-shadow: none;
             animation: scoreBoxShimmer 5.6s ease-in-out infinite, scoreBoxGlow 3.6s ease-in-out infinite;
         }
 
@@ -599,9 +632,12 @@
             justify-content: center;
             cursor: pointer;
             z-index: 60;
-            transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+            transition: transform 160ms ease, filter 160ms ease;
             pointer-events: auto;
             isolation: isolate;
+            outline: none;
+            box-shadow: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .inventory-icon-btn::before {
@@ -617,6 +653,7 @@
             transform: translateY(7px);
             pointer-events: none;
             z-index: 0;
+            display: none;
         }
 
         .inventory-icon-btn img {
@@ -628,7 +665,7 @@
             display: block;
             transform: scale(1.08);
             transform-origin: center;
-            filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.24));
+            filter: none;
             user-select: none;
             -webkit-user-drag: none;
         }
@@ -638,15 +675,34 @@
             transform: translateY(-2px) scale(1.03);
             filter: saturate(1.07) brightness(1.05);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(191, 219, 254, 0.58);
+            box-shadow: none;
+        }
+
+        .inventory-icon-btn:focus,
+        .inventory-icon-btn:focus-visible {
+            outline: none;
+            box-shadow: none;
         }
 
         .inventory-icon-btn:active {
             transform: translateY(0) scale(0.98);
         }
 
-        .store-panel,
-        .inventory-panel {
+        /* Prevent any square focus/hover frame around the inventory icon button. */
+        .inventory-icon-btn,
+        .inventory-icon-btn:hover,
+        .inventory-icon-btn:focus,
+        .inventory-icon-btn:focus-visible,
+        .inventory-icon-btn:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .inventory-icon-btn::-moz-focus-inner {
+            border: 0;
+        }
+
+        .store-panel {
             width: min(360px, 86vw);
             background: var(--hud-panel-bg);
             color: var(--hud-text);
@@ -665,23 +721,7 @@
             max-height: min(70vh, 500px);
         }
 
-        .inventory-panel {
-            position: fixed;
-            bottom: calc(clamp(6px, 1.6vh, 20px) + env(safe-area-inset-bottom));
-            left: calc(clamp(8px, 2vw, 32px) + env(safe-area-inset-left));
-            right: calc(clamp(8px, 2vw, 32px) + env(safe-area-inset-right));
-            width: auto;
-            max-width: none;
-            max-height: min(36vh, 380px);
-            height: min(36vh, 380px);
-            grid-template-rows: auto auto auto minmax(0, 1fr);
-            padding: clamp(10px, 1.4vw, 16px);
-            gap: 10px;
-            box-shadow: none;
-        }
-
-        .store-panel.open,
-        .inventory-panel.open {
+        .store-panel.open {
             display: grid;
         }
 
@@ -991,15 +1031,16 @@
         }
 
         .inventory-frame-shell {
+            --inventory-shell-rail-width: clamp(10px, 2.6vw, 12px);
             position: absolute;
             inset: var(--inventory-shell-inset-top) var(--inventory-shell-inset-side) var(--inventory-shell-inset-bottom);
             border-radius: clamp(20px, 5vw, 26px);
             border: clamp(3px, 0.9vw, 5px) solid rgba(189, 140, 60, 0.96);
             background:
                 linear-gradient(90deg,
-                    rgba(143, 98, 48, 0.98) 0 clamp(10px, 2.6vw, 12px),
-                    rgba(0, 0, 0, 0) clamp(10px, 2.6vw, 12px) calc(100% - clamp(10px, 2.6vw, 12px)),
-                    rgba(132, 90, 44, 0.98) calc(100% - clamp(10px, 2.6vw, 12px)) 100%),
+                    rgba(143, 98, 48, 0.98) 0 var(--inventory-shell-rail-width),
+                    rgba(0, 0, 0, 0) var(--inventory-shell-rail-width) calc(100% - var(--inventory-shell-rail-width)),
+                    rgba(143, 98, 48, 0.98) calc(100% - var(--inventory-shell-rail-width)) 100%),
                 linear-gradient(180deg,
                     rgba(157, 111, 57, 0.98) 0 clamp(12px, 3vw, 14px),
                     rgba(0, 0, 0, 0) clamp(12px, 3vw, 14px) calc(100% - clamp(12px, 3vw, 14px)),
@@ -1007,17 +1048,18 @@
             box-shadow:
                 0 18px 34px rgba(0, 0, 0, 0.48),
                 inset 0 1px 0 rgba(255, 232, 166, 0.45),
-                inset 0 0 0 1px rgba(83, 52, 21, 0.9);
+                inset 0 0 0 1px rgba(83, 52, 21, 0.72);
             display: grid;
             grid-template-rows: auto minmax(var(--inventory-showcase-min-height), 1fr) auto;
             grid-template-areas:
                 "header"
                 "showcase"
                 "slots";
-            row-gap: var(--inventory-shell-gap);
+            row-gap: 0;
             padding: clamp(10px, 2.2vw, 14px);
             pointer-events: auto;
-            overflow: hidden;
+            overflow: visible;
+            box-sizing: border-box;
         }
 
         .inventory-fill-layers {
@@ -1050,7 +1092,7 @@
         .inventory-frame-shell::before {
             content: "";
             position: absolute;
-            inset: clamp(4px, 0.8vw, 6px);
+            inset: clamp(3px, 0.8vw, 5px);
             border-radius: clamp(16px, 4vw, 20px);
             border: 1px solid rgba(239, 195, 103, 0.62);
             pointer-events: none;
@@ -1060,9 +1102,9 @@
         .inventory-frame-shell::after {
             content: "";
             position: absolute;
-            left: clamp(10px, 2.8vw, 14px);
-            right: clamp(10px, 2.8vw, 14px);
-            bottom: -2px;
+            left: var(--inventory-shell-rail-width);
+            right: var(--inventory-shell-rail-width);
+            bottom: 0;
             height: clamp(16px, 3.8vh, 24px);
             border-radius: 0 0 14px 14px;
             background:
@@ -1127,7 +1169,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: clamp(10px, 2.5vw, 14px) clamp(34px, 9vw, 46px) clamp(10px, 2.5vw, 13px);
-            border-radius: clamp(14px, 3.8vw, 18px);
+            border-radius: 0;
             border: 1px solid rgba(239, 196, 106, 0.9);
             background:
                 linear-gradient(180deg, rgba(153, 104, 53, 0.98), rgba(101, 64, 30, 0.97)),
@@ -1158,21 +1200,7 @@
         }
 
         .inventory-panel .inventory-header::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: calc(-1 * clamp(9px, 1.5vw, 13px));
-            width: clamp(18px, 4.6vw, 24px);
-            height: clamp(18px, 4.6vw, 24px);
-            transform: translateX(-50%) rotate(45deg);
-            border-radius: 4px;
-            border: 1px solid rgba(241, 195, 95, 0.9);
-            background:
-                radial-gradient(circle at 35% 35%, rgba(205, 239, 255, 0.96), rgba(97, 154, 255, 0.94) 58%, rgba(48, 94, 198, 0.98));
-            box-shadow:
-                0 4px 8px rgba(0, 0, 0, 0.32),
-                0 0 10px rgba(113, 201, 255, 0.48);
-            pointer-events: none;
+            content: none;
         }
 
         .inventory-panel .inventory-heading {
@@ -1187,7 +1215,7 @@
         .inventory-panel .inventory-title {
             margin: 0;
             font-family: 'Cinzel', serif;
-            font-size: clamp(34px, 8.8vw, 50px);
+            font-size: clamp(24px, 6.3vw, 36px);
             line-height: 0.9;
             letter-spacing: 0.04em;
             text-transform: uppercase;
@@ -1214,20 +1242,20 @@
 
         .inventory-panel .inventory-close-btn {
             position: absolute;
-            top: 50%;
-            right: clamp(8px, 2.3vw, 12px);
-            transform: translateY(-50%);
-            width: clamp(30px, 8vw, 36px);
-            height: clamp(30px, 8vw, 36px);
+            left: 50%;
+            right: auto;
+            top: calc(-1 * clamp(9px, 1.5vw, 13px));
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: clamp(18px, 4.6vw, 24px);
+            height: clamp(18px, 4.6vw, 24px);
             min-width: 0;
             min-height: 0;
-            border-radius: 999px;
+            border-radius: 4px;
             border: 1px solid rgba(238, 194, 116, 0.86);
-            background: linear-gradient(180deg, rgba(138, 86, 36, 0.96), rgba(85, 51, 21, 0.98));
-            color: #ffefc6;
-            font-family: var(--btn-font);
-            font-size: clamp(14px, 3vw, 18px);
-            font-weight: 700;
+            background:
+                radial-gradient(circle at 35% 35%, rgba(205, 239, 255, 0.96), rgba(97, 154, 255, 0.94) 58%, rgba(48, 94, 198, 0.98));
+            color: transparent;
+            font-size: 0;
             line-height: 1;
             padding: 0;
             display: inline-flex;
@@ -1235,17 +1263,32 @@
             justify-content: center;
             cursor: pointer;
             box-shadow:
-                0 4px 8px rgba(0, 0, 0, 0.28),
-                inset 0 1px 0 rgba(255, 236, 193, 0.4);
-            transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease;
+                0 4px 8px rgba(0, 0, 0, 0.32),
+                0 0 10px rgba(113, 201, 255, 0.48);
+            transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+            z-index: 4;
+        }
+
+        .inventory-panel .inventory-close-btn::before {
+            content: "X";
+            color: #f2f8ff;
+            font-family: var(--btn-font);
+            font-size: clamp(12px, 3.1vw, 16px);
+            font-weight: 800;
+            line-height: 1;
+            transform: rotate(-45deg);
+            text-shadow: 0 1px 1px rgba(16, 44, 92, 0.6);
         }
 
         .inventory-panel .inventory-close-btn:hover,
         .inventory-panel .inventory-close-btn:focus-visible {
-            transform: translateY(-50%) scale(1.04);
+            transform: translate(-50%, -50%) rotate(45deg) scale(1.08);
             border-color: rgba(255, 222, 159, 0.98);
             filter: brightness(1.06);
             outline: none;
+            box-shadow:
+                0 5px 10px rgba(0, 0, 0, 0.34),
+                0 0 12px rgba(143, 216, 255, 0.62);
         }
 
         .inventory-viewport-window {
@@ -1258,7 +1301,7 @@
             min-height: var(--inventory-showcase-min-height);
             margin: 0;
             border: 2px solid rgba(202, 156, 78, 0.94);
-            border-radius: clamp(10px, 2.8vw, 14px);
+            border-radius: 0;
             background:
                 radial-gradient(120% 105% at 50% 62%, rgba(150, 209, 255, 0.13), rgba(150, 209, 255, 0.02) 58%, rgba(150, 209, 255, 0) 100%);
             box-shadow:
@@ -1266,13 +1309,14 @@
                 inset 0 1px 0 rgba(255, 231, 178, 0.24);
             pointer-events: none;
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         .inventory-viewport-window::before {
             content: "";
             position: absolute;
             inset: clamp(4px, 1vw, 7px);
-            border-radius: clamp(8px, 2.2vw, 11px);
+            border-radius: 0;
             border: 1px solid rgba(223, 187, 112, 0.64);
             pointer-events: none;
         }
@@ -1281,7 +1325,7 @@
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: 0;
             background:
                 linear-gradient(180deg, rgba(173, 224, 255, 0.08), rgba(255, 255, 255, 0) 36%, rgba(18, 32, 48, 0.08) 100%);
             pointer-events: none;
@@ -1291,7 +1335,7 @@
             grid-area: slots;
             z-index: 3;
             position: relative;
-            border-radius: clamp(10px, 2.8vw, 14px);
+            border-radius: 0;
             border: 2px solid rgba(180, 133, 61, 0.96);
             background:
                 radial-gradient(120% 90% at 50% -18%, rgba(189, 230, 255, 0.18), rgba(189, 230, 255, 0) 56%),
@@ -1303,7 +1347,7 @@
             padding: clamp(5px, 1.3vw, 8px);
             pointer-events: auto;
             display: flex;
-            align-items: stretch;
+            align-items: center;
             box-sizing: border-box;
             overflow: hidden;
             min-height: clamp(74px, 14%, 120px);
@@ -1367,7 +1411,7 @@
         .inventory-panel .inventory-list {
             width: 100%;
             min-height: 0;
-            max-height: clamp(72px, 12.8vh, 108px);
+            max-height: min(100%, clamp(72px, 12.8vh, 108px));
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             grid-auto-flow: row;
@@ -1379,10 +1423,11 @@
             margin: 0;
             scrollbar-width: thin;
             scrollbar-color: rgba(248, 214, 141, 0.66) rgba(36, 21, 7, 0.18);
-            align-content: start;
+            scrollbar-gutter: stable both-edges;
+            align-content: center;
             justify-items: stretch;
             box-sizing: border-box;
-            flex: 1 1 auto;
+            flex: 0 1 auto;
         }
 
         .inventory-panel .inventory-list::-webkit-scrollbar {
@@ -1534,9 +1579,80 @@
             background: linear-gradient(180deg, rgba(86, 57, 26, 0.72), rgba(57, 35, 14, 0.86));
         }
 
+        .inventory-focus-overlay {
+            --inventory-focus-hole-top: 0px;
+            --inventory-focus-hole-right: 0px;
+            --inventory-focus-hole-bottom: 0px;
+            --inventory-focus-hole-left: 0px;
+            --inventory-focus-hole-inset: clamp(10px, 1.2vw, 14px);
+            --inventory-focus-top-drop: clamp(96px, 22vh, 190px);
+            --inventory-focus-band-alpha: 0.56;
+            position: fixed;
+            inset: 0;
+            z-index: 56;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 180ms ease, visibility 0ms linear 180ms;
+        }
+
+        .inventory-focus-band {
+            position: absolute;
+            background: rgba(4, 9, 20, var(--inventory-focus-band-alpha));
+            backdrop-filter: blur(9px) saturate(0.92);
+            -webkit-backdrop-filter: blur(9px) saturate(0.92);
+            pointer-events: none;
+        }
+
+        .inventory-focus-band.top {
+            inset: 0 0 calc(100% - (var(--inventory-focus-hole-top) + var(--inventory-focus-hole-inset) + var(--inventory-focus-top-drop))) 0;
+        }
+
+        .inventory-focus-band.right {
+            inset:
+                calc(var(--inventory-focus-hole-top) + var(--inventory-focus-hole-inset) + var(--inventory-focus-top-drop))
+                0
+                calc(100% - (var(--inventory-focus-hole-bottom) - var(--inventory-focus-hole-inset)))
+                calc(var(--inventory-focus-hole-right) - var(--inventory-focus-hole-inset));
+        }
+
+        .inventory-focus-band.bottom {
+            inset: calc(var(--inventory-focus-hole-bottom) - var(--inventory-focus-hole-inset)) 0 0 0;
+        }
+
+        .inventory-focus-band.left {
+            inset:
+                calc(var(--inventory-focus-hole-top) + var(--inventory-focus-hole-inset) + var(--inventory-focus-top-drop))
+                calc(100% - (var(--inventory-focus-hole-left) + var(--inventory-focus-hole-inset)))
+                calc(100% - (var(--inventory-focus-hole-bottom) - var(--inventory-focus-hole-inset)))
+                0;
+        }
+
         body.inventory-open #mystery-hanging-sign-layer {
             opacity: 0 !important;
             visibility: hidden !important;
+        }
+
+        body.inventory-open .inventory-icon-btn,
+        body.inventory-open .inventory-icon-btn:hover,
+        body.inventory-open .inventory-icon-btn:focus-visible,
+        body.inventory-open .inventory-icon-btn:active {
+            transform: none;
+            filter: none;
+            box-shadow: none;
+            outline: none;
+            background: transparent;
+            border-color: transparent;
+        }
+
+        body.inventory-open .inventory-icon-btn::before {
+            opacity: 0;
+        }
+
+        body.inventory-open .inventory-focus-overlay {
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0ms;
         }
 
         .store-content {
@@ -2172,6 +2288,16 @@
             }
         }
 
+        @media (orientation: landscape) {
+            #mystery-hanging-sign-layer {
+                --mystery-rope-width: clamp(0.98px, 0.16vmin, 1.7px);
+                --mystery-sign-width: clamp(154px, 27.5vmin, 244px);
+                --mystery-sign-height: clamp(122px, 22.8vmin, 196px);
+                --mystery-knot-width: clamp(9px, 1.8vmin, 15px);
+                --mystery-knot-height: clamp(7px, 1.55vmin, 12px);
+            }
+        }
+
         @media (max-width: 700px) {
             .inventory-panel {
                 --inventory-panel-width: min(95vw, 356px);
@@ -2186,7 +2312,7 @@
 
             .inventory-frame-shell {
                 grid-template-rows: auto minmax(var(--inventory-showcase-min-height), 1fr) auto;
-                row-gap: var(--inventory-shell-gap);
+                row-gap: 0;
                 padding: clamp(9px, 2.4vw, 12px);
             }
 
@@ -2195,16 +2321,11 @@
             }
 
             .inventory-panel .inventory-title {
-                font-size: clamp(30px, 10.3vw, 42px);
+                font-size: clamp(21px, 7.1vw, 30px);
             }
 
             .inventory-panel .store-subtitle {
                 font-size: clamp(9px, 2.6vw, 11px);
-            }
-
-            .inventory-panel .inventory-close-btn {
-                width: clamp(28px, 8.2vw, 34px);
-                height: clamp(28px, 8.2vw, 34px);
             }
 
             .inventory-slots-shell {
@@ -2216,7 +2337,7 @@
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: clamp(3px, 0.9vw, 6px);
                 padding: clamp(2px, 0.7vw, 4px);
-                max-height: clamp(68px, 13vh, 102px);
+                max-height: min(100%, clamp(68px, 13vh, 102px));
             }
         }
 
@@ -2238,7 +2359,7 @@
 
             .inventory-frame-shell {
                 grid-template-rows: auto minmax(var(--inventory-showcase-min-height), 1fr) auto;
-                row-gap: var(--inventory-shell-gap);
+                row-gap: 0;
                 padding: clamp(6px, 1.3vh, 10px);
             }
 
@@ -2247,7 +2368,7 @@
             }
 
             .inventory-panel .inventory-title {
-                font-size: clamp(22px, 6.9vw, 32px);
+                font-size: clamp(16px, 5vw, 24px);
             }
 
             .inventory-panel .store-subtitle {
@@ -2264,7 +2385,7 @@
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 3px;
                 padding: 2px;
-                max-height: clamp(62px, 12vh, 96px);
+                max-height: min(100%, clamp(62px, 12vh, 96px));
             }
         }
 
@@ -2294,7 +2415,7 @@
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 2px;
                 padding: 2px;
-                max-height: clamp(58px, 11.4vh, 88px);
+                max-height: min(100%, clamp(58px, 11.4vh, 88px));
             }
 
         }
@@ -2302,6 +2423,105 @@
         @media (max-width: 380px) and (min-height: 431px) {
             .inventory-panel .inventory-list {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        @media (orientation: portrait) {
+            .inventory-panel {
+                --inventory-panel-edge-gap: 0px;
+                --inventory-panel-width: var(
+                    --inventory-portrait-panel-width,
+                    calc(100vw - var(--inventory-safe-area-left) - var(--inventory-safe-area-right))
+                );
+                --inventory-panel-height: min(
+                    calc(100vh - var(--inventory-safe-area-top) - var(--inventory-safe-area-bottom) - clamp(8px, 1.8vh, 18px)),
+                    980px
+                );
+                --inventory-anchor-x: 50vw;
+                --inventory-anchor-y: calc((100vh - var(--inventory-safe-area-bottom)) * 0.5);
+                --inventory-shell-inset-top: clamp(56px, 11.8vh, 108px);
+                --inventory-shell-inset-side: 9px;
+                --inventory-shell-inset-bottom: 9px;
+                --inventory-shell-gap: clamp(8px, 1.9vh, 14px);
+                --inventory-showcase-min-height: clamp(130px, 34vh, 360px);
+                left: max(0px, var(--inventory-safe-area-left));
+                right: auto;
+                top: calc(var(--inventory-safe-area-top) + (var(--inventory-panel-height) * 0.5) + clamp(2px, 0.5vh, 6px));
+                width: var(--inventory-panel-width);
+                max-width: var(--inventory-panel-width);
+                transform: translateY(-50%);
+            }
+
+            .inventory-panel .inventory-hanger {
+                display: none;
+            }
+
+            .inventory-frame-shell {
+                --inventory-shell-rail-width: 10px;
+                grid-template-columns: minmax(0, 1fr);
+                justify-items: stretch;
+                border-radius: 16px;
+                border-width: 3px;
+                padding: 10px;
+            }
+
+            .inventory-frame-shell::before {
+                inset: 3px;
+                border-width: 1px;
+            }
+
+            .inventory-frame-shell::after {
+                left: 10px;
+                right: 10px;
+            }
+
+            .inventory-viewport-window,
+            .inventory-slots-shell {
+                min-width: 0;
+                max-width: 100%;
+                border-width: 2px;
+            }
+
+            .inventory-panel .inventory-header,
+            .inventory-panel .inventory-list {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .inventory-viewport-window::before {
+                inset: 4px;
+                border-width: 1px;
+            }
+
+            .inventory-panel .inventory-header {
+                padding: clamp(10px, 2.6vw, 16px) clamp(38px, 10vw, 58px) clamp(10px, 2.6vw, 14px);
+            }
+
+            .inventory-panel .inventory-title {
+                font-size: clamp(22px, 7.2vw, 38px);
+            }
+
+            .inventory-panel .inventory-close-btn {
+                left: 50%;
+                right: auto;
+            }
+
+            .inventory-slots-shell {
+                min-height: clamp(92px, 18vh, 192px);
+                padding: clamp(6px, 1.8vw, 12px);
+            }
+
+            .inventory-panel .inventory-list {
+                grid-template-columns: repeat(auto-fit, minmax(clamp(58px, 14vw, 108px), 1fr));
+                gap: clamp(4px, 1.1vw, 8px);
+                padding: clamp(3px, 0.9vw, 6px);
+                max-height: min(100%, clamp(104px, 26vh, 260px));
+            }
+
+            .inventory-slot-cell,
+            .inventory-slot-empty,
+            .inventory-panel .inventory-item {
+                border-radius: clamp(6px, 1.8vw, 10px);
             }
         }
 
@@ -2337,8 +2557,22 @@
         <div id="mystery-scroll-sign">
             <canvas id="mystery-scroll-canvas" aria-hidden="true"></canvas>
             <div class="scroll-text">
-                <span class="line-top">Mystery Box</span>
+                <span class="line-top">Mystery</span>
                 <span class="line-bottom">- 100 pts</span>
+            </div>
+            <div class="scroll-chevron-row" aria-hidden="true">
+                <svg class="scroll-chevron" viewBox="0 0 24 18" role="presentation">
+                    <path class="chevron-main" d="M4 3.5 L12 8.8 L20 3.5"></path>
+                    <path class="chevron-main" d="M4 9.2 L12 14.5 L20 9.2"></path>
+                    <path class="chevron-glow" d="M4 3.5 L12 8.8 L20 3.5"></path>
+                    <path class="chevron-glow" d="M4 9.2 L12 14.5 L20 9.2"></path>
+                </svg>
+                <svg class="scroll-chevron" viewBox="0 0 24 18" role="presentation">
+                    <path class="chevron-main" d="M4 3.5 L12 8.8 L20 3.5"></path>
+                    <path class="chevron-main" d="M4 9.2 L12 14.5 L20 9.2"></path>
+                    <path class="chevron-glow" d="M4 3.5 L12 8.8 L20 3.5"></path>
+                    <path class="chevron-glow" d="M4 9.2 L12 14.5 L20 9.2"></path>
+                </svg>
             </div>
         </div>
     </div>
@@ -2375,6 +2609,12 @@
                 </div>
             </div>
         </section>
+        <div class="inventory-focus-overlay" id="inventory-focus-overlay" aria-hidden="true">
+            <span class="inventory-focus-band top"></span>
+            <span class="inventory-focus-band right"></span>
+            <span class="inventory-focus-band bottom"></span>
+            <span class="inventory-focus-band left"></span>
+        </div>
         <section class="inventory-panel" id="inventory-panel" aria-label="Player inventory">
             <div class="inventory-hanger" aria-hidden="true"></div>
             <div class="inventory-frame-shell">
@@ -2385,9 +2625,8 @@
                 <div class="inventory-header">
                     <div class="inventory-heading">
                         <h2 class="store-title inventory-title">Inventory</h2>
-                        <p class="store-subtitle">Stashed props you can equip anytime</p>
                     </div>
-                    <button class="inventory-close-btn" id="inventory-close-btn" type="button" aria-label="Close inventory">×</button>
+                    <button class="inventory-close-btn" id="inventory-close-btn" type="button" aria-label="Close inventory"></button>
                 </div>
                 <div class="inventory-viewport-window" aria-hidden="true"></div>
                 <div class="inventory-slots-shell">
@@ -5218,6 +5457,7 @@
         const mysteryScrollCanvas = document.getElementById('mystery-scroll-canvas');
         const storePanel = document.getElementById('store-panel');
         const inventoryPanel = document.getElementById('inventory-panel');
+        const inventoryFocusOverlay = document.getElementById('inventory-focus-overlay');
         const inventoryCloseBtn = document.getElementById('inventory-close-btn');
         const inventoryList = document.getElementById('inventory-list');
         const inventoryEmpty = document.getElementById('inventory-empty');
@@ -5983,6 +6223,8 @@
             settled: false,
             rewardShown: false,
             previewPrimed: false,
+            previewPreloadQueued: false,
+            preloadedPreview: null,
             landedYaw: 0,
             pressActive: false,
             pressPointerId: null,
@@ -6186,6 +6428,7 @@
 
         let inventoryRenderQueued = false;
         let inventoryRenderDirty = false;
+        let inventoryAnchorUpdateQueued = false;
         const inventoryAnchorWorld = new THREE.Vector3();
         const inventoryAnchorNdc = new THREE.Vector3();
         const inventoryPanelAnchorState = {
@@ -6212,6 +6455,86 @@
 
         function isInventoryPanelOpen() {
             return Boolean(inventoryPanel && inventoryPanel.classList.contains('open'));
+        }
+
+        function isPortraitLikeViewport() {
+            const viewportWidth = window.visualViewport && Number.isFinite(window.visualViewport.width)
+                ? window.visualViewport.width
+                : window.innerWidth;
+            const viewportHeight = window.visualViewport && Number.isFinite(window.visualViewport.height)
+                ? window.visualViewport.height
+                : window.innerHeight;
+            return Number.isFinite(viewportWidth) && Number.isFinite(viewportHeight) && viewportHeight >= viewportWidth;
+        }
+
+        function scheduleInventoryPanelAnchorUpdate({ afterPaint = false } = {}) {
+            if (!inventoryPanel || !isInventoryPanelOpen() || inventoryAnchorUpdateQueued) {
+                return;
+            }
+            inventoryAnchorUpdateQueued = true;
+            const runAnchorUpdate = () => {
+                inventoryAnchorUpdateQueued = false;
+                updateInventoryPanelAnchor();
+            };
+            if (afterPaint) {
+                window.requestAnimationFrame(() => {
+                    window.requestAnimationFrame(runAnchorUpdate);
+                });
+                return;
+            }
+            window.requestAnimationFrame(runAnchorUpdate);
+        }
+
+        function updateInventoryFocusOverlayHole() {
+            if (!inventoryFocusOverlay || !inventoryPanel || !isInventoryPanelOpen()) {
+                return;
+            }
+            const visualViewport = window.visualViewport;
+            const viewportWidth = Math.max(
+                1,
+                (visualViewport && Number.isFinite(visualViewport.width) ? visualViewport.width : window.innerWidth) || 1
+            );
+            const viewportHeight = Math.max(
+                1,
+                (visualViewport && Number.isFinite(visualViewport.height) ? visualViewport.height : window.innerHeight) || 1
+            );
+            const panelRect = inventoryPanel.getBoundingClientRect();
+            if (
+                !Number.isFinite(panelRect.left) ||
+                !Number.isFinite(panelRect.top) ||
+                !Number.isFinite(panelRect.right) ||
+                !Number.isFinite(panelRect.bottom)
+            ) {
+                return;
+            }
+            const panelWidth = Math.max(1, panelRect.width);
+            const panelHeight = Math.max(1, panelRect.height);
+            const desiredInset = isPortraitLikeViewport() ? 10 : 12;
+            const holeInsetX = Math.min(desiredInset, Math.max(0, (panelWidth - 20) * 0.5));
+            const holeInsetY = Math.min(desiredInset, Math.max(0, (panelHeight - 20) * 0.5));
+
+            const holeLeft = THREE.MathUtils.clamp(panelRect.left + holeInsetX, 0, viewportWidth);
+            const holeTop = THREE.MathUtils.clamp(panelRect.top + holeInsetY, 0, viewportHeight);
+            const holeRight = THREE.MathUtils.clamp(panelRect.right - holeInsetX, holeLeft, viewportWidth);
+            const holeBottom = THREE.MathUtils.clamp(panelRect.bottom - holeInsetY, holeTop, viewportHeight);
+            const desiredTopDrop = isPortraitLikeViewport() ? 96 : 84;
+            let topDropPx = desiredTopDrop;
+            const viewportWindow = inventoryPanel.querySelector('.inventory-viewport-window');
+            if (viewportWindow) {
+                const viewportRect = viewportWindow.getBoundingClientRect();
+                if (Number.isFinite(viewportRect.top)) {
+                    // Keep the top mask above the character display window.
+                    const maxSafeTopDrop = viewportRect.top - (holeTop + holeInsetY) - 2;
+                    topDropPx = Math.min(topDropPx, maxSafeTopDrop);
+                }
+            }
+            topDropPx = THREE.MathUtils.clamp(topDropPx, 0, desiredTopDrop);
+
+            inventoryFocusOverlay.style.setProperty('--inventory-focus-hole-left', `${Number(holeLeft.toFixed(2))}px`);
+            inventoryFocusOverlay.style.setProperty('--inventory-focus-hole-top', `${Number(holeTop.toFixed(2))}px`);
+            inventoryFocusOverlay.style.setProperty('--inventory-focus-hole-right', `${Number(holeRight.toFixed(2))}px`);
+            inventoryFocusOverlay.style.setProperty('--inventory-focus-hole-bottom', `${Number(holeBottom.toFixed(2))}px`);
+            inventoryFocusOverlay.style.setProperty('--inventory-focus-top-drop', `${Number(topDropPx.toFixed(2))}px`);
         }
 
         function getInventoryBottomGuardPx(viewportHeight) {
@@ -6269,8 +6592,15 @@
                 return;
             }
 
-            const viewportWidth = Math.max(1, window.innerWidth || 1);
-            const viewportHeight = Math.max(1, window.innerHeight || 1);
+            const visualViewport = window.visualViewport;
+            const viewportWidth = Math.max(
+                1,
+                (visualViewport && Number.isFinite(visualViewport.width) ? visualViewport.width : window.innerWidth) || 1
+            );
+            const viewportHeight = Math.max(
+                1,
+                (visualViewport && Number.isFinite(visualViewport.height) ? visualViewport.height : window.innerHeight) || 1
+            );
             if (
                 inventoryPanelAnchorState.initialized &&
                 inventoryPanelAnchorState.viewportWidth === viewportWidth &&
@@ -6279,6 +6609,69 @@
                 return;
             }
 
+            if (isPortraitLikeViewport()) {
+                const rootStyle = getComputedStyle(document.documentElement);
+                const safeAreaLeft = Number.parseFloat(rootStyle.getPropertyValue('--inventory-safe-area-left')) || 0;
+                const safeAreaRight = Number.parseFloat(rootStyle.getPropertyValue('--inventory-safe-area-right')) || 0;
+                const layoutViewportWidth = Math.max(1, window.innerWidth || Math.round(viewportWidth));
+                const snappedPanelWidth = Math.max(1, Math.round(layoutViewportWidth - safeAreaLeft - safeAreaRight));
+                const targetX = Number((viewportWidth * 0.5).toFixed(2));
+                const targetY = Number((viewportHeight * 0.5).toFixed(2));
+                inventoryPanelAnchorState.x = targetX;
+                inventoryPanelAnchorState.y = targetY;
+                inventoryPanel.style.setProperty('--inventory-anchor-x', `${targetX}px`);
+                inventoryPanel.style.setProperty('--inventory-anchor-y', `${targetY}px`);
+                inventoryPanel.style.setProperty('--inventory-portrait-panel-width', `${snappedPanelWidth}px`);
+                inventoryPanel.style.setProperty('--inventory-panel-top', '0px');
+                inventoryPanel.style.setProperty('--inventory-bottom-clearance', '0px');
+                const panelRect = inventoryPanel.getBoundingClientRect();
+                const panelTop = Number.isFinite(panelRect.top) ? panelRect.top : 0;
+                const baseInsetTop = Number.parseFloat(getComputedStyle(inventoryPanel).getPropertyValue('--inventory-shell-inset-top')) || 0;
+                const frameShell = inventoryPanel.querySelector('.inventory-frame-shell');
+                const header = inventoryPanel.querySelector('.inventory-header');
+                let shellToHeaderOffset = 0;
+                if (frameShell && header) {
+                    const shellRect = frameShell.getBoundingClientRect();
+                    const headerRect = header.getBoundingClientRect();
+                    if (
+                        Number.isFinite(shellRect.top) &&
+                        Number.isFinite(headerRect.top) &&
+                        headerRect.top >= shellRect.top - 1
+                    ) {
+                        shellToHeaderOffset = Math.max(0, headerRect.top - shellRect.top);
+                    } else {
+                        const shellStyle = getComputedStyle(frameShell);
+                        const shellBorderTop = Number.parseFloat(shellStyle.borderTopWidth) || 0;
+                        const shellPaddingTop = Number.parseFloat(shellStyle.paddingTop) || 0;
+                        shellToHeaderOffset = Math.max(0, shellBorderTop + shellPaddingTop);
+                    }
+                }
+                let anchoredInsetTop = baseInsetTop;
+                if (scoreBox) {
+                    const scoreRect = scoreBox.getBoundingClientRect();
+                    if (Number.isFinite(scoreRect.bottom) && Number.isFinite(scoreRect.height) && scoreRect.height > 0) {
+                        const desiredGapPx = THREE.MathUtils.clamp(viewportHeight * 0.0125, 8, 14);
+                        const iconSeatDropPx = THREE.MathUtils.clamp(viewportHeight * 0.01, 8, 12);
+                        const minShellGapPx = THREE.MathUtils.clamp(viewportHeight * 0.003, 2, 4);
+                        const desiredHeaderTop = scoreRect.bottom + desiredGapPx + iconSeatDropPx;
+                        const desiredInsetTop = desiredHeaderTop - panelTop - shellToHeaderOffset;
+                        const minInsetFromShellGap = scoreRect.bottom + minShellGapPx + (iconSeatDropPx * 0.5) - panelTop;
+                        anchoredInsetTop = Math.max(desiredInsetTop, minInsetFromShellGap);
+                    }
+                }
+                const minInsetTop = 36;
+                const maxInsetTop = Math.max(minInsetTop, viewportHeight * 0.24);
+                const clampedInsetTop = THREE.MathUtils.clamp(anchoredInsetTop, minInsetTop, maxInsetTop);
+                inventoryPanel.style.setProperty('--inventory-shell-inset-top', `${Number(clampedInsetTop.toFixed(2))}px`);
+                inventoryPanelAnchorState.viewportWidth = viewportWidth;
+                inventoryPanelAnchorState.viewportHeight = viewportHeight;
+                inventoryPanelAnchorState.initialized = true;
+                updateInventoryFocusOverlayHole();
+                return;
+            }
+
+            inventoryPanel.style.removeProperty('--inventory-portrait-panel-width');
+            inventoryPanel.style.removeProperty('--inventory-shell-inset-top');
             creatureGroup.getWorldPosition(inventoryAnchorWorld);
             inventoryAnchorWorld.y += 0.22;
             inventoryAnchorNdc.copy(inventoryAnchorWorld).project(camera);
@@ -6324,6 +6717,7 @@
             inventoryPanelAnchorState.viewportWidth = viewportWidth;
             inventoryPanelAnchorState.viewportHeight = viewportHeight;
             inventoryPanelAnchorState.initialized = true;
+            updateInventoryFocusOverlayHole();
         }
 
         function scheduleInventoryRender() {
@@ -6716,6 +7110,7 @@
 
             inventoryEmpty.style.display = 'none';
             const totalSlots = Math.max(4, stashedKeys.length);
+            const fragment = document.createDocumentFragment();
             for (let i = 0; i < totalSlots; i++) {
                 const slotCell = document.createElement('div');
                 slotCell.className = 'inventory-slot-cell';
@@ -6742,8 +7137,9 @@
                     emptySlot.setAttribute('aria-hidden', 'true');
                     slotCell.appendChild(emptySlot);
                 }
-                inventoryList.appendChild(slotCell);
+                fragment.appendChild(slotCell);
             }
+            inventoryList.appendChild(fragment);
 
             updateInventoryButtonStates();
         }
@@ -7645,9 +8041,10 @@
             return fallbackGroup;
         }
 
-        function setPreviewObject(propKey, label = 'Unknown item') {
+        function setPreviewObject(propKey, label = 'Unknown item', prebuiltPreview = null) {
             const source = getItemByPropKey(propKey);
-            if (!source) {
+            const hasPrebuiltObject = Boolean(prebuiltPreview?.object && prebuiltPreview.propKey === propKey);
+            if (!source && !hasPrebuiltObject) {
                 setPreviewActionButtonsDisabled(true);
                 return;
             }
@@ -7670,7 +8067,7 @@
                 previewState.object = null;
             }
 
-            const previewBuild = buildPreviewObject(source);
+            const previewBuild = hasPrebuiltObject ? prebuiltPreview : buildPreviewObject(source);
             const cloned = previewBuild?.object;
             const hasRenderableMesh = previewBuild?.hasRenderableMesh ?? false;
             if (!cloned) {
@@ -8151,6 +8548,75 @@
             return rewardPool[Math.floor(Math.random() * rewardPool.length)];
         }
 
+        function cacheMysteryRewardPreviewBuild(propKey) {
+            if (!propKey) {
+                return null;
+            }
+            const cached = mysteryState.preloadedPreview;
+            if (cached?.propKey === propKey && cached?.object) {
+                return cached;
+            }
+            const source = getItemByPropKey(propKey);
+            if (!source) {
+                mysteryState.preloadedPreview = null;
+                return null;
+            }
+            const previewBuild = buildPreviewObject(source);
+            if (!previewBuild?.object) {
+                mysteryState.preloadedPreview = null;
+                return null;
+            }
+            const prepared = {
+                propKey,
+                object: previewBuild.object,
+                hasRenderableMesh: previewBuild.hasRenderableMesh ?? false
+            };
+            mysteryState.preloadedPreview = prepared;
+            return prepared;
+        }
+
+        function takeMysteryRewardPreviewBuild(propKey) {
+            if (!propKey) {
+                return null;
+            }
+            const cached = mysteryState.preloadedPreview;
+            if (!cached || cached.propKey !== propKey || !cached.object) {
+                return null;
+            }
+            mysteryState.preloadedPreview = null;
+            mysteryState.previewPreloadQueued = false;
+            return cached;
+        }
+
+        function scheduleMysteryRewardPreviewPreload(propKey) {
+            if (!propKey) {
+                return;
+            }
+            const cached = mysteryState.preloadedPreview;
+            if (cached?.propKey === propKey && cached?.object) {
+                return;
+            }
+            if (mysteryState.previewPreloadQueued) {
+                return;
+            }
+            mysteryState.previewPreloadQueued = true;
+            const runPreload = () => {
+                mysteryState.previewPreloadQueued = false;
+                if (mysteryState.phase === 'idle') {
+                    return;
+                }
+                if (mysteryState.rewardKey !== propKey) {
+                    return;
+                }
+                cacheMysteryRewardPreviewBuild(propKey);
+            };
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(runPreload, { timeout: 260 });
+            } else {
+                setTimeout(runPreload, 16);
+            }
+        }
+
         function launchMysteryBox() {
             if (mysteryState.phase !== 'idle' && mysteryState.phase !== 'cooldown') {
                 return;
@@ -8277,11 +8743,14 @@
             mysteryState.spinVelX = (Math.random() * 0.58 + 0.08) * (Math.random() < 0.5 ? -1 : 1);
             mysteryState.spinVelY = (Math.random() * 1.45 + 0.35) * (Math.random() < 0.5 ? -1 : 1);
             mysteryState.spinVelZ = (Math.random() * 0.34 + 0.04) * (Math.random() < 0.5 ? -1 : 1);
+            const preselectedRewardKey = pickMysteryRewardKey();
             mysteryState.settled = false;
-            mysteryState.rewardKey = null;
-            mysteryState.rewardLabel = null;
+            mysteryState.rewardKey = preselectedRewardKey;
+            mysteryState.rewardLabel = preselectedRewardKey ? getPropLabelByKey(preselectedRewardKey) : null;
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
+            mysteryState.previewPreloadQueued = false;
+            mysteryState.preloadedPreview = null;
             mysteryState.landedYaw = model.rotation.y;
             mysteryState.pressActive = false;
             mysteryState.pressPointerId = null;
@@ -8295,6 +8764,9 @@
             mysteryState.shadowFade = 1;
             updateMysteryGroundShadows(model);
             setContactShadowFade(1);
+            if (preselectedRewardKey) {
+                scheduleMysteryRewardPreviewPreload(preselectedRewardKey);
+            }
         }
 
         function clearMysteryBox() {
@@ -8317,6 +8789,8 @@
             mysteryState.rewardLabel = null;
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
+            mysteryState.previewPreloadQueued = false;
+            mysteryState.preloadedPreview = null;
             mysteryState.landedYaw = 0;
             mysteryState.pressActive = false;
             mysteryState.pressPointerId = null;
@@ -9495,8 +9969,12 @@
 
         function revealMysteryReward() {
             if (!mysteryState.root || mysteryState.phase !== 'landed') return;
-            const rewardKey = pickMysteryRewardKey();
+            const rewardKey = mysteryState.rewardKey || pickMysteryRewardKey();
             if (!rewardKey) return;
+            const rewardLabel = mysteryState.rewardLabel || getPropLabelByKey(rewardKey);
+            mysteryState.rewardKey = rewardKey;
+            mysteryState.rewardLabel = rewardLabel;
+            cacheMysteryRewardPreviewBuild(rewardKey);
             const stashResult = stashPropInInventory(rewardKey, { deferRender: true });
             mysteryState.openStartPressDepth = THREE.MathUtils.clamp(mysteryState.pressDepth || 0, 0, 1);
             mysteryState.pressActive = false;
@@ -9505,8 +9983,6 @@
             mysteryState.pressDepth = 0;
             mysteryState.rattleTimer = 0;
             mysteryState.rattleCooldown = MYSTERY_BOX_CONFIG.landedRattleInterval || 2.5;
-            mysteryState.rewardKey = rewardKey;
-            mysteryState.rewardLabel = getPropLabelByKey(rewardKey);
             mysteryState.phase = 'opening';
             mysteryState.timer = 0;
             mysteryState.rewardShown = false;
@@ -10103,7 +10579,12 @@
                 );
                 if (!mysteryState.rewardShown && mysteryState.rewardKey && dustRatio >= rewardRevealRatio) {
                     mysteryState.rewardShown = true;
-                    setPreviewObject(mysteryState.rewardKey, `${mysteryState.rewardLabel} (Mystery Reward)`);
+                    const preloadedRewardPreview = takeMysteryRewardPreviewBuild(mysteryState.rewardKey);
+                    setPreviewObject(
+                        mysteryState.rewardKey,
+                        `${mysteryState.rewardLabel} (Mystery Reward)`,
+                        preloadedRewardPreview
+                    );
                     if (propPreviewName) {
                         propPreviewName.textContent = `Mystery Reward: ${mysteryState.rewardLabel} (Added to Inventory)`;
                     }
@@ -10240,7 +10721,9 @@
         }
 
         function setActiveInventoryCategory(categoryKey) {
-            activeInventoryCategory = isInventoryCategory(categoryKey) ? categoryKey : INVENTORY_CONFIG.defaultCategory;
+            const nextCategory = isInventoryCategory(categoryKey) ? categoryKey : INVENTORY_CONFIG.defaultCategory;
+            const didCategoryChange = nextCategory !== activeInventoryCategory;
+            activeInventoryCategory = nextCategory;
             inventoryCategoryButtons.forEach((btn) => {
                 btn.classList.toggle('active', btn.dataset.category === activeInventoryCategory);
                 if (btn.dataset.category && isInventoryCategory(btn.dataset.category)) {
@@ -10248,8 +10731,16 @@
                     btn.textContent = getInventoryDisplayNameWithCount(category);
                 }
             });
-            if (isInventoryPanelOpen() || inventoryRenderDirty) {
-                renderInventoryList();
+            if (isInventoryPanelOpen()) {
+                if (didCategoryChange || inventoryRenderDirty) {
+                    scheduleInventoryRender();
+                } else {
+                    updateInventoryButtonStates();
+                }
+                return;
+            }
+            if (didCategoryChange) {
+                inventoryRenderDirty = true;
             }
         }
 
@@ -10257,8 +10748,12 @@
             inventoryToggle.addEventListener('click', () => {
                 const isOpen = inventoryPanel.classList.toggle('open');
                 inventoryToggle.setAttribute('aria-expanded', String(isOpen));
+                if (isOpen) {
+                    updateInventoryFocusOverlayHole();
+                }
                 document.body.classList.toggle('inventory-open', isOpen);
                 if (isOpen) {
+                    inventoryToggle.blur();
                     if (mysterySignSlingshotState.active) {
                         endMysterySignSlingshot(mysterySignSlingshotState.pointerId);
                     }
@@ -10267,7 +10762,7 @@
                         storePanel.classList.remove('open');
                     }
                     setActiveInventoryCategory(activeInventoryCategory);
-                    updateInventoryPanelAnchor(0);
+                    scheduleInventoryPanelAnchorUpdate({ afterPaint: true });
                 } else {
                     const mysterySignPhase = mysterySignSlingshotState?.phase;
                     if (mysterySignPhase === 'waiting' || mysterySignPhase === 'launch') {
@@ -11541,16 +12036,27 @@
             mysteryScroll3D.textFitWidth = signWidth;
             mysteryScroll3D.textFitHeight = signHeight;
 
-            const availableWidth = Math.max(90, textWrap.clientWidth - 2);
-            let topSize = THREE.MathUtils.clamp(signWidth * 0.19, 22, 50);
-            let bottomSize = THREE.MathUtils.clamp(signWidth * 0.14, 17, 35);
-            const minTopSize = 20;
-            const minBottomSize = 15;
+            const availableWidth = Math.max(72, textWrap.clientWidth - 2);
+            const signScale = THREE.MathUtils.clamp(
+                Math.min(signWidth / 300, signHeight / 242),
+                0.65,
+                1.1
+            );
+            const topBaseSize = signWidth * 0.178;
+            const bottomBaseSize = signWidth * 0.134;
+            let topSize = topBaseSize;
+            let bottomSize = bottomBaseSize;
+            const minTopSize = topBaseSize * 0.7;
+            const minBottomSize = bottomBaseSize * 0.7;
+            const topStep = 0.4 * signScale;
+            const bottomStep = 0.35 * signScale;
+            const topTranslateY = -THREE.MathUtils.clamp(signHeight * 0.0155, 1.8, 3.8);
+            const bottomTranslateY = -THREE.MathUtils.clamp(signHeight * 0.0082, 0.9, 2.2);
 
-            topLine.style.fontSize = `${topSize}px`;
-            bottomLine.style.fontSize = `${bottomSize}px`;
-            topLine.style.transform = 'scaleX(1)';
-            bottomLine.style.transform = 'translateY(-2px) scaleX(1)';
+            topLine.style.fontSize = `${topSize.toFixed(2)}px`;
+            bottomLine.style.fontSize = `${bottomSize.toFixed(2)}px`;
+            topLine.style.transform = `translateY(${topTranslateY.toFixed(2)}px) scaleX(1)`;
+            bottomLine.style.transform = `translateY(${bottomTranslateY.toFixed(2)}px) scaleX(1)`;
             topLine.style.transformOrigin = '50% 50%';
             bottomLine.style.transformOrigin = '50% 50%';
 
@@ -11560,24 +12066,26 @@
                 if (topOverflow <= 0.5 && bottomOverflow <= 0.5) break;
 
                 if (topOverflow > 0.5 && topSize > minTopSize) {
-                    topSize -= 0.45;
+                    topSize -= topStep;
                 }
                 if (bottomOverflow > 0.5 && bottomSize > minBottomSize) {
-                    bottomSize -= 0.4;
+                    bottomSize -= bottomStep;
                 }
 
                 topLine.style.fontSize = `${topSize.toFixed(2)}px`;
                 bottomLine.style.fontSize = `${bottomSize.toFixed(2)}px`;
             }
 
-            const compact = signWidth < 292;
-            topLine.style.letterSpacing = compact ? '0.012em' : '0.018em';
-            bottomLine.style.letterSpacing = compact ? '0.01em' : '0.015em';
+            const widthNorm = THREE.MathUtils.clamp((signWidth - 154) / 146, 0, 1);
+            const topLetterSpacing = THREE.MathUtils.lerp(0.01, 0.018, widthNorm);
+            const bottomLetterSpacing = THREE.MathUtils.lerp(0.009, 0.015, widthNorm);
+            topLine.style.letterSpacing = `${topLetterSpacing.toFixed(3)}em`;
+            bottomLine.style.letterSpacing = `${bottomLetterSpacing.toFixed(3)}em`;
 
             const topScale = Math.min(1, availableWidth / Math.max(1, topLine.scrollWidth));
             const bottomScale = Math.min(1, availableWidth / Math.max(1, bottomLine.scrollWidth));
-            topLine.style.transform = `scaleX(${Math.max(0.84, topScale).toFixed(3)})`;
-            bottomLine.style.transform = `translateY(-2px) scaleX(${Math.max(0.86, bottomScale).toFixed(3)})`;
+            topLine.style.transform = `translateY(${topTranslateY.toFixed(2)}px) scaleX(${Math.max(0.84, topScale).toFixed(3)})`;
+            bottomLine.style.transform = `translateY(${bottomTranslateY.toFixed(2)}px) scaleX(${Math.max(0.86, bottomScale).toFixed(3)})`;
         }
 
         function resizeMysteryScroll3D(forceRender = false) {
@@ -11698,6 +12206,9 @@
             const segmentCount = MYSTERY_HANGING_SIGN_CONFIG.segmentCount;
             const width = window.innerWidth;
             const height = window.innerHeight;
+            const aspect = width / Math.max(1, height);
+            const landscapeBlend = THREE.MathUtils.clamp((aspect - 1.02) / 1.0, 0, 1);
+            const shortLandscapeBlend = landscapeBlend * THREE.MathUtils.clamp((560 - height) / 160, 0, 1);
             const safeTopInset = window.visualViewport?.offsetTop || 0;
             const offscreenLift = Math.max(
                 MYSTERY_HANGING_SIGN_CONFIG.anchorOffscreenMin,
@@ -11705,10 +12216,25 @@
             );
             const nextAnchorX = width * 0.5;
             const nextAnchorY = safeTopInset - offscreenLift;
-            const visibleRopeLength = THREE.MathUtils.clamp(
-                height * MYSTERY_HANGING_SIGN_CONFIG.ropeLengthViewportRatio,
+            const ropeLengthViewportRatio = THREE.MathUtils.lerp(
+                MYSTERY_HANGING_SIGN_CONFIG.ropeLengthViewportRatio,
+                0.125,
+                shortLandscapeBlend
+            );
+            const minRopeLength = THREE.MathUtils.lerp(
                 MYSTERY_HANGING_SIGN_CONFIG.minRopeLength,
-                MYSTERY_HANGING_SIGN_CONFIG.maxRopeLength
+                72,
+                shortLandscapeBlend
+            );
+            const maxRopeLength = THREE.MathUtils.lerp(
+                MYSTERY_HANGING_SIGN_CONFIG.maxRopeLength,
+                160,
+                shortLandscapeBlend
+            );
+            const visibleRopeLength = THREE.MathUtils.clamp(
+                height * ropeLengthViewportRatio,
+                minRopeLength,
+                maxRopeLength
             );
             const nextRopeLength = visibleRopeLength + offscreenLift;
             const nextSegmentLength = nextRopeLength / segmentCount;
@@ -11971,21 +12497,152 @@
             holdInput.triggered = false;
         });
 
+        const responsiveViewState = {
+            initialized: false,
+            needsProjectionUpdate: false,
+            currentFov: camera.fov,
+            targetFov: camera.fov,
+            currentPosition: camera.position.clone(),
+            targetPosition: camera.position.clone(),
+            currentScale: BASE_CREATURE_SCALE,
+            targetScale: BASE_CREATURE_SCALE
+        };
+        let responsiveLayoutUpdateQueued = false;
+        let orientationSettleTimer = null;
+
+        function getViewportDimensions() {
+            const visualViewport = window.visualViewport;
+            const rawWidth = visualViewport && Number.isFinite(visualViewport.width)
+                ? visualViewport.width
+                : window.innerWidth;
+            const rawHeight = visualViewport && Number.isFinite(visualViewport.height)
+                ? visualViewport.height
+                : window.innerHeight;
+            const width = Math.max(1, Math.round(rawWidth || 1));
+            const height = Math.max(1, Math.round(rawHeight || 1));
+            return {
+                width,
+                height,
+                aspect: width / height
+            };
+        }
+
+        function computeResponsiveViewTargets(viewportWidth, viewportHeight) {
+            const aspect = viewportWidth / viewportHeight;
+            const portraitBlend = THREE.MathUtils.clamp((1.03 - aspect) / 0.5, 0, 1);
+            const landscapeBlend = THREE.MathUtils.clamp((aspect - 1.02) / 1.06, 0, 1);
+            const wideLandscapeBlend = THREE.MathUtils.clamp((aspect - 1.62) / 1.0, 0, 1);
+            const compactLandscapeBlend = THREE.MathUtils.clamp((1.2 - aspect) / 0.24, 0, 1);
+            const shortLandscapeBlend = landscapeBlend * THREE.MathUtils.clamp((560 - viewportHeight) / 160, 0, 1);
+            const tallPortraitBlend = THREE.MathUtils.clamp((0.75 - aspect) / 0.24, 0, 1);
+
+            const landscapeFovBase = THREE.MathUtils.lerp(48.8, 51.2, landscapeBlend);
+            const landscapeFovWide = THREE.MathUtils.lerp(landscapeFovBase, 52.2, wideLandscapeBlend);
+            const landscapeFov = THREE.MathUtils.lerp(landscapeFovWide, 50.4, shortLandscapeBlend);
+            const portraitFov = THREE.MathUtils.lerp(53.0, 54.4, tallPortraitBlend);
+            const fov = THREE.MathUtils.clamp(
+                THREE.MathUtils.lerp(landscapeFov, portraitFov, portraitBlend),
+                47,
+                59
+            );
+
+            const landscapeYBase = THREE.MathUtils.lerp(1.9, 2.18, wideLandscapeBlend);
+            const landscapeY = THREE.MathUtils.lerp(landscapeYBase, 2.46, shortLandscapeBlend);
+            const portraitY = THREE.MathUtils.lerp(0.92, 0.84, tallPortraitBlend);
+            const positionY = THREE.MathUtils.lerp(landscapeY, portraitY, portraitBlend);
+
+            const landscapeZBase = THREE.MathUtils.lerp(21.8, 23.1, landscapeBlend);
+            const landscapeZWide = THREE.MathUtils.lerp(landscapeZBase, 24.6, wideLandscapeBlend);
+            const landscapeZShort = THREE.MathUtils.lerp(landscapeZWide, 22.8, shortLandscapeBlend);
+            const landscapeZ = THREE.MathUtils.lerp(landscapeZShort, 21.9, compactLandscapeBlend);
+            const portraitZ = THREE.MathUtils.lerp(22.5, 23.3, tallPortraitBlend);
+            const positionZ = THREE.MathUtils.lerp(landscapeZ, portraitZ, portraitBlend);
+
+            let scaleMultiplier = THREE.MathUtils.lerp(0.96, 0.9, landscapeBlend);
+            scaleMultiplier = THREE.MathUtils.lerp(scaleMultiplier, 0.9, portraitBlend);
+            scaleMultiplier = THREE.MathUtils.lerp(scaleMultiplier, 0.96, shortLandscapeBlend);
+            if (viewportWidth < 420) scaleMultiplier *= 0.96;
+            if (viewportHeight < 430 && aspect < 1.0) scaleMultiplier *= 0.95;
+            const creatureScale = BASE_CREATURE_SCALE * THREE.MathUtils.clamp(scaleMultiplier, 0.84, 0.98);
+
+            return {
+                aspect,
+                fov,
+                positionY,
+                positionZ,
+                creatureScale
+            };
+        }
+
+        function stepResponsiveViewMotion(dt, force = false) {
+            if (!responsiveViewState.initialized) {
+                return;
+            }
+            const safeDt = Number.isFinite(dt) && dt > 0 ? dt : 1 / 60;
+            const blend = force ? 1 : 1 - Math.exp(-safeDt * 11);
+            const previousFov = responsiveViewState.currentFov;
+
+            responsiveViewState.currentFov = THREE.MathUtils.lerp(
+                responsiveViewState.currentFov,
+                responsiveViewState.targetFov,
+                blend
+            );
+            responsiveViewState.currentPosition.lerp(responsiveViewState.targetPosition, blend);
+            responsiveViewState.currentScale = THREE.MathUtils.lerp(
+                responsiveViewState.currentScale,
+                responsiveViewState.targetScale,
+                blend
+            );
+
+            camera.fov = responsiveViewState.currentFov;
+            camera.position.copy(responsiveViewState.currentPosition);
+            creatureGroup.scale.setScalar(responsiveViewState.currentScale);
+
+            if (
+                force ||
+                responsiveViewState.needsProjectionUpdate ||
+                Math.abs(responsiveViewState.currentFov - previousFov) > 0.001
+            ) {
+                camera.updateProjectionMatrix();
+                responsiveViewState.needsProjectionUpdate = false;
+            }
+        }
+
+        function scheduleResponsiveLayout({ afterPaint = false } = {}) {
+            if (responsiveLayoutUpdateQueued) {
+                return;
+            }
+            responsiveLayoutUpdateQueued = true;
+            const runLayout = () => {
+                responsiveLayoutUpdateQueued = false;
+                applyResponsiveLayout();
+            };
+            if (afterPaint) {
+                window.requestAnimationFrame(() => {
+                    window.requestAnimationFrame(runLayout);
+                });
+                return;
+            }
+            window.requestAnimationFrame(runLayout);
+        }
+
         function applyResponsiveLayout() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const aspect = w / h;
-            const isPortrait = aspect < 1;
+            const { width: w, height: h, aspect } = getViewportDimensions();
+            const viewTarget = computeResponsiveViewTargets(w, h);
 
             camera.aspect = aspect;
-            camera.fov = isPortrait ? 52 : 45;
-            camera.position.set(0, isPortrait ? 0.9 : 1.2, isPortrait ? 22 : 20);
-            camera.updateProjectionMatrix();
+            responsiveViewState.needsProjectionUpdate = true;
+            responsiveViewState.targetFov = viewTarget.fov;
+            responsiveViewState.targetPosition.set(0, viewTarget.positionY, viewTarget.positionZ);
+            responsiveViewState.targetScale = viewTarget.creatureScale;
 
-            let scale = BASE_CREATURE_SCALE;
-            if (isPortrait) scale *= 0.88;
-            if (w < 420) scale *= 0.95;
-            creatureGroup.scale.setScalar(scale);
+            if (!responsiveViewState.initialized) {
+                responsiveViewState.initialized = true;
+                responsiveViewState.currentFov = responsiveViewState.targetFov;
+                responsiveViewState.currentPosition.copy(responsiveViewState.targetPosition);
+                responsiveViewState.currentScale = responsiveViewState.targetScale;
+                stepResponsiveViewMotion(1 / 60, true);
+            }
 
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(w, h);
@@ -11997,7 +12654,7 @@
             layoutMysteryHangingSign();
             resizeMysteryScroll3D();
             inventoryPanelAnchorState.initialized = false;
-            updateInventoryPanelAnchor(0);
+            scheduleInventoryPanelAnchorUpdate({ afterPaint: true });
         }
 
         function animate() {
@@ -12009,6 +12666,7 @@
             }
             elapsed += dt;
             const t = elapsed;
+            stepResponsiveViewMotion(dt);
 
             if (!mysteryFlightCinematic.active && holdInput.active && !holdInput.triggered && (performance.now() - holdInput.startedMs) >= HOLD_TO_BURST_MS) {
                 holdInput.triggered = true;
@@ -12343,8 +13001,24 @@
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', applyResponsiveLayout);
-        window.addEventListener('orientationchange', applyResponsiveLayout);
+        window.addEventListener('resize', () => {
+            scheduleResponsiveLayout();
+        }, { passive: true });
+        window.addEventListener('orientationchange', () => {
+            scheduleResponsiveLayout({ afterPaint: true });
+            if (orientationSettleTimer) {
+                window.clearTimeout(orientationSettleTimer);
+            }
+            orientationSettleTimer = window.setTimeout(() => {
+                scheduleResponsiveLayout({ afterPaint: true });
+                orientationSettleTimer = null;
+            }, 220);
+        }, { passive: true });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                scheduleResponsiveLayout();
+            }, { passive: true });
+        }
 
         initMysteryScroll3D();
         layoutMysteryHangingSign(true);

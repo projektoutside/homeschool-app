@@ -102,7 +102,7 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
 const HomeProfileRouteShell = () => <div />;
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-02-15-3';
+const HOME_PAGE_APP_VERSION = '2026-02-18-1';
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();
