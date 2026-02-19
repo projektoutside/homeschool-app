@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { HOME_PAGE_MUSIC_OPTIONS } from '../utils/homePageMusic';
 import { hasQuickUnlock, resolveQuickUnlockCredentials, saveQuickUnlock } from '../utils/quickUnlock';
 import './GlobalSettings.css';
 
@@ -13,7 +14,16 @@ interface GlobalSettingsProps {
 export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user, signOut, updateHomeLabel, updatePassword, updateUsername } = useAuth();
-    const { settings, setMuted, setMusicVolume, setSfxVolume, resetSoundSettings } = useSoundSettings();
+    const {
+        settings,
+        setMuted,
+        setMusicVolume,
+        setSfxVolume,
+        setHomePageMusicTrack,
+        setNatureSoundsMuted,
+        setNatureSoundsVolume,
+        resetSoundSettings,
+    } = useSoundSettings();
 
     const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
     const [isSoundSettingsOpen, setIsSoundSettingsOpen] = useState(false);
@@ -390,6 +400,46 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                 onTouchEnd={() => playTestTone('music', settings.musicVolume)}
                                 disabled={settings.muted}
                             />
+                        </div>
+
+                        <div className="settings-group">
+                            <label htmlFor="homePageMusicSelect">Homepage character music</label>
+                            <select
+                                id="homePageMusicSelect"
+                                value={settings.homePageMusicTrack}
+                                onChange={(e) => setHomePageMusicTrack(e.target.value)}
+                            >
+                                {HOME_PAGE_MUSIC_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="settings-helper-text">Applies only to the Homepage tab while viewing your character.</p>
+                        </div>
+
+                        <div className="settings-group">
+                            <label htmlFor="natureSoundsMuteToggle">Nature Sounds</label>
+                            <label className="settings-toggle-label" htmlFor="natureSoundsMuteToggle">
+                                <span>Mute Nature Sounds</span>
+                                <input
+                                    id="natureSoundsMuteToggle"
+                                    type="checkbox"
+                                    checked={settings.natureSoundsMuted}
+                                    onChange={(e) => setNatureSoundsMuted(e.target.checked)}
+                                />
+                            </label>
+                            <label htmlFor="natureSoundsVolumeRange">Nature Sounds volume: {settings.natureSoundsVolume}%</label>
+                            <input
+                                id="natureSoundsVolumeRange"
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={settings.natureSoundsVolume}
+                                onChange={(e) => setNatureSoundsVolume(Number(e.target.value))}
+                                disabled={settings.muted || settings.natureSoundsMuted}
+                            />
+                            <p className="settings-helper-text">Applies only on the Homepage tab. It fades out when you leave Home.</p>
                         </div>
 
                         <div className="settings-group">

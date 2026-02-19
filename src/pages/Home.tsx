@@ -458,16 +458,24 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     }, [endHoldProcess, flushPointerFrame, startInertiaAnimation, startSnapAnimation]);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            stopAnimation();
+            velocityRef.current = 0;
 
-        event.preventDefault();
-        stopAnimation();
-        velocityRef.current = 0;
+            const delta = event.key === 'ArrowRight' ? 1 : -1;
+            const target = clampNumber(Math.round(positionRef.current) + delta, 0, maxIndex);
+            startSnapAnimation(target);
+            return;
+        }
 
-        const delta = event.key === 'ArrowRight' ? 1 : -1;
-        const target = clampNumber(Math.round(positionRef.current) + delta, 0, maxIndex);
-        startSnapAnimation(target);
-    }, [maxIndex, startSnapAnimation, stopAnimation]);
+        if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+            if (!focusedGame) return;
+            event.preventDefault();
+            if (shouldBlockGameLaunch()) return;
+            onLaunchGame(focusedGame);
+        }
+    }, [focusedGame, maxIndex, onLaunchGame, shouldBlockGameLaunch, startSnapAnimation, stopAnimation]);
 
     const handleContextMenu = useCallback((event: React.MouseEvent) => {
         pendingLaunchGameRef.current = null;

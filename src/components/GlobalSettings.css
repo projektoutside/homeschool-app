@@ -179,7 +179,8 @@
     font-family: var(--font-display);
 }
 
-.settings-group input {
+.settings-group input,
+.settings-group select {
     width: 100%;
     border-radius: 12px;
     border: 2px solid rgba(255, 255, 255, 0.2);
@@ -191,7 +192,8 @@
     transition: all 0.2s ease;
 }
 
-.settings-group input:focus {
+.settings-group input:focus,
+.settings-group select:focus {
     outline: none;
     border-color: #67e8f9;
     background: rgba(15, 23, 42, 0.8);
@@ -329,7 +331,8 @@
         padding: 0.8rem;
     }
     
-    .settings-group input {
+    .settings-group input,
+    .settings-group select {
         padding: 0.6rem 0.7rem;
         font-size: 16px; /* Prevent zoom on iOS */
     }

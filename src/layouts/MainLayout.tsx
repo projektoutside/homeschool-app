@@ -67,7 +67,7 @@ const MainLayout: React.FC = () => {
                         className={`persistent-home-page ${isUserHomeRoute ? 'is-visible' : 'is-hidden'}`}
                         aria-hidden={!isUserHomeRoute}
                     >
-                        <UserHomePage />
+                        <UserHomePage isActive={isUserHomeRoute} />
                     </section>
                 ) : null}
             </main>

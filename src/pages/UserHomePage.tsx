@@ -6,9 +6,13 @@ import './Home.css';
 import './UserHomePage.css';
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-02-18-1';
+const HOME_PAGE_APP_VERSION = '2026-02-19-3';
 
-const UserHomePage: React.FC = () => {
+interface UserHomePageProps {
+  isActive: boolean;
+}
+
+const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { settings: soundSettings } = useSoundSettings();
@@ -18,12 +22,20 @@ const UserHomePage: React.FC = () => {
   );
 
   useEffect(() => {
-    applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
-  }, [soundSettings]);
+    applySoundSettingsToWindow(
+      iframeRef.current?.contentWindow,
+      soundSettings,
+      { homePageActive: isActive },
+    );
+  }, [isActive, soundSettings]);
 
   const handleLoad = () => {
     setIsLoading(false);
-    applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+    applySoundSettingsToWindow(
+      iframeRef.current?.contentWindow,
+      soundSettings,
+      { homePageActive: isActive },
+    );
   };
 
   useEffect(() => {

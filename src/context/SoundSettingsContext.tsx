@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { DEFAULT_HOME_PAGE_MUSIC_TRACK, normalizeHomePageMusicTrack } from '../utils/homePageMusic';
 
 export interface SoundSettings {
   muted: boolean;
   musicVolume: number;
   sfxVolume: number;
+  homePageMusicTrack: string;
+  natureSoundsMuted: boolean;
+  natureSoundsVolume: number;
 }
 
 interface SoundSettingsContextValue {
@@ -11,6 +15,9 @@ interface SoundSettingsContextValue {
   setMuted: (muted: boolean) => void;
   setMusicVolume: (value: number) => void;
   setSfxVolume: (value: number) => void;
+  setHomePageMusicTrack: (value: string) => void;
+  setNatureSoundsMuted: (muted: boolean) => void;
+  setNatureSoundsVolume: (value: number) => void;
   resetSoundSettings: () => void;
 }
 
@@ -18,8 +25,11 @@ const STORAGE_KEY = 'app_sound_settings_v1';
 
 const DEFAULT_SETTINGS: SoundSettings = {
   muted: false,
-  musicVolume: 70,
+  musicVolume: 20,
   sfxVolume: 75,
+  homePageMusicTrack: DEFAULT_HOME_PAGE_MUSIC_TRACK,
+  natureSoundsMuted: false,
+  natureSoundsVolume: 35,
 };
 
 const SoundSettingsContext = createContext<SoundSettingsContextValue | undefined>(undefined);
@@ -39,6 +49,13 @@ const readStoredSettings = (): SoundSettings => {
       muted: Boolean(parsed.muted),
       musicVolume: clampPercent(parsed.musicVolume ?? DEFAULT_SETTINGS.musicVolume),
       sfxVolume: clampPercent(parsed.sfxVolume ?? DEFAULT_SETTINGS.sfxVolume),
+      homePageMusicTrack: normalizeHomePageMusicTrack(
+        parsed.homePageMusicTrack ?? DEFAULT_SETTINGS.homePageMusicTrack,
+      ),
+      natureSoundsMuted: Boolean(parsed.natureSoundsMuted ?? DEFAULT_SETTINGS.natureSoundsMuted),
+      natureSoundsVolume: clampPercent(
+        parsed.natureSoundsVolume ?? DEFAULT_SETTINGS.natureSoundsVolume,
+      ),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -61,6 +78,15 @@ export const SoundSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     setMuted: (muted: boolean) => setSettings(prev => ({ ...prev, muted })),
     setMusicVolume: (value: number) => setSettings(prev => ({ ...prev, musicVolume: clampPercent(value) })),
     setSfxVolume: (value: number) => setSettings(prev => ({ ...prev, sfxVolume: clampPercent(value) })),
+    setHomePageMusicTrack: (value: string) => setSettings(prev => ({
+      ...prev,
+      homePageMusicTrack: normalizeHomePageMusicTrack(value),
+    })),
+    setNatureSoundsMuted: (muted: boolean) => setSettings(prev => ({ ...prev, natureSoundsMuted: muted })),
+    setNatureSoundsVolume: (value: number) => setSettings(prev => ({
+      ...prev,
+      natureSoundsVolume: clampPercent(value),
+    })),
     resetSoundSettings: () => setSettings(DEFAULT_SETTINGS),
   }), [settings]);
 

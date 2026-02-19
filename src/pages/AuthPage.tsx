@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   clearQuickUnlock,
@@ -48,6 +49,7 @@ const actionBtnStyle: React.CSSProperties = {
 };
 
 const AuthPage: React.FC = () => {
+  const navigate = useNavigate();
   const { signIn, signUp, isConfigured } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
@@ -105,8 +107,10 @@ const AuthPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      let didSignIn = false;
       if (mode === 'signin') {
         await signIn(usernameOrEmail, password);
+        didSignIn = true;
       } else {
         await signUp(usernameOrEmail, password);
         setMessage('Account created. If email confirmations are enabled, please confirm before logging in.');
@@ -121,6 +125,10 @@ const AuthPage: React.FC = () => {
       } else if (hasQuickUnlock()) {
         clearQuickUnlock();
         setShowQuickUnlock(false);
+      }
+
+      if (didSignIn) {
+        navigate('/home-profile', { replace: true });
       }
     } catch (err) {
       const status = typeof err === 'object' && err && 'status' in err
@@ -155,6 +163,7 @@ const AuthPage: React.FC = () => {
       await signIn(credentials.usernameOrEmail, credentials.password);
       setMessage('Unlocked! Welcome back 👋');
       setQuickUnlockPin('');
+      navigate('/home-profile', { replace: true });
     } catch (err) {
       const nextMessage = err instanceof Error ? err.message : 'Quick unlock failed.';
       setError(nextMessage);
