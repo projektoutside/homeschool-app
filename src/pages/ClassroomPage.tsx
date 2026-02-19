@@ -20,7 +20,8 @@ const CLASSROOM_MESSAGE_STATE_SAVE = 'LAHS_CLASSROOM_STATE_SAVE';
 const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
 const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
 const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
-const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 8000;
+const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 4500;
+const CLASSROOM_DOOR_INTRO_SESSION_KEY = 'LAHS_CLASSROOM_DOOR_INTRO_SEEN_V1';
 
 type ClassroomLayoutEntry = {
     left: number;
@@ -168,12 +169,34 @@ const sanitizeClassroomState = (rawState: unknown): ClassroomPersistedState | nu
     };
 };
 
+const readDoorIntroSeen = (): boolean => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    try {
+        return window.sessionStorage.getItem(CLASSROOM_DOOR_INTRO_SESSION_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+
+const markDoorIntroSeen = (): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        window.sessionStorage.setItem(CLASSROOM_DOOR_INTRO_SESSION_KEY, '1');
+    } catch {
+        // Ignore storage errors for private browsing / disabled storage.
+    }
+};
+
 const ClassroomPage: React.FC = () => {
     const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [isFrameLoaded, setIsFrameLoaded] = useState(false);
-    const [isDoorIntroComplete, setIsDoorIntroComplete] = useState(false);
+    const [isDoorIntroComplete, setIsDoorIntroComplete] = useState(() => readDoorIntroSeen());
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const introFrameRef = useRef<HTMLIFrameElement | null>(null);
     const pendingStateRef = useRef<ClassroomPersistedState | null>(null);
@@ -418,6 +441,7 @@ const ClassroomPage: React.FC = () => {
             return;
         }
 
+        markDoorIntroSeen();
         setIsDoorIntroComplete(true);
     }, []);
 
@@ -477,8 +501,14 @@ const ClassroomPage: React.FC = () => {
 
     useEffect(() => {
         setIsFrameLoaded(false);
-        setIsDoorIntroComplete(false);
+        const shouldSkipDoorIntro = readDoorIntroSeen();
+        setIsDoorIntroComplete(shouldSkipDoorIntro);
+        if (shouldSkipDoorIntro) {
+            return;
+        }
+
         const introFallbackId = window.setTimeout(() => {
+            markDoorIntroSeen();
             setIsDoorIntroComplete(true);
         }, CLASSROOM_DOOR_INTRO_FALLBACK_MS);
 
@@ -507,13 +537,15 @@ const ClassroomPage: React.FC = () => {
                     />
                     {!isTransitionComplete ? (
                         <div className="classroom-door-intro-layer" aria-hidden={false}>
-                            <iframe
-                                ref={introFrameRef}
-                                src={doorIntroPath}
-                                title="Classroom Door Intro"
-                                className="classroom-door-intro-frame"
-                                sandbox="allow-same-origin allow-scripts"
-                            />
+                            {!isDoorIntroComplete ? (
+                                <iframe
+                                    ref={introFrameRef}
+                                    src={doorIntroPath}
+                                    title="Classroom Door Intro"
+                                    className="classroom-door-intro-frame"
+                                    sandbox="allow-same-origin allow-scripts"
+                                />
+                            ) : null}
                             {isDoorIntroComplete && !isFrameLoaded ? (
                                 <div className="classroom-app-loading classroom-app-loading-overlay" aria-live="polite">
                                     Loading classroom...

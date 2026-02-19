@@ -6,7 +6,7 @@ import './Home.css';
 import './UserHomePage.css';
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-02-19-3';
+const HOME_PAGE_APP_VERSION = '2026-02-19-4';
 
 interface UserHomePageProps {
   isActive: boolean;

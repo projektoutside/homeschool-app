@@ -5509,6 +5509,7 @@
         const HOME_PAGE_ROUTE_FADE_IN_MS = 2000;
         const HOME_PAGE_MUSIC_ENTRY_DELAY_MS = 2000;
         const HOME_PAGE_MUSIC_FADE_IN_MS = 2000;
+        const HOME_PAGE_INACTIVE_RENDER_INTERVAL_MS = 260;
         const HOME_PAGE_NATURE_SOUNDS_SOURCE = encodeURI('./HomePageMusic/NatureBirds/NatureBirdsBackground.mp3');
         const HOME_PAGE_NATURE_SOUNDS_DEFAULT_VOLUME = 0.35;
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
@@ -5518,6 +5519,9 @@
             gain: 1,
             fadeToken: 0,
             fadeRafId: null
+        };
+        const homePageAnimationState = {
+            lastInactiveRenderAtMs: 0
         };
         const homePageMusicState = {
             activeAudio: null,
@@ -6087,6 +6091,7 @@
             const nextActive = Boolean(isActive);
             if (homePageRouteAudioState.isActive === nextActive) {
                 if (nextActive) {
+                    resumeBackgroundPlaybackIfActive();
                     if (!homePageMusicState.muted && homePageMusicState.shouldPlay) {
                         attemptHomePageMusicPlayback();
                     }
@@ -6100,11 +6105,13 @@
             homePageRouteAudioState.isActive = nextActive;
             if (nextActive) {
                 startHomePageActivationAudioSequence();
+                resumeBackgroundPlaybackIfActive();
                 return;
             }
 
             clearScheduledHomePageMusicStart();
             animateHomePageRouteGain(0, HOME_PAGE_ROUTE_FADE_OUT_MS, { pauseAfter: true });
+            pauseBackgroundPlaybackImmediately();
         }
 
         function handleIncomingSoundSettings(payload) {
@@ -6172,6 +6179,25 @@
             }
         }
 
+        function pauseBackgroundPlaybackImmediately() {
+            if (!gifBackgroundVideo) return;
+            clearBackgroundRecoveryTimer();
+            try {
+                gifBackgroundVideo.pause();
+            } catch (_) {}
+        }
+
+        function resumeBackgroundPlaybackIfActive() {
+            if (!homePageRouteAudioState.isActive) {
+                return;
+            }
+            attemptBackgroundPlayback().then((played) => {
+                if (!played) {
+                    scheduleBackgroundPlaybackRecovery();
+                }
+            });
+        }
+
         function attemptBackgroundPlayback({ reload = false } = {}) {
             if (!gifBackgroundVideo) return Promise.resolve(false);
             if (reload) {
@@ -6209,6 +6235,7 @@
 
         function scheduleBackgroundPlaybackRecovery() {
             if (!gifBackgroundVideo) return;
+            if (!homePageRouteAudioState.isActive) return;
             if (backgroundMediaState.recoveryTimer !== null) return;
             if (backgroundMediaState.retries >= backgroundMediaState.maxRetries) {
                 setBackgroundFallbackEnabled(Boolean(gifBackgroundFallback));
@@ -6233,6 +6260,7 @@
         }
 
         function monitorBackgroundPlaybackProgress() {
+            if (!homePageRouteAudioState.isActive) return;
             if (!gifBackgroundVideo || document.visibilityState === 'hidden') return;
             const readyToTrack = gifBackgroundVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
             const activelyPlaying = !gifBackgroundVideo.paused && !gifBackgroundVideo.ended;
@@ -6257,11 +6285,9 @@
         }
 
         function handleBackgroundInteractionUnlock() {
-            attemptBackgroundPlayback().then((played) => {
-                if (!played) {
-                    scheduleBackgroundPlaybackRecovery();
-                }
-            });
+            if (homePageRouteAudioState.isActive) {
+                resumeBackgroundPlaybackIfActive();
+            }
             attemptHomePageMusicPlayback();
             attemptNatureSoundsPlayback();
             window.removeEventListener('pointerdown', handleBackgroundInteractionUnlock, true);
@@ -6284,49 +6310,41 @@
                 setBackgroundFallbackEnabled(false);
             });
             gifBackgroundVideo.addEventListener('canplay', () => {
-                if (document.visibilityState === 'visible') {
+                if (homePageRouteAudioState.isActive && document.visibilityState === 'visible') {
                     attemptBackgroundPlayback();
                 }
             });
             gifBackgroundVideo.addEventListener('waiting', () => {
-                if (document.visibilityState === 'visible') {
+                if (homePageRouteAudioState.isActive && document.visibilityState === 'visible') {
                     scheduleBackgroundPlaybackRecovery();
                 }
             });
             gifBackgroundVideo.addEventListener('stalled', () => {
-                if (document.visibilityState === 'visible') {
+                if (homePageRouteAudioState.isActive && document.visibilityState === 'visible') {
                     scheduleBackgroundPlaybackRecovery();
                 }
             });
             gifBackgroundVideo.addEventListener('error', () => {
-                scheduleBackgroundPlaybackRecovery();
+                if (homePageRouteAudioState.isActive) {
+                    scheduleBackgroundPlaybackRecovery();
+                }
             });
 
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState !== 'visible') return;
-                attemptBackgroundPlayback().then((played) => {
-                    if (!played) {
-                        scheduleBackgroundPlaybackRecovery();
-                    }
-                });
+                if (!homePageRouteAudioState.isActive || document.visibilityState !== 'visible') return;
+                resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
             });
             window.addEventListener('pageshow', () => {
-                attemptBackgroundPlayback().then((played) => {
-                    if (!played) {
-                        scheduleBackgroundPlaybackRecovery();
-                    }
-                });
+                if (!homePageRouteAudioState.isActive) return;
+                resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
             });
             window.addEventListener('focus', () => {
-                attemptBackgroundPlayback().then((played) => {
-                    if (!played) {
-                        scheduleBackgroundPlaybackRecovery();
-                    }
-                });
+                if (!homePageRouteAudioState.isActive) return;
+                resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
             });
@@ -6335,14 +6353,16 @@
             window.addEventListener('keydown', handleBackgroundInteractionUnlock, true);
 
             backgroundMediaState.monitorTimer = window.setInterval(monitorBackgroundPlaybackProgress, 1200);
-            attemptBackgroundPlayback().then((played) => {
-                if (!played) {
-                    scheduleBackgroundPlaybackRecovery();
-                    if (gifBackgroundFallback) {
-                        setBackgroundFallbackEnabled(true);
+            if (homePageRouteAudioState.isActive) {
+                attemptBackgroundPlayback().then((played) => {
+                    if (!played) {
+                        scheduleBackgroundPlaybackRecovery();
+                        if (gifBackgroundFallback) {
+                            setBackgroundFallbackEnabled(true);
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         let storeThumbHydrateToken = 0;
@@ -13332,7 +13352,16 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 1 / 30);
+            const rawDelta = clock.getDelta();
+            if (!homePageRouteAudioState.isActive) {
+                const now = performance.now();
+                if ((now - homePageAnimationState.lastInactiveRenderAtMs) >= HOME_PAGE_INACTIVE_RENDER_INTERVAL_MS) {
+                    homePageAnimationState.lastInactiveRenderAtMs = now;
+                    renderer.render(scene, camera);
+                }
+                return;
+            }
+            const dt = Math.min(rawDelta, 1 / 30);
             if (!Number.isFinite(dt) || dt <= 0) {
                 renderer.render(scene, camera);
                 return;
