@@ -44,6 +44,10 @@ type IncomingSavePayload = {
     state?: unknown;
 };
 
+interface ClassroomPageProps {
+    isActive?: boolean;
+}
+
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 const MANAGER_ENV_ALLOWLIST = String(import.meta.env.VITE_3DCLASS_MANAGER_ALLOWLIST ?? '')
     .split(',')
@@ -168,22 +172,26 @@ const sanitizeClassroomState = (rawState: unknown): ClassroomPersistedState | nu
     };
 };
 
-const ClassroomPage: React.FC = () => {
+const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
     const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [isFrameLoaded, setIsFrameLoaded] = useState(false);
-    const [isDoorIntroComplete, setIsDoorIntroComplete] = useState(false);
+    const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
+    const [completedDoorIntroKey, setCompletedDoorIntroKey] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const introFrameRef = useRef<HTMLIFrameElement | null>(null);
     const pendingStateRef = useRef<ClassroomPersistedState | null>(null);
     const pendingSaveTimerRef = useRef<number | null>(null);
+    const introFallbackTimerRef = useRef<number | null>(null);
     const lastPersistedSignatureRef = useRef<string>('');
     const hasManagerAccess = useMemo(() => isManagerUser(user), [user]);
     const managerRequested = useMemo(() => {
+        if (!isActive) {
+            return false;
+        }
         const params = new URLSearchParams(location.search);
         return parseBooleanQuery(params.get('manager')) || parseBooleanQuery(params.get('manager_ui'));
-    }, [location.search]);
+    }, [isActive, location.search]);
     const launchPath = useMemo(
         () => {
             const params = new URLSearchParams();
@@ -202,13 +210,24 @@ const ClassroomPage: React.FC = () => {
         params.set('v', CLASSROOM_APP_VERSION);
         return buildAssetPath(`3dClass/door-intro.html?${params.toString()}`);
     }, []);
+    const introActivationKey = useMemo(() => {
+        if (!isActive) {
+            return null;
+        }
+        return `${launchPath}|${location.key}`;
+    }, [isActive, launchPath, location.key]);
+    const isFrameLoaded = loadedLaunchPath === launchPath;
+    const isDoorIntroComplete = !introActivationKey || completedDoorIntroKey === introActivationKey;
     const isTransitionComplete = isFrameLoaded && isDoorIntroComplete;
 
     useEffect(() => {
+        if (!isActive) {
+            return;
+        }
         if (managerRequested && !hasManagerAccess) {
             navigate('/classroom', { replace: true });
         }
-    }, [hasManagerAccess, managerRequested, navigate]);
+    }, [hasManagerAccess, isActive, managerRequested, navigate]);
 
     const postMessageToClassroom = useCallback((type: string, payload: Record<string, unknown> = {}) => {
         const targetWindow = iframeRef.current?.contentWindow;
@@ -418,8 +437,15 @@ const ClassroomPage: React.FC = () => {
             return;
         }
 
-        setIsDoorIntroComplete(true);
-    }, []);
+        if (introFallbackTimerRef.current !== null) {
+            window.clearTimeout(introFallbackTimerRef.current);
+            introFallbackTimerRef.current = null;
+        }
+        if (!introActivationKey) {
+            return;
+        }
+        setCompletedDoorIntroKey(introActivationKey);
+    }, [introActivationKey]);
 
     useEffect(() => {
         window.addEventListener('message', handleDoorIntroMessage);
@@ -470,25 +496,40 @@ const ClassroomPage: React.FC = () => {
     }, [syncAuthToClassroom, syncLatestStateToClassroom, user]);
 
     const handleFrameLoad = useCallback(() => {
-        setIsFrameLoaded(true);
+        setLoadedLaunchPath(launchPath);
         syncAuthToClassroom();
         void syncLatestStateToClassroom('frame-load');
-    }, [syncAuthToClassroom, syncLatestStateToClassroom]);
+    }, [launchPath, syncAuthToClassroom, syncLatestStateToClassroom]);
 
     useEffect(() => {
-        setIsFrameLoaded(false);
-        setIsDoorIntroComplete(false);
+        if (introFallbackTimerRef.current !== null) {
+            window.clearTimeout(introFallbackTimerRef.current);
+            introFallbackTimerRef.current = null;
+        }
 
-        const introFallbackId = window.setTimeout(() => {
-            setIsDoorIntroComplete(true);
+        if (!introActivationKey || isDoorIntroComplete) {
+            return;
+        }
+
+        introFallbackTimerRef.current = window.setTimeout(() => {
+            introFallbackTimerRef.current = null;
+            setCompletedDoorIntroKey(introActivationKey);
         }, CLASSROOM_DOOR_INTRO_FALLBACK_MS);
 
-        return () => window.clearTimeout(introFallbackId);
-    }, [doorIntroPath, launchPath]);
+        return () => {
+            if (introFallbackTimerRef.current !== null) {
+                window.clearTimeout(introFallbackTimerRef.current);
+                introFallbackTimerRef.current = null;
+            }
+        };
+    }, [introActivationKey, isDoorIntroComplete]);
 
     useEffect(() => () => {
         if (pendingSaveTimerRef.current !== null) {
             window.clearTimeout(pendingSaveTimerRef.current);
+        }
+        if (introFallbackTimerRef.current !== null) {
+            window.clearTimeout(introFallbackTimerRef.current);
         }
     }, []);
 
@@ -497,6 +538,7 @@ const ClassroomPage: React.FC = () => {
             <section className="os-icon-area classroom-app-area" aria-label="Classroom app">
                 <div className="classroom-app-shell">
                     <iframe
+                        key={launchPath}
                         ref={iframeRef}
                         src={launchPath}
                         title="Classroom App"
@@ -510,6 +552,7 @@ const ClassroomPage: React.FC = () => {
                         <div className="classroom-door-intro-layer" aria-hidden={false}>
                             {!isDoorIntroComplete ? (
                                 <iframe
+                                    key={introActivationKey ?? 'inactive'}
                                     ref={introFrameRef}
                                     src={doorIntroPath}
                                     title="Classroom Door Intro"

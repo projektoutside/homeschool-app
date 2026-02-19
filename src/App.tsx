@@ -27,7 +27,6 @@ const Viewer = React.lazy(loadViewerRoute);
 const HTMLViewer = React.lazy(loadHTMLViewerRoute);
 const InstallPage = React.lazy(loadInstallRoute);
 const AuthPage = React.lazy(loadAuthRoute);
-const ClassroomPage = React.lazy(loadClassroomRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
@@ -109,6 +108,7 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
 };
 
 const HomeProfileRouteShell = () => <div />;
+const ClassroomRouteShell = () => <div />;
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
 const HOME_PAGE_APP_VERSION = '2026-02-19-4';
@@ -328,7 +328,7 @@ const App: React.FC = () => {
                                 <Route path="resource/:id" element={<RequireAuth user={user} loading={loading}><Viewer /></RequireAuth>} />
                             <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
                                 <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><HomeProfileRouteShell /></RequireAuth>} />
-                                <Route path="classroom" element={<RequireAuth user={user} loading={loading}><ClassroomPage /></RequireAuth>} />
+                                <Route path="classroom" element={<RequireAuth user={user} loading={loading}><ClassroomRouteShell /></RequireAuth>} />
                                 <Route path="*" element={<Navigate to="/home-profile" replace />} />
                             </Route>
                         </Routes>

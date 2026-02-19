@@ -298,6 +298,7 @@
             cursor: grab;
             filter: none;
             transition: filter 180ms ease;
+            isolation: isolate;
         }
 
         #mystery-scroll-sign:active {
@@ -317,11 +318,12 @@
             display: block;
             pointer-events: none;
             filter: none;
+            z-index: 1;
         }
 
         #mystery-scroll-sign .scroll-text {
             position: relative;
-            z-index: 3;
+            z-index: 5;
             left: 50%;
             top: 38%;
             width: 62%;
@@ -331,6 +333,8 @@
             align-items: center;
             gap: clamp(2px, 0.35vw, 5px);
             pointer-events: none;
+            opacity: 1;
+            visibility: visible;
         }
 
         #mystery-scroll-sign .scroll-chevron-row {
@@ -382,6 +386,10 @@
                 0 1px 0 rgba(255, 242, 208, 0.65),
                 0 0 4px rgba(255, 221, 126, 0.2),
                 0 2px 4px rgba(40, 20, 6, 0.4);
+            position: relative;
+            z-index: 6;
+            opacity: 1;
+            visibility: visible;
         }
 
         #mystery-scroll-sign .line-top {
@@ -12717,6 +12725,20 @@
             const topLine = mysteryScrollSign.querySelector('.line-top');
             const bottomLine = mysteryScrollSign.querySelector('.line-bottom');
             if (!textWrap || !topLine || !bottomLine) return;
+
+            // Guard against rare compositor/style glitches that can leave scroll text blank or hidden.
+            if (!topLine.textContent || !topLine.textContent.trim()) {
+                topLine.textContent = 'Mystery';
+            }
+            if (!bottomLine.textContent || !bottomLine.textContent.trim()) {
+                bottomLine.textContent = '- 100 pts';
+            }
+            textWrap.style.opacity = '1';
+            textWrap.style.visibility = 'visible';
+            topLine.style.opacity = '1';
+            topLine.style.visibility = 'visible';
+            bottomLine.style.opacity = '1';
+            bottomLine.style.visibility = 'visible';
 
             const signWidth = mysteryScrollSign.offsetWidth;
             const signHeight = mysteryScrollSign.offsetHeight;
