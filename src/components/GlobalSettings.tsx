@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useSoundSettings } from '../context/SoundSettingsContext';
+import { DEFAULT_SOUND_SETTINGS, useSoundSettings, type SoundSettings } from '../context/SoundSettingsContext';
 import { HOME_PAGE_MUSIC_OPTIONS } from '../utils/homePageMusic';
 import { hasQuickUnlock, resolveQuickUnlockCredentials, saveQuickUnlock } from '../utils/quickUnlock';
 import './GlobalSettings.css';
@@ -10,6 +10,8 @@ interface GlobalSettingsProps {
     isOpen: boolean;
     onClose: () => void;
 }
+
+type SoundExitIntent = 'close-sound-panel' | 'close-all-settings';
 
 export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
@@ -22,7 +24,6 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         setHomePageMusicTrack,
         setNatureSoundsMuted,
         setNatureSoundsVolume,
-        resetSoundSettings,
     } = useSoundSettings();
 
     const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
@@ -39,58 +40,111 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     const [statusMessage, setStatusMessage] = useState('');
     const [statusError, setStatusError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [soundDraft, setSoundDraft] = useState<SoundSettings>(settings);
+    const [soundStatusMessage, setSoundStatusMessage] = useState('');
+    const [soundStatusError, setSoundStatusError] = useState('');
+    const [isUnsavedSoundPromptOpen, setIsUnsavedSoundPromptOpen] = useState(false);
+    const [pendingSoundExitIntent, setPendingSoundExitIntent] = useState<SoundExitIntent | null>(null);
 
     // Audio Context Ref
     const audioContextRef = useRef<AudioContext | null>(null);
 
-    // Initialize logic
-    useEffect(() => {
-        if (isOpen) {
-            const nextUsername = (user?.user_metadata?.username as string | undefined)?.trim()
-            || user?.email?.split('@')[0]
-            || '';
-            const nextHomeLabel = (user?.user_metadata?.home_label as string | undefined)?.trim()
-            || nextUsername;
-
-            setUsername(nextUsername);
-            setHomeLabel(nextHomeLabel);
-            resetStatus();
-        }
-    }, [isOpen, user]);
-
-    const resetStatus = () => {
+    const resetStatus = useCallback(() => {
         setStatusError('');
         setStatusMessage('');
-    };
+    }, []);
 
-    const getAudioContext = useCallback(() => {
+    const resetSoundStatus = useCallback(() => {
+        setSoundStatusError('');
+        setSoundStatusMessage('');
+    }, []);
+
+    // Initialize profile/account forms whenever the parent settings menu opens.
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const nextUsername = (user?.user_metadata?.username as string | undefined)?.trim()
+        || user?.email?.split('@')[0]
+        || '';
+        const nextHomeLabel = (user?.user_metadata?.home_label as string | undefined)?.trim()
+        || nextUsername;
+
+        setUsername(nextUsername);
+        setHomeLabel(nextHomeLabel);
+        setPendingSoundExitIntent(null);
+        setIsUnsavedSoundPromptOpen(false);
+        resetStatus();
+        resetSoundStatus();
+    }, [isOpen, resetSoundStatus, resetStatus, user]);
+
+    useEffect(() => {
+        if (isSoundSettingsOpen) {
+            return;
+        }
+        setSoundDraft(settings);
+    }, [isSoundSettingsOpen, settings]);
+
+    const hasSoundDraftChanges = useMemo(() => (
+        soundDraft.muted !== settings.muted
+        || soundDraft.musicVolume !== settings.musicVolume
+        || soundDraft.sfxVolume !== settings.sfxVolume
+        || soundDraft.homePageMusicTrack !== settings.homePageMusicTrack
+        || soundDraft.natureSoundsMuted !== settings.natureSoundsMuted
+        || soundDraft.natureSoundsVolume !== settings.natureSoundsVolume
+    ), [settings, soundDraft]);
+
+    useEffect(() => {
+        if (!isSoundSettingsOpen || !hasSoundDraftChanges) {
+            return;
+        }
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasSoundDraftChanges, isSoundSettingsOpen]);
+
+    const getAudioContext = useCallback((): AudioContext | null => {
+        const AudioContextCtor = window.AudioContext
+            || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextCtor) {
+            return null;
+        }
+
         if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioContextRef.current = new AudioContextCtor();
         }
         if (audioContextRef.current.state === 'suspended') {
-            audioContextRef.current.resume();
+            void audioContextRef.current.resume();
         }
         return audioContextRef.current;
     }, []);
 
     const playTestTone = useCallback((type: 'music' | 'sfx', volume: number) => {
-        if (settings.muted) return;
-        
+        if (soundDraft.muted) return;
+
         try {
             const ctx = getAudioContext();
+            if (!ctx) return;
+
             const gainNode = ctx.createGain();
             const osc = ctx.createOscillator();
-            
+
             // Convert 0-100 to 0-1 gain (logarithmic perception approximation)
             const normalizedVol = Math.pow(volume / 100, 2);
-            
+
             gainNode.gain.setValueAtTime(normalizedVol, ctx.currentTime);
             gainNode.connect(ctx.destination);
 
             if (type === 'music') {
                 // Play a pleasant major chord arpeggio for music test
                 const now = ctx.currentTime;
-                
+
                 // Root
                 const osc1 = ctx.createOscillator();
                 osc1.type = 'sine';
@@ -114,7 +168,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                 osc3.connect(gainNode);
                 osc3.start(now + 0.2);
                 osc3.stop(now + 0.6);
-                
+
                 // Fade out
                 gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
             } else {
@@ -125,7 +179,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                 osc.connect(gainNode);
                 osc.start();
                 osc.stop(ctx.currentTime + 0.15);
-                
+
                 // Quick fade
                 gainNode.gain.setValueAtTime(normalizedVol, ctx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
@@ -133,7 +187,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         } catch (e) {
             console.error('Audio playback failed', e);
         }
-    }, [getAudioContext, settings.muted]);
+    }, [getAudioContext, soundDraft.muted]);
 
     const handleSaveHomeLabel = async () => {
         resetStatus();
@@ -224,6 +278,105 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         }
     };
 
+    const applySoundDraftToGlobalSettings = useCallback(() => {
+        setMuted(soundDraft.muted);
+        setMusicVolume(soundDraft.musicVolume);
+        setSfxVolume(soundDraft.sfxVolume);
+        setHomePageMusicTrack(soundDraft.homePageMusicTrack);
+        setNatureSoundsMuted(soundDraft.natureSoundsMuted);
+        setNatureSoundsVolume(soundDraft.natureSoundsVolume);
+        setSoundStatusError('');
+        setSoundStatusMessage('Sound settings saved. These preferences will stay until you change them again.');
+    }, [
+        setHomePageMusicTrack,
+        setMusicVolume,
+        setMuted,
+        setNatureSoundsMuted,
+        setNatureSoundsVolume,
+        setSfxVolume,
+        soundDraft.homePageMusicTrack,
+        soundDraft.musicVolume,
+        soundDraft.muted,
+        soundDraft.natureSoundsMuted,
+        soundDraft.natureSoundsVolume,
+        soundDraft.sfxVolume,
+    ]);
+
+    const closeSoundSettingsPanelNow = useCallback(() => {
+        setIsSoundSettingsOpen(false);
+        setPendingSoundExitIntent(null);
+        setIsUnsavedSoundPromptOpen(false);
+        resetSoundStatus();
+    }, [resetSoundStatus]);
+
+    const closeAllSettingsNow = useCallback(() => {
+        setIsAccountSettingsOpen(false);
+        setIsSoundSettingsOpen(false);
+        setPendingSoundExitIntent(null);
+        setIsUnsavedSoundPromptOpen(false);
+        resetSoundStatus();
+        onClose();
+    }, [onClose, resetSoundStatus]);
+
+    const executeSoundExitIntent = useCallback((intent: SoundExitIntent) => {
+        if (intent === 'close-all-settings') {
+            closeAllSettingsNow();
+            return;
+        }
+        closeSoundSettingsPanelNow();
+    }, [closeAllSettingsNow, closeSoundSettingsPanelNow]);
+
+    const requestSoundExit = useCallback((intent: SoundExitIntent) => {
+        if (isSoundSettingsOpen && hasSoundDraftChanges) {
+            setPendingSoundExitIntent(intent);
+            setIsUnsavedSoundPromptOpen(true);
+            return;
+        }
+
+        executeSoundExitIntent(intent);
+    }, [executeSoundExitIntent, hasSoundDraftChanges, isSoundSettingsOpen]);
+
+    const openSoundSettingsPanel = useCallback(() => {
+        setSoundDraft(settings);
+        setPendingSoundExitIntent(null);
+        setIsUnsavedSoundPromptOpen(false);
+        resetSoundStatus();
+        setIsSoundSettingsOpen(true);
+    }, [resetSoundStatus, settings]);
+
+    const handleSaveSoundDraftAndExit = useCallback(() => {
+        applySoundDraftToGlobalSettings();
+        closeSoundSettingsPanelNow();
+    }, [applySoundDraftToGlobalSettings, closeSoundSettingsPanelNow]);
+
+    const handleDiscardSoundDraft = useCallback((showMessage: boolean) => {
+        setSoundDraft(settings);
+        setSoundStatusError('');
+        setSoundStatusMessage(showMessage ? 'Unsaved sound changes were discarded.' : '');
+    }, [settings]);
+
+    const handleExitWithoutSaving = useCallback(() => {
+        handleDiscardSoundDraft(false);
+        closeSoundSettingsPanelNow();
+    }, [closeSoundSettingsPanelNow, handleDiscardSoundDraft]);
+
+    const handleConfirmSaveAndExit = useCallback(() => {
+        applySoundDraftToGlobalSettings();
+        const intent = pendingSoundExitIntent ?? 'close-sound-panel';
+        executeSoundExitIntent(intent);
+    }, [applySoundDraftToGlobalSettings, executeSoundExitIntent, pendingSoundExitIntent]);
+
+    const handleConfirmDiscardAndExit = useCallback(() => {
+        handleDiscardSoundDraft(false);
+        const intent = pendingSoundExitIntent ?? 'close-sound-panel';
+        executeSoundExitIntent(intent);
+    }, [executeSoundExitIntent, handleDiscardSoundDraft, pendingSoundExitIntent]);
+
+    const handleCancelUnsavedSoundPrompt = useCallback(() => {
+        setPendingSoundExitIntent(null);
+        setIsUnsavedSoundPromptOpen(false);
+    }, []);
+
     if (!isOpen) return null;
 
     return (
@@ -232,7 +385,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                 type="button"
                 className="settings-backdrop"
                 aria-label="Close settings"
-                onClick={onClose}
+                onClick={() => requestSoundExit('close-all-settings')}
             />
 
             <section className="settings-panel" aria-label="Settings panel">
@@ -240,11 +393,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                     <h2>Settings</h2>
                     <button
                         type="button"
-                        onClick={() => {
-                            onClose();
-                            setIsAccountSettingsOpen(false);
-                            setIsSoundSettingsOpen(false);
-                        }}
+                        onClick={() => requestSoundExit('close-all-settings')}
                         aria-label="Close settings"
                     >
                         ✕
@@ -262,7 +411,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                     <button
                         type="button"
                         className="settings-menu-btn"
-                        onClick={() => setIsSoundSettingsOpen(true)}
+                        onClick={openSoundSettingsPanel}
                     >
                         Sound Settings
                     </button>
@@ -366,13 +515,25 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                         type="button"
                         className="settings-sub-backdrop"
                         aria-label="Close sound settings"
-                        onClick={() => setIsSoundSettingsOpen(false)}
+                        onClick={() => requestSoundExit('close-sound-panel')}
                     />
                     <section className="settings-subpanel" aria-label="Sound settings panel">
                         <header className="settings-header">
                             <h2>Sound Settings</h2>
-                            <button type="button" onClick={() => setIsSoundSettingsOpen(false)} aria-label="Close sound settings">✕</button>
+                            <button
+                                type="button"
+                                onClick={() => requestSoundExit('close-sound-panel')}
+                                aria-label="Close sound settings"
+                            >
+                                ✕
+                            </button>
                         </header>
+
+                        <p className={`settings-draft-note ${hasSoundDraftChanges ? 'pending' : 'saved'}`} role="status" aria-live="polite">
+                            {hasSoundDraftChanges
+                                ? 'You have unsaved sound changes. Use Save Sound Settings and Exit to keep them permanently.'
+                                : 'All sound settings are currently saved.'}
+                        </p>
 
                         <div className="settings-group">
                             <label className="settings-toggle-label" htmlFor="globalMuteToggle">
@@ -380,25 +541,28 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                 <input
                                     id="globalMuteToggle"
                                     type="checkbox"
-                                    checked={settings.muted}
-                                    onChange={(e) => setMuted(e.target.checked)}
+                                    checked={soundDraft.muted}
+                                    onChange={(e) => setSoundDraft(prev => ({ ...prev, muted: e.target.checked }))}
                                 />
                             </label>
-                            <p className="settings-helper-text">This setting overrides audio in games, worksheets, and tools.</p>
+                            <p className="settings-helper-text">
+                                This setting overrides audio in games, worksheets, and tools.
+                                Changes here are drafts until you select Save Sound Settings.
+                            </p>
                         </div>
 
                         <div className="settings-group">
-                            <label htmlFor="musicVolumeRange">Global music volume: {settings.musicVolume}%</label>
+                            <label htmlFor="musicVolumeRange">Global music volume: {soundDraft.musicVolume}%</label>
                             <input
                                 id="musicVolumeRange"
                                 type="range"
                                 min={0}
                                 max={100}
-                                value={settings.musicVolume}
-                                onChange={(e) => setMusicVolume(Number(e.target.value))}
-                                onMouseUp={() => playTestTone('music', settings.musicVolume)}
-                                onTouchEnd={() => playTestTone('music', settings.musicVolume)}
-                                disabled={settings.muted}
+                                value={soundDraft.musicVolume}
+                                onChange={(e) => setSoundDraft(prev => ({ ...prev, musicVolume: Number(e.target.value) }))}
+                                onMouseUp={() => playTestTone('music', soundDraft.musicVolume)}
+                                onTouchEnd={() => playTestTone('music', soundDraft.musicVolume)}
+                                disabled={soundDraft.muted}
                             />
                         </div>
 
@@ -406,8 +570,8 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                             <label htmlFor="homePageMusicSelect">Homepage character music</label>
                             <select
                                 id="homePageMusicSelect"
-                                value={settings.homePageMusicTrack}
-                                onChange={(e) => setHomePageMusicTrack(e.target.value)}
+                                value={soundDraft.homePageMusicTrack}
+                                onChange={(e) => setSoundDraft(prev => ({ ...prev, homePageMusicTrack: e.target.value }))}
                             >
                                 {HOME_PAGE_MUSIC_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
@@ -425,37 +589,101 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                 <input
                                     id="natureSoundsMuteToggle"
                                     type="checkbox"
-                                    checked={settings.natureSoundsMuted}
-                                    onChange={(e) => setNatureSoundsMuted(e.target.checked)}
+                                    checked={soundDraft.natureSoundsMuted}
+                                    onChange={(e) => setSoundDraft(prev => ({ ...prev, natureSoundsMuted: e.target.checked }))}
                                 />
                             </label>
-                            <label htmlFor="natureSoundsVolumeRange">Nature Sounds volume: {settings.natureSoundsVolume}%</label>
+                            <label htmlFor="natureSoundsVolumeRange">Nature Sounds volume: {soundDraft.natureSoundsVolume}%</label>
                             <input
                                 id="natureSoundsVolumeRange"
                                 type="range"
                                 min={0}
                                 max={100}
-                                value={settings.natureSoundsVolume}
-                                onChange={(e) => setNatureSoundsVolume(Number(e.target.value))}
-                                disabled={settings.muted || settings.natureSoundsMuted}
+                                value={soundDraft.natureSoundsVolume}
+                                onChange={(e) => setSoundDraft(prev => ({ ...prev, natureSoundsVolume: Number(e.target.value) }))}
+                                disabled={soundDraft.muted || soundDraft.natureSoundsMuted}
                             />
                             <p className="settings-helper-text">Applies only on the Homepage tab. It fades out when you leave Home.</p>
                         </div>
 
                         <div className="settings-group">
-                            <label htmlFor="sfxVolumeRange">Global effects volume: {settings.sfxVolume}%</label>
+                            <label htmlFor="sfxVolumeRange">Global effects volume: {soundDraft.sfxVolume}%</label>
                             <input
                                 id="sfxVolumeRange"
                                 type="range"
                                 min={0}
                                 max={100}
-                                value={settings.sfxVolume}
-                                onChange={(e) => setSfxVolume(Number(e.target.value))}
-                                onMouseUp={() => playTestTone('sfx', settings.sfxVolume)}
-                                onTouchEnd={() => playTestTone('sfx', settings.sfxVolume)}
-                                disabled={settings.muted}
+                                value={soundDraft.sfxVolume}
+                                onChange={(e) => setSoundDraft(prev => ({ ...prev, sfxVolume: Number(e.target.value) }))}
+                                onMouseUp={() => playTestTone('sfx', soundDraft.sfxVolume)}
+                                onTouchEnd={() => playTestTone('sfx', soundDraft.sfxVolume)}
+                                disabled={soundDraft.muted}
                             />
-                            <button type="button" onClick={resetSoundSettings}>Reset Sound Defaults</button>
+                        </div>
+
+                        <div className="settings-group settings-group-actions">
+                            <p className="settings-helper-text">
+                                Save commits these changes across the app and stores them permanently on this device.
+                            </p>
+                            <div className="settings-action-row">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSoundDraft(DEFAULT_SOUND_SETTINGS);
+                                        setSoundStatusError('');
+                                        setSoundStatusMessage('Draft reset to default sound values. Select Save Sound Settings and Exit to apply.');
+                                    }}
+                                >
+                                    Reset Draft to Defaults
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleExitWithoutSaving}
+                                    disabled={!hasSoundDraftChanges}
+                                >
+                                    Exit without Saving
+                                </button>
+                                <button
+                                    type="button"
+                                    className="settings-save-primary"
+                                    onClick={handleSaveSoundDraftAndExit}
+                                    disabled={!hasSoundDraftChanges}
+                                >
+                                    Save Sound Settings and Exit
+                                </button>
+                            </div>
+                        </div>
+
+                        {soundStatusMessage && <p className="settings-status success">{soundStatusMessage}</p>}
+                        {soundStatusError && <p className="settings-status error">{soundStatusError}</p>}
+                    </section>
+                </>
+            )}
+
+            {isUnsavedSoundPromptOpen && (
+                <>
+                    <button
+                        type="button"
+                        className="settings-confirm-backdrop"
+                        aria-label="Close save confirmation dialog"
+                        onClick={handleCancelUnsavedSoundPrompt}
+                    />
+                    <section className="settings-confirm-dialog" role="dialog" aria-modal="true" aria-label="Unsaved sound changes">
+                        <h3>Unsaved Sound Changes</h3>
+                        <p>
+                            You changed sound settings but have not saved yet.
+                            Choose Save and Exit to keep them, or Discard to leave without saving.
+                        </p>
+                        <div className="settings-confirm-actions">
+                            <button type="button" className="confirm-secondary" onClick={handleCancelUnsavedSoundPrompt}>
+                                Keep Editing
+                            </button>
+                            <button type="button" className="confirm-danger" onClick={handleConfirmDiscardAndExit}>
+                                Discard Changes
+                            </button>
+                            <button type="button" className="confirm-primary" onClick={handleConfirmSaveAndExit}>
+                                Save and Exit
+                            </button>
                         </div>
                     </section>
                 </>

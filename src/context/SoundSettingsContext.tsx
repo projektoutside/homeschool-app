@@ -23,7 +23,7 @@ interface SoundSettingsContextValue {
 
 const STORAGE_KEY = 'app_sound_settings_v1';
 
-const DEFAULT_SETTINGS: SoundSettings = {
+export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   muted: false,
   musicVolume: 20,
   sfxVolume: 75,
@@ -40,25 +40,25 @@ const clampPercent = (value: number): number => {
 };
 
 const readStoredSettings = (): SoundSettings => {
-  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+  if (typeof window === 'undefined') return DEFAULT_SOUND_SETTINGS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
+    if (!raw) return DEFAULT_SOUND_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<SoundSettings>;
     return {
       muted: Boolean(parsed.muted),
-      musicVolume: clampPercent(parsed.musicVolume ?? DEFAULT_SETTINGS.musicVolume),
-      sfxVolume: clampPercent(parsed.sfxVolume ?? DEFAULT_SETTINGS.sfxVolume),
+      musicVolume: clampPercent(parsed.musicVolume ?? DEFAULT_SOUND_SETTINGS.musicVolume),
+      sfxVolume: clampPercent(parsed.sfxVolume ?? DEFAULT_SOUND_SETTINGS.sfxVolume),
       homePageMusicTrack: normalizeHomePageMusicTrack(
-        parsed.homePageMusicTrack ?? DEFAULT_SETTINGS.homePageMusicTrack,
+        parsed.homePageMusicTrack ?? DEFAULT_SOUND_SETTINGS.homePageMusicTrack,
       ),
-      natureSoundsMuted: Boolean(parsed.natureSoundsMuted ?? DEFAULT_SETTINGS.natureSoundsMuted),
+      natureSoundsMuted: Boolean(parsed.natureSoundsMuted ?? DEFAULT_SOUND_SETTINGS.natureSoundsMuted),
       natureSoundsVolume: clampPercent(
-        parsed.natureSoundsVolume ?? DEFAULT_SETTINGS.natureSoundsVolume,
+        parsed.natureSoundsVolume ?? DEFAULT_SOUND_SETTINGS.natureSoundsVolume,
       ),
     };
   } catch {
-    return DEFAULT_SETTINGS;
+    return DEFAULT_SOUND_SETTINGS;
   }
 };
 
@@ -87,7 +87,7 @@ export const SoundSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       ...prev,
       natureSoundsVolume: clampPercent(value),
     })),
-    resetSoundSettings: () => setSettings(DEFAULT_SETTINGS),
+    resetSoundSettings: () => setSettings(DEFAULT_SOUND_SETTINGS),
   }), [settings]);
 
   return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
