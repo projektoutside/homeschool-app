@@ -5507,6 +5507,8 @@
         const HOME_PAGE_MUSIC_LOOP_CHECK_MS = 120;
         const HOME_PAGE_ROUTE_FADE_OUT_MS = 2000;
         const HOME_PAGE_ROUTE_FADE_IN_MS = 2000;
+        const HOME_PAGE_MUSIC_ENTRY_DELAY_MS = 2000;
+        const HOME_PAGE_MUSIC_FADE_IN_MS = 2000;
         const HOME_PAGE_NATURE_SOUNDS_SOURCE = encodeURI('./HomePageMusic/NatureBirds/NatureBirdsBackground.mp3');
         const HOME_PAGE_NATURE_SOUNDS_DEFAULT_VOLUME = 0.35;
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
@@ -5529,7 +5531,10 @@
             queuedGain: 0,
             transitionToken: 0,
             transitionRafId: null,
-            monitorTimer: null
+            monitorTimer: null,
+            delayedStartTimer: null,
+            delayedStartToken: 0,
+            isDelayedStartPending: false
         };
         const natureSoundState = {
             audio: null,
@@ -5608,6 +5613,15 @@
             }
         }
 
+        function clearScheduledHomePageMusicStart() {
+            if (homePageMusicState.delayedStartTimer !== null) {
+                window.clearTimeout(homePageMusicState.delayedStartTimer);
+                homePageMusicState.delayedStartTimer = null;
+            }
+            homePageMusicState.isDelayedStartPending = false;
+            homePageMusicState.delayedStartToken += 1;
+        }
+
         function clearHomePageRouteFadeAnimation() {
             if (homePageRouteAudioState.fadeRafId !== null) {
                 window.cancelAnimationFrame(homePageRouteAudioState.fadeRafId);
@@ -5655,6 +5669,7 @@
         }
 
         function pauseHomePageAudioImmediately() {
+            clearScheduledHomePageMusicStart();
             clearHomePageMusicTransitionAnimation();
             homePageMusicState.transitionToken += 1;
             if (homePageMusicState.queuedAudio) {
@@ -5668,6 +5683,47 @@
             if (natureSoundState.audio) {
                 natureSoundState.audio.pause();
             }
+        }
+
+        function animateHomePageMusicActiveGain(targetGain, durationMs) {
+            const target = clampUnitVolume(targetGain, targetGain > 0 ? 1 : 0);
+            const startGain = clampUnitVolume(homePageMusicState.activeGain, 1);
+            const delta = target - startGain;
+            clearHomePageMusicTransitionAnimation();
+
+            if (Math.abs(delta) <= 0.0005 || durationMs <= 0) {
+                homePageMusicState.activeGain = target;
+                homePageMusicState.queuedGain = 0;
+                applyHomePageMusicGain();
+                return;
+            }
+
+            const token = homePageMusicState.transitionToken + 1;
+            homePageMusicState.transitionToken = token;
+            const startedAt = performance.now();
+            const fadeDuration = Math.max(80, Number(durationMs) || 0);
+
+            const step = () => {
+                if (token !== homePageMusicState.transitionToken) return;
+                const elapsed = performance.now() - startedAt;
+                const progress = Math.max(0, Math.min(1, elapsed / fadeDuration));
+                const eased = progress * progress * (3 - (2 * progress));
+                homePageMusicState.activeGain = startGain + (delta * eased);
+                homePageMusicState.queuedGain = 0;
+                applyHomePageMusicGain();
+
+                if (progress < 1) {
+                    homePageMusicState.transitionRafId = window.requestAnimationFrame(step);
+                    return;
+                }
+
+                homePageMusicState.activeGain = target;
+                homePageMusicState.queuedGain = 0;
+                homePageMusicState.transitionRafId = null;
+                applyHomePageMusicGain();
+            };
+
+            homePageMusicState.transitionRafId = window.requestAnimationFrame(step);
         }
 
         function animateHomePageRouteGain(targetGain, durationMs, options = {}) {
@@ -5851,12 +5907,15 @@
             return runFade();
         }
 
-        function attemptHomePageMusicPlayback() {
+        function attemptHomePageMusicPlayback(options = {}) {
+            const ignoreDelay = Boolean(options.ignoreDelay);
+            const fadeInMs = Math.max(0, Number(options.fadeInMs) || 0);
             homePageMusicState.shouldPlay = true;
+            if (!ignoreDelay && homePageMusicState.isDelayedStartPending) return Promise.resolve(false);
             if (!homePageRouteAudioState.isActive || homePageMusicState.muted) return Promise.resolve(false);
             const audio = ensureHomePageMusicAudio();
             if (!audio) return Promise.resolve(false);
-            homePageMusicState.activeGain = 1;
+            homePageMusicState.activeGain = fadeInMs > 0 ? 0 : 1;
             homePageMusicState.queuedGain = 0;
             applyHomePageMusicGain();
             const playAttempt = audio.play();
@@ -5864,6 +5923,9 @@
                 return playAttempt
                     .then(() => {
                         ensureHomePageMusicLoopMonitor();
+                        if (fadeInMs > 0) {
+                            animateHomePageMusicActiveGain(1, fadeInMs);
+                        }
                         return true;
                     })
                     .catch(() => false);
@@ -5871,8 +5933,46 @@
             const playing = !audio.paused && !audio.ended;
             if (playing) {
                 ensureHomePageMusicLoopMonitor();
+                if (fadeInMs > 0) {
+                    animateHomePageMusicActiveGain(1, fadeInMs);
+                }
             }
             return Promise.resolve(playing);
+        }
+
+        function scheduleHomePageMusicStart(delayMs = HOME_PAGE_MUSIC_ENTRY_DELAY_MS) {
+            clearScheduledHomePageMusicStart();
+            if (!homePageRouteAudioState.isActive || homePageMusicState.muted || !homePageMusicState.shouldPlay) return;
+            const delay = Math.max(0, Number(delayMs) || 0);
+            if (delay <= 0) {
+                attemptHomePageMusicPlayback({ ignoreDelay: true, fadeInMs: HOME_PAGE_MUSIC_FADE_IN_MS });
+                return;
+            }
+            const token = homePageMusicState.delayedStartToken;
+            homePageMusicState.isDelayedStartPending = true;
+            homePageMusicState.delayedStartTimer = window.setTimeout(() => {
+                if (token !== homePageMusicState.delayedStartToken) return;
+                homePageMusicState.delayedStartTimer = null;
+                homePageMusicState.isDelayedStartPending = false;
+                if (!homePageRouteAudioState.isActive || homePageMusicState.muted || !homePageMusicState.shouldPlay) return;
+                attemptHomePageMusicPlayback({ ignoreDelay: true, fadeInMs: HOME_PAGE_MUSIC_FADE_IN_MS });
+            }, delay);
+        }
+
+        function startHomePageActivationAudioSequence() {
+            applyHomePageMusicGain();
+            applyNatureSoundsGain();
+            if (!homePageMusicState.muted && !natureSoundState.muted && natureSoundState.shouldPlay) {
+                attemptNatureSoundsPlayback();
+                if (homePageMusicState.shouldPlay) {
+                    scheduleHomePageMusicStart(HOME_PAGE_MUSIC_ENTRY_DELAY_MS);
+                }
+            } else if (!homePageMusicState.muted && homePageMusicState.shouldPlay) {
+                scheduleHomePageMusicStart(0);
+            } else {
+                clearScheduledHomePageMusicStart();
+            }
+            animateHomePageRouteGain(1, HOME_PAGE_ROUTE_FADE_IN_MS, { pauseAfter: false });
         }
 
         function attemptNatureSoundsPlayback() {
@@ -5943,7 +6043,11 @@
             }
             if (homePageRouteAudioState.isActive) {
                 if (homePageMusicState.shouldPlay) {
-                    attemptHomePageMusicPlayback();
+                    if (!natureSoundState.muted && natureSoundState.shouldPlay) {
+                        scheduleHomePageMusicStart(HOME_PAGE_MUSIC_ENTRY_DELAY_MS);
+                    } else {
+                        scheduleHomePageMusicStart(0);
+                    }
                 }
                 if (!natureSoundState.muted && natureSoundState.shouldPlay) {
                     attemptNatureSoundsPlayback();
@@ -5995,18 +6099,11 @@
 
             homePageRouteAudioState.isActive = nextActive;
             if (nextActive) {
-                applyHomePageMusicGain();
-                applyNatureSoundsGain();
-                if (!homePageMusicState.muted && homePageMusicState.shouldPlay) {
-                    attemptHomePageMusicPlayback();
-                }
-                if (!homePageMusicState.muted && !natureSoundState.muted && natureSoundState.shouldPlay) {
-                    attemptNatureSoundsPlayback();
-                }
-                animateHomePageRouteGain(1, HOME_PAGE_ROUTE_FADE_IN_MS, { pauseAfter: false });
+                startHomePageActivationAudioSequence();
                 return;
             }
 
+            clearScheduledHomePageMusicStart();
             animateHomePageRouteGain(0, HOME_PAGE_ROUTE_FADE_OUT_MS, { pauseAfter: true });
         }
 
@@ -6039,10 +6136,8 @@
             const storedTrackId = readStoredHomePageMusicTrackId();
             swapToHomePageMusicTrackImmediately(storedTrackId);
             ensureNatureSoundsAudio();
-            applyHomePageMusicGain();
-            applyNatureSoundsGain();
-            attemptHomePageMusicPlayback();
-            attemptNatureSoundsPlayback();
+            homePageRouteAudioState.gain = 0;
+            startHomePageActivationAudioSequence();
         }
 
         window.setAudioMuted = setAudioMuted;
