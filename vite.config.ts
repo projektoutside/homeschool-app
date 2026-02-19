@@ -250,10 +250,14 @@ const contentManagerPlugin = () => {
 // Use absolute path for GitHub Pages to support client-side routing with deep links
 // Respect BASE_PATH env var if set (by GitHub Actions workflow)
 const base = process.env.BASE_PATH || (process.env.NODE_ENV === 'production' ? '/homeschool-app/' : '/');
+const devAllowedHosts = ['localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok.app'];
 
 // https://vite.dev/config/
 export default defineConfig({
   base,
+  server: {
+    allowedHosts: devAllowedHosts,
+  },
   plugins: [
     react(),
     contentManagerPlugin(),

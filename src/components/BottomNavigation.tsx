@@ -12,6 +12,7 @@ const HOME_TRANSITION_FADE_IN_MS = 220;
 const HOME_TRANSITION_FADE_OUT_MS = 280;
 const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
+const STATS_WAKE_GLOW_MS = 2000;
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings }) => {
     const navigate = useNavigate();
@@ -332,20 +333,21 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
         const currentX = e.targetTouches[0].clientX;
         const diff = statsTouchStartX.current - currentX;
+        const statsSwipeDistance = 34;
 
         if (Math.abs(diff) > clickBlockThreshold) {
             hasStatsSwiped.current = true;
         }
 
         // Minimize stats dock
-        if (diff > minSwipeDistance && !isStatsMinimized) {
+        if (diff > statsSwipeDistance && !isStatsMinimized) {
             setIsStatsMinimized(true);
             statsTouchStartX.current = null;
             return;
         }
 
         // Restore stats dock
-        if (diff < -minSwipeDistance && isStatsMinimized) {
+        if (diff < -statsSwipeDistance && isStatsMinimized) {
             // Hidden/dormant state requires a tap first to re-arm the line.
             if (isStatsLineDormant) {
                 return;
@@ -368,6 +370,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             hasStatsSwiped.current = false;
         }
     };
+
+    const handleWakeZonePress = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!(isMinimized && isStatsMinimized && isStatsLineDormant)) return;
+        triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
+    }, [isMinimized, isStatsMinimized, isStatsLineDormant, triggerStatsAwakeFlash]);
 
     useEffect(() => {
         const getFullscreenLikeState = () => {
@@ -742,7 +751,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         onClick={(e) => {
                             if (isStatsMinimized && isMinimized) {
                                 if (isStatsLineDormant) {
-                                    triggerStatsAwakeFlash(2500);
+                                    triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
                                     e.stopPropagation();
                                     return;
                                 }
@@ -766,6 +775,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         </div>
                     </div>
                 </aside>
+            {isMinimized && isStatsMinimized && isStatsLineDormant ? (
+                <button
+                    type="button"
+                    className="stats-wake-zone"
+                    aria-label="Activate dock handle glow"
+                    title="Tap here to wake the handle"
+                    onPointerDown={handleWakeZonePress}
+                />
+            ) : null}
             <div
                 className={`homepage-transition-overlay ${homeTransitionPhase === 'idle' ? '' : 'is-active'} ${homeTransitionPhase === 'fading-out' ? 'is-fading-out' : ''}`}
                 aria-hidden="true"

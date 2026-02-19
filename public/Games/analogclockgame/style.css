@@ -1258,11 +1258,28 @@ textarea:focus-visible,
   .shop-items-overlay {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--s-xs);
+    align-items: stretch;
+    overflow: hidden;
+  }
+  .shop-item,
+  .shop-item-overlay {
+    height: 100%;
+    min-height: 0;
+    padding: 4px 5px;
+    gap: 2px;
+    align-content: center;
+    overflow: hidden;
   }
   .item-icon-wrap { width: 28px; height: 28px; }
+  .item-name { font-size: clamp(0.62rem, 1.35vw, 0.76rem); line-height: 1.1; }
   .item-description { display: none; }
-  .item-leftover { font-size: 0.58rem; }
-  .shop-item-cta { min-height: 22px; }
+  .item-cost-row { gap: 2px; }
+  .item-cost { padding: 1px 8px; font-size: clamp(0.58rem, 1.2vw, 0.72rem); }
+  .item-leftover { display: none; }
+  .shop-item-cta { min-height: 18px; font-size: 0.58rem; }
+  .shop-shell-footer,
+  .shop-overlay-footer { padding: var(--s-2xs) var(--s-sm); }
+  .shop-close-btn { min-height: 30px; font-size: 0.74rem; }
 }
 @media (max-height: 420px) and (orientation: landscape) {
   .start-menu-overlay,
@@ -1329,6 +1346,21 @@ textarea:focus-visible,
     padding: 4px 8px;
     font-size: 0.82rem;
   }
+  .shop-shell,
+  .shop-overlay-content { gap: var(--s-2xs); padding: var(--s-xs); }
+  .shop-shell-header,
+  .shop-overlay-header,
+  .shop-shell-footer,
+  .shop-overlay-footer { padding: 3px var(--s-xs); }
+  .shop-items-grid,
+  .shop-items-overlay { gap: 4px; }
+  .shop-item,
+  .shop-item-overlay { padding: 2px 4px; gap: 1px; }
+  .item-icon-wrap { width: 22px; height: 22px; }
+  .item-name { font-size: 0.62rem; }
+  .item-cost { padding: 1px 6px; font-size: 0.56rem; }
+  .shop-item-cta { min-height: 16px; font-size: 0.54rem; }
+  .shop-close-btn { min-height: 28px; font-size: 0.7rem; }
 }
 @media (min-width: 1500px) {
   #game-container { gap: var(--s-2xl); }

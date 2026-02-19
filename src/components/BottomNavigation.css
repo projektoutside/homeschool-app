@@ -484,6 +484,27 @@
     box-shadow: 0 0 12px rgba(250, 204, 21, 0.75);
 }
 
+.stats-wake-zone {
+    position: fixed;
+    left: 0;
+    bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+    width: 92px;
+    height: 96px;
+    border: 0;
+    background: transparent;
+    z-index: 10006;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.stats-wake-zone:focus,
+.stats-wake-zone:active {
+    outline: none;
+}
+
 @keyframes stats-line-pulse-dim {
     0% {
         opacity: 0.95;
@@ -561,6 +582,12 @@
     .stats-label,
     .stats-text {
         font-size: 0.96rem;
+    }
+
+    .stats-wake-zone {
+        width: 78px;
+        height: 84px;
+        bottom: max(env(safe-area-inset-bottom, 0px), 8px);
     }
 }
 
