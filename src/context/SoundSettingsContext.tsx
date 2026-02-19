@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_HOME_PAGE_MUSIC_TRACK, normalizeHomePageMusicTrack } from '../utils/homePageMusic';
 
 export interface SoundSettings {
@@ -73,22 +73,83 @@ export const SoundSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [settings]);
 
+  const setMuted = useCallback((muted: boolean) => {
+    const normalizedMuted = Boolean(muted);
+    setSettings(prev => (prev.muted === normalizedMuted ? prev : { ...prev, muted: normalizedMuted }));
+  }, []);
+
+  const setMusicVolume = useCallback((value: number) => {
+    const normalizedVolume = clampPercent(value);
+    setSettings(prev => (prev.musicVolume === normalizedVolume ? prev : { ...prev, musicVolume: normalizedVolume }));
+  }, []);
+
+  const setSfxVolume = useCallback((value: number) => {
+    const normalizedVolume = clampPercent(value);
+    setSettings(prev => (prev.sfxVolume === normalizedVolume ? prev : { ...prev, sfxVolume: normalizedVolume }));
+  }, []);
+
+  const setHomePageMusicTrack = useCallback((value: string) => {
+    const normalizedTrack = normalizeHomePageMusicTrack(value);
+    setSettings(prev => (
+      prev.homePageMusicTrack === normalizedTrack
+        ? prev
+        : { ...prev, homePageMusicTrack: normalizedTrack }
+    ));
+  }, []);
+
+  const setNatureSoundsMuted = useCallback((muted: boolean) => {
+    const normalizedMuted = Boolean(muted);
+    setSettings(prev => (
+      prev.natureSoundsMuted === normalizedMuted
+        ? prev
+        : { ...prev, natureSoundsMuted: normalizedMuted }
+    ));
+  }, []);
+
+  const setNatureSoundsVolume = useCallback((value: number) => {
+    const normalizedVolume = clampPercent(value);
+    setSettings(prev => (
+      prev.natureSoundsVolume === normalizedVolume
+        ? prev
+        : { ...prev, natureSoundsVolume: normalizedVolume }
+    ));
+  }, []);
+
+  const resetSoundSettings = useCallback(() => {
+    setSettings(prev => {
+      if (
+        prev.muted === DEFAULT_SOUND_SETTINGS.muted
+        && prev.musicVolume === DEFAULT_SOUND_SETTINGS.musicVolume
+        && prev.sfxVolume === DEFAULT_SOUND_SETTINGS.sfxVolume
+        && prev.homePageMusicTrack === DEFAULT_SOUND_SETTINGS.homePageMusicTrack
+        && prev.natureSoundsMuted === DEFAULT_SOUND_SETTINGS.natureSoundsMuted
+        && prev.natureSoundsVolume === DEFAULT_SOUND_SETTINGS.natureSoundsVolume
+      ) {
+        return prev;
+      }
+      return DEFAULT_SOUND_SETTINGS;
+    });
+  }, []);
+
   const value = useMemo<SoundSettingsContextValue>(() => ({
     settings,
-    setMuted: (muted: boolean) => setSettings(prev => ({ ...prev, muted })),
-    setMusicVolume: (value: number) => setSettings(prev => ({ ...prev, musicVolume: clampPercent(value) })),
-    setSfxVolume: (value: number) => setSettings(prev => ({ ...prev, sfxVolume: clampPercent(value) })),
-    setHomePageMusicTrack: (value: string) => setSettings(prev => ({
-      ...prev,
-      homePageMusicTrack: normalizeHomePageMusicTrack(value),
-    })),
-    setNatureSoundsMuted: (muted: boolean) => setSettings(prev => ({ ...prev, natureSoundsMuted: muted })),
-    setNatureSoundsVolume: (value: number) => setSettings(prev => ({
-      ...prev,
-      natureSoundsVolume: clampPercent(value),
-    })),
-    resetSoundSettings: () => setSettings(DEFAULT_SOUND_SETTINGS),
-  }), [settings]);
+    setMuted,
+    setMusicVolume,
+    setSfxVolume,
+    setHomePageMusicTrack,
+    setNatureSoundsMuted,
+    setNatureSoundsVolume,
+    resetSoundSettings,
+  }), [
+    resetSoundSettings,
+    setHomePageMusicTrack,
+    setMusicVolume,
+    setMuted,
+    setNatureSoundsMuted,
+    setNatureSoundsVolume,
+    setSfxVolume,
+    settings,
+  ]);
 
   return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
 };
