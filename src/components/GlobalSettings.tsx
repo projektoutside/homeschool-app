@@ -45,6 +45,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     const [soundStatusError, setSoundStatusError] = useState('');
     const [isUnsavedSoundPromptOpen, setIsUnsavedSoundPromptOpen] = useState(false);
     const [pendingSoundExitIntent, setPendingSoundExitIntent] = useState<SoundExitIntent | null>(null);
+    const [soundBaseline, setSoundBaseline] = useState<SoundSettings | null>(null);
 
     // Audio Context Ref
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -86,14 +87,21 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         setSoundDraft(settings);
     }, [isSoundSettingsOpen, settings]);
 
-    const hasSoundDraftChanges = useMemo(() => (
-        soundDraft.muted !== settings.muted
-        || soundDraft.musicVolume !== settings.musicVolume
-        || soundDraft.sfxVolume !== settings.sfxVolume
-        || soundDraft.homePageMusicTrack !== settings.homePageMusicTrack
-        || soundDraft.natureSoundsMuted !== settings.natureSoundsMuted
-        || soundDraft.natureSoundsVolume !== settings.natureSoundsVolume
-    ), [settings, soundDraft]);
+    const hasSoundDraftChanges = useMemo(() => {
+        const baseline = soundBaseline;
+        if (!baseline) {
+            return false;
+        }
+
+        return (
+            soundDraft.muted !== baseline.muted
+            || soundDraft.musicVolume !== baseline.musicVolume
+            || soundDraft.sfxVolume !== baseline.sfxVolume
+            || soundDraft.homePageMusicTrack !== baseline.homePageMusicTrack
+            || soundDraft.natureSoundsMuted !== baseline.natureSoundsMuted
+            || soundDraft.natureSoundsVolume !== baseline.natureSoundsVolume
+        );
+    }, [soundBaseline, soundDraft]);
 
     useEffect(() => {
         if (!isSoundSettingsOpen || !hasSoundDraftChanges) {
@@ -189,6 +197,30 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
         }
     }, [getAudioContext, soundDraft.muted]);
 
+    const applySoundSettingsToGlobal = useCallback((nextSettings: SoundSettings) => {
+        setMuted(nextSettings.muted);
+        setMusicVolume(nextSettings.musicVolume);
+        setSfxVolume(nextSettings.sfxVolume);
+        setHomePageMusicTrack(nextSettings.homePageMusicTrack);
+        setNatureSoundsMuted(nextSettings.natureSoundsMuted);
+        setNatureSoundsVolume(nextSettings.natureSoundsVolume);
+    }, [
+        setHomePageMusicTrack,
+        setMusicVolume,
+        setMuted,
+        setNatureSoundsMuted,
+        setNatureSoundsVolume,
+        setSfxVolume,
+    ]);
+
+    // Live preview: apply draft changes immediately while the user adjusts controls.
+    useEffect(() => {
+        if (!isSoundSettingsOpen || !soundBaseline) {
+            return;
+        }
+        applySoundSettingsToGlobal(soundDraft);
+    }, [applySoundSettingsToGlobal, isSoundSettingsOpen, soundBaseline, soundDraft]);
+
     const handleSaveHomeLabel = async () => {
         resetStatus();
         setIsSaving(true);
@@ -279,31 +311,14 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     };
 
     const applySoundDraftToGlobalSettings = useCallback(() => {
-        setMuted(soundDraft.muted);
-        setMusicVolume(soundDraft.musicVolume);
-        setSfxVolume(soundDraft.sfxVolume);
-        setHomePageMusicTrack(soundDraft.homePageMusicTrack);
-        setNatureSoundsMuted(soundDraft.natureSoundsMuted);
-        setNatureSoundsVolume(soundDraft.natureSoundsVolume);
+        applySoundSettingsToGlobal(soundDraft);
         setSoundStatusError('');
         setSoundStatusMessage('Sound settings saved. These preferences will stay until you change them again.');
-    }, [
-        setHomePageMusicTrack,
-        setMusicVolume,
-        setMuted,
-        setNatureSoundsMuted,
-        setNatureSoundsVolume,
-        setSfxVolume,
-        soundDraft.homePageMusicTrack,
-        soundDraft.musicVolume,
-        soundDraft.muted,
-        soundDraft.natureSoundsMuted,
-        soundDraft.natureSoundsVolume,
-        soundDraft.sfxVolume,
-    ]);
+    }, [applySoundSettingsToGlobal, soundDraft]);
 
     const closeSoundSettingsPanelNow = useCallback(() => {
         setIsSoundSettingsOpen(false);
+        setSoundBaseline(null);
         setPendingSoundExitIntent(null);
         setIsUnsavedSoundPromptOpen(false);
         resetSoundStatus();
@@ -312,6 +327,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     const closeAllSettingsNow = useCallback(() => {
         setIsAccountSettingsOpen(false);
         setIsSoundSettingsOpen(false);
+        setSoundBaseline(null);
         setPendingSoundExitIntent(null);
         setIsUnsavedSoundPromptOpen(false);
         resetSoundStatus();
@@ -338,6 +354,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
 
     const openSoundSettingsPanel = useCallback(() => {
         setSoundDraft(settings);
+        setSoundBaseline(settings);
         setPendingSoundExitIntent(null);
         setIsUnsavedSoundPromptOpen(false);
         resetSoundStatus();
@@ -350,10 +367,12 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     }, [applySoundDraftToGlobalSettings, closeSoundSettingsPanelNow]);
 
     const handleDiscardSoundDraft = useCallback((showMessage: boolean) => {
-        setSoundDraft(settings);
+        const revertTarget = soundBaseline ?? settings;
+        setSoundDraft(revertTarget);
+        applySoundSettingsToGlobal(revertTarget);
         setSoundStatusError('');
         setSoundStatusMessage(showMessage ? 'Unsaved sound changes were discarded.' : '');
-    }, [settings]);
+    }, [applySoundSettingsToGlobal, settings, soundBaseline]);
 
     const handleExitWithoutSaving = useCallback(() => {
         handleDiscardSoundDraft(false);
@@ -531,7 +550,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
 
                         <p className={`settings-draft-note ${hasSoundDraftChanges ? 'pending' : 'saved'}`} role="status" aria-live="polite">
                             {hasSoundDraftChanges
-                                ? 'You have unsaved sound changes. Use Save Sound Settings and Exit to keep them permanently.'
+                                ? 'You are previewing unsaved sound changes live. Use Save Sound Settings and Exit to keep them permanently.'
                                 : 'All sound settings are currently saved.'}
                         </p>
 
@@ -547,7 +566,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                             </label>
                             <p className="settings-helper-text">
                                 This setting overrides audio in games, worksheets, and tools.
-                                Changes here are drafts until you select Save Sound Settings.
+                                Changes preview in real time. Save to keep them permanently.
                             </p>
                         </div>
 
@@ -623,7 +642,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
 
                         <div className="settings-group settings-group-actions">
                             <p className="settings-helper-text">
-                                Save commits these changes across the app and stores them permanently on this device.
+                                Changes apply as live preview immediately. Save makes the current preview permanent on this device.
                             </p>
                             <div className="settings-action-row">
                                 <button
@@ -631,7 +650,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
                                     onClick={() => {
                                         setSoundDraft(DEFAULT_SOUND_SETTINGS);
                                         setSoundStatusError('');
-                                        setSoundStatusMessage('Draft reset to default sound values. Select Save Sound Settings and Exit to apply.');
+                                        setSoundStatusMessage('Preview reset to default sound values. Select Save Sound Settings and Exit to keep these values.');
                                     }}
                                 >
                                     Reset Draft to Defaults
