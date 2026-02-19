@@ -96,6 +96,11 @@
       const SHOULD_SKIP_INTRO = false;
       const INTRO_MESSAGE_SCOPE = "classroom-main";
       const INTRO_MESSAGE_DONE = "LAHS_CLASSROOM_DOOR_INTRO_DONE";
+      const SOUND_SETTINGS_STORAGE_KEY = "app_sound_settings_v1";
+      const DEFAULT_SFX_VOLUME = 0.75;
+      const DOOR_OPEN_AUDIO_BASE_GAIN = 0.42;
+      const DOOR_OPEN_AUDIO_FILE = "audio/dooropening.mp3";
+      const DOOR_OPEN_AUDIO_TRIGGER_PROGRESS = 0.015;
 
       const doorIntro = document.getElementById("doorIntro");
       const doorIntroStage = document.getElementById("doorIntroStage");
@@ -133,6 +138,98 @@
           return 4 * x * x * x;
         }
         return 1 - Math.pow(-2 * x + 2, 3) / 2;
+      }
+
+      function readDoorIntroSoundSettings() {
+        const fallbackDoorVolume = clamp01(DEFAULT_SFX_VOLUME * DOOR_OPEN_AUDIO_BASE_GAIN);
+        const fallback = {
+          muted: false,
+          doorVolume: fallbackDoorVolume
+        };
+        try {
+          const rawSettings = window.localStorage.getItem(SOUND_SETTINGS_STORAGE_KEY);
+          if (!rawSettings) {
+            return fallback;
+          }
+          const parsed = JSON.parse(rawSettings);
+          const muted = Boolean(parsed && parsed.muted);
+          const rawSfxVolume = Number(parsed && parsed.sfxVolume);
+          const sfxVolume = Number.isFinite(rawSfxVolume)
+            ? clamp01(rawSfxVolume / 100)
+            : DEFAULT_SFX_VOLUME;
+          const effectiveSfxVolume = muted ? 0 : sfxVolume;
+
+          return {
+            muted: muted,
+            doorVolume: clamp01(effectiveSfxVolume * DOOR_OPEN_AUDIO_BASE_GAIN)
+          };
+        } catch {
+          return fallback;
+        }
+      }
+
+      function createDoorOpeningAudioController() {
+        const audio = new Audio(DOOR_OPEN_AUDIO_FILE);
+        audio.preload = "auto";
+        audio.playsInline = true;
+        const soundSettings = readDoorIntroSoundSettings();
+        audio.muted = soundSettings.muted;
+        audio.volume = soundSettings.doorVolume;
+
+        let hasPlayed = false;
+        let nextRetryAtMs = 0;
+
+        function play(nowMs) {
+          const now = Number(nowMs) || performance.now();
+          if (hasPlayed || now < nextRetryAtMs) {
+            return;
+          }
+
+          hasPlayed = true;
+          try {
+            audio.currentTime = 0;
+          } catch {
+            // Ignore playback positioning errors.
+          }
+
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(function () {
+              hasPlayed = false;
+              nextRetryAtMs = now + 120;
+            });
+          }
+        }
+
+        return {
+          playForDoorOpeningProgress: function (progress, nowMs) {
+            if (hasPlayed || progress < DOOR_OPEN_AUDIO_TRIGGER_PROGRESS) {
+              return;
+            }
+            play(nowMs);
+          },
+          stop: function () {
+            hasPlayed = false;
+            nextRetryAtMs = 0;
+            try {
+              audio.pause();
+              audio.currentTime = 0;
+            } catch {
+              // Ignore media reset errors.
+            }
+          },
+          dispose: function () {
+            hasPlayed = false;
+            nextRetryAtMs = 0;
+            try {
+              audio.pause();
+              audio.removeAttribute("src");
+              audio.load();
+            } catch {
+              // Ignore media disposal errors.
+            }
+          }
+        };
       }
 
       function createWoodTexture(THREE_REF, width, height, palette) {
@@ -389,6 +486,10 @@
         const durationMs = Math.max(240, Number(options.durationMs) || INTRO_ANIMATION_DURATION_MS);
         const reduceMotion = Boolean(options.reduceMotion);
         const textureCandidates = Array.isArray(options.textureCandidates) ? options.textureCandidates : [];
+        const doorAudioController = options.doorAudioController
+          && typeof options.doorAudioController.playForDoorOpeningProgress === "function"
+          ? options.doorAudioController
+          : null;
 
         const renderer = new THREE_REF.WebGLRenderer({
           antialias: true,
@@ -796,6 +897,9 @@
           const t = clamp01(elapsedMs / durationMs);
 
           const doorOpenProgress = easeOutCubic(clamp01((t - 0.1) / 0.52));
+          if (doorAudioController) {
+            doorAudioController.playForDoorOpeningProgress(doorOpenProgress, nowMs);
+          }
           doorPivot.rotation.y = -1.95 * doorOpenProgress;
 
           const handleDown = clamp01((t - 0.06) / 0.18);
@@ -877,6 +981,9 @@
               cancelAnimationFrame(animationFrameId);
             }
             window.removeEventListener("resize", handleResize);
+            if (doorAudioController && typeof doorAudioController.stop === "function") {
+              doorAudioController.stop();
+            }
             if (container.contains(renderer.domElement)) {
               container.removeChild(renderer.domElement);
             }
@@ -951,6 +1058,7 @@
         const introDurationMs = reduceMotion ? INTRO_REDUCED_DURATION_MS : INTRO_ANIMATION_DURATION_MS;
         let finished = false;
         let runtime = null;
+        let doorAudioController = createDoorOpeningAudioController();
         let snapshotRetryTimerId = null;
         let snapshotRetryCount = 0;
         const SNAPSHOT_MAX_RETRIES = 18;
@@ -1007,6 +1115,7 @@
             fadeLayer: doorIntroFade,
             durationMs: introDurationMs,
             reduceMotion: reduceMotion,
+            doorAudioController: doorAudioController,
             textureCandidates: getBackgroundCandidates(false)
           });
           if (runtime && runtime.donePromise) {
@@ -1028,6 +1137,10 @@
             await introMinDurationPromise;
             if (runtime && typeof runtime.dispose === "function") {
               runtime.dispose();
+            }
+            if (doorAudioController && typeof doorAudioController.dispose === "function") {
+              doorAudioController.dispose();
+              doorAudioController = null;
             }
             doorIntro.classList.add("is-leaving");
             await waitForMs(INTRO_FADE_DURATION_MS);

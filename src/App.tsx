@@ -10,15 +10,24 @@ import { buildAssetPath } from './utils/pathUtils';
 import './App.css';
 import './components/ErrorBoundary.css';
 
+const loadHomeRoute = () => import('./pages/Home');
+const loadGamePlayerRoute = () => import('./pages/GamePlayer');
+const loadManagerRoute = () => import('./pages/ManagerPage');
+const loadViewerRoute = () => import('./pages/Viewer');
+const loadHTMLViewerRoute = () => import('./pages/HTMLViewer');
+const loadInstallRoute = () => import('./pages/InstallPage');
+const loadAuthRoute = () => import('./pages/AuthPage');
+const loadClassroomRoute = () => import('./pages/ClassroomPage');
+
 // Lazy load pages for performance
-const Home = React.lazy(() => import('./pages/Home'));
-const GamePlayer = React.lazy(() => import('./pages/GamePlayer'));
-const ManagerPage = React.lazy(() => import('./pages/ManagerPage'));
-const Viewer = React.lazy(() => import('./pages/Viewer'));
-const HTMLViewer = React.lazy(() => import('./pages/HTMLViewer'));
-const InstallPage = React.lazy(() => import('./pages/InstallPage'));
-const AuthPage = React.lazy(() => import('./pages/AuthPage'));
-const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage'));
+const Home = React.lazy(loadHomeRoute);
+const GamePlayer = React.lazy(loadGamePlayerRoute);
+const ManagerPage = React.lazy(loadManagerRoute);
+const Viewer = React.lazy(loadViewerRoute);
+const HTMLViewer = React.lazy(loadHTMLViewerRoute);
+const InstallPage = React.lazy(loadInstallRoute);
+const AuthPage = React.lazy(loadAuthRoute);
+const ClassroomPage = React.lazy(loadClassroomRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
@@ -106,6 +115,7 @@ const HOME_PAGE_APP_VERSION = '2026-02-19-4';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
+const CLASSROOM_DOOR_AUDIO_PATH = '3dClass/audio/dooropening.mp3';
 const CLASSROOM_APP_VERSION = '2026-02-18-1';
 
 const App: React.FC = () => {
@@ -114,9 +124,18 @@ const App: React.FC = () => {
     const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOME_PAGE_APP_VERSION}`);
     const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_APP_VERSION}&intro=0`);
     const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_APP_VERSION}`);
+    const classroomDoorAudioUrl = buildAssetPath(CLASSROOM_DOOR_AUDIO_PATH);
 
     useEffect(() => {
-        if (loading || !user) return;
+        if (loading) return;
+
+        const routeWarmupHandles: number[] = [];
+        const scheduleRouteWarmup = (delayMs: number, loader: () => Promise<unknown>) => {
+            const timerId = window.setTimeout(() => {
+                void loader();
+            }, delayMs);
+            routeWarmupHandles.push(timerId);
+        };
 
         const preconnectHref = `${window.location.origin}/`;
         const preconnectRel = document.querySelector<HTMLLinkElement>(
@@ -240,14 +259,34 @@ const App: React.FC = () => {
             document.head.appendChild(classroomDoorIntroPrefetchLink);
         }
 
-        const classroomPageWarmupHandle = window.setTimeout(() => {
-            void import('./pages/ClassroomPage');
-        }, 120);
+        const classroomDoorAudioPrefetchRel = document.querySelector<HTMLLinkElement>(
+            'link[data-prefetch="homeschool-classroom-door-audio-prefetch"]',
+        );
+        if (!classroomDoorAudioPrefetchRel) {
+            const classroomDoorAudioPrefetchLink = document.createElement('link');
+            classroomDoorAudioPrefetchLink.rel = 'prefetch';
+            classroomDoorAudioPrefetchLink.as = 'audio';
+            classroomDoorAudioPrefetchLink.href = classroomDoorAudioUrl;
+            classroomDoorAudioPrefetchLink.type = 'audio/mpeg';
+            classroomDoorAudioPrefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-audio-prefetch');
+            document.head.appendChild(classroomDoorAudioPrefetchLink);
+        }
+
+        // Staggered warmups so main tabs/routes feel instant after login and during login flow.
+        // Keep low delays but avoid hammering network/CPU in one burst.
+        scheduleRouteWarmup(80, loadHomeRoute);
+        scheduleRouteWarmup(140, loadClassroomRoute);
+        scheduleRouteWarmup(220, loadHTMLViewerRoute);
+        scheduleRouteWarmup(300, loadGamePlayerRoute);
+        scheduleRouteWarmup(380, loadViewerRoute);
+
+        // Manager route is less frequently used; warm slightly later.
+        scheduleRouteWarmup(520, loadManagerRoute);
 
         return () => {
-            window.clearTimeout(classroomPageWarmupHandle);
+            routeWarmupHandles.forEach((timerId) => window.clearTimeout(timerId));
         };
-    }, [classroomAppUrl, classroomDoorIntroUrl, homePageAppUrl, loading, user]);
+    }, [classroomAppUrl, classroomDoorAudioUrl, classroomDoorIntroUrl, homePageAppUrl, loading]);
 
     useEffect(() => {
         return () => {
