@@ -1066,5 +1066,17 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/CarKingFinal/index.html",
         "thumbnail": "/assets/thumbnails/optimized/car-king-128.webp",
         "dateAdded": "2026-01-31"
+    },
+    {
+        "id": "math-farmers-market-frenzy",
+        "title": "Farmers Market Frenzy 3D",
+        "description": "Run a farmers market stand, calculate totals, and return correct change.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Addition", "Subtraction", "Money"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/Farmersmarket/index.html",
+        "thumbnail": "/Games/Farmersmarket/thumb.png",
+        "dateAdded": "2026-02-19"
     }
 ];

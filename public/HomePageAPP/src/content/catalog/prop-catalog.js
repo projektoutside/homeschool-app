@@ -26,5 +26,12 @@ export const PROP_CATALOG = Object.freeze([
     category: 'wingSet',
     prewarmPriority: 4,
     factoryId: 'makeOmegaWingsProp'
+  }),
+  Object.freeze({
+    key: 'efernoWings',
+    label: 'Eferno Wings',
+    category: 'wingSet',
+    prewarmPriority: 4,
+    factoryId: 'makeEfernoWingsProp'
   })
 ]);

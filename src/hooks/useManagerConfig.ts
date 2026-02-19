@@ -122,7 +122,7 @@ const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
       tab.id,
       Array.from(new Set((inputTabItems[tab.id] ?? []).filter(id => validItemIds.has(id)))),
     ]),
-  );
+  ) as Record<string, string[]>;
 
   const folders = (raw.folders ?? [])
     .filter(folder => validTabIds.has(folder.tabId))
@@ -130,6 +130,23 @@ const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
       ...folder,
       itemIds: Array.from(new Set(folder.itemIds.filter(id => validItemIds.has(id)))),
     }));
+
+  // Ensure newly added base items are included for existing saved configs
+  // while preserving explicit deletions and current folder/tab placements.
+  const assignedItemIds = new Set<string>([
+    ...Object.values(tabItems).flat(),
+    ...folders.flatMap(folder => folder.itemIds),
+  ]);
+
+  baseItems.forEach(item => {
+    if (assignedItemIds.has(item.id)) return;
+
+    const targetTabId = getPreferredTabIdForItem(item.type, tabs);
+    if (!targetTabId) return;
+
+    tabItems[targetTabId] = [...(tabItems[targetTabId] ?? []), item.id];
+    assignedItemIds.add(item.id);
+  });
 
   return {
     tabs,

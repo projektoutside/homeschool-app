@@ -1124,7 +1124,10 @@ class DOMManager {
     }
 
     updateTotalScoreDisplay(points) {
-        this.safeUpdate('totalScoreDisplay', el => el.textContent = points.toString());
+        const totalScoreElement = this.get('totalScoreDisplay');
+        if (totalScoreElement) {
+            totalScoreElement.textContent = points.toString();
+        }
     }
 
     showPointsPopup(points, coins = 0) {
@@ -1233,6 +1236,8 @@ class DOMManager {
         const secondsHand = document.getElementById('seconds-hand');
         if (secondsHand) {
             secondsHand.classList.add('visible');
+            secondsHand.style.opacity = '1';
+            secondsHand.style.visibility = 'visible';
         }
     }
 
@@ -1240,6 +1245,8 @@ class DOMManager {
         const secondsHand = document.getElementById('seconds-hand');
         if (secondsHand) {
             secondsHand.classList.remove('visible');
+            secondsHand.style.opacity = '0';
+            secondsHand.style.visibility = 'visible';
         }
     }
 
@@ -2136,6 +2143,11 @@ class PerfectGameLogic {
         this.isProcessingAnswer = false;
         this.answerProcessingStartTime = null;
         this.minProcessingDelay = 200; // Minimum delay between answer processing (200ms)
+
+        // Track recent distractor strategy mixes to avoid predictable patterns.
+        this.recentDistractorStrategies = [];
+        this.recentBucketPlans = [];
+        this.maxDistractorHistory = 12;
     }
 
     startGame(startingLevel = 1) {
@@ -2409,8 +2421,8 @@ class PerfectGameLogic {
         // Common hours score (higher for typical waking hours)
         let hourScore = 0.5; // Default
         if (hours >= 7 && hours <= 11) hourScore = 1.0; // Morning hours
-        else if (hours >= 12 && hours <= 6) hourScore = 0.9; // Afternoon/evening
-        else if (hours >= 1 && hours <= 6) hourScore = 0.3; // Late night/early morning
+        else if (hours === 12 || (hours >= 1 && hours <= 3)) hourScore = 0.9; // Afternoon/evening equivalents on 12h dial
+        else if (hours >= 4 && hours <= 6) hourScore = 0.3; // Late night/early morning
 
         // Round minutes are more common
         let minuteScore = 0.7; // Default
@@ -2463,7 +2475,6 @@ class PerfectGameLogic {
         const level = this.gameState.getCurrentLevel();
         const correctOption = this.formatTime(timeData, level);
         this.currentCorrectAnswer = correctOption;
-        const options = [correctOption];
         const usedOptions = new Set([correctOption]);
         const randomnessManager = this.gameState.randomnessManager;
 
@@ -2474,43 +2485,20 @@ class PerfectGameLogic {
             GameUtils.log('MOBILE: Options container exists:', !!this.domManager.get('options'));
         }
 
-        // Generate 3 incorrect options with enhanced strategies
-        const maxAttempts = 50; // Increased for better variety
-        let attempts = 0;
+        // Build adaptive distractors based on learner performance and level complexity.
+        const adaptiveDistractors = this.generateAdaptiveDistractors(timeData, level, usedOptions, 3);
+        let options = [correctOption, ...adaptiveDistractors];
 
-        while (options.length < 4 && attempts < maxAttempts) {
-            const incorrectOption = this.generateEnhancedIncorrectOption(timeData, level, usedOptions);
-            if (!usedOptions.has(incorrectOption)) {
-                options.push(incorrectOption);
-                usedOptions.add(incorrectOption);
-                GameUtils.log(`Generated incorrect option: ${incorrectOption}`);
-            }
-            attempts++;
-        }
-
-        // Enhanced fallback generation if needed
-        while (options.length < 4) {
-            const fallbackOption = this.generateFallbackIncorrectOption(timeData, level, usedOptions);
-            if (!usedOptions.has(fallbackOption)) {
-                options.push(fallbackOption);
-                usedOptions.add(fallbackOption);
-            }
-        }
-
-        // Ensure we have exactly 4 options
-        if (options.length !== 4) {
-            GameUtils.warn(`Expected 4 options, got ${options.length}. Padding with fallbacks.`);
-            while (options.length < 4) {
-                const paddingOption = this.generatePaddingOption(timeData, level, usedOptions);
-                if (!usedOptions.has(paddingOption)) {
-                    options.push(paddingOption);
-                    usedOptions.add(paddingOption);
-                }
-            }
-        }
+        // Hard guarantee: exactly one correct answer + four unique options.
+        options = this.enforceUniqueSingleCorrectAnswer(options, correctOption, timeData, level, usedOptions);
 
         // Enhanced shuffle using crypto random if available
         const shuffledOptions = this.enhancedShuffle(options, randomnessManager);
+
+        const correctCount = shuffledOptions.filter(option => option === correctOption).length;
+        if (correctCount !== 1) {
+            GameUtils.error(`Option integrity failure: expected one correct answer, got ${correctCount}`);
+        }
 
         // MOBILE DEBUG: Log before adding options
         if (window.innerWidth <= 768) {
@@ -2558,6 +2546,417 @@ class PerfectGameLogic {
 
         GameUtils.log(`Generated ${shuffledOptions.length} options: ${shuffledOptions.join(', ')}`);
         GameUtils.log(`Correct answer: ${correctOption}`);
+    }
+
+    getLearnerChallengeProfile(level) {
+        const answered = this.gameState.questionsAnswered;
+        const accuracy = answered > 0 ? this.gameState.correctAnswers / answered : 0.65;
+
+        let mode = 'balanced';
+        if (answered >= 6 && accuracy >= 0.82) {
+            mode = 'challenging';
+        } else if (answered >= 6 && accuracy <= 0.5) {
+            mode = 'supportive';
+        }
+
+        // Keep early levels less punishing even for strong learners.
+        if (level.id <= 2 && mode === 'challenging') {
+            mode = 'balanced';
+        }
+
+        return { mode, accuracy };
+    }
+
+    getAllowedMinutesForLevel(level) {
+        if (!level || !Array.isArray(level.formats)) {
+            return null;
+        }
+
+        if (level.formats.includes('full_minutes')) {
+            return null; // All minutes are valid.
+        }
+
+        const allowed = new Set();
+
+        if (level.formats.includes("o'clock")) {
+            allowed.add(0);
+        }
+        if (level.formats.includes('half_past')) {
+            allowed.add(30);
+        }
+        if (level.formats.includes('quarter_hours')) {
+            allowed.add(15);
+            allowed.add(45);
+        }
+        if (level.formats.includes('five_minutes')) {
+            [5, 10, 20, 25, 35, 40, 50, 55].forEach(minute => allowed.add(minute));
+        }
+
+        return Array.from(allowed).sort((a, b) => a - b);
+    }
+
+    nearestAllowedMinute(minute, allowedMinutes) {
+        if (!allowedMinutes || allowedMinutes.length === 0) {
+            return minute;
+        }
+
+        let best = allowedMinutes[0];
+        let bestDistance = 999;
+
+        for (const allowed of allowedMinutes) {
+            const diff = Math.abs(minute - allowed);
+            const circularDiff = Math.min(diff, 60 - diff);
+            if (circularDiff < bestDistance) {
+                bestDistance = circularDiff;
+                best = allowed;
+            }
+        }
+
+        return best;
+    }
+
+    timeDataToTotalSeconds(timeData, level) {
+        const minutes = Math.max(0, Math.min(59, Math.floor(timeData.minutes || 0)));
+        const seconds = level.hasSeconds ? Math.max(0, Math.min(59, Math.floor(timeData.seconds || 0))) : 0;
+
+        if (level.hasAMPM) {
+            const isAM = !!timeData.isAM;
+            const hour24 = ((timeData.hours % 12) + (isAM ? 0 : 12)) % 24;
+            return hour24 * 3600 + minutes * 60 + seconds;
+        }
+
+        const hour12 = (timeData.hours % 12);
+        return hour12 * 3600 + minutes * 60 + seconds;
+    }
+
+    totalSecondsToTimeData(totalSeconds, level, fallbackIsAM = true) {
+        const cycle = level.hasAMPM ? 86400 : 43200;
+        const normalized = ((Math.floor(totalSeconds) % cycle) + cycle) % cycle;
+
+        const totalMinutes = Math.floor(normalized / 60);
+        const seconds = normalized % 60;
+        const minutes = totalMinutes % 60;
+        const hourRaw = Math.floor(totalMinutes / 60);
+
+        if (level.hasAMPM) {
+            const isAM = hourRaw < 12;
+            const hour12 = hourRaw % 12 === 0 ? 12 : hourRaw % 12;
+            return { hours: hour12, minutes, seconds, isAM };
+        }
+
+        const hour12 = hourRaw % 12 === 0 ? 12 : hourRaw % 12;
+        return { hours: hour12, minutes, seconds: level.hasSeconds ? seconds : 0, isAM: fallbackIsAM };
+    }
+
+    offsetTimeData(baseTimeData, offsetSeconds, level) {
+        const totalSeconds = this.timeDataToTotalSeconds(baseTimeData, level);
+        return this.totalSecondsToTimeData(totalSeconds + offsetSeconds, level, baseTimeData.isAM);
+    }
+
+    normalizeTimeForLevel(timeData, level, baseTimeData) {
+        const normalized = {
+            hours: Math.max(1, Math.min(12, Math.floor(timeData.hours || 12))),
+            minutes: Math.max(0, Math.min(59, Math.floor(timeData.minutes || 0))),
+            seconds: level.hasSeconds ? Math.max(0, Math.min(59, Math.floor(timeData.seconds || 0))) : 0,
+            isAM: level.hasAMPM ? !!timeData.isAM : !!baseTimeData.isAM
+        };
+
+        const allowedMinutes = this.getAllowedMinutesForLevel(level);
+        if (allowedMinutes) {
+            normalized.minutes = this.nearestAllowedMinute(normalized.minutes, allowedMinutes);
+        }
+
+        return normalized;
+    }
+
+    calculateOptionDistanceSeconds(baseTimeData, candidateTimeData, level) {
+        const cycle = level.hasAMPM ? 86400 : 43200;
+        const a = this.timeDataToTotalSeconds(baseTimeData, level);
+        const b = this.timeDataToTotalSeconds(candidateTimeData, level);
+        const diff = Math.abs(a - b);
+        return Math.min(diff, cycle - diff);
+    }
+
+    classifyDistanceBucket(distanceSeconds, level) {
+        const nearThreshold = level.hasSeconds ? 75 : 300;
+        const mediumThreshold = level.hasSeconds ? 420 : 1200;
+
+        if (distanceSeconds <= nearThreshold) return 'near';
+        if (distanceSeconds <= mediumThreshold) return 'medium';
+        return 'far';
+    }
+
+    createDistractorCandidate(baseTimeData, level, usedOptions, strategy, rawTimeData, correctOption, seenTexts) {
+        const normalizedTime = this.normalizeTimeForLevel(rawTimeData, level, baseTimeData);
+        const optionText = this.formatTime(normalizedTime, level);
+
+        if (!optionText || optionText === correctOption || usedOptions.has(optionText) || seenTexts.has(optionText)) {
+            return null;
+        }
+
+        const distance = this.calculateOptionDistanceSeconds(baseTimeData, normalizedTime, level);
+        const bucket = this.classifyDistanceBucket(distance, level);
+
+        seenTexts.add(optionText);
+        return {
+            strategy,
+            optionText,
+            timeData: normalizedTime,
+            distance,
+            bucket
+        };
+    }
+
+    buildDistractorCandidates(baseTimeData, level, usedOptions) {
+        const candidates = [];
+        const correctOption = this.formatTime(baseTimeData, level);
+        const seenTexts = new Set();
+
+        const pushCandidate = (strategy, timeData) => {
+            const candidate = this.createDistractorCandidate(
+                baseTimeData,
+                level,
+                usedOptions,
+                strategy,
+                timeData,
+                correctOption,
+                seenTexts
+            );
+            if (candidate) {
+                candidates.push(candidate);
+            }
+        };
+
+        // Core hour/minute distractors.
+        const genericOffsets = level.id <= 2
+            ? [3600, -3600, 7200, -7200]
+            : [300, -300, 600, -600, 900, -900, 1800, -1800, 3600, -3600];
+
+        genericOffsets.forEach(offset => {
+            pushCandidate(`offset_${offset}`, this.offsetTimeData(baseTimeData, offset, level));
+        });
+
+        // Hand confusion: reading minute hand as hour hand.
+        const confusedHour = this.getHandConfusionHour(baseTimeData.hours, baseTimeData.minutes);
+        pushCandidate('hand_confusion', { ...baseTimeData, hours: confusedHour });
+
+        // AM/PM confusion for advanced levels.
+        if (level.hasAMPM) {
+            pushCandidate('ampm_flip', { ...baseTimeData, isAM: !baseTimeData.isAM });
+        }
+
+        // Seconds precision distractors for level 7.
+        if (level.hasSeconds) {
+            [-1, 1, -2, 2, -5, 5, -10, 10, -15, 15, -30, 30].forEach(offset => {
+                pushCandidate(`seconds_${offset}`, this.offsetTimeData(baseTimeData, offset, level));
+            });
+
+            // Rounded-second distractors.
+            const rounded10 = Math.round(baseTimeData.seconds / 10) * 10 % 60;
+            const rounded15 = Math.round(baseTimeData.seconds / 15) * 15 % 60;
+            pushCandidate('seconds_round_10', { ...baseTimeData, seconds: rounded10 });
+            pushCandidate('seconds_round_15', { ...baseTimeData, seconds: rounded15 });
+        }
+
+        // Near-miss synthetic variants.
+        for (let i = 0; i < 3; i++) {
+            const nearMiss = this.generateNearMissTime(baseTimeData, level);
+            if (nearMiss) {
+                // generateNearMissTime returns a formatted string in legacy flow; convert safely if needed.
+                if (typeof nearMiss === 'string') {
+                    if (!usedOptions.has(nearMiss) && nearMiss !== correctOption && !seenTexts.has(nearMiss)) {
+                        seenTexts.add(nearMiss);
+                        candidates.push({
+                            strategy: 'near_miss_legacy',
+                            optionText: nearMiss,
+                            timeData: baseTimeData,
+                            distance: 999,
+                            bucket: 'medium'
+                        });
+                    }
+                } else {
+                    pushCandidate('near_miss', nearMiss);
+                }
+            }
+        }
+
+        return candidates;
+    }
+
+    calculateStrategyPenalty(strategy, selectedStrategies) {
+        let penalty = selectedStrategies.has(strategy) ? 2.0 : 0;
+
+        const recent = this.recentDistractorStrategies.slice(-6);
+        for (const strategySet of recent) {
+            if (strategySet.includes(strategy)) {
+                penalty += 1.0;
+            }
+        }
+
+        return penalty;
+    }
+
+    chooseCandidateFromPool(pool, selectedStrategies, profile, level) {
+        if (!pool || pool.length === 0) return null;
+
+        let bestCandidate = null;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        for (const candidate of pool) {
+            const strategyPenalty = this.calculateStrategyPenalty(candidate.strategy, selectedStrategies);
+            const distancePenalty = profile.mode === 'supportive' && candidate.bucket === 'near' ? 0.6 : 0;
+            const precisionBonus = (level.hasSeconds && profile.mode !== 'supportive' && candidate.strategy.startsWith('seconds_')) ? -0.55 : 0;
+            const noise = Math.random() * 0.35;
+
+            const score = strategyPenalty + distancePenalty + precisionBonus + noise;
+            if (score < bestScore) {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate;
+    }
+
+    selectDistractorCandidates(candidates, profile, level, count = 3) {
+        const selected = [];
+        const selectedStrategies = new Set();
+        const remaining = [...candidates];
+
+        const planPresets = {
+            supportive: [
+                ['medium', 'far', 'near'],
+                ['medium', 'medium', 'far'],
+                ['near', 'medium', 'far']
+            ],
+            balanced: [
+                ['near', 'medium', 'near'],
+                ['near', 'medium', 'far'],
+                ['medium', 'near', 'far'],
+                ['near', 'far', 'medium']
+            ],
+            challenging: [
+                ['near', 'near', 'medium'],
+                ['near', 'medium', 'medium'],
+                ['near', 'near', 'far'],
+                ['medium', 'near', 'near']
+            ]
+        };
+
+        let plans = planPresets[profile.mode] || planPresets.balanced;
+
+        // Keep the earliest levels more forgiving, but still variable.
+        if (level.id <= 2) {
+            plans = [
+                ['medium', 'far', 'medium'],
+                ['far', 'medium', 'far'],
+                ['medium', 'medium', 'far']
+            ];
+        }
+
+        const recentPlanKeys = new Set(this.recentBucketPlans.slice(-4));
+        const freshPlans = plans.filter(plan => !recentPlanKeys.has(plan.join('|')));
+        const availablePlans = freshPlans.length > 0 ? freshPlans : plans;
+        const desiredBuckets = availablePlans[Math.floor(Math.random() * availablePlans.length)];
+        const planKey = desiredBuckets.join('|');
+        this.recentBucketPlans.push(planKey);
+        if (this.recentBucketPlans.length > this.maxDistractorHistory) {
+            this.recentBucketPlans = this.recentBucketPlans.slice(-this.maxDistractorHistory);
+        }
+
+        const removeByText = (text) => {
+            const idx = remaining.findIndex(candidate => candidate.optionText === text);
+            if (idx >= 0) remaining.splice(idx, 1);
+        };
+
+        for (const bucket of desiredBuckets) {
+            if (selected.length >= count) break;
+
+            const bucketPool = remaining.filter(candidate => candidate.bucket === bucket);
+            const chosen = this.chooseCandidateFromPool(bucketPool, selectedStrategies, profile, level);
+            if (chosen) {
+                selected.push(chosen);
+                selectedStrategies.add(chosen.strategy);
+                removeByText(chosen.optionText);
+            }
+        }
+
+        while (selected.length < count && remaining.length > 0) {
+            const chosen = this.chooseCandidateFromPool(remaining, selectedStrategies, profile, level);
+            if (!chosen) break;
+            selected.push(chosen);
+            selectedStrategies.add(chosen.strategy);
+            removeByText(chosen.optionText);
+        }
+
+        return selected;
+    }
+
+    recordDistractorStrategies(selectedCandidates) {
+        const strategySet = selectedCandidates.map(candidate => candidate.strategy);
+        this.recentDistractorStrategies.push(strategySet);
+        if (this.recentDistractorStrategies.length > this.maxDistractorHistory) {
+            this.recentDistractorStrategies = this.recentDistractorStrategies.slice(-this.maxDistractorHistory);
+        }
+    }
+
+    generateAdaptiveDistractors(baseTimeData, level, usedOptions, count = 3) {
+        const profile = this.getLearnerChallengeProfile(level);
+        const candidates = this.buildDistractorCandidates(baseTimeData, level, usedOptions);
+        const selectedCandidates = this.selectDistractorCandidates(candidates, profile, level, count);
+
+        this.recordDistractorStrategies(selectedCandidates);
+        return selectedCandidates.map(candidate => candidate.optionText);
+    }
+
+    enforceUniqueSingleCorrectAnswer(options, correctOption, timeData, level, usedOptions) {
+        const uniqueIncorrect = [];
+        const seenIncorrect = new Set();
+
+        options.forEach(option => {
+            if (option !== correctOption && !seenIncorrect.has(option)) {
+                uniqueIncorrect.push(option);
+                seenIncorrect.add(option);
+            }
+        });
+
+        const sanitized = [correctOption, ...uniqueIncorrect];
+        const seenAll = new Set(sanitized);
+
+        let guard = 0;
+        while (sanitized.length < 4 && guard < 80) {
+            const fallback = this.generateFallbackIncorrectOption(timeData, level, usedOptions);
+            if (fallback !== correctOption && !seenAll.has(fallback)) {
+                sanitized.push(fallback);
+                seenAll.add(fallback);
+            }
+            guard++;
+        }
+
+        while (sanitized.length < 4 && guard < 140) {
+            const padding = this.generatePaddingOption(timeData, level, usedOptions);
+            if (padding !== correctOption && !seenAll.has(padding)) {
+                sanitized.push(padding);
+                seenAll.add(padding);
+            }
+            guard++;
+        }
+
+        // Deterministic last resort if random generators run out of unique options.
+        const safetyOffsets = [3600, -3600, 1800, -1800, 300, -300, 7200, -7200];
+        for (const offset of safetyOffsets) {
+            if (sanitized.length >= 4) break;
+            const candidateTime = this.offsetTimeData(timeData, offset, level);
+            const candidate = this.formatTime(candidateTime, level);
+            if (candidate !== correctOption && !seenAll.has(candidate)) {
+                sanitized.push(candidate);
+                seenAll.add(candidate);
+            }
+        }
+
+        // Always return exactly 4, with exactly one correct answer.
+        const clippedIncorrect = sanitized.filter(option => option !== correctOption).slice(0, 3);
+        return [correctOption, ...clippedIncorrect];
     }
 
     generateEnhancedIncorrectOption(baseTimeData, level, usedOptions) {
@@ -4074,10 +4473,7 @@ class RewardShop {
                 mobileToggle.setAttribute('aria-expanded', 'false');
                 shopItemsContainer.setAttribute('aria-hidden', 'true');
             }
-
-            // Ensure toggle is visible (override any legacy hiding)
-            mobileToggle.style.display = 'flex';
-            mobileToggle.style.removeProperty('visibility');
+            mobileToggle.classList.toggle('is-open', mobileToggle.getAttribute('aria-expanded') === 'true');
 
             // Add interaction listeners if not already present (simple idempotency check handling)
             // We use a custom property on the element to track if listeners are added
@@ -4143,6 +4539,8 @@ class RewardShop {
 
         // Update ARIA label
         mobileToggle.setAttribute('aria-label', newState ? 'Close Reward Shop' : 'Open Reward Shop');
+        mobileToggle.classList.toggle('is-open', newState);
+        document.body.classList.toggle('shop-open', newState);
 
         // Pause/Resume timer based on shop state
         if (this.gameLogic) {
@@ -4151,19 +4549,6 @@ class RewardShop {
             } else {
                 this.gameLogic.resumeTimer();
             }
-        }
-
-        // Add visual feedback for mobile interaction
-        if (newState) {
-            // Expanding - add expanded styling
-            mobileToggle.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
-            mobileToggle.style.borderColor = '#4CAF50';
-        } else {
-            // Collapsing - restore original styling
-            setTimeout(() => {
-                mobileToggle.style.backgroundColor = '';
-                mobileToggle.style.borderColor = '';
-            }, 300);
         }
 
         // Add haptic feedback for mobile devices
@@ -4191,63 +4576,14 @@ class RewardShop {
 
         GameUtils.log('📱 Applying mobile phone optimizations...');
 
-        // Optimize all touch targets for phone interaction
-        const gameContainer = document.getElementById('game-container');
-        if (gameContainer) {
-            gameContainer.style.height = '100vh';
-            gameContainer.style.height = '100dvh'; // Dynamic viewport height
-            gameContainer.style.overflow = 'hidden';
-        }
-
-        // Optimize options for perfect mobile interaction
+        // Keep runtime enhancements lightweight and let CSS handle layout/reflow.
         const options = document.querySelectorAll('.option');
         options.forEach(option => {
             option.style.touchAction = 'manipulation';
             option.style.webkitTapHighlightColor = 'rgba(255, 255, 255, 0.2)';
             option.style.userSelect = 'none';
             option.style.webkitUserSelect = 'none';
-
-            // Enhanced mobile feedback
-            option.addEventListener('touchstart', (e) => {
-                option.style.transform = 'scale(0.98)';
-            }, { passive: true });
-
-            option.addEventListener('touchend', (e) => {
-                setTimeout(() => {
-                    option.style.transform = '';
-                }, 150);
-            }, { passive: true });
         });
-
-        // Optimize question panel for mobile reading
-        const questionPanel = document.getElementById('question-panel');
-        if (questionPanel) {
-            questionPanel.style.overflowY = 'hidden';
-            questionPanel.style.webkitOverflowScrolling = 'touch';
-        }
-
-        // Prevent zoom on mobile
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Prevent pull-to-refresh
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Add mobile-specific viewport meta tag if not present
-        let viewportMeta = document.querySelector('meta[name="viewport"]');
-        if (!viewportMeta) {
-            viewportMeta = document.createElement('meta');
-            viewportMeta.name = 'viewport';
-            document.head.appendChild(viewportMeta);
-        }
-        viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
 
         // Add mobile body class for CSS targeting
         document.body.classList.add('mobile-device');
@@ -4913,26 +5249,10 @@ class AnalogClockGame {
     }
 
     checkOrientation() {
-        // Logic should match CSS media query (orientation: portrait)
         const isPortrait = window.innerHeight > window.innerWidth;
-
-        if (isPortrait) {
-            if (!this.isPausedByOrientation) {
-                this.isPausedByOrientation = true;
-                if (this.gameLogic && this.gameState.isGameActive) {
-                    this.gameLogic.pauseTimer();
-                    GameUtils.log('⏸️ Game paused due to portrait orientation');
-                }
-            }
-        } else {
-            if (this.isPausedByOrientation) {
-                this.isPausedByOrientation = false;
-                if (this.gameLogic && this.gameState.isGameActive) {
-                    this.gameLogic.resumeTimer();
-                    GameUtils.log('▶️ Game resumed from portrait orientation');
-                }
-            }
-        }
+        document.body.dataset.orientation = isPortrait ? 'portrait' : 'landscape';
+        this.isPausedByOrientation = false;
+        GameUtils.log(`📐 Orientation updated: ${document.body.dataset.orientation}`);
     }
 }
 
@@ -4942,93 +5262,20 @@ class AnalogClockGame {
 function initializeGame() {
     const initialize = () => {
         try {
-            // Mobile-specific initialization
-            if (window.innerWidth <= 600) {
-                // Clean up any existing mobile debug panels first
-                const existingDebugPanels = document.querySelectorAll('.mobile-debug-info');
-                existingDebugPanels.forEach(panel => {
-                    if (panel.parentNode) {
-                        panel.parentNode.removeChild(panel);
-                        GameUtils.log('📱 Cleaned up existing mobile debug panel during initialization');
-                    }
-                });
+            // Clean up any existing mobile debug panels first
+            const existingDebugPanels = document.querySelectorAll('.mobile-debug-info');
+            existingDebugPanels.forEach(panel => {
+                if (panel.parentNode) {
+                    panel.parentNode.removeChild(panel);
+                    GameUtils.log('📱 Cleaned up existing mobile debug panel during initialization');
+                }
+            });
 
-                // Prevent zoom on mobile
-                document.addEventListener('touchstart', (e) => {
-                    if (e.touches.length > 1) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-
-                // Prevent double-tap zoom
-                let lastTouchEnd = 0;
-                document.addEventListener('touchend', (e) => {
-                    const now = (new Date()).getTime();
-                    if (now - lastTouchEnd <= 300) {
-                        e.preventDefault();
-                    }
-                    lastTouchEnd = now;
-                }, { passive: false });
-
-                // Add mobile-specific body class
-                document.body.classList.add('mobile-device');
-
-                // AGGRESSIVE MOBILE SETUP: Force game container visibility
-                setTimeout(() => {
-                    const gameContainer = document.getElementById('game-container');
-                    const optionsContainer = document.getElementById('options');
-
-                    if (gameContainer) {
-                        gameContainer.style.display = 'flex';
-                        gameContainer.style.flexDirection = 'column';
-                        gameContainer.style.width = '100vw';
-                        gameContainer.style.height = '100vh';
-                        gameContainer.style.position = 'fixed';
-                        gameContainer.style.top = '0';
-                        gameContainer.style.left = '0';
-                        gameContainer.style.zIndex = '1000';
-                        gameContainer.style.background = 'transparent';
-                        gameContainer.style.overflow = 'hidden';
-
-                        GameUtils.log('MOBILE: Applied aggressive game container styling');
-                    }
-
-                    if (optionsContainer) {
-                        optionsContainer.style.display = 'block';
-                        optionsContainer.style.minHeight = '200px';
-                        optionsContainer.style.width = '100%';
-                        optionsContainer.style.padding = '10px';
-                        optionsContainer.style.margin = '10px 0';
-                        optionsContainer.style.background = 'transparent';
-                        optionsContainer.style.border = 'none';
-                        optionsContainer.style.boxSizing = 'border-box';
-                        optionsContainer.style.overflow = 'visible';
-                        optionsContainer.style.position = 'relative';
-                        optionsContainer.style.zIndex = '1001';
-
-                        GameUtils.log('MOBILE: Applied aggressive options container styling');
-                    }
-                }, 100);
-
-                GameUtils.log('Mobile-specific optimizations applied');
-            }
+            document.body.classList.toggle('mobile-device', window.innerWidth <= 600);
 
             // Create global game instance
             window.analogClockGame = new AnalogClockGame();
             window.analogClockGame.init();
-
-            // Mobile viewport adjustment
-            if (window.innerWidth <= 600) {
-                setTimeout(() => {
-                    // Force layout recalculation after initialization
-                    const gameContainer = document.getElementById('game-container');
-                    if (gameContainer) {
-                        gameContainer.style.height = '100vh';
-                        gameContainer.style.height = '100dvh';
-                        gameContainer.offsetHeight; // Force reflow
-                    }
-                }, 100);
-            }
 
             GameUtils.log('Game initialization completed successfully');
 
@@ -5070,6 +5317,7 @@ document.addEventListener('visibilitychange', () => {
 
 // Handle window resize for mobile reward shop toggle
 window.addEventListener('resize', () => {
+    document.body.classList.toggle('mobile-device', window.innerWidth <= 600);
     if (window.analogClockGame && window.analogClockGame.rewardShop) {
         window.analogClockGame.rewardShop.handleResize();
     }

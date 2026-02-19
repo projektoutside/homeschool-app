@@ -9,11 +9,12 @@ import './GlobalSettings.css';
 interface GlobalSettingsProps {
     isOpen: boolean;
     onClose: () => void;
+    externalCloseRequestId?: number;
 }
 
 type SoundExitIntent = 'close-sound-panel' | 'close-all-settings';
 
-export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose }) => {
+export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose, externalCloseRequestId = 0 }) => {
     const navigate = useNavigate();
     const { user, signOut, updateHomeLabel, updatePassword, updateUsername } = useAuth();
     const {
@@ -46,6 +47,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
     const [isUnsavedSoundPromptOpen, setIsUnsavedSoundPromptOpen] = useState(false);
     const [pendingSoundExitIntent, setPendingSoundExitIntent] = useState<SoundExitIntent | null>(null);
     const [soundBaseline, setSoundBaseline] = useState<SoundSettings | null>(null);
+    const lastHandledExternalCloseRequestRef = useRef(externalCloseRequestId);
 
     // Audio Context Ref
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -351,6 +353,20 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose 
 
         executeSoundExitIntent(intent);
     }, [executeSoundExitIntent, hasSoundDraftChanges, isSoundSettingsOpen]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            lastHandledExternalCloseRequestRef.current = externalCloseRequestId;
+            return;
+        }
+
+        if (externalCloseRequestId === lastHandledExternalCloseRequestRef.current) {
+            return;
+        }
+
+        lastHandledExternalCloseRequestRef.current = externalCloseRequestId;
+        requestSoundExit('close-all-settings');
+    }, [externalCloseRequestId, isOpen, requestSoundExit]);
 
     const openSoundSettingsPanel = useCallback(() => {
         setSoundDraft(settings);

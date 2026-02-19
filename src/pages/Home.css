@@ -514,6 +514,13 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    pointer-events: none;
+    cursor: default;
+}
+
+.arcade-app-item.is-focused {
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .arcade-app-item::before {
@@ -577,7 +584,7 @@
     mix-blend-mode: screen;
 }
 
-.arcade-app-item:hover .arcade-app-thumb {
+.arcade-app-item.is-focused:hover .arcade-app-thumb {
     border-color: rgba(255, 245, 199, 0.88);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.76),

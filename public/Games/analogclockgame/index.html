@@ -7,13 +7,15 @@
         content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="description" content="Learn to read analog clocks with this interactive educational game.">
     <meta name="theme-color" content="#1A1A2E">
+    <link rel="icon" href="thumb.png" type="image/png">
 
     <title>Learn Analog Clocks - Interactive Time Learning Game</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
     <script src="game.js" defer></script>
@@ -118,19 +120,19 @@
             </div>
             <div class="modal-body">
                 <div class="setting-item">
-                    <label>Time Limit (Minutes): <span id="time-multiplier-value">5 minutes</span></label>
+                    <label for="time-multiplier">Time Limit (Minutes): <span id="time-multiplier-value">5 minutes</span></label>
                     <input type="range" id="time-multiplier" min="1" max="15" step="1" value="5">
                 </div>
                 <div class="setting-item">
-                    <label>Enable Sound</label>
+                    <label for="sound-toggle">Enable Sound</label>
                     <input type="checkbox" id="sound-toggle" checked>
                 </div>
                 <div class="setting-item">
-                    <label>Music Volume: <span id="music-volume-value">50%</span></label>
+                    <label for="music-volume">Music Volume: <span id="music-volume-value">50%</span></label>
                     <input type="range" id="music-volume" min="0" max="100" step="5" value="50">
                 </div>
                 <div class="setting-item">
-                    <label>Lives: <span id="star-count-value">3</span></label>
+                    <label for="star-count">Lives: <span id="star-count-value">3</span></label>
                     <input type="range" id="star-count" min="1" max="10" step="1" value="3">
                 </div>
                 <div class="settings-preview">
@@ -213,7 +215,9 @@
             </div>
             <div id="scoring-breakdown"></div>
             <div class="modal-footer">
-                <button id="reward-shop-btn" class="secondary-button">Reward Shop 🏪</button>
+                <button id="reward-shop-btn" class="secondary-button">
+                    <span class="button-text">Reward Shop 🏪</span>
+                </button>
                 <button id="start-next-level-btn" class="start-button">Start Level 🚀</button>
             </div>
         </div>
@@ -222,25 +226,22 @@
     <!-- Main Game Container -->
     <main id="game-container" class="hidden">
 
-        <!-- Timer/Score Section (Mobile: Top / Desktop: Top-Right typically, but here integrated) -->
-        <!-- Clock Panel -->
-        <!-- Mobile Header Bar (New) -->
-        <div id="game-header-bar">
-            <div class="header-left">
-                <button id="mobile-shop-toggle" class="header-icon-btn" aria-label="Open Shop">
-                    <span class="icon">🏪</span>
-                    <span class="btn-text">Shop</span>
-                </button>
+        <div id="progress-panel">
+            <div class="level-row">
+                <div class="badge">Level <span id="level-display">1</span></div>
             </div>
-            <div class="header-center">
-                <div class="mini-score">Score: <span id="total-score-display">0</span></div>
-            </div>
-            <div class="header-right">
-                <button id="fullscreen-toggle" class="header-icon-btn" aria-label="Toggle Fullscreen">
-                    <span class="icon">⛶</span>
-                </button>
-                <div class="coin-display-mini">
-                    🪙 <span id="clockcoin-amount">0</span>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Lives</div>
+                    <div id="stars">★ ★ ★</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Time</div>
+                    <div id="timer">05:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Score</div>
+                    <div id="points">0</div>
                 </div>
             </div>
         </div>
@@ -248,6 +249,17 @@
         <!-- Clock Panel -->
         <section id="clock-panel">
             <div class="clock-wrapper">
+                <div class="clock-corner-controls">
+                    <button id="mobile-shop-toggle" class="clock-corner-btn shop-btn" aria-label="Open Shop">
+                        <span class="icon">🏪</span>
+                        <span class="btn-text">Shop</span>
+                    </button>
+                    <div class="clock-corner-coin" aria-label="Clock Coins">
+                        <span class="coin-icon">🪙</span>
+                        <span id="clockcoin-amount">0</span>
+                    </div>
+                </div>
+
                 <div id="ampm-panel" class="hidden">
                     Time of Day: <span id="ampm-indicator">Morning</span>
                 </div>
@@ -299,11 +311,6 @@
                 <div class="clock-status">
                     <span id="clock-status">Ready?</span>
                 </div>
-
-                <!-- Removed total-score-display from here as it is now in header -->
-                <!-- Kept div for structure if needed or hidden -->
-
-                <!-- Removed points-popup from here to move to body for better positioning logic -->
             </div>
         </section>
 
@@ -312,26 +319,6 @@
 
         <!-- Game Controls -->
         <section id="game-panel">
-            <div id="progress-panel">
-                <div class="level-row">
-                    <div class="badge">Level <span id="level-display">1</span></div>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">Lives</div>
-                        <div id="stars">★ ★ ★</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Time</div>
-                        <div id="timer">05:00</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Score</div>
-                        <div id="points">0</div>
-                    </div>
-                </div>
-            </div>
-
             <div id="question-panel">
                 <h1>What time is it?</h1>
                 <div id="options">
@@ -428,7 +415,9 @@
                     </button>
 
                 </div>
-                <div id="purchase-feedback" class="hidden"></div>
+                <div id="purchase-feedback" class="hidden">
+                    <span id="feedback-text"></span>
+                </div>
             </div>
         </section>
 

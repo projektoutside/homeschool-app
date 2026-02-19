@@ -38,6 +38,7 @@ const MainLayout: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [settingsCloseRequestId, setSettingsCloseRequestId] = useState(0);
     const [hasHomePageMounted, setHasHomePageMounted] = useState<boolean>(
         location.pathname === '/home-profile' || location.pathname === '/',
     );
@@ -155,6 +156,15 @@ const MainLayout: React.FC = () => {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [location.pathname, navigate]);
 
+    const handleSettingsButtonClick = () => {
+        if (!isSettingsOpen) {
+            setIsSettingsOpen(true);
+            return;
+        }
+
+        setSettingsCloseRequestId(prev => prev + 1);
+    };
+
     return (
         <div
             className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''}`}
@@ -187,10 +197,14 @@ const MainLayout: React.FC = () => {
 
             {/* Persistent Bottom Navigation */}
             {/* Render always, or maybe hide on GamePlayer if strictly needed? User said "regardless of which page". */}
-            <BottomNavigation onOpenSettings={() => setIsSettingsOpen(true)} />
+            <BottomNavigation onOpenSettings={handleSettingsButtonClick} />
 
             {/* Global Settings Panel */}
-            <GlobalSettings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+            <GlobalSettings
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                externalCloseRequestId={settingsCloseRequestId}
+            />
         </div>
     );
 };

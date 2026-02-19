@@ -234,6 +234,10 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
         return !!dragStateRef.current?.moved;
     }, []);
 
+    const isFocusedGame = useCallback((game: ContentItem) => (
+        !!focusedGame && focusedGame.id === game.id
+    ), [focusedGame]);
+
     const startHoldProcess = useCallback((event: React.PointerEvent<HTMLButtonElement>, game: ContentItem) => {
         if (favoriteActionMode === 'none') return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -267,9 +271,13 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     }, [completeHoldAction, favoriteActionMode, stopHoldProcess]);
 
     const handleGamePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>, game: ContentItem) => {
+        if (!isFocusedGame(game)) {
+            pendingLaunchGameRef.current = null;
+            return;
+        }
         pendingLaunchGameRef.current = game;
         startHoldProcess(event, game);
-    }, [startHoldProcess]);
+    }, [isFocusedGame, startHoldProcess]);
 
     const endHoldProcess = useCallback((pointerId: number) => {
         const holdTarget = holdTargetRef.current;
@@ -484,17 +492,19 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
 
     const handleGameClick = useCallback((game: ContentItem) => {
         pendingLaunchGameRef.current = null;
+        if (!isFocusedGame(game)) return;
         if (shouldBlockGameLaunch()) return;
         onLaunchGame(game);
-    }, [onLaunchGame, shouldBlockGameLaunch]);
+    }, [isFocusedGame, onLaunchGame, shouldBlockGameLaunch]);
 
     const handleViewportClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target !== event.currentTarget) return;
         const pendingGame = pendingLaunchGameRef.current;
         pendingLaunchGameRef.current = null;
         if (!pendingGame || shouldBlockGameLaunch()) return;
+        if (!isFocusedGame(pendingGame)) return;
         onLaunchGame(pendingGame);
-    }, [onLaunchGame, shouldBlockGameLaunch]);
+    }, [isFocusedGame, onLaunchGame, shouldBlockGameLaunch]);
 
     useLayoutEffect(() => {
         const viewport = viewportRef.current;
@@ -677,6 +687,8 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
                                     onPointerDown={(event) => handleGamePointerDown(event, game)}
                                     title={game.title}
                                     aria-label={game.title}
+                                    aria-disabled={!isFocused}
+                                    tabIndex={isFocused ? 0 : -1}
                                 >
                                     <span className="arcade-app-thumb">
                                         {iconPath ? (
