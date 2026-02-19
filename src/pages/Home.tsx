@@ -784,7 +784,7 @@ const HomePage: React.FC = () => {
         [allItems],
     );
     const gameItemsForPanels = useMemo(
-        () => allGameItems.slice(0, 7),
+        () => allGameItems,
         [allGameItems],
     );
     const favoriteGames = useMemo(() => {
