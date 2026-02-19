@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
@@ -10,16 +10,20 @@ interface BottomNavigationProps {
 
 const HOME_TRANSITION_FADE_IN_MS = 220;
 const HOME_TRANSITION_FADE_OUT_MS = 280;
+const STATS_PULSE_CYCLE_MS = 950;
+const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isPlayRoute = location.pathname.startsWith('/play/');
     
     const [isMinimized, setIsMinimized] = useState(false);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
     const [isStatsLineDormant, setIsStatsLineDormant] = useState(false);
     const [isStatsLinePulsing, setIsStatsLinePulsing] = useState(false);
     const [isStatsLineAwakeFlash, setIsStatsLineAwakeFlash] = useState(false);
+    const [statsPulseCount, setStatsPulseCount] = useState(1);
     const [expandedMode, setExpandedMode] = useState(false);
     const [failedGameIconIds, setFailedGameIconIds] = useState<Set<string>>(new Set());
     const sliderRef = useRef<HTMLDivElement>(null);
@@ -36,6 +40,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const homeTransitionPendingNavRef = useRef<boolean>(false);
     const homeTransitionFadeInTimerRef = useRef<number | null>(null);
     const homeTransitionFadeOutTimerRef = useRef<number | null>(null);
+    const lastAutoFlushGameRouteRef = useRef<string>('');
 
     const clearHomeTransitionTimers = useCallback(() => {
         if (homeTransitionFadeInTimerRef.current !== null) {
@@ -69,6 +74,53 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         }, HOME_TRANSITION_FADE_IN_MS);
     }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
 
+    const triggerStatsAwakeFlash = useCallback((durationMs: number) => {
+        setIsStatsLineDormant(false);
+        setIsStatsLinePulsing(false);
+        setIsStatsLineAwakeFlash(true);
+
+        if (statsAwakeFlashTimeoutRef.current !== null) {
+            window.clearTimeout(statsAwakeFlashTimeoutRef.current);
+        }
+
+        statsAwakeFlashTimeoutRef.current = window.setTimeout(() => {
+            setIsStatsLineAwakeFlash(false);
+            if (isStatsMinimizedRef.current) {
+                setIsStatsLineDormant(true);
+            }
+            statsAwakeFlashTimeoutRef.current = null;
+        }, durationMs);
+    }, []);
+
+    const triggerStatsPulseGlow = useCallback((pulseCount: number) => {
+        const normalizedPulseCount = Math.max(1, Math.floor(pulseCount));
+        const totalDurationMs = STATS_PULSE_CYCLE_MS * normalizedPulseCount;
+
+        setStatsPulseCount(normalizedPulseCount);
+        setIsStatsLineDormant(false);
+        setIsStatsLinePulsing(true);
+        setIsStatsLineAwakeFlash(true);
+
+        if (statsPulseTimeoutRef.current !== null) {
+            window.clearTimeout(statsPulseTimeoutRef.current);
+        }
+        statsPulseTimeoutRef.current = window.setTimeout(() => {
+            setIsStatsLinePulsing(false);
+            statsPulseTimeoutRef.current = null;
+        }, totalDurationMs);
+
+        if (statsAwakeFlashTimeoutRef.current !== null) {
+            window.clearTimeout(statsAwakeFlashTimeoutRef.current);
+        }
+        statsAwakeFlashTimeoutRef.current = window.setTimeout(() => {
+            setIsStatsLineAwakeFlash(false);
+            if (isStatsMinimizedRef.current) {
+                setIsStatsLineDormant(true);
+            }
+            statsAwakeFlashTimeoutRef.current = null;
+        }, totalDurationMs);
+    }, []);
+
     useEffect(() => {
         if (!homeTransitionPendingNavRef.current) {
             return;
@@ -82,6 +134,35 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         homeTransitionPendingNavRef.current = false;
         setHomeTransitionPhase('fading-out');
     }, [location.pathname]);
+
+    // Auto-collapse the bottom dock when a game route opens so only the flush gold bar remains.
+    useLayoutEffect(() => {
+        if (!isPlayRoute) {
+            lastAutoFlushGameRouteRef.current = '';
+            return;
+        }
+
+        setExpandedMode(false);
+        setIsMinimized(true);
+        setIsStatsMinimized(true);
+    }, [isPlayRoute]);
+
+    // Flash the flush gold bar once per opened game route as a discoverability hint.
+    useEffect(() => {
+        if (!isPlayRoute) {
+            return;
+        }
+        if (!isMinimized || !isStatsMinimized) {
+            return;
+        }
+
+        const routeKey = `${location.pathname}${location.search}`;
+        if (lastAutoFlushGameRouteRef.current === routeKey) {
+            return;
+        }
+        lastAutoFlushGameRouteRef.current = routeKey;
+        triggerStatsPulseGlow(AUTO_GAME_DOCK_PULSE_COUNT);
+    }, [isMinimized, isPlayRoute, isStatsMinimized, location.pathname, location.search, triggerStatsPulseGlow]);
 
     useEffect(() => {
         if (homeTransitionPhase !== 'fading-out') {
@@ -102,14 +183,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     useEffect(() => {
         if (isMinimized) {
             setExpandedMode(false);
-            setIsStatsMinimized(false);
+            // Keep gold dock fully flushed while playing games.
+            setIsStatsMinimized(isPlayRoute);
         } else {
             setIsStatsMinimized(false);
             setIsStatsLineDormant(false);
             setIsStatsLinePulsing(false);
             setIsStatsLineAwakeFlash(false);
         }
-    }, [isMinimized]);
+    }, [isMinimized, isPlayRoute]);
 
     // Always clear dormant/pulse state when stats panel is opened.
     useEffect(() => {
@@ -321,6 +403,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         };
 
         const triggerDormantPulse = () => {
+            setStatsPulseCount(1);
             setIsStatsLineDormant(false);
             setIsStatsLinePulsing(true);
 
@@ -332,7 +415,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 setIsStatsLinePulsing(false);
                 setIsStatsLineDormant(true);
                 statsPulseTimeoutRef.current = null;
-            }, 950);
+            }, STATS_PULSE_CYCLE_MS);
         };
 
         const evaluateFullscreenTransition = () => {
@@ -647,6 +730,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 className={`bottom-stats-dock ${isMinimized ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
                 aria-label="User stats"
                 aria-hidden={!isMinimized}
+                style={{ '--stats-pulse-count': String(statsPulseCount) } as React.CSSProperties}
                 onTouchStart={onStatsTouchStart}
                 onTouchMove={onStatsTouchMove}
                 onTouchEnd={onStatsTouchEnd}
@@ -658,19 +742,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         onClick={(e) => {
                             if (isStatsMinimized && isMinimized) {
                                 if (isStatsLineDormant) {
-                                    setIsStatsLineDormant(false);
-                                    setIsStatsLinePulsing(false);
-                                    setIsStatsLineAwakeFlash(true);
-                                    if (statsAwakeFlashTimeoutRef.current !== null) {
-                                        window.clearTimeout(statsAwakeFlashTimeoutRef.current);
-                                    }
-                                    statsAwakeFlashTimeoutRef.current = window.setTimeout(() => {
-                                        if (isStatsMinimizedRef.current) {
-                                            setIsStatsLineAwakeFlash(false);
-                                            setIsStatsLineDormant(true);
-                                        }
-                                        statsAwakeFlashTimeoutRef.current = null;
-                                    }, 2500);
+                                    triggerStatsAwakeFlash(2500);
                                     e.stopPropagation();
                                     return;
                                 }

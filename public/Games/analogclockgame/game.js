@@ -839,6 +839,13 @@ class DOMManager {
             previewTime: document.getElementById('preview-time'),
             previewLives: document.getElementById('preview-lives'),
 
+            // In-game quick settings elements
+            quickSettingsToggle: document.getElementById('quick-settings-toggle'),
+            quickSettingsPanel: document.getElementById('quick-settings-panel'),
+            quickSoundToggleBtn: document.getElementById('quick-sound-toggle'),
+            quickMainMenuBtn: document.getElementById('quick-main-menu-btn'),
+            quickExitGameBtn: document.getElementById('quick-exit-game-btn'),
+
             // Level transition elements
             levelTransitionModal: document.getElementById('level-transition-modal'),
             levelTransitionTitle: document.getElementById('level-transition-title'),
@@ -885,7 +892,8 @@ class DOMManager {
         ];
 
         const optionalElements = [
-            'settingsBtn', 'settingsModal', 'saveSettingsBtn', 'resetSettingsBtn', 'soundToggle'
+            'settingsBtn', 'settingsModal', 'saveSettingsBtn', 'resetSettingsBtn', 'soundToggle',
+            'quickSettingsToggle', 'quickSettingsPanel', 'quickSoundToggleBtn', 'quickMainMenuBtn', 'quickExitGameBtn'
         ];
 
         const missingElements = requiredElements
@@ -3925,6 +3933,219 @@ class SettingsModalManager {
 }
 
 /* =============================================
+   IN-GAME QUICK SETTINGS
+   ============================================= */
+class InGameQuickSettingsManager {
+    constructor(domManager, settingsManager, gameLogic, soundManager) {
+        this.domManager = domManager;
+        this.settingsManager = settingsManager;
+        this.gameLogic = gameLogic;
+        this.soundManager = soundManager;
+        this.resumeTimerOnClose = false;
+        this.handleDocumentClick = this.handleDocumentClick.bind(this);
+        this.handleDocumentKeydown = this.handleDocumentKeydown.bind(this);
+        this.setupEventListeners();
+        this.updateSoundButton();
+    }
+
+    setupEventListeners() {
+        const toggleBtn = this.domManager.get('quickSettingsToggle');
+        const panel = this.domManager.get('quickSettingsPanel');
+        const soundBtn = this.domManager.get('quickSoundToggleBtn');
+        const mainMenuBtn = this.domManager.get('quickMainMenuBtn');
+        const exitBtn = this.domManager.get('quickExitGameBtn');
+
+        if (!toggleBtn || !panel) return;
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.togglePanel();
+        });
+
+        toggleBtn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.togglePanel();
+            }
+        });
+
+        panel.addEventListener('click', (e) => e.stopPropagation());
+        soundBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleSound();
+        });
+        mainMenuBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.handleReturnToMainMenu();
+        });
+        exitBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            void this.handleExitGame();
+        });
+
+        document.addEventListener('click', this.handleDocumentClick);
+        document.addEventListener('keydown', this.handleDocumentKeydown);
+    }
+
+    isPanelOpen() {
+        const panel = this.domManager.get('quickSettingsPanel');
+        return !!panel && panel.getAttribute('aria-hidden') === 'false';
+    }
+
+    openPanel() {
+        const panel = this.domManager.get('quickSettingsPanel');
+        const toggleBtn = this.domManager.get('quickSettingsToggle');
+        if (!panel || !toggleBtn) return;
+
+        const gameIsActive = this.gameLogic?.gameState?.isGameActive === true;
+        const timerRunning = gameIsActive && !!this.gameLogic?.gameState?.timer;
+        this.resumeTimerOnClose = timerRunning;
+        if (timerRunning) {
+            this.gameLogic.pauseTimer();
+        }
+
+        this.updateSoundButton();
+        panel.classList.remove('hidden');
+        panel.setAttribute('aria-hidden', 'false');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.setAttribute('aria-label', 'Close quick settings');
+    }
+
+    closePanel(options = {}) {
+        const { resumeTimer = true } = options;
+        const panel = this.domManager.get('quickSettingsPanel');
+        const toggleBtn = this.domManager.get('quickSettingsToggle');
+        if (!panel || !toggleBtn) return;
+
+        panel.classList.add('hidden');
+        panel.setAttribute('aria-hidden', 'true');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute('aria-label', 'Open quick settings');
+
+        if (resumeTimer && this.resumeTimerOnClose && this.gameLogic) {
+            this.gameLogic.resumeTimer();
+        }
+        this.resumeTimerOnClose = false;
+    }
+
+    togglePanel() {
+        if (this.isPanelOpen()) {
+            this.closePanel();
+        } else {
+            this.openPanel();
+        }
+    }
+
+    handleDocumentClick(event) {
+        if (!this.isPanelOpen()) return;
+        const panel = this.domManager.get('quickSettingsPanel');
+        const toggleBtn = this.domManager.get('quickSettingsToggle');
+        if (!panel || !toggleBtn) return;
+        if (panel.contains(event.target) || toggleBtn.contains(event.target)) return;
+        this.closePanel();
+    }
+
+    handleDocumentKeydown(event) {
+        if (event.key === 'Escape' && this.isPanelOpen()) {
+            this.closePanel();
+        }
+    }
+
+    updateSoundButton() {
+        const soundBtn = this.domManager.get('quickSoundToggleBtn');
+        if (!soundBtn || !this.settingsManager) return;
+        const enabled = this.settingsManager.getSetting('soundEnabled');
+        soundBtn.textContent = enabled ? 'On' : 'Off';
+        soundBtn.classList.toggle('is-on', enabled);
+        soundBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        soundBtn.setAttribute('aria-label', enabled ? 'Sound is on' : 'Sound is off');
+    }
+
+    toggleSound() {
+        if (!this.settingsManager) return;
+        const nextValue = !this.settingsManager.getSetting('soundEnabled');
+        this.settingsManager.updateSetting('soundEnabled', nextValue);
+        this.settingsManager.saveSettings();
+
+        const modalSoundToggle = this.domManager.get('soundToggle');
+        if (modalSoundToggle) {
+            modalSoundToggle.checked = nextValue;
+        }
+
+        if (this.soundManager) {
+            this.soundManager.updateMusicState();
+            if (nextValue) {
+                this.soundManager.playClick();
+            }
+        }
+
+        this.updateSoundButton();
+        this.domManager.updateClockStatus(nextValue ? 'Sound On 🔊' : 'Sound Off 🔇');
+    }
+
+    handleReturnToMainMenu() {
+        this.closePanel({ resumeTimer: false });
+        if (this.gameLogic) {
+            this.gameLogic.returnToMenu();
+        }
+    }
+
+    async handleExitGame() {
+        this.closePanel({ resumeTimer: false });
+        if (this.gameLogic) {
+            this.gameLogic.stopTimer();
+            if (this.gameLogic.gameState) {
+                this.gameLogic.gameState.isGameActive = false;
+            }
+        }
+
+        try {
+            if (window.electronAPI && typeof window.electronAPI.exitApp === 'function') {
+                window.electronAPI.exitApp();
+                return;
+            }
+            if (window.nw && window.nw.App && typeof window.nw.App.quit === 'function') {
+                window.nw.App.quit();
+                return;
+            }
+            if (window.navigator && window.navigator.app && typeof window.navigator.app.exitApp === 'function') {
+                window.navigator.app.exitApp();
+                return;
+            }
+            if (window.__TAURI__ && window.__TAURI__.window && typeof window.__TAURI__.window.getCurrent === 'function') {
+                await window.__TAURI__.window.getCurrent().close();
+                return;
+            }
+        } catch (error) {
+            GameUtils.warn('Native exit bridge failed:', error);
+        }
+
+        try {
+            if (document.fullscreenElement && document.exitFullscreen) {
+                await document.exitFullscreen();
+            }
+        } catch (error) {
+            GameUtils.warn('Could not exit fullscreen before close:', error);
+        }
+
+        window.open('', '_self');
+        window.close();
+
+        window.setTimeout(() => {
+            if (!window.closed) {
+                this.domManager.updateClockStatus('Exit blocked by browser. Close this tab/app to leave.');
+            }
+        }, 250);
+    }
+
+    destroy() {
+        document.removeEventListener('click', this.handleDocumentClick);
+        document.removeEventListener('keydown', this.handleDocumentKeydown);
+    }
+}
+
+/* =============================================
    LEVEL TRANSITION MANAGER
    ============================================= */
 class LevelTransitionManager {
@@ -4037,7 +4258,8 @@ class LevelTransitionManager {
         overlay.innerHTML = `
             <div class="shop-overlay-content">
                 <div class="shop-overlay-header">
-                    <h2>🏪 Reward Shop</h2>
+                    <h2>ClockCoin Shop</h2>
+                    <p class="shop-shell-subtitle">Spend smart now so the next level feels easier.</p>
                     <div class="shop-overlay-stats">
                         <div class="score-display">
                             <span class="score-icon">🏆</span>
@@ -4050,13 +4272,16 @@ class LevelTransitionManager {
                             <span class="coin-label">ClockCoins</span>
                         </div>
                     </div>
+                    <div class="wallet-pill secondary">
+                        <strong id="overlay-affordable-count">0</strong> items ready to buy
+                    </div>
                     <button class="close-shop-overlay" aria-label="Close shop">✕</button>
                 </div>
                 <div class="shop-overlay-body">
                     ${this.createShopItemsHTML()}
                 </div>
                 <div class="shop-overlay-footer">
-                    <p>💡 Tip: Purchase strategic items to help with the upcoming level!</p>
+                    <p>Tap a card to buy it. Watch your remaining coins before you continue.</p>
                     <button class="continue-level-btn">Continue to Level →</button>
                 </div>
             </div>
@@ -4085,14 +4310,22 @@ class LevelTransitionManager {
                          data-effect="${item.effect}" 
                          data-value="${item.value}" 
                          data-cost="${item.cost}">
-                        <div class="item-icon">${item.icon}</div>
+                        <div class="item-icon-wrap">
+                            <div class="item-icon">${item.icon}</div>
+                        </div>
                         <div class="item-info">
                             <div class="item-name">${item.name}</div>
                             <div class="item-description">${item.description}</div>
                         </div>
-                        <div class="item-cost">
-                            <span class="cost-amount">${item.cost}</span>
-                            <span class="cost-icon">🪙</span>
+                        <div class="item-cost-row">
+                            <div class="item-cost">
+                                <span class="cost-amount">${item.cost}</span>
+                                <span class="cost-icon">🪙</span>
+                            </div>
+                            <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                        </div>
+                        <div class="shop-item-cta">
+                            <span class="cta-label">Buy Boost</span>
                         </div>
                     </div>
                 `).join('')}
@@ -4123,11 +4356,16 @@ class LevelTransitionManager {
         });
 
         // Keyboard support
-        document.addEventListener('keydown', (e) => {
+        const handleEscape = (e) => {
             if (e.key === 'Escape') {
+                document.removeEventListener('keydown', handleEscape);
                 this.hideRewardShopOverlay(overlay);
             }
-        });
+        };
+        overlay._escapeHandler = handleEscape;
+        document.addEventListener('keydown', handleEscape);
+
+        this.updateOverlayShopAvailability(overlay);
     }
 
     handleOverlayPurchase(shopItem, overlay) {
@@ -4192,6 +4430,8 @@ class LevelTransitionManager {
                 item.classList.remove('insufficient-funds');
             }
         });
+
+        this.rewardShop.updateSpendingHints(overlay);
     }
 
     showOverlayFeedback(message, type, overlay) {
@@ -4257,6 +4497,9 @@ class LevelTransitionManager {
     }
 
     hideRewardShopOverlay(overlay) {
+        if (overlay && overlay._escapeHandler) {
+            document.removeEventListener('keydown', overlay._escapeHandler);
+        }
         overlay.classList.remove('visible');
         overlay.classList.add('hidden');
         setTimeout(() => {
@@ -4400,6 +4643,7 @@ class RewardShop {
         this.setupMobileToggle();
         this.updateClockCoinDisplay();
         this.updateShopAvailability();
+        this.updateSpendingHints(document.getElementById('shop-items-container'));
 
         // Ensure tablets get the full reward shop experience
         this.ensureTabletRewardShopVisibility();
@@ -4565,6 +4809,8 @@ class RewardShop {
                     item.style.webkitTapHighlightColor = 'rgba(255, 255, 255, 0.2)';
                 });
             }, 100);
+
+            this.updateSpendingHints(shopItemsContainer);
         }
 
         GameUtils.log(`📱 Mobile reward shop ${newState ? 'expanded' : 'collapsed'} - ${shopItemsContainer.querySelectorAll('.shop-item').length} items available`);
@@ -4710,6 +4956,8 @@ class RewardShop {
             mobileCoinDisplay.textContent = this.clockCoins;
             this.animateClockCoinUpdate(mobileCoinDisplay);
         }
+
+        this.updateSpendingHints(document.getElementById('shop-items-container'));
     }
 
     updateShopAvailability() {
@@ -4722,6 +4970,56 @@ class RewardShop {
                 item.classList.remove('insufficient-funds');
             }
         });
+
+        this.updateSpendingHints(document.getElementById('shop-items-container'));
+    }
+
+    updateSpendingHints(scopeElement = document) {
+        if (!scopeElement || !scopeElement.querySelectorAll) return;
+
+        const items = scopeElement.querySelectorAll('.shop-item, .shop-item-overlay');
+        if (!items.length) return;
+
+        let affordableCount = 0;
+        items.forEach(item => {
+            const cost = Number.parseInt(item.dataset.cost, 10);
+            if (Number.isNaN(cost)) return;
+
+            const canAfford = this.clockCoins >= cost;
+            const remaining = Math.max(0, this.clockCoins - cost);
+            if (canAfford) affordableCount++;
+
+            const afterBalanceEl = item.querySelector('.item-after-balance');
+            if (afterBalanceEl) {
+                afterBalanceEl.textContent = `${remaining} left`;
+            }
+
+            const ctaLabel = item.querySelector('.cta-label');
+            if (ctaLabel) {
+                ctaLabel.textContent = canAfford ? 'Buy Boost' : `Need ${cost - this.clockCoins} more`;
+            }
+
+            const itemName = item.querySelector('.item-name')?.textContent?.trim() || 'Boost item';
+            const affordabilityLine = canAfford
+                ? `${remaining} coins left after purchase.`
+                : `Need ${cost - this.clockCoins} more coins to buy.`;
+            item.setAttribute('aria-label', `${itemName}. Costs ${cost} coins. ${affordabilityLine}`);
+        });
+
+        const currentCoinsEl = scopeElement.querySelector('#shop-current-coins');
+        if (currentCoinsEl) {
+            currentCoinsEl.textContent = this.clockCoins;
+        }
+
+        const affordableCountEl = scopeElement.querySelector('#shop-affordable-count');
+        if (affordableCountEl) {
+            affordableCountEl.textContent = affordableCount;
+        }
+
+        const overlayAffordableCountEl = scopeElement.querySelector('#overlay-affordable-count');
+        if (overlayAffordableCountEl) {
+            overlayAffordableCountEl.textContent = affordableCount;
+        }
     }
 
     showPurchaseFeedback(message, type) {
@@ -5086,6 +5384,7 @@ class AnalogClockGame {
         this.rewardShop = new RewardShop(this.gameState, this.domManager, this.gameLogic);
         this.levelTransitionManager = new LevelTransitionManager(this.domManager, this.gameLogic);
         this.settingsModalManager = new SettingsModalManager(this.domManager, this.settingsManager, this.gameLogic);
+        this.inGameQuickSettingsManager = new InGameQuickSettingsManager(this.domManager, this.settingsManager, this.gameLogic, this.soundManager);
         this.startMenuManager = new StartMenuManager(this.domManager, this.gameLogic, this.settingsModalManager);
         this.highScoreManager = new HighScoreManager();
 
@@ -5173,6 +5472,10 @@ class AnalogClockGame {
         this.gameState.destroy();
         this.levelTransitionManager = null;
         this.settingsModalManager = null;
+        if (this.inGameQuickSettingsManager) {
+            this.inGameQuickSettingsManager.destroy();
+        }
+        this.inGameQuickSettingsManager = null;
         this.startMenuManager = null;
         this.gameLogic = null;
         this.clockBuilder = null;

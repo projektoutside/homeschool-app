@@ -100,6 +100,21 @@ const applyRubberBand = (value: number, min: number, max: number, strength: numb
     return value;
 };
 
+const deriveThumbPathFromHtmlPath = (customHtmlPath?: string): string | null => {
+    if (!customHtmlPath) return null;
+    const match = customHtmlPath.match(/^(.*)\/index\.html$/i);
+    if (!match) return null;
+    return `${match[1]}/thumb.png`;
+};
+
+const resolveItemIconPath = (item: Pick<ContentItem, 'thumbnail' | 'customHtmlPath'>): string | null => {
+    if (item.thumbnail) {
+        return buildAssetPath(item.thumbnail);
+    }
+    const derivedThumbPath = deriveThumbPathFromHtmlPath(item.customHtmlPath);
+    return derivedThumbPath ? buildAssetPath(derivedThumbPath) : null;
+};
+
 interface ArcadeGamePanelProps {
     panelIndex: number;
     title: string;
@@ -173,6 +188,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     const [position, setPosition] = useState(0);
     const [iconSize, setIconSize] = useState(84);
     const [spacing, setSpacing] = useState(112);
+    const [failedIconIds, setFailedIconIds] = useState<Set<string>>(new Set());
     const [holdVisual, setHoldVisual] = useState<HoldVisualState | null>(null);
     const [holdFeedback, setHoldFeedback] = useState<HoldFeedbackState | null>(null);
 
@@ -656,7 +672,8 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
                 >
                     <div className="arcade-carousel-track">
                         {games.map((game, index) => {
-                            const iconPath = game.thumbnail ? buildAssetPath(game.thumbnail) : null;
+                            const iconPath = resolveItemIconPath(game);
+                            const showIconImage = !!iconPath && !failedIconIds.has(game.id);
                             const distance = Math.abs(index - position);
                             const proximity = clampNumber(1 - distance, 0, 1);
                             const scale = 0.74 + proximity * 0.42;
@@ -691,8 +708,19 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
                                     tabIndex={isFocused ? 0 : -1}
                                 >
                                     <span className="arcade-app-thumb">
-                                        {iconPath ? (
-                                            <img src={iconPath} alt="" draggable={false} />
+                                        {showIconImage ? (
+                                            <img
+                                                src={iconPath}
+                                                alt=""
+                                                draggable={false}
+                                                onError={() => {
+                                                    setFailedIconIds(prev => {
+                                                        const next = new Set(prev);
+                                                        next.add(game.id);
+                                                        return next;
+                                                    });
+                                                }}
+                                            />
                                         ) : (
                                             <span className="arcade-app-fallback" aria-hidden="true">🎮</span>
                                         )}
@@ -805,7 +833,7 @@ const HomePage: React.FC = () => {
     const visibleIconPaths = useMemo(
         () => itemsForPreload
             .slice(0, 16)
-            .map(item => item.thumbnail ? buildAssetPath(item.thumbnail) : null)
+            .map(item => resolveItemIconPath(item))
             .filter((path): path is string => Boolean(path)),
         [itemsForPreload],
     );
@@ -866,7 +894,7 @@ const HomePage: React.FC = () => {
             : (item.type === 'worksheet' || item.type === 'tool')
                 ? `/open/${item.id}`
                 : `/resource/${item.id}`;
-        navigate(targetPath);
+        navigate(targetPath, { state: { launchItem: item } });
     }, [navigate]);
 
     const handleFavoriteHoldAction = useCallback((item: ContentItem, action: Exclude<FavoriteActionMode, 'none'>) => {
@@ -890,7 +918,7 @@ const HomePage: React.FC = () => {
         }, MYSTERY_SHAKE_DURATION_MS);
 
         window.setTimeout(() => {
-            navigate(`/play/${randomGame.id}`);
+            navigate(`/play/${randomGame.id}`, { state: { launchItem: randomGame } });
         }, MYSTERY_REVEAL_DURATION_MS);
     }, [allGameItems, mysteryShakeActive, mysteryTargetGameId, navigate]);
 
@@ -984,7 +1012,7 @@ const HomePage: React.FC = () => {
                         )}
 
                         {visibleItems.map((item, index) => {
-                            const iconPath = item.thumbnail ? buildAssetPath(item.thumbnail) : null;
+                            const iconPath = resolveItemIconPath(item);
                             const prioritizeIcon = index < 12;
 
                             return (

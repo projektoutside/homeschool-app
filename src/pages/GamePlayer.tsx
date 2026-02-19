@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
+import type { ContentItem } from '../types/content';
 import type { FullscreenHTMLElementType } from '../types/fullscreen';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
@@ -9,6 +10,7 @@ import './GamePlayer.css';
 
 const GamePlayer: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const location = useLocation();
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -19,7 +21,18 @@ const GamePlayer: React.FC = () => {
         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
     }, [soundSettings]);
 
-    const item = useMemo(() => CONTENT_ITEMS.find(content => content.id === id), [id]);
+    const launchStateItem = useMemo(() => {
+        const state = location.state as { launchItem?: ContentItem } | null;
+        if (!state || typeof state !== 'object' || !state.launchItem) return null;
+        return state.launchItem;
+    }, [location.state]);
+
+    const item = useMemo(() => {
+        if (launchStateItem && launchStateItem.id === id) {
+            return launchStateItem;
+        }
+        return CONTENT_ITEMS.find(content => content.id === id);
+    }, [id, launchStateItem]);
     const launchPath = useMemo(() => {
         if (!item) return '';
         if (item.customHtmlPath) return buildAssetPath(item.customHtmlPath);

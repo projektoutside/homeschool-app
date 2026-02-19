@@ -475,7 +475,7 @@
 }
 
 .bottom-stats-dock.minimized.pulse .stats-restore-line {
-    animation: stats-line-pulse-dim 0.95s ease-out 1;
+    animation: stats-line-pulse-dim 0.95s ease-out var(--stats-pulse-count, 1);
 }
 
 .bottom-stats-dock.minimized.awake .stats-restore-line {
