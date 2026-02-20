@@ -1,0 +1,186 @@
+Original prompt: i want for you to focus on the main menu of the app, lets remove those plant images inside of each of the modes so we can have more spacing, and then please fix the [Back to Difficulty] button so its not all showing white,
+
+- Located menu markup and style rules for difficulty cards and `Back to Difficulty`.
+- Removed plant icon elements from all three difficulty cards in the main menu.
+- Updated `.back-btn` visual styling to use a solid gradient/button treatment so the text is no longer white-on-white.
+- Validation:
+  - Ran web-game Playwright client against local `file:///.../index.html` and captured updated difficulty screen screenshots (`output/web-game/shot-0.png`, `output/web-game/shot-1.png`).
+  - Captured character screen in browser tooling and verified `Back to Difficulty` now renders in blue with readable text (`output/back-button-check.png`).
+  - `npm run build` succeeds; existing Vite warnings about non-module scripts remain unchanged from baseline.
+- TODOs:
+  - None for this request.
+
+- New request:
+  - Add a quick settings icon to the right of the top timer with sound controls, a `Main Menu` button, and an `Exit Game` button.
+- Implementation in progress:
+  - Added HUD quick settings markup next to `#timerDisplay` in `index.html`.
+  - Added responsive styling for the quick settings trigger/panel and timer-adjacent placement in `public/css/styles.css`.
+  - Added `Main.js` logic for quick settings open/close, sound setting sync/apply, return-to-main-menu flow, and exit-game flow.
+- Validation:
+  - `npm run build` passes (existing non-module script warnings unchanged).
+  - Ran web-game Playwright client and captured baseline screenshot after changes: `output/web-game-hud-settings/shot-0.png`.
+  - Browser validation screenshot of in-game quick settings placement and menu content: `output/hud-settings-open-landscape.png`.
+  - Verified sound controls update runtime + persisted settings (`enableSound`, `volume`) and update live audio/money manager values.
+  - Verified `Main Menu` action returns to difficulty screen and hides game container.
+  - Verified `Exit Game` opens confirmation dialog; dismiss path keeps current session.
+  - Verified confirmed exit path logic (open/close + fallback timer scheduling) through a controlled scripted stub.
+- TODOs:
+  - None for this request.
+- New request:
+  - Deep-fix the Paying Customers panel where submit controls were missing/non-functional during change-giving.
+- Root cause found:
+  - `CustomerManager.updatePatience()` still used elapsed time from the original `arrivalTime` even after switching to payment mode.
+  - After correct total entry, payment started but the customer could time out immediately (next patience tick), triggering `customerLostPatience()` and `hideAllInterfaces()`.
+  - This collapsed `#paymentInterface` (`--payment-state-scale: 0`), so bills/coins and submit controls looked present in DOM text snapshots but were not interactive.
+- Implementation:
+  - Updated `public/js/CustomerManager.js` `updatePatience()` to use the active mode counter (`patienceCounter` + `patienceDecrement`) as the source of truth.
+  - Preserved zap-damage behavior and tied periodic pressure to the active phase (`ordering` vs `payment`).
+  - Kept changes narrowly scoped to the patience timer bug path.
+- Validation:
+  - Runtime browser check (DevTools): after `onTotalCalculated(...)`, `payment-interface` now stays `active` with `--payment-state-scale: 1` and non-zero panel rect.
+  - Runtime browser check: clicking payment denominations updates change display (e.g., `$0.00` -> `$5.00`) and controls are interactive for multiple seconds instead of collapsing immediately.
+  - Confirmed previous failure signature no longer occurs (`payment-interface` no longer drops to class without `active` right after transition).
+  - `npm run build` passes (existing Vite non-module script warnings unchanged).
+- TODOs:
+  - Optional follow-up: tune payment patience duration/pressure values for game-balance now that payment-phase timer behavior is deterministic.
+- New request:
+  - Quick settings panel appears wide open when starting a match; fix and re-verify gameplay stability.
+- Root cause found:
+  - The menu relied on the HTML `hidden` attribute, but `.hud-settings-menu { display: flex; }` could override hidden in practice, allowing visible-by-default behavior.
+  - Match-start transitions did not explicitly reset the HUD menu state, so stale-open state could carry into a new game.
+- Implementation:
+  - Added `.hud-settings-menu[hidden] { display: none !important; }` in `public/css/styles.css`.
+  - Added explicit `this.closeHUDSettingsMenu();` in `startGameWithDifficulty`, `showCharacterSelection`, `startVSModeGame`, and immediately after HUD quick settings initialization in `setupHUDQuickSettings`.
+- Validation:
+  - Browser runtime check: menu opens when toggled, then closes automatically on match start (`hidden=true`, `display=none`, `aria-expanded=false`).
+  - Browser smoke check: payment flow still works (`payment-interface active`, money selection updates change text, panel stays interactive).
+  - `npm run build` passes (same existing Vite non-module script warnings unchanged).
+- TODOs:
+  - None for this request.
+- New request:
+  - Ensure the "Submit Change" button in the Give Change panel is always visible/clickable and fix non-interactive panel behavior.
+- Deep root causes confirmed:
+  - Payment panel was layered below gameplay HUD panels (`z-index` lower than AI/customer/scoreboard), so overlapping HUD regions could block interaction.
+  - Payment panel fit logic used box dimensions only; when content expanded (error/help text), controls could overflow outside the panel box, causing Submit to disappear/clipped on tighter viewports.
+- Implementation:
+  - `public/js/MoneyManager.js`
+    - `updatePaymentDisplay()` now re-runs `adjustPaymentInterfacePosition()` after content/state updates.
+    - `showChangeError()` and `showTransactionSuccess()` now re-fit the panel after message content changes.
+    - `adjustPaymentInterfacePosition()` now measures full content size using `max(scrollWidth/scrollHeight, offset, rect)` for fit-scale calculations.
+  - `public/css/styles.css` (final payment override block)
+    - Raised payment panel stacking order to `z-index: 180`.
+    - Limited interactivity to active state (`pointer-events: none` by default, `auto` when active).
+    - Removed max-height cap in final override (`height: auto`, `max-height: none`) so transform scaling controls final size.
+    - Added overflow safety (`overflow-y: auto`, `overflow-x: hidden`) so controls remain reachable in extreme viewport constraints.
+- Validation:
+  - `npm run build` passes (same existing non-module script warnings only).
+  - Runtime stress test at short viewport (`1366x430`): Submit button now remains inside panel bounds and no longer overlaps scoreboard region.
+  - Runtime check at tablet viewport (`~1024x768`): payment panel remains above HUD layers (`payment z-index 180 > score 100 > AI 92`).
+  - Runtime interaction check: money selection updates change total; incorrect submit shows retry/error message; correct submit closes payment panel and resets payment state.
+  - Quick settings regression check: forced menu open + start match now closes menu (`hidden=true`, `display=none`, `aria-expanded=false`).
+- TODOs:
+  - None for this request.
+- New request:
+  - After first customer, new customers stop showing in the player customer panel. Ensure customers continue one after another.
+- Root cause found:
+  - Customer panel hide/show race in `CustomerManager`:
+    - `hideCustomerPanel()` registered async transition cleanup that could fire after a new customer was already shown.
+    - Late cleanup removed `.active` from the newly spawned customer's panel, making it appear as if no new customer arrived.
+  - Additional recurrence risk:
+    - Spawn gate could remain blocked if `currentCustomer` was null but `currentState` stayed non-idle due async ordering/race.
+- Implementation:
+  - `public/js/CustomerManager.js`
+    - Added stale-state recovery in `canSpawnCustomer()`:
+      - if `!currentCustomer && currentState !== 'idle'`, force `currentState = 'idle'`.
+    - Added transition guards:
+      - constructor fields: `customerPanelHideHandler`, `customerPanelHideFallbackTimer`.
+      - new method `clearCustomerPanelHideTransition()` to cancel stale listener/timeouts.
+    - `showCustomerPanel()` now cancels pending hide transitions before showing and always removes stale `slide-out-left`.
+    - `hideCustomerPanel()` now:
+      - clears prior pending handlers first,
+      - tracks listener/timer references,
+      - applies guarded cleanup so a newly spawned active customer panel is not hidden by stale callbacks.
+- Validation:
+  - `npm run build` passes (same existing non-module script warnings only).
+  - Runtime automated turnover test (3 consecutive successful transactions):
+    - customer chain continued (`Lisa -> Anna -> Catherine -> Mark`)
+    - panel remained visible each handoff (`customer-panel active`, no stale `slide-out-left`).
+  - Runtime injected stale-state test (`currentCustomer=null`, `currentState='reviewing'`, stale slide class):
+    - `canSpawnCustomer()` recovered state,
+    - next spawn succeeded,
+    - panel became visible (`customer-panel active`).
+- TODOs:
+  - None for this request.
+- New request:
+  - Make number buttons bigger in the "Your Customer" panel keypad.
+- Implementation:
+  - Added final CSS overrides scoped to `#customerPanel .number-keypad` to increase key and submit-button size while preserving responsive behavior.
+  - File: `public/css/styles.css` (end of file)
+    - Larger base landscape keypad buttons and submit button.
+    - Added `@media (max-height: 620px)` tuned values so buttons remain larger than before without breaking layout on short screens.
+- Validation:
+  - `npm run build` passes (same existing non-module script warnings only).
+  - Runtime computed styles confirm larger dimensions now applied to customer keypad buttons and submit button.
+- TODOs:
+  - None for this request.
+- New request:
+  - Ensure the purple `Submit Total` button and the total display box in the customer keypad row are exactly the same measured row height.
+- Validation:
+  - Browser measurement at default viewport (`http://127.0.0.1:4174/index.html?aligncheck=1`):
+    - submit height = `30.3375px`, display height = `30.3375px`
+    - `topDiff=0`, `bottomDiff=0`, `heightDiff=0`
+  - Browser measurement at short landscape viewport (`1366x430`):
+    - submit height = `25px`, display height = `25px`
+    - `topDiff=0`, `bottomDiff=0`, `heightDiff=0`
+- TODOs:
+  - None for this request.
+- New request:
+  - Move quantity closer to item price in order slots for faster readability.
+- Implementation:
+  - `public/js/CustomerManager.js`
+    - Updated customer order slot markup to group quantity and price inside a shared `.item-meta` wrapper.
+  - `public/js/AIOpponentManager.js`
+    - Updated AI order slot markup to use the same `.item-meta` wrapper for consistency.
+  - `public/css/styles.css`
+    - Updated final order-slot grid layout from separate `qty/price` cells to a compact `meta` row.
+    - Added `.item-meta` as inline-flex with a tight gap so quantity and price render side-by-side.
+    - Removed old quantity padding that visually pushed values apart.
+- Validation:
+  - Runtime DOM check (customer slot): `×3` and `$9.00` render on same row with ~`2.21px` gap.
+  - Runtime DOM check (AI slot): `×5` and `$8.75` render on same row with ~`2.19px` gap.
+  - `npm run build` passes (same existing Vite non-module script warnings unchanged).
+- TODOs:
+  - None for this request.
+- Additional responsive validation:
+  - At `1366x430` landscape, quantity/price stay on one row in each slot with tight spacing (~`3px` measured).
+- New request:
+  - Show an AI customer patience bar inside the AI customer panel so the AI side feels more realistic.
+- Implementation:
+  - `index.html`
+    - Added AI customer patience UI block inside `#aiCustomerPanel` with:
+      - `#aiCustomerPatiencePercentage`
+      - `#aiCustomerPatienceBar`
+      - `#aiCustomerPatienceFill`
+  - `public/js/AIOpponentManager.js`
+    - Cached the new AI patience DOM elements.
+    - Added shared patience visual helpers:
+      - `hasAIPatienceVisualTargets()`
+      - `applyAIPatienceLevelClass(...)`
+      - `setAIPatienceVisual(...)`
+    - Wired AI patience updates to both bars (header progress + in-panel customer patience bar).
+    - Initialized in-panel patience to `100%` when displaying a new AI customer.
+    - Standardized reset behavior to reset all AI patience visuals to `0%`.
+  - `public/css/styles.css`
+    - Added final override styles for the in-panel AI customer patience component.
+    - Added responsive scaling for short landscape heights.
+    - Added high/medium/low/critical color states for both AI patience fills.
+- Validation:
+  - Browser snapshot confirms patience block is visible inside AI customer section.
+  - Runtime check confirms live updates:
+    - start: `100%` (`#aiCustomerPatienceFill` and header fill both `100%`)
+    - during countdown: percentage decreases and class states update.
+    - stop/reset: both fills return to `0%`.
+  - Short landscape (`1366x430`) check confirms in-panel patience block remains visible.
+  - `npm run build` passes (same existing Vite non-module script warnings unchanged).
+- TODOs:
+  - None for this request.

@@ -98,7 +98,7 @@
 
 /* MINIMIZED STATE */
 .bottom-navigation-dock.minimized {
-    left: 0;
+    left: max(env(safe-area-inset-left, 0px), 0px);
     transform: translateX(calc(-100% + 24px)); /* Hide almost completely */
     width: min(980px, calc(100vw - 1.5rem)); 
     background: transparent;
@@ -303,13 +303,22 @@
 }
 
 .nav-settings-btn:hover {
-    transform: translateY(-3px) rotate(5deg);
-    border-color: #f472b6; /* Pink accent on hover */
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.35);
     background: linear-gradient(180deg, rgba(51, 65, 85, 0.8), rgba(30, 41, 59, 0.9));
 }
 
 .nav-settings-btn:active {
     transform: scale(0.95);
+}
+
+.nav-settings-btn.settings-open {
+    transform: translateY(-3px) rotate(5deg);
+    border-color: #f472b6;
+    background: linear-gradient(180deg, rgba(127, 29, 29, 0.92), rgba(69, 10, 10, 0.96));
+    box-shadow:
+        0 8px 16px -4px rgba(239, 68, 68, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .nav-settings-icon {
@@ -331,16 +340,21 @@
 }
 
 .nav-settings-btn:hover .settings-square {
-    background-color: #f472b6;
-    box-shadow: 0 0 6px rgba(244, 114, 182, 0.6);
+    background-color: #e2e8f0;
+    box-shadow: 0 0 6px rgba(148, 163, 184, 0.5);
+}
+
+.nav-settings-btn.settings-open .settings-square {
+    background-color: #fca5a5;
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.75);
 }
 
 /* STATS DOCK (appears once main nav is minimized) */
 .bottom-stats-dock {
     position: fixed;
-    left: 0;
+    left: max(env(safe-area-inset-left, 0px), 0px);
     bottom: max(env(safe-area-inset-bottom, 0px), 12px);
-    width: min(980px, calc(100vw - 1.5rem - 24px));
+    width: min(980px, calc(100vw - 1.5rem - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
     min-height: 84px;
     display: flex;
     align-items: center;
@@ -370,6 +384,7 @@
     transform: translateX(24px);
     pointer-events: auto;
 }
+
 
 .stats-content {
     width: 100%;
@@ -469,9 +484,9 @@
 }
 
 .bottom-stats-dock.minimized.dormant .stats-restore-line {
-    opacity: 0.3;
+    opacity: 0.52;
     background-color: rgba(250, 204, 21, 0.72);
-    box-shadow: 0 0 6px rgba(250, 204, 21, 0.28);
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.45);
 }
 
 .bottom-stats-dock.minimized.pulse .stats-restore-line {
@@ -486,7 +501,7 @@
 
 .stats-wake-zone {
     position: fixed;
-    left: 0;
+    left: max(env(safe-area-inset-left, 0px), 0px);
     bottom: max(env(safe-area-inset-bottom, 0px), 10px);
     width: 92px;
     height: 96px;
@@ -569,11 +584,12 @@
     }
 
     .bottom-stats-dock {
-        width: calc(100vw - 1rem - 24px);
+        width: calc(100vw - 1rem - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
         min-height: 68px;
         padding: 0.5rem;
         padding-right: 2.5rem;
     }
+
 
     .stats-content {
         gap: 0.55rem;

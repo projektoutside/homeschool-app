@@ -4091,6 +4091,49 @@ class InGameQuickSettingsManager {
         }
     }
 
+    getMainAppHomePath() {
+        const pathname = window.location.pathname || '';
+        const gamesSegmentIndex = pathname.toLowerCase().indexOf('/games/');
+        const basePath = gamesSegmentIndex >= 0 ? pathname.slice(0, gamesSegmentIndex) : '';
+        const normalizedBase = basePath ? (basePath.endsWith('/') ? basePath : `${basePath}/`) : '/';
+        return `${normalizedBase}home-profile`;
+    }
+
+    navigateToMainAppHome() {
+        const targetPath = this.getMainAppHomePath();
+        const payload = {
+            type: 'LAHS_GAME_EXIT_TO_HOME',
+            source: 'analogclockgame',
+            targetPath
+        };
+
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(payload, '*');
+            }
+        } catch (error) {
+            GameUtils.warn('Could not notify parent window for home navigation:', error);
+        }
+
+        try {
+            if (window.top && window.top !== window) {
+                window.top.location.assign(targetPath);
+                return true;
+            }
+        } catch (error) {
+            GameUtils.warn('Could not navigate top window to home:', error);
+        }
+
+        try {
+            window.location.assign(targetPath);
+            return true;
+        } catch (error) {
+            GameUtils.warn('Could not navigate current window to home:', error);
+        }
+
+        return false;
+    }
+
     async handleExitGame() {
         this.closePanel({ resumeTimer: false });
         if (this.gameLogic) {
@@ -4101,27 +4144,6 @@ class InGameQuickSettingsManager {
         }
 
         try {
-            if (window.electronAPI && typeof window.electronAPI.exitApp === 'function') {
-                window.electronAPI.exitApp();
-                return;
-            }
-            if (window.nw && window.nw.App && typeof window.nw.App.quit === 'function') {
-                window.nw.App.quit();
-                return;
-            }
-            if (window.navigator && window.navigator.app && typeof window.navigator.app.exitApp === 'function') {
-                window.navigator.app.exitApp();
-                return;
-            }
-            if (window.__TAURI__ && window.__TAURI__.window && typeof window.__TAURI__.window.getCurrent === 'function') {
-                await window.__TAURI__.window.getCurrent().close();
-                return;
-            }
-        } catch (error) {
-            GameUtils.warn('Native exit bridge failed:', error);
-        }
-
-        try {
             if (document.fullscreenElement && document.exitFullscreen) {
                 await document.exitFullscreen();
             }
@@ -4129,14 +4151,9 @@ class InGameQuickSettingsManager {
             GameUtils.warn('Could not exit fullscreen before close:', error);
         }
 
-        window.open('', '_self');
-        window.close();
-
-        window.setTimeout(() => {
-            if (!window.closed) {
-                this.domManager.updateClockStatus('Exit blocked by browser. Close this tab/app to leave.');
-            }
-        }, 250);
+        if (!this.navigateToMainAppHome()) {
+            this.domManager.updateClockStatus('Could not return to Homepage. Please open Homepage from the app tabs.');
+        }
     }
 
     destroy() {

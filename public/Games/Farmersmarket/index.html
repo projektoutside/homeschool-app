@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="x5-orientation" content="landscape">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <title>Farmers Market Frenzy 3D - Educational Money Game</title>
+
+    <!-- Mobile Meta Tags -->
+    <meta name="theme-color" content="#27ae60">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="HandheldFriendly" content="true">
+
+    <!-- Icons - Using data URIs to avoid file system issues -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌽</text></svg>">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="./public/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka+One&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Orientation Warning Overlay -->
+    <div id="orientationWarning" class="orientation-warning" aria-hidden="true">
+        <div class="orientation-content">
+            <div class="rotate-icon">📱</div>
+            <h2>Turn Device to Landscape Mode</h2>
+            <p>This game runs in landscape only.</p>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="game-title">🌽 Farmers Market Frenzy 3D 🥕</h1>
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading your market stand...</p>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loadingProgress"></div>
+            </div>
+            <div class="loading-particles"></div>
+        </div>
+    </div>
+
+    <!-- Difficulty Selection Screen -->
+    <div class="difficulty-screen" id="difficultyScreen">
+        <div class="difficulty-content">
+            <h1 class="difficulty-title">🎯 Choose Your Challenge Level 🎯</h1>
+            <p class="difficulty-subtitle">Select the math difficulty that's right for you!</p>
+
+            <div class="difficulty-options">
+                <div class="difficulty-card easy" data-difficulty="easy">
+                    <h3>Easy Mode</h3>
+                    <p class="difficulty-description">Perfect for beginners!</p>
+                    <div class="difficulty-details">
+                        <p>💰 Whole dollar amounts only</p>
+                        <p>📝 Examples: $1.00, $2.00, $5.00</p>
+                        <p>🎯 Focus on basic addition</p>
+                    </div>
+                    <div class="difficulty-sample">
+                        <span class="sample-label">Sample prices:</span>
+                        <div class="sample-prices">$1.00 • $3.00 • $5.00</div>
+                    </div>
+                </div>
+
+                <div class="difficulty-card medium" data-difficulty="medium">
+                    <h3>Medium Mode</h3>
+                    <p class="difficulty-description">Ready for quarters?</p>
+                    <div class="difficulty-details">
+                        <p>💰 Dollars and quarters only</p>
+                        <p>📝 Examples: $1.25, $2.50, $3.75</p>
+                        <p>🎯 Practice with 25¢ increments</p>
+                    </div>
+                    <div class="difficulty-sample">
+                        <span class="sample-label">Sample prices:</span>
+                        <div class="sample-prices">$1.25 • $2.75 • $4.50</div>
+                    </div>
+                </div>
+
+                <div class="difficulty-card hard" data-difficulty="hard">
+                    <h3>Hard Mode</h3>
+                    <p class="difficulty-description">Master mathematician!</p>
+                    <div class="difficulty-details">
+                        <p>💰 All coin values included</p>
+                        <p>📝 Examples: $1.37, $2.84, $5.93</p>
+                        <p>🎯 Full decimal precision</p>
+                    </div>
+                    <div class="difficulty-sample">
+                        <span class="sample-label">Sample prices:</span>
+                        <div class="sample-prices">$1.37 • $2.84 • $5.93</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="difficulty-actions">
+                <button class="settings-btn" id="settingsBtn">
+                    ⚙️ Settings
+                </button>
+                <button class="start-game-btn" id="startGameBtnDifficulty" disabled>
+                    🚀 Start Your Market Adventure!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Selection Screen -->
+    <div class="character-screen" id="characterScreen" style="display: none;">
+        <div class="character-content">
+            <h1 class="character-title">👥 Choose Your Opponent 👥</h1>
+            <p class="character-subtitle">Select who you'll compete against in VS Mode!</p>
+
+            <div class="character-options">
+                <!-- Abby - Easy -->
+                <div class="character-card easy" data-character="abby" data-ai-difficulty="easy">
+                    <div class="character-portrait">
+                        <div class="character-avatar">👧</div>
+                    </div>
+                    <h3>Abby</h3>
+                    <p class="character-description">The Beginner</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Just learning the ropes</p>
+                        <p>⚡ <strong>Speed:</strong> Takes time to think</p>
+                        <p>🎪 <strong>Style:</strong> Careful and cautious</p>
+                        <p>💭 <strong>Personality:</strong> Sweet but makes mistakes</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 35%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chase - Medium -->
+                <div class="character-card medium" data-character="chase" data-ai-difficulty="medium">
+                    <div class="character-portrait">
+                        <div class="character-avatar">🧑‍🎓</div>
+                    </div>
+                    <h3>Chase</h3>
+                    <p class="character-description">The Student</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Getting confident</p>
+                        <p>⚡ <strong>Speed:</strong> Decent processing speed</p>
+                        <p>🎪 <strong>Style:</strong> Balanced approach</p>
+                        <p>💭 <strong>Personality:</strong> Eager to prove himself</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 75%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Becky - Hard -->
+                <div class="character-card hard" data-character="becky" data-ai-difficulty="hard">
+                    <div class="character-portrait">
+                        <div class="character-avatar">👩‍💼</div>
+                    </div>
+                    <h3>Becky</h3>
+                    <p class="character-description">The Professional</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Business expert</p>
+                        <p>⚡ <strong>Speed:</strong> Lightning fast</p>
+                        <p>🎪 <strong>Style:</strong> Efficient and precise</p>
+                        <p>💭 <strong>Personality:</strong> Rarely makes errors</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 90%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 95%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diego - Easy -->
+                <div class="character-card easy" data-character="diego" data-ai-difficulty="easy">
+                    <div class="character-portrait">
+                        <div class="character-avatar">👦</div>
+                    </div>
+                    <h3>Diego</h3>
+                    <p class="character-description">The Eager Explorer</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Enthusiastic beginner</p>
+                        <p>⚡ <strong>Speed:</strong> Quick but makes errors</p>
+                        <p>🎪 <strong>Style:</strong> Enthusiastic and playful</p>
+                        <p>💭 <strong>Personality:</strong> Gets excited and rushes</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 45%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 40%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Luna - Medium -->
+                <div class="character-card medium" data-character="luna" data-ai-difficulty="medium">
+                    <div class="character-portrait">
+                        <div class="character-avatar">🧑‍🚀</div>
+                    </div>
+                    <h3>Luna</h3>
+                    <p class="character-description">The Space Cadet</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Creative dreamer</p>
+                        <p>⚡ <strong>Speed:</strong> Steady with good focus</p>
+                        <p>🎪 <strong>Style:</strong> Creative and methodical</p>
+                        <p>💭 <strong>Personality:</strong> Sometimes zones out</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 65%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 70%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Max - Hard -->
+                <div class="character-card hard" data-character="max" data-ai-difficulty="hard">
+                    <div class="character-portrait">
+                        <div class="character-avatar">🧑‍💻</div>
+                    </div>
+                    <h3>Max</h3>
+                    <p class="character-description">The Code Master</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Tech whiz</p>
+                        <p>⚡ <strong>Speed:</strong> Lightning fast calculations</p>
+                        <p>🎪 <strong>Style:</strong> Precise and analytical</p>
+                        <p>💭 <strong>Personality:</strong> Competitive perfectionist</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 90%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bill - Medium -->
+                <div class="character-card medium" data-character="bill" data-ai-difficulty="medium">
+                    <div class="character-portrait">
+                        <div class="character-avatar">🍺</div>
+                    </div>
+                    <h3>Bill</h3>
+                    <p class="character-description">The Drunk</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Party animal</p>
+                        <p>⚡ <strong>Speed:</strong> Surprisingly quick reflexes</p>
+                        <p>🎪 <strong>Style:</strong> Chaotic and unpredictable</p>
+                        <p>💭 <strong>Personality:</strong> Makes wild calculation errors</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 80%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 25%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stacy - Easy -->
+                <div class="character-card easy" data-character="stacy" data-ai-difficulty="easy">
+                    <div class="character-portrait">
+                        <div class="character-avatar">💁‍♀️</div>
+                    </div>
+                    <h3>Stacy</h3>
+                    <p class="character-description">The Blondie</p>
+                    <div class="character-details">
+                        <p>🎯 <strong>Skill Level:</strong> Fashionista</p>
+                        <p>⚡ <strong>Speed:</strong> Takes time to look perfect</p>
+                        <p>🎪 <strong>Style:</strong> Careful and methodical</p>
+                        <p>💭 <strong>Personality:</strong> Surprisingly good at math</p>
+                    </div>
+                    <div class="character-stats">
+                        <div class="stat-bar">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 45%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-bar">
+                            <span class="stat-label">Accuracy</span>
+                            <div class="stat-progress">
+                                <div class="stat-fill" style="width: 75%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-actions">
+                <button class="back-btn" id="backTodifficultyBtn">
+                    ← Back to Difficulty
+                </button>
+                <div class="game-mode-buttons">
+                    <button class="progressive-play-btn" id="progressivePlayBtn">
+                        🎯 Progressive Play
+                    </button>
+                    <button class="random-opponent-btn" id="randomOpponentBtn">
+                        🎲 Random Opponent
+                    </button>
+                </div>
+                <button class="start-competition-btn" id="startCompetitionBtnCharacter" disabled>
+                    🚀 Start Competition!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>⚙️ Game Settings</h2>
+                <button class="close-settings-btn" id="closeSettingsBtn">✖️</button>
+            </div>
+
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="items">🛒 Market Items</button>
+                <button class="settings-tab" data-tab="general">🎮 General</button>
+            </div>
+
+            <div class="settings-tab-content">
+                <!-- Market Items Tab -->
+                <div class="tab-panel active" id="itemsTab">
+                    <div class="items-header">
+                        <h3>Manage Market Items</h3>
+                        <button class="add-item-btn" id="addItemBtn">➕ Add New Item</button>
+                    </div>
+
+                    <div class="items-categories">
+                        <div class="category-section" data-category="vegetables">
+                            <h4>🥕 Vegetables</h4>
+                            <div class="items-list" id="vegetablesList"></div>
+                        </div>
+
+                        <div class="category-section" data-category="fruits">
+                            <h4>🍎 Fruits</h4>
+                            <div class="items-list" id="fruitsList"></div>
+                        </div>
+
+                        <div class="category-section" data-category="baked_goods">
+                            <h4>🍞 Baked Goods</h4>
+                            <div class="items-list" id="bakedGoodsList"></div>
+                        </div>
+
+                        <div class="category-section" data-category="preserves">
+                            <h4>🍯 Preserves</h4>
+                            <div class="items-list" id="preservesList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- General Settings Tab -->
+                <div class="tab-panel" id="generalTab">
+                    <div class="setting-group">
+                        <h4>🔊 Audio Settings</h4>
+                        <label class="setting-item">
+                            <span>Enable Sound Effects</span>
+                            <input type="checkbox" id="enableSoundSetting" checked>
+                        </label>
+                        <label class="setting-item">
+                            <span>Master Volume</span>
+                            <input type="range" id="volumeSetting" min="0" max="100" value="70">
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>🎮 Game Settings</h4>
+                        <label class="setting-item">
+                            <span>Enable Animations</span>
+                            <input type="checkbox" id="enableAnimationsSetting" checked>
+                        </label>
+                        <label class="setting-item">
+                            <span>Show Hints</span>
+                            <input type="checkbox" id="showHintsSetting" checked>
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>⏰ Timer Settings</h4>
+                        <label class="setting-item">
+                            <span>Enable Game Timer</span>
+                            <input type="checkbox" id="enableTimerSetting" checked>
+                        </label>
+                        <label class="setting-item">
+                            <span>Timer Warning (last 30 seconds)</span>
+                            <input type="checkbox" id="timerWarningSetting" checked>
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>⏱️ Game Timer Settings</h4>
+                        <div class="timer-slider-container">
+                            <label class="setting-item slider-label">
+                                <span>Game Time for All Modes</span>
+                                <span id="timerValueDisplay" class="timer-value">5 minutes</span>
+                            </label>
+                            <div class="slider-wrapper">
+                                <input type="range" id="unifiedTimerSlider" class="timer-slider" min="1" max="15"
+                                    value="5" step="0.5" title="Game timer duration slider"
+                                    aria-label="Game timer duration">
+                                <div class="slider-labels">
+                                    <span>1 min</span>
+                                    <span>5 min</span>
+                                    <span>10 min</span>
+                                    <span>15 min</span>
+                                </div>
+                            </div>
+                            <div class="timer-presets">
+                                <button class="preset-btn" data-time="2">Quick (2 min)</button>
+                                <button class="preset-btn" data-time="5">Standard (5 min)</button>
+                                <button class="preset-btn" data-time="10">Relaxed (10 min)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>🔄 Data Management</h4>
+                        <button class="setting-action-btn" id="resetGameBtn">🗑️ Reset Game Data</button>
+                        <button class="setting-action-btn" id="exportDataBtn">📤 Export Settings</button>
+                        <button class="setting-action-btn" id="importDataBtn">📥 Import Settings</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="save-settings-btn" id="saveSettingsBtn">💾 Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Editor Modal -->
+    <div class="item-editor-modal" id="itemEditorModal">
+        <div class="item-editor-content">
+            <div class="item-editor-header">
+                <h3 id="itemEditorTitle">Add New Item</h3>
+                <button class="close-modal-btn" id="closeItemEditorBtn">✖️</button>
+            </div>
+
+            <div class="item-editor-form">
+                <label class="form-group">
+                    <span>Item Name</span>
+                    <input type="text" id="itemNameInput" placeholder="Enter item name">
+                </label>
+
+                <label class="form-group">
+                    <span>Emoji</span>
+                    <input type="text" id="itemEmojiInput" placeholder="🍎" maxlength="2">
+                </label>
+
+                <label class="form-group">
+                    <span>Base Price ($)</span>
+                    <input type="number" id="itemPriceInput" placeholder="2.50" step="0.01" min="0.01">
+                </label>
+
+                <label class="form-group">
+                    <span>Category</span>
+                    <select id="itemCategorySelect">
+                        <option value="vegetables">🥕 Vegetables</option>
+                        <option value="fruits">🍎 Fruits</option>
+                        <option value="baked_goods">🍞 Baked Goods</option>
+                        <option value="preserves">🍯 Preserves</option>
+                    </select>
+                </label>
+
+                <label class="form-group checkbox-group">
+                    <input type="checkbox" id="itemSeasonalCheckbox">
+                    <span>Seasonal Item</span>
+                </label>
+
+                <div class="seasonal-options" id="seasonalOptions" style="display: none;">
+                    <span>Available Seasons:</span>
+                    <div class="season-checkboxes">
+                        <label><input type="checkbox" value="spring"> 🌸 Spring</label>
+                        <label><input type="checkbox" value="summer"> ☀️ Summer</label>
+                        <label><input type="checkbox" value="fall"> 🍂 Fall</label>
+                        <label><input type="checkbox" value="winter"> ❄️ Winter</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item-editor-footer">
+                <button class="cancel-btn" id="cancelItemBtn">Cancel</button>
+                <button class="save-item-btn" id="saveItemBtn">Save Item</button>
+                <button class="delete-item-btn" id="deleteItemBtn" style="display: none;">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="gameContainer" class="game-container">
+        <!-- 3D Scene Container -->
+        <div id="sceneContainer" class="scene-container"></div>
+
+
+        <!-- Game HUD -->
+        <div id="gameHUD" class="game-hud">
+
+            <!-- Timer Display -->
+            <div id="timerDisplay" class="timer-display">
+                <div class="timer-icon">⏰</div>
+                <div class="timer-label">Time Left:</div>
+                <div id="timerTime" class="timer-time">5:00</div>
+            </div>
+
+            <!-- Quick Settings (next to timer) -->
+            <div id="hudQuickSettings" class="hud-quick-settings">
+                <button
+                    id="hudSettingsToggleBtn"
+                    class="hud-settings-toggle-btn"
+                    type="button"
+                    aria-label="Open quick settings"
+                    aria-controls="hudSettingsMenu"
+                    aria-expanded="false">
+                    ⚙️
+                </button>
+                <div id="hudSettingsMenu" class="hud-settings-menu" hidden>
+                    <div class="hud-settings-title">Quick Settings</div>
+
+                    <label class="hud-sound-toggle" for="hudSoundToggle">
+                        <input type="checkbox" id="hudSoundToggle" checked>
+                        <span>Sound On</span>
+                    </label>
+
+                    <label class="hud-volume-control" for="hudVolumeSlider">
+                        <span>Volume</span>
+                        <input type="range" id="hudVolumeSlider" min="0" max="100" step="1" value="70">
+                    </label>
+
+                    <button class="hud-settings-action menu" id="hudMainMenuBtn" type="button">
+                        🏠 Main Menu
+                    </button>
+                    <button class="hud-settings-action exit" id="hudExitGameBtn" type="button">
+                        ❌ Exit Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unified Customer & Math Panel -->
+            <div class="customer-panel" id="customerPanel">
+                <div class="customer-panel-header">
+                    <h3>👤 Your Customer</h3>
+                </div>
+
+                <div class="customer-section" id="customerSection">
+                    <div class="customer-info">
+                        <div class="customer-avatar" id="customerAvatar">🧑‍🌾</div>
+                        <div class="customer-name" id="customerName">Sarah</div>
+                    </div>
+                    <div class="customer-patience">
+                        <div class="patience-header">
+                            <span class="patience-text">Patience</span>
+                            <span class="patience-percentage" id="patiencePercentage">100%</span>
+                        </div>
+                        <div class="patience-bar" id="patienceBar">
+                            <div class="patience-fill" id="patienceFill"></div>
+                        </div>
+                        <div class="patience-status" id="patienceStatus">
+                            <span class="status-icon" id="statusIcon">😊</span>
+                            <span class="status-text" id="statusText">Customer is patient</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-section">
+                    <div class="order-header">
+                        <h4>🛒 Customer's Order</h4>
+                    </div>
+                    <div class="order-items" id="orderItems"></div>
+                </div>
+
+                <div class="number-keypad" id="numberKeypad">
+                    <div class="keypad-buttons">
+                        <button class="key-btn number" data-number="7">7</button>
+                        <button class="key-btn number" data-number="8">8</button>
+                        <button class="key-btn number" data-number="9">9</button>
+                        <button class="key-btn number" data-number="4">4</button>
+                        <button class="key-btn number" data-number="5">5</button>
+                        <button class="key-btn number" data-number="6">6</button>
+                        <button class="key-btn number" data-number="1">1</button>
+                        <button class="key-btn number" data-number="2">2</button>
+                        <button class="key-btn number" data-number="3">3</button>
+                        <button class="key-btn clear" id="clearBtn">Clear</button>
+                        <button class="key-btn number" data-number="0">0</button>
+                        <button class="key-btn decimal" id="decimalBtn">.</button>
+                        <button class="key-btn submit" id="submitBtn" aria-label="Submit Total">
+                            <span class="submit-total-inline-label" id="submitTotalInlineLabel">Total: ?</span>
+                            <span class="submit-total-inline-action">Submit Total</span>
+                        </button>
+                        <div class="keypad-display-container">
+                            <span class="dollar-sign">$</span>
+                            <div class="keypad-display" id="keypadDisplay">0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calculation-feedback" id="calculationFeedback" style="display: none;">
+                    <div class="feedback-content">
+                        <div class="feedback-icon" id="feedbackIcon">✅</div>
+                        <div class="feedback-message" id="feedbackMessage">Correct! Well done!</div>
+                    </div>
+                </div>
+                <button
+                    class="customer-panel-resize-handle"
+                    id="customerPanelResizeHandle"
+                    type="button"
+                    aria-label="Resize Your Customer panel"
+                    title="Drag to resize panel">
+                </button>
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- AI Opponent Panel -->
+        <div id="aiStatsPanel" class="ai-stats-panel" style="display: block;">
+            <div class="ai-panel-header">
+                <h3 id="aiPanelTitle">🤖 AI Opponent</h3>
+                <button id="aiPanelToggleBtn" class="ai-panel-toggle-btn" aria-label="Minimize Scoreboard">_</button>
+                <div class="ai-status-indicator" id="aiStatusIndicator">🤔 Thinking...</div>
+                <div class="ai-progress-bar" id="aiProgressBar">
+                    <div class="ai-progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="ai-customer-section" id="aiCustomerPanel">
+                <div class="ai-customer-panel-header">
+                    <h4>👀 AI Customer</h4>
+                </div>
+                <div class="ai-customer-info">
+                    <div class="ai-customer-avatar" id="aiCustomerAvatar">🤖</div>
+                    <div class="ai-customer-name" id="aiCustomerName">AI Customer</div>
+                </div>
+                <div class="ai-customer-patience" id="aiCustomerPatience">
+                    <div class="ai-customer-patience-header">
+                        <span class="ai-customer-patience-text">Patience</span>
+                        <span class="ai-customer-patience-percentage" id="aiCustomerPatiencePercentage">0%</span>
+                    </div>
+                    <div class="ai-customer-patience-bar" id="aiCustomerPatienceBar">
+                        <div class="ai-customer-patience-fill" id="aiCustomerPatienceFill"></div>
+                    </div>
+                </div>
+                <div class="ai-order-section">
+                    <div class="ai-order-header">
+                        <h5>🛒 AI Customer's Order</h5>
+                    </div>
+                    <div class="ai-order-items" id="aiOrderItems"></div>
+                    <div class="ai-order-total" id="aiOrderTotal"><strong>Total: $0.00</strong></div>
+                </div>
+                <div class="ai-thinking-animation" id="aiThinkingAnimation">
+                    <div class="thinking-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-stats-grid">
+                <div class="ai-stat-item">
+                    <div class="ai-stat-label">Customers Served</div>
+                    <div class="ai-stat-value" id="aiCustomersServed">0</div>
+                </div>
+                <div class="ai-stat-item">
+                    <div class="ai-stat-label">Total Earnings</div>
+                    <div class="ai-stat-value" id="aiTotalEarnings">$0.00</div>
+                </div>
+                <div class="ai-stat-item">
+                    <div class="ai-stat-label">Average Rating</div>
+                    <div class="ai-stat-value" id="aiAverageRating">0.0</div>
+                </div>
+                <div class="ai-stat-item">
+                    <div class="ai-stat-label">Current Streak</div>
+                    <div class="ai-stat-value" id="aiCurrentStreak">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Competition Results Modal -->
+        <div id="competitionResults" class="competition-results" style="display: none;">
+            <div class="results-content">
+                <div class="results-header">
+                    <h2>🏆 Competition Results</h2>
+                    <div class="final-winner" id="finalWinner">🎉 You Win!</div>
+                    <div class="winner-message" id="winnerMessage">Best 2 out of 3 categories: Player 2 - 1 AI</div>
+                </div>
+
+                <div class="category-breakdown" id="categoryBreakdown">
+                    <!-- Category results will be populated by JavaScript -->
+                </div>
+
+                <div class="results-actions">
+                    <button class="results-btn" id="newCompetitionBtn">🔄 Retry</button>
+                    <button class="results-btn" id="selectOpponentBtn">👥 Select Different Opponent</button>
+                    <button class="results-btn secondary" id="closeCompetitionBtn">Close</button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Payment Interface -->
+        <div id="paymentInterface" class="payment-interface">
+            <div class="payment-header">
+                <h3>💰 Give Change to Customer</h3>
+                <div class="payment-amount" id="paymentAmount">$0.00</div>
+                <p id="orderTotalDisplay" style="font-size: 1rem; margin: 5px 0; color: #e74c3c; font-weight: bold;">
+                    Order Total: $0.00</p>
+            </div>
+
+            <!-- Change Display - Moved Higher -->
+            <div class="change-display" id="changeDisplay">Change: $0.00</div>
+
+            <div class="money-selection">
+                <div class="bills-section">
+                    <h4>Bills</h4>
+                    <div class="bills-grid" id="billsGrid">
+                        <div class="bill-item" data-value="100">$100</div>
+                        <div class="bill-item" data-value="50">$50</div>
+                        <div class="bill-item" data-value="20">$20</div>
+                        <div class="bill-item" data-value="10">$10</div>
+                        <div class="bill-item" data-value="5">$5</div>
+                        <div class="bill-item" data-value="1">$1</div>
+                    </div>
+                </div>
+                <div class="coins-section">
+                    <h4>Coins</h4>
+                    <div class="coins-grid" id="coinsGrid">
+                        <div class="coin-item" data-value="1.00">$1</div>
+                        <div class="coin-item" data-value="0.50">50¢</div>
+                        <div class="coin-item" data-value="0.25">25¢</div>
+                        <div class="coin-item" data-value="0.10">10¢</div>
+                        <div class="coin-item" data-value="0.05">5¢</div>
+                        <div class="coin-item" data-value="0.01">1¢</div>
+                    </div>
+                </div>
+            </div>
+            <div class="change-calculation">
+                <div class="payment-buttons">
+                    <button class="undo-btn" id="undoBtn">↶ Undo Last</button>
+                    <button class="clear-selection-btn" id="clearSelectionBtn">Clear All</button>
+                    <button class="complete-transaction-btn" id="completeTransactionBtn" type="button">Submit Change</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review System -->
+        <div id="reviewPanel" class="review-panel">
+            <div class="review-content">
+                <div class="review-stars" id="reviewStars">⭐⭐⭐⭐⭐</div>
+                <div class="review-text" id="reviewText"></div>
+                <div class="review-impact" id="reviewImpact"></div>
+                <button class="next-customer-btn" id="nextCustomerBtn">Next Customer</button>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div id="tutorialOverlay" class="tutorial-overlay">
+            <div class="tutorial-content">
+                <h2>Welcome to Farmers Market Frenzy! 🌾</h2>
+                <div class="tutorial-steps" id="tutorialSteps">
+                    <div class="tutorial-step active">
+                        <h3>Step 1: Take Orders</h3>
+                        <p>Customers will approach your stand and place orders. Listen carefully to what they want!</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>Step 2: Calculate Total</h3>
+                        <p>Use mental math to calculate the total cost. No calculators allowed - do it in your head!</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>Step 3: Handle Payment</h3>
+                        <p>Customers will pay with bills and coins. Calculate the correct change!</p>
+                    </div>
+                    <div class="tutorial-step">
+                        <h3>Step 4: Get Reviews</h3>
+                        <p>Fast and accurate service earns 5-star reviews and increases your popularity!</p>
+                    </div>
+                </div>
+                <div class="tutorial-navigation">
+                    <button class="tutorial-btn" id="prevStepBtn">Previous</button>
+                    <button class="tutorial-btn" id="nextStepBtn">Next</button>
+                    <button class="tutorial-btn primary" id="startGameBtn">Start Playing!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pauseMenu" class="pause-menu">
+            <div class="pause-content">
+                <h2>Game Paused</h2>
+                <div class="pause-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Customers Served:</span>
+                        <span class="stat-value" id="customersServed">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Average Rating:</span>
+                        <span class="stat-value" id="averageRating">0.0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Earnings:</span>
+                        <span class="stat-value" id="totalEarnings">$0.00</span>
+                    </div>
+                </div>
+                <div class="pause-buttons">
+                    <button class="pause-btn-option" id="resumeBtn">Resume Game</button>
+                    <button class="pause-btn-option" id="restartBtn">Restart Game</button>
+                    <button class="pause-btn-option" id="tutorialBtn">View Tutorial</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Competition Scoreboard (Bottom) -->
+        <div id="scoringPanel" class="scoring-panel" style="display: block;">
+            <div class="scoring-header">
+                <div class="header-left">
+                    <h3>🏆 Competition Scoreboard</h3>
+                    <p class="scoring-subtitle">Best 2 out of 3 categories wins!</p>
+                </div>
+                <button
+                    id="scoringPanelToggleBtn"
+                    class="scoring-panel-toggle-btn"
+                    type="button"
+                    aria-label="Minimize competition scoreboard"
+                    aria-expanded="true">-</button>
+            </div>
+
+            <div class="scoring-grid">
+                <!-- Customers Served Category -->
+                <div class="score-category">
+                    <div class="category-header">
+                        <h4>📊 Customers Served</h4>
+                    </div>
+                    <div class="score-comparison">
+                        <div class="player-score">
+                            <div class="score-label">👤 You</div>
+                            <div class="score-value" id="customersScorePlayer">0</div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="ai-score">
+                            <div class="score-label">🤖 AI</div>
+                            <div class="score-value" id="customersScoreAI">0</div>
+                        </div>
+                    </div>
+                    <div class="round-winner" id="customersRoundWinner">🤝 Even</div>
+                </div>
+
+                <!-- Total Earnings Category -->
+                <div class="score-category">
+                    <div class="category-header">
+                        <h4>💰 Total Earnings</h4>
+                    </div>
+                    <div class="score-comparison">
+                        <div class="player-score">
+                            <div class="score-label">👤 You</div>
+                            <div class="score-value" id="earningsScorePlayer">$0.00</div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="ai-score">
+                            <div class="score-label">🤖 AI</div>
+                            <div class="score-value" id="earningsScoreAI">$0.00</div>
+                        </div>
+                    </div>
+                    <div class="round-winner" id="earningsRoundWinner">🤝 Even</div>
+                </div>
+
+                <!-- Customer Service Category -->
+                <div class="score-category">
+                    <div class="category-header">
+                        <h4>⭐ Customer Service</h4>
+                    </div>
+                    <div class="score-comparison">
+                        <div class="player-score">
+                            <div class="score-label">👤 You</div>
+                            <div class="score-value" id="serviceScorePlayer">0.0</div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="ai-score">
+                            <div class="score-label">🤖 AI</div>
+                            <div class="score-value" id="serviceScoreAI">0.0</div>
+                        </div>
+                    </div>
+                    <div class="round-winner" id="serviceRoundWinner">🤝 Even</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consolidated Audio Elements -->
+    <audio id="gameAudio" preload="auto">
+        <source
+            src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DvwG5dEQYqe8jt3ZdKFAZV"
+            type="audio/wav">
+    </audio>
+
+    <!-- Three.js and Animation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="./public/js/GameConfig.js"></script>
+    <script src="./public/js/SceneManager.js"></script>
+    <script src="./public/js/CustomerManager.js"></script>
+    <script src="./public/js/ProductManager.js"></script>
+    <script src="./public/js/MoneyManager.js"></script>
+    <script src="./public/js/TimerManager.js"></script>
+    <script src="./public/js/AIOpponentManager.js"></script>
+    <script src="./public/js/VSModeManager.js"></script>
+    <script src="./public/js/GameManager.js"></script>
+    <script src="./public/js/SettingsManager.js"></script>
+    <script src="./public/js/Main.js"></script>
+
+    <!-- Enhanced Game End Display Fallback and Testing -->
+    <script>
+        // Ensure timer system and enhanced game end display are properly initialized
+        window.addEventListener('load', () => {
+            // Check for CORS issues
+            if (window.location.protocol === 'file:') {
+                console.log('📁 Running from local file system');
+                console.log('💡 If you encounter CORS issues, consider using a local server');
+                console.log('   Python: python -m http.server 8000');
+                console.log('   Node.js: npx http-server');
+            }
+
+            // Wait for main to be available with retry mechanism
+            let initAttempts = 0;
+            const maxAttempts = 3;
+
+            const tryInitialize = () => {
+                if (window.main && window.main.gameManager) {
+                    console.log('⏰ Timer system initialized successfully');
+                    console.log('🎮 Progressive Play timer fixes are active');
+                    console.log('📊 Enhanced game end display with statistics is active');
+
+                    // Ensure timer manager is properly initialized
+                    if (window.main.gameManager.timerManager) {
+                        const timerManager = window.main.gameManager.timerManager;
+
+                        // Force timer initialization if needed
+                        if (!timerManager.isInitialized) {
+                            if (typeof timerManager.init === 'function') {
+                                console.log('🔄 Forcing timer initialization...');
+                                timerManager.init();
+                            } else {
+                                console.log('ℹ️ Timer manager is already using auto-initialization flow');
+                            }
+                        }
+
+                        // Check if timer is running properly
+                        if (!timerManager.isTimerRunning() && timerManager.enabled) {
+                            console.log('🔄 Timer not running, attempting to start...');
+                            setTimeout(() => {
+                                timerManager.startTimer();
+                            }, 100);
+                        }
+                    }
+                } else {
+                    initAttempts++;
+                    if (initAttempts < maxAttempts) {
+                        console.log(`⏳ Waiting for game initialization... (attempt ${initAttempts}/${maxAttempts})`);
+                        setTimeout(tryInitialize, 1000);
+                    } else {
+                        console.warn('⚠️ Game manager not available after maximum attempts');
+                    }
+                }
+            };
+
+            // Start initialization process
+            setTimeout(tryInitialize, 1000);
+
+            // Add timer debugging to global scope for troubleshooting after a delay
+            setTimeout(() => {
+                window.timerDebug = {
+                    getStatus: () => {
+                        if (window.main?.gameManager?.timerManager) {
+                            const tm = window.main.gameManager.timerManager;
+                            return {
+                                isRunning: tm.isTimerRunning(),
+                                isPaused: tm.isTimerPaused(),
+                                timeRemaining: tm.getTimeRemaining(),
+                                formattedTime: tm.getFormattedTimeRemaining(),
+                                gameMode: tm.getCurrentGameMode(),
+                                duration: tm.getDuration(),
+                                enabled: tm.enabled
+                            };
+                        }
+                        return null;
+                    },
+                    forceRestart: () => {
+                        if (window.main?.gameManager?.timerManager) {
+                            window.main.gameManager.timerManager.forceRestartTimer();
+                            console.log('🔄 Timer force restarted');
+                        }
+                    },
+                    reset: () => {
+                        if (window.main?.gameManager?.timerManager) {
+                            window.main.gameManager.timerManager.resetTimer();
+                            console.log('🔄 Timer reset');
+                        }
+                    },
+                    testEndDisplay: () => {
+                        if (window.main?.gameManager) {
+                            console.log('🧪 Testing enhanced game end display...');
+                            window.main.gameManager.showGameEndResults();
+                            console.log('✅ Enhanced game end display test completed');
+                        }
+                    }
+                };
+
+                // Add enhanced game end display debugging
+                window.gameEndDebug = {
+                    testPerformanceMetrics: () => {
+                        if (window.main?.gameManager?.calculatePerformanceMetrics) {
+                            const metrics = window.main.gameManager.calculatePerformanceMetrics();
+                            console.log('📊 Performance Metrics:', metrics);
+                            return metrics;
+                        }
+                        return null;
+                    },
+                    showEndModal: () => {
+                        if (window.main?.gameManager) {
+                            window.main.gameManager.showGameEndResults();
+                        }
+                    }
+                };
+
+                // Add Progressive Play enhanced display debugging
+                window.progressivePlayDebug = {
+                    testVictoryDisplay: () => {
+                        if (window.main?.gameManager?.vsModeManager) {
+                            const vsManager = window.main.gameManager.vsModeManager;
+                            // Create mock results for testing
+                            const mockResults = {
+                                overallWinner: 'player',
+                                playerStats: {
+                                    customersServed: 6,
+                                    totalEarnings: 28.50,
+                                    averageRating: 4.2
+                                },
+                                aiStats: {
+                                    customersServed: 4,
+                                    totalEarnings: 22.75,
+                                    averageRating: 3.8
+                                },
+                                categories: {
+                                    customers: 'player',
+                                    earnings: 'player',
+                                    service: 'player'
+                                }
+                            };
+                            vsManager.currentRoundResults = mockResults;
+                            vsManager.showProgressiveVictory(() => { // <-- This is a function call with a callback
+                                console.log('✅ Progressive Play victory display test completed');
+                            });
+                            console.log('🧪 Testing Progressive Play victory display...');
+                        }
+                    },
+                    testDefeatDisplay: () => {
+                        if (window.main?.gameManager?.vsModeManager) {
+                            const vsManager = window.main.gameManager.vsModeManager;
+                            // Create mock results for testing
+                            const mockResults = {
+                                overallWinner: 'ai',
+                                playerStats: {
+                                    customersServed: 3,
+                                    totalEarnings: 15.25,
+                                    averageRating: 3.2
+                                },
+                                aiStats: {
+                                    customersServed: 5,
+                                    totalEarnings: 28.50,
+                                    averageRating: 4.1
+                                },
+                                categories: {
+                                    customers: 'ai',
+                                    earnings: 'ai',
+                                    service: 'ai'
+                                }
+                            };
+                            vsManager.currentRoundResults = mockResults;
+                            vsManager.showProgressiveDefeat(() => {
+                                console.log('✅ Progressive Play defeat display test completed');
+                            });
+                            console.log('🧪 Testing Progressive Play defeat display...');
+                        }
+                    },
+                    testContinuity: () => {
+                        if (window.main?.gameManager?.vsModeManager) {
+                            const vsManager = window.main.gameManager.vsModeManager;
+                            vsManager.setGameMode('progressive');
+                            vsManager.ensureProgressivePlayContinuity();
+                            console.log('🧪 Testing Progressive Play continuity...');
+                        }
+                    }
+                };
+
+                console.log('🔧 Timer debug functions available: window.timerDebug.getStatus(), window.timerDebug.forceRestart(), window.timerDebug.reset(), window.timerDebug.testEndDisplay()');
+                console.log('📊 Game end debug functions available: window.gameEndDebug.testPerformanceMetrics(), window.gameEndDebug.showEndModal()');
+                console.log('🏆 Progressive Play debug functions available: window.progressivePlayDebug.testVictoryDisplay(), window.progressivePlayDebug.testDefeatDisplay(), window.progressivePlayDebug.testContinuity()');
+                console.log('👥 Customer flow debug function available: window.debugCustomerFlow()');
+                console.log('⏰ Timer settings debug function available: window.debugTimerSettings()');
+                console.log('🧪 Timer settings test function available: window.testTimerSettings()');
+
+            }, 1000);
+
+            // Ensure VS mode manager is properly initialized for enhanced competition results
+            setTimeout(() => {
+                if (window.main?.gameManager?.vsModeManager) {
+                    console.log('🏆 VS Mode manager initialized with enhanced competition results display');
+
+                    // Test Progressive Play enhanced display methods
+                    const vsManager = window.main.gameManager.vsModeManager;
+                    if (typeof vsManager.showProgressiveVictory === 'function' &&
+                        typeof vsManager.showProgressiveDefeat === 'function') {
+                        console.log('✅ Progressive Play enhanced display methods are available');
+                    } else {
+                        console.warn('⚠️ Progressive Play enhanced display methods not found');
+                    }
+                } else {
+                    console.warn('⚠️ Game manager not available after timeout');
+                }
+            }, 1000);
+        });
+
+        // Add global error handling for enhanced display
+        window.addEventListener('error', (event) => {
+            console.error('❌ Global error caught:', event.error);
+            // Only log if there's actually an error
+            if (event.error) {
+                if (event.error.message && event.error.message.includes('game-end')) {
+                    console.log('🔧 Attempting to recover from game end display error...');
+                    // Could add recovery logic here if needed
+                }
+            } else {
+                console.log('ℹ️ Error event without error object (likely resource loading)');
+            }
+        });
+    </script>
+
+    <script>
+        // One-time cleanup: remove old service-worker registrations/caches from previous versions
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
+                } catch (error) {
+                    console.warn('Service worker cleanup skipped:', error);
+                }
+            });
+        }
+
+        if ('caches' in window) {
+            window.addEventListener('load', async () => {
+                try {
+                    const cacheKeys = await caches.keys();
+                    await Promise.all(cacheKeys.map(cacheKey => caches.delete(cacheKey)));
+                } catch (error) {
+                    console.warn('Cache cleanup skipped:', error);
+                }
+            });
+        }
+
+        // Enhanced Game End Display Fallback and Testing
+        window.addEventListener('load', () => {
+            // Ensure enhanced display works even if there are loading issues
+            setTimeout(() => {
+                if (window.main && window.main.gameManager) {
+                    // Test that the enhanced methods are available
+                    if (typeof window.main.gameManager.calculatePerformanceMetrics === 'function') {
+                        console.log('✅ Enhanced game end display methods are available');
+                    } else {
+                        console.warn('⚠️ Enhanced game end display methods not found, attempting to reload...');
+                        // Could add fallback logic here
+                    }
+
+                    // Test VS mode enhanced display
+                    if (window.main.gameManager.vsModeManager &&
+                        typeof window.main.gameManager.vsModeManager.getCategoryDifferenceText === 'function') {
+                        console.log('✅ Enhanced VS mode competition results are available');
+                    } else {
+                        console.warn('⚠️ Enhanced VS mode competition results not found');
+                    }
+                }
+            }, 2000); // Wait a bit longer to ensure everything is loaded
+        });
+
+        // Prevent zoom on double tap (mobile optimization)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // MOBILE FIX: Ensure touch events work properly for game buttons
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add touch event listeners for critical game buttons
+            const criticalButtons = [
+                'nextCustomerBtn',
+                'submitBtn',
+                'completeTransactionBtn'
+            ];
+
+            criticalButtons.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    // Add both touch and click events for maximum compatibility
+                    button.addEventListener('touchstart', function (e) {
+                        e.preventDefault();
+                        this.click(); // Trigger the click event
+                    }, { passive: false });
+
+                    // Add visual feedback for touch
+                    button.addEventListener('touchstart', function () {
+                        this.style.transform = 'scale(0.95)';
+                    });
+
+                    button.addEventListener('touchend', function () {
+                        this.style.transform = 'scale(1)';
+                    });
+                }
+            });
+
+            console.log('📱 iPad Fix: Enhanced touch event handling enabled');
+        });
+    </script>
+
+
+</body>
+
+</html>

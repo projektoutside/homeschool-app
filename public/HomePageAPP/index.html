@@ -2692,6 +2692,10 @@
             wingLeft: "M90,90 Q30,40 0,70 Q40,120 85,100"
         };
         const SCALE = 0.1;
+        const EQUIP_GLOW_PULSE_DURATION_SEC = 2.2;
+        const EQUIP_PROP_REVEAL_AT_PEAK_PROGRESS = 0.5;
+        const EQUIP_PROP_REVEAL_RAMP_DURATION_SEC = 0.34;
+        const EQUIP_PROP_REVEAL_START_SCALE = 0.84;
 
         // --- SCENE SETUP ---
         const container = document.getElementById('game-container');
@@ -2705,6 +2709,9 @@
         container.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
+        const equipGlowOverlayGroup = new THREE.Group();
+        equipGlowOverlayGroup.renderOrder = 8;
+        scene.add(equipGlowOverlayGroup);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 140);
         camera.position.set(0, 1.2, 20);
@@ -3098,6 +3105,34 @@
         });
         haloWide.position.set(0, 0.15, -2.4);
         creatureGroup.add(haloWide);
+
+        const equipGlowCharacterCore = createSoftHaloSprite({
+            size: 10.8,
+            inner: 'rgba(255, 243, 182, 0.82)',
+            mid: 'rgba(120, 224, 255, 0.42)',
+            outer: 'rgba(36, 118, 220, 0.0)'
+        });
+        equipGlowCharacterCore.position.set(0, 0.28, -1.65);
+        equipGlowCharacterCore.material.opacity = 0;
+        equipGlowCharacterCore.material.depthTest = false;
+        equipGlowCharacterCore.visible = false;
+        equipGlowCharacterCore.renderOrder = 9;
+        equipGlowCharacterCore.userData.baseScale = equipGlowCharacterCore.scale.x;
+        creatureGroup.add(equipGlowCharacterCore);
+
+        const equipGlowCharacterWide = createSoftHaloSprite({
+            size: 17.8,
+            inner: 'rgba(163, 238, 255, 0.36)',
+            mid: 'rgba(108, 168, 255, 0.22)',
+            outer: 'rgba(20, 84, 210, 0.0)'
+        });
+        equipGlowCharacterWide.position.set(0, 0.2, -2.45);
+        equipGlowCharacterWide.material.opacity = 0;
+        equipGlowCharacterWide.material.depthTest = false;
+        equipGlowCharacterWide.visible = false;
+        equipGlowCharacterWide.renderOrder = 9;
+        equipGlowCharacterWide.userData.baseScale = equipGlowCharacterWide.scale.x;
+        creatureGroup.add(equipGlowCharacterWide);
 
         const contactShadowTexture = (() => {
             const canvas = document.createElement('canvas');
@@ -5965,6 +6000,25 @@
 
         const activeProps = new Set();
         const playerInventory = new Set();
+        const prewarmedMainRendererPropKeys = new Set();
+        const scheduledMainRendererWarmups = new Set();
+        const equipGlowAuraByTarget = new WeakMap();
+        const equipGlowScratch = new THREE.Vector3();
+        const equipGlowState = {
+            active: false,
+            timer: 0,
+            propKey: null,
+            activeAuras: [],
+            pendingRevealLoadout: false,
+            pendingRevealAtProgress: 0
+        };
+        const equipPropRevealState = {
+            active: false,
+            timer: 0,
+            propKey: null,
+            target: null,
+            baseScale: new THREE.Vector3(1, 1, 1)
+        };
 
         function getCategoryLimit(category) {
             return CATEGORY_EQUIP_LIMITS[category] ?? 1;
@@ -6062,6 +6116,307 @@
             materialBody.clearcoatRoughness = 0.62;
         }
 
+        function markPropMainRendererWarm(propKey) {
+            if (!propKey) return;
+            prewarmedMainRendererPropKeys.add(propKey);
+        }
+
+        function isPropMainRendererWarm(propKey) {
+            return !!propKey && prewarmedMainRendererPropKeys.has(propKey);
+        }
+
+        function warmPropForMainRenderer(propKey) {
+            if (!propKey || isPropMainRendererWarm(propKey)) {
+                return true;
+            }
+
+            const metadata = propRegistry.get(propKey);
+            const prop = metadata?.object;
+            if (!prop) {
+                return false;
+            }
+
+            const left = prop.userData?.left;
+            const right = prop.userData?.right;
+            const wasVisible = prop.visible;
+            const leftWasVisible = left?.visible ?? false;
+            const rightWasVisible = right?.visible ?? false;
+
+            try {
+                if (left && right) {
+                    left.visible = true;
+                    right.visible = true;
+                }
+                prop.visible = true;
+                renderer.compile(scene, camera);
+                markPropMainRendererWarm(propKey);
+                return true;
+            } catch (_) {
+                return false;
+            } finally {
+                prop.visible = wasVisible;
+                if (left) left.visible = leftWasVisible;
+                if (right) right.visible = rightWasVisible;
+            }
+        }
+
+        function schedulePropWarmForMainRenderer(propKey) {
+            if (!propKey || isPropMainRendererWarm(propKey) || scheduledMainRendererWarmups.has(propKey)) {
+                return;
+            }
+            scheduledMainRendererWarmups.add(propKey);
+            const run = () => {
+                scheduledMainRendererWarmups.delete(propKey);
+                warmPropForMainRenderer(propKey);
+            };
+            if (window.requestIdleCallback) {
+                window.requestIdleCallback(() => run(), { timeout: 360 });
+            } else {
+                window.setTimeout(run, 0);
+            }
+        }
+
+        function collectEquipGlowTargets(propObject) {
+            const targets = [];
+            const appendTarget = (object3D) => {
+                if (!object3D || !object3D.isObject3D) return;
+                if (targets.includes(object3D)) return;
+                targets.push(object3D);
+            };
+
+            const left = propObject?.userData?.left;
+            const right = propObject?.userData?.right;
+            appendTarget(left);
+            appendTarget(right);
+
+            const rootHasGeometry = propObject?.isObject3D ? hasFiniteRenderableGeometry(propObject) : false;
+            if (rootHasGeometry || targets.length === 0) {
+                appendTarget(propObject);
+            }
+
+            return targets.filter((object3D) => object3D?.parent);
+        }
+
+        function ensureEquipGlowAuraForTarget(targetObject) {
+            if (!targetObject || !targetObject.isObject3D) {
+                return null;
+            }
+            const existing = equipGlowAuraByTarget.get(targetObject);
+            if (existing) {
+                return existing;
+            }
+
+            const bounds = computeSafeObjectBounds(targetObject, { respectVisibility: false, includePoints: true });
+            const worldCenter = bounds ? bounds.getCenter(new THREE.Vector3()) : new THREE.Vector3();
+            const safeSize = bounds ? getFiniteSizeVector(bounds.getSize(new THREE.Vector3()), 0.72) : new THREE.Vector3(0.72, 0.72, 0.72);
+            targetObject.updateMatrixWorld(true);
+            const localCenter = targetObject.worldToLocal(worldCenter.clone());
+            const maxSpan = Math.max(safeSize.x, safeSize.y, safeSize.z);
+            const auraSize = THREE.MathUtils.clamp(maxSpan * 2.9, 0.9, 16.5);
+
+            const auraSprite = createSoftHaloSprite({
+                size: auraSize,
+                inner: 'rgba(255, 247, 196, 0.94)',
+                mid: 'rgba(133, 232, 255, 0.48)',
+                outer: 'rgba(38, 116, 224, 0.0)'
+            });
+            auraSprite.visible = false;
+            auraSprite.material.opacity = 0;
+            auraSprite.material.depthTest = false;
+            auraSprite.renderOrder = 9;
+            equipGlowOverlayGroup.add(auraSprite);
+
+            const aura = {
+                target: targetObject,
+                localCenter,
+                baseSize: auraSize,
+                sprite: auraSprite
+            };
+            equipGlowAuraByTarget.set(targetObject, aura);
+            return aura;
+        }
+
+        function clearEquipVisualGlowPulse() {
+            equipGlowCharacterCore.visible = false;
+            equipGlowCharacterCore.material.opacity = 0;
+            equipGlowCharacterCore.scale.setScalar(equipGlowCharacterCore.userData.baseScale || 10.8);
+            equipGlowCharacterWide.visible = false;
+            equipGlowCharacterWide.material.opacity = 0;
+            equipGlowCharacterWide.scale.setScalar(equipGlowCharacterWide.userData.baseScale || 17.8);
+
+            for (const aura of equipGlowState.activeAuras) {
+                if (!aura?.sprite) continue;
+                aura.sprite.visible = false;
+                aura.sprite.material.opacity = 0;
+                aura.sprite.scale.set(aura.baseSize, aura.baseSize, 1);
+            }
+
+            equipGlowState.active = false;
+            equipGlowState.timer = 0;
+            equipGlowState.propKey = null;
+            equipGlowState.activeAuras = [];
+        }
+
+        function clearEquipPropRevealDelay() {
+            equipGlowState.pendingRevealLoadout = false;
+            equipGlowState.pendingRevealAtProgress = 0;
+        }
+
+        function clearEquipPropRevealRamp() {
+            if (equipPropRevealState.target) {
+                equipPropRevealState.target.scale.copy(equipPropRevealState.baseScale);
+            }
+            equipPropRevealState.active = false;
+            equipPropRevealState.timer = 0;
+            equipPropRevealState.propKey = null;
+            equipPropRevealState.target = null;
+        }
+
+        function startEquipPropRevealRamp(propKey) {
+            const metadata = propRegistry.get(propKey);
+            const target = metadata?.object;
+            if (!target || !target.isObject3D) {
+                clearEquipPropRevealRamp();
+                return;
+            }
+
+            clearEquipPropRevealRamp();
+            equipPropRevealState.active = true;
+            equipPropRevealState.timer = 0;
+            equipPropRevealState.propKey = propKey;
+            equipPropRevealState.target = target;
+            equipPropRevealState.baseScale.copy(target.scale);
+            target.scale.copy(equipPropRevealState.baseScale).multiplyScalar(EQUIP_PROP_REVEAL_START_SCALE);
+        }
+
+        function updateEquipPropRevealRamp(dt) {
+            if (!equipPropRevealState.active) {
+                return;
+            }
+            const target = equipPropRevealState.target;
+            if (!target || !target.parent) {
+                clearEquipPropRevealRamp();
+                return;
+            }
+
+            equipPropRevealState.timer += dt;
+            const progress = THREE.MathUtils.clamp(
+                equipPropRevealState.timer / EQUIP_PROP_REVEAL_RAMP_DURATION_SEC,
+                0,
+                1
+            );
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const overshoot = Math.sin(progress * Math.PI) * 0.035;
+            const revealScale = THREE.MathUtils.lerp(EQUIP_PROP_REVEAL_START_SCALE, 1, easeOut) + overshoot;
+            target.scale.copy(equipPropRevealState.baseScale).multiplyScalar(revealScale);
+
+            if (progress >= 1) {
+                clearEquipPropRevealRamp();
+            }
+        }
+
+        function queueEquipPropRevealAfterGlow(progress = EQUIP_PROP_REVEAL_AT_PEAK_PROGRESS) {
+            equipGlowState.pendingRevealLoadout = true;
+            const normalizedProgress = Number(progress);
+            equipGlowState.pendingRevealAtProgress = Number.isFinite(normalizedProgress)
+                ? THREE.MathUtils.clamp(normalizedProgress, 0, 1)
+                : EQUIP_PROP_REVEAL_AT_PEAK_PROGRESS;
+        }
+
+        function flushEquipPropRevealIfPending() {
+            if (!equipGlowState.pendingRevealLoadout) {
+                return;
+            }
+            const revealPropKey = equipGlowState.propKey;
+            clearEquipPropRevealDelay();
+            applyLoadout();
+            if (revealPropKey) {
+                startEquipPropRevealRamp(revealPropKey);
+            }
+        }
+
+        function startEquipVisualGlowPulse(propKey) {
+            const metadata = propRegistry.get(propKey);
+            if (!metadata?.object) {
+                return false;
+            }
+
+            schedulePropWarmForMainRenderer(propKey);
+            clearEquipPropRevealDelay();
+            clearEquipPropRevealRamp();
+            clearEquipVisualGlowPulse();
+            const targets = collectEquipGlowTargets(metadata.object);
+            equipGlowState.activeAuras = targets
+                .map((targetObject) => ensureEquipGlowAuraForTarget(targetObject))
+                .filter(Boolean);
+            equipGlowState.active = true;
+            equipGlowState.timer = 0;
+            equipGlowState.propKey = propKey;
+            return true;
+        }
+
+        function updateEquipVisualGlowPulse(dt, t) {
+            if (!equipGlowState.active) {
+                return;
+            }
+
+            equipGlowState.timer += dt;
+            const progress = THREE.MathUtils.clamp(equipGlowState.timer / EQUIP_GLOW_PULSE_DURATION_SEC, 0, 1);
+            const envelope = Math.sin(progress * Math.PI);
+            const strength = Math.max(0, envelope);
+
+            const coreBaseScale = equipGlowCharacterCore.userData.baseScale || 10.8;
+            const wideBaseScale = equipGlowCharacterWide.userData.baseScale || 17.8;
+            const characterVisible = strength > 0.006;
+            equipGlowCharacterCore.visible = characterVisible;
+            equipGlowCharacterWide.visible = characterVisible;
+            if (characterVisible) {
+                equipGlowCharacterCore.material.opacity = THREE.MathUtils.clamp(0.05 + strength * 0.92, 0, 0.98);
+                equipGlowCharacterWide.material.opacity = THREE.MathUtils.clamp(0.04 + strength * 0.56, 0, 0.92);
+                equipGlowCharacterCore.scale.setScalar(coreBaseScale * (1 + progress * 0.36 + strength * 0.22));
+                equipGlowCharacterWide.scale.setScalar(wideBaseScale * (1 + progress * 0.48 + strength * 0.14));
+            }
+
+            if (
+                equipGlowState.pendingRevealLoadout &&
+                equipGlowState.propKey &&
+                !isPropMainRendererWarm(equipGlowState.propKey) &&
+                progress >= 0.2
+            ) {
+                warmPropForMainRenderer(equipGlowState.propKey);
+            }
+
+            if (equipGlowState.pendingRevealLoadout && progress >= equipGlowState.pendingRevealAtProgress) {
+                flushEquipPropRevealIfPending();
+            }
+
+            for (let i = 0; i < equipGlowState.activeAuras.length; i++) {
+                const aura = equipGlowState.activeAuras[i];
+                const target = aura?.target;
+                const sprite = aura?.sprite;
+                if (!target || !sprite || !target.parent || !target.visible || strength <= 0.008) {
+                    if (sprite) {
+                        sprite.visible = false;
+                        sprite.material.opacity = 0;
+                    }
+                    continue;
+                }
+
+                target.updateMatrixWorld(true);
+                equipGlowScratch.copy(aura.localCenter).applyMatrix4(target.matrixWorld);
+                sprite.position.copy(equipGlowScratch);
+                sprite.visible = true;
+                const flicker = 0.9 + Math.sin(t * 15.2 + i * 0.68) * 0.1;
+                sprite.material.opacity = THREE.MathUtils.clamp((0.08 + strength * 0.86) * flicker, 0, 0.98);
+                const auraScale = aura.baseSize * (1 + progress * 0.54 + Math.sin(t * 11.6 + i * 0.82) * 0.04);
+                sprite.scale.set(auraScale, auraScale, 1);
+            }
+
+            if (progress >= 1) {
+                clearEquipVisualGlowPulse();
+            }
+        }
+
         function toggleProp(propKey) {
             const metadata = propRegistry.get(propKey);
             if (!metadata) return;
@@ -6098,12 +6453,26 @@
             if (shouldActivate) {
                 activeProps.add(propKey);
             }
-            applyLoadout();
+            if (shouldActivate) {
+                const startedGlow = startEquipVisualGlowPulse(propKey);
+                if (startedGlow) {
+                    queueEquipPropRevealAfterGlow();
+                } else {
+                    clearEquipPropRevealRamp();
+                    applyLoadout();
+                }
+            } else {
+                clearEquipPropRevealDelay();
+                clearEquipPropRevealRamp();
+                applyLoadout();
+            }
         }
 
         function clearAllProps() {
             activeProps.clear();
             activeCategorySelection.clear();
+            clearEquipPropRevealDelay();
+            clearEquipPropRevealRamp();
             applyLoadout();
         }
 
@@ -6175,6 +6544,13 @@
         const HOME_PAGE_INACTIVE_RENDER_INTERVAL_MS = 260;
         const HOME_PAGE_NATURE_SOUNDS_SOURCE = encodeURI('./HomePageMusic/NatureBirds/NatureBirdsBackground.mp3');
         const HOME_PAGE_NATURE_SOUNDS_DEFAULT_VOLUME = 0.35;
+        const HOME_PAGE_MYSTERY_PULL_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/stringsound.mp3');
+        const HOME_PAGE_MYSTERY_RELEASE_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/stringrelease.mp3');
+        const HOME_PAGE_MYSTERY_BOX_LANDING_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/MysteryBoxLanding.mp3');
+        const HOME_PAGE_MYSTERY_BOX_SHAKE_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/MysteryBoxShaking.mp3');
+        const HOME_PAGE_MYSTERY_BOX_OPEN_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/openingboxsound.mp3');
+        const HOME_PAGE_MYSTERY_EQUIP_PROP_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/equipingprop.mp3');
+        const MYSTERY_BOX_SHAKE_SFX_MIN_INTERVAL_MS = 120;
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
         const HOME_PAGE_MUSIC_STORAGE_KEY = 'homepage_music_track_v1';
         const homePageRouteAudioState = {
@@ -6208,6 +6584,16 @@
             muted: false,
             volume: HOME_PAGE_NATURE_SOUNDS_DEFAULT_VOLUME,
             shouldPlay: true
+        };
+        const mysterySfxState = {
+            pullAudio: null,
+            releaseAudio: null,
+            boxLandingAudio: null,
+            boxShakeAudio: null,
+            boxOpenAudio: null,
+            equipPropAudio: null,
+            pullActive: false,
+            lastBoxShakeAtMs: -Infinity
         };
 
         function clampUnitVolume(value, fallback = 0.7) {
@@ -6260,6 +6646,167 @@
             audio.autoplay = false;
             audio.playsInline = true;
             return audio;
+        }
+
+        function createMysterySfxAudio(source, { loop = false } = {}) {
+            if (!source) return null;
+            const audio = new Audio(source);
+            audio.loop = Boolean(loop);
+            audio.preload = 'auto';
+            audio.autoplay = false;
+            audio.playsInline = true;
+            return audio;
+        }
+
+        function ensureMysteryPullAudio() {
+            if (!mysterySfxState.pullAudio) {
+                mysterySfxState.pullAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_PULL_SOUND_SOURCE, { loop: true });
+            }
+            return mysterySfxState.pullAudio;
+        }
+
+        function ensureMysteryReleaseAudio() {
+            if (!mysterySfxState.releaseAudio) {
+                mysterySfxState.releaseAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_RELEASE_SOUND_SOURCE, { loop: false });
+            }
+            return mysterySfxState.releaseAudio;
+        }
+
+        function ensureMysteryBoxLandingAudio() {
+            if (!mysterySfxState.boxLandingAudio) {
+                mysterySfxState.boxLandingAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_BOX_LANDING_SOUND_SOURCE, { loop: false });
+            }
+            return mysterySfxState.boxLandingAudio;
+        }
+
+        function ensureMysteryBoxShakeAudio() {
+            if (!mysterySfxState.boxShakeAudio) {
+                mysterySfxState.boxShakeAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_BOX_SHAKE_SOUND_SOURCE, { loop: false });
+            }
+            return mysterySfxState.boxShakeAudio;
+        }
+
+        function ensureMysteryBoxOpenAudio() {
+            if (!mysterySfxState.boxOpenAudio) {
+                mysterySfxState.boxOpenAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_BOX_OPEN_SOUND_SOURCE, { loop: false });
+            }
+            return mysterySfxState.boxOpenAudio;
+        }
+
+        function ensureMysteryEquipPropAudio() {
+            if (!mysterySfxState.equipPropAudio) {
+                mysterySfxState.equipPropAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_EQUIP_PROP_SOUND_SOURCE, { loop: false });
+            }
+            return mysterySfxState.equipPropAudio;
+        }
+
+        function canPlayMysterySfx() {
+            if (!homePageRouteAudioState.isActive) return false;
+            if (homePageMusicState.muted) return false;
+            return homePageMusicState.sfxVolume > 0.0005;
+        }
+
+        function applyMysterySfxGain() {
+            const shouldMute = !canPlayMysterySfx();
+            const baseVolume = clampUnitVolume(homePageMusicState.sfxVolume, 0.75);
+            const applyGain = (audio, gain = 1) => {
+                if (!audio) return;
+                audio.muted = shouldMute;
+                audio.volume = shouldMute ? 0 : clampUnitVolume(baseVolume * gain, baseVolume);
+            };
+            applyGain(mysterySfxState.pullAudio, 0.72);
+            applyGain(mysterySfxState.releaseAudio, 0.9);
+            applyGain(mysterySfxState.boxLandingAudio, 0.96);
+            applyGain(mysterySfxState.boxShakeAudio, 0.88);
+            applyGain(mysterySfxState.boxOpenAudio, 0.92);
+            applyGain(mysterySfxState.equipPropAudio, 0.9);
+        }
+
+        function playMysterySfxNow(audio, restart = true) {
+            if (!audio || !canPlayMysterySfx()) return false;
+            applyMysterySfxGain();
+            if (restart) {
+                try {
+                    audio.currentTime = 0;
+                } catch (_) {}
+            }
+            const playAttempt = audio.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {});
+            }
+            return true;
+        }
+
+        function startMysteryScrollPullSfx() {
+            mysterySfxState.pullActive = true;
+            const audio = ensureMysteryPullAudio();
+            if (!audio || !canPlayMysterySfx()) return;
+            applyMysterySfxGain();
+            if (!audio.paused && !audio.ended) return;
+            try {
+                audio.currentTime = 0;
+            } catch (_) {}
+            const playAttempt = audio.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {});
+            }
+        }
+
+        function stopMysteryScrollPullSfx(resetToStart = false) {
+            mysterySfxState.pullActive = false;
+            const audio = mysterySfxState.pullAudio;
+            if (!audio) return;
+            try {
+                audio.pause();
+            } catch (_) {}
+            if (resetToStart) {
+                try {
+                    audio.currentTime = 0;
+                } catch (_) {}
+            }
+        }
+
+        function playMysteryStringReleaseSfx() {
+            stopMysteryScrollPullSfx(true);
+            playMysterySfxNow(ensureMysteryReleaseAudio(), true);
+        }
+
+        function playMysteryBoxLandingSfx() {
+            playMysterySfxNow(ensureMysteryBoxLandingAudio(), true);
+        }
+
+        function playMysteryBoxShakeSfx() {
+            const now = performance.now();
+            if ((now - mysterySfxState.lastBoxShakeAtMs) < MYSTERY_BOX_SHAKE_SFX_MIN_INTERVAL_MS) {
+                return;
+            }
+            mysterySfxState.lastBoxShakeAtMs = now;
+            playMysterySfxNow(ensureMysteryBoxShakeAudio(), true);
+        }
+
+        function playMysteryBoxOpenSfx() {
+            playMysterySfxNow(ensureMysteryBoxOpenAudio(), true);
+        }
+
+        function playMysteryEquipPropSfx() {
+            playMysterySfxNow(ensureMysteryEquipPropAudio(), true);
+        }
+
+        function stopMysterySfxImmediately() {
+            stopMysteryScrollPullSfx(true);
+            const oneShots = [
+                mysterySfxState.releaseAudio,
+                mysterySfxState.boxLandingAudio,
+                mysterySfxState.boxShakeAudio,
+                mysterySfxState.boxOpenAudio,
+                mysterySfxState.equipPropAudio
+            ];
+            oneShots.forEach((audio) => {
+                if (!audio) return;
+                try {
+                    audio.pause();
+                } catch (_) {}
+            });
         }
 
         function releaseHomePageMusicAudio(audio) {
@@ -6339,6 +6886,7 @@
             clearScheduledHomePageMusicStart();
             clearHomePageMusicTransitionAnimation();
             homePageMusicState.transitionToken += 1;
+            stopMysterySfxImmediately();
             if (homePageMusicState.queuedAudio) {
                 releaseHomePageMusicAudio(homePageMusicState.queuedAudio);
                 homePageMusicState.queuedAudio = null;
@@ -6629,6 +7177,7 @@
         function startHomePageActivationAudioSequence() {
             applyHomePageMusicGain();
             applyNatureSoundsGain();
+            applyMysterySfxGain();
             if (!homePageMusicState.muted && !natureSoundState.muted && natureSoundState.shouldPlay) {
                 attemptNatureSoundsPlayback();
                 if (homePageMusicState.shouldPlay) {
@@ -6704,6 +7253,7 @@
             homePageMusicState.muted = Boolean(muted);
             applyHomePageMusicGain();
             applyNatureSoundsGain();
+            applyMysterySfxGain();
             if (homePageMusicState.muted) {
                 pauseHomePageAudioImmediately();
                 return;
@@ -6729,6 +7279,7 @@
 
         function setSfxVolume(volume) {
             homePageMusicState.sfxVolume = clampUnitVolume(volume, homePageMusicState.sfxVolume);
+            applyMysterySfxGain();
         }
 
         function setNatureSoundsMuted(muted) {
@@ -6766,12 +7317,17 @@
             }
 
             homePageRouteAudioState.isActive = nextActive;
+            applyMysterySfxGain();
             if (nextActive) {
                 startHomePageActivationAudioSequence();
                 resumeBackgroundPlaybackIfActive();
                 return;
             }
 
+            stopMysterySfxImmediately();
+            clearEquipPropRevealDelay();
+            clearEquipPropRevealRamp();
+            clearEquipVisualGlowPulse();
             clearScheduledHomePageMusicStart();
             animateHomePageRouteGain(0, HOME_PAGE_ROUTE_FADE_OUT_MS, { pauseAfter: true });
             pauseBackgroundPlaybackImmediately();
@@ -6806,6 +7362,13 @@
             const storedTrackId = readStoredHomePageMusicTrackId();
             swapToHomePageMusicTrackImmediately(storedTrackId);
             ensureNatureSoundsAudio();
+            ensureMysteryPullAudio();
+            ensureMysteryReleaseAudio();
+            ensureMysteryBoxLandingAudio();
+            ensureMysteryBoxShakeAudio();
+            ensureMysteryBoxOpenAudio();
+            ensureMysteryEquipPropAudio();
+            applyMysterySfxGain();
             homePageRouteAudioState.gain = 0;
             startHomePageActivationAudioSequence();
         }
@@ -8129,6 +8692,7 @@
             if (!metadata) {
                 return false;
             }
+            const wasAlreadyEquipped = activeProps.has(propKey);
             const propCategory = metadata.category;
             if (singleEquipCategories.has(propCategory)) {
                 const currentForCategory = getCategorySelection(propCategory).filter((entry) => entry !== propKey);
@@ -8149,8 +8713,21 @@
                 setCategorySelection(propCategory, currentForCategory);
             }
             activeProps.add(propKey);
-            applyLoadout();
             updatePropButtonStates();
+            if (!wasAlreadyEquipped) {
+                playMysteryEquipPropSfx();
+                const startedGlow = startEquipVisualGlowPulse(propKey);
+                if (startedGlow) {
+                    queueEquipPropRevealAfterGlow();
+                } else {
+                    clearEquipPropRevealRamp();
+                    applyLoadout();
+                }
+            } else {
+                clearEquipPropRevealDelay();
+                clearEquipPropRevealRamp();
+                applyLoadout();
+            }
             return true;
         }
 
@@ -8168,6 +8745,8 @@
             const currentForCategory = getCategorySelection(propCategory).filter((entry) => entry !== propKey);
             setCategorySelection(propCategory, currentForCategory);
 
+            clearEquipPropRevealDelay();
+            clearEquipPropRevealRamp();
             applyLoadout();
             updatePropButtonStates();
             return true;
@@ -9983,6 +10562,7 @@
                 return;
             }
             clearMysteryBox();
+            mysterySfxState.lastBoxShakeAtMs = -Infinity;
 
             const model = createMysteryBoxModel();
             const creaturePosition = new THREE.Vector3();
@@ -10132,6 +10712,7 @@
 
         function clearMysteryBox() {
             clearMysteryGroundShadows();
+            stopMysteryScrollPullSfx(true);
             if (mysteryState.root) {
                 scene.remove(mysteryState.root);
             }
@@ -11336,6 +11917,7 @@
             mysteryState.rewardKey = rewardKey;
             mysteryState.rewardLabel = rewardLabel;
             cacheMysteryRewardPreviewBuild(rewardKey);
+            schedulePropWarmForMainRenderer(rewardKey);
             const stashResult = stashPropInInventory(rewardKey, { deferRender: true });
             mysteryState.openStartPressDepth = THREE.MathUtils.clamp(mysteryState.pressDepth || 0, 0, 1);
             mysteryState.pressActive = false;
@@ -11344,6 +11926,7 @@
             mysteryState.pressDepth = 0;
             mysteryState.rattleTimer = 0;
             mysteryState.rattleCooldown = MYSTERY_BOX_CONFIG.landedRattleInterval || 2.5;
+            playMysteryBoxOpenSfx();
             mysteryState.phase = 'opening';
             mysteryState.timer = 0;
             mysteryState.rewardShown = false;
@@ -11387,6 +11970,7 @@
                 mysteryState.rattleTimer,
                 (MYSTERY_BOX_CONFIG.landedRattleDuration || 0.44) * 0.32
             );
+            playMysteryBoxShakeSfx();
             return true;
         }
 
@@ -11440,6 +12024,7 @@
             mysterySignSlingshotState.returnVelocity = 0;
             mysterySignSlingshotState.phase = 'drag';
             mysteryScrollSign.style.cursor = 'grabbing';
+            startMysteryScrollPullSfx();
             return true;
         }
 
@@ -11459,8 +12044,13 @@
             mysterySignSlingshotState.startY = 0;
             mysterySignSlingshotState.pullOffset = 0;
             mysteryScrollSign.style.cursor = 'grab';
+            stopMysteryScrollPullSfx(true);
             if (!didPullEnough) return false;
-            return launchMysterySignByPull(pulledOffset);
+            const launched = launchMysterySignByPull(pulledOffset);
+            if (launched) {
+                playMysteryStringReleaseSfx();
+            }
+            return launched;
         }
 
         function getMysterySignLaunchDistance(pullOffset = 0) {
@@ -11707,6 +12297,7 @@
                 if (fallRatio >= 1 || root.position.y <= mysteryState.landingY) {
                     root.position.copy(mysteryState.landingPoint);
                     root.position.y = mysteryState.landingY;
+                    playMysteryBoxLandingSfx();
                     mysteryState.phase = 'landed';
                     mysteryState.timer = 0;
                     mysteryState.landedYaw = root.rotation.y;
@@ -11753,6 +12344,7 @@
                         rattleDuration * 1.2
                     );
                     mysteryState.rattleSeed = Math.random() * Math.PI * 2;
+                    playMysteryBoxShakeSfx();
                 }
                 let rattleStrength = 0;
                 if (mysteryState.rattleTimer > 0) {
@@ -14368,6 +14960,9 @@
                 prop.rotation.z = prop.userData.baseRotation.z - creatureGroup.rotation.z;
             }
 
+            updateEquipVisualGlowPulse(dt, t);
+            updateEquipPropRevealRamp(dt);
+
             let eyeTargetX = THREE.MathUtils.clamp(cursor.x * 0.13, -0.1, 0.1);
             let eyeTargetY = THREE.MathUtils.clamp(cursor.y * 0.1, -0.08, 0.08);
             if (mysteryFlightFx.active) {
@@ -14461,11 +15056,12 @@
                 if (b.priority !== a.priority) return b.priority - a.priority;
                 return a.key.localeCompare(b.key);
             })
-            .map(({ object }) => {
+            .map(({ key, object }) => {
                 const prop = object;
                 const left = prop.userData.left;
                 const right = prop.userData.right;
                 return {
+                    key,
                     prop,
                     wasVisible: prop.visible,
                     leftWasVisible: left?.visible ?? false,
@@ -14476,9 +15072,9 @@
             });
 
         const runPropPrewarm = (deadline) => {
-            const batchSize = 2;
+            const batchSize = 3;
             for (let i = 0; i < batchSize && prewarmProps.length > 0; i++) {
-                const { prop, wasVisible, leftWasVisible, rightWasVisible, left, right } = prewarmProps.shift();
+                const { key, prop, wasVisible, leftWasVisible, rightWasVisible, left, right } = prewarmProps.shift();
 
                 if (left && right) {
                     left.visible = true;
@@ -14486,7 +15082,10 @@
                 }
 
                 prop.visible = true;
-                renderer.compile(scene, camera);
+                try {
+                    renderer.compile(scene, camera);
+                    markPropMainRendererWarm(key || prop.userData?.propKey);
+                } catch (_) {}
                 prop.visible = wasVisible;
 
                 if (left) left.visible = leftWasVisible;
@@ -14499,17 +15098,17 @@
 
             if (prewarmProps.length > 0) {
                 if (window.requestIdleCallback) {
-                    window.requestIdleCallback(runPropPrewarm, { timeout: 2000 });
+                    window.requestIdleCallback(runPropPrewarm, { timeout: 800 });
                 } else {
-                    setTimeout(runPropPrewarm, 16);
+                    setTimeout(runPropPrewarm, 8);
                 }
             }
         };
 
         if (window.requestIdleCallback) {
-            window.requestIdleCallback(runPropPrewarm, { timeout: 2000 });
+            window.requestIdleCallback(runPropPrewarm, { timeout: 800 });
         } else {
-            setTimeout(runPropPrewarm, 16);
+            setTimeout(runPropPrewarm, 8);
         }
         animate();
     </script>

@@ -5,6 +5,7 @@ import './MainLayout.css';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
 import UserHomePage from '../pages/UserHomePage';
+import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
 
 const LazyClassroomPage = React.lazy(() => import('../pages/ClassroomPage'));
 
@@ -35,6 +36,8 @@ const getClassroomWarmupDelayMs = (): number => {
 };
 
 const MainLayout: React.FC = () => {
+    useGlobalUiClickSound();
+
     const location = useLocation();
     const navigate = useNavigate();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -197,7 +200,7 @@ const MainLayout: React.FC = () => {
 
             {/* Persistent Bottom Navigation */}
             {/* Render always, or maybe hide on GamePlayer if strictly needed? User said "regardless of which page". */}
-            <BottomNavigation onOpenSettings={handleSettingsButtonClick} />
+            <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
 
             {/* Global Settings Panel */}
             <GlobalSettings

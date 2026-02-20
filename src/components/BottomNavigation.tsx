@@ -6,6 +6,7 @@ import './BottomNavigation.css';
 
 interface BottomNavigationProps {
     onOpenSettings: () => void;
+    isSettingsOpen: boolean;
 }
 
 const HOME_TRANSITION_FADE_IN_MS = 220;
@@ -14,7 +15,7 @@ const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 const STATS_WAKE_GLOW_MS = 2000;
 
-export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings }) => {
+export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const isPlayRoute = location.pathname.startsWith('/play/');
@@ -74,6 +75,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             navigate('/home-profile');
         }, HOME_TRANSITION_FADE_IN_MS);
     }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
+
+    const enforceGameDockFlush = useCallback(() => {
+        setExpandedMode(false);
+        setIsMinimized(true);
+        setIsStatsMinimized(true);
+    }, []);
 
     const triggerStatsAwakeFlash = useCallback((durationMs: number) => {
         setIsStatsLineDormant(false);
@@ -143,10 +150,27 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             return;
         }
 
-        setExpandedMode(false);
-        setIsMinimized(true);
-        setIsStatsMinimized(true);
-    }, [isPlayRoute]);
+        enforceGameDockFlush();
+    }, [enforceGameDockFlush, isPlayRoute]);
+
+    // Keep flush-left dock anchored through orientation/viewport changes while game route is active.
+    useEffect(() => {
+        if (!isPlayRoute) return;
+
+        const syncFlushState = () => {
+            window.requestAnimationFrame(() => {
+                enforceGameDockFlush();
+            });
+        };
+
+        window.addEventListener('orientationchange', syncFlushState);
+        window.addEventListener('resize', syncFlushState);
+
+        return () => {
+            window.removeEventListener('orientationchange', syncFlushState);
+            window.removeEventListener('resize', syncFlushState);
+        };
+    }, [enforceGameDockFlush, isPlayRoute]);
 
     // Flash the flush gold bar once per opened game route as a discoverability hint.
     useEffect(() => {
@@ -279,6 +303,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         
         // 2. RESTORE: Swipe Right (negative diff) on Minimized View
         if (diff < -minSwipeDistance && isMinimized) {
+            // Stage restore flow: yellow panel first, gray nav second.
+            if (isStatsMinimized) {
+                setIsStatsMinimized(false);
+                touchStartX.current = null;
+                return;
+            }
             setIsMinimized(false);
             touchStartX.current = null; 
             return;
@@ -374,8 +404,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const handleWakeZonePress = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        if (!(isMinimized && isStatsMinimized && isStatsLineDormant)) return;
-        triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
+        if (!(isMinimized && isStatsMinimized)) return;
+        if (isStatsLineDormant) {
+            triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
+            return;
+        }
+        setIsStatsMinimized(false);
     }, [isMinimized, isStatsMinimized, isStatsLineDormant, triggerStatsAwakeFlash]);
 
     useEffect(() => {
@@ -496,10 +530,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         };
     }, [clearHomeTransitionTimers]);
 
-    // Keep the yellow line visible by preventing iframe/container-only fullscreen
-    // while the line-only mode is active.
+    // Keep bottom dock overlays visible during gameplay by preventing
+    // iframe/container-only fullscreen (documentElement fullscreen is allowed).
     useEffect(() => {
-        if (!isMinimized || !isStatsMinimized) return;
+        if (!isPlayRoute) return;
 
         const getFullscreenElement = () => {
             const doc = document as Document & {
@@ -541,10 +575,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         return () => {
             events.forEach(eventName => document.removeEventListener(eventName, ensureOverlayCompatibleFullscreen));
         };
-    }, [isMinimized, isStatsMinimized]);
+    }, [isPlayRoute]);
 
     // Helper to determine active state
     const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
+    const shouldShowStatsDock = isMinimized;
     const isGamesActive = location.pathname === '/apps' && new URLSearchParams(location.search).get('tab')?.toLowerCase() === 'game';
     const tab = new URLSearchParams(location.search).get('tab')?.toLowerCase();
     const isClassroomActive = 
@@ -571,6 +606,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 aria-hidden={!isMinimized}
                 onClick={(e) => {
                     if (isMinimized) {
+                        // Stage restore flow: click once opens yellow panel,
+                        // click again restores gray nav tabs.
+                        if (isStatsMinimized) {
+                            setIsStatsMinimized(false);
+                            e.stopPropagation();
+                            return;
+                        }
                         setIsMinimized(false);
                         e.stopPropagation(); 
                     }
@@ -587,7 +629,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 <div className={`nav-content-container ${expandedMode ? 'view-hidden-left' : 'view-active'}`}>
                     <button
                         type="button"
-                        className="nav-settings-btn"
+                        className={`nav-settings-btn ${isSettingsOpen ? 'settings-open' : ''}`}
                         onClick={onOpenSettings}
                         aria-label="Open settings"
                         title="Settings"
@@ -736,9 +778,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             </nav>
 
             <aside
-                className={`bottom-stats-dock ${isMinimized ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
+                className={`bottom-stats-dock ${shouldShowStatsDock ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
                 aria-label="User stats"
-                aria-hidden={!isMinimized}
+                aria-hidden={!shouldShowStatsDock}
                 style={{ '--stats-pulse-count': String(statsPulseCount) } as React.CSSProperties}
                 onTouchStart={onStatsTouchStart}
                 onTouchMove={onStatsTouchMove}
@@ -755,11 +797,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                     e.stopPropagation();
                                     return;
                                 }
-                                // In minimized-line mode, opening is swipe-only.
+                                setIsStatsMinimized(false);
                                 e.stopPropagation();
                             }
                         }}
-                        title="Slide right or click to restore stats"
+                        title="Tap to wake/open, or slide right to open"
                     >
                         <div className="stats-restore-line"></div>
                     </div>
@@ -775,12 +817,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         </div>
                     </div>
                 </aside>
-            {isMinimized && isStatsMinimized && isStatsLineDormant ? (
+            {isMinimized && isStatsMinimized ? (
                 <button
                     type="button"
                     className="stats-wake-zone"
-                    aria-label="Activate dock handle glow"
-                    title="Tap here to wake the handle"
+                    aria-label={isStatsLineDormant ? "Activate dock handle glow" : "Open bottom tabs"}
+                    title={isStatsLineDormant ? "Tap once to wake handle, tap again or slide right to open" : "Tap to open bottom tabs"}
                     onPointerDown={handleWakeZonePress}
                 />
             ) : null}

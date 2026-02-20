@@ -8,6 +8,8 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './GamePlayer.css';
 
+const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
+
 const GamePlayer: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const location = useLocation();
@@ -43,6 +45,24 @@ const GamePlayer: React.FC = () => {
     // Only handle games and tools in fullscreen mode
     // Worksheets are handled by the Viewer with print preview mode
     const isImmersiveType = item?.type === 'game' || item?.type === 'tool';
+
+    useEffect(() => {
+        const handleGameMessage = (event: MessageEvent) => {
+            if (!iframeRef.current?.contentWindow || event.source !== iframeRef.current.contentWindow) {
+                return;
+            }
+
+            const message = event.data as { type?: unknown } | null;
+            if (!message || message.type !== GAME_EXIT_TO_HOME_MESSAGE) {
+                return;
+            }
+
+            navigate('/home-profile');
+        };
+
+        window.addEventListener('message', handleGameMessage);
+        return () => window.removeEventListener('message', handleGameMessage);
+    }, [navigate]);
 
     const enterFullscreen = useCallback(async () => {
         const element = document.documentElement as FullscreenHTMLElementType;

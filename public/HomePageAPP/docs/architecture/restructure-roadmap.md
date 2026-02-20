@@ -7,10 +7,11 @@
 
 ## Current Status
 - `INVENTORY_CONFIG` and `PROP_DEFINITIONS` are now sourced from:
-  - `src/content/catalog/inventory-config.js`
-  - `src/content/catalog/prop-catalog.js`
-  - `src/compat/legacy-prop-definitions-adapter.js`
+  - `src/inventory/catalog/inventory-config.js`
+  - `src/inventory/catalog/prop-catalog.js`
+  - `src/inventory/adapters/legacy-prop-definitions-adapter.js`
 - Runtime behavior remains unchanged because `index.html` still consumes legacy-shaped definitions.
+- Backward-compatible wrappers remain at legacy paths under `src/content/...` and `src/compat/...`.
 
 ## Naming and IDs
 - Category key format: `camelCase` (`wingSet`, `headWear`).

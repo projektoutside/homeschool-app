@@ -1,0 +1,19 @@
+{
+  "name": "farmersmarketinstall",
+  "version": "1.0.0",
+  "description": "A comprehensive educational math game where players run a farmers market stand, calculate totals, and give correct change.",
+  "main": "public/js/Main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "dev:lan": "vite --host"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}
