@@ -980,18 +980,6 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-14"
     },
     {
-        "id": "math-analog-clock-game",
-        "title": "Analog Clock Game",
-        "description": "Learn to tell time with this interactive analog clock game.",
-        "type": "game",
-        "category": "math",
-        "subjects": ["Time", "Geometry"],
-        "gradeLevels": ["1st", "2nd", "3rd"],
-        "customHtmlPath": "/Games/analogclockgame/index.html",
-        "thumbnail": "/assets/thumbnails/optimized/analog-clock-128.webp",
-        "dateAdded": "2026-01-14"
-    },
-    {
         "id": "math-1768955732393",
         "title": "PolygonAPP",
         "description": "Learn Polygon!",

@@ -331,36 +331,6 @@ body {
     background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
 }
 
-/* ── App Dialog ───────────────────────────────────────────────────────────── */
-.app-dialog-overlay {
-    background: rgba(4, 8, 20, 0.7) !important;
-    backdrop-filter: blur(8px) !important;
-}
-
-.app-dialog-panel {
-    background: var(--galaxy-bg-panel-solid) !important;
-    border: 1px solid var(--galaxy-border) !important;
-    box-shadow: 0 26px 50px rgba(0, 0, 0, 0.6) !important;
-}
-
-.app-dialog-header {
-    background: linear-gradient(135deg, #1a3275 0%, #14255a 100%) !important;
-}
-
-.app-dialog-body {
-    color: var(--galaxy-text) !important;
-}
-
-.app-dialog-btn.primary {
-    background: linear-gradient(135deg, #2a4494 0%, #1a2f6e 100%) !important;
-}
-
-.app-dialog-btn.secondary {
-    background: rgba(25, 40, 70, 0.8) !important;
-    color: var(--galaxy-text) !important;
-    border: 1px solid var(--galaxy-border) !important;
-}
-
 /* ── Fun Game Start Overlay (Save/Load Panel) ─────────────────────────────── */
 .fun-game-start-overlay {
     background: radial-gradient(circle at top, rgba(30, 60, 130, 0.4), rgba(4, 8, 20, 0.88)) !important;

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Polygon Fun">
@@ -20,15 +20,6 @@
     <style>
         /* CSS Custom Properties for Responsive Design System */
         :root {
-            /* Safe-area insets for notched/mobile devices */
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-right: env(safe-area-inset-right, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --safe-left: env(safe-area-inset-left, 0px);
-
-            /* Consistent edge breathing room (console-like fit) */
-            --edge-gap-mobile: clamp(8px, 2.5vw, 14px);
-
             /* Base font size - scales with viewport */
             --base-font-size: clamp(12px, 1.5vw, 16px);
             --font-scale: 1;
@@ -76,14 +67,6 @@
             --is-touch: 0;
             --is-portrait: 0;
             --is-landscape: 1;
-
-            /* Runtime safety scaling for bottom control panels */
-            --grid-tools-scale: 1;
-            --game-controls-scale: 1;
-
-            /* Runtime viewport guards (updated by JS) */
-            --viewport-bottom-obstruction: 0px;
-            --controls-bottom-lift: clamp(6px, 1.4vh, 14px);
         }
 
         * {
@@ -92,6 +75,12 @@
             box-sizing: border-box;
         }
 
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         html {
             font-size: var(--base-font-size);
@@ -112,9 +101,8 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             min-height: 100dvh;
-            max-height: 100dvh;
             /* Dynamic viewport height for mobile */
             overflow: hidden;
             background: #0f172a;
@@ -151,9 +139,7 @@
             position: fixed;
             inset: 0;
             width: 100%;
-            height: 100vh;
-            min-height: 100dvh;
-            max-height: 100dvh;
+            height: 100%;
             height: 100dvh;
             max-width: 100%;
             max-height: none;
@@ -179,48 +165,7 @@
                 flex-direction: column;
                 height: 100vh;
                 height: 100dvh;
-                min-height: 100dvh;
-                max-height: 100dvh;
                 margin: 0;
-            }
-
-            /* Keep all fixed chrome away from device edges */
-            .top-tools-bar {
-                top: calc(var(--safe-top) + var(--edge-gap-mobile));
-                left: calc(var(--safe-left) + var(--edge-gap-mobile));
-                right: calc(var(--safe-right) + var(--edge-gap-mobile));
-                width: auto;
-                border-radius: 14px;
-            }
-
-            .toolbar {
-                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 8px);
-                left: calc(var(--safe-left) + var(--edge-gap-mobile));
-                right: calc(var(--safe-right) + var(--edge-gap-mobile));
-                width: auto;
-                border-radius: 14px;
-            }
-
-            .grid-tools-panel {
-                left: calc(var(--safe-left) + var(--edge-gap-mobile));
-                right: calc(var(--safe-right) + var(--edge-gap-mobile));
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile));
-                width: auto;
-                max-width: none;
-                transform: none;
-            }
-
-            .game-controls-panel {
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px);
-                left: 50%;
-                transform: translateX(-50%);
-                max-width: calc(100vw - (var(--safe-left) + var(--safe-right) + (var(--edge-gap-mobile) * 2)));
-            }
-
-            .coord-display {
-                left: calc(var(--safe-left) + var(--edge-gap-mobile));
-                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 56px + 10px);
-                bottom: auto;
             }
         }
 
@@ -229,8 +174,6 @@
             .app-container {
                 height: 100vh;
                 height: 100dvh;
-                min-height: 100dvh;
-                max-height: 100dvh;
                 margin: 0;
             }
         }
@@ -528,9 +471,150 @@
             }
         }
 
+        /* Sidebar Panels - Responsive Widths */
+        .sidebar {
+            width: var(--sidebar-width-desktop);
+            min-width: 0;
+            max-width: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--color-border);
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+            flex-shrink: 0;
+            transition: transform 0.3s ease, width 0.3s ease, position 0.3s ease;
+            /* Ensure sidebars are visible by default */
+            visibility: visible;
+            opacity: 1;
+        }
 
-        /* === SIDEBAR CSS REMOVED - Legacy Panels Eliminated === */
+        .sidebar-right {
+            border-right: none;
+            border-left: 1px solid var(--color-border);
+        }
 
+        /* Mobile: Sidebars become overlays */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                /* Start below toolbar - top tools bar + toolbar height */
+                top: clamp(96px, 12vw, 126px);
+                left: 0;
+                width: min(85vw, 320px);
+                /* Height adjusted to account for top offset */
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                z-index: var(--z-menu);
+                transform: translateX(-100%);
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .sidebar.sidebar-right {
+                left: auto;
+                right: 0;
+                transform: translateX(100%);
+                border-left: none;
+                border-right: 1px solid var(--color-border);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .sidebar-right.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Tablet: Sidebars visible by default (like desktop), but can be toggled to overlay */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                /* On tablets, sidebars are visible by default like desktop */
+                width: var(--sidebar-width-tablet);
+                position: relative !important;
+                transform: none !important;
+                box-shadow: none;
+                /* Push sidebars down below toolbar - top-tools-bar + toolbar height */
+                /* Top tools bar: clamp(48px, 6vw, 56px) + Toolbar: clamp(48px, 6vw, 56px) to clamp(60px, 8vw, 70px) */
+                margin-top: clamp(96px, 12vw, 126px);
+                /* Constrain height to fill remaining viewport below toolbar */
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                max-height: calc(100vh - clamp(96px, 12vw, 126px));
+                max-height: calc(100dvh - clamp(96px, 12vw, 126px));
+                top: auto;
+                left: auto;
+                right: auto;
+                z-index: auto;
+                /* Ensure visibility */
+                visibility: visible !important;
+                opacity: 1 !important;
+                display: flex !important;
+                /* Align to start of flex container */
+                align-self: flex-start;
+            }
+
+            /* When toggled to overlay mode on tablet (mobile-open class) */
+            .sidebar.mobile-open {
+                position: fixed !important;
+                top: clamp(96px, 12vw, 126px) !important;
+                left: 0;
+                width: min(70vw, 400px);
+                height: calc(100vh - clamp(96px, 12vw, 126px));
+                height: calc(100dvh - clamp(96px, 12vw, 126px));
+                z-index: var(--z-menu);
+                transform: translateX(0) !important;
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+                /* Reset margin when in overlay mode */
+                margin-top: 0 !important;
+                align-self: auto;
+            }
+
+            .sidebar.sidebar-right.mobile-open {
+                left: auto;
+                right: 0;
+                transform: translateX(0) !important;
+                border-left: none;
+                border-right: 1px solid var(--color-border);
+                /* Reset margin when in overlay mode */
+                margin-top: 0 !important;
+                align-self: auto;
+            }
+        }
+
+        .panel {
+            border-bottom: 1px solid #e0e0e0;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            /* For Safari compatibility */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: var(--spacing-md);
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
 
         /* Canvas Area - Fully Responsive */
         .canvas-container {
@@ -646,9 +730,142 @@
 
 
 
+        /* Layer Item - Responsive */
+        .layer-item {
+            padding: var(--spacing-md);
+            background: #f8f8f8;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            margin-left: var(--spacing-md);
+            margin-right: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: var(--touch-target-min);
+            touch-action: manipulation;
+        }
 
-        /* === LAYER CSS REMOVED - Legacy Panels Eliminated === */
+        .layer-item:hover {
+            background: #f0f0f0;
+        }
 
+        .layer-item.selected {
+            background: #e8e0ff;
+            border: 1px solid #667eea;
+        }
+
+        .layer-color {
+            width: clamp(28px, 3.5vw, 32px);
+            min-width: clamp(28px, 3.5vw, 32px);
+            height: clamp(28px, 3.5vw, 32px);
+            min-height: clamp(28px, 3.5vw, 32px);
+            border-radius: var(--radius-sm);
+            border: clamp(2px, 0.25vw, 3px) solid white;
+            box-shadow: 0 clamp(1px, 0.125vw, 2px) clamp(2px, 0.375vw, 3px) rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .layer-name {
+            flex: 1;
+            font-size: clamp(13px, 1.75vw, 16px);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .layer-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .layer-action-btn {
+            width: var(--touch-target-sm);
+            min-width: var(--touch-target-min);
+            height: var(--touch-target-sm);
+            min-height: var(--touch-target-min);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(14px, 1.875vw, 18px);
+            transition: background 0.2s;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+
+        .layer-action-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Visualizer Items - Responsive */
+        .viz-item {
+            padding: var(--spacing-md);
+            background: #f0f9ff;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            margin-left: var(--spacing-md);
+            margin-right: var(--spacing-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: clamp(2px, 0.25vw, 3px) solid transparent;
+            min-height: var(--touch-target-min);
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+        }
+
+        .viz-item:hover {
+            background: #e0f2fe;
+            border-color: #0ea5e9;
+        }
+
+        .viz-item.active {
+            background: #eef2ff;
+            border-color: #818cf8;
+        }
+
+        .visualizer-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            background: white;
+            margin-right: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .viz-item:hover .visualizer-checkbox {
+            border-color: #0ea5e9;
+        }
+
+        .viz-item.active .visualizer-checkbox {
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+
+        .viz-item.active .visualizer-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .viz-item-title {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: var(--spacing-xs);
+            font-size: clamp(13px, 1.75vw, 16px);
+        }
 
 
 
@@ -1299,11 +1516,10 @@
         /* Game Controls Panel - ABOVE (Undo/Redo/Submit) */
         .game-controls-panel {
             position: fixed;
-            bottom: calc(94px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
+            bottom: 94px;
             /* Positioned just above grid panel (70px height + 24px gap for professional spacing) */
             left: 50%;
-            transform: translateX(-50%) scale(var(--game-controls-scale));
-            transform-origin: center bottom;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -1386,10 +1602,9 @@
         /* Grid Tools Panel - BELOW (Grid/Zoom/Pan in single row) */
         .grid-tools-panel {
             position: fixed;
-            bottom: calc(24px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
+            bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) scale(var(--grid-tools-scale));
-            transform-origin: center bottom;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1499,7 +1714,7 @@
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .game-controls-panel {
-                bottom: calc(118px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
+                bottom: 118px;
                 /* Maintain professional 24px gap on mobile */
                 gap: 8px;
                 padding: 8px 12px;
@@ -1515,7 +1730,7 @@
                 gap: 6px;
                 /* Further reduced for mobile */
                 padding: 8px 10px;
-                bottom: calc(20px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift));
+                bottom: 20px;
                 max-width: 98vw;
                 /* Even more space on mobile */
             }
@@ -1571,15 +1786,13 @@
                 left: auto;
                 bottom: 118px;
                 /* Maintain same relative spacing in landscape */
-                transform: scale(var(--game-controls-scale));
-                transform-origin: right bottom;
+                transform: none;
             }
 
             .grid-tools-panel {
                 right: 20px;
                 left: auto;
-                transform: scale(var(--grid-tools-scale));
-                transform-origin: right bottom;
+                transform: none;
                 max-width: 90vw;
                 /* Leave space on edges in landscape */
             }
@@ -1734,6 +1947,102 @@
 
         .modal-btn:hover {
             opacity: 0.9;
+        }
+
+        /* App Dialog (Custom Confirm/Alert) */
+        .app-dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 11000;
+            padding: 24px;
+            backdrop-filter: blur(6px);
+        }
+
+        .app-dialog-panel {
+            width: min(92vw, 460px);
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 26px 50px rgba(15, 23, 42, 0.35);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            animation: modalSlideIn 0.25s ease-out;
+        }
+
+        .app-dialog-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .app-dialog-close {
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .app-dialog-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .app-dialog-body {
+            padding: 18px 20px 8px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        .app-dialog-actions {
+            padding: 16px 20px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .app-dialog-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            min-height: 44px;
+            transition: transform 0.15s ease, opacity 0.2s ease;
+        }
+
+        .app-dialog-btn.primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+        }
+
+        .app-dialog-btn.secondary {
+            background: #e2e8f0;
+            color: #1f2937;
+        }
+
+        .app-dialog-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .app-dialog-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* Main Menu Overlay - AAA Quality */
@@ -2593,7 +2902,7 @@
 
         .game-results-canvas {
             width: 100%;
-            height: clamp(150px, 20vh, 190px);
+            height: 240px;
             border-radius: 16px;
             border: 1px solid #e2e8f0;
             background: #f8fafc;
@@ -2604,7 +2913,7 @@
             border-radius: 16px;
             padding: 12px 16px;
             border: 1px solid #e2e8f0;
-            max-height: clamp(150px, 20vh, 190px);
+            max-height: 240px;
             overflow-y: auto;
             font-size: 14px;
         }
@@ -3061,63 +3370,7 @@
                 height: min(94vh, 760px);
             }
         }
-
-        /* Final viewport-fit hardening for phones (applied last to avoid override conflicts) */
-        @media (max-width: 768px) {
-
-            html,
-            body,
-            .app-container {
-                width: 100%;
-                height: 100dvh !important;
-                min-height: 100dvh !important;
-                max-height: 100dvh !important;
-                overflow: hidden !important;
-            }
-
-            .top-tools-bar {
-                top: calc(var(--safe-top) + var(--edge-gap-mobile)) !important;
-                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
-                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
-                width: auto !important;
-            }
-
-            .toolbar {
-                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 8px) !important;
-                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
-                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
-                width: auto !important;
-            }
-
-            .grid-tools-panel {
-                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
-                right: calc(var(--safe-right) + var(--edge-gap-mobile)) !important;
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift)) !important;
-                width: auto !important;
-                max-width: none !important;
-                transform: scale(var(--grid-tools-scale)) !important;
-                transform-origin: center bottom !important;
-                overflow-x: hidden !important;
-            }
-
-            .game-controls-panel {
-                bottom: calc(var(--safe-bottom) + var(--edge-gap-mobile) + 78px + var(--viewport-bottom-obstruction) + var(--controls-bottom-lift)) !important;
-                left: 50% !important;
-                right: auto !important;
-                transform: translateX(-50%) scale(var(--game-controls-scale)) !important;
-                transform-origin: center bottom !important;
-                max-width: calc(100vw - (var(--safe-left) + var(--safe-right) + (var(--edge-gap-mobile) * 2))) !important;
-            }
-
-            .coord-display {
-                top: calc(var(--safe-top) + var(--edge-gap-mobile) + 56px + 56px + 10px) !important;
-                left: calc(var(--safe-left) + var(--edge-gap-mobile)) !important;
-                bottom: auto !important;
-            }
-        }
-
     </style>
-    <link rel="stylesheet" href="galaxy-theme.css">
 </head>
 
 <body>
@@ -3172,6 +3425,20 @@
         </div>
     </div>
 
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <div class="app-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle">
+            <div class="app-dialog-header">
+                <span id="appDialogTitle">Confirm Action</span>
+                <button class="app-dialog-close" id="appDialogClose" aria-label="Close">✕</button>
+            </div>
+            <div class="app-dialog-body" id="appDialogBody"></div>
+            <div class="app-dialog-actions">
+                <button class="app-dialog-btn secondary" id="appDialogCancel">Cancel</button>
+                <button class="app-dialog-btn primary" id="appDialogConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Main Body Row (Sidebars + Canvas) -->
         <div class="main-body-row" style="display: flex; flex: 1; min-height: 0; width: 100%; position: relative;">
@@ -3179,9 +3446,49 @@
             <!-- Mobile Sidebar Backdrop -->
             <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
+            <!-- Left Sidebar -->
+            <div class="sidebar">
 
-            <!-- Left Sidebar REMOVED - Legacy Layers Panel eliminated -->
+                <!-- Wrapper for Layers Panel full height -->
+                <div class="resizable-panel" id="layersPanel" style="height: 100%; flex: 1;">
+                    <!-- Layers Panel -->
+                    <div class="panel-header">
+                        <button class="panel-back-btn" id="layersBackBtn" aria-label="Close Layers Panel">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <rect x="7" y="7" width="10" height="10" rx="1" ry="1" />
+                                <rect x="11" y="11" width="6" height="6" rx="0.5" ry="0.5" />
+                            </svg>
+                            Layers
+                        </span>
+                        <span id="layerCount">0</span>
+                    </div>
+                    <div class="resizable-panel-content">
+                        <!-- Create New Polygon Button -->
+                        <div class="create-polygon-container">
+                            <button id="createPolygonBtn" class="create-polygon-btn"
+                                aria-label="Open create new polygon menu">
+                                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7L2 17L12 22L22 17L22 7L12 2Z" />
+                                </svg>
+                                <span>Create New Polygon</span>
+                            </button>
+                        </div>
 
+                        <!-- Layers List -->
+                        <div id="layersList"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Canvas Container -->
             <div class="canvas-container" id="canvasContainer">
@@ -3254,9 +3561,55 @@
                 <div class="coord-display" id="coordDisplay">X: 0, Y: 0</div>
             </div>
 
-
-            <!-- Right Sidebar REMOVED - Legacy Visualizers Panel eliminated -->
-
+            <!-- Right Sidebar -->
+            <div class="sidebar sidebar-right">
+                <!-- Visualizers Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <button class="panel-back-btn" id="visualizersBackBtn" aria-label="Close Visualizers Panel">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <span>👁️ Visualizers</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="viz-item" data-viz="angles">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Angles</div>
+                        </div>
+                        <div class="viz-item" data-viz="medians">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Medians &amp; Centroid</div>
+                        </div>
+                        <div class="viz-item" data-viz="altitudes">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Altitudes &amp; Orthocenter</div>
+                        </div>
+                        <div class="viz-item" data-viz="bisectors">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Perpendicular Bisectors</div>
+                        </div>
+                        <div class="viz-item" data-viz="diagonals">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Diagonals</div>
+                        </div>
+                        <div class="viz-item" data-viz="vertices">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Vertices</div>
+                        </div>
+                        <div class="viz-item" data-viz="perimeters">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Perimeters</div>
+                        </div>
+                        <div class="viz-item" data-viz="baseHeight">
+                            <div class="visualizer-checkbox"></div>
+                            <div class="viz-item-title">Show Base &amp; Height</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -3437,7 +3790,10 @@
             <div class="game-results-stars" id="gameResultsStars"></div>
             <div class="game-results-title" id="gameResultsTitle"><span>Victory!</span></div>
             <div class="game-results-subtitle" id="gameResultsSubtitle">You split it like a pro!</div>
-            <div class="game-results-badges" id="gameResultsBadges"></div>
+            <div class="game-results-badges" id="gameResultsBadges">
+                <span class="game-results-badge">🏆 Level Clear</span>
+                <span class="game-results-badge">✨ Keep Going</span>
+            </div>
             <div class="game-results-coin" id="gameResultsCoin"></div>
             <div class="game-results-reason" id="gameResultsReason" style="display: none;"></div>
             <div class="game-results-breakdown">
@@ -3484,215 +3840,129 @@
     </div>
 
     <script src="js/geometry.js"></script>
-    <!--
-      Cache-bust mutable gameplay scripts so updated deployments reliably load.
-      Bump this query token whenever levels/game logic is released.
-    -->
-    <script src="js/levels.js?v=2026-02-11-1"></script>
+    <script src="js/levels.js"></script>
     <script src="js/storage.js"></script>
-    <script src="js/game.js?v=2026-02-11-1"></script>
+    <script src="js/game.js"></script>
     <script>
-        // Safety feature: keep bottom control panels inside visible viewport on any device.
-        const BottomControlViewportSafety = (() => {
-            let rafId = null;
-            let initialized = false;
+        const AppDialog = (() => {
+            let overlay;
+            let titleEl;
+            let bodyEl;
+            let confirmBtn;
+            let cancelBtn;
+            let closeBtn;
+            let resolver;
+            let escListener;
 
-            const SCALE_MIN = 0.35;
+            const ensureElements = () => {
+                if (overlay) return true;
+                overlay = document.getElementById('appDialogOverlay');
+                titleEl = document.getElementById('appDialogTitle');
+                bodyEl = document.getElementById('appDialogBody');
+                confirmBtn = document.getElementById('appDialogConfirm');
+                cancelBtn = document.getElementById('appDialogCancel');
+                closeBtn = document.getElementById('appDialogClose');
 
-            const parsePx = (value) => {
-                const n = parseFloat(String(value || '').replace('px', ''));
-                return Number.isFinite(n) ? n : 0;
-            };
-
-            const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-            const getInsetValue = (cssVarName) => {
-                try {
-                    const raw = getComputedStyle(document.documentElement).getPropertyValue(cssVarName);
-                    return parsePx(raw);
-                } catch {
-                    return 0;
-                }
-            };
-
-            const getViewportMetrics = () => {
-                const vv = window.visualViewport;
-                const width = vv && Number.isFinite(vv.width) ? vv.width : window.innerWidth;
-                const height = vv && Number.isFinite(vv.height) ? vv.height : window.innerHeight;
-                const vvOffsetTop = vv && Number.isFinite(vv.offsetTop) ? vv.offsetTop : 0;
-                const layoutViewportHeight = window.innerHeight || height;
-                // Area hidden by mobile browser chrome / fullscreen transitions at the bottom.
-                const bottomObstruction = Math.max(0, layoutViewportHeight - (height + vvOffsetTop));
-
-                const safeLeft = getInsetValue('--safe-left');
-                const safeRight = getInsetValue('--safe-right');
-                const safeTop = getInsetValue('--safe-top');
-                const safeBottom = getInsetValue('--safe-bottom');
-                const edgeGap = Math.max(8, getInsetValue('--edge-gap-mobile') || 12);
-                const controlsLift = Math.max(0, getInsetValue('--controls-bottom-lift') || 8);
-
-                return {
-                    width: Math.max(220, width),
-                    height: Math.max(220, height),
-                    bottomObstruction,
-                    safeLeft,
-                    safeRight,
-                    safeTop,
-                    safeBottom,
-                    edgeGap,
-                    controlsLift,
-                    availableWidth: Math.max(220, width - safeLeft - safeRight - (edgeGap * 2) - 6),
-                    topPadding: safeTop + edgeGap,
-                    bottomPadding: safeBottom + edgeGap + controlsLift + bottomObstruction
-                };
-            };
-
-            const getPanelNaturalSize = (panel, cssVarName) => {
-                if (!panel) return { width: 0, height: 0, visible: false, bottom: 0 };
-
-                const style = window.getComputedStyle(panel);
-                const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && panel.offsetParent !== null;
-                if (!isVisible) return { width: 0, height: 0, visible: false, bottom: parsePx(style.bottom) };
-
-                const currentScaleRaw = getComputedStyle(document.documentElement).getPropertyValue(cssVarName);
-                const currentScale = clamp(parseFloat(currentScaleRaw) || 1, SCALE_MIN, 1);
-                const rect = panel.getBoundingClientRect();
-
-                const naturalWidth = Math.max(
-                    panel.scrollWidth || 0,
-                    rect.width > 0 ? rect.width / Math.max(0.001, currentScale) : 0
-                );
-                const naturalHeight = Math.max(
-                    panel.scrollHeight || 0,
-                    rect.height > 0 ? rect.height / Math.max(0.001, currentScale) : 0
-                );
-
-                return {
-                    width: naturalWidth,
-                    height: naturalHeight,
-                    visible: true,
-                    bottom: parsePx(style.bottom)
-                };
-            };
-
-            const computeScale = (naturalSize, availableWidth, viewportHeight, panelBottom, topPadding, minScale = SCALE_MIN) => {
-                if (!(naturalSize.width > 0) || !(naturalSize.height > 0)) return 1;
-
-                const byWidth = availableWidth / naturalSize.width;
-                const availableHeightForPanel = Math.max(40, viewportHeight - panelBottom - topPadding);
-                const byHeight = availableHeightForPanel / naturalSize.height;
-
-                return clamp(Math.min(1, byWidth, byHeight), minScale, 1);
-            };
-
-            const apply = () => {
-                rafId = null;
-
-                const root = document.documentElement;
-                const m = getViewportMetrics();
-                root.style.setProperty('--viewport-bottom-obstruction', `${Math.round(m.bottomObstruction)}px`);
-
-                const gridPanel = document.querySelector('.grid-tools-panel');
-                const gamePanel = document.querySelector('.game-controls-panel');
-
-                const gridNatural = getPanelNaturalSize(gridPanel, '--grid-tools-scale');
-                const gameNatural = getPanelNaturalSize(gamePanel, '--game-controls-scale');
-
-                let gridScale = computeScale(
-                    gridNatural,
-                    m.availableWidth,
-                    m.height,
-                    gridNatural.bottom,
-                    m.topPadding,
-                    SCALE_MIN
-                );
-
-                let gameScale = computeScale(
-                    gameNatural,
-                    m.availableWidth,
-                    m.height,
-                    gameNatural.bottom,
-                    m.topPadding,
-                    SCALE_MIN
-                );
-
-                // Final stack safety pass: ensure highest top edge never goes beyond viewport top padding.
-                const gridTop = gridNatural.visible
-                    ? (m.height - gridNatural.bottom - (gridNatural.height * gridScale))
-                    : Infinity;
-                const gameTop = gameNatural.visible
-                    ? (m.height - gameNatural.bottom - (gameNatural.height * gameScale))
-                    : Infinity;
-                const highestTop = Math.min(gridTop, gameTop);
-
-                if (Number.isFinite(highestTop) && highestTop < m.topPadding) {
-                    if (gridNatural.visible) {
-                        const maxGridScale = (m.height - gridNatural.bottom - m.topPadding) / Math.max(1, gridNatural.height);
-                        gridScale = clamp(Math.min(gridScale, maxGridScale), SCALE_MIN, 1);
-                    }
-                    if (gameNatural.visible) {
-                        const maxGameScale = (m.height - gameNatural.bottom - m.topPadding) / Math.max(1, gameNatural.height);
-                        gameScale = clamp(Math.min(gameScale, maxGameScale), SCALE_MIN, 1);
-                    }
+                if (!overlay || !titleEl || !bodyEl || !confirmBtn || !cancelBtn || !closeBtn) {
+                    return false;
                 }
 
-                root.style.setProperty('--grid-tools-scale', clamp(gridScale, SCALE_MIN, 1).toFixed(3));
-                root.style.setProperty('--game-controls-scale', clamp(gameScale, SCALE_MIN, 1).toFixed(3));
+                confirmBtn.addEventListener('click', () => closeDialog(true));
+                cancelBtn.addEventListener('click', () => closeDialog(false));
+                closeBtn.addEventListener('click', () => closeDialog(false));
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay && overlay.dataset.allowCancel === 'true') {
+                        closeDialog(false);
+                    }
+                });
+                return true;
             };
 
-            const schedule = () => {
-                if (rafId != null) cancelAnimationFrame(rafId);
-                rafId = requestAnimationFrame(apply);
+            const attachEscapeListener = () => {
+                if (escListener) {
+                    document.removeEventListener('keydown', escListener);
+                }
+                escListener = (event) => {
+                    if (event.key === 'Escape' && overlay?.dataset.allowCancel === 'true') {
+                        closeDialog(false);
+                    }
+                };
+                document.addEventListener('keydown', escListener);
             };
 
-            const initObservers = () => {
-                if (typeof MutationObserver === 'undefined') return;
+            const openDialog = ({
+                title = 'Confirm Action',
+                message = '',
+                confirmText = 'Confirm',
+                cancelText = 'Cancel',
+                allowCancel = true
+            } = {}) => {
+                if (!ensureElements()) {
+                    return Promise.resolve(false);
+                }
 
-                const watchNodes = [
-                    document.body,
-                    document.documentElement,
-                    document.querySelector('.grid-tools-panel'),
-                    document.querySelector('.game-controls-panel'),
-                    document.getElementById('gameControls')
-                ].filter(Boolean);
+                titleEl.textContent = title;
+                bodyEl.textContent = message;
+                confirmBtn.textContent = confirmText;
+                cancelBtn.textContent = cancelText;
+                cancelBtn.style.display = allowCancel ? 'inline-flex' : 'none';
+                closeBtn.style.display = allowCancel ? 'inline-flex' : 'none';
+                overlay.dataset.allowCancel = allowCancel ? 'true' : 'false';
+                overlay.style.display = 'flex';
+                overlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
 
-                watchNodes.forEach((node) => {
-                    const observer = new MutationObserver(schedule);
-                    observer.observe(node, {
-                        attributes: true,
-                        childList: true,
-                        subtree: true,
-                        attributeFilter: ['style', 'class']
-                    });
+                attachEscapeListener();
+
+                return new Promise((resolve) => {
+                    resolver = resolve;
+                    setTimeout(() => {
+                        confirmBtn.focus();
+                    }, 0);
                 });
             };
 
-            const init = () => {
-                if (initialized) return;
-                initialized = true;
-
-                schedule();
-                window.addEventListener('resize', schedule, { passive: true });
-                window.addEventListener('orientationchange', () => setTimeout(schedule, 120), { passive: true });
-                window.addEventListener('pageshow', schedule, { passive: true });
-                window.addEventListener('load', schedule, { passive: true });
-                document.addEventListener('visibilitychange', schedule);
-                document.addEventListener('fullscreenchange', schedule);
-                document.addEventListener('webkitfullscreenchange', schedule);
-
-                if (window.visualViewport) {
-                    window.visualViewport.addEventListener('resize', schedule, { passive: true });
-                    window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+            const closeDialog = (result) => {
+                if (!overlay) return;
+                overlay.style.display = 'none';
+                overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                if (escListener) {
+                    document.removeEventListener('keydown', escListener);
+                    escListener = null;
                 }
-
-                initObservers();
+                if (resolver) {
+                    const callback = resolver;
+                    resolver = null;
+                    callback(result);
+                }
             };
 
-            return { init, apply, schedule };
+            const confirm = (message, options = {}) => openDialog({
+                ...options,
+                message,
+                allowCancel: true,
+                confirmText: options.confirmText || 'Confirm',
+                cancelText: options.cancelText || 'Cancel'
+            });
+
+            const alert = (message, options = {}) => openDialog({
+                ...options,
+                message,
+                allowCancel: false,
+                confirmText: options.confirmText || 'OK'
+            });
+
+            return {
+                confirm,
+                alert,
+                close: closeDialog
+            };
         })();
 
-        window.__applyBottomControlsSafeFit = () => BottomControlViewportSafety.apply();
-        window.__scheduleBottomControlsSafeFit = () => BottomControlViewportSafety.schedule();
+        window.AppDialog = AppDialog;
+        window.appConfirm = (message, options) => AppDialog.confirm(message, options);
+        window.appAlert = (message, options) => AppDialog.alert(message, options);
 
         // Main Menu Logic
         const MainMenu = {
@@ -3747,27 +4017,10 @@
             }
         };
 
-        // Deterministic automation bootstrap for runtime verification.
-        // Enable with URL params, e.g.:
-        //   index.html?pf_auto=1&pf_mode=beginner&pf_level=0&pf_dev=1
-        const getAutomationBootstrapConfig = () => {
-            const params = new URLSearchParams(window.location.search || '');
-            const auto = params.get('pf_auto') === '1' || params.get('autostart') === '1';
-            if (!auto) return null;
-
-            const mode = params.get('pf_mode') || 'beginner';
-            const levelRaw = params.get('pf_level');
-            const level = Number.isFinite(Number(levelRaw)) ? Math.max(0, Number(levelRaw)) : 0;
-            const openDev = params.get('pf_dev') === '1' || params.get('dev') === '1';
-
-            return { mode, level, openDev };
-        };
-
         // Initialize Main Menu when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             ensureAppEntryRoute();
             MainMenu.init();
-            BottomControlViewportSafety.init();
         });
 
         // Register PWA manifest only on supported secure/network origins.
@@ -4173,9 +4426,67 @@
             }
 
             setupResizablePanels() {
-                // Legacy sidebar stack has been removed from the DOM.
-                // Keep this method as a compatibility no-op for existing init flow.
-                return;
+                const divider1 = document.getElementById('divider1');
+                const layersPanel = document.getElementById('layersPanel');
+                const colorPanel = document.getElementById('colorPanel');
+
+                // Set initial heights for sidebar panels
+                const sidebar = document.querySelector('.sidebar');
+                if (!sidebar) return; // Guard clause
+
+                const totalHeight = sidebar.clientHeight;
+
+                // Split 50/50 between Layers and Color since Properties is gone
+                const panelHeight = Math.floor(totalHeight * 0.5);
+
+                if (layersPanel) layersPanel.style.height = panelHeight + 'px';
+                if (colorPanel) colorPanel.style.height = panelHeight + 'px';
+
+                // Make divider draggable
+                if (divider1 && layersPanel && colorPanel) {
+                    divider1.addEventListener('mousedown', (e) => {
+                        this.isResizing = true;
+                        this.activeDivider = divider1;
+                        this.startY = e.clientY;
+                        this.startHeight = parseInt(window.getComputedStyle(layersPanel).height);
+
+                        document.body.style.cursor = 'row-resize';
+                        document.body.style.userSelect = 'none';
+
+                        e.preventDefault();
+                    });
+
+                    // Global resize handlers
+                    document.addEventListener('mousemove', (e) => {
+                        if (!this.isResizing || this.activeDivider !== divider1) return;
+
+                        const deltaY = e.clientY - this.startY;
+                        const newHeight1 = Math.max(50, this.startHeight + deltaY);
+                        // Adjust second panel to fill remaining space
+                        // Note: Flexbox usually handles the fill, but setting specific height might fight it.
+                        // Ideally we rely on flex-grow, but since we're using explicit heights:
+                        // Let's just update the first panel and let flex take care of the rest or update both.
+                        // For simplicity in this existing system, we update both.
+                        const sidebarRect = sidebar.getBoundingClientRect();
+                        const availableHeight = sidebarRect.height - 12; // divider height
+                        const newHeight2 = Math.max(50, availableHeight - newHeight1);
+
+                        layersPanel.style.height = newHeight1 + 'px';
+                        colorPanel.style.height = newHeight2 + 'px';
+
+                        this.resizeCanvas();
+                    });
+
+                    document.addEventListener('mouseup', () => {
+                        if (this.isResizing) {
+                            this.isResizing = false;
+                            this.activeDivider = null;
+                            document.body.style.cursor = '';
+                            document.body.style.userSelect = '';
+                        }
+                    });
+                }
+
             }
 
 
@@ -6722,9 +7033,52 @@
 
 
             updateLayers() {
-                // Legacy layers sidebar has been removed.
-                // Retain a no-op method to preserve call-site compatibility.
-                return;
+                const list = document.getElementById('layersList');
+                document.getElementById('layerCount').textContent = this.polygons.length;
+
+                list.innerHTML = '';
+                this.polygons.forEach((poly, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'layer-item';
+                    if ((this.combineMode && this.combineSelection.has(poly)) ||
+                        (!this.combineMode && poly === this.selectedPolygon)) {
+                        item.classList.add('selected');
+                    }
+
+                    item.innerHTML = `
+                <div class="layer-color" style="background: ${poly.color}"></div>
+                <div class="layer-name">${poly.name}</div>
+                <div class="layer-actions">
+                    <button class="layer-action-btn" onclick="app.togglePolygonVisibility(${index})" title="${poly.visible ? 'Hide' : 'Show'}">
+                        ${poly.visible
+                            ? '👁️'
+                            : '<div style="position:relative; display:inline-block;">👁️<div style="position:absolute; top:50%; left:-2px; right:-2px; height:2px; background:red; transform:rotate(-45deg); pointer-events:none;"></div></div>'}
+                    </button>
+                    <button class="layer-action-btn" onclick="app.deletePolygon(${index})" title="Delete">🗑️</button>
+                </div>
+            `;
+
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('layer-action-btn')) {
+                            if (this.combineMode) {
+                                if (this.combineSelection.has(poly)) {
+                                    this.combineSelection.delete(poly);
+                                } else {
+                                    this.combineSelection.add(poly);
+                                }
+                                this.render();
+                                this.updateLayers();
+                            } else {
+                                this.selectedPolygon = poly;
+
+                                this.updateLayers();
+                                this.render();
+                            }
+                        }
+                    });
+
+                    list.appendChild(item);
+                });
             }
 
 
@@ -6858,213 +7212,6 @@
 
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // Galaxy theme: deep space background with stars & nebula
-                const dpr = window.devicePixelRatio || 1;
-                const bgW = this.canvas.width / dpr;
-                const bgH = this.canvas.height / dpr;
-
-                // 1) Deep space radial gradient
-                const spaceBg = this.ctx.createRadialGradient(bgW * 0.5, bgH * 0.3, 0, bgW * 0.5, bgH * 0.5, bgW * 0.85);
-                spaceBg.addColorStop(0, '#111d3a');
-                spaceBg.addColorStop(0.35, '#0b1228');
-                spaceBg.addColorStop(0.7, '#070e20');
-                spaceBg.addColorStop(1, '#040810');
-                this.ctx.fillStyle = spaceBg;
-                this.ctx.fillRect(0, 0, bgW, bgH);
-
-                // 2) Initialize galaxy elements once (lazy)
-                if (!this._galaxyStars || this._galaxyLastW !== bgW || this._galaxyLastH !== bgH) {
-                    this._galaxyLastW = bgW;
-                    this._galaxyLastH = bgH;
-                    const cx = bgW * 0.5;
-                    const cy = bgH * 0.5;
-                    const maxR = Math.sqrt(cx * cx + cy * cy) * 1.3; // extend beyond canvas edges for rotation
-                    // Dead zone: center area where the polygon typically lives
-                    const deadZoneR = Math.min(bgW, bgH) * 0.22;
-                    // Generate stars in polar coordinates for rotation
-                    const starCount = Math.min(500, Math.max(200, Math.floor(bgW * bgH / 2400)));
-                    this._galaxyStars = [];
-                    for (let i = 0; i < starCount; i++) {
-                        const brightness = Math.random();
-                        const isLarge = brightness > 0.85;
-                        const r = isLarge ? (1.0 + Math.random() * 1.5) : (0.3 + Math.random() * 0.8);
-                        // For large stars, keep them away from the polygon center
-                        let dist;
-                        if (r > 1.0) {
-                            dist = deadZoneR + Math.random() * (maxR - deadZoneR);
-                        } else {
-                            dist = Math.random() * maxR;
-                        }
-                        const angle = Math.random() * Math.PI * 2;
-                        this._galaxyStars.push({
-                            dist: dist,
-                            angle: angle,
-                            r: r,
-                            spikes: isLarge ? (Math.random() > 0.5 ? 4 : 6) : 4,
-                            brightness: 0.3 + brightness * 0.7,
-                            twinkleSpeed: 0.5 + Math.random() * 2.5,
-                            twinkleOffset: Math.random() * Math.PI * 2,
-                            spikeRatio: 0.3 + Math.random() * 0.25,
-                            color: brightness > 0.92 ? [180, 210, 255] :
-                                brightness > 0.8 ? [200, 220, 255] :
-                                    brightness > 0.6 ? [220, 230, 255] :
-                                        [255, 255, 255]
-                        });
-                    }
-                    // Generate nebula clouds
-                    this._galaxyNebulae = [];
-                    const nebulaCount = 4 + Math.floor(Math.random() * 3);
-                    const nebulaColors = [
-                        [30, 50, 120], [50, 30, 100], [20, 60, 130],
-                        [60, 40, 110], [25, 45, 100], [40, 25, 90]
-                    ];
-                    for (let i = 0; i < nebulaCount; i++) {
-                        const c = nebulaColors[i % nebulaColors.length];
-                        // Nebulae also in polar coords for rotation
-                        const ndist = Math.min(bgW, bgH) * (0.2 + Math.random() * 0.5);
-                        const nangle = Math.random() * Math.PI * 2;
-                        this._galaxyNebulae.push({
-                            dist: ndist, angle: nangle,
-                            rx: bgW * (0.15 + Math.random() * 0.25),
-                            ry: bgH * (0.12 + Math.random() * 0.2),
-                            color: c,
-                            alpha: 0.03 + Math.random() * 0.06,
-                            localRotation: Math.random() * Math.PI
-                        });
-                    }
-                }
-
-                // Rotation of the night sky — very slow circular motion
-                const time = performance.now() * 0.001;
-                const skyRotation = time * 0.002; // ~0.11 degrees per second — gentle drift
-                const cx = bgW * 0.5;
-                const cy = bgH * 0.5;
-
-                // Compute polygon bounding box in screen-space for star dimming
-                let polyScreenBounds = null;
-                if (this.polygons && this.polygons.length > 0) {
-                    let minSX = Infinity, maxSX = -Infinity, minSY = Infinity, maxSY = -Infinity;
-                    const halfW = bgW * 0.5, halfH = bgH * 0.5;
-                    const panX = this.pan ? this.pan.x : 0;
-                    const panY = this.pan ? this.pan.y : 0;
-                    const zm = this.zoom || 1;
-                    for (const poly of this.polygons) {
-                        if (poly.visible === false) continue;
-                        for (const vtx of (poly.vertices || [])) {
-                            const screenX = halfW + panX + vtx.x * zm;
-                            const screenY = halfH + panY + vtx.y * zm;
-                            if (screenX < minSX) minSX = screenX;
-                            if (screenX > maxSX) maxSX = screenX;
-                            if (screenY < minSY) minSY = screenY;
-                            if (screenY > maxSY) maxSY = screenY;
-                        }
-                    }
-                    if (isFinite(minSX)) {
-                        // Expand bounds by a margin for the "around" zone
-                        const margin = Math.min(bgW, bgH) * 0.08;
-                        polyScreenBounds = {
-                            cx: (minSX + maxSX) * 0.5,
-                            cy: (minSY + maxSY) * 0.5,
-                            halfW: (maxSX - minSX) * 0.5 + margin,
-                            halfH: (maxSY - minSY) * 0.5 + margin
-                        };
-                    }
-                }
-
-                // Helper: calculate dimming factor for a star at (sx, sy) based on polygon proximity
-                const getDimFactor = (sx, sy) => {
-                    if (!polyScreenBounds) return 1.0;
-                    const pb = polyScreenBounds;
-                    // Normalized distance from polygon center (0 = at center, 1 = at edge)
-                    const dx = Math.abs(sx - pb.cx) / Math.max(1, pb.halfW);
-                    const dy = Math.abs(sy - pb.cy) / Math.max(1, pb.halfH);
-                    const dist = Math.max(dx, dy); // Chebyshev distance
-                    if (dist > 1.5) return 1.0;     // Far from polygon — full brightness
-                    if (dist < 0.8) return 0.12;      // Deep inside polygon — heavily dimmed
-                    // Smooth falloff between 0.8 and 1.5
-                    return 0.12 + (dist - 0.8) / 0.7 * 0.88;
-                };
-
-                // 3) Draw nebula clouds (rotating)
-                this._galaxyNebulae.forEach(neb => {
-                    const nx = cx + Math.cos(neb.angle + skyRotation) * neb.dist;
-                    const ny = cy + Math.sin(neb.angle + skyRotation) * neb.dist;
-                    this.ctx.save();
-                    this.ctx.translate(nx, ny);
-                    this.ctx.rotate(neb.localRotation + skyRotation);
-                    const nebGrad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(neb.rx, neb.ry));
-                    const [r, g, b] = neb.color;
-                    const nebDim = getDimFactor(nx, ny);
-                    nebGrad.addColorStop(0, `rgba(${r},${g},${b},${neb.alpha * 1.8 * nebDim})`);
-                    nebGrad.addColorStop(0.4, `rgba(${r},${g},${b},${neb.alpha * nebDim})`);
-                    nebGrad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-                    this.ctx.fillStyle = nebGrad;
-                    this.ctx.scale(1, neb.ry / Math.max(1, neb.rx));
-                    this.ctx.beginPath();
-                    this.ctx.arc(0, 0, neb.rx, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    this.ctx.restore();
-                });
-
-                // 4) Draw star field — realistic star shapes with slow rotation & polygon dimming
-                this._galaxyStars.forEach(star => {
-                    // Calculate rotated position
-                    const sx = cx + Math.cos(star.angle + skyRotation) * star.dist;
-                    const sy = cy + Math.sin(star.angle + skyRotation) * star.dist;
-                    // Cull stars outside canvas
-                    if (sx < -10 || sx > bgW + 10 || sy < -10 || sy > bgH + 10) return;
-
-                    const twinkle = 0.5 + 0.5 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
-                    const dimFactor = getDimFactor(sx, sy);
-                    const alpha = star.brightness * (0.6 + 0.4 * twinkle) * dimFactor;
-                    const [cr, cg, cb] = star.color;
-                    const colorStr = `rgba(${cr},${cg},${cb},`;
-
-                    if (star.r < 0.7) {
-                        // Tiny stars: simple dot
-                        this.ctx.fillStyle = colorStr + alpha.toFixed(2) + ')';
-                        this.ctx.beginPath();
-                        this.ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
-                        this.ctx.fill();
-                    } else {
-                        // Draw realistic star shape with diffraction spikes
-                        this.ctx.save();
-                        this.ctx.translate(sx, sy);
-                        // Soft glow halo behind the star
-                        const glowR = star.r * 3.5;
-                        const glowGrad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
-                        glowGrad.addColorStop(0, colorStr + (alpha * 0.35).toFixed(3) + ')');
-                        glowGrad.addColorStop(0.5, colorStr + (alpha * 0.08).toFixed(3) + ')');
-                        glowGrad.addColorStop(1, colorStr + '0)');
-                        this.ctx.fillStyle = glowGrad;
-                        this.ctx.beginPath();
-                        this.ctx.arc(0, 0, glowR, 0, Math.PI * 2);
-                        this.ctx.fill();
-
-                        // Star spikes
-                        const spikes = star.spikes;
-                        const outerR = star.r * 2.2;
-                        const innerR = star.r * star.spikeRatio;
-                        this.ctx.beginPath();
-                        for (let s = 0; s < spikes * 2; s++) {
-                            const a = (s * Math.PI) / spikes - Math.PI / 2;
-                            const rad = s % 2 === 0 ? outerR : innerR;
-                            if (s === 0) this.ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
-                            else this.ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
-                        }
-                        this.ctx.closePath();
-                        this.ctx.fillStyle = colorStr + alpha.toFixed(2) + ')';
-                        this.ctx.fill();
-
-                        // Bright core
-                        this.ctx.beginPath();
-                        this.ctx.arc(0, 0, star.r * 0.45, 0, Math.PI * 2);
-                        this.ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.95).toFixed(2)})`;
-                        this.ctx.fill();
-                        this.ctx.restore();
-                    }
-                });
-
                 // Save context state
                 this.ctx.save();
 
@@ -7111,18 +7258,6 @@
                 }
 
                 this.ctx.restore();
-
-                // Galaxy animation: schedule next frame for twinkling stars (~30fps)
-                if (!this._galaxyAnimRunning) {
-                    this._galaxyAnimRunning = true;
-                    const galaxyTick = () => {
-                        if (this._galaxyAnimRunning) {
-                            this.render(true);
-                            setTimeout(() => requestAnimationFrame(galaxyTick), 33);
-                        }
-                    };
-                    requestAnimationFrame(galaxyTick);
-                }
             }
 
             drawGrid() {
@@ -7232,7 +7367,7 @@
 
                 // Consistent grid colors - ALWAYS use these exact colors
                 // Never change based on selection or any other state
-                const gridColor = isMajor ? 'rgba(80, 120, 200, 0.2)' : 'rgba(60, 100, 180, 0.12)';
+                const gridColor = isMajor ? '#c0c0c0' : '#d8d8d8';
 
                 // Optimize line width calculation - consistent line widths
                 const zoomInv = 1 / this.zoom;
@@ -7313,7 +7448,7 @@
                 // Draw axes only for major grid with consistent visibility
                 if (isMajor && Math.abs(gridSize - this.gridSize) < 0.01) {
                     // Explicitly set axis properties to ensure consistency
-                    this.ctx.strokeStyle = 'rgba(80, 120, 200, 0.3)';
+                    this.ctx.strokeStyle = '#999';
                     this.ctx.lineWidth = Math.max(1.5, Math.min(3.0, 2 * zoomInv));
                     this.ctx.lineCap = 'butt';
                     this.ctx.setLineDash([]); // Ensure solid lines for axes
@@ -7343,8 +7478,8 @@
                     return;
                 }
 
-                // Draw fill — subtle deep space tint
-                this.ctx.fillStyle = polygon.color + '1a';
+                // Draw fill
+                this.ctx.fillStyle = polygon.color + '33';
                 this.ctx.beginPath();
                 this.ctx.moveTo(vertices[0].x, vertices[0].y);
                 for (let i = 1; i < vertices.length; i++) {
@@ -7353,103 +7488,33 @@
                 this.ctx.closePath();
                 this.ctx.fill();
 
-                // Draw stroke — galaxy glow edges
-                this.ctx.save();
-                this.ctx.shadowColor = selected ? 'rgba(160, 200, 255, 0.7)' : polygon.color;
-                this.ctx.shadowBlur = selected ? 14 / this.zoom : 8 / this.zoom;
-                this.ctx.strokeStyle = selected ? 'rgba(180, 210, 255, 0.9)' : polygon.color;
-                this.ctx.lineWidth = (selected ? 2.5 : 1.8) / this.zoom;
+                // Draw stroke
+                this.ctx.strokeStyle = selected ? '#333' : polygon.color;
+                this.ctx.lineWidth = (selected ? 3 : 2) / this.zoom;
                 this.ctx.stroke();
-                this.ctx.restore();
 
-                // Draw vertices — precise reference-image star replication
+                // Draw vertices
                 for (let i = 0; i < vertices.length; i++) {
                     const v = vertices[i];
 
-                    const baseVertexSize = selected ? 6 : 4;
-                    let vertexSize = baseVertexSize;
+                    // Normal vertex rendering - enhanced for better dragging visibility
+                    let vertexSize = selected ? 8 : 4;
+                    let vertexFill = selected ? '#fff' : polygon.color;
+                    let vertexStroke = selected ? '#333' : polygon.color;
+
+                    // Make vertex larger when it's being dragged
                     if (this.selectedVertex === v) {
-                        vertexSize = baseVertexSize + 2;
-                    }
-                    const sz = vertexSize / this.zoom;
-
-                    this.ctx.save();
-                    this.ctx.translate(v.x, v.y);
-
-                    // 1) Wide soft outer glow halo
-                    const outerGlowR = sz * 6;
-                    const outerGlow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, outerGlowR);
-                    outerGlow.addColorStop(0, 'rgba(160, 200, 255, 0.35)');
-                    outerGlow.addColorStop(0.15, 'rgba(130, 180, 255, 0.18)');
-                    outerGlow.addColorStop(0.4, 'rgba(100, 150, 255, 0.06)');
-                    outerGlow.addColorStop(1, 'rgba(80, 130, 255, 0)');
-                    this.ctx.fillStyle = outerGlow;
-                    this.ctx.beginPath();
-                    this.ctx.arc(0, 0, outerGlowR, 0, Math.PI * 2);
-                    this.ctx.fill();
-
-                    // 2) Inner bright glow
-                    const innerGlowR = sz * 2.5;
-                    const innerGlow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, innerGlowR);
-                    innerGlow.addColorStop(0, 'rgba(200, 225, 255, 0.7)');
-                    innerGlow.addColorStop(0.3, 'rgba(170, 200, 255, 0.3)');
-                    innerGlow.addColorStop(1, 'rgba(140, 180, 255, 0)');
-                    this.ctx.fillStyle = innerGlow;
-                    this.ctx.beginPath();
-                    this.ctx.arc(0, 0, innerGlowR, 0, Math.PI * 2);
-                    this.ctx.fill();
-
-                    // 3) Primary 4-point long diffraction spikes (vertical & horizontal cross)
-                    const longSpikeR = sz * 6;   // Long reach like reference
-                    const longSpikeW = sz * 0.12; // Very thin
-                    this.ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
-                    this.ctx.shadowBlur = 8 / this.zoom;
-                    this.ctx.fillStyle = 'rgba(210, 230, 255, 0.85)';
-                    // Draw each spike as a narrow diamond
-                    for (let s = 0; s < 4; s++) {
-                        const angle = s * Math.PI / 2; // 0°, 90°, 180°, 270°
-                        this.ctx.save();
-                        this.ctx.rotate(angle);
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(0, -longSpikeW);        // Left edge at center
-                        this.ctx.lineTo(longSpikeR, 0);          // Tip
-                        this.ctx.lineTo(0, longSpikeW);          // Right edge at center
-                        this.ctx.closePath();
-                        this.ctx.fill();
-                        this.ctx.restore();
+                        vertexSize = selected ? 10 : 6;
                     }
 
-                    // 4) Secondary shorter 4-point spikes at 45° (subtle)
-                    const shortSpikeR = sz * 3;
-                    const shortSpikeW = sz * 0.08;
-                    this.ctx.fillStyle = 'rgba(200, 225, 255, 0.45)';
-                    for (let s = 0; s < 4; s++) {
-                        const angle = s * Math.PI / 2 + Math.PI / 4; // 45°, 135°, etc.
-                        this.ctx.save();
-                        this.ctx.rotate(angle);
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(0, -shortSpikeW);
-                        this.ctx.lineTo(shortSpikeR, 0);
-                        this.ctx.lineTo(0, shortSpikeW);
-                        this.ctx.closePath();
-                        this.ctx.fill();
-                        this.ctx.restore();
-                    }
+                    this.ctx.fillStyle = vertexFill;
+                    this.ctx.strokeStyle = vertexStroke;
+                    this.ctx.lineWidth = 2 / this.zoom;
 
-                    // 5) Blazing white-hot core
-                    this.ctx.shadowColor = 'rgba(220, 240, 255, 1)';
-                    this.ctx.shadowBlur = 14 / this.zoom;
                     this.ctx.beginPath();
-                    this.ctx.arc(0, 0, sz * 0.6, 0, Math.PI * 2);
-                    this.ctx.fillStyle = 'rgba(240, 248, 255, 0.95)';
+                    this.ctx.arc(v.x, v.y, vertexSize / this.zoom, 0, Math.PI * 2);
                     this.ctx.fill();
-                    // Innermost hot white point
-                    this.ctx.beginPath();
-                    this.ctx.arc(0, 0, sz * 0.25, 0, Math.PI * 2);
-                    this.ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-                    this.ctx.fill();
-
-                    this.ctx.restore();
+                    this.ctx.stroke();
                 }
 
                 // Restore context state after drawing polygon
@@ -7515,10 +7580,10 @@
                     gradient.addColorStop(0.5, '#4ade80');  // Green 400
                     gradient.addColorStop(1, '#22c55e');    // Green 500
                 } else {
-                    // Invalid/Drawing: Dim galaxy blue gradient
-                    gradient.addColorStop(0, 'rgba(80, 120, 200, 0.5)');
-                    gradient.addColorStop(0.5, 'rgba(120, 160, 220, 0.6)');
-                    gradient.addColorStop(1, 'rgba(80, 120, 200, 0.5)');
+                    // Invalid/Drawing: Subtle blue-gray gradient
+                    gradient.addColorStop(0, '#64748b');    // Slate 500
+                    gradient.addColorStop(0.5, '#94a3b8');  // Slate 400
+                    gradient.addColorStop(1, '#64748b');    // Slate 500
                 }
 
                 this.ctx.strokeStyle = gradient;
@@ -7582,8 +7647,8 @@
                     this.ctx.shadowColor = 'rgba(34, 197, 94, 0.8)';
                     this.ctx.shadowBlur = 8 / this.zoom;
                 } else {
-                    // Invalid: Subtle galaxy-blue circle
-                    this.ctx.fillStyle = 'rgba(100, 140, 200, 0.5)';
+                    // Invalid: Subtle gray circle
+                    this.ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
                     this.ctx.shadowColor = 'transparent';
                     this.ctx.shadowBlur = 0;
                 }
@@ -8852,18 +8917,120 @@
         }
 
 
+        // Setup back button handlers for panels
+        function setupPanelBackButtons() {
+            // Layers panel back button
+            const layersBackBtn = document.getElementById('layersBackBtn');
+            if (layersBackBtn) {
+                // Remove any existing listeners to prevent duplicates
+                const newLayersBtn = layersBackBtn.cloneNode(true);
+                layersBackBtn.parentNode.replaceChild(newLayersBtn, layersBackBtn);
 
-        // setupPanelBackButtons() REMOVED - Legacy panels eliminated
+                newLayersBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const layersSidebar = document.querySelector('.sidebar:not(.sidebar-right)');
+                    if (layersSidebar) {
+                        const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
 
+                        if (isMobile) {
+                            // On mobile, close the overlay
+                            closeMobileSidebars();
+                        } else if (isTablet) {
+                            // On tablet, toggle sidebar visibility (hide/show)
+                            toggleMobileSidebar(layersSidebar);
+                        }
+                    }
+                });
+            }
 
+            // Visualizers panel back button
+            const visualizersBackBtn = document.getElementById('visualizersBackBtn');
+            if (visualizersBackBtn) {
+                // Remove any existing listeners to prevent duplicates
+                const newVisualizersBtn = visualizersBackBtn.cloneNode(true);
+                visualizersBackBtn.parentNode.replaceChild(newVisualizersBtn, visualizersBackBtn);
 
-        // setupMobileMenus() REMOVED - Legacy sidebar toggles eliminated
+                newVisualizersBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const visualizersSidebar = document.querySelector('.sidebar-right');
+                    if (visualizersSidebar) {
+                        const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
 
+                        if (isMobile) {
+                            // On mobile, close the overlay
+                            closeMobileSidebars();
+                        } else if (isTablet) {
+                            // On tablet, toggle sidebar visibility (hide/show)
+                            toggleMobileSidebar(visualizersSidebar);
+                        }
+                    }
+                });
+            }
+        }
+
+        // Add mobile menu buttons if needed (tablets show sidebars by default, but buttons available for toggling)
+        function setupMobileMenus() {
+            const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
+            const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
+            const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
+
+            // Show toggle buttons on mobile (required) and optionally on tablets (for overlay mode)
+            if (isMobile || isTablet) {
+                // Add menu toggle buttons to canvas container
+                const canvasContainer = document.getElementById('canvasContainer');
+
+                // Calculate position below toolbar
+                // Top tools bar height + Toolbar height + small gap
+                const topToolsBar = document.querySelector('.top-tools-bar');
+                const toolbar = document.querySelector('.toolbar');
+                let topOffset = 12; // Default gap
+
+                if (topToolsBar && toolbar) {
+                    const topToolsBarHeight = topToolsBar.getBoundingClientRect().height;
+                    const toolbarHeight = toolbar.getBoundingClientRect().height;
+                    topOffset = topToolsBarHeight + toolbarHeight + 8; // 8px gap below toolbar
+                } else {
+                    // Fallback calculation based on CSS values
+                    // Top tools bar: clamp(48px, 6vw, 56px) + mobile offset clamp(10px, 2vw, 15px)
+                    // Toolbar: clamp(48px, 6vw, 56px) to clamp(60px, 8vw, 70px)
+                    const viewportWidth = window.innerWidth;
+                    const topBarHeight = Math.max(48, Math.min(56, viewportWidth * 0.06)) +
+                        (viewportWidth <= 768 ? Math.max(10, Math.min(15, viewportWidth * 0.02)) : 0);
+                    const toolbarHeight = Math.max(48, Math.min(70, viewportWidth * 0.08));
+                    topOffset = topBarHeight + toolbarHeight + 8;
+                }
+
+                // Left sidebar toggle (Layers) - REMOVED per user request
+                // let leftToggle = document.getElementById('mobileMenuLeft');
+                // if (leftToggle) leftToggle.remove(); 
+
+                // Right sidebar toggle (Visualizers) - REMOVED per user request
+                // Also remove any previously injected button from earlier versions.
+                const existingRightToggle = document.getElementById('mobileMenuRight');
+                if (existingRightToggle) existingRightToggle.remove();
+            } else {
+                // Remove mobile menu buttons on desktop
+                const leftToggle = document.getElementById('mobileMenuLeft');
+                const rightToggle = document.getElementById('mobileMenuRight');
+                if (leftToggle) leftToggle.remove();
+                if (rightToggle) rightToggle.remove();
+            }
+        }
 
         // Initialize application
         let app;
         window.addEventListener('load', () => {
-            // setupPanelBackButtons() call removed
+            // Initialize device detector first
+            deviceDetector = new DeviceDetector();
+
+            // Setup panel back buttons
+            setupPanelBackButtons();
 
             app = new PolygonFunApp();
 
@@ -8876,32 +9043,23 @@
             }
             window.game = game;
 
-            // Deterministic runtime entry (automation/testing only via URL params).
-            const automationConfig = getAutomationBootstrapConfig();
-            if (automationConfig) {
-                try {
-                    if (typeof MainMenu !== 'undefined' && MainMenu && typeof MainMenu.hide === 'function') {
-                        MainMenu.hide();
-                    }
+            // Setup mobile menus
+            setupMobileMenus();
 
-                    game.startMode(automationConfig.mode);
-
-                    if (game.currentMode && typeof game.currentMode.loadLevel === 'function') {
-                        game.currentMode.loadLevel(automationConfig.level);
-                    }
-
-                    if (automationConfig.openDev && game.devManager && typeof game.devManager.toggle === 'function' && !game.devManager.isVisible) {
-                        game.devManager.toggle();
-                    }
-
-                    console.log('[AutomationBootstrap] Applied', automationConfig);
-                } catch (e) {
-                    console.error('[AutomationBootstrap] Failed to apply:', e);
-                }
-            }
-
-
-            // setupMobileMenus() calls removed
+            // Update mobile menus on resize and orientation change
+            window.addEventListener('deviceResize', setupMobileMenus);
+            window.addEventListener('resize', () => {
+                // Debounce resize to avoid too many calls
+                clearTimeout(window.mobileMenuResizeTimeout);
+                window.mobileMenuResizeTimeout = setTimeout(() => {
+                    setupMobileMenus();
+                }, 100);
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    setupMobileMenus();
+                }, 200);
+            });
 
             // Example: Set up telemetry callbacks
             app.setTelemetryCallbacks({

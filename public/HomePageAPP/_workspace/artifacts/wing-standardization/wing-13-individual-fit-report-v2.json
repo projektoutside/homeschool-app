@@ -1,0 +1,1678 @@
+{
+  "generated_at": "2026-02-24T09:02:16.396491+00:00",
+  "app_root": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP",
+  "set_count": 13,
+  "target_file_count": 17,
+  "processed_file_count": 17,
+  "failure_count": 0,
+  "changed_file_count": 17,
+  "results": [
+    {
+      "order": 1,
+      "wing_key": "timelessWings",
+      "wing_label": "Timeless Wings",
+      "relative_path": "Images/PROPS/EndlessWing/Timeless Wings.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\EndlessWing\\\\Timeless Wings.glb",
+      "profile": {
+        "target_max_dim": 1.02,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "target_gap": 0.018
+      },
+      "changed": true,
+      "size_bytes_before": 13109476,
+      "size_bytes_after": 13111216,
+      "sha256_before": "65B37D9194710A4348ED700AAA1B9CD10261AFFF810647C79647334A349926ED",
+      "sha256_after": "8625B8E2856046A67D48946F69D6C98E356145E654438A3B4D21D0ECFD03DA2D",
+      "bounds_before": {
+        "min": [
+          -0.5099999904632568,
+          -0.09143377840518951,
+          -0.27316907048225403
+        ],
+        "max": [
+          0.5099999904632568,
+          0.09143383800983429,
+          0.27316907048225403
+        ],
+        "center": [
+          0.0,
+          2.9802322387695312e-08,
+          0.0
+        ],
+        "size": [
+          1.0199999809265137,
+          0.1828676164150238,
+          0.5463381409645081
+        ],
+        "max_dim": 1.0199999809265137
+      },
+      "bounds_after": {
+        "min": [
+          -0.5099999904632568,
+          -0.0907052680850029,
+          -0.27099254727363586
+        ],
+        "max": [
+          0.5099999904632568,
+          0.09070532768964767,
+          0.27099254727363586
+        ],
+        "center": [
+          0.0,
+          2.9802322387695312e-08,
+          0.0
+        ],
+        "size": [
+          1.0199999809265137,
+          0.18141059577465057,
+          0.5419850945472717
+        ],
+        "max_dim": 1.0199999809265137
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 129258,
+        "right_count": 148259,
+        "left_inner_x": -0.008282291702926159,
+        "right_inner_x": 0.0015253998572006822,
+        "gap": 0.009807691560126841
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 129258,
+        "right_count": 148259,
+        "left_inner_x": -0.012378445826470852,
+        "right_inner_x": 0.005621553864330053,
+        "gap": 0.017999999690800905
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 129258,
+        "right_count": 148259,
+        "left_inner_x": -0.012279818765819073,
+        "right_inner_x": 0.005576763302087784,
+        "gap": 0.017856582067906857
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.004096154219936579,
+        "raw_shift": -0.004096154219936579,
+        "target_gap": 0.018,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9920323446609675
+    },
+    {
+      "order": 2,
+      "wing_key": "blossomissWings",
+      "wing_label": "Blossomiss Wings",
+      "relative_path": "Images/PROPS/BlossomissWings/BlossomissWings.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\BlossomissWings\\\\BlossomissWings.glb",
+      "profile": {
+        "target_max_dim": 1.0,
+        "axis_scale": [
+          1.0,
+          1.05,
+          1.04
+        ],
+        "target_gap": 0.016
+      },
+      "changed": true,
+      "size_bytes_before": 13046924,
+      "size_bytes_after": 13047284,
+      "sha256_before": "262D5B91CB3B594E72A8FDEBAFC6A92F0B89E2D69A012C4FE23164CE957E8843",
+      "sha256_after": "CF3F8AC953F1C1B761482CAFEBC05CFA01F7103EA4B0D5962ED3D083915F663C",
+      "bounds_before": {
+        "min": [
+          -0.5,
+          -0.0933062806725502,
+          -0.24241779744625092
+        ],
+        "max": [
+          0.5,
+          0.09330631792545319,
+          0.2424178123474121
+        ],
+        "center": [
+          0.0,
+          1.862645149230957e-08,
+          7.450580596923828e-09
+        ],
+        "size": [
+          1.0,
+          0.18661260604858398,
+          0.4848356246948242
+        ],
+        "max_dim": 1.0
+      },
+      "bounds_after": {
+        "min": [
+          -0.5,
+          -0.09735004603862762,
+          -0.25051507353782654
+        ],
+        "max": [
+          0.5,
+          0.0973500907421112,
+          0.25051507353782654
+        ],
+        "center": [
+          0.0,
+          2.2351741790771484e-08,
+          0.0
+        ],
+        "size": [
+          1.0,
+          0.19470013678073883,
+          0.5010301470756531
+        ],
+        "max_dim": 1.0
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 128723,
+        "right_count": 145328,
+        "left_inner_x": -0.004935769364237785,
+        "right_inner_x": 0.00467961560934782,
+        "gap": 0.009615384973585606
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 128723,
+        "right_count": 145328,
+        "left_inner_x": -0.008128076791763306,
+        "right_inner_x": 0.00787192303687334,
+        "gap": 0.015999999828636646
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 128723,
+        "right_count": 145328,
+        "left_inner_x": -0.008076511323451996,
+        "right_inner_x": 0.007821982726454735,
+        "gap": 0.01589849404990673
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0031923075132071974,
+        "raw_shift": -0.0031923075132071974,
+        "target_gap": 0.016,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9936558935230603
+    },
+    {
+      "order": 3,
+      "wing_key": "lavalcanoWings",
+      "wing_label": "Lavalcano Wings",
+      "relative_path": "Images/PROPS/LavalcanoWings/LavalcanoWings.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\LavalcanoWings\\\\LavalcanoWings.glb",
+      "profile": {
+        "target_max_dim": 1.04,
+        "axis_scale": [
+          1.03,
+          0.98,
+          1.0
+        ],
+        "target_gap": 0.014
+      },
+      "changed": true,
+      "size_bytes_before": 12332180,
+      "size_bytes_after": 12332892,
+      "sha256_before": "90AAADE5B9820F03BDFD977A6DBCA2D0945335269715E40982F2E0E3987AEC07",
+      "sha256_after": "F6BCB1D1E055264491C4C3FD3F2BA3054BE4E113A046892D571E9307DBFD229C",
+      "bounds_before": {
+        "min": [
+          -0.5199999809265137,
+          -0.04509839415550232,
+          -0.21462751924991608
+        ],
+        "max": [
+          0.5199999809265137,
+          0.04509834572672844,
+          0.21462753415107727
+        ],
+        "center": [
+          0.0,
+          -2.421438694000244e-08,
+          7.450580596923828e-09
+        ],
+        "size": [
+          1.0399999618530273,
+          0.09019674360752106,
+          0.42925506830215454
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "bounds_after": {
+        "min": [
+          -0.5199999809265137,
+          -0.04276145249605179,
+          -0.20765897631645203
+        ],
+        "max": [
+          0.5199999809265137,
+          0.04276140779256821,
+          0.20765899121761322
+        ],
+        "center": [
+          0.0,
+          -2.2351741790771484e-08,
+          7.450580596923828e-09
+        ],
+        "size": [
+          1.0399999618530273,
+          0.08552286028862,
+          0.41531795263290405
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 107308,
+        "right_count": 144156,
+        "left_inner_x": -0.005105732940137386,
+        "right_inner_x": 0.004894267302006483,
+        "gap": 0.01000000024214387
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 107308,
+        "right_count": 144156,
+        "left_inner_x": -0.007108904886990786,
+        "right_inner_x": 0.006891095079481602,
+        "gap": 0.013999999966472387
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 107308,
+        "right_count": 144156,
+        "left_inner_x": -0.006878092419356108,
+        "right_inner_x": 0.0066673546098172665,
+        "gap": 0.013545447029173374
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0018500001337379219,
+        "raw_shift": -0.0018500001337379219,
+        "target_gap": 0.014,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9675319427467092
+    },
+    {
+      "order": 4,
+      "wing_key": "xatoriWings",
+      "wing_label": "Xatori Wings",
+      "relative_path": "Images/PROPS/Xatori/Xatori.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Xatori\\\\Xatori.glb",
+      "profile": {
+        "target_max_dim": 1.03,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.02
+        ],
+        "target_gap": 0.016
+      },
+      "changed": true,
+      "size_bytes_before": 13615648,
+      "size_bytes_after": 13616168,
+      "sha256_before": "81E78A91C5F88A51C9E9698ED413B70C07C97F87DC2C10CF5765C56D57AFD4E3",
+      "sha256_after": "3C70CFBA8429457A34B29E3719837CB01F0820359832710A7AEE9DF1489FBF07",
+      "bounds_before": {
+        "min": [
+          -0.5149999856948853,
+          -0.09756144881248474,
+          -0.32110145688056946
+        ],
+        "max": [
+          0.5149999856948853,
+          0.09756144881248474,
+          0.32110145688056946
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0299999713897705,
+          0.19512289762496948,
+          0.6422029137611389
+        ],
+        "max_dim": 1.0299999713897705
+      },
+      "bounds_after": {
+        "min": [
+          -0.5149999856948853,
+          -0.09698742628097534,
+          -0.325596421957016
+        ],
+        "max": [
+          0.5149999856948853,
+          0.09698742628097534,
+          0.325596421957016
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0299999713897705,
+          0.19397485256195068,
+          0.651192843914032
+        ],
+        "max_dim": 1.0299999713897705
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 140849,
+        "right_count": 154313,
+        "left_inner_x": -0.004951923619955778,
+        "right_inner_x": 0.004951923619955778,
+        "gap": 0.009903847239911556
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 140849,
+        "right_count": 154313,
+        "left_inner_x": -0.00800000037997961,
+        "right_inner_x": 0.00800000037997961,
+        "gap": 0.01600000075995922
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 140849,
+        "right_count": 154313,
+        "left_inner_x": -0.00795293040573597,
+        "right_inner_x": 0.00795293040573597,
+        "gap": 0.01590586081147194
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.003048076380044222,
+        "raw_shift": -0.003048076380044222,
+        "target_gap": 0.016,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9941162831689794
+    },
+    {
+      "order": 5,
+      "wing_key": "lightOfSmilesWings",
+      "wing_label": "Light Of Smiles Wings",
+      "relative_path": "Images/PROPS/LightOfSmiles/LightOfSmiles.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\LightOfSmiles\\\\LightOfSmiles.glb",
+      "profile": {
+        "target_max_dim": 0.99,
+        "axis_scale": [
+          0.99,
+          1.04,
+          1.03
+        ],
+        "target_gap": 0.015
+      },
+      "changed": true,
+      "size_bytes_before": 13638236,
+      "size_bytes_after": 13641068,
+      "sha256_before": "F7E95D977373DF3FDFD8A991F95B8205EA8FBEA1CA73265CB07A5FEB3DC0B66E",
+      "sha256_after": "763CF012A7ADB1DEEFEAF01623B7C7CEB091AB6148C6B5155D00365D95167B7A",
+      "bounds_before": {
+        "min": [
+          -0.4950000047683716,
+          -0.03496918827295303,
+          -0.3086489737033844
+        ],
+        "max": [
+          0.4950000047683716,
+          0.034968942403793335,
+          0.3086490035057068
+        ],
+        "center": [
+          0.0,
+          -1.2293457984924316e-07,
+          1.4901161193847656e-08
+        ],
+        "size": [
+          0.9900000095367432,
+          0.06993813067674637,
+          0.6172980070114136
+        ],
+        "max_dim": 0.9900000095367432
+      },
+      "bounds_after": {
+        "min": [
+          -0.49500003457069397,
+          -0.036527495831251144,
+          -0.31930306553840637
+        ],
+        "max": [
+          0.49500003457069397,
+          0.03652724251151085,
+          0.31930309534072876
+        ],
+        "center": [
+          0.0,
+          -1.2665987014770508e-07,
+          1.4901161193847656e-08
+        ],
+        "size": [
+          0.9900000691413879,
+          0.073054738342762,
+          0.6386061906814575
+        ],
+        "max_dim": 0.9900000691413879
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 138947,
+        "right_count": 151529,
+        "left_inner_x": -0.004855101462453604,
+        "right_inner_x": 0.0046641286462545395,
+        "gap": 0.009519230108708143
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 138947,
+        "right_count": 151529,
+        "left_inner_x": -0.007594531401991844,
+        "right_inner_x": 0.007405468262732029,
+        "gap": 0.014999999664723873
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 138947,
+        "right_count": 151529,
+        "left_inner_x": -0.007627848070114851,
+        "right_inner_x": 0.007437955122441053,
+        "gap": 0.015065803192555904
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.002787980884313583,
+        "raw_shift": -0.002787980884313583,
+        "target_gap": 0.015,
+        "clamped": false
+      },
+      "uniform_scale_factor": 1.0043868466512373
+    },
+    {
+      "order": 6,
+      "wing_key": "goddessOfValleysWings",
+      "wing_label": "Goddess Of Valleys Wings",
+      "relative_path": "Images/PROPS/Goddess of Valleys/GoddessOfValleys.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Goddess of Valleys\\\\GoddessOfValleys.glb",
+      "profile": {
+        "target_max_dim": 1.01,
+        "axis_scale": [
+          0.99,
+          1.05,
+          1.0
+        ],
+        "target_gap": 0.017
+      },
+      "changed": true,
+      "size_bytes_before": 13790088,
+      "size_bytes_after": 13790424,
+      "sha256_before": "A81F14115E8A8D893EBF1C1DCC622ADB88EEB76584E0914E7AA8959EDE8C6E19",
+      "sha256_after": "19171001919F717D0F616A13F3D7D8F8B2CED3D9DB4905D8FADFB2DC5B7E00CB",
+      "bounds_before": {
+        "min": [
+          -0.4569700062274933,
+          -0.15668030083179474,
+          -0.5049998760223389
+        ],
+        "max": [
+          0.4569700062274933,
+          0.15668025612831116,
+          0.5049998760223389
+        ],
+        "center": [
+          0.0,
+          -2.2351741790771484e-08,
+          0.0
+        ],
+        "size": [
+          0.9139400124549866,
+          0.3133605718612671,
+          1.0099997520446777
+        ],
+        "max_dim": 1.0099997520446777
+      },
+      "bounds_after": {
+        "min": [
+          -0.4565503001213074,
+          -0.16451430320739746,
+          -0.5049998760223389
+        ],
+        "max": [
+          0.4565503001213074,
+          0.16451425850391388,
+          0.5049998760223389
+        ],
+        "center": [
+          0.0,
+          -2.2351741790771484e-08,
+          0.0
+        ],
+        "size": [
+          0.9131006002426147,
+          0.32902854681015015,
+          1.0099997520446777
+        ],
+        "max_dim": 1.0099997520446777
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 138396,
+        "right_count": 155407,
+        "left_inner_x": -0.005583534948527813,
+        "right_inner_x": 0.003204349661245942,
+        "gap": 0.008787884609773755
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 138396,
+        "right_count": 155407,
+        "left_inner_x": -0.009677696973085403,
+        "right_inner_x": 0.007322303019464016,
+        "gap": 0.01699999999254942
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 138396,
+        "right_count": 155407,
+        "left_inner_x": -0.009677696973085403,
+        "right_inner_x": 0.007322303019464016,
+        "gap": 0.01699999999254942
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.004149997028522194,
+        "raw_shift": -0.004149997028522194,
+        "target_gap": 0.017,
+        "clamped": false
+      },
+      "uniform_scale_factor": 1.0000002455003794
+    },
+    {
+      "order": 7,
+      "wing_key": "moonlightAmayaWings",
+      "wing_label": "Moonlight Amaya Wings",
+      "relative_path": "Images/PROPS/Moonlight Amaya/MoonlightAmaya.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Moonlight Amaya\\\\MoonlightAmaya.glb",
+      "profile": {
+        "target_max_dim": 1.0,
+        "axis_scale": [
+          1.0,
+          1.02,
+          1.01
+        ],
+        "target_gap": 0.016
+      },
+      "changed": true,
+      "size_bytes_before": 13831024,
+      "size_bytes_after": 13838236,
+      "sha256_before": "96F3136B2745E9A437886845B89B1260EDF6954036E3AF388CAD560D64EE76AA",
+      "sha256_after": "FFE74CB41B4C25A792B8E4263606B0F53A9A8C669963C8E623A65F4EFCA6F086",
+      "bounds_before": {
+        "min": [
+          -0.4975639581680298,
+          -0.04038991779088974,
+          -0.5
+        ],
+        "max": [
+          0.4975639581680298,
+          0.04038988798856735,
+          0.5
+        ],
+        "center": [
+          0.0,
+          -1.4901161193847656e-08,
+          0.0
+        ],
+        "size": [
+          0.9951279163360596,
+          0.08077980577945709,
+          1.0
+        ],
+        "max_dim": 1.0
+      },
+      "bounds_after": {
+        "min": [
+          -0.495821475982666,
+          -0.04078982025384903,
+          -0.5
+        ],
+        "max": [
+          0.495821475982666,
+          0.04078978672623634,
+          0.5
+        ],
+        "center": [
+          0.0,
+          -1.6763806343078613e-08,
+          0.0
+        ],
+        "size": [
+          0.991642951965332,
+          0.08157961070537567,
+          1.0
+        ],
+        "max_dim": 1.0
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 144917,
+        "right_count": 155863,
+        "left_inner_x": -0.004890439100563526,
+        "right_inner_x": 0.004678098484873772,
+        "gap": 0.009568537585437298
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 144917,
+        "right_count": 155863,
+        "left_inner_x": -0.0081061702221632,
+        "right_inner_x": 0.007893829606473446,
+        "gap": 0.015999999828636646
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 144917,
+        "right_count": 155863,
+        "left_inner_x": -0.008025910705327988,
+        "right_inner_x": 0.007815673016011715,
+        "gap": 0.015841583721339703
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0032157312072813513,
+        "raw_shift": -0.0032157312072813513,
+        "target_gap": 0.016,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9900990192498218
+    },
+    {
+      "order": 8,
+      "wing_key": "honeycombBloomsWings",
+      "wing_label": "Honeycomb Blooms Wings",
+      "relative_path": "Images/PROPS/Honeycomb Blooms/HoneycombBlooms.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Honeycomb Blooms\\\\HoneycombBlooms.glb",
+      "profile": {
+        "target_max_dim": 0.995,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.04
+        ],
+        "target_gap": 0.015
+      },
+      "changed": true,
+      "size_bytes_before": 13719048,
+      "size_bytes_after": 13719380,
+      "sha256_before": "4A28821ED96D12392BDF554C8144F3E5A6C44AEC3ABBB2FC6369FAC659B542C0",
+      "sha256_after": "2D649C2BE55315F06C24B53A6B8FC0A33900DCFDCB3F649A08D58634F4E9C61C",
+      "bounds_before": {
+        "min": [
+          -0.49671828746795654,
+          -0.15407206118106842,
+          -0.497499942779541
+        ],
+        "max": [
+          0.49671828746795654,
+          0.15407192707061768,
+          0.49749991297721863
+        ],
+        "center": [
+          0.0,
+          -6.705522537231445e-08,
+          -1.4901161193847656e-08
+        ],
+        "size": [
+          0.9934365749359131,
+          0.3081439733505249,
+          0.994999885559082
+        ],
+        "max_dim": 0.994999885559082
+      },
+      "bounds_after": {
+        "min": [
+          -0.48023292422294617,
+          -0.14814624190330505,
+          -0.4975000023841858
+        ],
+        "max": [
+          0.48023292422294617,
+          0.1481461077928543,
+          0.4975000023841858
+        ],
+        "center": [
+          0.0,
+          -6.705522537231445e-08,
+          0.0
+        ],
+        "size": [
+          0.9604658484458923,
+          0.29629236459732056,
+          0.9950000047683716
+        ],
+        "max_dim": 0.9950000047683716
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 139663,
+        "right_count": 156149,
+        "left_inner_x": -0.004684015642851591,
+        "right_inner_x": 0.004868257790803909,
+        "gap": 0.0095522734336555
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 139663,
+        "right_count": 156149,
+        "left_inner_x": -0.007407878991216421,
+        "right_inner_x": 0.007592121139168739,
+        "gap": 0.01500000013038516
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 139663,
+        "right_count": 156149,
+        "left_inner_x": -0.007122961804270744,
+        "right_inner_x": 0.007300117518752813,
+        "gap": 0.014423079323023558
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0027238632831722495,
+        "raw_shift": -0.0027238632831722495,
+        "target_gap": 0.015,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.961538634161739
+    },
+    {
+      "order": 9,
+      "wing_key": "canvasOfNavelleWings",
+      "wing_label": "Canvas Of Navelle Wings",
+      "relative_path": "Images/PROPS/Canvas of Navelle/CanvasOfNavelle.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Canvas of Navelle\\\\CanvasOfNavelle.glb",
+      "profile": {
+        "target_max_dim": 1.005,
+        "axis_scale": [
+          1.0,
+          1.01,
+          1.03
+        ],
+        "target_gap": 0.015
+      },
+      "changed": true,
+      "size_bytes_before": 13718408,
+      "size_bytes_after": 13719024,
+      "sha256_before": "3489ABC85FC4AA1EFC0766EFBED947E1D26567C80F1AE809A96A30FC0280781C",
+      "sha256_after": "9D622B8442993C627CBC9198A93F8E84B7F4B29F5578329A041DBA1CD75F7CC5",
+      "bounds_before": {
+        "min": [
+          -0.49674299359321594,
+          -0.15259818732738495,
+          -0.5024998784065247
+        ],
+        "max": [
+          0.49674299359321594,
+          0.1525980532169342,
+          0.5024998784065247
+        ],
+        "center": [
+          0.0,
+          -6.705522537231445e-08,
+          0.0
+        ],
+        "size": [
+          0.9934859871864319,
+          0.30519622564315796,
+          1.0049997568130493
+        ],
+        "max_dim": 1.0049997568130493
+      },
+      "bounds_after": {
+        "min": [
+          -0.4849191904067993,
+          -0.1496351659297943,
+          -0.5024999976158142
+        ],
+        "max": [
+          0.4849191904067993,
+          0.14963503181934357,
+          0.5024999976158142
+        ],
+        "center": [
+          0.0,
+          -6.705522537231445e-08,
+          0.0
+        ],
+        "size": [
+          0.9698383808135986,
+          0.2992702126502991,
+          1.0049999952316284
+        ],
+        "max_dim": 1.0049999952316284
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 139654,
+        "right_count": 156138,
+        "left_inner_x": -0.004684248473495245,
+        "right_inner_x": 0.004868499934673309,
+        "gap": 0.009552748408168554
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 139654,
+        "right_count": 156138,
+        "left_inner_x": -0.007407874334603548,
+        "right_inner_x": 0.007592125795781612,
+        "gap": 0.01500000013038516
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 139654,
+        "right_count": 156138,
+        "left_inner_x": -0.007192112971097231,
+        "right_inner_x": 0.007370998151600361,
+        "gap": 0.014563111122697592
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0027236257959157226,
+        "raw_shift": -0.0027236257959157226,
+        "target_gap": 0.015,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9708740738864036
+    },
+    {
+      "order": 10,
+      "wing_key": "emeraldCoenWings",
+      "wing_label": "Emerald Coen Wings",
+      "relative_path": "Images/PROPS/Emerald Coen/EmeraldCoen.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Emerald Coen\\\\EmeraldCoen.glb",
+      "profile": {
+        "target_max_dim": 1.01,
+        "axis_scale": [
+          0.995,
+          1.03,
+          1.0
+        ],
+        "target_gap": 0.016
+      },
+      "changed": true,
+      "size_bytes_before": 14400916,
+      "size_bytes_after": 14401536,
+      "sha256_before": "834040D75D5720422EDBACF3D5D7DAE98979CB99911BCEAD8A5D2DE5214BB3DE",
+      "sha256_after": "CE8846AF9B7146D1E0286F7D35C7252EC4440614C4890F061E2AABD875A67B1C",
+      "bounds_before": {
+        "min": [
+          -0.4780704975128174,
+          -0.14680086076259613,
+          -0.5049998760223389
+        ],
+        "max": [
+          0.4780704975128174,
+          0.14680083096027374,
+          0.5049998760223389
+        ],
+        "center": [
+          0.0,
+          -1.4901161193847656e-08,
+          0.0
+        ],
+        "size": [
+          0.9561409950256348,
+          0.2936016917228699,
+          1.0099997520446777
+        ],
+        "max_dim": 1.0099997520446777
+      },
+      "bounds_after": {
+        "min": [
+          -0.4791063070297241,
+          -0.1512048840522766,
+          -0.5049998760223389
+        ],
+        "max": [
+          0.4791063070297241,
+          0.15120485424995422,
+          0.5049998760223389
+        ],
+        "center": [
+          0.0,
+          -1.4901161193847656e-08,
+          0.0
+        ],
+        "size": [
+          0.9582126140594482,
+          0.30240973830223083,
+          1.0099997520446777
+        ],
+        "max_dim": 1.0099997520446777
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 153992,
+        "right_count": 157551,
+        "left_inner_x": -0.003790411166846752,
+        "right_inner_x": 0.00540325278416276,
+        "gap": 0.009193663951009512
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 153992,
+        "right_count": 157551,
+        "left_inner_x": -0.007197611499577761,
+        "right_inner_x": 0.008802388794720173,
+        "gap": 0.016000000294297934
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 153992,
+        "right_count": 157551,
+        "left_inner_x": -0.007197611499577761,
+        "right_inner_x": 0.008802388794720173,
+        "gap": 0.016000000294297934
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0034261521343141796,
+        "raw_shift": -0.0034261521343141796,
+        "target_gap": 0.016,
+        "clamped": false
+      },
+      "uniform_scale_factor": 1.0000002455003794
+    },
+    {
+      "order": 11,
+      "wing_key": "efernoWings",
+      "wing_label": "Eferno Wings",
+      "relative_path": "Images/PROPS/Eferno/ComfyUI_00007_.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\Eferno\\\\ComfyUI_00007_.glb",
+      "profile": {
+        "target_max_dim": 1.08,
+        "axis_scale": [
+          0.98,
+          1.08,
+          0.92
+        ],
+        "target_gap": 0.014
+      },
+      "changed": true,
+      "size_bytes_before": 9899888,
+      "size_bytes_after": 9924156,
+      "sha256_before": "4FDF615D8898BB98DDB3033F2558F6E9CD0828EECDB3345FA6A372403C4C1F73",
+      "sha256_after": "D466599E62BE59A0976C203E9556FA3C54298181440D4EE15C5B092482A9DDEB",
+      "bounds_before": {
+        "min": [
+          -0.5291569232940674,
+          -0.004239463247358799,
+          -0.5399999618530273
+        ],
+        "max": [
+          0.5291568636894226,
+          0.004239463247358799,
+          0.5400000214576721
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          2.9802322387695312e-08
+        ],
+        "size": [
+          1.0583138465881348,
+          0.008478926494717598,
+          1.0799999237060547
+        ],
+        "max_dim": 1.0799999237060547
+      },
+      "bounds_after": {
+        "min": [
+          -0.5400000214576721,
+          -0.0047493549063801765,
+          -0.5153254270553589
+        ],
+        "max": [
+          0.5399999618530273,
+          0.0047493549063801765,
+          0.5153254866600037
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          2.9802322387695312e-08
+        ],
+        "size": [
+          1.0799999237060547,
+          0.009498709812760353,
+          1.0306508541107178
+        ],
+        "max_dim": 1.0799999237060547
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 168059,
+        "right_count": 167951,
+        "left_inner_x": -0.004967972636222839,
+        "right_inner_x": 0.00520812114700675,
+        "gap": 0.01017609378322959
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 168059,
+        "right_count": 167951,
+        "left_inner_x": -0.006882327143102884,
+        "right_inner_x": 0.007117672823369503,
+        "gap": 0.013999999966472387
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 168059,
+        "right_count": 167951,
+        "left_inner_x": -0.007138965651392937,
+        "right_inner_x": 0.007383087184280157,
+        "gap": 0.014522052835673094
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0020137140695005657,
+        "raw_shift": -0.0020137140695005657,
+        "target_gap": 0.014,
+        "clamped": false
+      },
+      "uniform_scale_factor": 1.0372894741361642
+    },
+    {
+      "order": 12,
+      "wing_key": "doubleEdgeWings",
+      "wing_label": "Double Edge Wings",
+      "relative_path": "Images/PROPS/DoubleEdge/DoubleEdgeWings_LOD0.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\DoubleEdge\\\\DoubleEdgeWings_LOD0.glb",
+      "profile": {
+        "target_max_dim": 1.06,
+        "axis_scale": [
+          1.02,
+          0.95,
+          0.98
+        ],
+        "target_gap": 0.012
+      },
+      "changed": true,
+      "size_bytes_before": 9972544,
+      "size_bytes_after": 9977184,
+      "sha256_before": "18D759BBEE38C8C9DA698B737D2801282EA5917DEB20FBC147F550060554C3E5",
+      "sha256_after": "A8BED1D1766722B806BF30C3815B62A80EE9D3C54DDFBCA4EE93FE0D005468A9",
+      "bounds_before": {
+        "min": [
+          -0.5299999713897705,
+          -0.03622584044933319,
+          -0.4501328468322754
+        ],
+        "max": [
+          0.5300000309944153,
+          0.03622584417462349,
+          0.4501328468322754
+        ],
+        "center": [
+          2.9802322387695312e-08,
+          1.862645149230957e-09,
+          0.0
+        ],
+        "size": [
+          1.059999942779541,
+          0.07245168089866638,
+          0.9002656936645508
+        ],
+        "max_dim": 1.059999942779541
+      },
+      "bounds_after": {
+        "min": [
+          -0.5300000309944153,
+          -0.03368978202342987,
+          -0.43184003233909607
+        ],
+        "max": [
+          0.5300000905990601,
+          0.03368978574872017,
+          0.43184003233909607
+        ],
+        "center": [
+          2.9802322387695312e-08,
+          1.862645149230957e-09,
+          0.0
+        ],
+        "size": [
+          1.0600001811981201,
+          0.06737956404685974,
+          0.8636800646781921
+        ],
+        "max_dim": 1.0600001811981201
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 138247,
+        "right_count": 138107,
+        "left_inner_x": -0.005254542455077171,
+        "right_inner_x": 0.004937764257192612,
+        "gap": 0.010192306712269783
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 138247,
+        "right_count": 138107,
+        "left_inner_x": -0.0061615570448338985,
+        "right_inner_x": 0.00583844305947423,
+        "gap": 0.012000000104308128
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 138247,
+        "right_count": 138107,
+        "left_inner_x": -0.006031795404851437,
+        "right_inner_x": 0.005715486127883196,
+        "gap": 0.011747281532734632
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0008019236326217653,
+        "raw_shift": -0.0008019236326217653,
+        "target_gap": 0.012,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9789401110796
+    },
+    {
+      "order": 13,
+      "wing_key": "doubleEdgeWings",
+      "wing_label": "Double Edge Wings",
+      "relative_path": "Images/PROPS/DoubleEdge/DoubleEdgeWings_LOD1.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\DoubleEdge\\\\DoubleEdgeWings_LOD1.glb",
+      "profile": {
+        "target_max_dim": 1.06,
+        "axis_scale": [
+          1.02,
+          0.95,
+          0.98
+        ],
+        "target_gap": 0.012
+      },
+      "changed": true,
+      "size_bytes_before": 4247232,
+      "size_bytes_after": 4248112,
+      "sha256_before": "EF912D82C7ADD32BFC034822F519CD84A78240225FB06A155FB6726FF1518A6A",
+      "sha256_after": "D7DE45CFBE57729E2F39E2734BDE4A09ECA0E0071B41904E7D98C2875F3F797F",
+      "bounds_before": {
+        "min": [
+          -0.5199999213218689,
+          -0.03814398869872093,
+          -0.4604145288467407
+        ],
+        "max": [
+          0.5199999809265137,
+          0.03814398869872093,
+          0.4604145288467407
+        ],
+        "center": [
+          2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.07628797739744186,
+          0.9208290576934814
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "bounds_after": {
+        "min": [
+          -0.5299999713897705,
+          -0.03614812716841698,
+          -0.4501022696495056
+        ],
+        "max": [
+          0.5300000309944153,
+          0.03614812716841698,
+          0.4501022696495056
+        ],
+        "center": [
+          2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.059999942779541,
+          0.07229625433683395,
+          0.9002045392990112
+        ],
+        "max_dim": 1.059999942779541
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 59258,
+        "right_count": 58498,
+        "left_inner_x": -0.005017726216465235,
+        "right_inner_x": 0.004982274491339922,
+        "gap": 0.010000000707805157
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 59258,
+        "right_count": 58498,
+        "left_inner_x": -0.006018080282956362,
+        "right_inner_x": 0.005981919821351767,
+        "gap": 0.012000000104308128
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 59258,
+        "right_count": 58498,
+        "left_inner_x": -0.006003355607390404,
+        "right_inner_x": 0.005967283621430397,
+        "gap": 0.0119706392288208
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0008999998159706594,
+        "raw_shift": -0.0008999998159706594,
+        "target_gap": 0.012,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.997553267800004
+    },
+    {
+      "order": 14,
+      "wing_key": "doubleEdgeWings",
+      "wing_label": "Double Edge Wings",
+      "relative_path": "Images/PROPS/DoubleEdge/DoubleEdgeWings_LOD2.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\DoubleEdge\\\\DoubleEdgeWings_LOD2.glb",
+      "profile": {
+        "target_max_dim": 1.06,
+        "axis_scale": [
+          1.02,
+          0.95,
+          0.98
+        ],
+        "target_gap": 0.012
+      },
+      "changed": true,
+      "size_bytes_before": 1489052,
+      "size_bytes_after": 1489032,
+      "sha256_before": "F685DDE02C70CA10D265C2E6D50BBAC0F908CA5BFD27D1CC70C73B8DE62D679A",
+      "sha256_after": "AA23A0D62A9D8ADD9088384D2C04E479D687365CF3451B3E4869D86BC24572BC",
+      "bounds_before": {
+        "min": [
+          -0.5199999809265137,
+          -0.03707912564277649,
+          -0.4585990309715271
+        ],
+        "max": [
+          0.5199999809265137,
+          0.03707912564277649,
+          0.4585990309715271
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.07415825128555298,
+          0.9171980619430542
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "bounds_after": {
+        "min": [
+          -0.5300000309944153,
+          -0.03513898327946663,
+          -0.4483274519443512
+        ],
+        "max": [
+          0.5300000309944153,
+          0.03513898327946663,
+          0.4483274519443512
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0600000619888306,
+          0.07027796655893326,
+          0.8966549038887024
+        ],
+        "max_dim": 1.0600000619888306
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 22021,
+        "right_count": 21736,
+        "left_inner_x": -0.005149109289050102,
+        "right_inner_x": 0.00485089048743248,
+        "gap": 0.009999999776482582
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 22021,
+        "right_count": 21736,
+        "left_inner_x": -0.006152091547846794,
+        "right_inner_x": 0.005847908556461334,
+        "gap": 0.012000000104308128
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 22021,
+        "right_count": 21736,
+        "left_inner_x": -0.0061370390467345715,
+        "right_inner_x": 0.005833600182086229,
+        "gap": 0.0119706392288208
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0009000002816319467,
+        "raw_shift": -0.0009000002816319467,
+        "target_gap": 0.012,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.997553267800004
+    },
+    {
+      "order": 15,
+      "wing_key": "frozenTundraWings",
+      "wing_label": "Frozen Tundra Wings",
+      "relative_path": "Images/PROPS/FrozenTundra/FrozenTundraWings_LOD0.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\FrozenTundra\\\\FrozenTundraWings_LOD0.glb",
+      "profile": {
+        "target_max_dim": 1.04,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.02
+        ],
+        "target_gap": 0.014
+      },
+      "changed": true,
+      "size_bytes_before": 4347320,
+      "size_bytes_after": 4347988,
+      "sha256_before": "1FF379A2C5461CB64139F5C7F465E636AA36EA1F100EFC2B462ADF2C96693CA7",
+      "sha256_after": "52E689AD414DE88EA7A178F0A66B73EB30B97BAD5F11196A663DC49FD4A16A61",
+      "bounds_before": {
+        "min": [
+          -0.5200000405311584,
+          -0.13990864157676697,
+          -0.3157092332839966
+        ],
+        "max": [
+          0.5200000405311584,
+          0.13990864157676697,
+          0.3157092332839966
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.040000081062317,
+          0.27981728315353394,
+          0.6314184665679932
+        ],
+        "max_dim": 1.040000081062317
+      },
+      "bounds_after": {
+        "min": [
+          -0.5199999809265137,
+          -0.1393725872039795,
+          -0.3207896053791046
+        ],
+        "max": [
+          0.5199999809265137,
+          0.1393725872039795,
+          0.3207896053791046
+        ],
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.278745174407959,
+          0.6415792107582092
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 43233,
+        "right_count": 47914,
+        "left_inner_x": -0.00495065376162529,
+        "right_inner_x": 0.005049347877502441,
+        "gap": 0.010000001639127731
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 43233,
+        "right_count": 47914,
+        "left_inner_x": -0.0069506531581282616,
+        "right_inner_x": 0.007049347274005413,
+        "gap": 0.014000000432133675
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 43233,
+        "right_count": 47914,
+        "left_inner_x": -0.006924021989107132,
+        "right_inner_x": 0.0070223379880189896,
+        "gap": 0.013946359977126122
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0019999991804361345,
+        "raw_shift": -0.0019999991804361345,
+        "target_gap": 0.014,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.996168554166062
+    },
+    {
+      "order": 16,
+      "wing_key": "frozenTundraWings",
+      "wing_label": "Frozen Tundra Wings",
+      "relative_path": "Images/PROPS/FrozenTundra/FrozenTundraWings_LOD1.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\FrozenTundra\\\\FrozenTundraWings_LOD1.glb",
+      "profile": {
+        "target_max_dim": 1.04,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.02
+        ],
+        "target_gap": 0.014
+      },
+      "changed": true,
+      "size_bytes_before": 2049252,
+      "size_bytes_after": 2081556,
+      "sha256_before": "88A48A1EE02AED4AEB9416EFD0663E28D92D59A1A1ABBF2316F4E52AB20B59F6",
+      "sha256_after": "3863DFECD3EA6274A80CE579237591E6BE483FB059B95039E7259377342EE4B9",
+      "bounds_before": {
+        "min": [
+          -0.5200000405311584,
+          -0.13995766639709473,
+          -0.309562087059021
+        ],
+        "max": [
+          0.5199999809265137,
+          0.13995766639709473,
+          0.309562087059021
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.27991533279418945,
+          0.619124174118042
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "bounds_after": {
+        "min": [
+          -0.5200000405311584,
+          -0.13942144811153412,
+          -0.31454354524612427
+        ],
+        "max": [
+          0.5199999809265137,
+          0.13942144811153412,
+          0.31454354524612427
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.27884289622306824,
+          0.6290870904922485
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 25310,
+        "right_count": 27551,
+        "left_inner_x": -0.005149936303496361,
+        "right_inner_x": 0.004850063938647509,
+        "gap": 0.01000000024214387
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 25310,
+        "right_count": 27551,
+        "left_inner_x": -0.00714993616566062,
+        "right_inner_x": 0.006850063800811768,
+        "gap": 0.013999999966472387
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 25310,
+        "right_count": 27551,
+        "left_inner_x": -0.00712254224345088,
+        "right_inner_x": 0.006823819130659103,
+        "gap": 0.013946361374109983
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.0019999998789280654,
+        "raw_shift": -0.0019999998789280654,
+        "target_gap": 0.014,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9961686679137208
+    },
+    {
+      "order": 17,
+      "wing_key": "frozenTundraWings",
+      "wing_label": "Frozen Tundra Wings",
+      "relative_path": "Images/PROPS/FrozenTundra/FrozenTundraWings_LOD2.glb",
+      "absolute_path": "c:\\\\Users\\\\xator\\\\Desktop\\\\ONLYGITHUBMAIN\\\\La's Homeschool\\\\public\\\\HomePageAPP\\Images\\\\PROPS\\\\FrozenTundra\\\\FrozenTundraWings_LOD2.glb",
+      "profile": {
+        "target_max_dim": 1.04,
+        "axis_scale": [
+          1.0,
+          1.0,
+          1.02
+        ],
+        "target_gap": 0.014
+      },
+      "changed": true,
+      "size_bytes_before": 952304,
+      "size_bytes_after": 958752,
+      "sha256_before": "C8F1A75B5E7DEA098A0A066EE210EE03BC4D2B933338599E41CB0E0B727A6089",
+      "sha256_after": "811636CAB0BA2CB09CFC1B4258A2D346EE600FEACEC37A1B4741E807E6334530",
+      "bounds_before": {
+        "min": [
+          -0.5200000405311584,
+          -0.13966220617294312,
+          -0.30990415811538696
+        ],
+        "max": [
+          0.5199999809265137,
+          0.13966220617294312,
+          0.30990415811538696
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.27932441234588623,
+          0.6198083162307739
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "bounds_after": {
+        "min": [
+          -0.5200000405311584,
+          -0.13912712037563324,
+          -0.31489115953445435
+        ],
+        "max": [
+          0.5199999809265137,
+          0.13912712037563324,
+          0.31489115953445435
+        ],
+        "center": [
+          -2.9802322387695312e-08,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0399999618530273,
+          0.2782542407512665,
+          0.6297823190689087
+        ],
+        "max_dim": 1.0399999618530273
+      },
+      "gap_before": {
+        "valid": true,
+        "left_count": 11974,
+        "right_count": 13422,
+        "left_inner_x": -0.005247035995125771,
+        "right_inner_x": 0.004752964712679386,
+        "gap": 0.010000000707805157
+      },
+      "gap_after_axis_gap_stage": {
+        "valid": true,
+        "left_count": 11974,
+        "right_count": 13422,
+        "left_inner_x": -0.0072470358572900295,
+        "right_inner_x": 0.006752964574843645,
+        "gap": 0.014000000432133675
+      },
+      "gap_final": {
+        "valid": true,
+        "left_count": 11974,
+        "right_count": 13422,
+        "left_inner_x": -0.007219269871711731,
+        "right_inner_x": 0.00672709196805954,
+        "gap": 0.01394636183977127
+      },
+      "gap_adjustment": {
+        "applied_shift": -0.001999999646097422,
+        "raw_shift": -0.001999999646097422,
+        "target_gap": 0.014,
+        "clamped": false
+      },
+      "uniform_scale_factor": 0.9961686679137208
+    }
+  ],
+  "failures": []
+}

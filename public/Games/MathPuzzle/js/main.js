@@ -35,9 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 7. Auto-start main menu music
         startMainMenuMusic();
 
-        // 8. Enable fullscreen mode
-        enableFullscreen();
-
         console.log('Math Puzzle: All systems initialized successfully');
     } catch (error) {
         console.error('Math Puzzle: Initialization error:', error);
@@ -50,15 +47,25 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function enableFullscreen() {
     const docElm = document.documentElement;
+    let requestResult;
     
-    if (docElm.requestFullscreen) {
-        docElm.requestFullscreen();
-    } else if (docElm.mozRequestFullScreen) { // Firefox
-        docElm.mozRequestFullScreen();
-    } else if (docElm.webkitRequestFullscreen) { // Chrome, Safari, Opera
-        docElm.webkitRequestFullscreen();
-    } else if (docElm.msRequestFullscreen) { // IE/Edge
-        docElm.msRequestFullscreen();
+    try {
+        if (docElm.requestFullscreen) {
+            requestResult = docElm.requestFullscreen();
+        } else if (docElm.mozRequestFullScreen) { // Firefox
+            requestResult = docElm.mozRequestFullScreen();
+        } else if (docElm.webkitRequestFullscreen) { // Chrome, Safari, Opera
+            requestResult = docElm.webkitRequestFullscreen();
+        } else if (docElm.msRequestFullscreen) { // IE/Edge
+            requestResult = docElm.msRequestFullscreen();
+        }
+    } catch (_error) {
+        return;
+    }
+
+    // Modern browsers can reject fullscreen requests unless triggered by user gesture.
+    if (requestResult && typeof requestResult.catch === 'function') {
+        requestResult.catch(() => {});
     }
     
     console.log('Fullscreen mode enabled');
@@ -79,11 +86,16 @@ function exitFullscreen() {
     }
 }
 
+function hasTrustedUserActivation() {
+    return !navigator.userActivation || navigator.userActivation.isActive;
+}
+
 /**
  * Toggle fullscreen mode on user interaction
  * Browsers require user interaction to enter fullscreen
  */
 document.addEventListener('click', () => {
+    if (!hasTrustedUserActivation()) return;
     if (!document.fullscreenElement && 
         !document.mozFullScreenElement && 
         !document.webkitFullscreenElement && 
@@ -94,6 +106,7 @@ document.addEventListener('click', () => {
 
 // Also try to enable fullscreen on any key press (backup method)
 document.addEventListener('keydown', () => {
+    if (!hasTrustedUserActivation()) return;
     if (!document.fullscreenElement && 
         !document.mozFullScreenElement && 
         !document.webkitFullscreenElement && 
@@ -104,6 +117,7 @@ document.addEventListener('keydown', () => {
 
 // Enable fullscreen on touch (for mobile devices)
 document.addEventListener('touchstart', () => {
+    if (!hasTrustedUserActivation()) return;
     if (!document.fullscreenElement && 
         !document.mozFullScreenElement && 
         !document.webkitFullscreenElement && 
