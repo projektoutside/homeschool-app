@@ -12,6 +12,8 @@ class MathGameController {
         this.callbacks = callbacks;
         this.currentEquation = null;
         this.score = 0;
+        this.currentProblemPoints = 0;
+        this.nextQuestionTimeout = null;
         this.numberColorTiers = [
             { name: 'white', points: 3, weight: 35, className: 'number-color-white' },
             { name: 'blue', points: 4, weight: 25, className: 'number-color-blue' },
@@ -45,6 +47,8 @@ class MathGameController {
 
         this.updateLimitVisuals();
         this.updateScoreDisplay();
+        this.renderColorPointsGuide();
+        this.updateCurrentProblemPointsDisplay(0);
     }
 
     initTimeLimit() {
@@ -95,6 +99,10 @@ class MathGameController {
         this.stopTimer();
         this.gameEnded = true;
         this.clearSelectedBlock();
+        if (this.nextQuestionTimeout) {
+            clearTimeout(this.nextQuestionTimeout);
+            this.nextQuestionTimeout = null;
+        }
 
         const undoBtn = document.getElementById('undoMove');
         const clearBtn = document.getElementById('clearEquation');
@@ -116,6 +124,21 @@ class MathGameController {
         }
     }
 
+    updateTimerVisualState(timeDisplayEl = null) {
+        const timeDisplay = timeDisplayEl || document.getElementById('timeRemaining');
+        if (!timeDisplay) return;
+
+        if (this.timeRemaining <= 30) {
+            timeDisplay.style.color = '#ff3b30';
+        } else if (this.timeRemaining <= 60) {
+            timeDisplay.style.color = '#ffff00';
+        } else {
+            timeDisplay.style.color = '#45c776';
+        }
+
+        timeDisplay.style.animation = '';
+    }
+
     startNewRound() {
         this.moveHistory = [];
         this.gameEnded = false;
@@ -126,6 +149,7 @@ class MathGameController {
         if (timeDisplay && !this.gameTimer) {
             this.initTimeLimit();
             timeDisplay.textContent = this.timeRemaining;
+            this.updateTimerVisualState(timeDisplay);
         }
 
         this.generateEquation();
@@ -150,14 +174,7 @@ class MathGameController {
             const timeDisplay = document.getElementById('timeRemaining');
             if (timeDisplay) {
                 timeDisplay.textContent = this.timeRemaining;
-
-                if (this.timeRemaining <= 10) {
-                    timeDisplay.style.color = '#ff6b6b';
-                    timeDisplay.style.animation = 'pulse 1s infinite';
-                } else {
-                    timeDisplay.style.color = '';
-                    timeDisplay.style.animation = '';
-                }
+                this.updateTimerVisualState(timeDisplay);
             }
 
             if (this.timeRemaining <= 0) {
@@ -190,28 +207,50 @@ class MathGameController {
         this.currentEquation = this.mathGenerator.generate(this.gameState.level);
     }
 
-    pickNumberColorTier() {
-        const totalWeight = this.numberColorTiers.reduce((sum, tier) => sum + tier.weight, 0);
+    pickNumberColorTier(excludedTierNames = null) {
+        const eligibleTiers = this.numberColorTiers.filter((tier) => {
+            return !(excludedTierNames && excludedTierNames.has(tier.name));
+        });
+
+        const tiersToUse = eligibleTiers.length > 0 ? eligibleTiers : this.numberColorTiers;
+        const totalWeight = tiersToUse.reduce((sum, tier) => sum + tier.weight, 0);
         if (totalWeight <= 0) {
-            return this.numberColorTiers[0];
+            return tiersToUse[0];
         }
 
         let random = Math.random() * totalWeight;
-        for (const tier of this.numberColorTiers) {
+        for (const tier of tiersToUse) {
             if (random < tier.weight) {
                 return tier;
             }
             random -= tier.weight;
         }
 
-        return this.numberColorTiers[0];
+        return tiersToUse[0];
     }
 
-    applyNumberColorTier(block) {
-        const tier = this.pickNumberColorTier();
+    generateRoundColorTierAssignments(blockCount) {
+        const assignments = [];
+        let redUsed = false;
+
+        for (let index = 0; index < blockCount; index += 1) {
+            const excluded = redUsed ? new Set(['red']) : null;
+            const tier = this.pickNumberColorTier(excluded);
+            assignments.push(tier);
+            if (tier.name === 'red') {
+                redUsed = true;
+            }
+        }
+
+        return assignments;
+    }
+
+    applyNumberColorTier(block, tierOverride = null) {
+        const tier = tierOverride || this.pickNumberColorTier();
         block.classList.add(tier.className);
         block.dataset.colorTier = tier.name;
         block.dataset.colorPoints = String(tier.points);
+        return tier;
     }
 
     calculatePlacedNumberColorPoints() {
@@ -220,6 +259,52 @@ class MathGameController {
             const points = Number.parseInt(block.dataset.colorPoints, 10);
             return total + (Number.isFinite(points) ? points : 3);
         }, 0);
+    }
+
+    renderColorPointsGuide() {
+        const legend = document.getElementById('pointsGuideLegend');
+        if (!legend) return;
+
+        legend.innerHTML = '';
+
+        this.numberColorTiers.forEach((tier) => {
+            const item = document.createElement('div');
+            item.className = 'points-guide-item';
+
+            const swatch = document.createElement('span');
+            swatch.className = `points-guide-swatch points-guide-swatch-${tier.name}`;
+            swatch.setAttribute('aria-hidden', 'true');
+
+            const label = document.createElement('span');
+            label.className = 'points-guide-label';
+            label.textContent = tier.name.charAt(0).toUpperCase() + tier.name.slice(1);
+
+            const value = document.createElement('span');
+            value.className = 'points-guide-value';
+            value.textContent = `${tier.points} pts`;
+
+            item.appendChild(swatch);
+            item.appendChild(label);
+            item.appendChild(value);
+            legend.appendChild(item);
+        });
+    }
+
+    updateCurrentProblemPointsDisplay(points = null) {
+        const pointsDisplay = document.getElementById('currentProblemPoints');
+        if (!pointsDisplay) return;
+
+        let resolvedPoints = points;
+        if (!Number.isFinite(resolvedPoints)) {
+            const blocks = document.querySelectorAll('.answer-block[data-color-points]');
+            resolvedPoints = Array.from(blocks).reduce((total, block) => {
+                const value = Number.parseInt(block.dataset.colorPoints, 10);
+                return total + (Number.isFinite(value) ? value : 0);
+            }, 0);
+        }
+
+        this.currentProblemPoints = Number.isFinite(resolvedPoints) ? resolvedPoints : 0;
+        pointsDisplay.textContent = String(this.currentProblemPoints);
     }
 
     createAnswerBlocks() {
@@ -281,6 +366,7 @@ class MathGameController {
         if (instEl) instEl.textContent = instruction;
 
         this.shuffleArray(answers);
+        const roundColorTiers = this.generateRoundColorTierAssignments(answers.length);
 
         answers.forEach((val, idx) => {
             const block = document.createElement('div');
@@ -288,10 +374,15 @@ class MathGameController {
             block.textContent = val;
             block.dataset.value = val;
             block.dataset.id = `block-${idx}`;
-            this.applyNumberColorTier(block);
+            this.applyNumberColorTier(block, roundColorTiers[idx] || null);
             this.addDragListeners(block);
             container.appendChild(block);
         });
+
+        const puzzlePoints = roundColorTiers.reduce((sum, tier) => {
+            return sum + (tier && Number.isFinite(tier.points) ? tier.points : 0);
+        }, 0);
+        this.updateCurrentProblemPointsDisplay(puzzlePoints);
 
         this.updateEquationDisplay();
         this.createOperationBlocks();
@@ -1018,29 +1109,33 @@ class MathGameController {
             }
         });
 
-        setTimeout(() => {
+        this.scheduleNextQuestion(800);
+    }
+
+    scheduleNextQuestion(delayMs = 0) {
+        if (this.nextQuestionTimeout) {
+            clearTimeout(this.nextQuestionTimeout);
+            this.nextQuestionTimeout = null;
+        }
+
+        this.nextQuestionTimeout = setTimeout(() => {
+            this.nextQuestionTimeout = null;
+            if (this.gameEnded) return;
             // Fallback sync for score display in case feedback animation is interrupted
             this.updateScoreDisplay();
             this.nextQuestion();
-        }, 800);
+        }, delayMs);
     }
 
     handleIncorrect() {
-        this.showFeedback(false, 'Try again!', '🤔');
-        setTimeout(() => this.clearSlotsOnly(), 800);
+        this.showFeedback(false, 'Incorrect! New puzzle incoming...', '❌');
+        this.scheduleNextQuestion(820);
     }
 
     showFeedback(success, msg, icon, options = null) {
         if (this.callbacks.showFeedback) {
             this.callbacks.showFeedback(success ? 'Success' : 'Incorrect', msg, icon, options);
         }
-    }
-
-    nextQuestion() {
-        if (this.gameEnded) return;
-        this.clearAllSlots();
-        this.generateEquation();
-        this.createAnswerBlocks();
     }
 
     clearSlotsOnly() {

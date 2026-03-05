@@ -224,9 +224,18 @@
             </div>
 
             <div class="game-info">
-                <div class="score-display">Score: <span id="currentScore">0</span></div>
-                <div class="timer-display">Time: <span id="timeRemaining">60</span>s</div>
+                <div class="score-display"><span class="score-label">Total Score:</span> <span id="currentScore">0</span></div>
+                <div class="timer-display">
+                    <span class="timer-label">Time:</span>
+                    <span id="timeRemaining">60</span>
+                    <span class="timer-unit">s</span>
+                </div>
             </div>
+            <div class="header-problem-points">This puzzle: <span id="currentProblemPoints">0</span> pts</div>
+        </div>
+
+        <div class="points-guide-panel" aria-live="polite">
+            <div class="points-guide-legend" id="pointsGuideLegend" aria-label="Number color point values"></div>
         </div>
 
         <!-- Equation Display Area -->

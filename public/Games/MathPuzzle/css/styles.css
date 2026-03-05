@@ -42,7 +42,7 @@ body {
   gap: var(--spacing-xs);
   --ui-rhythm-gap: 0.62rem;
   --divider-top-offset: 0.34rem;
-  --controls-clearance: 104px;
+  --controls-clearance: 84px;
   min-height: 100vh;
   overflow-y: auto;
 }
@@ -146,8 +146,150 @@ body {
 }
 
 .score-display, .timer-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0.14rem 0.5rem;
+  border-radius: 9px;
+  border: 1px solid rgba(198, 225, 255, 0.34);
+  background: linear-gradient(150deg, rgba(106, 136, 210, 0.34), rgba(66, 93, 168, 0.28));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(10, 22, 58, 0.2);
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
   white-space: nowrap;
+}
+
+.score-display {
+  gap: 0.24rem;
+}
+
+.timer-display {
+  gap: 0.24rem;
+}
+
+#timeRemaining {
+  font-weight: 900;
+  color: #45c776;
+  transition: color 0.2s ease;
+}
+
+.score-label {
+  letter-spacing: 0.01em;
+}
+
+.header-problem-points {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.86rem, 1.42vw, 1.04rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: rgba(227, 252, 255, 0.96);
+  text-shadow: 0 0 8px rgba(127, 225, 255, 0.35);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.points-guide-panel {
+  width: min(98vw, 900px);
+  margin: calc(var(--ui-rhythm-gap) * 0.7) auto 0;
+  padding: 0.28rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(203, 230, 255, 0.24);
+  background: linear-gradient(135deg, rgba(56, 84, 162, 0.44), rgba(42, 64, 136, 0.35));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 5px 16px rgba(8, 18, 58, 0.25);
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.points-guide-legend {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.24rem;
+  width: 100%;
+}
+
+.points-guide-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  min-height: 28px;
+  width: 100%;
+  padding: 0.12rem 0.28rem;
+  border-radius: 9px;
+  border: 1px solid rgba(220, 238, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(246, 252, 255, 0.97);
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.5rem, 0.95vw, 0.64rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.points-guide-swatch {
+  width: clamp(0.5rem, 0.85vw, 0.72rem);
+  height: clamp(0.5rem, 0.85vw, 0.72rem);
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.points-guide-label,
+.points-guide-value {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.points-guide-value {
+  justify-self: end;
+  color: rgba(217, 255, 237, 0.97);
+  font-weight: 800;
+  text-align: right;
+}
+
+.points-guide-swatch-white {
+  background: linear-gradient(145deg, #ffffff, #e6edf6);
+  border-color: #d8e2ef;
+}
+
+.points-guide-swatch-blue {
+  background: linear-gradient(145deg, #4f93ff, #2f6ee5);
+}
+
+.points-guide-swatch-green {
+  background: linear-gradient(145deg, #45c776, #2fa45b);
+}
+
+.points-guide-swatch-orange {
+  background: linear-gradient(145deg, #ff9e3d, #ff7a1f);
+}
+
+.points-guide-swatch-red {
+  background: linear-gradient(145deg, #ff6b6b, #e24141);
+}
+
+#currentProblemPoints {
+  color: rgba(201, 255, 220, 0.99);
+  font-size: inherit;
+  font-weight: 900;
+  text-shadow:
+    0 0 10px rgba(118, 233, 166, 0.5),
+    0 0 18px rgba(109, 233, 255, 0.22);
 }
 
 /* Equation Container */
@@ -539,7 +681,7 @@ body {
   align-items: center;
   justify-content: center;
   font-family: 'Fredoka One', cursive;
-  font-size: var(--font-size-base);
+  font-size: clamp(1.15rem, 2.8vw, 1.6rem);
   font-weight: 900;
   color: #000000;
   cursor: grab;
@@ -591,8 +733,8 @@ body {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: 0.45rem 0.5rem;
+  gap: 0.24rem;
+  padding: 0.22rem 0.32rem;
   flex-wrap: nowrap;
   width: min(98vw, 900px);
   position: fixed;
@@ -612,16 +754,16 @@ body {
 
 .control-display-panel {
   flex: 1 1 auto;
-  min-height: clamp(40px, 10vw, 55px);
+  min-height: clamp(28px, 7.4vw, 38px);
   display: flex;
   align-items: center;
-  padding: 0 1rem;
-  margin-right: 0.35rem;
+  padding: 0 0.56rem;
+  margin-right: 0.16rem;
   border-radius: 12px;
   border: 1px solid rgba(197, 226, 255, 0.18);
   background: linear-gradient(140deg, rgba(103, 126, 197, 0.26), rgba(70, 89, 162, 0.2));
   text-align: left;
-  font-size: clamp(0.9rem, 2.1vw, 2rem);
+  font-size: clamp(0.7rem, 1.6vw, 1.1rem);
   font-weight: 700;
   color: rgba(240, 248, 255, 0.96);
   white-space: nowrap;
@@ -636,14 +778,14 @@ body {
   border-radius: var(--radius-md);
   padding: 0;
   font-family: 'Nunito', sans-serif;
-  font-size: var(--font-size-xs);
+  font-size: 0.62rem;
   font-weight: 600;
   color: white;
   cursor: pointer;
-  width: clamp(40px, 10vw, 55px);
-  height: clamp(40px, 10vw, 55px);
-  min-width: 40px;
-  min-height: 40px;
+  width: clamp(30px, 7.8vw, 40px);
+  height: clamp(30px, 7.8vw, 40px);
+  min-width: 30px;
+  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -653,18 +795,18 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .limit-stars {
   display: flex;
-  gap: 2px;
-  min-height: 8px;
+  gap: 1px;
+  min-height: 5px;
 }
 
 .limit-star {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #ffe067;
   box-shadow: 0 0 6px rgba(255, 224, 103, 0.8);
@@ -1183,5 +1325,37 @@ body {
 
   .answer-blocks-container {
     padding-bottom: var(--controls-clearance);
+  }
+}
+
+@media screen and (max-width: 960px) {
+  .header-problem-points {
+    top: 6px;
+    right: 8px;
+    font-size: 0.8rem;
+  }
+
+  .points-guide-item {
+    min-height: 26px;
+    padding: 0.1rem 0.22rem;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .points-guide-panel {
+    padding: 0.24rem 0.3rem;
+  }
+
+  .points-guide-item {
+    min-height: 24px;
+    gap: 0.14rem;
+    padding: 0.08rem 0.16rem;
+    font-size: 0.46rem;
+  }
+
+  .header-problem-points {
+    top: 5px;
+    right: 6px;
+    font-size: 0.7rem;
   }
 }
