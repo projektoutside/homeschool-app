@@ -962,6 +962,8 @@
             --inventory-panel-width: min(90vw, 368px);
             --inventory-panel-height: min(84vh, 730px);
             --inventory-bottom-clearance: calc(var(--inventory-safe-area-bottom) + 84px);
+            --inventory-portrait-base-lift: clamp(14px, 2.4vh, 22px);
+            --inventory-bottom-safe-lift: 0px;
             --inventory-panel-edge-gap: clamp(10px, 1.7vh, 18px);
             --inventory-shell-inset-top: clamp(64px, 16%, 108px);
             --inventory-shell-inset-side: clamp(9px, 2.4vw, 14px);
@@ -2306,6 +2308,65 @@
             }
         }
 
+        @media (orientation: landscape) and (max-width: 980px) {
+            .prop-preview-panel {
+                width: min(92vw, 380px);
+                max-width: 92vw;
+                max-height: min(86vh, 360px);
+                top: calc(50% - clamp(6px, 2.2vh, 18px));
+                padding: clamp(9px, 1.6vh, 12px);
+                gap: clamp(6px, 1.3vh, 9px);
+            }
+
+            .preview-viewport {
+                aspect-ratio: auto;
+                height: clamp(92px, 32vh, 176px);
+                min-height: clamp(82px, 24vh, 132px);
+                max-height: min(44vh, 182px);
+            }
+
+            .preview-actions {
+                gap: 6px;
+                flex-wrap: nowrap;
+            }
+
+            .preview-apply-btn {
+                min-height: 36px;
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-width: 980px) and (max-height: 430px) {
+            .prop-preview-panel {
+                top: calc(50% - clamp(10px, 3.6vh, 24px));
+                max-height: min(90vh, 320px);
+            }
+
+            .preview-viewport {
+                height: clamp(78px, 30vh, 140px);
+                min-height: 72px;
+                max-height: min(38vh, 145px);
+            }
+
+            .preview-subtitle {
+                min-height: 16px;
+                font-size: 11px;
+            }
+
+            .preview-close-btn {
+                min-width: 26px;
+                min-height: 26px;
+                width: 26px;
+                height: 26px;
+            }
+
+            .preview-apply-btn {
+                min-height: 34px;
+                padding: 7px 10px;
+            }
+        }
+
         @media (max-width: 700px) {
             .inventory-panel {
                 --inventory-panel-width: min(95vw, 356px);
@@ -2457,7 +2518,7 @@
                 top: calc(var(--inventory-safe-area-top) + (var(--inventory-panel-height) * 0.5) + clamp(2px, 0.5vh, 6px));
                 width: var(--inventory-panel-width);
                 max-width: var(--inventory-panel-width);
-                transform: translateY(-50%);
+                transform: translateY(calc(-50% - var(--inventory-portrait-base-lift) - var(--inventory-bottom-safe-lift)));
             }
 
             .inventory-panel .inventory-hanger {
@@ -8466,10 +8527,12 @@
                 return 0;
             }
 
+            const baseBottomGapPx = isPortraitLikeViewport() ? 100 : 82;
+            const dockClearancePaddingPx = 16;
             const visualViewportInset = window.visualViewport && Number.isFinite(window.visualViewport.height)
                 ? Math.max(0, window.innerHeight - window.visualViewport.height)
                 : 0;
-            let guardPx = Math.max(56, visualViewportInset);
+            let guardPx = Math.max(baseBottomGapPx, visualViewportInset);
             const candidates = new Set();
 
             INVENTORY_BOTTOM_GUARD_SELECTORS.forEach((selector) => {
@@ -8505,7 +8568,7 @@
                 if (!isDocked) {
                     return;
                 }
-                guardPx = Math.max(guardPx, viewportHeight - rect.top + 8);
+                guardPx = Math.max(guardPx, viewportHeight - rect.top + dockClearancePaddingPx);
             });
 
             return THREE.MathUtils.clamp(guardPx, 0, viewportHeight * 0.42);
@@ -8547,8 +8610,17 @@
                 inventoryPanel.style.setProperty('--inventory-anchor-y', `${targetY}px`);
                 inventoryPanel.style.setProperty('--inventory-portrait-panel-width', `${snappedPanelWidth}px`);
                 inventoryPanel.style.setProperty('--inventory-panel-top', '0px');
-                inventoryPanel.style.setProperty('--inventory-bottom-clearance', '0px');
-                const panelRect = inventoryPanel.getBoundingClientRect();
+                const bottomGuardPx = getInventoryBottomGuardPx(viewportHeight);
+                inventoryPanel.style.setProperty('--inventory-bottom-clearance', `${Math.max(0, Number(bottomGuardPx.toFixed(2)))}px`);
+                const bottomSafetyMarginPx = 12;
+                inventoryPanel.style.setProperty('--inventory-bottom-safe-lift', '0px');
+                let panelRect = inventoryPanel.getBoundingClientRect();
+                const safeBottomLimit = viewportHeight - bottomGuardPx - bottomSafetyMarginPx;
+                if (Number.isFinite(panelRect.bottom) && panelRect.bottom > safeBottomLimit) {
+                    const requiredLiftPx = panelRect.bottom - safeBottomLimit;
+                    inventoryPanel.style.setProperty('--inventory-bottom-safe-lift', `${Math.max(0, Number(requiredLiftPx.toFixed(2)))}px`);
+                    panelRect = inventoryPanel.getBoundingClientRect();
+                }
                 const panelTop = Number.isFinite(panelRect.top) ? panelRect.top : 0;
                 const baseInsetTop = Number.parseFloat(getComputedStyle(inventoryPanel).getPropertyValue('--inventory-shell-inset-top')) || 0;
                 const frameShell = inventoryPanel.querySelector('.inventory-frame-shell');
