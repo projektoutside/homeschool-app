@@ -140,8 +140,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             return;
         }
 
-        homeTransitionPendingNavRef.current = false;
-        setHomeTransitionPhase('fading-out');
+        const frameId = window.requestAnimationFrame(() => {
+            homeTransitionPendingNavRef.current = false;
+            setHomeTransitionPhase('fading-out');
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
     }, [location.pathname]);
 
     // Auto-collapse the bottom dock when a game route opens so only the flush gold bar remains.
@@ -151,7 +155,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             return;
         }
 
-        enforceGameDockFlush();
+        const frameId = window.requestAnimationFrame(() => {
+            enforceGameDockFlush();
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
     }, [enforceGameDockFlush, isPlayRoute]);
 
     // Keep flush-left dock anchored through orientation/viewport changes while game route is active.
@@ -187,7 +195,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             return;
         }
         lastAutoFlushGameRouteRef.current = routeKey;
-        triggerStatsPulseGlow(AUTO_GAME_DOCK_PULSE_COUNT);
+        const frameId = window.requestAnimationFrame(() => {
+            triggerStatsPulseGlow(AUTO_GAME_DOCK_PULSE_COUNT);
+        });
+        return () => window.cancelAnimationFrame(frameId);
     }, [isMinimized, isPlayRoute, isStatsMinimized, location.pathname, location.search, triggerStatsPulseGlow]);
 
     useEffect(() => {
@@ -207,25 +218,30 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     
     // Sync dependent dock states when main dock toggles
     useEffect(() => {
-        if (isMinimized) {
-            setExpandedMode(false);
-            // Keep gold dock fully flushed while playing games.
-            setIsStatsMinimized(isPlayRoute);
-        } else {
-            setIsStatsMinimized(false);
-            setIsStatsLineDormant(false);
-            setIsStatsLinePulsing(false);
-            setIsStatsLineAwakeFlash(false);
-        }
+        const frameId = window.requestAnimationFrame(() => {
+            if (isMinimized) {
+                setExpandedMode(false);
+                // Keep gold dock fully flushed while playing games.
+                setIsStatsMinimized(isPlayRoute);
+            } else {
+                setIsStatsMinimized(false);
+                setIsStatsLineDormant(false);
+                setIsStatsLinePulsing(false);
+                setIsStatsLineAwakeFlash(false);
+            }
+        });
+        return () => window.cancelAnimationFrame(frameId);
     }, [isMinimized, isPlayRoute]);
 
     // Always clear dormant/pulse state when stats panel is opened.
     useEffect(() => {
         isStatsMinimizedRef.current = isStatsMinimized;
         if (!isStatsMinimized) {
-            setIsStatsLineDormant(false);
-            setIsStatsLinePulsing(false);
-            setIsStatsLineAwakeFlash(false);
+            const frameId = window.requestAnimationFrame(() => {
+                setIsStatsLineDormant(false);
+                setIsStatsLinePulsing(false);
+                setIsStatsLineAwakeFlash(false);
+            });
             if (statsAwakeFlashTimeoutRef.current !== null) {
                 window.clearTimeout(statsAwakeFlashTimeoutRef.current);
                 statsAwakeFlashTimeoutRef.current = null;
@@ -234,6 +250,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 window.clearTimeout(statsAutoDimTimeoutRef.current);
                 statsAutoDimTimeoutRef.current = null;
             }
+            return () => window.cancelAnimationFrame(frameId);
         }
     }, [isStatsMinimized]);
 

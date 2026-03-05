@@ -178,25 +178,28 @@ export const useManagerConfig = () => {
   const userScopedStorageKey = user ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
 
   useEffect(() => {
+    let nextConfig = buildDefaultConfig();
     const scopedConfig = localStorage.getItem(userScopedStorageKey);
 
     if (scopedConfig) {
-      setConfig(parseConfig(scopedConfig));
-      setIsHydratedFromStorage(true);
-      return;
+      nextConfig = parseConfig(scopedConfig);
+    } else {
+      // Legacy migration path for existing local users
+      const legacyConfig = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacyConfig) {
+        localStorage.setItem(userScopedStorageKey, legacyConfig);
+        nextConfig = parseConfig(legacyConfig);
+      }
     }
 
-    // Legacy migration path for existing local users
-    const legacyConfig = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacyConfig) {
-      localStorage.setItem(userScopedStorageKey, legacyConfig);
-      setConfig(parseConfig(legacyConfig));
+    const frameId = window.requestAnimationFrame(() => {
+      setConfig(nextConfig);
       setIsHydratedFromStorage(true);
-      return;
-    }
+    });
 
-    setConfig(buildDefaultConfig());
-    setIsHydratedFromStorage(true);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [userScopedStorageKey]);
 
   useEffect(() => {
@@ -208,6 +211,8 @@ export const useManagerConfig = () => {
     let cancelled = false;
 
     const loadRemoteConfig = async () => {
+      setIsHydratedFromRemote(false);
+
       if (!isHydratedFromStorage) return;
 
       if (!supabase || !user) {
@@ -236,7 +241,6 @@ export const useManagerConfig = () => {
       setIsHydratedFromRemote(true);
     };
 
-    setIsHydratedFromRemote(false);
     loadRemoteConfig();
 
     return () => {

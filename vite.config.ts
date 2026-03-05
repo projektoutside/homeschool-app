@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite'
+import type { Connect, Plugin, ViteDevServer } from 'vite';
+import type { ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react'
 // import { VitePWA } from 'vite-plugin-pwa' // Temporarily disabled - see note below
 import fs from 'fs';
@@ -80,19 +82,42 @@ ${JSON.stringify(state, null, 2)}
   return indexHtml.replace(markerPattern, replacementBlock);
 };
 
+type ContentSavePayload = {
+  category: string;
+  item: unknown;
+};
+
+type BulkUploadFile = {
+  name: string;
+  content: string;
+};
+
+type BulkUploadPayload = {
+  category: string;
+  files: BulkUploadFile[];
+};
+
+const isBulkUploadFile = (value: unknown): value is BulkUploadFile => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return typeof record.name === 'string' && typeof record.content === 'string';
+};
+
 // Custom middleware to save content to files
-const contentManagerPlugin = () => {
+const contentManagerPlugin = (): Plugin => {
   return {
     name: 'content-manager',
-    configureServer(server: any) {
-      server.middlewares.use('/api/classroom-3d/save-index-state', async (req: any, res: any, next: any) => {
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use('/api/classroom-3d/save-index-state', async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.method !== 'POST') {
           next();
           return;
         }
 
         let body = '';
-        req.on('data', (chunk: any) => {
+        req.on('data', (chunk: Buffer | string) => {
           body += chunk.toString();
         });
         req.on('end', () => {
@@ -126,19 +151,26 @@ const contentManagerPlugin = () => {
         });
       });
 
-      server.middlewares.use('/api/save-content', async (req: any, res: any, next: any) => {
+      server.middlewares.use('/api/save-content', async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.method === 'POST') {
           let body = '';
-          req.on('data', (chunk: any) => {
+          req.on('data', (chunk: Buffer | string) => {
             body += chunk.toString();
           });
           req.on('end', () => {
             try {
-              const { category, item } = JSON.parse(body);
+              const parsedBody = body ? JSON.parse(body) as Partial<ContentSavePayload> : {};
+              const category = typeof parsedBody.category === 'string' ? parsedBody.category : '';
+              const item = parsedBody.item ?? {};
+              if (!category) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Category is required' }));
+                return;
+              }
               const targetFile = path.resolve(__dirname, `src/data/content/${category}.ts`);
 
               if (fs.existsSync(targetFile)) {
-                let content = fs.readFileSync(targetFile, 'utf-8');
+                const content = fs.readFileSync(targetFile, 'utf-8');
                 // Find the end of the array to inject the new item
                 // Looking for the last closing bracket inside the array definition
                 const closingBracketIndex = content.lastIndexOf('];');
@@ -168,17 +200,31 @@ const contentManagerPlugin = () => {
       });
 
       // New Endpoint: Bulk Upload
-      server.middlewares.use('/api/upload-bulk', async (req: any, res: any, next: any) => {
+      server.middlewares.use('/api/upload-bulk', async (req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.method === 'POST') {
           let body = '';
-          req.on('data', (chunk: any) => {
+          req.on('data', (chunk: Buffer | string) => {
             // Basic body accumulation (Note: strictly for text/small payloads in this dev tool context)
             body += chunk.toString();
           });
           req.on('end', () => {
             try {
               // Parse JSON body containing file data and category
-              const { category, files } = JSON.parse(body); // files: [{ name: 'sheet.html', content: '<html>...' }]
+              const parsedBody = body ? JSON.parse(body) as Partial<BulkUploadPayload> : {};
+              const category = typeof parsedBody.category === 'string' ? parsedBody.category : '';
+              const files = Array.isArray(parsedBody.files)
+                ? parsedBody.files.filter(isBulkUploadFile)
+                : [];
+              if (!category) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Category is required' }));
+                return;
+              }
+              if (files.length === 0) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'No valid files to upload' }));
+                return;
+              }
               const targetDataFile = path.resolve(__dirname, `src/data/content/${category}.ts`);
 
               if (!fs.existsSync(targetDataFile)) {
@@ -187,12 +233,12 @@ const contentManagerPlugin = () => {
                 return;
               }
 
-              const newItems: any[] = [];
+              const newItems: Array<Record<string, unknown>> = [];
               const publicBase = path.resolve(__dirname, 'public/Worksheets');
               if (!fs.existsSync(publicBase)) fs.mkdirSync(publicBase, { recursive: true });
 
               // Process each file
-              files.forEach((file: any) => {
+              files.forEach((file) => {
                 const safeName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '-').toLowerCase();
                 const folderPath = path.join(publicBase, safeName);
                 if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
@@ -215,7 +261,7 @@ const contentManagerPlugin = () => {
               });
 
               // Write to TS file
-              let tsContent = fs.readFileSync(targetDataFile, 'utf-8');
+              const tsContent = fs.readFileSync(targetDataFile, 'utf-8');
               const idx = tsContent.lastIndexOf('];');
               if (idx !== -1) {
                 // Check if we need a preceeding comma

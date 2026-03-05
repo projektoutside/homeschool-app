@@ -835,9 +835,12 @@ const HomePage: React.FC = () => {
         () => panelTitles.findIndex(title => title.trim().toLowerCase() === FAVORITES_PANEL_TITLE.toLowerCase()),
         [panelTitles],
     );
-    const itemsForPreload = shouldRenderArcadePanels
-        ? [...gameItemsForPanels, ...favoriteGames]
-        : visibleItems;
+    const itemsForPreload = useMemo(
+        () => (shouldRenderArcadePanels
+            ? [...gameItemsForPanels, ...favoriteGames]
+            : visibleItems),
+        [favoriteGames, gameItemsForPanels, shouldRenderArcadePanels, visibleItems],
+    );
     const visibleIconPaths = useMemo(
         () => itemsForPreload
             .slice(0, 16)
@@ -899,9 +902,17 @@ const HomePage: React.FC = () => {
         const tabFromQuery = config.tabs.find(tab => tab.label.trim().toLowerCase() === requestedTab);
         if (!tabFromQuery) return;
 
-        setActiveTab(tabFromQuery.id);
-        setOpenFolderId(null);
-    }, [location.search, config.tabs, navigate]);
+        if (tabFromQuery.id === activeTab && openFolderId === null) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            setActiveTab(tabFromQuery.id);
+            setOpenFolderId(null);
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [activeTab, config.tabs, location.search, navigate, openFolderId]);
 
     // Prime the most visible icons for faster first paint on slower connections/devices.
     useEffect(() => {
@@ -936,10 +947,13 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         const validGameIds = new Set(allGameItems.map(item => item.id));
-        setFavoriteGameIds(prev => {
-            const filtered = prev.filter(id => validGameIds.has(id));
-            return filtered.length === prev.length ? prev : filtered;
+        const frameId = window.requestAnimationFrame(() => {
+            setFavoriteGameIds(prev => {
+                const filtered = prev.filter(id => validGameIds.has(id));
+                return filtered.length === prev.length ? prev : filtered;
+            });
         });
+        return () => window.cancelAnimationFrame(frameId);
     }, [allGameItems]);
 
     const handlePanelTitleChange = useCallback((panelIndex: number, nextTitle: string) => {

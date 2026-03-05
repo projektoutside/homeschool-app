@@ -8,6 +8,7 @@
     "dev:live": "vite --host 0.0.0.0 --port 5173 --strictPort",
     "live:start": "powershell -ExecutionPolicy Bypass -File scripts/start-live-ngrok.ps1",
     "build": "tsc -b && vite build",
+    "audit:games": "node ./scripts/audit-games.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

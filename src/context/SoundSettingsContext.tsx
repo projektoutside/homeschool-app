@@ -23,6 +23,7 @@ interface SoundSettingsContextValue {
 
 const STORAGE_KEY = 'app_sound_settings_v1';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   muted: false,
   musicVolume: 20,
@@ -154,6 +155,7 @@ export const SoundSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSoundSettings = (): SoundSettingsContextValue => {
   const ctx = useContext(SoundSettingsContext);
   if (!ctx) {

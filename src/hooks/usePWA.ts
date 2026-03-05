@@ -378,7 +378,7 @@ export function usePWA(): UsePWAReturn {
       } else if (docEl.msRequestFullscreen) {
         await docEl.msRequestFullscreen();
       }
-    } catch (error) {
+    } catch {
       // Fullscreen not supported or permission denied - silently ignore
     }
   }, []);
