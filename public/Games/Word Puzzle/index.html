@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Word Puzzle - Educational Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+
+<body>
+    <div id="three-container"></div>
+
+    <!-- Main Menu Page -->
+    <div class="page main-container" id="mainMenu">
+        <div class="title-container">
+            <h1 class="main-title">
+                <div class="title-line">
+                    <span class="title-word">Word</span>
+                </div>
+                <div class="title-line">
+                    <span class="title-word">Puzzle!</span>
+                </div>
+            </h1>
+        </div>
+
+        <div class="buttons-container">
+            <button class="game-button primary-button" id="singlePlayer">
+                <span class="button-text">Single Player Mode</span>
+                <div class="button-glow"></div>
+            </button>
+
+            <button class="game-button settings-button" id="settings">
+                <span class="button-text">Settings</span>
+                <div class="button-glow"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Difficulty Selection Page -->
+    <div class="page difficulty-page" id="difficultyPage" style="display: none;">
+        <div class="page-header">
+            <button class="back-button" id="backToMain">
+                <span>← Back</span>
+            </button>
+            <h2 class="page-title">Choose Your Level!</h2>
+        </div>
+
+        <div class="difficulty-container">
+            <div class="difficulty-grid">
+                <button class="difficulty-button easy-level" data-difficulty="easy">
+                    <div class="difficulty-icon">🌟</div>
+                    <div class="difficulty-name">Easy</div>
+                    <div class="difficulty-description">Perfect for beginners!</div>
+                </button>
+
+                <button class="difficulty-button medium-level" data-difficulty="medium">
+                    <div class="difficulty-icon">⚡</div>
+                    <div class="difficulty-name">Medium</div>
+                    <div class="difficulty-description">Ready for a challenge?</div>
+                </button>
+
+                <button class="difficulty-button hard-level" data-difficulty="hard">
+                    <div class="difficulty-icon">🔥</div>
+                    <div class="difficulty-name">Hard</div>
+                    <div class="difficulty-description">Think you can handle it?</div>
+                </button>
+
+                <button class="difficulty-button extreme-level" data-difficulty="extreme">
+                    <div class="difficulty-icon">💀</div>
+                    <div class="difficulty-name">Extreme</div>
+                    <div class="difficulty-description">Only for word masters!</div>
+                </button>
+            </div>
+
+            <div class="start-container">
+                <button class="start-button" id="startGame" style="display: none;">
+                    <span class="start-text">START GAME!</span>
+                    <div class="start-glow"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page settings-page" id="settingsPage" style="display: none;">
+        <div class="page-header">
+            <button class="back-button" id="backToMainFromSettings">
+                <span>← Back</span>
+            </button>
+            <h2 class="page-title">Settings</h2>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-section">
+                <h3 class="settings-section-title">⏱️ Timer Settings</h3>
+                <div class="settings-item">
+                    <label for="customTimeLimit" class="settings-label">
+                        Custom Time Limit (seconds)
+                    </label>
+                    <div class="settings-input-group">
+                        <input type="range" id="customTimeLimit" class="settings-slider" min="10" max="300" value="60"
+                            step="5">
+                        <div class="settings-value-display">
+                            <span id="timeLimitValue">60</span> seconds
+                        </div>
+                    </div>
+                    <div class="settings-presets">
+                        <button class="preset-button" data-time="30">30s</button>
+                        <button class="preset-button" data-time="60">60s</button>
+                        <button class="preset-button" data-time="90">90s</button>
+                        <button class="preset-button" data-time="120">120s</button>
+                        <button class="preset-button" data-time="180">180s</button>
+                    </div>
+                    <p class="settings-description">
+                        Set a custom time limit for all difficulty levels. This will override the default difficulty
+                        timers.
+                    </p>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">🔊 Sound Settings</h3>
+                <div class="settings-item">
+                    <label class="settings-checkbox-label sound-mute-label">
+                        <input type="checkbox" id="muteAll" class="settings-checkbox">
+                        <span>🔇 Mute All Sounds</span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <label for="musicVolume" class="settings-label">
+                        🎵 Background Music Volume
+                    </label>
+                    <div class="settings-input-group">
+                        <input type="range" id="musicVolume" class="settings-slider" min="0" max="100" value="70">
+                        <div class="settings-value-display">
+                            <span id="musicVolumeValue">70</span>%
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label for="sfxVolume" class="settings-label">
+                        🎮 Sound Effects Volume
+                    </label>
+                    <div class="settings-input-group">
+                        <input type="range" id="sfxVolume" class="settings-slider" min="0" max="100" value="80">
+                        <div class="settings-value-display">
+                            <span id="sfxVolumeValue">80</span>%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">🎮 Game Settings</h3>
+                <div class="settings-item">
+                    <div class="settings-row-group">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="enableHints" class="settings-checkbox" checked>
+                            <span>Enable Hints</span>
+                        </label>
+                        <div class="settings-input-small">
+                            <label for="hintLimit">Count:</label>
+                            <input type="number" id="hintLimit" class="settings-number-input" min="1" max="100"
+                                value="3">
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-row-group">
+                        <label class="settings-checkbox-label">
+                            <input type="checkbox" id="enableSkip" class="settings-checkbox" checked>
+                            <span>Enable Skips</span>
+                        </label>
+                        <div class="settings-input-small">
+                            <label for="skipLimit">Count:</label>
+                            <input type="number" id="skipLimit" class="settings-number-input" min="1" max="100"
+                                value="3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">💾 Save Settings</h3>
+                <div class="settings-actions">
+                    <button class="settings-save-button" id="saveSettings">
+                        <span>💾 Save Settings</span>
+                    </button>
+                    <button class="settings-reset-button" id="resetSettings">
+                        <span>🔄 Reset to Defaults</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Countdown Page -->
+    <div class="page countdown-page" id="countdownPage" style="display: none;">
+        <div class="countdown-container">
+            <div class="countdown-number" id="countdownNumber">3</div>
+            <div class="countdown-message" id="countdownMessage">Get Ready!</div>
+        </div>
+    </div>
+
+    <!-- Gameplay Page -->
+    <div class="page gameplay-page" id="gameplayPage" style="display: none;">
+        <!-- Game Header -->
+        <div class="game-header">
+            <div class="gameplay-top-actions">
+                <button class="top-action-button" id="gameplayMainMenuBtn">Main Menu</button>
+                <button class="top-action-button" id="gameplaySettingsBtn">Settings</button>
+            </div>
+
+            <div class="game-info">
+                <div class="score-display"><span class="score-label">Total Score:</span> <span id="currentScore">0</span></div>
+                <div class="timer-display">
+                    <span class="timer-label">Time:</span>
+                    <span id="timeRemaining">60</span>
+                    <span class="timer-unit">s</span>
+                </div>
+            </div>
+            <div class="header-problem-points">This puzzle: <span id="currentProblemPoints">0</span> pts</div>
+        </div>
+
+        <div class="points-guide-panel" aria-live="polite">
+            <div class="points-guide-legend" id="pointsGuideLegend" aria-label="Letter color point values"></div>
+        </div>
+
+        <!-- Equation Display Area -->
+        <div class="equation-container">
+            <div class="equation-display" id="equationDisplay">
+                <!-- Placeholder boxes will be dynamically generated -->
+                <div class="equation-slot" data-position="0"></div>
+                <div class="equation-slot" data-position="1"></div>
+                <div class="equation-slot" data-position="2"></div>
+                <div class="equation-slot" data-position="3"></div>
+                <div class="equation-slot" data-position="4"></div>
+            </div>
+        </div>
+
+        <!-- Combined Blocks Area -->
+        <div class="answer-blocks-container">
+            <div class="answer-blocks">
+                <!-- Numbers Section -->
+                <div class="blocks-section">
+                    <div class="blocks-label">Letters</div>
+                    <div class="blocks-group" id="answerBlocks">
+                        <!-- Draggable letter blocks will be dynamically generated -->
+                    </div>
+                </div>
+
+                <!-- Operations Section -->
+                <div class="blocks-section operations-section">
+                    <div class="blocks-label">Symbols</div>
+                    <div class="blocks-group" id="operationBlocks">
+                        <!-- Draggable operation blocks will be dynamically generated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="game-controls">
+            <div class="instruction-text control-display-panel">
+                <div class="instruction-line instruction-meta">Letters: A B C | Category: General</div>
+                <div class="instruction-line instruction-clue">Clue: Unscramble the word using the clue.</div>
+            </div>
+
+            <button class="control-button undo-button" id="undoMove">↶ Undo</button>
+            <button class="control-button clear-button" id="clearEquation">Clear All</button>
+
+            <div class="control-wrapper">
+                <button class="control-button hint-button" id="getHint">Hint</button>
+                <div class="limit-stars" id="hintStars">
+                    <!-- Stars will be injected here -->
+                </div>
+            </div>
+
+            <div class="control-wrapper">
+                <button class="control-button skip-button" id="skipQuestion">Skip</button>
+                <div class="limit-stars" id="skipStars">
+                    <!-- Stars will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="correct-answer-fx" id="correctAnswerFx" style="display: none;" aria-live="polite" aria-atomic="true">
+            <div class="correct-answer-text" id="correctAnswerText">Correct!</div>
+            <div class="correct-answer-points" id="correctAnswerPoints">+0 points</div>
+        </div>
+
+        <!-- Success/Feedback Messages -->
+        <div class="feedback-overlay" id="feedbackOverlay" style="display: none;">
+            <div class="feedback-content">
+                <div class="feedback-icon" id="feedbackIcon">🎉</div>
+                <div class="feedback-message" id="feedbackMessage">Correct! Well done!</div>
+                <div class="feedback-score-sequence" id="feedbackScoreSequence" style="display: none;">
+                    <div class="feedback-points-earned" id="feedbackPointsEarned">+0 points</div>
+                    <div class="feedback-score-transition">
+                        <span class="feedback-score-label">Score</span>
+                        <span class="feedback-score-value" id="feedbackOldScore">0</span>
+                        <span class="feedback-score-plus">+</span>
+                        <span class="feedback-score-value" id="feedbackPointsValue">0</span>
+                        <span class="feedback-score-equals">=</span>
+                        <span class="feedback-score-value feedback-score-final" id="feedbackNewScore">0</span>
+                    </div>
+                </div>
+                <div class="feedback-actions" id="feedbackActions" style="display: none;">
+                    <button class="control-button primary-button" id="playAgainBtn">🔄 Play Again</button>
+                    <button class="control-button secondary-button" id="mainMenuBtn">🏠 Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="feedback-overlay" id="confirmOverlay" style="display: none;">
+        <div class="feedback-content">
+            <div class="feedback-icon">💾</div>
+            <div class="feedback-message">Save these settings?</div>
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="confirmSaveBtn">✅ Yes, Save</button>
+                <button class="control-button secondary-button" id="cancelSaveBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gameplay Main Menu Confirmation -->
+    <div class="feedback-overlay" id="gameplayMainMenuOverlay" style="display: none;">
+        <div class="feedback-content compact-feedback">
+            <div class="feedback-icon">🏠</div>
+            <div class="feedback-message">Return to Main Menu?</div>
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="confirmGameplayMainMenuBtn">✅ Yes</button>
+                <button class="control-button secondary-button" id="cancelGameplayMainMenuBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gameplay Sound Settings -->
+    <div class="feedback-overlay" id="gameplaySoundOverlay" style="display: none;">
+        <div class="feedback-content gameplay-sound-modal">
+            <div class="feedback-icon">🔊</div>
+            <div class="feedback-message">Sound Settings</div>
+
+            <div class="gameplay-sound-settings">
+                <label class="settings-checkbox-label sound-mute-label">
+                    <input type="checkbox" id="gameplayMuteAll" class="settings-checkbox">
+                    <span>🔇 Mute All Sounds</span>
+                </label>
+
+                <div class="settings-item">
+                    <label for="gameplayMusicVolume" class="settings-label">🎵 Background Music</label>
+                    <div class="settings-input-group">
+                        <input type="range" id="gameplayMusicVolume" class="settings-slider" min="0" max="100" value="70">
+                        <div class="settings-value-display"><span id="gameplayMusicVolumeValue">70</span>%</div>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <label for="gameplaySfxVolume" class="settings-label">🎮 Sound Effects</label>
+                    <div class="settings-input-group">
+                        <input type="range" id="gameplaySfxVolume" class="settings-slider" min="0" max="100" value="80">
+                        <div class="settings-value-display"><span id="gameplaySfxVolumeValue">80</span>%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feedback-actions" style="display: flex;">
+                <button class="control-button primary-button" id="saveGameplaySoundBtn">💾 Save</button>
+                <button class="control-button secondary-button" id="closeGameplaySoundBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="particle-overlay"></div>
+
+    <!-- Orientation Warning Overlay -->
+    <div id="orientation-warning" class="orientation-warning" style="display: none;">
+        <div class="orientation-content">
+            <div class="rotate-icon">📱</div>
+            <h2>Please Rotate Your Device</h2>
+            <p>This game is designed for landscape mode only.</p>
+        </div>
+    </div>
+
+    <!-- Load scripts sequentially to avoid CORS issues with modules on file:// protocol -->
+    <script src="js/utils/DeviceDetector.js"></script>
+    <script src="js/utils/PerformanceMonitor.js"></script>
+    <script src="js/utils/WordLibraryIndex.js"></script>
+    <script src="js/utils/WordGenerator.js"></script>
+    <script src="js/effects/ThreeJsBackground.js"></script>
+    <script src="js/effects/AnimationController.js"></script>
+    <script src="js/controllers/WordGameController.js"></script>
+    <script src="js/controllers/GameController.js"></script>
+    <script src="js/controllers/MusicController.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

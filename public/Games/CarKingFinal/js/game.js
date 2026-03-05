@@ -1,4 +1,10 @@
 // Kids Car Guessing Game - Main JavaScript File
+const CAR_KING_MIC_PREF_SYNC = 'LAHS_CAR_KING_MIC_PREF_SYNC';
+const CAR_KING_MIC_PREF_REQUEST = 'LAHS_CAR_KING_MIC_PREF_REQUEST';
+const CAR_KING_MIC_PREF_SAVE = 'LAHS_CAR_KING_MIC_PREF_SAVE';
+const CAR_KING_MIC_PREF_SAVE_RESULT = 'LAHS_CAR_KING_MIC_PREF_SAVE_RESULT';
+const CAR_KING_VALID_MIC_PREFERENCES = new Set(['ask', 'session', 'always']);
+
 class CarGuessingGame {
     constructor() {
         this.currentScreen = 'start';
@@ -44,6 +50,12 @@ class CarGuessingGame {
         this.micNoSpeechTimeoutMs = 5500;
         this.selectedMicId = this.loadSelectedMicId();
         this.supportsContinuousRecognition = true;
+        this.micAccessPreference = this.loadMicAccessPreference();
+        this.pendingMicAction = null;
+        this.hostBridgeInitialized = false;
+        this.hostMicPreference = 'ask';
+        this.hostUserId = null;
+        this.micPermissionDialogInitialized = false;
         this.startClipPath = 'assets/audio/voice/Start.mp3';
         this.startSequenceLeadInMs = 120;
         this.startSequenceCountdownMs = 4000;
@@ -77,9 +89,11 @@ class CarGuessingGame {
         console.log("🚗 Initializing Kids Car Guessing Game...");
         this.setupEventListeners();
         this.setupPermissionWatchers();
+        this.setupHostBridge();
         this.setupRecognitionLifecycleHandlers();
         this.initMainMenu();
         this.showStartScreen();
+        this.updateMicPreferenceSummary();
 
         // IMPORTANT: initialize speech/AudioContext in a non-blocking way.
         // On some devices/browsers, resuming AudioContext before a user gesture can hang,
@@ -116,6 +130,449 @@ class CarGuessingGame {
         }).catch(() => {
             // Permissions API is not consistent on all browsers (especially iOS WebKit).
         });
+    }
+
+    sanitizeMicAccessPreference(value) {
+        return CAR_KING_VALID_MIC_PREFERENCES.has(value) ? value : 'ask';
+    }
+
+    getHostTargetOrigin() {
+        return window.location.origin && window.location.origin !== 'null'
+            ? window.location.origin
+            : '*';
+    }
+
+    loadMicAccessPreference() {
+        try {
+            const sessionPreference = this.sanitizeMicAccessPreference(
+                sessionStorage.getItem('carKingMicAccessPreferenceSession')
+            );
+            if (sessionPreference === 'session') {
+                return 'session';
+            }
+        } catch (err) {
+            console.warn('Unable to load microphone access preference:', err);
+        }
+
+        return 'ask';
+    }
+
+    persistMicAccessPreference(preference) {
+        try {
+            if (preference === 'session') {
+                sessionStorage.setItem('carKingMicAccessPreferenceSession', 'session');
+            } else {
+                sessionStorage.removeItem('carKingMicAccessPreferenceSession');
+            }
+        } catch (err) {
+            console.warn('Unable to persist microphone access preference:', err);
+        }
+    }
+
+    setMicAccessPreference(preference, options = {}) {
+        const { syncToHost = false } = options;
+        const normalized = this.sanitizeMicAccessPreference(preference);
+        this.micAccessPreference = normalized;
+        this.persistMicAccessPreference(normalized);
+
+        if (syncToHost) {
+            const remotePreference = normalized === 'always' ? 'always' : 'ask';
+            this.postMicPreferenceToHost(remotePreference);
+        }
+
+        this.updateMicPreferenceSummary();
+    }
+
+    updateMicPreferenceSummary(statusMessage = '') {
+        const summaryEl = document.getElementById('micPreferenceSummary');
+        const manageBtn = document.getElementById('micPreferenceManageBtn');
+        if (!summaryEl && !manageBtn) return;
+
+        let summary = 'Car King will ask before turning on the microphone until you choose a preference.';
+        let buttonLabel = 'Choose Session or Always';
+
+        if (this.micAccessPreference === 'always') {
+            summary = 'Microphone access is remembered for this account when browser/site permission is available.';
+            buttonLabel = 'Change Saved Preference';
+        } else if (this.micAccessPreference === 'session') {
+            summary = 'Microphone access stays on only for this browser session. You will be asked again next time.';
+            buttonLabel = 'Switch Session or Always';
+        }
+
+        if (statusMessage) {
+            summary = `${summary} ${statusMessage}`;
+        }
+
+        if (summaryEl) {
+            summaryEl.textContent = summary;
+        }
+        if (manageBtn) {
+            manageBtn.textContent = buttonLabel;
+        }
+    }
+
+    setMicPermissionHelp(message = '', isError = false) {
+        const helpEl = document.getElementById('micPermissionHelp');
+        if (!helpEl) return;
+
+        if (!message) {
+            helpEl.textContent = '';
+            helpEl.classList.add('hidden');
+            helpEl.classList.remove('is-error');
+            return;
+        }
+
+        helpEl.textContent = message;
+        helpEl.classList.remove('hidden');
+        helpEl.classList.toggle('is-error', Boolean(isError));
+    }
+
+    postMicPreferenceToHost(preference) {
+        if (!window.parent || window.parent === window) return;
+
+        try {
+            window.parent.postMessage(
+                {
+                    type: CAR_KING_MIC_PREF_SAVE,
+                    gameId: 'math-car-king',
+                    preference: this.sanitizeMicAccessPreference(preference)
+                },
+                this.getHostTargetOrigin()
+            );
+        } catch (err) {
+            console.warn('Unable to post microphone preference to host app:', err);
+        }
+    }
+
+    setupHostBridge() {
+        if (this.hostBridgeInitialized) return;
+        this.hostBridgeInitialized = true;
+
+        window.addEventListener('message', (event) => {
+            if (!event?.data || typeof event.data !== 'object') return;
+            if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') return;
+
+            const message = event.data;
+
+            if (message.type === CAR_KING_MIC_PREF_SYNC) {
+                const preference = this.sanitizeMicAccessPreference(message.preference);
+                this.hostMicPreference = preference;
+                this.hostUserId = typeof message.userId === 'string' ? message.userId : null;
+
+                if (preference === 'always') {
+                    this.setMicAccessPreference('always');
+                } else if (this.micAccessPreference !== 'session' && this.micAccessPreference !== 'always') {
+                    this.setMicAccessPreference(preference);
+                } else {
+                    this.updateMicPreferenceSummary();
+                }
+
+                return;
+            }
+
+            if (message.type === CAR_KING_MIC_PREF_SAVE_RESULT) {
+                if (message.success) {
+                    const persistedMode = message.persisted === 'supabase' ? 'supabase' : 'local';
+                    const savedPreference = this.sanitizeMicAccessPreference(
+                        message.requestedPreference || message.preference || this.micAccessPreference
+                    );
+                    let saveMessage = 'Microphone preference updated.';
+
+                    if (savedPreference === 'always') {
+                        saveMessage = persistedMode === 'supabase'
+                            ? 'Always-on microphone was saved to this account.'
+                            : 'Always-on microphone was saved locally for testing.';
+                    } else if (savedPreference === 'session') {
+                        saveMessage = 'Session-only microphone access is active for this visit.';
+                    } else if (savedPreference === 'ask') {
+                        saveMessage = persistedMode === 'supabase'
+                            ? 'Saved-account microphone memory was cleared for this user.'
+                            : 'Saved-account microphone memory was cleared locally.';
+                    }
+
+                    this.setMicPermissionHelp(saveMessage, false);
+                    this.updateMicPreferenceSummary(saveMessage);
+                } else if (message.error) {
+                    this.setMicPermissionHelp(message.error, true);
+                }
+            }
+        });
+
+        if (window.parent && window.parent !== window) {
+            try {
+                window.parent.postMessage(
+                    {
+                        type: CAR_KING_MIC_PREF_REQUEST,
+                        gameId: 'math-car-king'
+                    },
+                    this.getHostTargetOrigin()
+                );
+            } catch (err) {
+                console.warn('Unable to request microphone preference sync:', err);
+            }
+        }
+    }
+
+    initMicPermissionDialog() {
+        if (this.micPermissionDialogInitialized) return;
+
+        const overlay = document.getElementById('micPermissionOverlay');
+        const sessionBtn = document.getElementById('micSessionOnlyBtn');
+        const alwaysBtn = document.getElementById('micAlwaysOnBtn');
+        const retryBtn = document.getElementById('micPermissionRetryBtn');
+        const openSettingsBtn = document.getElementById('micPermissionOpenSettingsBtn');
+        const closeBtn = document.getElementById('micPermissionCloseBtn');
+
+        if (!overlay || !sessionBtn || !alwaysBtn || !retryBtn || !openSettingsBtn || !closeBtn) {
+            return;
+        }
+
+        sessionBtn.addEventListener('click', async () => {
+            await this.handleMicPreferenceSelection('session');
+        });
+
+        alwaysBtn.addEventListener('click', async () => {
+            await this.handleMicPreferenceSelection('always');
+        });
+
+        retryBtn.addEventListener('click', async () => {
+            const action = this.pendingMicAction || 'mic-settings';
+            const granted = await this.prepareMicrophoneForAction(action);
+            if (granted) {
+                this.hideMicPermissionDialog();
+            }
+        });
+
+        openSettingsBtn.addEventListener('click', async () => {
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            if (settingsOverlay) {
+                settingsOverlay.classList.add('visible');
+            }
+            await this.refreshMicrophones(false);
+        });
+
+        closeBtn.addEventListener('click', () => {
+            this.hideMicPermissionDialog();
+            this.pendingMicAction = null;
+        });
+
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                this.hideMicPermissionDialog();
+            }
+        });
+
+        this.micPermissionDialogInitialized = true;
+    }
+
+    showMicPreferenceDialog(action = 'preference-only') {
+        this.initMicPermissionDialog();
+        this.pendingMicAction = action;
+
+        const overlay = document.getElementById('micPermissionOverlay');
+        const titleEl = document.getElementById('micPermissionTitle');
+        const messageEl = document.getElementById('micPermissionMessage');
+        const choiceActions = document.getElementById('micPermissionChoiceActions');
+        const retryActions = document.getElementById('micPermissionRetryActions');
+        const closeBtn = document.getElementById('micPermissionCloseBtn');
+        const deviceStatus = document.getElementById('micDeviceStatus');
+
+        if (!overlay || !titleEl || !messageEl || !choiceActions || !retryActions || !closeBtn) {
+            return;
+        }
+
+        titleEl.textContent = 'How should Car King use the microphone?';
+        messageEl.textContent = 'Choose whether microphone access should stay on for this session only or be remembered for this account.';
+        closeBtn.textContent = action === 'start-game' ? 'Cancel Start' : 'Not Now';
+        choiceActions.classList.remove('hidden');
+        retryActions.classList.add('hidden');
+        this.setMicPermissionHelp('Car King only listens while voice mode is active.', false);
+        if (deviceStatus) {
+            deviceStatus.textContent = 'Choose whether microphone access should be session-only or always on for this account.';
+            deviceStatus.style.color = 'var(--text-muted)';
+        }
+
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    showMicPermissionDiagnosis(action = 'mic-settings', permissionState = 'unknown', err = null) {
+        this.initMicPermissionDialog();
+        this.pendingMicAction = action;
+
+        const overlay = document.getElementById('micPermissionOverlay');
+        const titleEl = document.getElementById('micPermissionTitle');
+        const messageEl = document.getElementById('micPermissionMessage');
+        const choiceActions = document.getElementById('micPermissionChoiceActions');
+        const retryActions = document.getElementById('micPermissionRetryActions');
+        const closeBtn = document.getElementById('micPermissionCloseBtn');
+        const deviceStatus = document.getElementById('micDeviceStatus');
+
+        if (!overlay || !titleEl || !messageEl || !choiceActions || !retryActions || !closeBtn) {
+            return;
+        }
+
+        let title = 'Microphone access is needed';
+        let message = 'Turn on microphone permission for this app so Car King can hear spoken answers.';
+        let help = 'After you allow microphone access in your browser or device settings, tap Try Again.';
+
+        if (permissionState === 'denied') {
+            title = 'Microphone access is turned off';
+            message = 'Car King cannot start voice mode because microphone permission is blocked for this app.';
+            help = 'Open your browser site settings, allow microphone access for this app, then return and tap Try Again.';
+        } else if (err?.message === 'getUserMedia-not-supported') {
+            title = 'This device cannot provide microphone access';
+            message = 'The current browser or device does not expose the microphone tools Car King needs.';
+            help = 'Try the latest Chrome, Edge, Safari, or another supported browser with microphone access enabled.';
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        closeBtn.textContent = action === 'start-game' ? 'Stay on Menu' : 'Not Now';
+        choiceActions.classList.add('hidden');
+        retryActions.classList.remove('hidden');
+        this.setMicPermissionHelp(help, permissionState === 'denied');
+
+        if (deviceStatus) {
+            deviceStatus.textContent = permissionState === 'denied'
+                ? 'Microphone blocked. Turn it on in browser/site settings for this game.'
+                : message;
+            deviceStatus.style.color = permissionState === 'denied' ? 'var(--accent)' : 'var(--text-muted)';
+        }
+
+        this.updateMicStatusMessage('Microphone permission is required before voice mode can start.');
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    hideMicPermissionDialog() {
+        const overlay = document.getElementById('micPermissionOverlay');
+        if (!overlay) return;
+
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        this.setMicPermissionHelp();
+    }
+
+    async queryMicrophonePermissionState() {
+        if (this.isAudioStreamUsable(this.globalPermStream)) {
+            this.micPermissionState = 'granted';
+            this.micPermissionGranted = true;
+            this.saveMicPermissionState();
+            return 'granted';
+        }
+
+        if (navigator.permissions?.query) {
+            try {
+                const status = await navigator.permissions.query({ name: 'microphone' });
+                this.micPermissionState = status.state;
+                this.micPermissionGranted = status.state === 'granted';
+                if (this.micPermissionGranted) {
+                    this.saveMicPermissionState();
+                }
+                return status.state;
+            } catch (err) {
+                console.warn('Microphone permission query failed:', err);
+            }
+        }
+
+        if (this.micPermissionGranted) {
+            return 'granted';
+        }
+
+        return 'unknown';
+    }
+
+    async prepareMicrophoneForAction(action = 'mic-settings') {
+        if (this.inputMode !== 'voice' && action !== 'preference-only') return true;
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+            const unsupportedError = new Error('getUserMedia-not-supported');
+            this.showMicPermissionDiagnosis(action, 'unsupported', unsupportedError);
+            return false;
+        }
+
+        const permissionState = await this.queryMicrophonePermissionState();
+
+        if (permissionState === 'granted') {
+            const ready = await this.ensureMicrophonePermissionForGame(true, {
+                allowPrompt: false,
+                reason: action,
+                showDiagnostics: false
+            });
+            if (!ready) {
+                this.showMicPermissionDiagnosis(action, await this.queryMicrophonePermissionState());
+            }
+            return ready;
+        }
+
+        if (permissionState === 'denied') {
+            this.showMicPermissionDiagnosis(action, permissionState);
+            return false;
+        }
+
+        if (this.micAccessPreference === 'ask') {
+            this.showMicPreferenceDialog(action);
+            return false;
+        }
+
+        const granted = await this.ensureMicrophonePermissionForGame(true, {
+            allowPrompt: true,
+            reason: action,
+            showDiagnostics: true
+        });
+
+        if (!granted) {
+            this.showMicPermissionDiagnosis(action, await this.queryMicrophonePermissionState());
+            return false;
+        }
+
+        return true;
+    }
+
+    async handleMicPreferenceSelection(preference) {
+        const normalized = this.sanitizeMicAccessPreference(preference);
+        const pendingAction = this.pendingMicAction || 'preference-only';
+
+        this.setMicAccessPreference(normalized, { syncToHost: true });
+
+        if (normalized === 'session') {
+            this.setMicPermissionHelp('Car King will remember microphone access only until this app session ends.', false);
+        } else if (normalized === 'always') {
+            this.setMicPermissionHelp('Saving always-on microphone preference for this account...', false);
+        }
+
+        if (pendingAction === 'preference-only') {
+            this.pendingMicAction = null;
+            this.hideMicPermissionDialog();
+            return;
+        }
+
+        const permissionState = await this.queryMicrophonePermissionState();
+        const granted = await this.ensureMicrophonePermissionForGame(true, {
+            allowPrompt: permissionState !== 'granted',
+            reason: pendingAction,
+            showDiagnostics: true
+        });
+
+        if (!granted) {
+            this.showMicPermissionDiagnosis(pendingAction, await this.queryMicrophonePermissionState());
+            return;
+        }
+
+        this.pendingMicAction = null;
+        this.hideMicPermissionDialog();
+
+        if (pendingAction === 'start-game') {
+            await this.handleStartGameClick();
+        } else if (pendingAction === 'mic-test') {
+            await this.startMicTest();
+        } else if (pendingAction === 'mic-settings') {
+            await this.refreshMicrophones(false);
+        } else if (pendingAction === 'manual-mic') {
+            this.recognitionRestartAttempts = 0;
+            this.startListening();
+        }
     }
 
     setupRecognitionLifecycleHandlers() {
@@ -379,8 +836,14 @@ class CarGuessingGame {
                 if (this.isTestingMic) {
                     this.stopMicTest();
                 }
-                await this.ensureMicrophonePermissionForGame();
-                await this.warmStartRecognition();
+                const permissionReady = await this.ensureMicrophonePermissionForGame(false, {
+                    allowPrompt: false,
+                    reason: 'settings-close',
+                    showDiagnostics: false
+                });
+                if (permissionReady) {
+                    await this.warmStartRecognition();
+                }
                 settingsOverlay.classList.remove('visible');
             });
         }
@@ -533,8 +996,16 @@ class CarGuessingGame {
         if (this.isTestingMic) {
             this.stopMicTest();
         }
-        await this.ensureMicrophonePermissionForGame();
-        await this.warmStartRecognition();
+        if (this.inputMode === 'voice') {
+            const micReady = await this.prepareMicrophoneForAction('start-game');
+            if (!micReady) {
+                this.isStartingGame = false;
+                return;
+            }
+
+            await this.refreshMicrophones(false);
+            await this.warmStartRecognition();
+        }
         if (this.voiceSystem?.preloadClip) {
             try {
                 await this.voiceSystem.preloadClip(this.startClipPath);
@@ -682,8 +1153,11 @@ class CarGuessingGame {
                 this.stopListening();
                 document.getElementById('guessInput').placeholder = "Mic Paused";
             } else {
-                this.recognitionRestartAttempts = 0;
-                this.startListening();
+                this.prepareMicrophoneForAction('manual-mic').then((granted) => {
+                    if (!granted) return;
+                    this.recognitionRestartAttempts = 0;
+                    this.startListening();
+                });
             }
         };
         micBtn.addEventListener('click', this.micBtnClickHandler);
@@ -833,9 +1307,12 @@ class CarGuessingGame {
         const micSelect = document.getElementById('micSelect');
         const testBtn = document.getElementById('testMicBtn');
         const showNamesBtn = document.getElementById('showMicNamesBtn');
+        const managePreferenceBtn = document.getElementById('micPreferenceManageBtn');
         const micConfigSection = document.getElementById('micConfigSection');
 
-        if (!micSelect || !testBtn || !showNamesBtn || !micConfigSection) return;
+        if (!micSelect || !testBtn || !showNamesBtn || !managePreferenceBtn || !micConfigSection) return;
+
+        this.initMicPermissionDialog();
 
         const isSecureContext = window.isSecureContext && window.location.protocol !== 'file:';
         if (!isSecureContext) {
@@ -865,10 +1342,9 @@ class CarGuessingGame {
                     const statusEl = document.getElementById('micDeviceStatus');
                     if (statusEl) statusEl.textContent = "Activating microphone...";
 
-                    // Request permission through unified flow (single prompt behavior)
-                    const granted = await this.ensureMicrophonePermissionForGame(true);
+                    const granted = await this.prepareMicrophoneForAction('mic-settings');
                     if (!granted) {
-                        throw new Error('microphone-permission-denied');
+                        return;
                     }
 
                     // Success! Update UI immediately
@@ -905,6 +1381,10 @@ class CarGuessingGame {
                         statusEl.style.color = 'var(--accent)';
                     }
                 }
+            });
+
+            managePreferenceBtn.addEventListener('click', () => {
+                this.showMicPreferenceDialog('preference-only');
             });
 
             if (navigator.mediaDevices?.addEventListener) {
@@ -987,7 +1467,13 @@ class CarGuessingGame {
         }
     }
 
-    async ensureMicrophonePermissionForGame(force = false) {
+    async ensureMicrophonePermissionForGame(force = false, options = {}) {
+        const {
+            allowPrompt = force,
+            reason = 'game',
+            showDiagnostics = force
+        } = options;
+
         if (!force && this.inputMode !== 'voice') return true;
         if (!navigator.mediaDevices?.getUserMedia) return false;
 
@@ -998,19 +1484,19 @@ class CarGuessingGame {
             return true;
         }
 
-        // If browser explicitly reports denied, avoid re-prompt loops.
-        if (navigator.permissions?.query) {
-            try {
-                const status = await navigator.permissions.query({ name: 'microphone' });
-                this.micPermissionState = status.state;
-                if (status.state === 'denied') {
-                    this.micPermissionGranted = false;
-                    this.saveMicPermissionState();
-                    return false;
-                }
-            } catch (e) {
-                // Continue with getUserMedia fallback path.
+        const permissionState = await this.queryMicrophonePermissionState();
+
+        if (permissionState === 'denied') {
+            this.micPermissionGranted = false;
+            this.saveMicPermissionState();
+            if (showDiagnostics) {
+                this.showMicPermissionDiagnosis(reason, permissionState);
             }
+            return false;
+        }
+
+        if (!allowPrompt && permissionState !== 'granted') {
+            return false;
         }
 
         // De-duplicate concurrent permission requests from multiple UI actions.
@@ -1025,11 +1511,18 @@ class CarGuessingGame {
                 this.micPermissionGranted = true;
                 this.micPermissionState = 'granted';
                 this.saveMicPermissionState();
+                this.updateMicPreferenceSummary();
                 return true;
             } catch (err) {
                 console.warn('Microphone permission request failed:', err);
                 this.micPermissionGranted = false;
                 this.saveMicPermissionState();
+                if (showDiagnostics) {
+                    const blockedState = err?.name === 'NotAllowedError'
+                        ? 'denied'
+                        : await this.queryMicrophonePermissionState();
+                    this.showMicPermissionDiagnosis(reason, blockedState, err);
+                }
                 return false;
             } finally {
                 this.micPermissionRequestInFlight = null;
@@ -1257,10 +1750,9 @@ class CarGuessingGame {
         const status = document.getElementById('micTestStatus');
 
         try {
-            // Ensure permission is obtained once through the shared path.
-            const granted = await this.ensureMicrophonePermissionForGame(true);
+            const granted = await this.prepareMicrophoneForAction('mic-test');
             if (!granted) {
-                throw new Error('microphone-permission-denied');
+                return;
             }
 
             this.isTestingMic = true;

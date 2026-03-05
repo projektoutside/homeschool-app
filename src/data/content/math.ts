@@ -38,6 +38,18 @@ export const mathContent: ContentItem[] = [
         dateAdded: '2026-01-26'
     },
     {
+        id: 'word-puzzle-game',
+        title: 'Word Puzzle',
+        description: 'Unscramble themed words using clues and category hints.',
+        type: 'game',
+        category: 'language',
+        subjects: ['Vocabulary', 'Spelling', 'Word Recognition'],
+        gradeLevels: ['All'],
+        customHtmlPath: '/Games/Word%20Puzzle/index.html',
+        thumbnail: '/assets/thumbnails/optimized/word-puzzle-128.webp',
+        dateAdded: '2026-03-05'
+    },
+    {
         id: 'MathWorksheetCreator',
         title: 'Math Worksheet Creator',
         description: 'Create custom math worksheets for practice.',

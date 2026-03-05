@@ -26,6 +26,7 @@ const HOLD_DURATION_MS = 2000;
 
 const SINGLE_PLAYER_GAME_IDS = new Set<string>([
     'MathPuzzle',
+    'word-puzzle-game',
     'math-1768955732393-game', // PolygonAPP (game entry)
     'math-car-king',
     'math-analog-clock-game-v2',

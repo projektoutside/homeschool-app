@@ -3,7 +3,90 @@
  * Initializes all game systems
  */
 
-const MATH_PUZZLE_TITLE_POINT_COLORS = ['white', 'blue', 'green', 'orange', 'red'];
+const WORD_PUZZLE_GAME_ID = 'word-puzzle-game';
+const WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY = 'LAHS_WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP';
+const WORD_PUZZLE_USER_CONTEXT_SYNC = 'LAHS_WORD_PUZZLE_USER_CONTEXT_SYNC';
+const WORD_PUZZLE_USER_CONTEXT_REQUEST = 'LAHS_WORD_PUZZLE_USER_CONTEXT_REQUEST';
+const WORD_PUZZLE_TITLE_POINT_COLORS = ['white', 'blue', 'green', 'orange', 'red'];
+
+function getWordPuzzleHostTargetOrigin() {
+    return window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')
+        ? window.location.origin
+        : '*';
+}
+
+function sanitizeWordPuzzleUserContext(rawContext) {
+    const userId = typeof rawContext?.userId === 'string' && rawContext.userId.trim()
+        ? rawContext.userId.trim()
+        : null;
+    const username = typeof rawContext?.username === 'string' && rawContext.username.trim()
+        ? rawContext.username.trim()
+        : null;
+
+    return {
+        userId,
+        username,
+        isAuthenticated: Boolean(userId && rawContext?.isAuthenticated),
+        storageScope: userId ? `supabase-user:${userId}` : 'anonymous-test'
+    };
+}
+
+function readWordPuzzleBootstrapContext() {
+    try {
+        const rawValue = sessionStorage.getItem(WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY);
+        if (!rawValue) {
+            return sanitizeWordPuzzleUserContext(null);
+        }
+
+        return sanitizeWordPuzzleUserContext(JSON.parse(rawValue));
+    } catch (_error) {
+        return sanitizeWordPuzzleUserContext(null);
+    }
+}
+
+function persistWordPuzzleBootstrapContext(context) {
+    try {
+        sessionStorage.setItem(WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY, JSON.stringify(context));
+    } catch (_error) {
+        // Ignore bootstrap persistence failures and fall back to anonymous keys.
+    }
+}
+
+function setWordPuzzleUserContext(nextContext) {
+    const sanitizedContext = sanitizeWordPuzzleUserContext(nextContext);
+    window.wordPuzzleUserContext = sanitizedContext;
+    persistWordPuzzleBootstrapContext(sanitizedContext);
+    window.dispatchEvent(new CustomEvent('wordPuzzleUserContextChanged', {
+        detail: sanitizedContext
+    }));
+    return sanitizedContext;
+}
+
+function getWordPuzzleStorageKey(baseKey) {
+    if (typeof baseKey !== 'string' || !baseKey) {
+        return baseKey;
+    }
+
+    const currentContext = window.wordPuzzleUserContext || readWordPuzzleBootstrapContext();
+    return currentContext?.userId ? `${baseKey}:${currentContext.userId}` : baseKey;
+}
+
+function requestWordPuzzleUserContext() {
+    if (!window.parent || window.parent === window) return;
+
+    try {
+        window.parent.postMessage({
+            type: WORD_PUZZLE_USER_CONTEXT_REQUEST,
+            gameId: WORD_PUZZLE_GAME_ID
+        }, getWordPuzzleHostTargetOrigin());
+    } catch (error) {
+        console.warn('Word Puzzle: Unable to request host user context:', error);
+    }
+}
+
+window.wordPuzzleUserContext = readWordPuzzleBootstrapContext();
+window.setWordPuzzleUserContext = setWordPuzzleUserContext;
+window.getWordPuzzleStorageKey = getWordPuzzleStorageKey;
 
 function randomInt(max) {
     if (!Number.isInteger(max) || max <= 0) return 0;
@@ -18,8 +101,8 @@ function randomInt(max) {
 }
 
 function chooseNextTitlePointColor(previousColor = null) {
-    const availableColors = MATH_PUZZLE_TITLE_POINT_COLORS.filter((color) => color !== previousColor);
-    return availableColors[randomInt(availableColors.length)] || MATH_PUZZLE_TITLE_POINT_COLORS[0];
+    const availableColors = WORD_PUZZLE_TITLE_POINT_COLORS.filter((color) => color !== previousColor);
+    return availableColors[randomInt(availableColors.length)] || WORD_PUZZLE_TITLE_POINT_COLORS[0];
 }
 
 function applyRandomTitlePointColors() {
@@ -57,11 +140,23 @@ function applyRandomTitlePointColors() {
     });
 }
 
+window.addEventListener('message', (event) => {
+    if (!event?.data || typeof event.data !== 'object') return;
+    if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') return;
+
+    const message = event.data;
+    if (message.type !== WORD_PUZZLE_USER_CONTEXT_SYNC) return;
+    if (message.gameId && message.gameId !== WORD_PUZZLE_GAME_ID) return;
+
+    setWordPuzzleUserContext(message);
+});
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Math Puzzle: Initializing...');
+    console.log('Word Puzzle: Initializing...');
 
     try {
+        requestWordPuzzleUserContext();
         applyRandomTitlePointColors();
 
         // 1. Initialize Device Detector first (critical for layout)
@@ -91,9 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 7. Auto-start main menu music
         startMainMenuMusic();
 
-        console.log('Math Puzzle: All systems initialized successfully');
+        console.log('Word Puzzle: All systems initialized successfully');
     } catch (error) {
-        console.error('Math Puzzle: Initialization error:', error);
+        console.error('Word Puzzle: Initialization error:', error);
     }
 });
 

@@ -80,6 +80,16 @@
                         Turn On Microphone
                     </button>
 
+                    <div class="mic-preference-card" id="micPreferenceCard">
+                        <p class="mic-preference-label">Microphone Access Memory</p>
+                        <p id="micPreferenceSummary" class="mic-preference-summary">
+                            Car King will ask before turning on the microphone until you choose a preference.
+                        </p>
+                        <button id="micPreferenceManageBtn" class="show-mic-btn mic-preference-btn" type="button">
+                            Choose Session or Always
+                        </button>
+                    </div>
+
                     <div class="mic-test-wrapper">
                         <button id="testMicBtn" class="test-mic-btn">
                             <span class="btn-icon">🎙️</span> Test Check
@@ -101,6 +111,40 @@
                 </div>
             </div>
             <button id="closeSettingsBtn" class="close-settings-btn">Save & Close</button>
+        </div>
+    </div>
+
+    <div id="micPermissionOverlay" class="mic-permission-overlay hidden" aria-hidden="true">
+        <div class="mic-permission-modal" role="dialog" aria-modal="true" aria-labelledby="micPermissionTitle">
+            <p class="mic-permission-kicker">Microphone Setup</p>
+            <h3 id="micPermissionTitle" class="mic-permission-title">How should Car King use the microphone?</h3>
+            <p id="micPermissionMessage" class="mic-permission-message">
+                Choose whether microphone access should stay on only for this session or be remembered for your account.
+            </p>
+
+            <div id="micPermissionChoiceActions" class="mic-permission-actions">
+                <button id="micSessionOnlyBtn" class="mic-permission-btn secondary" type="button">
+                    This Session Only
+                </button>
+                <button id="micAlwaysOnBtn" class="mic-permission-btn primary" type="button">
+                    Always For This Account
+                </button>
+            </div>
+
+            <div id="micPermissionRetryActions" class="mic-permission-actions hidden">
+                <button id="micPermissionRetryBtn" class="mic-permission-btn primary" type="button">
+                    Try Again
+                </button>
+                <button id="micPermissionOpenSettingsBtn" class="mic-permission-btn secondary" type="button">
+                    Open Settings
+                </button>
+            </div>
+
+            <p id="micPermissionHelp" class="mic-permission-help hidden"></p>
+
+            <button id="micPermissionCloseBtn" class="close-settings-btn mic-permission-close" type="button">
+                Not Now
+            </button>
         </div>
     </div>
 

@@ -30,10 +30,10 @@ class ThreeJsBackground {
 
         this.camera.position.z = 50;
 
-        const ambientLight = new THREE.AmbientLight(0x6aa9ff, 0.68);
+        const ambientLight = new THREE.AmbientLight(0x5fb55d, 0.62);
         this.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xfff4d8, 0.94);
+        const directionalLight = new THREE.DirectionalLight(0xfff4cc, 0.9);
         directionalLight.position.set(10, 10, 5);
         this.scene.add(directionalLight);
     }
@@ -46,11 +46,11 @@ class ThreeJsBackground {
         const sizes = new Float32Array(particleCount);
 
         const colorPalette = [
-            new THREE.Color(0x8fd7ff),
-            new THREE.Color(0x67b0ff),
-            new THREE.Color(0x7cecff),
-            new THREE.Color(0xffd777),
-            new THREE.Color(0xb7c5ff)
+            new THREE.Color(0xffd95d),
+            new THREE.Color(0xffb868),
+            new THREE.Color(0x84de6c),
+            new THREE.Color(0x47d3a1),
+            new THREE.Color(0xff9c79)
         ];
 
         for (let i = 0; i < particleCount; i++) {
@@ -105,6 +105,13 @@ class ThreeJsBackground {
     createGeometricShapes() {
         const shapeCount = (this.deviceDetector?.device?.isMobile) ? 3 : 6;
         
+        const shapePalette = [
+            new THREE.Color(0xf6cf63),
+            new THREE.Color(0x78d764),
+            new THREE.Color(0x45c78b),
+            new THREE.Color(0xf7a56e)
+        ];
+
         for (let i = 0; i < shapeCount; i++) {
             let geometry;
             const shapeType = Math.floor(Math.random() * 3);
@@ -115,13 +122,6 @@ class ThreeJsBackground {
                 case 1: geometry = new THREE.IcosahedronGeometry(size); break;
                 default: geometry = new THREE.TetrahedronGeometry(size); break;
             }
-
-            const shapePalette = [
-                new THREE.Color(0x8ac9ff),
-                new THREE.Color(0x69a7ff),
-                new THREE.Color(0x81ecff),
-                new THREE.Color(0xffd37a)
-            ];
 
             const material = new THREE.MeshPhongMaterial({
                 color: shapePalette[Math.floor(Math.random() * shapePalette.length)].clone(),
