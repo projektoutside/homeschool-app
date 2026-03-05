@@ -17,6 +17,7 @@ const CLASSROOM_MESSAGE_READY = 'LAHS_CLASSROOM_READY';
 const CLASSROOM_MESSAGE_STATE_REQUEST = 'LAHS_CLASSROOM_STATE_REQUEST';
 const CLASSROOM_MESSAGE_STATE_SYNC = 'LAHS_CLASSROOM_STATE_SYNC';
 const CLASSROOM_MESSAGE_STATE_SAVE = 'LAHS_CLASSROOM_STATE_SAVE';
+const CLASSROOM_MESSAGE_NAVIGATE = 'LAHS_CLASSROOM_NAVIGATE';
 const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
 const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
 const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
@@ -411,11 +412,22 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
                     queueStateSave(sanitizedState);
                     break;
                 }
+                case CLASSROOM_MESSAGE_NAVIGATE: {
+                    const payload = (message.payload ?? {}) as Record<string, unknown>;
+                    const requestedPath = typeof payload.path === 'string' ? payload.path.trim() : '';
+                    // Only allow in-app navigation targets initiated by the classroom iframe.
+                    const isAllowedTarget = requestedPath === '/html-viewer' || requestedPath.startsWith('/html-viewer?');
+                    if (!isAllowedTarget) {
+                        return;
+                    }
+                    navigate(requestedPath);
+                    break;
+                }
                 default:
                     break;
             }
         },
-        [hasManagerAccess, queueStateSave, syncAuthToClassroom, syncLatestStateToClassroom],
+        [hasManagerAccess, navigate, queueStateSave, syncAuthToClassroom, syncLatestStateToClassroom],
     );
 
     useEffect(() => {

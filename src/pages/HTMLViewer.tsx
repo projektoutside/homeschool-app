@@ -24,6 +24,49 @@ const buildWorksheetUrl = (folderName: string): string => {
     return buildAssetPath(`Worksheets/${folderName}/index.html`);
 };
 
+const KNOWN_WORKSHEET_FOLDERS = [
+    '1minuteadditiontest', '1minutedivisiontest', '1minutemultiplicationtest', '1minutesubtractiontest',
+    '2stepmathproblems', '2stepmathproblems-easy', '2stepmathproblems-hard',
+    '30-addition-worksheet', '30-addition-worksheet-5s', '30-addition-worksheet-10s',
+    '30-addsub-worksheet', '30-division-worksheet', '30-double-digit-addition-worksheet',
+    '30-double-digit-addsub-worksheet', '30-double-digit-division-worksheet',
+    '30-double-digit-multiplication-worksheet', '30-double-digit-subtraction-worksheet',
+    '30-multiplication-worksheet', '30-multiplicationdivision-worksheet',
+    '30-simple-substitution-worksheet', '30-subtraction-worksheet',
+    '30-subtraction-worksheet-5s', '30-subtraction-worksheet-10s',
+    'additionsubtractionmissing-substitution', 'countby2s', 'countby5s', 'countby10s',
+    'countingoddnumbers', 'crosswordpuzzlegenerator', 'decimal-numbers-worksheet',
+    'emptymultiplicationtable', 'extraeasyadditionmissingaddend', 'extraeasysubtractionmissingminuend',
+    'fillintheblankartcalender', 'fillintheblankcalender', 'introduction-to-fractions-worksheet',
+    'introtofractions', 'missingpattern8shape', 'missingpatterncountsheet',
+    'missingpatterncountsheet-easy', 'missingpatterncountsheet-hard', 'missingpatternshape',
+    'positive-negative-add-sub-worksheet', 'positivenegativesecretword', 'presidents-worksheet',
+    'presidenttestfirst10', 'presidenttestlast15', 'simple-substitution10-worksheet',
+    'simple-substitution16-additionworksheet', 'simple-substitution16-divisionworksheet',
+    'simple-substitution16-mixaddsubworksheet', 'simple-substitution16-multiplicationworksheet',
+    'simple-substitution16-subtractionworksheet', 'simple-substitution16-variablesworksheet',
+    'simple-substitutionwordproblems', 'storytelling-elements-worksheet', 'substitutionsecretword',
+    'uniquepatternworksheet', 'uniquepatternworksheeteasy', 'uniquepatternworksheethard',
+    'uniquepatternworksheetmedium', 'us-states-word-bank'
+] as const;
+
+const WORKSHEET_BASE_WIDTH = 816;
+const WORKSHEET_BASE_HEIGHT = 1056;
+
+const clampScale = (value: number, min = 0.25, max = 6): number => {
+    if (!Number.isFinite(value) || value <= 0) return 1;
+    return Math.max(min, Math.min(max, value));
+};
+
+const computeFitScale = (availableWidth: number, availableHeight: number): number => {
+    if (!Number.isFinite(availableWidth) || !Number.isFinite(availableHeight) || availableWidth <= 0 || availableHeight <= 0) {
+        return 1;
+    }
+    const scaleX = availableWidth / WORKSHEET_BASE_WIDTH;
+    const scaleY = availableHeight / WORKSHEET_BASE_HEIGHT;
+    return clampScale(Math.min(scaleX, scaleY));
+};
+
 const HTMLViewer: React.FC = () => {
     const navigate = useNavigate();
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -54,73 +97,30 @@ const HTMLViewer: React.FC = () => {
             .join(' ');
     };
 
-    // Scan worksheets directory
+    // Build worksheet entries from the known static folder set to avoid
+    // runtime probing requests that can stall lower-end devices.
     useEffect(() => {
-        const scanWorksheets = async () => {
-            setIsLoading(true);
-            try {
-                // List of known worksheet folders from the public/Worksheets directory
-                const worksheetFolders = [
-                    '1minuteadditiontest', '1minutedivisiontest', '1minutemultiplicationtest', '1minutesubtractiontest',
-                    '2stepmathproblems', '2stepmathproblems-easy', '2stepmathproblems-hard',
-                    '30-addition-worksheet', '30-addition-worksheet-5s', '30-addition-worksheet-10s',
-                    '30-addsub-worksheet', '30-division-worksheet', '30-double-digit-addition-worksheet',
-                    '30-double-digit-addsub-worksheet', '30-double-digit-division-worksheet',
-                    '30-double-digit-multiplication-worksheet', '30-double-digit-subtraction-worksheet',
-                    '30-multiplication-worksheet', '30-multiplicationdivision-worksheet',
-                    '30-simple-substitution-worksheet', '30-subtraction-worksheet',
-                    '30-subtraction-worksheet-5s', '30-subtraction-worksheet-10s',
-                    'additionsubtractionmissing-substitution', 'countby2s', 'countby5s', 'countby10s',
-                    'countingoddnumbers', 'crosswordpuzzlegenerator', 'decimal-numbers-worksheet',
-                    'emptymultiplicationtable', 'extraeasyadditionmissingaddend', 'extraeasysubtractionmissingminuend',
-                    'fillintheblankartcalender', 'fillintheblankcalender', 'introduction-to-fractions-worksheet',
-                    'introtofractions', 'missingpattern8shape', 'missingpatterncountsheet',
-                    'missingpatterncountsheet-easy', 'missingpatterncountsheet-hard', 'missingpatternshape',
-                    'positive-negative-add-sub-worksheet', 'positivenegativesecretword', 'presidents-worksheet',
-                    'presidenttestfirst10', 'presidenttestlast15', 'simple-substitution10-worksheet',
-                    'simple-substitution16-additionworksheet', 'simple-substitution16-divisionworksheet',
-                    'simple-substitution16-mixaddsubworksheet', 'simple-substitution16-multiplicationworksheet',
-                    'simple-substitution16-subtractionworksheet', 'simple-substitution16-variablesworksheet',
-                    'simple-substitutionwordproblems', 'storytelling-elements-worksheet', 'substitutionsecretword',
-                    'uniquepatternworksheet', 'uniquepatternworksheeteasy', 'uniquepatternworksheethard',
-                    'uniquepatternworksheetmedium', 'us-states-word-bank'
-                ];
+        setIsLoading(true);
 
-                const scannedFolders: WorksheetFolder[] = [];
+        const scannedFolders: WorksheetFolder[] = KNOWN_WORKSHEET_FOLDERS.map((folderName) => {
+            const filePath = buildWorksheetUrl(folderName);
+            const file: WorksheetFile = {
+                name: 'index.html',
+                path: filePath,
+                folder: folderName,
+                title: formatFolderName(folderName),
+                description: 'Interactive worksheet'
+            };
 
-                for (const folderName of worksheetFolders) {
-                    try {
-                        const filePath = buildWorksheetUrl(folderName);
-                        const response = await fetch(filePath, { method: 'HEAD' });
-                        if (response.ok) {
-                            const file: WorksheetFile = {
-                                name: 'index.html',
-                                path: filePath,
-                                folder: folderName,
-                                title: formatFolderName(folderName),
-                                description: 'Interactive worksheet'
-                            };
+            return {
+                name: folderName,
+                path: buildAssetPath(`Worksheets/${folderName}`),
+                files: [file]
+            };
+        });
 
-                            scannedFolders.push({
-                                name: folderName,
-                                path: buildAssetPath(`Worksheets/${folderName}`),
-                                files: [file]
-                            });
-                        }
-                    } catch {
-                        // Folder doesn't exist or no index.html - silently skip
-                    }
-                }
-
-                setFolders(scannedFolders.sort((a, b) => a.name.localeCompare(b.name)));
-            } catch (error) {
-                console.error('Error scanning worksheets:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        scanWorksheets();
+        setFolders(scannedFolders.sort((a, b) => a.name.localeCompare(b.name)));
+        setIsLoading(false);
     }, []);
 
     const handleZoomIn = useCallback(() => {
@@ -132,41 +132,76 @@ const HTMLViewer: React.FC = () => {
     }, []);
 
     const handlePrint = useCallback(() => {
-        if (iframeRef.current?.contentWindow) {
-            iframeRef.current.contentWindow.print();
-        }
-    }, []);
-
-    const handleDownload = useCallback(() => {
         if (!selectedFile) return;
 
-        const link = document.createElement('a');
-        link.href = selectedFile.path;
-        link.download = `${selectedFile.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const frameWindow = iframeRef.current?.contentWindow;
+            if (frameWindow) {
+                frameWindow.focus();
+                frameWindow.print();
+                return;
+            }
+        } catch {
+            // Fall through to popup-based print fallback.
+        }
+
+        const printWindow = window.open(selectedFile.path, '_blank', 'noopener,noreferrer');
+        if (printWindow) {
+            const triggerPrint = () => {
+                try {
+                    printWindow.focus();
+                    printWindow.print();
+                } catch {
+                    // No-op: browser may block print in this fallback.
+                }
+            };
+            printWindow.addEventListener('load', triggerPrint, { once: true });
+            window.setTimeout(triggerPrint, 800);
+        }
+    }, [selectedFile]);
+
+    const handleDownload = useCallback(async () => {
+        if (!selectedFile) return;
+        const safeFileName = `${selectedFile.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+
+        try {
+            const response = await fetch(selectedFile.path, { credentials: 'same-origin' });
+            if (!response.ok) {
+                throw new Error(`Download request failed with status ${response.status}`);
+            }
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = safeFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+            return;
+        } catch {
+            // Fallback: direct URL download attempt.
+        }
+
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = selectedFile.path;
+        fallbackLink.download = safeFileName;
+        fallbackLink.rel = 'noopener noreferrer';
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
     }, [selectedFile]);
 
     // Calculate auto-fit scale for standard view
     const calculatePanelFit = useCallback(() => {
         if (!panelRef.current) return 1;
 
-        const padding = 60; // 30px padding on each side
-        const availableWidth = panelRef.current.clientWidth - padding;
-        const availableHeight = panelRef.current.clientHeight - padding;
-
-        const contentWidth = 816;
-        const contentHeight = 1056;
-
-        const scaleX = availableWidth / contentWidth;
-        const scaleY = availableHeight / contentHeight;
-
-        let scale = Math.min(scaleX, scaleY) * 0.98;
-
-        if (scale <= 0 || !isFinite(scale)) scale = 1;
-
-        return scale;
+        const panelRect = panelRef.current.getBoundingClientRect();
+        const horizontalInset = 10;
+        const verticalInset = 10;
+        const availableWidth = Math.max(1, panelRect.width - horizontalInset * 2);
+        const availableHeight = Math.max(1, panelRect.height - verticalInset * 2);
+        return computeFitScale(availableWidth, availableHeight);
     }, []);
 
     const handleFileSelect = useCallback((file: WorksheetFile) => {
@@ -188,6 +223,26 @@ const HTMLViewer: React.FC = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, [isFullscreen, selectedFile, calculatePanelFit]);
+
+    useEffect(() => {
+        if (!selectedFile || !panelRef.current) return;
+
+        const observer = new ResizeObserver(() => {
+            const panel = panelRef.current;
+            if (!panel) return;
+
+            if (isFullscreen) {
+                const rect = panel.getBoundingClientRect();
+                const fitScale = computeFitScale(rect.width, rect.height);
+                setFullscreenScale(fitScale);
+            } else {
+                setZoomScale(calculatePanelFit());
+            }
+        });
+
+        observer.observe(panelRef.current);
+        return () => observer.disconnect();
+    }, [selectedFile, isFullscreen, calculatePanelFit]);
 
     const toggleFolder = useCallback((folderName: string) => {
         setExpandedFolders(prev => {
@@ -212,22 +267,14 @@ const HTMLViewer: React.FC = () => {
         if (!isFullscreen) return;
 
         const calculateFitScale = () => {
-            const contentWidth = 816;
-            const contentHeight = 1056;
-
+            if (panelRef.current) {
+                const panelRect = panelRef.current.getBoundingClientRect();
+                setFullscreenScale(computeFitScale(panelRect.width, panelRect.height));
+                return;
+            }
             const screenWidth = window.innerWidth || 1024;
             const screenHeight = window.innerHeight || 768;
-
-            const scaleX = screenWidth / contentWidth;
-            const scaleY = screenHeight / contentHeight;
-
-            let fitScale = Math.min(scaleX, scaleY) * 0.95;
-
-            if (!fitScale || fitScale <= 0 || !isFinite(fitScale)) {
-                fitScale = 1;
-            }
-
-            setFullscreenScale(fitScale);
+            setFullscreenScale(computeFitScale(screenWidth, screenHeight));
         };
 
         const timer = setTimeout(calculateFitScale, 50);
@@ -239,13 +286,63 @@ const HTMLViewer: React.FC = () => {
         };
     }, [isFullscreen]);
 
+    useEffect(() => {
+        const rootElement = viewerContainerRef.current;
+        if (!rootElement) return;
+
+        const syncFullscreenState = () => {
+            const isNativeFullscreen = document.fullscreenElement === rootElement;
+            setIsFullscreen(isNativeFullscreen);
+        };
+
+        document.addEventListener('fullscreenchange', syncFullscreenState);
+        return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+    }, []);
+
     const enterFullscreen = useCallback(() => {
+        const rootElement = viewerContainerRef.current;
+        if (!rootElement) {
+            setIsFullscreen(true);
+            return;
+        }
+
+        if (rootElement.requestFullscreen) {
+            void rootElement.requestFullscreen()
+                .then(() => setIsFullscreen(true))
+                .catch(() => setIsFullscreen(true));
+            return;
+        }
+
         setIsFullscreen(true);
     }, []);
 
     const exitFullscreen = useCallback(() => {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            void document.exitFullscreen()
+                .then(() => setIsFullscreen(false))
+                .catch(() => setIsFullscreen(false));
+            return;
+        }
         setIsFullscreen(false);
     }, []);
+
+    useEffect(() => {
+        if (!isFullscreen) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                exitFullscreen();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen, exitFullscreen]);
+
+    useEffect(() => {
+        if (!selectedFile || isFullscreen) return;
+        setZoomScale(calculatePanelFit());
+    }, [selectedFile, isFullscreen, calculatePanelFit]);
 
     return (
         <div className={`html-viewer-page ${isFullscreen ? 'is-fullscreen' : ''}`} ref={viewerContainerRef}>
@@ -379,8 +476,8 @@ const HTMLViewer: React.FC = () => {
                                 transform: `scale(${fullscreenScale})`,
                                 transformOrigin: 'center center',
                             } : {
-                                width: `${816 * zoomScale}px`,
-                                height: `${1056 * zoomScale}px`,
+                                width: `${WORKSHEET_BASE_WIDTH * zoomScale}px`,
+                                height: `${WORKSHEET_BASE_HEIGHT * zoomScale}px`,
                                 position: 'relative',
                                 display: 'block'
                             }}
@@ -391,13 +488,13 @@ const HTMLViewer: React.FC = () => {
                                 title={selectedFile.title}
                                 className="worksheet-iframe"
                                 allowFullScreen
-                                sandbox="allow-scripts allow-forms allow-popups allow-modals"
+                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
                                 style={isFullscreen ? {
                                     background: 'white'
                                 } : {
                                     background: 'white',
-                                    width: '816px',
-                                    height: '1056px',
+                                    width: `${WORKSHEET_BASE_WIDTH}px`,
+                                    height: `${WORKSHEET_BASE_HEIGHT}px`,
                                     transform: `scale(${zoomScale})`,
                                     transformOrigin: 'top left',
                                     position: 'absolute',

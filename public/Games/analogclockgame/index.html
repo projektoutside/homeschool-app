@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="Learn to read analog clocks with this interactive educational game.">
+    <meta name="theme-color" content="#1A1A2E">
+    <link rel="icon" href="thumb.png" type="image/png">
+
+    <title>Learn Analog Clocks - Interactive Time Learning Game</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <script src="game.js" defer></script>
+</head>
+
+<body>
+
+    <!-- Start Menu Overlay -->
+    <div id="start-menu" class="start-menu-overlay">
+        <div class="start-menu-content">
+            <div class="game-header">
+                <h1 id="game-title" class="game-title">⏰ Analog Clock Game</h1>
+                <p class="game-tagline">Master time reading with interactive fun!</p>
+                <div class="high-score-badge">
+                    <span class="trophy-icon">🏆</span>
+                    <div class="score-info">
+                        <span class="score-label">Best Score</span>
+                        <span id="high-score-value" class="score-number">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="difficulty-selector">
+                <h2 class="section-title">Choose Difficulty</h2>
+                <div class="difficulty-grid">
+                    <label class="difficulty-card easy-card">
+                        <input type="radio" name="difficulty" value="easy" checked>
+                        <div class="card-content">
+                            <div class="card-icon">🌟</div>
+                            <div class="card-title">Easy</div>
+                            <div class="card-subtitle">Level 1 Start</div>
+                            <div class="card-description">Perfect for beginners</div>
+                        </div>
+                    </label>
+
+                    <label class="difficulty-card medium-card">
+                        <input type="radio" name="difficulty" value="medium">
+                        <div class="card-content">
+                            <div class="card-icon">⚡</div>
+                            <div class="card-title">Medium</div>
+                            <div class="card-subtitle">Level 3 Start</div>
+                            <div class="card-description">Some challenge</div>
+                        </div>
+                    </label>
+
+                    <label class="difficulty-card hard-card">
+                        <input type="radio" name="difficulty" value="hard">
+                        <div class="card-content">
+                            <div class="card-icon">🔥</div>
+                            <div class="card-title">Hard</div>
+                            <div class="card-subtitle">Level 5 Start</div>
+                            <div class="card-description">For experts</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="menu-actions">
+                <button id="start-game-btn" class="primary-btn">
+                    <span class="btn-text">Start Learning!</span>
+                    <span class="btn-icon">🚀</span>
+                </button>
+
+                <div class="secondary-actions">
+                    <button id="instructions-btn" class="secondary-btn">
+                        <span class="btn-icon">❓</span>
+                        <span class="btn-text">How to Play</span>
+                    </button>
+                    <button id="settings-btn" class="secondary-btn">
+                        <span class="btn-icon">⚙️</span>
+                        <span class="btn-text">Settings</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="instructions-modal" class="instructions-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>How to Play</h2>
+                <button id="close-instructions" class="secondary-btn" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>1. Look at the analog clock and read the time.</p>
+                <p>2. Choose the correct time from the options.</p>
+                <p>3. Progress through 7 difficulty levels.</p>
+                <p>4. Earn stars and beat the timer!</p>
+            </div>
+            <div class="modal-footer">
+                <button id="start-from-instructions" class="start-button">Start Playing!</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="settings-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Game Settings</h2>
+                <button id="close-settings" class="secondary-btn" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label for="time-multiplier">Time Limit (Minutes): <span id="time-multiplier-value">5 minutes</span></label>
+                    <input type="range" id="time-multiplier" min="1" max="15" step="1" value="5">
+                </div>
+                <div class="setting-item">
+                    <label for="sound-toggle">Enable Sound</label>
+                    <input type="checkbox" id="sound-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="music-volume">Music Volume: <span id="music-volume-value">50%</span></label>
+                    <input type="range" id="music-volume" min="0" max="100" step="5" value="50">
+                </div>
+                <div class="setting-item">
+                    <label for="star-count">Lives: <span id="star-count-value">3</span></label>
+                    <input type="range" id="star-count" min="1" max="10" step="1" value="3">
+                </div>
+                <div class="settings-preview">
+                    <p>Preview Level 1 Time: <span id="preview-time">5:00</span></p>
+                    <p>Lives: <span id="preview-lives">★★★</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings" class="primary-button">Save & Close</button>
+                <button id="reset-settings" class="secondary-button">Reset Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="game-over-modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Time's Up! ⏰</h2>
+            </div>
+            <div class="modal-body">
+                <div class="game-over-stats-container">
+                    <div class="stat-box main-score">
+                        <span class="stat-label">FINAL SCORE</span>
+                        <span id="final-score" class="stat-value">0</span>
+                    </div>
+                </div>
+                <div class="secondary-stats">
+                    <p>Accuracy: <span id="final-accuracy">0%</span></p>
+                    <p>Questions: <span id="final-questions">0</span></p>
+                </div>
+                
+                <!-- New: Coin Balance & Continue Option -->
+                <div class="game-over-wallet-section">
+                    <div class="wallet-display">
+                        <span class="wallet-label">Your Wallet:</span>
+                        <span class="wallet-amount"><span id="game-over-coins">0</span> 🪙</span>
+                    </div>
+                    
+                    <div id="game-over-instruction" class="instruction-message"></div>
+
+                    <div class="continue-options">
+                        <button id="buy-time-btn" class="shop-action-btn">
+                            <span class="btn-icon">⏰</span>
+                            <div class="btn-details">
+                                <span class="btn-title">Extend Time</span>
+                                <span class="btn-cost">1 Minute for 10 🪙</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Spend Remaining Coins Section -->
+                    <div id="spend-coins-section" class="spend-coins-grid hidden">
+                        <!-- Items will be injected here via JS -->
+                    </div>
+
+                    <div id="game-over-feedback" class="feedback-message hidden"></div>
+                </div>
+
+                <div class="leaderboard-section">
+                    <h3>🏆 Top Scores</h3>
+                    <div id="leaderboard-list" class="leaderboard-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-play-again" class="primary-button pulse-animation">Play Again 🔄</button>
+                <button id="modal-menu" class="secondary-button">Main Menu 🏠</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-transition-modal" class="level-transition-modal hidden">
+        <div class="modal-content">
+            <h2 id="level-transition-title">Level Up!</h2>
+            <p id="level-celebration-text">Congratulations!</p>
+            <h3 id="next-level-name">Level 2</h3>
+            <div class="level-details">
+                <p>New: <span id="level-challenge-text">Challenge</span></p>
+                <p>Time: <span id="level-time-limit">4:30</span></p>
+                <p>Tip: <span id="level-tip">Keep going!</span></p>
+            </div>
+            <div id="scoring-breakdown"></div>
+            <div class="modal-footer">
+                <button id="reward-shop-btn" class="secondary-button">
+                    <span class="button-text">Reward Shop 🏪</span>
+                </button>
+                <button id="start-next-level-btn" class="start-button">Start Level 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <main id="game-container" class="hidden">
+
+        <div id="progress-panel">
+            <div class="level-row">
+                <div class="badge">Level <span id="level-display">1</span></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Lives</div>
+                    <div id="stars">★ ★ ★</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Time</div>
+                    <div id="timer">05:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Score</div>
+                    <div id="points">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clock Panel -->
+        <section id="clock-panel">
+            <div class="clock-wrapper">
+                <div class="clock-corner-controls">
+                    <button id="mobile-shop-toggle" class="clock-corner-btn shop-btn" aria-label="Open Shop">
+                        <span class="icon">🏪</span>
+                        <span class="btn-text">Shop</span>
+                    </button>
+                    <div class="clock-corner-coin" aria-label="Clock Coins">
+                        <span class="coin-icon">🪙</span>
+                        <span id="clockcoin-amount">0</span>
+                    </div>
+                </div>
+
+                <div id="ampm-panel" class="hidden">
+                    Time of Day: <span id="ampm-indicator">Morning</span>
+                </div>
+
+                <div class="clock-container">
+                    <!-- SVG Clock Face -->
+                    <svg id="analog-clock" viewBox="0 0 500 500" role="img" aria-label="Analog clock">
+                        <defs>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                            <radialGradient id="clockFace" cx="50%" cy="45%" r="50%">
+                                <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+                                <stop offset="85%" style="stop-color:#F8F9FA;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#E9ECEF;stop-opacity:1" />
+                            </radialGradient>
+                        </defs>
+
+                        <!-- Outer Ring -->
+                        <circle cx="250" cy="250" r="240" fill="none" stroke="#FF9800" stroke-width="8" opacity="0.8" />
+                        <!-- Clock Face -->
+                        <circle cx="250" cy="250" r="230" fill="url(#clockFace)" stroke="#E0E0E0" stroke-width="2"
+                            filter="drop-shadow(0 4px 12px rgba(0,0,0,0.15))" />
+
+                        <!-- JS Generated Content -->
+                        <g id="hour-marks"></g>
+                        <g id="minute-marks"></g>
+                        <g id="clock-numbers"></g>
+
+                        <!-- Hands -->
+                        <g id="clock-hands">
+                            <line id="hour-hand" x1="250" y1="250" x2="250" y2="160" stroke="#1976D2" stroke-width="15"
+                                stroke-linecap="round" />
+                            <line id="minute-hand" x1="250" y1="250" x2="250" y2="110" stroke="#D32F2F"
+                                stroke-width="10" stroke-linecap="round" />
+                            <line id="seconds-hand" x1="250" y1="250" x2="250" y2="100" stroke="#FF9800"
+                                stroke-width="3" stroke-linecap="round" style="opacity: 0;" />
+                        </g>
+
+                        <!-- Center Cap -->
+                        <circle cx="250" cy="250" r="15" fill="#FF9800" stroke="#FFFFFF" stroke-width="3" />
+                    </svg>
+                </div>
+
+                <div class="clock-status">
+                    <span id="clock-status">Ready?</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Feedback Popups -->
+
+
+        <!-- Game Controls -->
+        <section id="game-panel">
+            <div id="question-panel">
+                <h1>What time is it?</h1>
+                <div id="options">
+                    <!-- Options generated by JS -->
+                </div>
+                <div id="question-footer-controls">
+                    <div class="quick-settings-anchor">
+                        <button id="quick-settings-toggle" class="quick-settings-toggle" aria-label="Open quick settings"
+                            aria-expanded="false" aria-controls="quick-settings-panel">
+                            <span class="icon">⚙️</span>
+                            <span class="btn-text">Settings</span>
+                        </button>
+                        <div id="quick-settings-panel" class="quick-settings-panel hidden" aria-hidden="true">
+                            <h3>Quick Settings</h3>
+                            <div class="quick-sound-row">
+                                <span class="quick-label">Sound</span>
+                                <button id="quick-sound-toggle" class="quick-sound-toggle" aria-pressed="true">On</button>
+                            </div>
+                            <button id="quick-main-menu-btn" class="quick-action-btn">
+                                <span class="icon">🏠</span>
+                                <span>Main Menu</span>
+                            </button>
+                            <button id="quick-exit-game-btn" class="quick-action-btn danger">
+                                <span class="icon">🚪</span>
+                                <span>Exit Game</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reward Shop Container -->
+            <div id="reward-shop-panel" class="hidden-panel">
+                <!-- Shop items container - toggled via class/ARIA -->
+                <div id="shop-items-container" class="shop-items-container overlay-style" aria-hidden="true">
+                    <div class="shop-shell" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+                        <header class="shop-shell-header">
+                            <h2 id="shop-title">ClockCoin Shop</h2>
+                            <p class="shop-shell-subtitle">Pick a boost and watch your coins carefully.</p>
+                            <div class="shop-wallet-strip" aria-live="polite">
+                                <div class="wallet-pill">
+                                    <span class="wallet-icon">🪙</span>
+                                    <span>You have <strong id="shop-current-coins">0</strong> coins</span>
+                                </div>
+                                <div class="wallet-pill secondary">
+                                    <strong id="shop-affordable-count">0</strong> items ready to buy
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="shop-items-grid">
+                            <!-- +10 Points -->
+                            <div class="shop-item" data-effect="points" data-value="10" data-cost="1">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">🌟</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+10 Points</div>
+                                    <div class="item-description">Quick boost</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">1</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+
+                            <!-- +60 Points -->
+                            <div class="shop-item" data-effect="points" data-value="60" data-cost="5">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">⭐</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+60 Points</div>
+                                    <div class="item-description">Good boost</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">5</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+
+                            <!-- +100 Points -->
+                            <div class="shop-item" data-effect="points" data-value="100" data-cost="8">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">✨</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+100 Points</div>
+                                    <div class="item-description">Great boost</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">8</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+
+                            <!-- +1 Minute -->
+                            <div class="shop-item" data-effect="time" data-value="60" data-cost="10">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">⏰</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+1 Minute</div>
+                                    <div class="item-description">Time extension</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">10</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+
+                            <!-- +1 Life -->
+                            <div class="shop-item" data-effect="life" data-value="1" data-cost="10">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">❤️</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+1 Life</div>
+                                    <div class="item-description">Extra chance</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">10</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+
+                            <!-- +500 Points -->
+                            <div class="shop-item" data-effect="points" data-value="500" data-cost="25">
+                                <div class="item-icon-wrap">
+                                    <div class="item-icon">💫</div>
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-name">+500 Points</div>
+                                    <div class="item-description">Mega boost</div>
+                                </div>
+                                <div class="item-cost-row">
+                                    <div class="item-cost">
+                                        <span class="cost-amount">25</span>
+                                        <span class="cost-icon">🪙</span>
+                                    </div>
+                                    <div class="item-leftover">After buy: <span class="item-after-balance">0</span></div>
+                                </div>
+                                <div class="shop-item-cta">
+                                    <span class="cta-label">Buy Boost</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer class="shop-shell-footer">
+                            <p class="shop-help-text">Tap any boost card to spend coins and power up your next answer.</p>
+                            <button id="close-shop-btn" class="shop-close-btn" aria-label="Return to Game">
+                                Return to Game ↩️
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+                <div id="purchase-feedback" class="hidden">
+                    <span id="feedback-text"></span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Screen Reader Live Region -->
+    <div class="sr-only" aria-live="polite" id="live-region"></div>
+
+
+    <!-- Dynamic Feedback Popups (Moved to body for global positioning) -->
+    <div id="score-popup" class="feedback-popup hidden">
+        <span id="score-popup-text">+10</span>
+    </div>
+    <div id="coin-popup" class="feedback-popup hidden">
+        <span id="coin-popup-text">+1 🪙</span>
+    </div>
+
+</body>
+
+</html>

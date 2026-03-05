@@ -6582,6 +6582,13 @@
         const itemThumbCache = new Map();
         const itemThumbInFlight = new Map();
         const ITEM_THUMB_SIZE = 56;
+        const ITEM_THUMB_IMAGE_BY_PROP = Object.freeze({
+            alphaWings: './Images/PROPS/Thumbnails/alphaWings.png',
+            rainbowWings: './Images/PROPS/Thumbnails/rainbowWings.png',
+            roboticWings: './Images/PROPS/Thumbnails/roboticWings.png',
+            omegaWings: './Images/PROPS/Thumbnails/omegaWings.png',
+            efernoWings: './Images/PROPS/Thumbnails/efernoWings.png'
+        });
         const isMobileLike = (() => {
             if (typeof window === 'undefined' || !window.matchMedia) {
                 return false;
@@ -8860,27 +8867,50 @@
             thumbElement.appendChild(fallback);
         }
 
+        function applyItemThumbImage(thumbElement, src) {
+            if (!thumbElement || !src) {
+                return null;
+            }
+            const image = document.createElement('img');
+            image.alt = '';
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            image.src = src;
+            thumbElement.textContent = '';
+            thumbElement.appendChild(image);
+            return image;
+        }
+
         function attachItemThumbImage(thumbElement, propKey) {
             setItemThumbFallback(thumbElement, propKey);
-            const cachedPromise = getItemThumbDataUrl(propKey);
-            if (!cachedPromise) {
+
+            const loadDynamicThumb = () => {
+                const cachedPromise = getItemThumbDataUrl(propKey);
+                if (!cachedPromise) {
+                    return Promise.resolve();
+                }
+                return cachedPromise.then((dataUrl) => {
+                    if (!dataUrl) {
+                        return;
+                    }
+                    applyItemThumbImage(thumbElement, dataUrl);
+                }).catch(() => {});
+            };
+
+            const staticThumbPath = ITEM_THUMB_IMAGE_BY_PROP[propKey];
+            if (staticThumbPath) {
+                const staticImage = applyItemThumbImage(thumbElement, staticThumbPath);
+                if (!staticImage) {
+                    return loadDynamicThumb();
+                }
+                staticImage.addEventListener('error', () => {
+                    setItemThumbFallback(thumbElement, propKey);
+                    void loadDynamicThumb();
+                }, { once: true });
                 return Promise.resolve();
             }
-            return cachedPromise.then((dataUrl) => {
-                if (!thumbElement || !thumbElement.isConnected) {
-                    return;
-                }
-                if (!dataUrl) {
-                    return;
-                }
-                const image = document.createElement('img');
-                image.src = dataUrl;
-                image.alt = '';
-                image.loading = 'lazy';
-                image.decoding = 'async';
-                thumbElement.textContent = '';
-                thumbElement.appendChild(image);
-            }).catch(() => {});
+
+            return loadDynamicThumb();
         }
 
         async function renderItemThumbImageUrl(propKey) {
@@ -9152,6 +9182,17 @@
                 fragment.appendChild(slotCell);
             }
             inventoryList.appendChild(fragment);
+            // Re-hydrate after insertion so inventory slot thumbnails render even when
+            // an image load resolves before the slot enters the live DOM tree.
+            const connectedItems = inventoryList.querySelectorAll('.inventory-item[data-prop]');
+            connectedItems.forEach((tile) => {
+                const propKey = tile?.dataset?.prop;
+                const thumb = tile.querySelector('.inventory-item-thumb');
+                if (!propKey || !thumb) {
+                    return;
+                }
+                attachItemThumbImage(thumb, propKey);
+            });
 
             updateInventoryButtonStates();
         }

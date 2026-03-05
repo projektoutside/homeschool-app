@@ -1,16 +1,16 @@
 /* HTML Viewer - Glass Style Application Shell */
 .html-viewer-page {
     min-height: 100vh;
-    min-height: 100dvh;
+    height: 100dvh;
     width: 100%;
     background: linear-gradient(135deg, #1a2744 0%, #0d1525 50%, #0a0f1a 100%);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+    align-items: stretch;
+    justify-content: stretch;
+    padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
     position: relative;
-    overflow-x: hidden;
-    overflow-y: auto;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Soft glow background effect */
@@ -29,11 +29,12 @@
 /* Glass Container */
 .html-viewer-container {
     width: 100%;
-    max-width: 900px;
-    height: calc(100dvh - 40px);
-    max-height: 1200px;
+    max-width: none;
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px);
+    max-height: none;
+    min-height: 0;
     background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border-radius: 24px;
+    border-radius: clamp(10px, 1.2vw, 20px);
     box-shadow:
         0 25px 80px rgba(0, 0, 0, 0.6),
         0 0 0 1px rgba(255, 255, 255, 0.05),
@@ -276,7 +277,7 @@
 .worksheet-viewer-panel {
     flex: 1;
     background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-    margin: 20px;
+    margin: 12px;
     margin-top: 0;
     border-radius: 12px;
     box-shadow:
@@ -286,9 +287,9 @@
     overflow-y: auto;
     position: relative;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    padding: 30px;
+    padding: 12px;
 }
 
 /* Worksheet Content Wrapper */
@@ -618,11 +619,11 @@
 /* Responsive Design */
 @media (max-width: 768px) {
     .html-viewer-page {
-        padding: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+        padding: max(4px, env(safe-area-inset-top, 0px)) max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
     }
 
     .html-viewer-container {
-        height: calc(100dvh - 20px);
+        height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8px);
         border-radius: 16px;
     }
 
@@ -666,9 +667,9 @@
     }
 
     .worksheet-viewer-panel {
-        margin: 12px;
+        margin: 8px;
         margin-top: 0;
-        padding: 16px;
+        padding: 10px;
     }
 
     .worksheet-placeholder p {
@@ -846,4 +847,8 @@
 .exit-fullscreen-btn svg {
     width: 18px;
     height: 18px;
+}
+
+.html-viewer-page.is-fullscreen::before {
+    display: none !important;
 }

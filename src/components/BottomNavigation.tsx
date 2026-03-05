@@ -43,6 +43,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const homeTransitionFadeInTimerRef = useRef<number | null>(null);
     const homeTransitionFadeOutTimerRef = useRef<number | null>(null);
     const lastAutoFlushGameRouteRef = useRef<string>('');
+    const fullscreenEvaluateFrameRef = useRef<number | null>(null);
 
     const clearHomeTransitionTimers = useCallback(() => {
         if (homeTransitionFadeInTimerRef.current !== null) {
@@ -483,9 +484,29 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             lastFullscreenActivationKeyRef.current = activationKey;
         };
 
+        const scheduleFullscreenEvaluation = () => {
+            if (fullscreenEvaluateFrameRef.current !== null) {
+                return;
+            }
+            fullscreenEvaluateFrameRef.current = window.requestAnimationFrame(() => {
+                fullscreenEvaluateFrameRef.current = null;
+                evaluateFullscreenTransition();
+            });
+        };
+
         evaluateFullscreenTransition();
 
-        const onFullscreenChange = () => evaluateFullscreenTransition();
+        const shouldTrackTransitions = isMinimized && isStatsMinimized;
+        if (!shouldTrackTransitions) {
+            return () => {
+                if (fullscreenEvaluateFrameRef.current !== null) {
+                    window.cancelAnimationFrame(fullscreenEvaluateFrameRef.current);
+                    fullscreenEvaluateFrameRef.current = null;
+                }
+            };
+        }
+
+        const onFullscreenChange = () => scheduleFullscreenEvaluation();
         const fullscreenEvents = [
             'fullscreenchange',
             'webkitfullscreenchange',
@@ -498,7 +519,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         });
 
         const mutationObserver = new MutationObserver(() => {
-            evaluateFullscreenTransition();
+            scheduleFullscreenEvaluation();
         });
 
         mutationObserver.observe(document.body, {
@@ -512,6 +533,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 document.removeEventListener(eventName, onFullscreenChange);
             });
             mutationObserver.disconnect();
+            if (fullscreenEvaluateFrameRef.current !== null) {
+                window.cancelAnimationFrame(fullscreenEvaluateFrameRef.current);
+                fullscreenEvaluateFrameRef.current = null;
+            }
         };
     }, [location.pathname, location.search, isMinimized, isStatsMinimized]);
 

@@ -1020,18 +1020,6 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-24"
     },
     {
-        "id": "math-single-player-math-write",
-        "title": "Single Player Math Write",
-        "description": "Practice handwriting and math skills in a single-player mode.",
-        "type": "game",
-        "category": "math",
-        "subjects": ["Addition", "Subtraction", "Multiplication", "Division"],
-        "gradeLevels": ["All"],
-        "customHtmlPath": "/Games/SinglePlayerMathWrite/index.html",
-        "thumbnail": "/assets/thumbnails/optimized/single-player-math-write-128.webp",
-        "dateAdded": "2026-01-28"
-    },
-    {
         "id": "math-2-players-math-write",
         "title": "2 Players Math Write",
         "description": "Take turns practicing handwriting and math skills with a friend.",
@@ -1054,6 +1042,18 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/CarKingFinal/index.html",
         "thumbnail": "/assets/thumbnails/optimized/car-king-128.webp",
         "dateAdded": "2026-01-31"
+    },
+    {
+        "id": "math-analog-clock-game-v2",
+        "title": "Analog Clock Game",
+        "description": "Practice reading analog clocks with interactive time challenges.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Time", "Clock Reading"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/analogclockgame/index.html",
+        "thumbnail": "/Games/analogclockgame/thumb.png",
+        "dateAdded": "2026-03-05"
     },
     {
         "id": "math-farmers-market-frenzy",

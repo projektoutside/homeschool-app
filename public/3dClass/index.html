@@ -1588,6 +1588,7 @@
       const CLASSROOM_MESSAGE_STATE_REQUEST = "LAHS_CLASSROOM_STATE_REQUEST";
       const CLASSROOM_MESSAGE_STATE_SYNC = "LAHS_CLASSROOM_STATE_SYNC";
       const CLASSROOM_MESSAGE_STATE_SAVE = "LAHS_CLASSROOM_STATE_SAVE";
+      const CLASSROOM_MESSAGE_NAVIGATE = "LAHS_CLASSROOM_NAVIGATE";
       const CLASSROOM_REMOTE_SAVE_DEBOUNCE_MS = 350;
       const CLASSROOM_INITIAL_SYNC_WAIT_MS = 850;
       const PORTRAIT_COMPONENT_SCALE = 1;
@@ -4584,6 +4585,11 @@
               event.preventDefault();
               return;
             }
+            if (isWorksheetHotspotObject(obj)) {
+              event.preventDefault();
+              openWorksheetViewerFromHotspot();
+              return;
+            }
             openGameFrame("games/" + getGameSlug(obj) + "/index.html");
           });
           btn.addEventListener("pointerdown", function (event) {
@@ -4680,6 +4686,48 @@
           ? obj.componentFileName.replace(/\.[^.]+$/, "")
           : obj.id;
         return base.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      }
+
+      function isWorksheetHotspotObject(obj) {
+        if (!obj) {
+          return false;
+        }
+        const id = String(obj.id || "").toLowerCase();
+        const label = String(obj.label || "").toLowerCase();
+        const fileName = String(obj.componentFileName || "").toLowerCase();
+        const slug = getGameSlug(obj).toLowerCase();
+        if (id === "component-worksheets" || slug === "worksheets") {
+          return true;
+        }
+        return id.indexOf("worksheet") !== -1
+          || label.indexOf("worksheet") !== -1
+          || fileName.indexOf("worksheet") !== -1
+          || slug.indexOf("worksheet") !== -1;
+      }
+
+      function resolveHtmlViewerPath() {
+        const marker = "/3dClass/";
+        const pathname = String(window.location.pathname || "");
+        const markerIndex = pathname.toLowerCase().indexOf(marker.toLowerCase());
+        const basePrefix = markerIndex >= 0 ? pathname.slice(0, markerIndex) : "";
+        return (basePrefix || "") + "/html-viewer";
+      }
+
+      function openWorksheetViewerFromHotspot() {
+        const targetPath = "/html-viewer";
+        const resolvedPath = resolveHtmlViewerPath();
+        postMessageToParent(CLASSROOM_MESSAGE_NAVIGATE, {
+          path: targetPath,
+          source: "component-worksheets"
+        });
+        // Guaranteed navigation fallback: direct top-level route change.
+        if (window.top && window.top !== window) {
+          try {
+            window.top.location.assign(resolvedPath);
+            return;
+          } catch (_) {}
+        }
+        window.location.assign(resolvedPath);
       }
 
       function openGameFrame(url) {

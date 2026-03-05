@@ -115,6 +115,14 @@ const resolveItemIconPath = (item: Pick<ContentItem, 'thumbnail' | 'customHtmlPa
     return derivedThumbPath ? buildAssetPath(derivedThumbPath) : null;
 };
 
+const resolveGameLaunchDocumentUrl = (item: Pick<ContentItem, 'type' | 'customHtmlPath' | 'externalUrl'>): string | null => {
+    if (item.type !== 'game') return null;
+    if (item.customHtmlPath) return buildAssetPath(item.customHtmlPath);
+    if (!item.externalUrl) return null;
+    if (/^https?:\/\//i.test(item.externalUrl)) return item.externalUrl;
+    return buildAssetPath(item.externalUrl);
+};
+
 interface ArcadeGamePanelProps {
     panelIndex: number;
     title: string;
@@ -837,6 +845,46 @@ const HomePage: React.FC = () => {
             .filter((path): path is string => Boolean(path)),
         [itemsForPreload],
     );
+    const gameLaunchPrefetchUrls = useMemo(() => {
+        const sourceItems = shouldRenderArcadePanels ? gameItemsForPanels : visibleItems;
+        return sourceItems
+            .filter(item => item.type === 'game')
+            .map(item => resolveGameLaunchDocumentUrl(item))
+            .filter((url): url is string => Boolean(url))
+            .slice(0, 6);
+    }, [gameItemsForPanels, shouldRenderArcadePanels, visibleItems]);
+    const prefetchedGameLaunchUrlsRef = useRef<Set<string>>(new Set());
+
+    const prefetchGameLaunchDocument = useCallback((url: string) => {
+        if (typeof window === 'undefined' || typeof document === 'undefined' || !url) return;
+        if (prefetchedGameLaunchUrlsRef.current.has(url)) return;
+        prefetchedGameLaunchUrlsRef.current.add(url);
+
+        const prefetchKey = encodeURIComponent(url);
+        const existingPrefetch = document.querySelector<HTMLLinkElement>(
+            `link[data-prefetch-game-doc="${prefetchKey}"]`,
+        );
+        if (!existingPrefetch) {
+            const prefetchLink = document.createElement('link');
+            prefetchLink.rel = 'prefetch';
+            prefetchLink.as = 'document';
+            prefetchLink.href = url;
+            prefetchLink.setAttribute('data-prefetch-game-doc', prefetchKey);
+            document.head.appendChild(prefetchLink);
+        }
+
+        const isAbsoluteHttp = /^https?:\/\//i.test(url);
+        const isSameOriginAbsolute = isAbsoluteHttp && url.startsWith(window.location.origin);
+        const isRelative = !isAbsoluteHttp;
+        if (isSameOriginAbsolute || isRelative) {
+            void fetch(url, {
+                cache: 'force-cache',
+                credentials: 'same-origin',
+            }).catch(() => {
+                // Warmup fetch is opportunistic.
+            });
+        }
+    }, []);
 
     useEffect(() => {
         const requestedTab = new URLSearchParams(location.search).get('tab')?.trim().toLowerCase();
@@ -864,6 +912,23 @@ const HomePage: React.FC = () => {
         });
     }, [visibleIconPaths]);
 
+    // Warm the first few game entry documents while users browse game panels.
+    useEffect(() => {
+        if (gameLaunchPrefetchUrls.length === 0) return;
+
+        const timerIds: number[] = [];
+        gameLaunchPrefetchUrls.forEach((url, index) => {
+            const timerId = window.setTimeout(() => {
+                prefetchGameLaunchDocument(url);
+            }, 120 + index * 220);
+            timerIds.push(timerId);
+        });
+
+        return () => {
+            timerIds.forEach((timerId) => window.clearTimeout(timerId));
+        };
+    }, [gameLaunchPrefetchUrls, prefetchGameLaunchDocument]);
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
         window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteGameIds));
@@ -884,6 +949,11 @@ const HomePage: React.FC = () => {
     }, []);
 
     const openItem = useCallback((item: ContentItem) => {
+        const launchDocumentUrl = resolveGameLaunchDocumentUrl(item);
+        if (launchDocumentUrl) {
+            prefetchGameLaunchDocument(launchDocumentUrl);
+        }
+
         if (item.externalUrl) {
             navigate(item.externalUrl);
             return;
@@ -895,7 +965,7 @@ const HomePage: React.FC = () => {
                 ? `/open/${item.id}`
                 : `/resource/${item.id}`;
         navigate(targetPath, { state: { launchItem: item } });
-    }, [navigate]);
+    }, [navigate, prefetchGameLaunchDocument]);
 
     const handleFavoriteHoldAction = useCallback((item: ContentItem, action: Exclude<FavoriteActionMode, 'none'>) => {
         setFavoriteGameIds(prev => {

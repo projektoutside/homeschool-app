@@ -111,7 +111,7 @@ const HomeProfileRouteShell = () => <div />;
 const ClassroomRouteShell = () => <div />;
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-02-19-4';
+const HOME_PAGE_APP_VERSION = '2026-03-05-3';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
