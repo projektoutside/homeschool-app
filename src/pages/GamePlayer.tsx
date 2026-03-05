@@ -9,6 +9,7 @@ import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './GamePlayer.css';
 
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
+const DEV_CACHE_BUST = import.meta.env.DEV ? Date.now().toString() : '';
 
 const GamePlayer: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -37,7 +38,14 @@ const GamePlayer: React.FC = () => {
     }, [id, launchStateItem]);
     const launchPath = useMemo(() => {
         if (!item) return '';
-        if (item.customHtmlPath) return buildAssetPath(item.customHtmlPath);
+        if (item.customHtmlPath) {
+            const basePath = buildAssetPath(item.customHtmlPath);
+            if (!import.meta.env.DEV) {
+                return basePath;
+            }
+            const separator = basePath.includes('?') ? '&' : '?';
+            return `${basePath}${separator}dev=${DEV_CACHE_BUST}`;
+        }
         if (item.externalUrl) return item.externalUrl;
         return '';
     }, [item]);

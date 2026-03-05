@@ -234,7 +234,34 @@ export function usePWA(): UsePWAReturn {
 
   // Register service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+
+    // Avoid stale-cached game/assets while developing with Vite dev server.
+    if (import.meta.env.DEV) {
+      void navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          void registration.unregister();
+        });
+      });
+
+      if ('caches' in window) {
+        void caches.keys().then((cacheKeys) => {
+          cacheKeys.forEach((cacheKey) => {
+            void caches.delete(cacheKey);
+          });
+        });
+      }
+
+      const frameId = window.requestAnimationFrame(() => {
+        setSwRegistration(null);
+        setIsOfflineReady(false);
+      });
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    {
       const swUrl = `${import.meta.env.BASE_URL}service-worker.js?v=${encodeURIComponent(SW_SCRIPT_VERSION)}`;
 
       const onControllerChange = () => {
@@ -321,8 +348,6 @@ export function usePWA(): UsePWAReturn {
         navigator.serviceWorker.removeEventListener('message', onServiceWorkerMessage);
       };
     }
-
-    return;
   }, []);
 
   // Fullscreen change listener

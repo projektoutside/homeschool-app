@@ -860,6 +860,7 @@ const HomePage: React.FC = () => {
 
     const prefetchGameLaunchDocument = useCallback((url: string) => {
         if (typeof window === 'undefined' || typeof document === 'undefined' || !url) return;
+        if (import.meta.env.DEV) return;
         if (prefetchedGameLaunchUrlsRef.current.has(url)) return;
         prefetchedGameLaunchUrlsRef.current.add(url);
 
@@ -925,6 +926,7 @@ const HomePage: React.FC = () => {
 
     // Warm the first few game entry documents while users browse game panels.
     useEffect(() => {
+        if (import.meta.env.DEV) return;
         if (gameLaunchPrefetchUrls.length === 0) return;
 
         const timerIds: number[] = [];

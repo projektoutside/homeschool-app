@@ -12,6 +12,13 @@ class MathGameController {
         this.callbacks = callbacks;
         this.currentEquation = null;
         this.score = 0;
+        this.numberColorTiers = [
+            { name: 'white', points: 3, weight: 35, className: 'number-color-white' },
+            { name: 'blue', points: 4, weight: 25, className: 'number-color-blue' },
+            { name: 'green', points: 5, weight: 20, className: 'number-color-green' },
+            { name: 'orange', points: 7, weight: 15, className: 'number-color-orange' },
+            { name: 'red', points: 10, weight: 5, className: 'number-color-red' }
+        ];
 
         // Initialize the new professional Math Generator
         this.mathGenerator = new MathGenerator();
@@ -183,6 +190,38 @@ class MathGameController {
         this.currentEquation = this.mathGenerator.generate(this.gameState.level);
     }
 
+    pickNumberColorTier() {
+        const totalWeight = this.numberColorTiers.reduce((sum, tier) => sum + tier.weight, 0);
+        if (totalWeight <= 0) {
+            return this.numberColorTiers[0];
+        }
+
+        let random = Math.random() * totalWeight;
+        for (const tier of this.numberColorTiers) {
+            if (random < tier.weight) {
+                return tier;
+            }
+            random -= tier.weight;
+        }
+
+        return this.numberColorTiers[0];
+    }
+
+    applyNumberColorTier(block) {
+        const tier = this.pickNumberColorTier();
+        block.classList.add(tier.className);
+        block.dataset.colorTier = tier.name;
+        block.dataset.colorPoints = String(tier.points);
+    }
+
+    calculatePlacedNumberColorPoints() {
+        const placedNumberBlocks = document.querySelectorAll('#equationDisplay .answer-block');
+        return Array.from(placedNumberBlocks).reduce((total, block) => {
+            const points = Number.parseInt(block.dataset.colorPoints, 10);
+            return total + (Number.isFinite(points) ? points : 3);
+        }, 0);
+    }
+
     createAnswerBlocks() {
         const container = document.getElementById('answerBlocks');
         if (!container) return;
@@ -249,6 +288,7 @@ class MathGameController {
             block.textContent = val;
             block.dataset.value = val;
             block.dataset.id = `block-${idx}`;
+            this.applyNumberColorTier(block);
             this.addDragListeners(block);
             container.appendChild(block);
         });
@@ -964,7 +1004,7 @@ class MathGameController {
     }
 
     handleCorrect() {
-        const pointsEarned = 100 * this.gameState.level;
+        const pointsEarned = this.calculatePlacedNumberColorPoints();
         const oldScore = this.score;
         const newScore = oldScore + pointsEarned;
 
