@@ -13,12 +13,29 @@ const PANEL_TITLE_DEFAULTS = [
     'Multiplayer Games',
     'Favorites',
 ] as const;
+const DAILY_DOUBLES_PANEL_INDEX = 0;
 const MYSTERY_PANEL_INDEX = 1;
+const NEWEST_FEATURED_PANEL_INDEX = 2;
+const SINGLE_PLAYER_PANEL_INDEX = 3;
+const MULTIPLAYER_PANEL_INDEX = 4;
 const MYSTERY_SHAKE_DURATION_MS = 1500;
 const MYSTERY_REVEAL_DURATION_MS = 3100;
 const FAVORITES_PANEL_TITLE = 'Favorites';
 const FAVORITES_STORAGE_KEY = 'arcade_favorite_games_v1';
 const HOLD_DURATION_MS = 2000;
+
+const SINGLE_PLAYER_GAME_IDS = new Set<string>([
+    'MathPuzzle',
+    'math-1768955732393-game', // PolygonAPP (game entry)
+    'math-car-king',
+    'math-analog-clock-game-v2',
+    'math-farmers-market-frenzy',
+]);
+
+const MULTIPLAYER_GAME_IDS = new Set<string>([
+    'math-2-players-math-write',
+    'math-spy-academy',
+]);
 
 type FavoriteActionMode = 'add' | 'remove' | 'none';
 type FeedbackKind = 'heart' | 'sad';
@@ -819,17 +836,44 @@ const HomePage: React.FC = () => {
         () => allItems.filter(item => item.type === 'game'),
         [allItems],
     );
-    const gameItemsForPanels = useMemo(
-        () => allGameItems,
+    const singlePlayerGames = useMemo(
+        () => allGameItems.filter(item => SINGLE_PLAYER_GAME_IDS.has(item.id)),
         [allGameItems],
     );
+    const multiplayerGames = useMemo(
+        () => allGameItems.filter(item => MULTIPLAYER_GAME_IDS.has(item.id)),
+        [allGameItems],
+    );
+    const dailyDoubleGames = useMemo(() => {
+        if (allGameItems.length === 0) return [];
+
+        // Deterministic per local day so the "Daily Doubles" game changes once per day.
+        const now = new Date();
+        const dayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+        let hash = 0;
+        for (let i = 0; i < dayKey.length; i += 1) {
+            hash = ((hash << 5) - hash) + dayKey.charCodeAt(i);
+            hash |= 0;
+        }
+
+        const gameIndex = Math.abs(hash) % allGameItems.length;
+        return [allGameItems[gameIndex]];
+    }, [allGameItems]);
+    const gamesForPanelByIndex = useMemo(() => {
+        const map = new Map<number, ContentItem[]>();
+        map.set(DAILY_DOUBLES_PANEL_INDEX, dailyDoubleGames);
+        map.set(NEWEST_FEATURED_PANEL_INDEX, allGameItems);
+        map.set(SINGLE_PLAYER_PANEL_INDEX, singlePlayerGames);
+        map.set(MULTIPLAYER_PANEL_INDEX, multiplayerGames);
+        return map;
+    }, [allGameItems, dailyDoubleGames, multiplayerGames, singlePlayerGames]);
     const favoriteGames = useMemo(() => {
         const byId = new Map(allGameItems.map(item => [item.id, item]));
         return favoriteGameIds
             .map(id => byId.get(id))
             .filter((item): item is ContentItem => Boolean(item));
     }, [allGameItems, favoriteGameIds]);
-    const shouldRenderArcadePanels = isGamesTab && !openFolderId && gameItemsForPanels.length > 0;
+    const shouldRenderArcadePanels = isGamesTab && !openFolderId && allGameItems.length > 0;
 
     const favoritesPanelIndex = useMemo(
         () => panelTitles.findIndex(title => title.trim().toLowerCase() === FAVORITES_PANEL_TITLE.toLowerCase()),
@@ -837,9 +881,9 @@ const HomePage: React.FC = () => {
     );
     const itemsForPreload = useMemo(
         () => (shouldRenderArcadePanels
-            ? [...gameItemsForPanels, ...favoriteGames]
+            ? [...allGameItems, ...favoriteGames]
             : visibleItems),
-        [favoriteGames, gameItemsForPanels, shouldRenderArcadePanels, visibleItems],
+        [allGameItems, favoriteGames, shouldRenderArcadePanels, visibleItems],
     );
     const visibleIconPaths = useMemo(
         () => itemsForPreload
@@ -849,13 +893,13 @@ const HomePage: React.FC = () => {
         [itemsForPreload],
     );
     const gameLaunchPrefetchUrls = useMemo(() => {
-        const sourceItems = shouldRenderArcadePanels ? gameItemsForPanels : visibleItems;
+        const sourceItems = shouldRenderArcadePanels ? allGameItems : visibleItems;
         return sourceItems
             .filter(item => item.type === 'game')
             .map(item => resolveGameLaunchDocumentUrl(item))
             .filter((url): url is string => Boolean(url))
             .slice(0, 6);
-    }, [gameItemsForPanels, shouldRenderArcadePanels, visibleItems]);
+    }, [allGameItems, shouldRenderArcadePanels, visibleItems]);
     const prefetchedGameLaunchUrlsRef = useRef<Set<string>>(new Set());
 
     const prefetchGameLaunchDocument = useCallback((url: string) => {
@@ -1045,7 +1089,9 @@ const HomePage: React.FC = () => {
                         {panelTitles.map((title, index) => {
                             const isFavoritesPanel = index === favoritesPanelIndex && favoritesPanelIndex !== -1;
                             const isMysteryPanel = index === MYSTERY_PANEL_INDEX;
-                            const gamesForPanel = isMysteryPanel ? [] : (isFavoritesPanel ? favoriteGames : gameItemsForPanels);
+                            const gamesForPanel = isMysteryPanel
+                                ? []
+                                : (isFavoritesPanel ? favoriteGames : (gamesForPanelByIndex.get(index) ?? allGameItems));
                             const favoriteActionMode: FavoriteActionMode = isMysteryPanel
                                 ? 'none'
                                 : (isFavoritesPanel ? 'remove' : 'add');
