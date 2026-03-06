@@ -11,9 +11,12 @@ class WordGameController {
         this.gameState = gameState;
         this.callbacks = callbacks;
         this.currentEquation = null;
+        this.currentRoundScorePlan = null;
         this.score = 0;
         this.currentProblemPoints = 0;
         this.nextQuestionTimeout = null;
+        this.goldBonusChance = 0.15;
+        this.goldRoundBodyClass = 'word-puzzle-gold-rush';
         this.numberColorTiers = [
             { name: 'white', points: 3, weight: 35, className: 'number-color-white' },
             { name: 'blue', points: 4, weight: 25, className: 'number-color-blue' },
@@ -21,6 +24,17 @@ class WordGameController {
             { name: 'orange', points: 7, weight: 15, className: 'number-color-orange' },
             { name: 'red', points: 10, weight: 5, className: 'number-color-red' }
         ];
+        this.numberColorTiersByName = this.numberColorTiers.reduce((lookup, tier) => {
+            lookup[tier.name] = tier;
+            return lookup;
+        }, {});
+        this.difficultyPointProfiles = {
+            easy: { minCap: 18, maxCap: 24 },
+            medium: { minCap: 24, maxCap: 32 },
+            hard: { minCap: 34, maxCap: 44 },
+            extreme: { minCap: 42, maxCap: 52 }
+        };
+        this.difficultyComplexityStats = this.buildDifficultyComplexityStats();
 
         // Initialize word puzzle generator
         this.wordGenerator = new WordGenerator();
@@ -64,6 +78,226 @@ class WordGameController {
         }
     }
 
+    buildDifficultyComplexityStats() {
+        const libraryIndex = typeof WORD_LIBRARY_INDEX !== 'undefined'
+            ? WORD_LIBRARY_INDEX
+            : window.WORD_LIBRARY_INDEX;
+
+        if (!Array.isArray(libraryIndex)) {
+            return {};
+        }
+
+        return libraryIndex.reduce((stats, entry) => {
+            if (!entry || typeof entry.difficulty !== 'string' || !Number.isFinite(entry.complexityScore)) {
+                return stats;
+            }
+
+            if (!stats[entry.difficulty]) {
+                stats[entry.difficulty] = {
+                    min: entry.complexityScore,
+                    max: entry.complexityScore
+                };
+                return stats;
+            }
+
+            stats[entry.difficulty].min = Math.min(stats[entry.difficulty].min, entry.complexityScore);
+            stats[entry.difficulty].max = Math.max(stats[entry.difficulty].max, entry.complexityScore);
+            return stats;
+        }, {});
+    }
+
+    clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    randomInt(min, max) {
+        const lower = Math.ceil(Math.min(min, max));
+        const upper = Math.floor(Math.max(min, max));
+        return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+    }
+
+    getCurrentRoundDifficulty(equation = this.currentEquation) {
+        return equation?.sourceDifficulty || equation?.difficulty || 'easy';
+    }
+
+    getDifficultyPointProfile(difficulty) {
+        return this.difficultyPointProfiles[difficulty] || this.difficultyPointProfiles.easy;
+    }
+
+    getMinimumPossibleRoundPoints(blockCount) {
+        return blockCount * this.numberColorTiersByName.white.points;
+    }
+
+    getNormalizedComplexityRatio(equation, difficulty) {
+        const complexityScore = Number(equation?.complexityScore);
+        const stats = this.difficultyComplexityStats[difficulty];
+
+        if (!Number.isFinite(complexityScore) || !stats || !Number.isFinite(stats.min) || !Number.isFinite(stats.max)) {
+            return 0.5;
+        }
+
+        if (stats.max <= stats.min) {
+            return 0.5;
+        }
+
+        return this.clamp((complexityScore - stats.min) / (stats.max - stats.min), 0, 1);
+    }
+
+    createRoundScorePlan(equation, blockCount) {
+        const difficulty = this.getCurrentRoundDifficulty(equation);
+        const profile = this.getDifficultyPointProfile(difficulty);
+        const complexityRatio = this.getNormalizedComplexityRatio(equation, difficulty);
+        const minimumPossiblePoints = this.getMinimumPossibleRoundPoints(blockCount);
+        const weightedUpperCap = Math.round(
+            profile.minCap + ((profile.maxCap - profile.minCap) * (0.45 + (complexityRatio * 0.55)))
+        );
+        const minimumCap = Math.max(profile.minCap, minimumPossiblePoints);
+        const maximumCap = Math.max(minimumCap, Math.max(profile.maxCap, minimumPossiblePoints));
+        const randomizedUpperCap = Math.max(minimumCap, Math.min(maximumCap, weightedUpperCap));
+        const maxPoints = this.randomInt(minimumCap, randomizedUpperCap);
+        const isGoldBonus = Math.random() < this.goldBonusChance;
+
+        return {
+            difficulty,
+            gradeBandLabel: equation?.gradeBandLabel || null,
+            complexityRatio,
+            minimumPossiblePoints,
+            maxPoints,
+            isGoldBonus,
+            multiplier: isGoldBonus ? 2 : 1,
+            basePoints: minimumPossiblePoints,
+            totalAwardPoints: minimumPossiblePoints * (isGoldBonus ? 2 : 1)
+        };
+    }
+
+    getUpgradeCandidatesForTier(currentTierName, redUsed) {
+        const tierOrder = ['white', 'blue', 'green', 'orange', 'red'];
+        const currentIndex = tierOrder.indexOf(currentTierName);
+        if (currentIndex === -1) return [];
+
+        const currentTier = this.numberColorTiersByName[currentTierName];
+        return tierOrder
+            .slice(currentIndex + 1)
+            .map((tierName) => this.numberColorTiersByName[tierName])
+            .filter((nextTier) => nextTier && !(nextTier.name === 'red' && redUsed))
+            .map((nextTier) => ({
+                nextTier,
+                delta: nextTier.points - currentTier.points,
+                selectionWeight: Math.max(1, nextTier.weight * (1 + ((nextTier.points - currentTier.points) * 0.15)))
+            }));
+    }
+
+    calculateTierAssignmentPoints(assignments) {
+        return assignments.reduce((total, tier) => {
+            return total + (tier && Number.isFinite(tier.points) ? tier.points : this.numberColorTiersByName.white.points);
+        }, 0);
+    }
+
+    generateConstrainedTierAssignment(blockCount, maxPoints) {
+        const assignments = Array.from({ length: blockCount }, () => this.numberColorTiersByName.white);
+        let totalPoints = this.calculateTierAssignmentPoints(assignments);
+        let redUsed = false;
+        let guard = 0;
+
+        while (guard < 250 && totalPoints < maxPoints) {
+            const remainingPoints = maxPoints - totalPoints;
+            const upgradeOptions = assignments.flatMap((tier, index) => {
+                return this.getUpgradeCandidatesForTier(tier.name, redUsed)
+                    .filter((candidate) => candidate.delta <= remainingPoints)
+                    .map((candidate) => ({
+                        ...candidate,
+                        index
+                    }));
+            });
+
+            if (upgradeOptions.length === 0) {
+                break;
+            }
+
+            const weightedPool = upgradeOptions.reduce((sum, option) => sum + option.selectionWeight, 0);
+            let random = Math.random() * weightedPool;
+            let selectedOption = upgradeOptions[0];
+
+            for (const option of upgradeOptions) {
+                if (random < option.selectionWeight) {
+                    selectedOption = option;
+                    break;
+                }
+                random -= option.selectionWeight;
+            }
+
+            assignments[selectedOption.index] = selectedOption.nextTier;
+            totalPoints += selectedOption.delta;
+            redUsed = redUsed || selectedOption.nextTier.name === 'red';
+            guard += 1;
+        }
+
+        return assignments;
+    }
+
+    generateRoundColorTierAssignments(blockCount, maxPoints = null) {
+        if (!Number.isFinite(maxPoints)) {
+            const assignments = [];
+            let redUsed = false;
+
+            for (let index = 0; index < blockCount; index += 1) {
+                const excluded = redUsed ? new Set(['red']) : null;
+                const tier = this.pickNumberColorTier(excluded);
+                assignments.push(tier);
+                if (tier.name === 'red') {
+                    redUsed = true;
+                }
+            }
+
+            return assignments;
+        }
+
+        const minimumPossiblePoints = this.getMinimumPossibleRoundPoints(blockCount);
+        const constrainedCap = Math.max(minimumPossiblePoints, Math.floor(maxPoints));
+        let bestAssignment = Array.from({ length: blockCount }, () => this.numberColorTiersByName.white);
+        let bestPoints = this.calculateTierAssignmentPoints(bestAssignment);
+
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+            const attemptAssignment = this.generateConstrainedTierAssignment(blockCount, constrainedCap);
+            const attemptPoints = this.calculateTierAssignmentPoints(attemptAssignment);
+
+            if (attemptPoints > bestPoints && attemptPoints <= constrainedCap) {
+                bestAssignment = attemptAssignment;
+                bestPoints = attemptPoints;
+            }
+
+            if (bestPoints === constrainedCap) {
+                break;
+            }
+        }
+
+        return bestAssignment;
+    }
+
+    applyRoundPresentation() {
+        const plan = this.currentRoundScorePlan;
+        document.body.classList.toggle(this.goldRoundBodyClass, Boolean(plan?.isGoldBonus));
+
+        const badge = document.getElementById('pointModeBadge');
+        if (!badge || !plan) return;
+
+        badge.hidden = false;
+        badge.textContent = plan.isGoldBonus ? 'GOLD x2' : `MAX ${plan.maxPoints}`;
+        badge.classList.toggle('point-mode-badge-gold', plan.isGoldBonus);
+    }
+
+    clearRoundPresentation() {
+        document.body.classList.remove(this.goldRoundBodyClass);
+        this.currentRoundScorePlan = null;
+
+        const badge = document.getElementById('pointModeBadge');
+        if (!badge) return;
+
+        badge.hidden = true;
+        badge.textContent = '';
+        badge.classList.remove('point-mode-badge-gold');
+    }
+
     setupGameEventListeners() {
         const undoBtn = document.getElementById('undoMove');
         const clearBtn = document.getElementById('clearEquation');
@@ -101,6 +335,7 @@ class WordGameController {
         this.stopTimer();
         this.gameEnded = true;
         this.clearSelectedBlock();
+        this.clearRoundPresentation();
         if (this.nextQuestionTimeout) {
             clearTimeout(this.nextQuestionTimeout);
             this.nextQuestionTimeout = null;
@@ -158,6 +393,7 @@ class WordGameController {
     startNewRound() {
         this.moveHistory = [];
         this.gameEnded = false;
+        this.clearRoundPresentation();
 
         this.updateUndoButtonState();
 
@@ -244,36 +480,27 @@ class WordGameController {
         return tiersToUse[0];
     }
 
-    generateRoundColorTierAssignments(blockCount) {
-        const assignments = [];
-        let redUsed = false;
-
-        for (let index = 0; index < blockCount; index += 1) {
-            const excluded = redUsed ? new Set(['red']) : null;
-            const tier = this.pickNumberColorTier(excluded);
-            assignments.push(tier);
-            if (tier.name === 'red') {
-                redUsed = true;
-            }
-        }
-
-        return assignments;
-    }
-
-    applyNumberColorTier(block, tierOverride = null) {
+    applyNumberColorTier(block, tierOverride = null, assignedPoints = null) {
         const tier = tierOverride || this.pickNumberColorTier();
         block.classList.add(tier.className);
         block.dataset.colorTier = tier.name;
-        block.dataset.colorPoints = String(tier.points);
+        const resolvedPoints = Number.isFinite(assignedPoints) ? assignedPoints : tier.points;
+        block.dataset.colorPoints = String(resolvedPoints);
         return tier;
     }
 
     calculatePlacedNumberColorPoints() {
+        if (this.currentRoundScorePlan && Number.isFinite(this.currentRoundScorePlan.totalAwardPoints)) {
+            return this.currentRoundScorePlan.totalAwardPoints;
+        }
+
         const placedNumberBlocks = document.querySelectorAll('#equationDisplay .answer-block');
-        return Array.from(placedNumberBlocks).reduce((total, block) => {
+        const basePoints = Array.from(placedNumberBlocks).reduce((total, block) => {
             const points = Number.parseInt(block.dataset.colorPoints, 10);
             return total + (Number.isFinite(points) ? points : 3);
         }, 0);
+        const multiplier = this.currentRoundScorePlan?.multiplier || 1;
+        return basePoints * multiplier;
     }
 
     renderColorPointsGuide() {
@@ -311,11 +538,15 @@ class WordGameController {
 
         let resolvedPoints = points;
         if (!Number.isFinite(resolvedPoints)) {
-            const blocks = document.querySelectorAll('.answer-block[data-color-points]');
-            resolvedPoints = Array.from(blocks).reduce((total, block) => {
-                const value = Number.parseInt(block.dataset.colorPoints, 10);
-                return total + (Number.isFinite(value) ? value : 0);
-            }, 0);
+            if (this.currentRoundScorePlan && Number.isFinite(this.currentRoundScorePlan.totalAwardPoints)) {
+                resolvedPoints = this.currentRoundScorePlan.totalAwardPoints;
+            } else {
+                const blocks = document.querySelectorAll('.answer-block[data-color-points]');
+                resolvedPoints = Array.from(blocks).reduce((total, block) => {
+                    const value = Number.parseInt(block.dataset.colorPoints, 10);
+                    return total + (Number.isFinite(value) ? value : 0);
+                }, 0);
+            }
         }
 
         this.currentProblemPoints = Number.isFinite(resolvedPoints) ? resolvedPoints : 0;
@@ -336,7 +567,12 @@ class WordGameController {
             clue: eq.clue
         });
 
-        const roundColorTiers = this.generateRoundColorTierAssignments(answers.length);
+        this.currentRoundScorePlan = this.createRoundScorePlan(eq, answers.length);
+        const roundColorTiers = this.generateRoundColorTierAssignments(answers.length, this.currentRoundScorePlan.maxPoints);
+        const basePoints = this.calculateTierAssignmentPoints(roundColorTiers);
+        this.currentRoundScorePlan.basePoints = basePoints;
+        this.currentRoundScorePlan.totalAwardPoints = basePoints * this.currentRoundScorePlan.multiplier;
+        this.applyRoundPresentation();
 
         answers.forEach((val, idx) => {
             const block = document.createElement('div');
@@ -344,15 +580,16 @@ class WordGameController {
             block.textContent = val;
             block.dataset.value = val;
             block.dataset.id = `block-${idx}`;
-            this.applyNumberColorTier(block, roundColorTiers[idx] || null);
+            this.applyNumberColorTier(
+                block,
+                roundColorTiers[idx] || null,
+                roundColorTiers[idx] ? roundColorTiers[idx].points : null
+            );
             this.addDragListeners(block);
             container.appendChild(block);
         });
 
-        const puzzlePoints = roundColorTiers.reduce((sum, tier) => {
-            return sum + (tier && Number.isFinite(tier.points) ? tier.points : 0);
-        }, 0);
-        this.updateCurrentProblemPointsDisplay(puzzlePoints);
+        this.updateCurrentProblemPointsDisplay(this.currentRoundScorePlan.totalAwardPoints);
 
         this.updateEquationDisplay();
         this.createOperationBlocks();
@@ -805,14 +1042,22 @@ class WordGameController {
         const pointsEarned = this.calculatePlacedNumberColorPoints();
         const oldScore = this.score;
         const newScore = oldScore + pointsEarned;
+        const isGoldBonus = Boolean(this.currentRoundScorePlan?.isGoldBonus);
 
         this.score = newScore;
 
-        this.showFeedback(true, 'Correct!', '🎉', {
+        this.showFeedback(
+            true,
+            isGoldBonus ? 'Gold Rush! Double points!' : 'Correct!',
+            isGoldBonus ? '✨' : '🎉',
+            {
             scoreGain: {
                 oldScore,
                 pointsEarned,
-                newScore
+                newScore,
+                isGoldBonus,
+                celebrationText: isGoldBonus ? 'Gold Rush!' : 'Correct!',
+                pointsLabel: isGoldBonus ? `+${pointsEarned} points x2` : `+${pointsEarned} points`
             }
         });
 

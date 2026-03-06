@@ -10,6 +10,7 @@ class WordGenerator {
             3: 'hard',
             4: 'extreme'
         };
+        this.strictDifficultySafety = true;
 
         this.repeatCooldown = 500;
         this.categoryCooldown = 12;
@@ -154,20 +155,11 @@ class WordGenerator {
     }
 
     getDifficultySearchOrder(targetDifficulty) {
-        const targetIndex = WORD_LIBRARY_DIFFICULTY_ORDER.indexOf(targetDifficulty);
-        if (targetIndex === -1) return [WORD_LIBRARY_DIFFICULTY_ORDER];
+        if (WORD_LIBRARY_DIFFICULTY_ORDER.includes(targetDifficulty)) {
+            return [[targetDifficulty]];
+        }
 
-        const previousDifficulty = WORD_LIBRARY_DIFFICULTY_ORDER[targetIndex - 1];
-        const nextDifficulty = WORD_LIBRARY_DIFFICULTY_ORDER[targetIndex + 1];
-        const outerDifficulties = WORD_LIBRARY_DIFFICULTY_ORDER.filter((difficulty) => {
-            return difficulty !== targetDifficulty && difficulty !== previousDifficulty && difficulty !== nextDifficulty;
-        });
-
-        return [
-            [targetDifficulty],
-            [previousDifficulty, nextDifficulty].filter(Boolean),
-            outerDifficulties
-        ];
+        return [['easy']];
     }
 
     getTrackRoundLength(targetDifficulty) {
@@ -189,13 +181,22 @@ class WordGenerator {
         return candidatePool[this.randomInt(0, candidatePool.length - 1)];
     }
 
+    isEntryDifficultySafe(entry, targetDifficulty) {
+        if (!entry || typeof entry !== 'object') return false;
+        if (!this.strictDifficultySafety) return true;
+
+        return entry.difficulty === targetDifficulty;
+    }
+
     selectEntryFromBanks(banks, targetDifficulty, recentWordIds) {
         if (!banks) return null;
 
         for (const difficultyGroup of this.getDifficultySearchOrder(targetDifficulty)) {
             const freshCandidates = difficultyGroup
                 .flatMap((difficulty) => banks[difficulty] || [])
-                .filter((entry) => !recentWordIds.has(entry.id));
+                .filter((entry) => {
+                    return this.isEntryDifficultySafe(entry, targetDifficulty) && !recentWordIds.has(entry.id);
+                });
 
             const selectedEntry = this.chooseDiversifiedCandidate(freshCandidates);
             if (selectedEntry) {
@@ -204,6 +205,18 @@ class WordGenerator {
         }
 
         return null;
+    }
+
+    getSafeDifficultyFallback(banks, targetDifficulty) {
+        const exactDifficultyEntries = Array.isArray(banks?.[targetDifficulty]) ? banks[targetDifficulty] : [];
+        return this.chooseDiversifiedCandidate(
+            exactDifficultyEntries.filter((entry) => this.isEntryDifficultySafe(entry, targetDifficulty))
+        );
+    }
+
+    ensureSafeSelection(selection, targetDifficulty) {
+        if (!selection || !selection.entry) return null;
+        return this.isEntryDifficultySafe(selection.entry, targetDifficulty) ? selection : null;
     }
 
     trackHasCandidates(trackId, targetDifficulty) {
@@ -261,7 +274,7 @@ class WordGenerator {
         if (activeTrackId) {
             const trackEntry = this.selectEntryFromBanks(this.trackBanks[activeTrackId], targetDifficulty, recentWordIds);
             if (trackEntry) {
-                return { entry: trackEntry, trackId: activeTrackId };
+                return this.ensureSafeSelection({ entry: trackEntry, trackId: activeTrackId }, targetDifficulty);
             }
 
             const replacementTrack = this.chooseNextTrack(targetDifficulty, activeTrackId);
@@ -269,18 +282,20 @@ class WordGenerator {
             if (activeTrackId) {
                 const replacementEntry = this.selectEntryFromBanks(this.trackBanks[activeTrackId], targetDifficulty, recentWordIds);
                 if (replacementEntry) {
-                    return { entry: replacementEntry, trackId: activeTrackId };
+                    return this.ensureSafeSelection({ entry: replacementEntry, trackId: activeTrackId }, targetDifficulty);
                 }
             }
         }
 
         const globalFreshEntry = this.selectEntryFromBanks(this.wordBanks, targetDifficulty, recentWordIds);
         if (globalFreshEntry) {
-            return { entry: globalFreshEntry, trackId: activeTrackId };
+            return this.ensureSafeSelection({ entry: globalFreshEntry, trackId: activeTrackId }, targetDifficulty);
         }
 
-        const fallbackEntry = this.chooseDiversifiedCandidate(this.wordBanks[targetDifficulty] || this.libraryIndex);
-        return fallbackEntry ? { entry: fallbackEntry, trackId: activeTrackId } : null;
+        const fallbackEntry = this.getSafeDifficultyFallback(this.wordBanks, targetDifficulty);
+        return fallbackEntry
+            ? this.ensureSafeSelection({ entry: fallbackEntry, trackId: activeTrackId }, targetDifficulty)
+            : null;
     }
 
     rememberSelection(selection) {
@@ -324,7 +339,7 @@ class WordGenerator {
         const selection = this.selectWordEntry(requestedDifficulty);
 
         if (!selection || !selection.entry) {
-            throw new Error('Word library index is empty.');
+            throw new Error(`Word library does not contain safe ${requestedDifficulty} words.`);
         }
 
         this.rememberSelection(selection);
@@ -349,6 +364,8 @@ class WordGenerator {
             trackTitle: activeTrack ? activeTrack.title : null,
             difficulty: requestedDifficulty,
             sourceDifficulty: selectedEntry.difficulty,
+            gradeBandLabel: selectedEntry.gradeBandLabel || null,
+            complexityScore: Number.isFinite(selectedEntry.complexityScore) ? selectedEntry.complexityScore : null,
             display: `Unscramble: ${targetWord}`
         };
     }

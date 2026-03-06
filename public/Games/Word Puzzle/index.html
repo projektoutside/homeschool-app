@@ -62,25 +62,25 @@
                 <button class="difficulty-button easy-level" data-difficulty="easy">
                     <div class="difficulty-icon">🌟</div>
                     <div class="difficulty-name">Easy</div>
-                    <div class="difficulty-description">Perfect for beginners!</div>
+                    <div class="difficulty-description">Pre-K to 1st grade words.</div>
                 </button>
 
                 <button class="difficulty-button medium-level" data-difficulty="medium">
                     <div class="difficulty-icon">⚡</div>
                     <div class="difficulty-name">Medium</div>
-                    <div class="difficulty-description">Ready for a challenge?</div>
+                    <div class="difficulty-description">2nd to 6th grade words.</div>
                 </button>
 
                 <button class="difficulty-button hard-level" data-difficulty="hard">
                     <div class="difficulty-icon">🔥</div>
                     <div class="difficulty-name">Hard</div>
-                    <div class="difficulty-description">Think you can handle it?</div>
+                    <div class="difficulty-description">6th to 10th grade words.</div>
                 </button>
 
                 <button class="difficulty-button extreme-level" data-difficulty="extreme">
                     <div class="difficulty-icon">💀</div>
                     <div class="difficulty-name">Extreme</div>
-                    <div class="difficulty-description">Only for word masters!</div>
+                    <div class="difficulty-description">11th grade words and beyond.</div>
                 </button>
             </div>
 
@@ -231,7 +231,10 @@
                     <span class="timer-unit">s</span>
                 </div>
             </div>
-            <div class="header-problem-points">This puzzle: <span id="currentProblemPoints">0</span> pts</div>
+            <div class="header-problem-points">
+                <span>This puzzle: <span id="currentProblemPoints">0</span> pts</span>
+                <span class="point-mode-badge" id="pointModeBadge" hidden></span>
+            </div>
         </div>
 
         <div class="points-guide-panel" aria-live="polite">

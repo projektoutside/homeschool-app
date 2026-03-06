@@ -176,13 +176,21 @@ const GamePlayer: React.FC = () => {
     }, [syncCarKingMicPreference]);
 
     useEffect(() => {
-        if (!isWordPuzzleGame) {
-            setWordPuzzleBootstrapStamp(WORD_PUZZLE_GAME_ID);
-            return;
+        const nextBootstrapStamp = !isWordPuzzleGame ? WORD_PUZZLE_GAME_ID : wordPuzzleBootstrapKey;
+
+        if (isWordPuzzleGame) {
+            persistWordPuzzleBootstrapContext(wordPuzzleUserContext);
         }
 
-        persistWordPuzzleBootstrapContext(wordPuzzleUserContext);
-        setWordPuzzleBootstrapStamp(wordPuzzleBootstrapKey);
+        const frameId = window.requestAnimationFrame(() => {
+            setWordPuzzleBootstrapStamp((currentStamp) => {
+                return currentStamp === nextBootstrapStamp ? currentStamp : nextBootstrapStamp;
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
     }, [isWordPuzzleGame, wordPuzzleBootstrapKey, wordPuzzleUserContext]);
 
     const syncWordPuzzleUserContext = useCallback(() => {

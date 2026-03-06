@@ -558,20 +558,153 @@ const WORD_LIBRARY_TRACKS = [
 ];
 
 const WORD_LIBRARY_DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'];
+const WORD_LIBRARY_DIFFICULTY_GRADE_BANDS = {
+    easy: 'Pre-K to 1st grade',
+    medium: '2nd to 6th grade',
+    hard: '6th to 10th grade',
+    extreme: '11th grade and beyond'
+};
+const WORD_LIBRARY_CATEGORY_GROUPS = {
+    earlyConcrete: new Set([
+        'Animals',
+        'Ocean Life',
+        'Birds',
+        'Food',
+        'Fruits and Vegetables',
+        'Home Objects',
+        'Plants and Garden',
+        'Farm Life'
+    ]),
+    foundational: new Set([
+        'Nature',
+        'Weather',
+        'Health',
+        'School',
+        'Sports',
+        'Celebrations',
+        'Transportation',
+        'Community Helpers',
+        'Character Traits',
+        'Kitchen and Cooking'
+    ]),
+    coreAcademic: new Set([
+        'Space',
+        'Science',
+        'Human Body',
+        'Language Arts',
+        'Math',
+        'Geography',
+        'History',
+        'Arts and Music',
+        'Travel and Places',
+        'Architecture',
+        'Environment',
+        'Reptiles and Amphibians'
+    ]),
+    specializedAdvanced: new Set([
+        'Materials and Chemistry',
+        'Physics and Motion',
+        'Coding and Logic'
+    ]),
+    appliedHard: new Set([
+        'Government',
+        'Technology',
+        'Engineering',
+        'Music Performance',
+        'Business and Money',
+        'Ancient World'
+    ]),
+    foundationalEasyCategories: new Set([
+        'School',
+        'Celebrations',
+        'Transportation'
+    ])
+};
 
 function normalizeWordLibraryWord(rawWord) {
     if (typeof rawWord !== 'string') return '';
     return rawWord.trim().replace(/[^a-z]/gi, '').toUpperCase();
 }
 
-function classifyWordLibraryDifficulty(word) {
-    const rareLetters = (word.match(/[JKQVXZ]/g) || []).length;
-    const score = word.length + (rareLetters * 1.5);
+function countWordLibraryVowelGroups(word) {
+    const matches = word.match(/[AEIOUY]+/g);
+    return matches ? matches.length : 0;
+}
 
-    if (score <= 5.5) return 'easy';
-    if (score <= 7.5) return 'medium';
-    if (score <= 9.5) return 'hard';
-    return 'extreme';
+function countWordLibraryAdvancedPatterns(word) {
+    const patterns = [
+        /TION/,
+        /SION/,
+        /MENT/,
+        /NESS/,
+        /TURE/,
+        /PH/,
+        /ENCE/,
+        /ANCE/,
+        /LOGY/,
+        /GRAPH/,
+        /SCOP/,
+        /CRYPT/
+    ];
+
+    return patterns.reduce((count, pattern) => count + (pattern.test(word) ? 1 : 0), 0);
+}
+
+function getWordLibraryDifficultyGroup(category) {
+    if (WORD_LIBRARY_CATEGORY_GROUPS.earlyConcrete.has(category)) return 'earlyConcrete';
+    if (WORD_LIBRARY_CATEGORY_GROUPS.foundational.has(category)) return 'foundational';
+    if (WORD_LIBRARY_CATEGORY_GROUPS.coreAcademic.has(category)) return 'coreAcademic';
+    if (WORD_LIBRARY_CATEGORY_GROUPS.specializedAdvanced.has(category)) return 'specializedAdvanced';
+    if (WORD_LIBRARY_CATEGORY_GROUPS.appliedHard.has(category)) return 'appliedHard';
+    return 'coreAcademic';
+}
+
+function calculateWordLibraryComplexityScore(word) {
+    const rareLetters = (word.match(/[JKQVXZ]/g) || []).length;
+    const vowelGroups = countWordLibraryVowelGroups(word);
+    const advancedPatterns = countWordLibraryAdvancedPatterns(word);
+    const consonantClusters = (word.match(/[BCDFGHJKLMNPQRSTVWXYZ]{3,}/g) || []).length;
+
+    return word.length
+        + (rareLetters * 1.25)
+        + (Math.max(0, vowelGroups - 2) * 0.6)
+        + (advancedPatterns * 1.4)
+        + (consonantClusters * 0.5);
+}
+
+function classifyWordLibraryDifficulty(word, category) {
+    const complexityScore = calculateWordLibraryComplexityScore(word);
+    const difficultyGroup = getWordLibraryDifficultyGroup(category);
+
+    if (difficultyGroup === 'earlyConcrete') {
+        if (complexityScore <= 5.4) return 'easy';
+        if (complexityScore <= 7.9) return 'medium';
+        return 'hard';
+    }
+
+    if (difficultyGroup === 'foundational') {
+        if (
+            WORD_LIBRARY_CATEGORY_GROUPS.foundationalEasyCategories.has(category)
+            && complexityScore <= 5.5
+        ) {
+            return 'easy';
+        }
+
+        if (complexityScore <= 6.8) return 'medium';
+        return 'hard';
+    }
+
+    if (difficultyGroup === 'coreAcademic') {
+        if (complexityScore <= 7.2) return 'medium';
+        return 'hard';
+    }
+
+    if (difficultyGroup === 'specializedAdvanced') {
+        if (complexityScore <= 10.8) return 'hard';
+        return 'extreme';
+    }
+
+    return 'hard';
 }
 
 function buildWordLibraryClue(word, category, templateIndex) {
@@ -601,13 +734,16 @@ const WORD_LIBRARY_INDEX = (() => {
             if (seenWords.has(normalizedWord)) return;
 
             seenWords.add(normalizedWord);
-            const difficulty = classifyWordLibraryDifficulty(normalizedWord);
+            const complexityScore = calculateWordLibraryComplexityScore(normalizedWord);
+            const difficulty = classifyWordLibraryDifficulty(normalizedWord, section.category);
             records.push({
                 id: `word-puzzle-${runningId + 1}`,
                 word: normalizedWord,
                 category: section.category,
                 tracks: resolveTrackIdsForCategory(section.category),
                 difficulty,
+                complexityScore,
+                gradeBandLabel: WORD_LIBRARY_DIFFICULTY_GRADE_BANDS[difficulty] || null,
                 clue: buildWordLibraryClue(normalizedWord, section.category, index),
                 length: normalizedWord.length
             });

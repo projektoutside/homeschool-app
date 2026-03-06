@@ -692,8 +692,8 @@ class GameController {
                 overlay.style.display = 'none';
             }
 
-            correctAnswerTextEl.textContent = 'Correct!';
-            correctAnswerPointsEl.textContent = `+${pointsEarned} points`;
+            correctAnswerTextEl.textContent = scoreGain.celebrationText || 'Correct!';
+            correctAnswerPointsEl.textContent = scoreGain.pointsLabel || `+${pointsEarned} points`;
             correctAnswerFxEl.style.display = 'flex';
 
             if (scoreHeaderEl) {

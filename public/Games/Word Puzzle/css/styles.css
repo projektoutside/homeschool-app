@@ -184,6 +184,9 @@ body {
   position: absolute;
   top: 7px;
   right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0;
   border: 0;
   background: none;
@@ -197,6 +200,37 @@ body {
   white-space: nowrap;
   pointer-events: none;
   z-index: 3;
+}
+
+.point-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0.12rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 238, 175, 0.62);
+  background: rgba(255, 247, 198, 0.16);
+  color: rgba(255, 249, 219, 0.98);
+  font-size: 0.72em;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 213, 110, 0.3);
+}
+
+.point-mode-badge[hidden] {
+  display: none;
+}
+
+.point-mode-badge-gold {
+  border-color: rgba(255, 245, 201, 0.95);
+  background: linear-gradient(145deg, rgba(255, 225, 103, 0.94), rgba(255, 168, 55, 0.9));
+  color: #623600;
+  text-shadow: none;
+  box-shadow:
+    0 0 14px rgba(255, 206, 88, 0.44),
+    inset 0 1px 0 rgba(255, 248, 224, 0.55);
 }
 
 .points-guide-panel {
@@ -1979,4 +2013,54 @@ body {
     0 0 18px rgba(255, 210, 96, 0.54),
     0 0 32px rgba(159, 236, 113, 0.42),
     0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+body.word-puzzle-gold-rush {
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 250, 200, 0.28), transparent 24%),
+    radial-gradient(circle at 82% 14%, rgba(255, 232, 138, 0.18), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(255, 195, 87, 0.16), transparent 24%),
+    linear-gradient(145deg, #ffd969 0%, #efa22f 48%, #9f5e0d 100%);
+}
+
+body.word-puzzle-gold-rush .game-header {
+  background: linear-gradient(145deg, rgba(166, 104, 18, 0.88), rgba(112, 65, 9, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 247, 216, 0.18),
+    0 10px 28px rgba(98, 58, 8, 0.3);
+}
+
+body.word-puzzle-gold-rush .points-guide-panel {
+  background: linear-gradient(135deg, rgba(177, 111, 20, 0.82), rgba(120, 73, 10, 0.84));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 224, 0.12),
+    0 5px 16px rgba(95, 57, 8, 0.26);
+}
+
+body.word-puzzle-gold-rush .game-controls {
+  background: linear-gradient(145deg, rgba(171, 105, 19, 0.92), rgba(114, 66, 10, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 248, 226, 0.1),
+    0 6px 28px rgba(97, 55, 8, 0.3);
+}
+
+body.word-puzzle-gold-rush .control-display-panel {
+  border-color: rgba(255, 235, 168, 0.44);
+  background: linear-gradient(140deg, rgba(206, 140, 35, 0.54), rgba(132, 79, 12, 0.5));
+}
+
+body.word-puzzle-gold-rush .feedback-content {
+  background: linear-gradient(145deg, rgba(177, 113, 24, 0.88), rgba(118, 70, 10, 0.84));
+  border-color: rgba(255, 233, 164, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 247, 216, 0.14),
+    0 18px 40px rgba(98, 58, 8, 0.32);
+}
+
+body.word-puzzle-gold-rush .header-problem-points,
+body.word-puzzle-gold-rush #currentProblemPoints {
+  color: rgba(255, 249, 224, 0.99);
+  text-shadow:
+    0 0 12px rgba(255, 222, 127, 0.6),
+    0 0 20px rgba(255, 178, 67, 0.34);
 }
