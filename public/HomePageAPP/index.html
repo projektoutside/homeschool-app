@@ -8671,6 +8671,7 @@
                 inventoryPanelAnchorState.viewportHeight = viewportHeight;
                 inventoryPanelAnchorState.initialized = true;
                 updateInventoryFocusOverlayHole();
+                updateInventoryCreatureFitGuard({ force: true });
                 return;
             }
 
@@ -8722,6 +8723,7 @@
             inventoryPanelAnchorState.viewportHeight = viewportHeight;
             inventoryPanelAnchorState.initialized = true;
             updateInventoryFocusOverlayHole();
+            updateInventoryCreatureFitGuard({ force: true });
         }
 
         function scheduleInventoryRender() {
@@ -14586,7 +14588,10 @@
             currentPosition: camera.position.clone(),
             targetPosition: camera.position.clone(),
             currentScale: BASE_CREATURE_SCALE,
-            targetScale: BASE_CREATURE_SCALE
+            targetScale: BASE_CREATURE_SCALE,
+            baseTargetScale: BASE_CREATURE_SCALE,
+            inventoryFitScale: 1,
+            lastInventoryFitMeasureMs: 0
         };
         let responsiveLayoutUpdateQueued = false;
         let orientationSettleTimer = null;
@@ -14606,6 +14611,201 @@
                 height,
                 aspect: width / height
             };
+        }
+
+        function isPhoneLikeViewport(viewportWidth, viewportHeight) {
+            const safeWidth = Math.max(1, Number.isFinite(viewportWidth) ? viewportWidth : window.innerWidth || 1);
+            const safeHeight = Math.max(1, Number.isFinite(viewportHeight) ? viewportHeight : window.innerHeight || 1);
+            const shortEdge = Math.min(safeWidth, safeHeight);
+            const longEdge = Math.max(safeWidth, safeHeight);
+            const coarsePointer = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+                ? window.matchMedia('(pointer: coarse)').matches
+                : shortEdge <= 700;
+
+            return coarsePointer && shortEdge <= 700 && longEdge <= 980;
+        }
+
+        function getInventoryShowcaseWindowRect() {
+            if (!inventoryPanel || !isInventoryPanelOpen()) {
+                return null;
+            }
+
+            const viewportWindow = inventoryPanel.querySelector('.inventory-viewport-window');
+            const rect = viewportWindow?.getBoundingClientRect?.();
+            if (
+                !rect ||
+                !Number.isFinite(rect.width) ||
+                !Number.isFinite(rect.height) ||
+                rect.width <= 1 ||
+                rect.height <= 1
+            ) {
+                return null;
+            }
+
+            return rect;
+        }
+
+        function computeProjectedObjectScreenBounds(object3D, activeCamera, viewportWidth, viewportHeight) {
+            if (!object3D || !activeCamera) {
+                return null;
+            }
+
+            const safeViewportWidth = Math.max(1, viewportWidth || 1);
+            const safeViewportHeight = Math.max(1, viewportHeight || 1);
+            object3D.updateMatrixWorld(true);
+            activeCamera.updateMatrixWorld(true);
+
+            const worldBounds = computeSafeObjectBounds(object3D, {
+                respectVisibility: false,
+                includePoints: true
+            });
+            if (!worldBounds || worldBounds.isEmpty()) {
+                return null;
+            }
+
+            const { min, max } = worldBounds;
+            const corners = [
+                new THREE.Vector3(min.x, min.y, min.z),
+                new THREE.Vector3(min.x, min.y, max.z),
+                new THREE.Vector3(min.x, max.y, min.z),
+                new THREE.Vector3(min.x, max.y, max.z),
+                new THREE.Vector3(max.x, min.y, min.z),
+                new THREE.Vector3(max.x, min.y, max.z),
+                new THREE.Vector3(max.x, max.y, min.z),
+                new THREE.Vector3(max.x, max.y, max.z)
+            ];
+
+            let left = Number.POSITIVE_INFINITY;
+            let top = Number.POSITIVE_INFINITY;
+            let right = Number.NEGATIVE_INFINITY;
+            let bottom = Number.NEGATIVE_INFINITY;
+
+            for (const corner of corners) {
+                const projected = corner.project(activeCamera);
+                if (
+                    !Number.isFinite(projected.x) ||
+                    !Number.isFinite(projected.y) ||
+                    !Number.isFinite(projected.z)
+                ) {
+                    continue;
+                }
+
+                const screenX = (projected.x * 0.5 + 0.5) * safeViewportWidth;
+                const screenY = ((-projected.y) * 0.5 + 0.5) * safeViewportHeight;
+                left = Math.min(left, screenX);
+                top = Math.min(top, screenY);
+                right = Math.max(right, screenX);
+                bottom = Math.max(bottom, screenY);
+            }
+
+            if (
+                !Number.isFinite(left) ||
+                !Number.isFinite(top) ||
+                !Number.isFinite(right) ||
+                !Number.isFinite(bottom)
+            ) {
+                return null;
+            }
+
+            return {
+                left,
+                top,
+                right,
+                bottom,
+                width: Math.max(1, right - left),
+                height: Math.max(1, bottom - top)
+            };
+        }
+
+        function syncResponsiveTargetScale() {
+            const baseTargetScale = Number.isFinite(responsiveViewState.baseTargetScale) && responsiveViewState.baseTargetScale > 0
+                ? responsiveViewState.baseTargetScale
+                : BASE_CREATURE_SCALE;
+            const inventoryFitScale = Number.isFinite(responsiveViewState.inventoryFitScale) && responsiveViewState.inventoryFitScale > 0
+                ? responsiveViewState.inventoryFitScale
+                : 1;
+
+            responsiveViewState.targetScale = baseTargetScale * inventoryFitScale;
+        }
+
+        function updateInventoryCreatureFitGuard({ force = false } = {}) {
+            const { width, height } = getViewportDimensions();
+            const shouldGuardInventoryFit = isInventoryPanelOpen() && !isPhoneLikeViewport(width, height);
+
+            if (!shouldGuardInventoryFit) {
+                if (Math.abs((responsiveViewState.inventoryFitScale || 1) - 1) > 0.001) {
+                    responsiveViewState.inventoryFitScale = 1;
+                    responsiveViewState.lastInventoryFitMeasureMs = 0;
+                    syncResponsiveTargetScale();
+                }
+                return;
+            }
+
+            const now = performance.now();
+            if (
+                !force &&
+                Number.isFinite(responsiveViewState.lastInventoryFitMeasureMs) &&
+                (now - responsiveViewState.lastInventoryFitMeasureMs) < 120
+            ) {
+                return;
+            }
+            responsiveViewState.lastInventoryFitMeasureMs = now;
+
+            const showcaseRect = getInventoryShowcaseWindowRect();
+            if (!showcaseRect) {
+                return;
+            }
+
+            const projectedBounds = computeProjectedObjectScreenBounds(creatureGroup, camera, width, height);
+            if (!projectedBounds) {
+                return;
+            }
+
+            const safePaddingX = THREE.MathUtils.clamp(showcaseRect.width * 0.07, 14, 28);
+            const safePaddingY = THREE.MathUtils.clamp(showcaseRect.height * 0.1, 18, 42);
+            const safeWidth = Math.max(1, showcaseRect.width - (safePaddingX * 2));
+            const safeHeight = Math.max(1, showcaseRect.height - (safePaddingY * 2));
+            const fitRatio = Math.min(
+                safeWidth / Math.max(1, projectedBounds.width),
+                safeHeight / Math.max(1, projectedBounds.height)
+            );
+            if (!Number.isFinite(fitRatio) || fitRatio <= 0) {
+                return;
+            }
+
+            const baseTargetScale = Number.isFinite(responsiveViewState.baseTargetScale) && responsiveViewState.baseTargetScale > 0
+                ? responsiveViewState.baseTargetScale
+                : BASE_CREATURE_SCALE;
+            const currentAbsoluteScale = Math.max(
+                0.001,
+                Number.isFinite(responsiveViewState.currentScale) && responsiveViewState.currentScale > 0
+                    ? responsiveViewState.currentScale
+                    : (Number.isFinite(creatureGroup.scale.x) && creatureGroup.scale.x > 0
+                        ? creatureGroup.scale.x
+                        : baseTargetScale)
+            );
+            const adjustmentCushion = fitRatio < 1 ? 0.94 : 0.985;
+            const desiredAbsoluteScale = currentAbsoluteScale * fitRatio * adjustmentCushion;
+            const nextInventoryFitScale = THREE.MathUtils.clamp(
+                desiredAbsoluteScale / Math.max(0.001, baseTargetScale),
+                0.68,
+                1
+            );
+            const currentInventoryFitScale = Number.isFinite(responsiveViewState.inventoryFitScale) && responsiveViewState.inventoryFitScale > 0
+                ? responsiveViewState.inventoryFitScale
+                : 1;
+            const withinStabilityBand = fitRatio >= 0.995 && fitRatio <= 1.045;
+
+            if (withinStabilityBand && Math.abs(nextInventoryFitScale - currentInventoryFitScale) < 0.03) {
+                return;
+            }
+
+            if (Math.abs(nextInventoryFitScale - currentInventoryFitScale) > 0.004) {
+                responsiveViewState.inventoryFitScale = nextInventoryFitScale;
+                syncResponsiveTargetScale();
+                inventoryPanelAnchorState.initialized = false;
+                scheduleInventoryPanelAnchorUpdate({ afterPaint: true });
+            }
         }
 
         function computeResponsiveViewTargets(viewportWidth, viewportHeight) {
@@ -14715,7 +14915,11 @@
             responsiveViewState.needsProjectionUpdate = true;
             responsiveViewState.targetFov = viewTarget.fov;
             responsiveViewState.targetPosition.set(0, viewTarget.positionY, viewTarget.positionZ);
-            responsiveViewState.targetScale = viewTarget.creatureScale;
+            responsiveViewState.baseTargetScale = viewTarget.creatureScale;
+            if (!isInventoryPanelOpen()) {
+                responsiveViewState.inventoryFitScale = 1;
+            }
+            syncResponsiveTargetScale();
 
             if (!responsiveViewState.initialized) {
                 responsiveViewState.initialized = true;
@@ -15130,6 +15334,7 @@
                 previewRenderer.render(previewScene, previewCamera);
             }
 
+            updateInventoryCreatureFitGuard();
             renderer.render(scene, camera);
         }
 
