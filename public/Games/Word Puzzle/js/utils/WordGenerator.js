@@ -185,6 +185,26 @@ class WordGenerator {
         if (!entry || typeof entry !== 'object') return false;
         if (!this.strictDifficultySafety) return true;
 
+        if (!this.canCreateDistinctScramble(entry.word)) {
+            return false;
+        }
+
+        if (targetDifficulty === 'easy') {
+            return entry.difficulty === 'easy' && entry.isEarlyReaderSafe === true;
+        }
+
+        if (targetDifficulty === 'medium') {
+            return entry.difficulty === 'medium' && entry.isMediumReaderSafe === true;
+        }
+
+        if (targetDifficulty === 'hard') {
+            return entry.difficulty === 'hard' && entry.isHardReaderSafe === true;
+        }
+
+        if (targetDifficulty === 'extreme') {
+            return entry.difficulty === 'extreme' && entry.isExtremeReaderSafe === true;
+        }
+
         return entry.difficulty === targetDifficulty;
     }
 
@@ -214,13 +234,39 @@ class WordGenerator {
         );
     }
 
+    hasSafeDifficultyEntries(banks, targetDifficulty) {
+        const exactDifficultyEntries = Array.isArray(banks?.[targetDifficulty]) ? banks[targetDifficulty] : [];
+        return exactDifficultyEntries.some((entry) => this.isEntryDifficultySafe(entry, targetDifficulty));
+    }
+
+    resolveTrackIdForEntry(entry, preferredTrackId = null) {
+        const entryTrackIds = Array.isArray(entry?.tracks)
+            ? entry.tracks.filter((trackId) => this.trackDefinitionsById[trackId])
+            : [];
+
+        if (preferredTrackId && entryTrackIds.includes(preferredTrackId)) {
+            return preferredTrackId;
+        }
+
+        return entryTrackIds[0] || null;
+    }
+
+    buildSelection(entry, preferredTrackId = null) {
+        if (!entry) return null;
+
+        return {
+            entry,
+            trackId: this.resolveTrackIdForEntry(entry, preferredTrackId)
+        };
+    }
+
     ensureSafeSelection(selection, targetDifficulty) {
         if (!selection || !selection.entry) return null;
         return this.isEntryDifficultySafe(selection.entry, targetDifficulty) ? selection : null;
     }
 
     trackHasCandidates(trackId, targetDifficulty) {
-        return !!this.selectEntryFromBanks(this.trackBanks[trackId], targetDifficulty, new Set(this.recentWordIds));
+        return this.hasSafeDifficultyEntries(this.trackBanks[trackId], targetDifficulty);
     }
 
     chooseNextTrack(targetDifficulty, excludedTrackId = null) {
@@ -274,7 +320,7 @@ class WordGenerator {
         if (activeTrackId) {
             const trackEntry = this.selectEntryFromBanks(this.trackBanks[activeTrackId], targetDifficulty, recentWordIds);
             if (trackEntry) {
-                return this.ensureSafeSelection({ entry: trackEntry, trackId: activeTrackId }, targetDifficulty);
+                return this.ensureSafeSelection(this.buildSelection(trackEntry, activeTrackId), targetDifficulty);
             }
 
             const replacementTrack = this.chooseNextTrack(targetDifficulty, activeTrackId);
@@ -282,19 +328,26 @@ class WordGenerator {
             if (activeTrackId) {
                 const replacementEntry = this.selectEntryFromBanks(this.trackBanks[activeTrackId], targetDifficulty, recentWordIds);
                 if (replacementEntry) {
-                    return this.ensureSafeSelection({ entry: replacementEntry, trackId: activeTrackId }, targetDifficulty);
+                    return this.ensureSafeSelection(this.buildSelection(replacementEntry, activeTrackId), targetDifficulty);
                 }
             }
         }
 
         const globalFreshEntry = this.selectEntryFromBanks(this.wordBanks, targetDifficulty, recentWordIds);
         if (globalFreshEntry) {
-            return this.ensureSafeSelection({ entry: globalFreshEntry, trackId: activeTrackId }, targetDifficulty);
+            return this.ensureSafeSelection(this.buildSelection(globalFreshEntry, activeTrackId), targetDifficulty);
+        }
+
+        if (activeTrackId) {
+            const trackFallbackEntry = this.getSafeDifficultyFallback(this.trackBanks[activeTrackId], targetDifficulty);
+            if (trackFallbackEntry) {
+                return this.ensureSafeSelection(this.buildSelection(trackFallbackEntry, activeTrackId), targetDifficulty);
+            }
         }
 
         const fallbackEntry = this.getSafeDifficultyFallback(this.wordBanks, targetDifficulty);
         return fallbackEntry
-            ? this.ensureSafeSelection({ entry: fallbackEntry, trackId: activeTrackId }, targetDifficulty)
+            ? this.ensureSafeSelection(this.buildSelection(fallbackEntry, activeTrackId), targetDifficulty)
             : null;
     }
 
@@ -370,22 +423,55 @@ class WordGenerator {
         };
     }
 
-    shuffleUntilDifferent(letters) {
-        const original = [...letters];
-        const shuffled = [...letters];
+    canCreateDistinctScramble(value) {
+        const letters = Array.isArray(value)
+            ? value.map((letter) => String(letter))
+            : String(value || '').trim().toUpperCase().split('');
 
-        for (let attempt = 0; attempt < 10; attempt += 1) {
-            this.shuffleArray(shuffled);
-            if (!this.areArraysEqual(shuffled, original)) {
-                return [...shuffled];
+        if (letters.length < 2) return false;
+        return new Set(letters).size > 1;
+    }
+
+    buildGuaranteedDifferentArrangement(letters) {
+        const original = [...letters];
+
+        for (let left = 0; left < original.length - 1; left += 1) {
+            for (let right = left + 1; right < original.length; right += 1) {
+                if (original[left] === original[right]) continue;
+
+                const swapped = [...original];
+                [swapped[left], swapped[right]] = [swapped[right], swapped[left]];
+
+                if (!this.areArraysEqual(swapped, original)) {
+                    return swapped;
+                }
             }
         }
 
-        if (shuffled.length > 1) {
-            const first = shuffled.shift();
-            shuffled.push(first);
+        const rotated = [...original.slice(1), original[0]];
+        return this.areArraysEqual(rotated, original) ? null : rotated;
+    }
+
+    shuffleUntilDifferent(letters) {
+        const original = [...letters];
+        if (!this.canCreateDistinctScramble(original)) {
+            throw new Error('Word cannot be scrambled safely.');
         }
-        return shuffled;
+
+        for (let attempt = 0; attempt < 24; attempt += 1) {
+            const shuffled = [...letters];
+            this.shuffleArray(shuffled);
+            if (!this.areArraysEqual(shuffled, original)) {
+                return shuffled;
+            }
+        }
+
+        const guaranteedArrangement = this.buildGuaranteedDifferentArrangement(original);
+        if (guaranteedArrangement) {
+            return guaranteedArrangement;
+        }
+
+        throw new Error('Unable to generate a safe scrambled word.');
     }
 
     areArraysEqual(a, b) {

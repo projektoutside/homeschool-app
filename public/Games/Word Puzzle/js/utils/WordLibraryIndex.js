@@ -327,6 +327,384 @@ const WORD_LIBRARY_EXPANSION_SECTIONS = [
     }
 ];
 
+const WORD_LIBRARY_EARLY_READER_SECTIONS = [
+    {
+        category: 'Animals',
+        words: [
+            'ant', 'bee', 'cat', 'dog', 'fox', 'frog', 'goat', 'hen', 'lamb', 'pig'
+        ]
+    },
+    {
+        category: 'Ocean Life',
+        words: [
+            'clam', 'crab', 'fish', 'seal', 'shark', 'shell', 'whale'
+        ]
+    },
+    {
+        category: 'Birds',
+        words: [
+            'bird', 'crow', 'dove', 'owl', 'robin', 'swan'
+        ]
+    },
+    {
+        category: 'Food',
+        words: [
+            'bean', 'bread', 'cake', 'corn', 'egg', 'juice', 'milk', 'pizza', 'rice', 'soup', 'toast'
+        ]
+    },
+    {
+        category: 'Fruits and Vegetables',
+        words: [
+            'apple', 'berry', 'grape', 'lemon', 'melon', 'peach', 'pear', 'plum'
+        ]
+    },
+    {
+        category: 'Nature',
+        words: [
+            'grass', 'leaf', 'light', 'moon', 'sky', 'sun', 'tree', 'water'
+        ]
+    },
+    {
+        category: 'Weather',
+        words: [
+            'fog', 'snow'
+        ]
+    },
+    {
+        category: 'School',
+        words: [
+            'book', 'chalk', 'class', 'desk', 'paper', 'pen', 'ruler'
+        ]
+    },
+    {
+        category: 'Language Arts',
+        words: [
+            'read', 'story', 'word'
+        ]
+    },
+    {
+        category: 'Math',
+        words: [
+            'add', 'count', 'shape'
+        ]
+    },
+    {
+        category: 'Home Objects',
+        words: [
+            'bed', 'bowl', 'chair', 'clock', 'cup', 'door', 'floor', 'hat', 'house', 'lamp', 'plate', 'spoon', 'table'
+        ]
+    },
+    {
+        category: 'Plants and Garden',
+        words: [
+            'daisy', 'green', 'moss', 'rose', 'seed', 'tulip', 'vine'
+        ]
+    },
+    {
+        category: 'Transportation',
+        words: [
+            'bike', 'boat', 'bus', 'car', 'plane', 'van', 'wagon'
+        ]
+    },
+    {
+        category: 'Sports',
+        words: [
+            'ball', 'game', 'kick', 'race', 'swing'
+        ]
+    },
+    {
+        category: 'Human Body',
+        words: [
+            'arm', 'chin', 'ear', 'face', 'foot', 'hand', 'knee', 'leg', 'mouth', 'nose', 'tooth'
+        ]
+    },
+    {
+        category: 'Health',
+        words: [
+            'brush', 'clean', 'rest', 'sleep', 'smile', 'soap'
+        ]
+    },
+    {
+        category: 'Arts and Music',
+        words: [
+            'dance', 'drum', 'music', 'paint', 'piano', 'song'
+        ]
+    }
+];
+
+const WORD_LIBRARY_MIDDLE_READER_SECTIONS = [
+    {
+        category: 'Animals',
+        words: [
+            'animal', 'beaver', 'camel', 'eagle', 'koala', 'llama', 'monkey', 'otter', 'panda', 'rabbit', 'zebra'
+        ]
+    },
+    {
+        category: 'Ocean Life',
+        words: [
+            'coral', 'salmon', 'shrimp', 'squid', 'trout', 'walrus'
+        ]
+    },
+    {
+        category: 'Birds',
+        words: [
+            'crane', 'falcon', 'heron', 'stork', 'toucan'
+        ]
+    },
+    {
+        category: 'Food',
+        words: [
+            'cereal', 'cheese', 'cookie', 'muffin', 'omelet', 'pickle', 'yogurt'
+        ]
+    },
+    {
+        category: 'Fruits and Vegetables',
+        words: [
+            'banana', 'carrot', 'celery', 'cherry', 'grapes', 'orange', 'pepper'
+        ]
+    },
+    {
+        category: 'Nature',
+        words: [
+            'cloud', 'flower', 'forest', 'meadow', 'rain', 'river', 'rock', 'stone', 'stream', 'valley'
+        ]
+    },
+    {
+        category: 'Weather',
+        words: [
+            'breeze', 'frost', 'storm', 'sunny', 'wind'
+        ]
+    },
+    {
+        category: 'Space',
+        words: [
+            'comet', 'galaxy', 'meteor', 'orbit', 'planet', 'rocket', 'star'
+        ]
+    },
+    {
+        category: 'Science',
+        words: [
+            'carbon', 'energy', 'magnet', 'matter', 'oxygen'
+        ]
+    },
+    {
+        category: 'Human Body',
+        words: [
+            'ankle', 'brain', 'elbow', 'finger', 'kidney', 'lungs', 'muscle', 'throat', 'tongue', 'wrist'
+        ]
+    },
+    {
+        category: 'School',
+        words: [
+            'eraser', 'lesson', 'marker', 'pencil', 'recess', 'report', 'school'
+        ]
+    },
+    {
+        category: 'Language Arts',
+        words: [
+            'author', 'poetry', 'prefix', 'reader', 'stanza', 'vowel'
+        ]
+    },
+    {
+        category: 'Math',
+        words: [
+            'angle', 'graph', 'minus', 'number', 'shape'
+        ]
+    },
+    {
+        category: 'Geography',
+        words: [
+            'border', 'delta', 'globe', 'harbor', 'island', 'region', 'tundra'
+        ]
+    },
+    {
+        category: 'History',
+        words: [
+            'colony', 'empire', 'museum', 'relic'
+        ]
+    },
+    {
+        category: 'Transportation',
+        words: [
+            'ferry', 'ship', 'subway', 'taxi', 'train', 'truck'
+        ]
+    },
+    {
+        category: 'Community Helpers',
+        words: [
+            'baker', 'chef', 'coach', 'doctor', 'farmer', 'guide', 'judge', 'nurse', 'pilot', 'tailor', 'writer'
+        ]
+    },
+    {
+        category: 'Engineering',
+        words: [
+            'bolt', 'bridge', 'engine', 'hammer', 'motor', 'pulley', 'switch', 'wrench'
+        ]
+    },
+    {
+        category: 'Arts and Music',
+        words: [
+            'ballet', 'canvas', 'chorus', 'guitar', 'melody', 'piano', 'rhythm', 'violin'
+        ]
+    },
+    {
+        category: 'Sports',
+        words: [
+            'helmet', 'hiking', 'hockey', 'soccer', 'trophy'
+        ]
+    },
+    {
+        category: 'Home Objects',
+        words: [
+            'basket', 'carpet', 'mirror', 'pillow', 'window'
+        ]
+    },
+    {
+        category: 'Plants and Garden',
+        words: [
+            'branch', 'cedar', 'clover', 'garden', 'maple', 'petal', 'plant', 'willow'
+        ]
+    },
+    {
+        category: 'Character Traits',
+        words: [
+            'brave', 'calm', 'caring', 'clever', 'honest', 'loyal'
+        ]
+    },
+    {
+        category: 'Technology',
+        words: [
+            'laptop', 'screen', 'signal', 'tablet'
+        ]
+    }
+];
+
+const WORD_LIBRARY_HARD_READER_SECTIONS = [
+    {
+        category: 'Math',
+        words: [
+            'axis', 'proof', 'factor', 'matrix', 'radius', 'vector', 'volume'
+        ]
+    },
+    {
+        category: 'Science',
+        words: [
+            'mass', 'method', 'sample', 'theory', 'enzyme', 'fusion', 'neuron'
+        ]
+    },
+    {
+        category: 'Language Arts',
+        words: [
+            'cause', 'clause', 'genre', 'irony', 'motif', 'prose', 'style', 'thesis', 'tone', 'voice'
+        ]
+    },
+    {
+        category: 'Coding and Logic',
+        words: [
+            'code', 'data', 'logic', 'scope', 'debug', 'input', 'binary', 'branch', 'memory', 'module', 'output', 'script', 'syntax'
+        ]
+    },
+    {
+        category: 'Technology',
+        words: [
+            'driver', 'packet', 'sensor', 'server', 'system', 'upload'
+        ]
+    },
+    {
+        category: 'Physics and Motion',
+        words: [
+            'force', 'impact', 'motion', 'phase', 'strain', 'torque'
+        ]
+    },
+    {
+        category: 'Government',
+        words: [
+            'bias', 'ballot', 'policy', 'public', 'rights', 'senate'
+        ]
+    },
+    {
+        category: 'History',
+        words: [
+            'colony', 'empire', 'period', 'reform', 'relic', 'treaty'
+        ]
+    },
+    {
+        category: 'Geography',
+        words: [
+            'border', 'delta', 'globe', 'harbor', 'region', 'tundra'
+        ]
+    },
+    {
+        category: 'Business and Money',
+        words: [
+            'asset', 'budget', 'income', 'market', 'price', 'profit', 'trend', 'value'
+        ]
+    },
+    {
+        category: 'Materials and Chemistry',
+        words: [
+            'alloy', 'cobalt', 'copper', 'helium', 'iodine', 'nickel'
+        ]
+    },
+    {
+        category: 'Engineering',
+        words: [
+            'bridge', 'design', 'device', 'engine', 'switch', 'wrench'
+        ]
+    },
+    {
+        category: 'Music Performance',
+        words: [
+            'chord', 'octave', 'pitch', 'scale', 'tempo'
+        ]
+    },
+    {
+        category: 'Space',
+        words: [
+            'crater', 'galaxy', 'meteor', 'orbit', 'quasar', 'rocket'
+        ]
+    },
+    {
+        category: 'Architecture',
+        words: [
+            'draft', 'form', 'model', 'sketch'
+        ]
+    }
+];
+
+const WORD_LIBRARY_EXTREME_READER_SECTIONS = [
+    {
+        category: 'Government',
+        words: [
+            'ethic', 'moral', 'policy', 'debate', 'equity', 'justice', 'liberty'
+        ]
+    },
+    {
+        category: 'Language Arts',
+        words: [
+            'valid', 'aspect', 'concept', 'analyze', 'complex', 'context', 'abstract', 'language', 'critical', 'rhetoric'
+        ]
+    },
+    {
+        category: 'Science',
+        words: [
+            'phase', 'theory', 'impact', 'science', 'research', 'dynamic', 'process', 'pattern'
+        ]
+    },
+    {
+        category: 'Physics and Motion',
+        words: [
+            'phase', 'impact', 'energy', 'kinetic', 'momentum'
+        ]
+    },
+    {
+        category: 'Business and Money',
+        words: [
+            'trend', 'strategy', 'outcome', 'insight', 'forecast', 'pattern'
+        ]
+    }
+];
+
 const WORD_LIBRARY_CLUE_TEMPLATES = {
     'Animals': [
         'A land animal you might study in wildlife science.',
@@ -626,6 +1004,120 @@ function normalizeWordLibraryWord(rawWord) {
     return rawWord.trim().replace(/[^a-z]/gi, '').toUpperCase();
 }
 
+const WORD_LIBRARY_EASY_SAFE_WORDS = (() => {
+    const safeWords = new Set();
+
+    WORD_LIBRARY_EARLY_READER_SECTIONS.forEach((section) => {
+        section.words.forEach((word) => {
+            const normalizedWord = normalizeWordLibraryWord(word);
+            if (normalizedWord) {
+                safeWords.add(normalizedWord);
+            }
+        });
+    });
+
+    return safeWords;
+})();
+
+const WORD_LIBRARY_MEDIUM_SAFE_WORDS = (() => {
+    const safeWords = new Set();
+
+    WORD_LIBRARY_MIDDLE_READER_SECTIONS.forEach((section) => {
+        section.words.forEach((word) => {
+            const normalizedWord = normalizeWordLibraryWord(word);
+            if (normalizedWord) {
+                safeWords.add(normalizedWord);
+            }
+        });
+    });
+
+    return safeWords;
+})();
+
+const WORD_LIBRARY_HARD_SAFE_WORDS = (() => {
+    const safeWords = new Set();
+
+    WORD_LIBRARY_HARD_READER_SECTIONS.forEach((section) => {
+        section.words.forEach((word) => {
+            const normalizedWord = normalizeWordLibraryWord(word);
+            if (normalizedWord) {
+                safeWords.add(normalizedWord);
+            }
+        });
+    });
+
+    return safeWords;
+})();
+
+const WORD_LIBRARY_EXTREME_SAFE_WORDS = (() => {
+    const safeWords = new Set();
+
+    WORD_LIBRARY_EXTREME_READER_SECTIONS.forEach((section) => {
+        section.words.forEach((word) => {
+            const normalizedWord = normalizeWordLibraryWord(word);
+            if (normalizedWord) {
+                safeWords.add(normalizedWord);
+            }
+        });
+    });
+
+    return safeWords;
+})();
+
+const WORD_LIBRARY_EASY_SAFE_CATEGORIES = new Set(
+    WORD_LIBRARY_EARLY_READER_SECTIONS.map((section) => section.category)
+);
+
+const WORD_LIBRARY_MEDIUM_SAFE_CATEGORIES = new Set(
+    WORD_LIBRARY_MIDDLE_READER_SECTIONS.map((section) => section.category)
+);
+
+const WORD_LIBRARY_HARD_SAFE_CATEGORIES = new Set(
+    WORD_LIBRARY_HARD_READER_SECTIONS.map((section) => section.category)
+);
+
+const WORD_LIBRARY_EXTREME_SAFE_CATEGORIES = new Set(
+    WORD_LIBRARY_EXTREME_READER_SECTIONS.map((section) => section.category)
+);
+
+function isWordLibraryEasySafe(word, category) {
+    const normalizedWord = normalizeWordLibraryWord(word);
+    return WORD_LIBRARY_EASY_SAFE_CATEGORIES.has(category)
+        && WORD_LIBRARY_EASY_SAFE_WORDS.has(normalizedWord)
+        && normalizedWord.length >= 3
+        && normalizedWord.length <= 5;
+}
+
+function isWordLibraryMediumSafe(word, category) {
+    const normalizedWord = normalizeWordLibraryWord(word);
+    return !isWordLibraryEasySafe(normalizedWord, category)
+        && WORD_LIBRARY_MEDIUM_SAFE_CATEGORIES.has(category)
+        && WORD_LIBRARY_MEDIUM_SAFE_WORDS.has(normalizedWord)
+        && normalizedWord.length >= 4
+        && normalizedWord.length <= 6;
+}
+
+function isWordLibraryHardSafe(word, category) {
+    const normalizedWord = normalizeWordLibraryWord(word);
+    return !isWordLibraryEasySafe(normalizedWord, category)
+        && !isWordLibraryMediumSafe(normalizedWord, category)
+        && !isWordLibraryExtremeSafe(normalizedWord, category)
+        && WORD_LIBRARY_HARD_SAFE_CATEGORIES.has(category)
+        && WORD_LIBRARY_HARD_SAFE_WORDS.has(normalizedWord)
+        && normalizedWord.length >= 4
+        && normalizedWord.length <= 6;
+}
+
+function isWordLibraryExtremeSafe(word, category) {
+    const normalizedWord = normalizeWordLibraryWord(word);
+    return !isWordLibraryEasySafe(normalizedWord, category)
+        && !isWordLibraryMediumSafe(normalizedWord, category)
+        && WORD_LIBRARY_EXTREME_SAFE_CATEGORIES.has(category)
+        && WORD_LIBRARY_EXTREME_SAFE_WORDS.has(normalizedWord)
+        && normalizedWord.length >= 5
+        && normalizedWord.length <= 8;
+}
+
 function countWordLibraryVowelGroups(word) {
     const matches = word.match(/[AEIOUY]+/g);
     return matches ? matches.length : 0;
@@ -676,20 +1168,28 @@ function classifyWordLibraryDifficulty(word, category) {
     const complexityScore = calculateWordLibraryComplexityScore(word);
     const difficultyGroup = getWordLibraryDifficultyGroup(category);
 
+    if (isWordLibraryEasySafe(word, category)) {
+        return 'easy';
+    }
+
+    if (isWordLibraryMediumSafe(word, category)) {
+        return 'medium';
+    }
+
+    if (isWordLibraryExtremeSafe(word, category)) {
+        return 'extreme';
+    }
+
+    if (isWordLibraryHardSafe(word, category)) {
+        return 'hard';
+    }
+
     if (difficultyGroup === 'earlyConcrete') {
-        if (complexityScore <= 5.4) return 'easy';
         if (complexityScore <= 7.9) return 'medium';
         return 'hard';
     }
 
     if (difficultyGroup === 'foundational') {
-        if (
-            WORD_LIBRARY_CATEGORY_GROUPS.foundationalEasyCategories.has(category)
-            && complexityScore <= 5.5
-        ) {
-            return 'easy';
-        }
-
         if (complexityScore <= 6.8) return 'medium';
         return 'hard';
     }
@@ -727,21 +1227,30 @@ const WORD_LIBRARY_INDEX = (() => {
     const records = [];
     let runningId = 0;
 
-    [...WORD_LIBRARY_SECTIONS, ...WORD_LIBRARY_EXPANSION_SECTIONS].forEach((section) => {
+    [...WORD_LIBRARY_SECTIONS, ...WORD_LIBRARY_EXPANSION_SECTIONS, ...WORD_LIBRARY_EARLY_READER_SECTIONS, ...WORD_LIBRARY_MIDDLE_READER_SECTIONS, ...WORD_LIBRARY_HARD_READER_SECTIONS, ...WORD_LIBRARY_EXTREME_READER_SECTIONS].forEach((section) => {
         section.words.forEach((rawWord, index) => {
             const normalizedWord = normalizeWordLibraryWord(rawWord);
-            if (!normalizedWord || normalizedWord.length < 4) return;
+            const minimumWordLength = isWordLibraryEasySafe(normalizedWord, section.category) ? 3 : 4;
+            if (!normalizedWord || normalizedWord.length < minimumWordLength) return;
             if (seenWords.has(normalizedWord)) return;
 
             seenWords.add(normalizedWord);
             const complexityScore = calculateWordLibraryComplexityScore(normalizedWord);
             const difficulty = classifyWordLibraryDifficulty(normalizedWord, section.category);
+            const isEarlyReaderSafe = isWordLibraryEasySafe(normalizedWord, section.category);
+            const isMediumReaderSafe = isWordLibraryMediumSafe(normalizedWord, section.category);
+            const isHardReaderSafe = isWordLibraryHardSafe(normalizedWord, section.category);
+            const isExtremeReaderSafe = isWordLibraryExtremeSafe(normalizedWord, section.category);
             records.push({
                 id: `word-puzzle-${runningId + 1}`,
                 word: normalizedWord,
                 category: section.category,
                 tracks: resolveTrackIdsForCategory(section.category),
                 difficulty,
+                isEarlyReaderSafe,
+                isMediumReaderSafe,
+                isHardReaderSafe,
+                isExtremeReaderSafe,
                 complexityScore,
                 gradeBandLabel: WORD_LIBRARY_DIFFICULTY_GRADE_BANDS[difficulty] || null,
                 clue: buildWordLibraryClue(normalizedWord, section.category, index),

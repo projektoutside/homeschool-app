@@ -17,6 +17,7 @@ class GameController {
         this.countdownTimer = null;
         this.feedbackHideTimeout = null;
         this.correctAnswerFxTimeout = null;
+        this.incorrectAnswerFxTimeout = null;
         this.userContextChangeHandler = () => {
             this.loadSettings();
             if (window.musicController && typeof window.musicController.loadSoundSettings === 'function') {
@@ -135,6 +136,21 @@ class GameController {
         const correctAnswerFx = document.getElementById('correctAnswerFx');
         if (correctAnswerFx) {
             correctAnswerFx.style.display = 'none';
+        }
+
+        const incorrectAnswerFx = document.getElementById('incorrectAnswerFx');
+        if (incorrectAnswerFx) {
+            incorrectAnswerFx.style.display = 'none';
+        }
+
+        if (this.correctAnswerFxTimeout) {
+            clearTimeout(this.correctAnswerFxTimeout);
+            this.correctAnswerFxTimeout = null;
+        }
+
+        if (this.incorrectAnswerFxTimeout) {
+            clearTimeout(this.incorrectAnswerFxTimeout);
+            this.incorrectAnswerFxTimeout = null;
         }
 
         // Start main menu music when returning to main menu
@@ -670,8 +686,12 @@ class GameController {
         const correctAnswerFxEl = document.getElementById('correctAnswerFx');
         const correctAnswerTextEl = document.getElementById('correctAnswerText');
         const correctAnswerPointsEl = document.getElementById('correctAnswerPoints');
+        const incorrectAnswerFxEl = document.getElementById('incorrectAnswerFx');
+        const incorrectAnswerTextEl = document.getElementById('incorrectAnswerText');
+        const incorrectAnswerWordEl = document.getElementById('incorrectAnswerWord');
 
         const scoreGain = options && options.scoreGain ? options.scoreGain : null;
+        const incorrectAnswerFx = options && options.incorrectAnswerFx ? options.incorrectAnswerFx : null;
 
         if (scoreGain && correctAnswerFxEl && correctAnswerTextEl && correctAnswerPointsEl) {
             const oldScore = Number(scoreGain.oldScore || 0);
@@ -759,6 +779,92 @@ class GameController {
                 correctAnswerFxEl.style.display = 'none';
                 this.correctAnswerFxTimeout = null;
             }, 1240);
+
+            return;
+        }
+
+        if (incorrectAnswerFx && incorrectAnswerFxEl && incorrectAnswerTextEl && incorrectAnswerWordEl) {
+            if (this.feedbackHideTimeout) {
+                clearTimeout(this.feedbackHideTimeout);
+                this.feedbackHideTimeout = null;
+            }
+
+            if (this.correctAnswerFxTimeout) {
+                clearTimeout(this.correctAnswerFxTimeout);
+                this.correctAnswerFxTimeout = null;
+            }
+
+            if (this.incorrectAnswerFxTimeout) {
+                clearTimeout(this.incorrectAnswerFxTimeout);
+                this.incorrectAnswerFxTimeout = null;
+            }
+
+            if (overlay && actionsEl && actionsEl.style.display === 'none') {
+                overlay.style.display = 'none';
+            }
+
+            const incorrectWord = incorrectAnswerFx.word || incorrectAnswerFx.title || 'ANSWER';
+            const incorrectRevealText = typeof incorrectAnswerFx.revealText === 'string'
+                ? incorrectAnswerFx.revealText.trim()
+                : '';
+            const showRevealLine = incorrectRevealText.length > 0;
+
+            incorrectAnswerTextEl.textContent = incorrectWord;
+            incorrectAnswerWordEl.textContent = incorrectRevealText;
+            incorrectAnswerWordEl.style.display = showRevealLine ? 'block' : 'none';
+            incorrectAnswerFxEl.style.display = 'flex';
+
+            if (typeof anime !== 'undefined') {
+                anime.remove([incorrectAnswerFxEl, incorrectAnswerTextEl, incorrectAnswerWordEl]);
+
+                anime({
+                    targets: incorrectAnswerFxEl,
+                    opacity: [0, 1],
+                    duration: 160,
+                    easing: 'easeOutQuad'
+                });
+
+                anime({
+                    targets: incorrectAnswerTextEl,
+                    opacity: [0, 1],
+                    scale: [0.72, 1.12, 1],
+                    translateY: [12, 0],
+                    duration: 360,
+                    easing: 'easeOutBack'
+                });
+
+                if (showRevealLine) {
+                    anime({
+                        targets: incorrectAnswerWordEl,
+                        opacity: [0, 1],
+                        scale: [0.84, 1.06, 1],
+                        translateY: [14, 0],
+                        delay: 160,
+                        duration: 360,
+                        easing: 'easeOutBack'
+                    });
+                }
+
+                anime({
+                    targets: incorrectAnswerFxEl,
+                    opacity: [1, 0],
+                    delay: incorrectAnswerFx.durationMs || 1120,
+                    duration: 260,
+                    easing: 'easeInQuad'
+                });
+            } else {
+                incorrectAnswerFxEl.style.opacity = '1';
+                incorrectAnswerTextEl.style.opacity = '1';
+                incorrectAnswerWordEl.style.opacity = showRevealLine ? '1' : '';
+            }
+
+            this.incorrectAnswerFxTimeout = setTimeout(() => {
+                incorrectAnswerFxEl.style.display = 'none';
+                incorrectAnswerFxEl.style.opacity = '';
+                incorrectAnswerTextEl.style.opacity = '';
+                incorrectAnswerWordEl.style.opacity = '';
+                this.incorrectAnswerFxTimeout = null;
+            }, (incorrectAnswerFx.durationMs || 1120) + 280);
 
             return;
         }
@@ -855,14 +961,29 @@ class GameController {
             this.correctAnswerFxTimeout = null;
         }
 
+        if (this.incorrectAnswerFxTimeout) {
+            clearTimeout(this.incorrectAnswerFxTimeout);
+            this.incorrectAnswerFxTimeout = null;
+        }
+
         const overlay = document.getElementById('feedbackOverlay');
         const scoreSequenceEl = document.getElementById('feedbackScoreSequence');
         const correctAnswerFxEl = document.getElementById('correctAnswerFx');
         const correctAnswerTextEl = document.getElementById('correctAnswerText');
         const correctAnswerPointsEl = document.getElementById('correctAnswerPoints');
+        const incorrectAnswerFxEl = document.getElementById('incorrectAnswerFx');
+        const incorrectAnswerTextEl = document.getElementById('incorrectAnswerText');
+        const incorrectAnswerWordEl = document.getElementById('incorrectAnswerWord');
 
         if (typeof anime !== 'undefined') {
-            anime.remove([correctAnswerFxEl, correctAnswerTextEl, correctAnswerPointsEl]);
+            anime.remove([
+                correctAnswerFxEl,
+                correctAnswerTextEl,
+                correctAnswerPointsEl,
+                incorrectAnswerFxEl,
+                incorrectAnswerTextEl,
+                incorrectAnswerWordEl
+            ]);
         }
 
         if (overlay) {
@@ -874,6 +995,22 @@ class GameController {
         if (correctAnswerFxEl) {
             correctAnswerFxEl.style.display = 'none';
             correctAnswerFxEl.style.opacity = '';
+        }
+
+        if (incorrectAnswerFxEl) {
+            incorrectAnswerFxEl.style.display = 'none';
+            incorrectAnswerFxEl.style.opacity = '';
+        }
+
+        if (incorrectAnswerTextEl) {
+            incorrectAnswerTextEl.textContent = 'APPLE';
+            incorrectAnswerTextEl.style.opacity = '';
+        }
+
+        if (incorrectAnswerWordEl) {
+            incorrectAnswerWordEl.textContent = '';
+            incorrectAnswerWordEl.style.display = 'none';
+            incorrectAnswerWordEl.style.opacity = '';
         }
     }
 

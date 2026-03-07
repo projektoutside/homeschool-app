@@ -1080,8 +1080,14 @@ class WordGameController {
     }
 
     handleIncorrect() {
-        this.showFeedback(false, 'Incorrect! New puzzle incoming...', '❌');
-        this.scheduleNextQuestion(820);
+        const correctWord = (this.currentEquation?.word || '').toUpperCase();
+        this.showFeedback(false, 'Incorrect! New puzzle incoming...', '❌', {
+            incorrectAnswerFx: {
+                word: correctWord || 'ANSWER',
+                durationMs: 1120
+            }
+        });
+        this.scheduleNextQuestion(1420);
     }
 
     showFeedback(success, msg, icon, options = null) {
