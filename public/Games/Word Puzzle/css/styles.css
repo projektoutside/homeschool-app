@@ -63,6 +63,7 @@ body {
   margin: var(--ui-rhythm-gap) auto 0;
   width: min(98vw, 900px);
   position: relative;
+  transition: padding 0.22s ease, gap 0.22s ease, width 0.22s ease;
 }
 
 .game-info {
@@ -77,6 +78,7 @@ body {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  transition: transform 0.22s ease, gap 0.22s ease;
 }
 
 .gameplay-top-actions {
@@ -85,6 +87,7 @@ body {
   gap: 0.5rem;
   position: relative;
   z-index: 2;
+  transition: gap 0.22s ease, transform 0.22s ease;
 }
 
 .top-action-button {
@@ -200,6 +203,7 @@ body {
   white-space: nowrap;
   pointer-events: none;
   z-index: 3;
+  transition: transform 0.22s ease, font-size 0.22s ease;
 }
 
 .point-mode-badge {
@@ -2133,4 +2137,53 @@ body.word-puzzle-gold-rush #currentProblemPoints {
   text-shadow:
     0 0 12px rgba(255, 222, 127, 0.6),
     0 0 20px rgba(255, 178, 67, 0.34);
+}
+
+@media screen and (orientation: portrait) {
+  .game-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "info"
+      "actions"
+      "points";
+    align-items: stretch;
+    justify-items: stretch;
+    gap: 0.5rem;
+    padding: 0.5rem 0.72rem 0.65rem;
+  }
+
+  .game-info {
+    grid-area: info;
+    position: static;
+    left: auto;
+    transform: none;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .gameplay-top-actions {
+    grid-area: actions;
+    width: 100%;
+    justify-content: center;
+    gap: 0.65rem;
+  }
+
+  .gameplay-top-actions .top-action-button {
+    flex: 1 1 0;
+    min-height: 2.5rem;
+    max-width: 11rem;
+  }
+
+  .header-problem-points {
+    grid-area: points;
+    position: static;
+    justify-self: center;
+    justify-content: center;
+    width: 100%;
+    font-size: clamp(0.88rem, 3.8vw, 1rem);
+    text-align: center;
+    white-space: normal;
+    transform: none;
+  }
 }
