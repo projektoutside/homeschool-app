@@ -7782,6 +7782,15 @@
             angularStiffness: 8.25,
             angularDamping: 3.85
         });
+        const MYSTERY_DEVICE_TILT_CONFIG = Object.freeze({
+            maxRollDeg: 26,
+            maxPitchDeg: 22,
+            motionSmoothing: 10.5,
+            gravityInfluence: 0.52,
+            torqueInfluence: 1.18,
+            pitchInfluence: 0.11,
+            idleTimeoutMs: 720
+        });
         const MYSTERY_SIGN_SLINGSHOT_CONFIG = Object.freeze({
             minPullPx: 34,
             maxPullPx: 180,
@@ -7829,6 +7838,20 @@
             height: 0,
             textFitWidth: 0,
             textFitHeight: 0
+        };
+        const mysteryDeviceTilt = {
+            supported: Boolean(typeof window.DeviceOrientationEvent !== 'undefined'),
+            permission: 'unknown',
+            listening: false,
+            active: false,
+            needsCalibration: true,
+            rawRollDeg: 0,
+            rawPitchDeg: 0,
+            rollDeg: 0,
+            pitchDeg: 0,
+            baselineRollDeg: 0,
+            baselinePitchDeg: 0,
+            lastSampleAt: 0
         };
         let mysterySignLayerRevealDone = false;
         let mysterySignLayerRevealFallbackTimer = null;
@@ -14206,6 +14229,166 @@
             mysteryScroll3D.renderer.render(mysteryScroll3D.scene, mysteryScroll3D.camera);
         }
 
+        function getMysteryDeviceTiltScreenAngle() {
+            const orientationAngle = window.screen?.orientation?.angle;
+            if (Number.isFinite(orientationAngle)) {
+                return orientationAngle;
+            }
+            const legacyAngle = window.orientation;
+            return Number.isFinite(legacyAngle) ? legacyAngle : 0;
+        }
+
+        function normalizeMysteryDeviceTilt(beta, gamma) {
+            if (!Number.isFinite(beta) || !Number.isFinite(gamma)) {
+                return null;
+            }
+
+            const angleRad = THREE.MathUtils.degToRad(getMysteryDeviceTiltScreenAngle());
+            const rollDeg = gamma * Math.cos(angleRad) + beta * Math.sin(angleRad);
+            const pitchDeg = beta * Math.cos(angleRad) - gamma * Math.sin(angleRad);
+            if (!Number.isFinite(rollDeg) || !Number.isFinite(pitchDeg)) {
+                return null;
+            }
+
+            return { rollDeg, pitchDeg };
+        }
+
+        function resetMysteryDeviceTiltCalibration() {
+            mysteryDeviceTilt.needsCalibration = true;
+            mysteryDeviceTilt.active = false;
+            mysteryDeviceTilt.rawRollDeg = 0;
+            mysteryDeviceTilt.rawPitchDeg = 0;
+            mysteryDeviceTilt.rollDeg = 0;
+            mysteryDeviceTilt.pitchDeg = 0;
+            mysteryDeviceTilt.lastSampleAt = 0;
+        }
+
+        function handleMysteryDeviceOrientation(event) {
+            const normalizedTilt = normalizeMysteryDeviceTilt(event?.beta, event?.gamma);
+            if (!normalizedTilt) {
+                return;
+            }
+
+            if (mysteryDeviceTilt.needsCalibration) {
+                mysteryDeviceTilt.baselineRollDeg = normalizedTilt.rollDeg;
+                mysteryDeviceTilt.baselinePitchDeg = normalizedTilt.pitchDeg;
+                mysteryDeviceTilt.needsCalibration = false;
+            }
+
+            mysteryDeviceTilt.rawRollDeg = normalizedTilt.rollDeg;
+            mysteryDeviceTilt.rawPitchDeg = normalizedTilt.pitchDeg;
+            mysteryDeviceTilt.active = true;
+            mysteryDeviceTilt.lastSampleAt = performance.now();
+        }
+
+        function startMysteryDeviceTiltTracking() {
+            if (!mysteryDeviceTilt.supported || mysteryDeviceTilt.listening) {
+                return;
+            }
+            window.addEventListener('deviceorientation', handleMysteryDeviceOrientation, { passive: true });
+            mysteryDeviceTilt.listening = true;
+            mysteryDeviceTilt.permission = 'granted';
+            resetMysteryDeviceTiltCalibration();
+        }
+
+        async function ensureMysteryDeviceTiltPermission({ userGesture = false } = {}) {
+            if (!mysteryDeviceTilt.supported) {
+                mysteryDeviceTilt.permission = 'unsupported';
+                return false;
+            }
+            if (!window.isSecureContext) {
+                mysteryDeviceTilt.permission = 'blocked';
+                return false;
+            }
+            if (mysteryDeviceTilt.permission === 'denied') {
+                return false;
+            }
+            if (mysteryDeviceTilt.listening) {
+                return true;
+            }
+
+            const deviceOrientationCtor = window.DeviceOrientationEvent;
+            const requestPermission = deviceOrientationCtor?.requestPermission;
+            if (typeof requestPermission === 'function') {
+                if (!userGesture) {
+                    mysteryDeviceTilt.permission = 'prompt';
+                    return false;
+                }
+                try {
+                    const result = await requestPermission.call(deviceOrientationCtor);
+                    mysteryDeviceTilt.permission = result === 'granted' ? 'granted' : 'denied';
+                } catch (_) {
+                    mysteryDeviceTilt.permission = 'denied';
+                    return false;
+                }
+            } else {
+                mysteryDeviceTilt.permission = 'granted';
+            }
+
+            if (mysteryDeviceTilt.permission !== 'granted') {
+                return false;
+            }
+
+            startMysteryDeviceTiltTracking();
+            return true;
+        }
+
+        function shouldApplyMysteryDeviceTilt() {
+            if (!mysteryDeviceTilt.supported || mysteryDeviceTilt.permission !== 'granted') {
+                return false;
+            }
+            const hasRecentSample =
+                mysteryDeviceTilt.lastSampleAt > 0 &&
+                (performance.now() - mysteryDeviceTilt.lastSampleAt) <= MYSTERY_DEVICE_TILT_CONFIG.idleTimeoutMs;
+            if (!hasRecentSample || mysteryDeviceTilt.needsCalibration) {
+                return false;
+            }
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return false;
+            }
+            if (mysterySignSlingshotState.active || mysterySignSlingshotState.phase !== 'idle') {
+                return false;
+            }
+            if (document.body.classList.contains('inventory-open')) {
+                return false;
+            }
+            return (performance.now() - mysteryDeviceTilt.lastSampleAt) <= MYSTERY_DEVICE_TILT_CONFIG.idleTimeoutMs;
+        }
+
+        function sampleMysteryDeviceTilt(dt) {
+            const safeDt = Number.isFinite(dt) && dt > 0 ? dt : (1 / 60);
+            let targetRollDeg = 0;
+            let targetPitchDeg = 0;
+            const hasRecentSample =
+                mysteryDeviceTilt.lastSampleAt > 0 &&
+                (performance.now() - mysteryDeviceTilt.lastSampleAt) <= MYSTERY_DEVICE_TILT_CONFIG.idleTimeoutMs;
+            if (!hasRecentSample) {
+                mysteryDeviceTilt.active = false;
+            }
+
+            if (shouldApplyMysteryDeviceTilt()) {
+                targetRollDeg = THREE.MathUtils.clamp(
+                    mysteryDeviceTilt.rawRollDeg - mysteryDeviceTilt.baselineRollDeg,
+                    -MYSTERY_DEVICE_TILT_CONFIG.maxRollDeg,
+                    MYSTERY_DEVICE_TILT_CONFIG.maxRollDeg
+                );
+                targetPitchDeg = THREE.MathUtils.clamp(
+                    mysteryDeviceTilt.rawPitchDeg - mysteryDeviceTilt.baselinePitchDeg,
+                    -MYSTERY_DEVICE_TILT_CONFIG.maxPitchDeg,
+                    MYSTERY_DEVICE_TILT_CONFIG.maxPitchDeg
+                );
+            }
+
+            const followAlpha = 1 - Math.exp(-MYSTERY_DEVICE_TILT_CONFIG.motionSmoothing * safeDt);
+            mysteryDeviceTilt.rollDeg += (targetRollDeg - mysteryDeviceTilt.rollDeg) * followAlpha;
+            mysteryDeviceTilt.pitchDeg += (targetPitchDeg - mysteryDeviceTilt.pitchDeg) * followAlpha;
+
+            return {
+                rollRad: THREE.MathUtils.degToRad(mysteryDeviceTilt.rollDeg),
+                pitchRad: THREE.MathUtils.degToRad(mysteryDeviceTilt.pitchDeg)
+            };
+        }
+
         function buildMysteryHangingSignPath(points) {
             if (!points || points.length === 0) return '';
             let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
@@ -14383,6 +14566,7 @@
             const nodes = mysteryHangingSign.nodes;
             const prevNodes = mysteryHangingSign.prevNodes;
             const segmentCount = MYSTERY_HANGING_SIGN_CONFIG.segmentCount;
+            const deviceTilt = sampleMysteryDeviceTilt(stepDt);
 
             const windBase =
                 Math.sin(t * 0.42 + 0.4) * 0.66 +
@@ -14390,7 +14574,14 @@
                 Math.sin(t * 2.2 + 0.9) * 0.08;
             const gustCarrier = Math.max(0, Math.sin(t * 0.15 - 0.52));
             const gust = gustCarrier * gustCarrier * MYSTERY_HANGING_SIGN_CONFIG.windGustForce;
-            const lateralAcceleration = windBase * MYSTERY_HANGING_SIGN_CONFIG.windLateralForce + gust;
+            const tiltLateralAcceleration =
+                Math.sin(deviceTilt.rollRad) *
+                MYSTERY_HANGING_SIGN_CONFIG.gravity *
+                MYSTERY_DEVICE_TILT_CONFIG.gravityInfluence;
+            const lateralAcceleration =
+                windBase * MYSTERY_HANGING_SIGN_CONFIG.windLateralForce +
+                gust +
+                tiltLateralAcceleration;
 
             const damping = Math.pow(MYSTERY_HANGING_SIGN_CONFIG.damping, stepDt * 60);
             const gravityStep = MYSTERY_HANGING_SIGN_CONFIG.gravity * stepDt * stepDt;
@@ -14444,10 +14635,11 @@
             const neck = nodes[segmentCount - 1] || tip;
             const ropeLean = Math.atan2(tip.x - neck.x, tip.y - neck.y);
             const windTorque = (lateralAcceleration / Math.max(1, MYSTERY_HANGING_SIGN_CONFIG.windLateralForce)) * 0.35;
+            const tiltTorque = deviceTilt.rollRad * MYSTERY_DEVICE_TILT_CONFIG.torqueInfluence;
             const gravityTorque = -Math.sin(mysteryHangingSign.angle) * 7.05;
             const alignmentTorque = (ropeLean * 0.92 - mysteryHangingSign.angle) * MYSTERY_HANGING_SIGN_CONFIG.angularStiffness;
             const dampingTorque = -mysteryHangingSign.angularVelocity * MYSTERY_HANGING_SIGN_CONFIG.angularDamping;
-            const angularAcceleration = gravityTorque + alignmentTorque + dampingTorque + windTorque;
+            const angularAcceleration = gravityTorque + alignmentTorque + dampingTorque + windTorque + tiltTorque;
             mysteryHangingSign.angularVelocity += angularAcceleration * stepDt;
             mysteryHangingSign.angularVelocity = THREE.MathUtils.clamp(mysteryHangingSign.angularVelocity, -2.4, 2.4);
             mysteryHangingSign.angle += mysteryHangingSign.angularVelocity * stepDt;
@@ -14455,7 +14647,8 @@
 
             const depthTarget = THREE.MathUtils.clamp(
                 ((tip.y - neck.y) - mysteryHangingSign.segmentLength) * -0.052 +
-                (tip.x - prevNodes[segmentCount].x) * 0.016,
+                (tip.x - prevNodes[segmentCount].x) * 0.016 -
+                Math.sin(deviceTilt.pitchRad) * MYSTERY_DEVICE_TILT_CONFIG.pitchInfluence,
                 -0.16,
                 0.12
             );
@@ -14521,7 +14714,7 @@
             updateCursorFromClientPoint(touch.clientX, touch.clientY);
         }, { passive: true });
 
-        window.addEventListener('pointerdown', (e) => {
+        window.addEventListener('pointerdown', async (e) => {
             if (e.target && e.target.closest && e.target.closest('#ui-overlay')) return;
             if (e.target && e.target.closest && (e.target.closest('#prop-preview-panel') || e.target.closest('#prop-preview-overlay'))) return;
             if (
@@ -14529,6 +14722,18 @@
                 isPointOnMysteryScrollSign(e.clientX, e.clientY) &&
                 Number.isFinite(e.pointerId)
             ) {
+                const needsPermissionTap =
+                    mysteryDeviceTilt.permission !== 'denied' &&
+                    !mysteryDeviceTilt.listening &&
+                    typeof window.DeviceOrientationEvent?.requestPermission === 'function';
+                if (needsPermissionTap) {
+                    const permissionGranted = await ensureMysteryDeviceTiltPermission({ userGesture: true });
+                    if (!permissionGranted) {
+                        return;
+                    }
+                    // Reserve the first scroll tap for the sensor permission flow on platforms like iOS.
+                    return;
+                }
                 e.preventDefault();
                 if (beginMysterySignSlingshot(e.pointerId, e.clientY)) {
                     return;
@@ -15342,6 +15547,7 @@
             scheduleResponsiveLayout();
         }, { passive: true });
         window.addEventListener('orientationchange', () => {
+            resetMysteryDeviceTiltCalibration();
             scheduleResponsiveLayout({ afterPaint: true });
             if (orientationSettleTimer) {
                 window.clearTimeout(orientationSettleTimer);
@@ -15360,6 +15566,7 @@
         initMysteryScroll3D();
         layoutMysteryHangingSign(true);
         applyResponsiveLayout();
+        void ensureMysteryDeviceTiltPermission();
         initHomePageMusicController();
         initBackgroundMediaController();
         scheduleStartupFadeDismiss();

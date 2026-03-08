@@ -30,3 +30,25 @@ Original prompt: when the box lands onto the bottom screen, can you have it kind
 - Validation:
   - Playwright client run completed after patch with no new console errors (existing preload warning only).
   - Manual interaction check: inventory open/close flow still works.
+- Follow-up prompt: make the hanging mystery scroll react to device tilt so it moves with realistic weight when the user tilts their phone/tablet.
+- Research notes:
+  - Device orientation/motion is secure-context only and iOS-style permission requests must be made from a user gesture.
+  - Because HomepageAPP is embedded in an iframe, the iframe needs `accelerometer` and `gyroscope` in its `allow` attribute so sensor access is not blocked.
+  - Screen-orientation normalization is required so portrait and landscape tilt feel correct instead of swapping axes.
+- Implementation:
+  - Updated the outer homepage iframe allowlist to include `accelerometer` and `gyroscope`.
+  - Bumped the homepage cache/version stamp to `2026-03-08-1` in the React shell so the new inner-page code refreshes reliably.
+  - Added device-orientation permission/bootstrap logic in `public/HomePageAPP/index.html` with secure-context guarding, iOS permission handling, and recalibration on orientation change.
+  - Added screen-space tilt normalization using current screen orientation before feeding values into the hanging-sign solver.
+  - Added smoothed device-tilt input into the existing mystery sign physics as extra lateral gravity, angular torque, and depth pitch instead of replacing the current rope/wind simulation.
+- Validation:
+  - `npm run build` completed successfully after the change.
+  - Playwright smoke run against `http://127.0.0.1:5173/HomePageAPP/index.html` loaded the page and produced a clean screenshot; only console issue was the existing `favicon.ico` 404.
+  - Synthetic `DeviceOrientationEvent` dispatch in Playwright changed the mystery sign position/transform (`left` shifted from about `411px` to `446px` during a `gamma: 24` tilt sample), confirming the tilt path is live.
+- Review/fix:
+  - Code review flagged a regression where the iOS motion permission prompt could appear on unrelated taps because permission priming ran at the top of the global `pointerdown` handler.
+  - Fixed by gating permission priming to taps on the mystery scroll only, and reserving that first scroll tap for the permission flow on platforms that require `DeviceOrientationEvent.requestPermission()`.
+  - Added a guard so denying motion access does not block normal mystery scroll interaction afterward.
+- Validation after fix:
+  - `npm run lint` passed.
+  - `npm run build` passed.

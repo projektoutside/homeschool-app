@@ -6,7 +6,7 @@ import './Home.css';
 import './UserHomePage.css';
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-03-05-3';
+const HOME_PAGE_APP_VERSION = '2026-03-08-1';
 
 interface UserHomePageProps {
   isActive: boolean;
@@ -60,7 +60,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
           src={launchPath}
           title="Homepage App"
           className={`user-home-app-frame ${isLoading ? 'is-loading' : ''}`}
-          allow="fullscreen; autoplay; microphone; camera"
+          allow="fullscreen; autoplay; microphone; camera; accelerometer; gyroscope"
           allowFullScreen
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
           onLoad={handleLoad}
