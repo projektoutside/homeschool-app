@@ -249,6 +249,17 @@
         <!-- Clock Panel -->
         <section id="clock-panel">
             <div class="clock-wrapper">
+                <div id="clock-scene" class="clock-scene" aria-hidden="true">
+                    <div class="clock-scene__orb"></div>
+                    <div class="clock-scene__stars"></div>
+                    <div class="clock-scene__cloud clock-scene__cloud--one"></div>
+                    <div class="clock-scene__cloud clock-scene__cloud--two"></div>
+                    <div class="clock-scene__cloud clock-scene__cloud--three"></div>
+                    <div class="clock-scene__ridge clock-scene__ridge--back"></div>
+                    <div class="clock-scene__ridge clock-scene__ridge--front"></div>
+                    <div class="clock-scene__mist"></div>
+                </div>
+
                 <div class="clock-corner-controls">
                     <button id="mobile-shop-toggle" class="clock-corner-btn shop-btn" aria-label="Open Shop">
                         <span class="icon">🏪</span>
@@ -308,8 +319,8 @@
                     </svg>
                 </div>
 
-                <div class="clock-status">
-                    <span id="clock-status">Ready?</span>
+                <div class="clock-status is-hidden" aria-live="polite">
+                    <span id="clock-status"></span>
                 </div>
             </div>
         </section>

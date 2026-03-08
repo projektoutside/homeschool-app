@@ -813,6 +813,7 @@ class DOMManager {
             // AM/PM Panel elements (Level 6+)
             ampmPanel: document.getElementById('ampm-panel'),
             ampmIndicator: document.getElementById('ampm-indicator'),
+            clockScene: document.getElementById('clock-scene'),
 
             // Start menu elements
             startMenu: document.getElementById('start-menu'),
@@ -893,6 +894,7 @@ class DOMManager {
 
         const optionalElements = [
             'settingsBtn', 'settingsModal', 'saveSettingsBtn', 'resetSettingsBtn', 'soundToggle',
+            'clockScene',
             'quickSettingsToggle', 'quickSettingsPanel', 'quickSoundToggleBtn', 'quickMainMenuBtn', 'quickExitGameBtn'
         ];
 
@@ -1195,29 +1197,18 @@ class DOMManager {
     }
 
     updateClockStatus(text) {
-        this.safeUpdate('clockStatus', el => el.textContent = text);
-
-        // Add randomness debugging info in debug mode
-        if (GAME_CONFIG.DEBUG && window.analogClockGame) {
-            const stats = window.analogClockGame.gameState?.getRandomnessStats();
-            if (stats) {
-                const debugInfo = ` (Q:${stats.sessionQuestionsCount})`;
-                this.safeUpdate('clockStatus', el => {
-                    if (!el.textContent.includes('(Q:')) {
-                        el.textContent += debugInfo;
-                    }
-                });
+        const nextText = typeof text === 'string' ? text.trim() : '';
+        this.safeUpdate('clockStatus', el => {
+            el.textContent = nextText;
+            const statusContainer = el.closest('.clock-status');
+            if (statusContainer) {
+                statusContainer.classList.toggle('is-hidden', nextText.length === 0);
             }
-        }
+        });
     }
 
     updateClockStatusWithLevel(gameState) {
-        if (gameState && gameState.isGameActive) {
-            const level = gameState.getCurrentLevel();
-            this.updateClockStatus(`Level ${level.id}: ${level.name}`);
-        } else {
-            this.updateClockStatus('Welcome! 🕐');
-        }
+        this.updateClockStatus('');
     }
 
     showAMPMPanel() {
@@ -1232,11 +1223,114 @@ class DOMManager {
             el.classList.add('hidden');
             el.classList.remove('visible');
         });
+        this.clearClockScene();
     }
 
     updateAMPMIndicator(isAM) {
         this.safeUpdate('ampmIndicator', el => {
+            if (typeof isAM === 'string') {
+                el.textContent = isAM;
+                return;
+            }
             el.textContent = isAM ? 'Morning' : 'Afternoon';
+        });
+    }
+
+    clearClockScene() {
+        this.safeUpdate('clockScene', el => {
+            el.classList.remove('is-visible');
+            el.removeAttribute('data-scene');
+            [
+                '--scene-orb-x',
+                '--scene-orb-y',
+                '--scene-orb-size',
+                '--scene-star-opacity',
+                '--scene-cloud-opacity',
+                '--scene-mist-opacity'
+            ].forEach(property => el.style.removeProperty(property));
+        });
+    }
+
+    resolveTimeOfDayScene(timeData, level) {
+        if (!level || !level.hasAMPM || !timeData) {
+            return null;
+        }
+
+        const minuteFraction = (timeData.minutes || 0) / 60 + (timeData.seconds || 0) / 3600;
+        const hour24 = ((timeData.hours % 12) + (timeData.isAM ? 0 : 12)) % 24 + minuteFraction;
+
+        if (hour24 < 5) {
+            const phase = hour24 / 5;
+            return {
+                scene: 'night',
+                label: 'Night',
+                orbX: `${80 - (phase * 14)}%`,
+                orbY: `${18 + (phase * 24)}%`,
+                orbSize: `${92 - (phase * 8)}px`,
+                starOpacity: 0.98,
+                cloudOpacity: 0.22,
+                mistOpacity: 0.24
+            };
+        }
+
+        if (hour24 < 12) {
+            const phase = (hour24 - 5) / 7;
+            return {
+                scene: 'sunrise',
+                label: 'Morning',
+                orbX: `${12 + (phase * 18)}%`,
+                orbY: `${82 - (phase * 58)}%`,
+                orbSize: `${96 + (phase * 24)}px`,
+                starOpacity: Math.max(0, 0.28 - (phase * 0.28)),
+                cloudOpacity: 0.76,
+                mistOpacity: 0.42
+            };
+        }
+
+        if (hour24 < 20.5) {
+            const phase = (hour24 - 12) / 8.5;
+            return {
+                scene: 'sunset',
+                label: hour24 < 17.5 ? 'Afternoon' : 'Evening',
+                orbX: `${80 - (phase * 16)}%`,
+                orbY: `${28 + (phase * 48)}%`,
+                orbSize: `${112 - (phase * 20)}px`,
+                starOpacity: Math.max(0, (phase - 0.58) * 1.1),
+                cloudOpacity: 0.68,
+                mistOpacity: 0.5
+            };
+        }
+
+        const phase = (hour24 - 20.5) / 3.5;
+        return {
+            scene: 'night',
+            label: 'Night',
+            orbX: `${72 + (phase * 12)}%`,
+            orbY: `${18 + (phase * 18)}%`,
+            orbSize: `${80 - (phase * 6)}px`,
+            starOpacity: 1,
+            cloudOpacity: 0.18,
+            mistOpacity: 0.2
+        };
+    }
+
+    updateTimeOfDayPresentation(timeData, level) {
+        const sceneData = this.resolveTimeOfDayScene(timeData, level);
+        if (!sceneData) {
+            this.clearClockScene();
+            return;
+        }
+
+        this.updateAMPMIndicator(sceneData.label);
+        this.safeUpdate('clockScene', el => {
+            el.dataset.scene = sceneData.scene;
+            el.classList.add('is-visible');
+            el.style.setProperty('--scene-orb-x', sceneData.orbX);
+            el.style.setProperty('--scene-orb-y', sceneData.orbY);
+            el.style.setProperty('--scene-orb-size', sceneData.orbSize);
+            el.style.setProperty('--scene-star-opacity', sceneData.starOpacity.toFixed(2));
+            el.style.setProperty('--scene-cloud-opacity', sceneData.cloudOpacity.toFixed(2));
+            el.style.setProperty('--scene-mist-opacity', sceneData.mistOpacity.toFixed(2));
         });
     }
 
@@ -1872,7 +1966,7 @@ class PerfectClockBuilder {
 
         // Calculate precise angles
         const normalizedHours = hours % 12;
-        const hourAngle = (normalizedHours * 30) + (minutes * 0.5) + (seconds * 0.00833) - 90; // Hour hand moves gradually with minutes and seconds
+        const hourAngle = (normalizedHours * 30) + (minutes * 0.5) + (seconds / 120) - 90; // Hour hand moves gradually with minutes and seconds
         const minuteAngle = (minutes * 6) + (seconds * 0.1) - 90; // Minute hand moves gradually with seconds
         const secondsAngle = seconds * 6 - 90; // Seconds hand: each second = 6 degrees
 
@@ -1888,6 +1982,17 @@ class PerfectClockBuilder {
         return true;
     }
 
+    setHandEndpoint(hand, length, angle) {
+        const radians = angle * Math.PI / 180;
+        const x = VISUAL_CONFIG.CENTER_X + length * Math.cos(radians);
+        const y = VISUAL_CONFIG.CENTER_Y + length * Math.sin(radians);
+
+        hand.setAttribute('x1', VISUAL_CONFIG.CENTER_X.toString());
+        hand.setAttribute('y1', VISUAL_CONFIG.CENTER_Y.toString());
+        hand.setAttribute('x2', x.toFixed(2));
+        hand.setAttribute('y2', y.toFixed(2));
+    }
+
     updateHourHand(angle) {
         if (!this.hourHand) {
             GameUtils.error('Hour hand not available for update');
@@ -1895,14 +2000,7 @@ class PerfectClockBuilder {
         }
 
         try {
-            const length = VISUAL_CONFIG.HOUR_HAND_LENGTH;
-            const x = VISUAL_CONFIG.CENTER_X + length * Math.cos(angle * Math.PI / 180);
-            const y = VISUAL_CONFIG.CENTER_Y + length * Math.sin(angle * Math.PI / 180);
-
-            this.hourHand.setAttribute('x1', VISUAL_CONFIG.CENTER_X);
-            this.hourHand.setAttribute('y1', VISUAL_CONFIG.CENTER_Y);
-            this.hourHand.setAttribute('x2', Math.round(x));
-            this.hourHand.setAttribute('y2', Math.round(y));
+            this.setHandEndpoint(this.hourHand, VISUAL_CONFIG.HOUR_HAND_LENGTH, angle);
         } catch (error) {
             GameUtils.error('Error updating hour hand:', error);
         }
@@ -1915,14 +2013,7 @@ class PerfectClockBuilder {
         }
 
         try {
-            const length = VISUAL_CONFIG.MINUTE_HAND_LENGTH;
-            const x = VISUAL_CONFIG.CENTER_X + length * Math.cos(angle * Math.PI / 180);
-            const y = VISUAL_CONFIG.CENTER_Y + length * Math.sin(angle * Math.PI / 180);
-
-            this.minuteHand.setAttribute('x1', VISUAL_CONFIG.CENTER_X);
-            this.minuteHand.setAttribute('y1', VISUAL_CONFIG.CENTER_Y);
-            this.minuteHand.setAttribute('x2', Math.round(x));
-            this.minuteHand.setAttribute('y2', Math.round(y));
+            this.setHandEndpoint(this.minuteHand, VISUAL_CONFIG.MINUTE_HAND_LENGTH, angle);
 
             GameUtils.log(`Minute hand updated to angle: ${angle + 90}°`);
         } catch (error) {
@@ -1937,14 +2028,7 @@ class PerfectClockBuilder {
         }
 
         try {
-            const length = VISUAL_CONFIG.SECONDS_HAND_LENGTH;
-            const x = VISUAL_CONFIG.CENTER_X + length * Math.cos(angle * Math.PI / 180);
-            const y = VISUAL_CONFIG.CENTER_Y + length * Math.sin(angle * Math.PI / 180);
-
-            this.secondsHand.setAttribute('x1', VISUAL_CONFIG.CENTER_X);
-            this.secondsHand.setAttribute('y1', VISUAL_CONFIG.CENTER_Y);
-            this.secondsHand.setAttribute('x2', Math.round(x));
-            this.secondsHand.setAttribute('y2', Math.round(y));
+            this.setHandEndpoint(this.secondsHand, VISUAL_CONFIG.SECONDS_HAND_LENGTH, angle);
 
             GameUtils.log(`Seconds hand updated to angle: ${angle + 90}°`);
         } catch (error) {
@@ -1975,9 +2059,36 @@ class PerfectClockBuilder {
         }, 1000);
     }
 
-    // LEVEL 7 VALIDATION: Test minute hand accuracy with seconds precision
+    validateHandPosition(handId, angle, length, label, maxTolerance = 0.75) {
+        const hand = document.getElementById(handId);
+        if (!hand) {
+            GameUtils.error(`❌ FAILED: ${label} hand element not found`);
+            return { passed: false };
+        }
+
+        const actualX = parseFloat(hand.getAttribute('x2'));
+        const actualY = parseFloat(hand.getAttribute('y2'));
+        const radians = angle * Math.PI / 180;
+        const expectedX = VISUAL_CONFIG.CENTER_X + length * Math.cos(radians);
+        const expectedY = VISUAL_CONFIG.CENTER_Y + length * Math.sin(radians);
+        const xError = Math.abs(actualX - expectedX);
+        const yError = Math.abs(actualY - expectedY);
+        const passed = xError <= maxTolerance && yError <= maxTolerance;
+
+        GameUtils.log(`  📍 ${label} expected: (${expectedX.toFixed(2)}, ${expectedY.toFixed(2)})`);
+        GameUtils.log(`  📍 ${label} actual: (${actualX.toFixed(2)}, ${actualY.toFixed(2)})`);
+        GameUtils.log(`  📏 ${label} error: X=${xError.toFixed(2)}px, Y=${yError.toFixed(2)}px`);
+
+        if (!passed) {
+            GameUtils.error(`  ❌ FAILED: ${label} hand position exceeds tolerance (${maxTolerance}px max)`);
+        }
+
+        return { passed, actualX, actualY, expectedX, expectedY, xError, yError };
+    }
+
+    // LEVEL 7 VALIDATION: Test minute and seconds hand accuracy with seconds precision
     validateLevel7MinuteHand() {
-        GameUtils.log('🔍 STARTING LEVEL 7 MINUTE HAND VALIDATION');
+        GameUtils.log('🔍 STARTING LEVEL 7 CLOCK-HAND VALIDATION');
 
         const criticalTestCases = [
             // Edge cases with high seconds (should push minute hand closer to next minute)
@@ -2011,69 +2122,43 @@ class PerfectClockBuilder {
 
             GameUtils.log(`\n📋 Test ${index + 1}: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - ${desc}`);
 
-            // Calculate expected minute hand angle
             const expectedMinuteAngle = (m * 6) + (s * 0.1) - 90;
-            const expectedDegrees = expectedMinuteAngle + 90; // Convert back to clock degrees
+            const expectedSecondsAngle = (s * 6) - 90;
+            const expectedDegrees = expectedMinuteAngle + 90;
 
-            // Update clock hands
             const success = this.updateClockHands(h, m, s);
-
             if (!success) {
                 GameUtils.error(`❌ FAILED: Could not update clock hands for test ${index + 1}`);
                 failedTests++;
                 return;
             }
 
-            // Validate SVG coordinates
-            const minuteHand = document.getElementById('minute-hand');
-            if (!minuteHand) {
-                GameUtils.error(`❌ FAILED: Minute hand element not found for test ${index + 1}`);
-                failedTests++;
-                return;
-            }
+            const minuteValidation = this.validateHandPosition(
+                'minute-hand',
+                expectedMinuteAngle,
+                VISUAL_CONFIG.MINUTE_HAND_LENGTH,
+                'Minute'
+            );
+            const secondsValidation = this.validateHandPosition(
+                'seconds-hand',
+                expectedSecondsAngle,
+                VISUAL_CONFIG.SECONDS_HAND_LENGTH,
+                'Seconds'
+            );
 
-            // Get actual coordinates
-            const actualX = parseFloat(minuteHand.getAttribute('x2'));
-            const actualY = parseFloat(minuteHand.getAttribute('y2'));
-
-            // Calculate expected coordinates
-            const length = VISUAL_CONFIG.MINUTE_HAND_LENGTH;
-            const expectedX = VISUAL_CONFIG.CENTER_X + length * Math.cos(expectedMinuteAngle * Math.PI / 180);
-            const expectedY = VISUAL_CONFIG.CENTER_Y + length * Math.sin(expectedMinuteAngle * Math.PI / 180);
-
-            // Account for rounding
-            const roundedExpectedX = Math.round(expectedX);
-            const roundedExpectedY = Math.round(expectedY);
-
-            // Check accuracy (allow 1 pixel tolerance for rounding)
-            const xError = Math.abs(actualX - roundedExpectedX);
-            const yError = Math.abs(actualY - roundedExpectedY);
-            const maxTolerance = 1;
-
-            const isAccurate = xError <= maxTolerance && yError <= maxTolerance;
-
-            // Calculate minute hand position for human understanding
-            const minutePosition = (expectedDegrees / 6); // Convert degrees to minute position
+            const minutePosition = (expectedDegrees / 6);
             const wholeMinutes = Math.floor(minutePosition);
-            const fractionPastMinute = (minutePosition - wholeMinutes) * 60; // Seconds equivalent
+            const fractionPastMinute = (minutePosition - wholeMinutes) * 60;
 
-            GameUtils.log(`  📐 Expected angle: ${expectedDegrees.toFixed(2)}° (minute ${wholeMinutes} + ${fractionPastMinute.toFixed(1)}s)`);
-            GameUtils.log(`  📍 Expected coords: (${roundedExpectedX}, ${roundedExpectedY})`);
-            GameUtils.log(`  📍 Actual coords: (${actualX}, ${actualY})`);
-            GameUtils.log(`  📏 Error: X=${xError.toFixed(2)}px, Y=${yError.toFixed(2)}px`);
+            GameUtils.log(`  📐 Expected minute angle: ${expectedDegrees.toFixed(2)}° (minute ${wholeMinutes} + ${fractionPastMinute.toFixed(1)}s)`);
 
-            if (isAccurate) {
-                GameUtils.log(`  ✅ PASSED: Minute hand position is accurate`);
+            if (minuteValidation.passed && secondsValidation.passed) {
+                GameUtils.log(`  ✅ PASSED: Minute and seconds hands are accurate`);
                 passedTests++;
             } else {
-                GameUtils.error(`  ❌ FAILED: Minute hand position exceeds tolerance`);
-                GameUtils.error(`    Expected: (${roundedExpectedX}, ${roundedExpectedY})`);
-                GameUtils.error(`    Actual: (${actualX}, ${actualY})`);
-                GameUtils.error(`    Error: X=${xError}px, Y=${yError}px (max: ${maxTolerance}px)`);
                 failedTests++;
             }
 
-            // Additional validation: Check answer key format
             const level7Config = GAME_CONFIG.LEVELS.find(level => level.id === 7);
             if (level7Config) {
                 const timeData = { hours: h, minutes: m, seconds: s, isAM: true };
@@ -2094,19 +2179,17 @@ class PerfectClockBuilder {
             }
         });
 
-        // Final validation report
         GameUtils.log(`\n🎯 LEVEL 7 VALIDATION SUMMARY:`);
         GameUtils.log(`✅ Passed tests: ${passedTests}`);
         GameUtils.log(`❌ Failed tests: ${failedTests}`);
         GameUtils.log(`📊 Success rate: ${((passedTests / (passedTests + failedTests)) * 100).toFixed(1)}%`);
 
         if (failedTests === 0) {
-            GameUtils.log(`🏆 ALL TESTS PASSED! Level 7 minute hand accuracy is 100%`);
+            GameUtils.log(`🏆 ALL TESTS PASSED! Level 7 clock-hand accuracy is 100%`);
         } else {
             GameUtils.error(`⚠️  ${failedTests} test(s) failed. Manual inspection recommended.`);
         }
 
-        // Reset clock to neutral position
         this.updateClockHands(12, 0, 0);
 
         return failedTests === 0;
@@ -2227,7 +2310,7 @@ class PerfectGameLogic {
         // Show/hide AM/PM panel for levels 6+
         if (level.hasAMPM) {
             this.domManager.showAMPMPanel();
-            this.domManager.updateAMPMIndicator(this.gameState.isAM);
+            this.domManager.updateTimeOfDayPresentation(this.gameState.currentTime, level);
         } else {
             this.domManager.hideAMPMPanel();
         }
@@ -2499,6 +2582,15 @@ class PerfectGameLogic {
 
         // Hard guarantee: exactly one correct answer + four unique options.
         options = this.enforceUniqueSingleCorrectAnswer(options, correctOption, timeData, level, usedOptions);
+        const optionIntegrity = {
+            total: options.length,
+            unique: new Set(options).size,
+            correctCount: options.filter(option => option === correctOption).length
+        };
+        if (optionIntegrity.total !== 4 || optionIntegrity.unique !== 4 || optionIntegrity.correctCount !== 1) {
+            GameUtils.warn('Repairing answer options after integrity check failed', optionIntegrity);
+            options = this.buildGuaranteedOptionSet(correctOption, timeData, level);
+        }
 
         // Enhanced shuffle using crypto random if available
         const shuffledOptions = this.enhancedShuffle(options, randomnessManager);
@@ -2955,7 +3047,7 @@ class PerfectGameLogic {
         for (const offset of safetyOffsets) {
             if (sanitized.length >= 4) break;
             const candidateTime = this.offsetTimeData(timeData, offset, level);
-            const candidate = this.formatTime(candidateTime, level);
+            const candidate = this.formatCandidateForLevel(candidateTime, level, timeData);
             if (candidate !== correctOption && !seenAll.has(candidate)) {
                 sanitized.push(candidate);
                 seenAll.add(candidate);
@@ -2965,6 +3057,59 @@ class PerfectGameLogic {
         // Always return exactly 4, with exactly one correct answer.
         const clippedIncorrect = sanitized.filter(option => option !== correctOption).slice(0, 3);
         return [correctOption, ...clippedIncorrect];
+    }
+
+    formatCandidateForLevel(candidateTimeData, level, baseTimeData) {
+        const normalizedCandidate = this.normalizeTimeForLevel(candidateTimeData, level, baseTimeData);
+        return this.formatTime(normalizedCandidate, level);
+    }
+
+    buildGuaranteedOptionSet(correctOption, timeData, level) {
+        const guaranteedIncorrect = [];
+        const seenOptions = new Set([correctOption]);
+
+        const addCandidate = (candidateTimeData) => {
+            const candidate = this.formatCandidateForLevel(candidateTimeData, level, timeData);
+            if (!candidate || candidate === correctOption || seenOptions.has(candidate)) {
+                return false;
+            }
+
+            guaranteedIncorrect.push(candidate);
+            seenOptions.add(candidate);
+            return guaranteedIncorrect.length >= 3;
+        };
+
+        const priorityOffsets = level.hasSeconds
+            ? [1, -1, 2, -2, 5, -5, 10, -10, 15, -15, 30, -30, 60, -60, 300, -300, 1800, -1800, 3600, -3600]
+            : [60, -60, 300, -300, 600, -600, 900, -900, 1800, -1800, 3600, -3600, 7200, -7200];
+
+        for (const offset of priorityOffsets) {
+            if (addCandidate(this.offsetTimeData(timeData, offset, level))) {
+                return [correctOption, ...guaranteedIncorrect];
+            }
+        }
+
+        if (level.hasAMPM && addCandidate({ ...timeData, isAM: !timeData.isAM })) {
+            return [correctOption, ...guaranteedIncorrect];
+        }
+
+        const minuteValues = this.getAllowedMinutesForLevel(level) || Array.from({ length: 60 }, (_, index) => index);
+        const secondValues = level.hasSeconds ? Array.from({ length: 60 }, (_, index) => index) : [0];
+        const meridiemValues = level.hasAMPM ? [timeData.isAM, !timeData.isAM] : [timeData.isAM];
+
+        for (const isAM of meridiemValues) {
+            for (let hour = 1; hour <= 12; hour++) {
+                for (const minute of minuteValues) {
+                    for (const second of secondValues) {
+                        if (addCandidate({ hours: hour, minutes: minute, seconds: second, isAM })) {
+                            return [correctOption, ...guaranteedIncorrect];
+                        }
+                    }
+                }
+            }
+        }
+
+        return [correctOption, ...guaranteedIncorrect];
     }
 
     generateEnhancedIncorrectOption(baseTimeData, level, usedOptions) {
@@ -3147,7 +3292,7 @@ class PerfectGameLogic {
         // Return random variation or fallback
         if (variations.length > 0) {
             const selectedVariation = variations[Math.floor(Math.random() * variations.length)];
-            return this.formatTime(selectedVariation, level);
+            return this.formatCandidateForLevel(selectedVariation, level, baseTimeData);
         }
 
         return this.generateIncorrectOption(baseTimeData, level);
@@ -3193,12 +3338,12 @@ class PerfectGameLogic {
             randomSeconds = randomnessManager.generateCryptographicRandom(0, 59);
         }
 
-        return this.formatTime({
+        return this.formatCandidateForLevel({
             hours: randomHour,
             minutes: randomMinutes,
             seconds: randomSeconds,
             isAM: isAM
-        }, level);
+        }, level, baseTimeData);
     }
 
     generatePaddingOption(baseTimeData, level, usedOptions) {
@@ -3213,19 +3358,19 @@ class PerfectGameLogic {
                 isAM: level.hasAMPM ? Math.random() < 0.5 : true
             };
 
-            const formatted = this.formatTime(paddingTime, level);
+            const formatted = this.formatCandidateForLevel(paddingTime, level, baseTimeData);
             if (!usedOptions.has(formatted)) {
                 return formatted;
             }
         }
 
         // Absolute fallback
-        return this.formatTime({
+        return this.formatCandidateForLevel({
             hours: 6,
             minutes: 0,
             seconds: 0,
             isAM: true
-        }, level);
+        }, level, baseTimeData);
     }
 
     enhancedShuffle(array, randomnessManager) {
