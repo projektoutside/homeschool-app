@@ -331,103 +331,85 @@ const WORD_LIBRARY_EARLY_READER_SECTIONS = [
     {
         category: 'Animals',
         words: [
-            'ant', 'bee', 'cat', 'dog', 'fox', 'frog', 'goat', 'hen', 'lamb', 'pig'
+            'ant', 'bee', 'cat', 'cow', 'dog', 'fox', 'hen', 'pig', 'ram', 'yak'
         ]
     },
     {
         category: 'Ocean Life',
         words: [
-            'clam', 'crab', 'fish', 'seal', 'shark', 'shell', 'whale'
+            'cod', 'eel', 'koi', 'ray'
         ]
     },
     {
         category: 'Birds',
         words: [
-            'bird', 'crow', 'dove', 'owl', 'robin', 'swan'
+            'emu', 'jay', 'owl'
+        ]
+    },
+    {
+        category: 'Colors',
+        words: [
+            'red', 'tan'
         ]
     },
     {
         category: 'Food',
         words: [
-            'bean', 'bread', 'cake', 'corn', 'egg', 'juice', 'milk', 'pizza', 'rice', 'soup', 'toast'
+            'bun', 'egg', 'ham', 'jam', 'pie', 'tea'
         ]
     },
     {
         category: 'Fruits and Vegetables',
         words: [
-            'apple', 'berry', 'grape', 'lemon', 'melon', 'peach', 'pear', 'plum'
+            'fig', 'pea', 'yam'
         ]
     },
     {
         category: 'Nature',
         words: [
-            'grass', 'leaf', 'light', 'moon', 'sky', 'sun', 'tree', 'water'
+            'log', 'mud', 'sea', 'sky', 'sun'
         ]
     },
     {
         category: 'Weather',
         words: [
-            'fog', 'snow'
-        ]
-    },
-    {
-        category: 'School',
-        words: [
-            'book', 'chalk', 'class', 'desk', 'paper', 'pen', 'ruler'
-        ]
-    },
-    {
-        category: 'Language Arts',
-        words: [
-            'read', 'story', 'word'
-        ]
-    },
-    {
-        category: 'Math',
-        words: [
-            'add', 'count', 'shape'
+            'dew', 'fog', 'ice'
         ]
     },
     {
         category: 'Home Objects',
         words: [
-            'bed', 'bowl', 'chair', 'clock', 'cup', 'door', 'floor', 'hat', 'house', 'lamp', 'plate', 'spoon', 'table'
+            'bed', 'box', 'cup', 'hat', 'jar', 'key', 'pan', 'pot', 'rug'
         ]
     },
     {
         category: 'Plants and Garden',
         words: [
-            'daisy', 'green', 'moss', 'rose', 'seed', 'tulip', 'vine'
+            'bud', 'elm', 'fir', 'ivy', 'oak'
         ]
     },
     {
         category: 'Transportation',
         words: [
-            'bike', 'boat', 'bus', 'car', 'plane', 'van', 'wagon'
+            'bus', 'car', 'van'
         ]
     },
     {
         category: 'Sports',
         words: [
-            'ball', 'game', 'kick', 'race', 'swing'
+            'bat', 'run', 'ski'
         ]
     },
     {
         category: 'Human Body',
         words: [
-            'arm', 'chin', 'ear', 'face', 'foot', 'hand', 'knee', 'leg', 'mouth', 'nose', 'tooth'
-        ]
-    },
-    {
-        category: 'Health',
-        words: [
-            'brush', 'clean', 'rest', 'sleep', 'smile', 'soap'
+            'arm', 'ear', 'eye', 'hip', 'jaw', 'leg', 'lip', 'toe'
         ]
     },
     {
         category: 'Arts and Music',
         words: [
-            'dance', 'drum', 'music', 'paint', 'piano', 'song'
+            'art', 'hum', 'tap'
         ]
     }
 ];
@@ -436,37 +418,43 @@ const WORD_LIBRARY_MIDDLE_READER_SECTIONS = [
     {
         category: 'Animals',
         words: [
-            'animal', 'beaver', 'camel', 'eagle', 'koala', 'llama', 'monkey', 'otter', 'panda', 'rabbit', 'zebra'
+            'frog', 'goat', 'lamb', 'animal', 'beaver', 'camel', 'eagle', 'koala', 'llama', 'monkey', 'otter', 'panda', 'rabbit', 'zebra'
         ]
     },
     {
         category: 'Ocean Life',
         words: [
-            'coral', 'salmon', 'shrimp', 'squid', 'trout', 'walrus'
+            'clam', 'crab', 'fish', 'seal', 'coral', 'salmon', 'shrimp', 'squid', 'trout', 'walrus'
         ]
     },
     {
         category: 'Birds',
         words: [
-            'crane', 'falcon', 'heron', 'stork', 'toucan'
+            'bird', 'crow', 'dove', 'swan', 'crane', 'falcon', 'heron', 'stork', 'toucan'
+        ]
+    },
+    {
+        category: 'Colors',
+        words: [
+            'blue', 'gold', 'gray', 'green', 'pink', 'white'
         ]
     },
     {
         category: 'Food',
         words: [
-            'cereal', 'cheese', 'cookie', 'muffin', 'omelet', 'pickle', 'yogurt'
+            'bread', 'cereal', 'cheese', 'cookie', 'juice', 'milk', 'muffin', 'omelet', 'pickle', 'toast', 'yogurt'
         ]
     },
     {
         category: 'Fruits and Vegetables',
         words: [
-            'banana', 'carrot', 'celery', 'cherry', 'grapes', 'orange', 'pepper'
+            'apple', 'banana', 'berry', 'carrot', 'celery', 'cherry', 'grape', 'grapes', 'lemon', 'melon', 'orange', 'peach', 'pear', 'pepper', 'plum'
         ]
     },
     {
         category: 'Nature',
         words: [
-            'cloud', 'flower', 'forest', 'meadow', 'rain', 'river', 'rock', 'stone', 'stream', 'valley'
+            'cloud', 'flower', 'forest', 'light', 'meadow', 'moon', 'rain', 'river', 'rock', 'stone', 'stream', 'tree', 'valley', 'water'
         ]
     },
     {
@@ -494,21 +482,27 @@ const WORD_LIBRARY_MIDDLE_READER_SECTIONS = [
         ]
     },
     {
+        category: 'Health',
+        words: [
+            'brush', 'clean', 'dental', 'health', 'rest', 'sleep', 'smile', 'soap'
+        ]
+    },
+    {
         category: 'School',
         words: [
-            'eraser', 'lesson', 'marker', 'pencil', 'recess', 'report', 'school'
+            'chalk', 'class', 'desk', 'eraser', 'lesson', 'marker', 'paper', 'pencil', 'recess', 'report', 'ruler', 'school', 'study'
         ]
     },
     {
         category: 'Language Arts',
         words: [
-            'author', 'poetry', 'prefix', 'reader', 'stanza', 'vowel'
+            'author', 'poetry', 'prefix', 'read', 'reader', 'stanza', 'story', 'vowel', 'word'
         ]
     },
     {
         category: 'Math',
         words: [
-            'angle', 'graph', 'minus', 'number', 'shape'
+            'angle', 'count', 'graph', 'minus', 'number', 'shape'
         ]
     },
     {
@@ -526,7 +520,7 @@ const WORD_LIBRARY_MIDDLE_READER_SECTIONS = [
     {
         category: 'Transportation',
         words: [
-            'ferry', 'ship', 'subway', 'taxi', 'train', 'truck'
+            'bike', 'boat', 'ferry', 'plane', 'ship', 'subway', 'taxi', 'train', 'truck', 'wagon'
         ]
     },
     {
@@ -544,25 +538,31 @@ const WORD_LIBRARY_MIDDLE_READER_SECTIONS = [
     {
         category: 'Arts and Music',
         words: [
-            'ballet', 'canvas', 'chorus', 'guitar', 'melody', 'piano', 'rhythm', 'violin'
+            'dance', 'drum', 'music', 'paint', 'ballet', 'canvas', 'chorus', 'guitar', 'melody', 'piano', 'rhythm', 'violin'
         ]
     },
     {
         category: 'Sports',
         words: [
-            'helmet', 'hiking', 'hockey', 'soccer', 'trophy'
+            'ball', 'game', 'helmet', 'hiking', 'hockey', 'kick', 'race', 'soccer', 'swing', 'trophy'
         ]
     },
     {
         category: 'Home Objects',
         words: [
-            'basket', 'carpet', 'mirror', 'pillow', 'window'
+            'book', 'bowl', 'basket', 'chair', 'carpet', 'clock', 'door', 'house', 'mirror', 'pillow', 'plate', 'spoon', 'table', 'window'
         ]
     },
     {
         category: 'Plants and Garden',
         words: [
-            'branch', 'cedar', 'clover', 'garden', 'maple', 'petal', 'plant', 'willow'
+            'branch', 'cedar', 'clover', 'daisy', 'garden', 'maple', 'moss', 'petal', 'plant', 'rose', 'seed', 'tulip', 'vine', 'willow'
+        ]
+    },
+    {
+        category: 'Farm Life',
+        words: [
+            'barn', 'farm', 'field', 'goat', 'horse', 'wheat'
         ]
     },
     {
@@ -705,168 +705,329 @@ const WORD_LIBRARY_EXTREME_READER_SECTIONS = [
     }
 ];
 
-const WORD_LIBRARY_CLUE_TEMPLATES = {
-    'Animals': [
-        'A land animal you might study in wildlife science.',
-        'A creature word from the animal kingdom.'
-    ],
-    'Ocean Life': [
-        'A sea creature or ocean life word.',
-        'A marine animal you might learn about in science.'
-    ],
-    'Birds': [
-        'A bird name from the natural world.',
-        'A feathered animal often seen in nature study.'
-    ],
-    'Food': [
-        'A food word connected to cooking or meals.',
-        'Something people might eat at breakfast, lunch, or dinner.'
-    ],
-    'Fruits and Vegetables': [
-        'A fruit or vegetable word connected to healthy eating.',
-        'A plant food often found in kitchens or gardens.'
-    ],
-    'Nature': [
-        'A word connected to the natural world outdoors.',
-        'A landform or nature word studied in earth science.'
-    ],
-    'Weather': [
-        'A weather word about what happens in the sky or air.',
-        'A term connected to storms, seasons, or forecasting.'
-    ],
-    'Space': [
-        'A word connected to space, planets, or stars.',
-        'A term you might hear during a lesson about the universe.'
-    ],
-    'Science': [
-        'A science word connected to experiments or the natural world.',
-        'A term often used in science class.'
-    ],
-    'Human Body': [
-        'A word for a body part or body system.',
-        'A human body term studied in health or science.'
-    ],
-    'Health': [
-        'A health word connected to caring for your body.',
-        'A wellness term about healthy habits.'
-    ],
-    'School': [
-        'A school word connected to learning tools or places.',
-        'A term you might use during a school day.'
-    ],
-    'Language Arts': [
-        'A reading or writing word from language arts.',
-        'A vocabulary term connected to words and sentences.'
-    ],
-    'Math': [
-        'A math word connected to numbers, shapes, or patterns.',
-        'A term you might learn in a math lesson.'
-    ],
-    'Geography': [
-        'A geography word connected to maps or places on Earth.',
-        'A social studies term about land, water, or regions.'
-    ],
-    'History': [
-        'A history word connected to people, places, or events from the past.',
-        'A social studies term from long ago.'
-    ],
-    'Government': [
-        'A civics word about rules, voting, or public leadership.',
-        'A government term used in citizenship lessons.'
-    ],
-    'Technology': [
-        'A technology word about computers or digital tools.',
-        'A term connected to devices, software, or the internet.'
-    ],
-    'Engineering': [
-        'An engineering word connected to building or machines.',
-        'A design and construction term.'
-    ],
-    'Arts and Music': [
-        'An arts or music word connected to performance or creativity.',
-        'A creative word used in art, theater, or music.'
-    ],
-    'Sports': [
-        'A sports word connected to games, movement, or teamwork.',
-        'An athletics term used in physical activity.'
-    ],
-    'Home Objects': [
-        'A household object you might find at home.',
-        'An everyday item used around the house.'
-    ],
-    'Plants and Garden': [
-        'A plant or garden word from the natural world.',
-        'A nature term connected to growing things.'
-    ],
-    'Character Traits': [
-        'A word that describes a positive trait or feeling.',
-        'A character-building word about how people act or think.'
-    ],
-    'Insects and Bugs': [
-        'A bug or insect word from nature study.',
-        'A small creature word connected to insects or bugs.'
-    ],
-    'Reptiles and Amphibians': [
-        'A reptile or amphibian word from animal science.',
-        'A cold-blooded animal word from nature learning.'
-    ],
-    'Transportation': [
-        'A transportation word about how people or goods travel.',
-        'A vehicle or travel word from everyday life.'
-    ],
-    'Community Helpers': [
-        'A job word for someone who helps a community.',
-        'A career or service word about helping people.'
-    ],
-    'Materials and Chemistry': [
-        'A material or chemistry word from science class.',
-        'A science term about substances, elements, or mixtures.'
-    ],
-    'Physics and Motion': [
-        'A physics word about movement, force, or energy.',
-        'A science term connected to motion or physical change.'
-    ],
-    'Coding and Logic': [
-        'A coding or computer-thinking word from technology.',
-        'A digital logic term used in computing.'
-    ],
-    'Ancient World': [
-        'A history word connected to ancient civilizations.',
-        'A word from long ago, often studied in world history.'
-    ],
-    'Environment': [
-        'An environment word about caring for Earth.',
-        'A science word about nature, ecosystems, or conservation.'
-    ],
-    'Architecture': [
-        'A building or structure word from architecture.',
-        'A design word connected to homes, buildings, or places.'
-    ],
-    'Business and Money': [
-        'A business or money word from everyday economics.',
-        'A financial word about saving, buying, or earning.'
-    ],
-    'Kitchen and Cooking': [
-        'A kitchen or cooking word from food preparation.',
-        'A household word used while cooking or baking.'
-    ],
-    'Music Performance': [
-        'A music performance word about playing or singing.',
-        'A performing arts term used in music.'
-    ],
-    'Travel and Places': [
-        'A travel word about journeys, destinations, or places.',
-        'A location or travel-planning word from real-world exploration.'
-    ],
-    'Celebrations': [
-        'A celebration word about parties, holidays, or special events.',
-        'A festive word connected to joyful gatherings.'
-    ],
-    'Farm Life': [
-        'A farm word about animals, crops, or country life.',
-        'A countryside vocabulary word from agriculture.'
-    ]
+const WORD_LIBRARY_CLUE_GUIDES = {
+    'Animals': {
+        easy: 'It is a living thing.',
+        default: 'This word is about a living creature.'
+    },
+    'Ocean Life': {
+        easy: 'It lives in water.',
+        default: 'This word is about life in water.'
+    },
+    'Birds': {
+        easy: 'It has feathers and wings.',
+        default: 'This word is about a feathered animal.'
+    },
+    'Colors': {
+        easy: 'You may see this in crayons or paint.',
+        default: 'This word is used for paint, clothes, or art.'
+    },
+    'Food': {
+        easy: 'You can eat or drink it.',
+        default: 'This word names food or a drink.'
+    },
+    'Fruits and Vegetables': {
+        easy: 'It is a fruit or vegetable.',
+        default: 'This word names a fruit or vegetable.'
+    },
+    'Nature': {
+        easy: 'You can see it outside.',
+        default: 'This word names something in nature.'
+    },
+    'Weather': {
+        easy: 'It is part of the weather.',
+        default: 'This word is about the weather.'
+    },
+    'Space': 'This word is about space.',
+    'Science': 'This word fits with experiments or how the world works.',
+    'Human Body': {
+        easy: 'It is part of your body.',
+        default: 'This word names part of the human body.'
+    },
+    'Health': 'This word is about staying healthy.',
+    'School': 'You may see this when people learn.',
+    'Language Arts': 'This word fits with books, reading, or writing.',
+    'Math': 'This is a math word.',
+    'Geography': 'This is a place or map word.',
+    'History': 'This word is about the past.',
+    'Government': 'This word is about rules or leaders.',
+    'Technology': 'This is a computer or device word.',
+    'Engineering': 'This is a building or machine word.',
+    'Arts and Music': {
+        easy: 'This word fits with drawing, songs, or instruments.',
+        default: 'This word fits with drawing, songs, or instruments.'
+    },
+    'Sports': {
+        easy: 'This word fits with games, teams, or exercise.',
+        default: 'This word fits with games, teams, or exercise.'
+    },
+    'Home Objects': {
+        easy: 'You can find this at home.',
+        default: 'This word names something used at home.'
+    },
+    'Plants and Garden': {
+        easy: 'It grows outside or in a garden.',
+        default: 'It grows outside or in a garden.'
+    },
+    'Character Traits': 'This tells how a person acts or feels.',
+    'Insects and Bugs': 'It is a bug or insect.',
+    'Reptiles and Amphibians': 'It is a reptile or amphibian.',
+    'Transportation': {
+        easy: 'It helps people go from place to place.',
+        default: 'It helps people go from place to place.'
+    },
+    'Community Helpers': 'This is a job that helps people.',
+    'Materials and Chemistry': 'This is a material or science word.',
+    'Physics and Motion': 'This word is about movement or energy.',
+    'Coding and Logic': 'This word is about coding or logic.',
+    'Ancient World': 'This word is about long ago.',
+    'Environment': 'This word is about Earth or nature.',
+    'Architecture': 'This is a building word.',
+    'Business and Money': 'This word fits with buying, selling, or saving.',
+    'Kitchen and Cooking': 'You use this in cooking.',
+    'Music Performance': 'This word fits with songs or instruments.',
+    'Travel and Places': 'This word fits with trips or different places.',
+    'Celebrations': 'You may see this at a party or special day.',
+    'Farm Life': {
+        easy: 'You may find this where animals and crops live.',
+        default: 'You may find this where animals and crops live.'
+    }
 };
+
+const WORD_LIBRARY_PRECISE_CLUE_OVERRIDES = {
+    ANT: 'It is a tiny bug that crawls on the ground.',
+    ARM: 'It helps you lift and carry things.',
+    ART: 'You make it by drawing, painting, or creating.',
+    BAT: 'You swing it to hit a ball.',
+    BED: 'You sleep on it.',
+    BEE: 'It is a buzzing insect that can make honey.',
+    BOX: 'You can put things inside it.',
+    BUD: 'It is a flower that has not opened yet.',
+    BUN: 'It is a small piece of bread.',
+    BUS: 'It carries many people on the road.',
+    CAR: 'People ride in it on the road.',
+    CAT: 'It is a pet that meows.',
+    COD: 'It is a fish that lives in the sea.',
+    COW: 'It is a farm animal that gives milk.',
+    CUP: 'You drink from it.',
+    DEW: 'It is water you may see on grass in the morning.',
+    DOG: 'It is a pet that barks.',
+    EAR: 'It helps you hear.',
+    EEL: 'It is a long fish that lives in water.',
+    EGG: 'You may eat it for breakfast.',
+    ELM: 'It is a kind of tree.',
+    EMU: 'It is a large bird that cannot fly well.',
+    EYE: 'It helps you see.',
+    FIG: 'It is a small fruit.',
+    FIR: 'It is a tree with needles.',
+    FOG: 'It is a thick cloud close to the ground.',
+    FOX: 'It is a wild animal with a bushy tail.',
+    HAM: 'It is a kind of meat.',
+    HAT: 'You wear it on your head.',
+    HEN: 'It is a farm bird that lays eggs.',
+    HIP: 'It is where your leg meets your body.',
+    HUM: 'You do this when you sing softly with your mouth closed.',
+    ICE: 'It is frozen water.',
+    IVY: 'It is a plant that can climb walls or trees.',
+    JAM: 'It is a sweet fruit spread.',
+    JAR: 'You can store food or small things in it.',
+    JAW: 'It helps you bite and chew.',
+    JAY: 'It is a bird with feathers and wings.',
+    KEY: 'You use it to open a lock.',
+    KOI: 'It is a fish often seen in a pond.',
+    LEG: 'It helps you stand and walk.',
+    LIP: 'It is on your mouth.',
+    LOG: 'It is a thick piece of a tree trunk.',
+    MUD: 'It is wet dirt.',
+    OAK: 'It is a strong kind of tree.',
+    OWL: 'It is a bird that is often awake at night.',
+    PAN: 'You cook food in it.',
+    PEA: 'It is a small green vegetable.',
+    PIE: 'It is a baked dessert with crust.',
+    PIG: 'It is a farm animal that likes mud.',
+    POT: 'You can cook food in it.',
+    RAM: 'It is a sheep with horns.',
+    RAY: 'It is a flat sea animal that swims in water.',
+    RED: 'It is a color you may see on a stop sign.',
+    RUG: 'You put it on the floor.',
+    RUN: 'You do this when you move fast on your feet.',
+    SEA: 'It is a large body of salt water.',
+    SKY: 'It is high above you outside.',
+    SKI: 'You use it to glide on snow.',
+    SUN: 'It shines in the sky during the day.',
+    TAN: 'It is a light brown color.',
+    TAP: 'You do this when you touch lightly or make a quick beat.',
+    TEA: 'It is a drink made with leaves in hot water.',
+    TOE: 'It is at the end of your foot.',
+    VAN: 'It is a road vehicle that can carry people or boxes.',
+    YAK: 'It is a large animal with long hair.',
+    YAM: 'It is a root vegetable you can cook and eat.',
+    ANIMAL: 'It is a living thing that can move and breathe.',
+    APPLE: 'It is a fruit that grows on a tree.',
+    BALL: 'You throw, catch, or kick it in games.',
+    BEDROOM: 'It is a room where people sleep.',
+    BIRD: 'It is an animal with feathers and wings.',
+    BLUE: 'It is the color of a clear sky.',
+    BOOK: 'You read it.',
+    BRAIN: 'It helps you think.',
+    CAMEL: 'It is a large animal that can travel in the desert.',
+    CARROT: 'It is a vegetable that grows in the ground.',
+    CLOUD: 'It floats in the sky.',
+    DRUM: 'You hit it to make music.',
+    EAGLE: 'It is a large bird that can fly high.',
+    FISH: 'It lives and swims in water.',
+    FLOWER: 'It grows on a plant and can bloom.',
+    GIRAFFE: 'It is a very tall animal with a long neck.',
+    GOLD: 'It is a shiny yellow color.',
+    GREEN: 'It is the color of grass and leaves.',
+    GUITAR: 'You play it by strumming the strings.',
+    HELMET: 'You wear it to protect your head.',
+    JUICE: 'It is a drink made from fruit.',
+    KOALA: 'It is an animal that lives in trees.',
+    MILK: 'It is a drink that often goes in cereal.',
+    MONKEY: 'It is an animal that can climb and swing.',
+    MUSIC: 'You hear it in songs and rhythms.',
+    ORANGE: 'It is a fruit with a peel you can remove.',
+    PANDA: 'It is a black and white bear.',
+    PENCIL: 'You write with it.',
+    PIANO: 'You play it by pressing keys.',
+    PINK: 'It is a light red color.',
+    PLANE: 'It flies in the sky.',
+    PLANT: 'It grows from the ground or in a pot.',
+    RABBIT: 'It is an animal with long ears that can hop.',
+    REDWOOD: 'It is a very tall tree.',
+    ROCK: 'It is a hard piece of stone.',
+    SCHOOL: 'People go there to learn.',
+    SHARK: 'It is a large fish with sharp teeth.',
+    SHIP: 'It travels on water.',
+    TABLE: 'You put things on it.',
+    TEACHER: 'This person helps students learn.',
+    TRAIN: 'It rides on tracks.',
+    TREE: 'It is a tall plant with a trunk.',
+    WATER: 'You drink it.',
+    WHALE: 'It is a very large animal that lives in the ocean.',
+    WHITE: 'It is the color of snow or milk.',
+    WORD: 'You can read it, write it, or say it.',
+    ZEBRA: 'It is an animal with black and white stripes.'
+};
+
+const WORD_LIBRARY_FACE_PARTS = new Set(['EAR', 'EYE', 'JAW', 'LIP', 'CHEEK', 'EYEBROW', 'EYELID']);
+const WORD_LIBRARY_ARM_AND_HAND_PARTS = new Set(['ARM', 'ELBOW', 'FINGER', 'FOREARM', 'WRIST', 'KNUCKLE', 'SHOULDER']);
+const WORD_LIBRARY_LEG_AND_FOOT_PARTS = new Set(['HIP', 'LEG', 'ANKLE', 'TOE']);
+const WORD_LIBRARY_FARM_ANIMALS = new Set(['COW', 'HEN', 'PIG', 'RAM', 'YAK', 'LAMB', 'GOAT', 'HORSE', 'DONKEY', 'CATTLE']);
+const WORD_LIBRARY_PET_OR_SMALL_ANIMALS = new Set(['CAT', 'DOG', 'HAMSTER', 'RABBIT', 'FERRET']);
+const WORD_LIBRARY_WILD_CATS = new Set(['COUGAR', 'JAGUAR', 'LEOPARD']);
+const WORD_LIBRARY_WATER_VEHICLES = new Set(['BOAT', 'CANOE', 'FERRY', 'SHIP', 'YACHT', 'KAYAK', 'GONDOLA']);
+const WORD_LIBRARY_AIR_VEHICLES = new Set(['PLANE', 'AIRPLANE', 'GLIDER', 'HELICOPTER', 'ROCKET', 'ZEPPELIN']);
+const WORD_LIBRARY_ROAD_VEHICLES = new Set(['BUS', 'CAR', 'VAN', 'TRUCK', 'TAXI', 'BIKE', 'BICYCLE', 'MINIVAN', 'MOTORCYCLE', 'PICKUP', 'SCOOTER']);
+const WORD_LIBRARY_RAIL_VEHICLES = new Set(['TRAIN', 'LOCOMOTIVE', 'CABOOSE', 'RAILWAY', 'TRAMWAY', 'SUBWAY']);
+const WORD_LIBRARY_TREES = new Set(['ELM', 'FIR', 'OAK', 'MAPLE', 'CEDAR', 'WILLOW', 'BAMBOO', 'SAPLING']);
+const WORD_LIBRARY_FLOWERS = new Set(['FLOWER', 'DAISY', 'TULIP', 'ROSE', 'BLOSSOM', 'WILDFLOWER', 'SUNFLOWER', 'LAVENDER']);
+const WORD_LIBRARY_PLANT_PARTS = new Set(['BUD', 'SEED', 'PETAL', 'PINECONE', 'ACORN', 'BRANCH', 'MOSS', 'VINE', 'LEAF']);
+const WORD_LIBRARY_FRUITS = new Set(['APPLE', 'APRICOT', 'BANANA', 'BERRY', 'CHERRY', 'COCONUT', 'FIG', 'GRAPE', 'GRAPES', 'LEMON', 'MANGO', 'MELON', 'ORANGE', 'PAPAYA', 'PEACH', 'PEAR', 'PLUM']);
+const WORD_LIBRARY_VEGETABLES = new Set(['PEA', 'YAM', 'CARROT', 'CELERY', 'CABBAGE', 'LETTUCE', 'ONION', 'PEPPER', 'PUMPKIN', 'SPINACH', 'BROCCOLI', 'CUCUMBER', 'CAULIFLOWER']);
+const WORD_LIBRARY_DRINKS = new Set(['TEA', 'MILK', 'JUICE']);
+const WORD_LIBRARY_SWEETS = new Set(['PIE', 'COOKIE', 'BROWNIE', 'MUFFIN', 'PUDDING', 'CUPCAKE', 'WAFFLE']);
+const WORD_LIBRARY_BREADS = new Set(['BUN', 'BREAD', 'TOAST', 'BAGEL', 'BISCUIT', 'CRACKER', 'PRETZEL', 'PANCAKE']);
+const WORD_LIBRARY_WRITING_TOOLS = new Set(['PENCIL', 'MARKER', 'CHALK']);
+const WORD_LIBRARY_READING_PARTS = new Set(['CHAPTER', 'PARAGRAPH', 'STANZA', 'HEADLINE', 'SENTENCE', 'STORY', 'REPORT']);
+const WORD_LIBRARY_MATH_SHAPES = new Set(['ANGLE', 'SHAPE', 'TRIANGLE', 'POLYGON', 'RADIUS', 'DIAMETER', 'AXIS', 'VECTOR']);
+const WORD_LIBRARY_MATH_NUMBER_IDEAS = new Set(['NUMBER', 'COUNT', 'INTEGER', 'DECIMAL', 'FRACTION', 'NUMERATOR', 'QUOTIENT', 'PRODUCT', 'PATTERN', 'SEQUENCE', 'GRAPH']);
+const WORD_LIBRARY_SPORTS_ACTIONS = new Set(['RUN', 'KICK', 'RACE', 'DRIBBLE', 'CLIMBING', 'HIKING', 'FISHING', 'SKATING', 'CYCLING']);
+const WORD_LIBRARY_SPORTS_ITEMS = new Set(['BALL', 'BAT', 'HELMET', 'TROPHY']);
+const WORD_LIBRARY_INSTRUMENTS = new Set(['DRUM', 'GUITAR', 'PIANO', 'VIOLIN', 'BANJO', 'TRUMPET', 'CLARINET', 'SAXOPHONE', 'UKULELE', 'XYLOPHONE', 'HARMONICA']);
+
+function resolveWordLibraryGroupedClue(word, category) {
+    switch (category) {
+    case 'Animals':
+        if (WORD_LIBRARY_FARM_ANIMALS.has(word)) return 'It is a farm animal.';
+        if (WORD_LIBRARY_PET_OR_SMALL_ANIMALS.has(word)) return 'It is an animal people may keep at home.';
+        if (WORD_LIBRARY_WILD_CATS.has(word)) return 'It is a wild cat.';
+        return 'It is an animal.';
+    case 'Ocean Life':
+        return 'It lives in water.';
+    case 'Birds':
+        return 'It is a bird.';
+    case 'Colors':
+        return 'It is a color.';
+    case 'Food':
+        if (WORD_LIBRARY_DRINKS.has(word)) return 'It is something you can drink.';
+        if (WORD_LIBRARY_SWEETS.has(word)) return 'It is a sweet food.';
+        if (WORD_LIBRARY_BREADS.has(word)) return 'It is a baked food made with dough or batter.';
+        return 'It is something you can eat.';
+    case 'Fruits and Vegetables':
+        if (WORD_LIBRARY_FRUITS.has(word)) return 'It is a fruit.';
+        if (WORD_LIBRARY_VEGETABLES.has(word)) return 'It is a vegetable.';
+        return 'It is a fruit or vegetable.';
+    case 'Nature':
+        if (WORD_LIBRARY_TREES.has(word)) return 'It is part of nature and grows outside.';
+        if (word === 'ROCK' || word === 'STONE' || word === 'BOULDER') return 'It is hard and comes from the ground.';
+        if (word === 'RAIN' || word === 'CLOUD' || word === 'SUN' || word === 'MOON') return 'You can see it in the sky.';
+        if (word === 'RIVER' || word === 'STREAM' || word === 'LAGOON' || word === 'OASIS' || word === 'WATER') return 'It is water you see outdoors.';
+        return 'You can see it outside.';
+    case 'Weather':
+        return 'It is part of the weather.';
+    case 'Human Body':
+        if (WORD_LIBRARY_FACE_PARTS.has(word)) return 'It is on the face.';
+        if (WORD_LIBRARY_ARM_AND_HAND_PARTS.has(word)) return 'It is on the arm or hand.';
+        if (WORD_LIBRARY_LEG_AND_FOOT_PARTS.has(word)) return 'It is on the leg or foot.';
+        if (word === 'BRAIN') return 'It helps you think.';
+        if (word === 'LUNGS') return 'It helps the body breathe.';
+        if (word === 'STOMACH') return 'It helps the body digest food.';
+        return 'It is part of the body.';
+    case 'School':
+        if (WORD_LIBRARY_WRITING_TOOLS.has(word)) return 'You use it to write or draw.';
+        if (word === 'ERASER') return 'You use it to rub out pencil marks.';
+        if (word === 'RULER') return 'You use it to measure or draw a straight line.';
+        if (word === 'DESK') return 'You sit or work at it in class.';
+        if (word === 'RECESS') return 'It is time to play during the school day.';
+        return 'You may see it at school.';
+    case 'Language Arts':
+        if (WORD_LIBRARY_READING_PARTS.has(word)) return 'It is part of something you read or write.';
+        if (word === 'READ') return 'You do this with a book or story.';
+        if (word === 'AUTHOR' || word === 'EDITOR' || word === 'READER' || word === 'WRITER') return 'It is a person connected to books or writing.';
+        return 'It fits with reading or writing.';
+    case 'Math':
+        if (WORD_LIBRARY_MATH_SHAPES.has(word)) return 'It is a shape or part of a shape.';
+        if (WORD_LIBRARY_MATH_NUMBER_IDEAS.has(word)) return 'It helps show numbers or counting.';
+        return 'It is used in math.';
+    case 'Arts and Music':
+    case 'Music Performance':
+        if (WORD_LIBRARY_INSTRUMENTS.has(word)) return 'You play it to make music.';
+        if (word === 'DANCE' || word === 'BALLET') return 'It is a kind of movement to music.';
+        if (word === 'PAINT' || word === 'CANVAS' || word === 'DRAWING' || word === 'PAINTING') return 'You use it to make art.';
+        return 'It fits with art or music.';
+    case 'Sports':
+        if (WORD_LIBRARY_SPORTS_ITEMS.has(word)) return 'You use it in a game or sport.';
+        if (WORD_LIBRARY_SPORTS_ACTIONS.has(word)) return 'It is something you do in sports or play.';
+        return 'It fits with sports or play.';
+    case 'Home Objects':
+        if (word === 'BED' || word === 'PILLOW' || word === 'BLANKET') return 'You use it when you rest or sleep.';
+        if (word === 'CLOCK' || word === 'ALARMCLOCK') return 'It helps you know the time.';
+        if (word === 'BOOK' || word === 'PICTURE' || word === 'MIRROR') return 'You keep or use it in a room at home.';
+        if (word === 'DOOR' || word === 'WINDOW' || word === 'DOORKNOB') return 'It is part of a room or house.';
+        if (word === 'CHAIR' || word === 'TABLE' || word === 'CABINET' || word === 'BOOKSHELF' || word === 'WARDROBE') return 'It is furniture you use at home.';
+        return 'You can find it at home.';
+    case 'Plants and Garden':
+        if (WORD_LIBRARY_TREES.has(word)) return 'It is a kind of tree.';
+        if (WORD_LIBRARY_FLOWERS.has(word)) return 'It is a flower or blooming plant.';
+        if (WORD_LIBRARY_PLANT_PARTS.has(word)) return 'It is part of a plant.';
+        if (word === 'GARDEN' || word === 'ORCHARD' || word === 'GREENHOUSE') return 'It is a place where plants grow.';
+        return 'It grows outside or in a garden.';
+    case 'Transportation':
+        if (WORD_LIBRARY_AIR_VEHICLES.has(word)) return 'It helps people travel through the air.';
+        if (WORD_LIBRARY_WATER_VEHICLES.has(word)) return 'It helps people travel on water.';
+        if (WORD_LIBRARY_RAIL_VEHICLES.has(word)) return 'It helps people travel on tracks.';
+        if (WORD_LIBRARY_ROAD_VEHICLES.has(word)) return 'It helps people travel on roads.';
+        return 'It helps people travel.';
+    case 'Community Helpers':
+        return 'It is a job that helps people.';
+    case 'Kitchen and Cooking':
+        return 'You use it in cooking.';
+    default:
+        return null;
+    }
+}
 
 const WORD_LIBRARY_TRACKS = [
     {
@@ -921,6 +1082,7 @@ const WORD_LIBRARY_TRACKS = [
         id: 'creative-life',
         title: 'Creative Life',
         categories: [
+            'Colors',
             'School',
             'Language Arts',
             'Arts and Music',
@@ -947,6 +1109,7 @@ const WORD_LIBRARY_CATEGORY_GROUPS = {
         'Animals',
         'Ocean Life',
         'Birds',
+        'Colors',
         'Food',
         'Fruits and Vegetables',
         'Home Objects',
@@ -1084,8 +1247,7 @@ function isWordLibraryEasySafe(word, category) {
     const normalizedWord = normalizeWordLibraryWord(word);
     return WORD_LIBRARY_EASY_SAFE_CATEGORIES.has(category)
         && WORD_LIBRARY_EASY_SAFE_WORDS.has(normalizedWord)
-        && normalizedWord.length >= 3
-        && normalizedWord.length <= 5;
+        && normalizedWord.length === 3;
 }
 
 function isWordLibraryMediumSafe(word, category) {
@@ -1207,13 +1369,28 @@ function classifyWordLibraryDifficulty(word, category) {
     return 'hard';
 }
 
-function buildWordLibraryClue(word, category, templateIndex) {
-    const templates = WORD_LIBRARY_CLUE_TEMPLATES[category] || [
-        `A vocabulary word connected to ${category.toLowerCase()}.`,
-        `A learning word from the topic of ${category.toLowerCase()}.`
-    ];
-    const baseClue = templates[templateIndex % templates.length];
-    return `${baseClue} It has ${word.length} letters.`;
+function buildWordLibraryClue(word, category, templateIndex, difficulty) {
+    const normalizedWord = normalizeWordLibraryWord(word);
+    const preciseClue = WORD_LIBRARY_PRECISE_CLUE_OVERRIDES[normalizedWord];
+    if (preciseClue) {
+        return preciseClue;
+    }
+
+    const groupedClue = resolveWordLibraryGroupedClue(normalizedWord, category, difficulty);
+    if (groupedClue) {
+        return groupedClue;
+    }
+
+    const clueGuide = WORD_LIBRARY_CLUE_GUIDES[category];
+    if (!clueGuide) {
+        return `This word fits with ${category.toLowerCase()}.`;
+    }
+
+    if (typeof clueGuide === 'string') {
+        return clueGuide;
+    }
+
+    return clueGuide[difficulty] || clueGuide.default || `This word fits with ${category.toLowerCase()}.`;
 }
 
 function resolveTrackIdsForCategory(category) {
@@ -1253,7 +1430,7 @@ const WORD_LIBRARY_INDEX = (() => {
                 isExtremeReaderSafe,
                 complexityScore,
                 gradeBandLabel: WORD_LIBRARY_DIFFICULTY_GRADE_BANDS[difficulty] || null,
-                clue: buildWordLibraryClue(normalizedWord, section.category, index),
+                clue: buildWordLibraryClue(normalizedWord, section.category, index, difficulty),
                 length: normalizedWord.length
             });
             runningId += 1;

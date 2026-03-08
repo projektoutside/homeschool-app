@@ -365,26 +365,72 @@ class WordGenerator {
         }
     }
 
-    buildAdaptiveClue(selectedEntry, requestedDifficulty) {
-        const requestedIndex = WORD_LIBRARY_DIFFICULTY_ORDER.indexOf(requestedDifficulty);
-        const sourceIndex = WORD_LIBRARY_DIFFICULTY_ORDER.indexOf(selectedEntry.difficulty);
+    escapeRegExp(value) {
+        return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 
-        if (requestedIndex === -1 || sourceIndex === -1 || sourceIndex <= requestedIndex) {
-            return selectedEntry.clue;
+    sanitizeClueText(rawClue, answer) {
+        let clue = typeof rawClue === 'string' ? rawClue.trim() : '';
+        if (!clue) return '';
+
+        const normalizedAnswer = String(answer || '').trim();
+        if (normalizedAnswer) {
+            const answerPattern = new RegExp(`\\b${this.escapeRegExp(normalizedAnswer)}\\b`, 'gi');
+            clue = clue.replace(answerPattern, 'this word');
         }
 
-        const firstLetter = selectedEntry.word.charAt(0);
-        const lastLetter = selectedEntry.word.charAt(selectedEntry.word.length - 1);
+        const bannedHintPatterns = [
+            /\bthe first letter is\b[^.?!]*[.?!]?/gi,
+            /\bthe last letter is\b[^.?!]*[.?!]?/gi,
+            /\bit starts with\b[^.?!]*[.?!]?/gi,
+            /\bit ends with\b[^.?!]*[.?!]?/gi,
+            /\bit has \d+ letters?\b[.?!]?/gi,
+            /\b\d+ letters?\b[.?!]?/gi,
+            /\bletter count\b[^.?!]*[.?!]?/gi
+        ];
 
-        if (requestedDifficulty === 'easy') {
-            return `${selectedEntry.clue} It starts with ${firstLetter} and ends with ${lastLetter}.`;
+        bannedHintPatterns.forEach((pattern) => {
+            clue = clue.replace(pattern, ' ');
+        });
+
+        return clue
+            .replace(/\s+/g, ' ')
+            .replace(/\s+([.?!,])/g, '$1')
+            .trim();
+    }
+
+    isClueTooCloseToAnswer(clue, answer) {
+        const normalizedAnswer = String(answer || '').trim().toUpperCase();
+        if (!clue || !normalizedAnswer) return false;
+
+        const answerTokenPattern = new RegExp(`\\b${this.escapeRegExp(normalizedAnswer)}\\b`, 'i');
+        if (answerTokenPattern.test(clue)) {
+            return true;
         }
 
-        if (requestedDifficulty === 'medium') {
-            return `${selectedEntry.clue} It starts with ${firstLetter}.`;
+        const clueTokens = clue
+            .toUpperCase()
+            .match(/[A-Z]+/g) || [];
+
+        return clueTokens.some((token) => {
+            if (token === normalizedAnswer) return true;
+            if (token.startsWith(normalizedAnswer) && token.length <= normalizedAnswer.length + 2) return true;
+            if (normalizedAnswer.startsWith(token) && normalizedAnswer.length <= token.length + 2) return true;
+            return false;
+        });
+    }
+
+    buildFallbackClue() {
+        return 'Use the category to help you guess.';
+    }
+
+    buildAdaptiveClue(selectedEntry) {
+        const safeClue = this.sanitizeClueText(selectedEntry?.clue, selectedEntry?.word);
+        if (!safeClue || this.isClueTooCloseToAnswer(safeClue, selectedEntry?.word)) {
+            return this.buildFallbackClue();
         }
 
-        return selectedEntry.clue;
+        return safeClue;
     }
 
     generate(level) {
@@ -411,7 +457,7 @@ class WordGenerator {
             wordId: selectedEntry.id,
             letters,
             scrambledLetters,
-            clue: this.buildAdaptiveClue(selectedEntry, requestedDifficulty),
+            clue: this.buildAdaptiveClue(selectedEntry),
             category: selectedEntry.category,
             trackId: activeTrack ? activeTrack.id : null,
             trackTitle: activeTrack ? activeTrack.title : null,
@@ -419,7 +465,7 @@ class WordGenerator {
             sourceDifficulty: selectedEntry.difficulty,
             gradeBandLabel: selectedEntry.gradeBandLabel || null,
             complexityScore: Number.isFinite(selectedEntry.complexityScore) ? selectedEntry.complexityScore : null,
-            display: `Unscramble: ${targetWord}`
+            display: `Unscramble ${letters.length} letters`
         };
     }
 

@@ -281,9 +281,9 @@ class WordGameController {
         const badge = document.getElementById('pointModeBadge');
         if (!badge || !plan) return;
 
-        badge.hidden = false;
-        badge.textContent = plan.isGoldBonus ? 'GOLD x2' : `MAX ${plan.maxPoints}`;
-        badge.classList.toggle('point-mode-badge-gold', plan.isGoldBonus);
+        badge.hidden = true;
+        badge.textContent = '';
+        badge.classList.remove('point-mode-badge-gold');
     }
 
     clearRoundPresentation() {
@@ -559,8 +559,7 @@ class WordGameController {
         container.innerHTML = '';
 
         const eq = this.currentEquation;
-        const answers = [...(eq.scrambledLetters || [])];
-        this.shuffleArray(answers);
+        const answers = this.buildSafeAnswerBlockOrder(eq);
         this.renderInstructionPanel({
             letters: answers,
             category: eq.category,
@@ -589,6 +588,8 @@ class WordGameController {
             container.appendChild(block);
         });
 
+        this.ensureAnswerContainerIsScrambled(container, eq);
+        this.assignSequentialBlockIds(container);
         this.updateCurrentProblemPointsDisplay(this.currentRoundScorePlan.totalAwardPoints);
 
         this.updateEquationDisplay();
@@ -974,6 +975,10 @@ class WordGameController {
 
         // 5. Restore original order based on data-id
         this.sortContainer(container);
+        if (containerId === 'answerBlocks') {
+            this.ensureAnswerContainerIsScrambled(container, this.currentEquation);
+            this.assignSequentialBlockIds(container);
+        }
         this.refreshSlotGlow();
     }
 
@@ -993,6 +998,101 @@ class WordGameController {
 
         // Re-append in correct order
         items.forEach(item => container.appendChild(item));
+    }
+
+    assignSequentialBlockIds(container) {
+        Array.from(container?.children || []).forEach((child, index) => {
+            child.dataset.id = `block-${index}`;
+        });
+    }
+
+    buildSafeAnswerBlockOrder(equation) {
+        const correctLetters = Array.isArray(equation?.letters) ? [...equation.letters] : [];
+        const scrambledLetters = Array.isArray(equation?.scrambledLetters) ? [...equation.scrambledLetters] : [];
+        const baseAnswers = scrambledLetters.length === correctLetters.length
+            ? scrambledLetters
+            : [...correctLetters];
+
+        if (!this.canBuildDistinctLetterOrder(correctLetters)) {
+            return baseAnswers;
+        }
+
+        if (!this.areLetterArraysEqual(baseAnswers, correctLetters)) {
+            return baseAnswers;
+        }
+
+        for (let attempt = 0; attempt < 24; attempt += 1) {
+            const reshuffled = [...baseAnswers];
+            this.shuffleArray(reshuffled);
+            if (!this.areLetterArraysEqual(reshuffled, correctLetters)) {
+                return reshuffled;
+            }
+        }
+
+        return this.buildGuaranteedDifferentLetterOrder(correctLetters) || baseAnswers;
+    }
+
+    ensureAnswerContainerIsScrambled(container, equation) {
+        if (!container) return;
+
+        const correctLetters = Array.isArray(equation?.letters) ? [...equation.letters] : [];
+        if (!this.canBuildDistinctLetterOrder(correctLetters)) return;
+
+        const blocks = Array.from(container.children);
+        const renderedLetters = blocks.map((block) => block.dataset.value || block.textContent || '');
+
+        if (!this.areLetterArraysEqual(renderedLetters, correctLetters)) {
+            return;
+        }
+
+        const safeOrder = this.buildSafeAnswerBlockOrder({
+            letters: correctLetters,
+            scrambledLetters: renderedLetters
+        });
+
+        if (this.areLetterArraysEqual(safeOrder, correctLetters)) {
+            return;
+        }
+
+        const availableBlocks = [...blocks];
+        safeOrder.forEach((letter) => {
+            const blockIndex = availableBlocks.findIndex((block) => (block.dataset.value || block.textContent || '') === letter);
+            if (blockIndex === -1) return;
+            const [block] = availableBlocks.splice(blockIndex, 1);
+            container.appendChild(block);
+        });
+    }
+
+    canBuildDistinctLetterOrder(letters) {
+        return Array.isArray(letters) && letters.length > 1 && new Set(letters).size > 1;
+    }
+
+    buildGuaranteedDifferentLetterOrder(letters) {
+        const original = [...letters];
+
+        for (let left = 0; left < original.length - 1; left += 1) {
+            for (let right = left + 1; right < original.length; right += 1) {
+                if (original[left] === original[right]) continue;
+
+                const swapped = [...original];
+                [swapped[left], swapped[right]] = [swapped[right], swapped[left]];
+
+                if (!this.areLetterArraysEqual(swapped, original)) {
+                    return swapped;
+                }
+            }
+        }
+
+        const rotated = [...original.slice(1), original[0]];
+        return this.areLetterArraysEqual(rotated, original) ? null : rotated;
+    }
+
+    areLetterArraysEqual(a, b) {
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i += 1) {
+            if (a[i] !== b[i]) return false;
+        }
+        return true;
     }
 
     shuffleArray(arr) {
