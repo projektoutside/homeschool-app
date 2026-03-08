@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { buildAssetPath } from '../utils/pathUtils';
 import type { ContentItem } from '../types/content';
-import type { FullscreenHTMLElementType } from '../types/fullscreen';
+import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { useAuth } from '../context/AuthContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { supabase } from '../lib/supabase';
@@ -23,6 +23,7 @@ const WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY = 'LAHS_WORD_PUZZLE_USER_CONTEXT_BO
 const WORD_PUZZLE_USER_CONTEXT_SYNC = 'LAHS_WORD_PUZZLE_USER_CONTEXT_SYNC';
 const WORD_PUZZLE_USER_CONTEXT_REQUEST = 'LAHS_WORD_PUZZLE_USER_CONTEXT_REQUEST';
 const DEV_CACHE_BUST = import.meta.env.DEV ? Date.now().toString() : '';
+const HOME_TAB_QUERY_SAFE_PATTERN = /^[a-z0-9-]+$/;
 
 type CarKingMicPreference = 'ask' | 'session' | 'always';
 type WordPuzzleUserContext = {
@@ -34,6 +35,13 @@ type WordPuzzleUserContext = {
 
 const isCarKingMicPreference = (value: unknown): value is CarKingMicPreference => {
     return value === 'ask' || value === 'session' || value === 'always';
+};
+
+const normalizeHomeTabRequest = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+
+    const normalized = value.trim().toLowerCase();
+    return normalized && HOME_TAB_QUERY_SAFE_PATTERN.test(normalized) ? normalized : null;
 };
 
 const getCarKingMicPreferenceStorageKey = (userId: string) => {
@@ -207,6 +215,23 @@ const GamePlayer: React.FC = () => {
         syncWordPuzzleUserContext();
     }, [syncWordPuzzleUserContext]);
 
+    const exitFullscreen = useCallback(async () => {
+        const doc = document as FullscreenDocumentType;
+        try {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+            } else if (doc.webkitExitFullscreen) {
+                await doc.webkitExitFullscreen();
+            } else if (doc.mozCancelFullScreen) {
+                await doc.mozCancelFullScreen();
+            } else if (doc.msExitFullscreen) {
+                await doc.msExitFullscreen();
+            }
+        } catch {
+            // Route navigation should still continue even if fullscreen exit fails.
+        }
+    }, []);
+
     useEffect(() => {
         const handleGameMessage = (event: MessageEvent) => {
             if (!iframeRef.current?.contentWindow || event.source !== iframeRef.current.contentWindow) {
@@ -217,6 +242,7 @@ const GamePlayer: React.FC = () => {
                 type?: unknown;
                 preference?: unknown;
                 gameId?: unknown;
+                tab?: unknown;
             } | null;
             if (!message || message.type !== GAME_EXIT_TO_HOME_MESSAGE) {
                 if (
@@ -301,12 +327,19 @@ const GamePlayer: React.FC = () => {
                 return;
             }
 
-            navigate('/home-profile');
+            const requestedTab = normalizeHomeTabRequest(message.tab);
+            const targetPath = requestedTab
+                ? `/home-profile?tab=${encodeURIComponent(requestedTab)}`
+                : '/home-profile';
+
+            void exitFullscreen().finally(() => {
+                navigate(targetPath);
+            });
         };
 
         window.addEventListener('message', handleGameMessage);
         return () => window.removeEventListener('message', handleGameMessage);
-    }, [isCarKingGame, isWordPuzzleGame, navigate, postMessageToGame, syncCarKingMicPreference, syncWordPuzzleUserContext, user]);
+    }, [exitFullscreen, isCarKingGame, isWordPuzzleGame, navigate, postMessageToGame, syncCarKingMicPreference, syncWordPuzzleUserContext, user]);
 
     const enterFullscreen = useCallback(async () => {
         const element = document.documentElement as FullscreenHTMLElementType;

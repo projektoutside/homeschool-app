@@ -103,6 +103,15 @@ const VISUAL_CONFIG = {
     }
 };
 
+const ANALOG_CLOCK_GAME_ID = 'math-analog-clock-game-v2';
+const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
+
+function getHostAppTargetOrigin() {
+    return window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')
+        ? window.location.origin
+        : '*';
+}
+
 /* =============================================
    UTILITY FUNCTIONS
    ============================================= */
@@ -4236,6 +4245,24 @@ class InGameQuickSettingsManager {
         }
     }
 
+    requestReturnToHostApp(targetTab = 'games') {
+        if (!window.parent || window.parent === window) {
+            return false;
+        }
+
+        try {
+            window.parent.postMessage({
+                type: GAME_EXIT_TO_HOME_MESSAGE,
+                gameId: ANALOG_CLOCK_GAME_ID,
+                tab: targetTab
+            }, getHostAppTargetOrigin());
+            return true;
+        } catch (error) {
+            GameUtils.warn('Host app exit bridge failed:', error);
+            return false;
+        }
+    }
+
     async handleExitGame() {
         this.closePanel({ resumeTimer: false });
         if (this.gameLogic) {
@@ -4243,6 +4270,10 @@ class InGameQuickSettingsManager {
             if (this.gameLogic.gameState) {
                 this.gameLogic.gameState.isGameActive = false;
             }
+        }
+
+        if (this.requestReturnToHostApp('games')) {
+            return;
         }
 
         try {
