@@ -478,6 +478,7 @@ body {
   max-width: 100%;
   position: relative;
   margin-top: calc(var(--ui-rhythm-gap) - 0.08rem);
+  transition: padding 0.24s ease, gap 0.24s ease, margin 0.24s ease;
 }
 
 .answer-blocks-container::before {
@@ -803,6 +804,14 @@ body {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 6px 28px rgba(13, 20, 56, 0.35);
+  transition:
+    width 0.24s ease,
+    min-height 0.24s ease,
+    padding 0.24s ease,
+    background 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
 }
 
 .control-display-panel {
@@ -825,6 +834,14 @@ body {
   overflow: hidden;
   overflow-x: hidden;
   text-shadow: 0 0 10px rgba(184, 222, 255, 0.35);
+  transition:
+    min-height 0.24s ease,
+    max-height 0.24s ease,
+    padding 0.24s ease,
+    margin 0.24s ease,
+    border-color 0.24s ease,
+    background 0.24s ease,
+    box-shadow 0.24s ease;
 }
 
 .instruction-line {
@@ -2140,7 +2157,22 @@ body.word-puzzle-gold-rush #currentProblemPoints {
 }
 
 @media screen and (orientation: portrait) {
+  .gameplay-page:not([style*='display: none']) {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header header header header"
+      "guide guide guide guide"
+      "equation equation equation equation"
+      "letters letters letters letters"
+      "panel panel panel panel"
+      "undo clear hint skip";
+    align-items: start;
+  }
+
   .game-header {
+    grid-area: header;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -2185,5 +2217,119 @@ body.word-puzzle-gold-rush #currentProblemPoints {
     text-align: center;
     white-space: normal;
     transform: none;
+  }
+
+  .points-guide-panel {
+    grid-area: guide;
+  }
+
+  .equation-container {
+    grid-area: equation;
+  }
+
+  .answer-blocks-container {
+    grid-area: letters;
+    padding-bottom: var(--spacing-sm);
+  }
+
+  .game-controls {
+    display: contents;
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .control-display-panel {
+    grid-area: panel;
+    --instruction-scale: 1.1;
+    min-height: 0;
+    max-height: none;
+    width: min(94vw, 560px);
+    height: 100%;
+    align-self: stretch;
+    justify-self: center;
+    padding: 1rem 1.1rem;
+    margin: 0 0 calc(env(safe-area-inset-bottom, 0px) + 0.3rem);
+    border-width: 2px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.72rem;
+    text-align: center;
+    background: linear-gradient(145deg, rgba(76, 135, 92, 0.72), rgba(28, 86, 54, 0.78));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 14px 34px rgba(12, 48, 30, 0.24);
+  }
+
+  .instruction-line {
+    width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .instruction-meta {
+    font-size: calc(clamp(0.82rem, 3vw, 0.96rem) * var(--instruction-scale));
+    line-height: 1.35;
+  }
+
+  .instruction-clue {
+    font-size: calc(clamp(0.92rem, 3.6vw, 1.08rem) * var(--instruction-scale));
+    line-height: 1.4;
+  }
+
+  #undoMove,
+  #clearEquation,
+  .hint-control-wrapper,
+  .skip-control-wrapper {
+    width: 100%;
+    align-self: end;
+  }
+
+  #undoMove {
+    grid-area: undo;
+  }
+
+  #clearEquation {
+    grid-area: clear;
+  }
+
+  .hint-control-wrapper {
+    grid-area: hint;
+  }
+
+  .skip-control-wrapper {
+    grid-area: skip;
+  }
+
+  .control-wrapper {
+    justify-content: flex-start;
+    gap: 0.18rem;
+  }
+
+  .control-button,
+  .control-wrapper .control-button {
+    width: 100%;
+    height: clamp(42px, 6.6vh, 52px);
+    min-width: 0;
+    min-height: 42px;
+    font-size: 0.74rem;
+  }
+
+  .limit-stars {
+    justify-content: center;
+    min-height: 8px;
   }
 }
