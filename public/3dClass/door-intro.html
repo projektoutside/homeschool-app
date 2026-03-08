@@ -90,9 +90,9 @@
   <script src="scripts/three.min.js"></script>
   <script>
     (function () {
-      const INTRO_ANIMATION_DURATION_MS = 1700;
-      const INTRO_REDUCED_DURATION_MS = 450;
-      const INTRO_FADE_DURATION_MS = 180;
+      const INTRO_ANIMATION_DURATION_MS = 1050;
+      const INTRO_REDUCED_DURATION_MS = 280;
+      const INTRO_FADE_DURATION_MS = 140;
       const SHOULD_SKIP_INTRO = false;
       const INTRO_MESSAGE_SCOPE = "classroom-main";
       const INTRO_MESSAGE_DONE = "LAHS_CLASSROOM_DOOR_INTRO_DONE";
@@ -1161,11 +1161,13 @@
       function getBackgroundCandidates(isPortrait = isPortraitViewport()) {
         return isPortrait
           ? [
+            "NEWmainbackground.webp",
             "NEWmainbackground.png",
             "newmainbackground.png",
             "NewMainBackground.png"
           ]
           : [
+            "NEWmainbackground.webp",
             "NEWmainbackground.png",
             "newmainbackground.png",
             "NewMainBackground.png"

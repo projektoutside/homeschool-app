@@ -7,7 +7,7 @@ import { buildAssetPath } from '../utils/pathUtils';
 import './Home.css';
 import './ClassroomPage.css';
 
-const CLASSROOM_APP_VERSION = '2026-02-18-1';
+const CLASSROOM_APP_VERSION = '2026-03-08-2';
 const CLASSROOM_SYNC_SCOPE = 'classroom-3d';
 const CLASSROOM_GLOBAL_STATE_TABLE = 'classroom_global_states';
 const CLASSROOM_GLOBAL_STATE_APP_ID = '3dClass';
@@ -21,7 +21,8 @@ const CLASSROOM_MESSAGE_NAVIGATE = 'LAHS_CLASSROOM_NAVIGATE';
 const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
 const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
 const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
-const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 4500;
+const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 2200;
+const CLASSROOM_DOOR_INTRO_SESSION_STORAGE_KEY = 'lahs.classroomDoorIntroSeen.v1';
 
 type ClassroomLayoutEntry = {
     left: number;
@@ -75,6 +76,30 @@ const parseBooleanQuery = (value: string | null): boolean => {
     if (!value) return false;
     const normalized = value.trim().toLowerCase();
     return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+};
+
+const hasSeenDoorIntroThisSession = (): boolean => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    try {
+        return window.sessionStorage.getItem(CLASSROOM_DOOR_INTRO_SESSION_STORAGE_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+
+const markDoorIntroSeenThisSession = (): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        window.sessionStorage.setItem(CLASSROOM_DOOR_INTRO_SESSION_STORAGE_KEY, '1');
+    } catch {
+        // Ignore storage failures so the classroom still launches normally.
+    }
 };
 
 const getUsername = (user: User | null): string => {
@@ -211,15 +236,28 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         params.set('v', CLASSROOM_APP_VERSION);
         return buildAssetPath(`3dClass/door-intro.html?${params.toString()}`);
     }, []);
-    const introActivationKey = useMemo(() => {
+    const shouldPlayDoorIntro = useMemo(() => {
         if (!isActive) {
+            return false;
+        }
+        return !hasSeenDoorIntroThisSession();
+    }, [isActive]);
+    const introActivationKey = useMemo(() => {
+        if (!isActive || !shouldPlayDoorIntro) {
             return null;
         }
         return `${launchPath}|${location.key}`;
-    }, [isActive, launchPath, location.key]);
+    }, [isActive, launchPath, location.key, shouldPlayDoorIntro]);
     const isFrameLoaded = loadedLaunchPath === launchPath;
     const isDoorIntroComplete = !introActivationKey || completedDoorIntroKey === introActivationKey;
     const isTransitionComplete = isFrameLoaded && isDoorIntroComplete;
+
+    useEffect(() => {
+        if (!shouldPlayDoorIntro) {
+            return;
+        }
+        markDoorIntroSeenThisSession();
+    }, [shouldPlayDoorIntro]);
 
     useEffect(() => {
         if (!isActive) {
@@ -554,7 +592,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
                         ref={iframeRef}
                         src={launchPath}
                         title="Classroom App"
-                        className={`classroom-app-frame ${isTransitionComplete ? '' : 'is-loading'}`}
+                        className={`classroom-app-frame ${isFrameLoaded ? '' : 'is-loading'}`}
                         allow="fullscreen; autoplay; microphone; camera"
                         allowFullScreen
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"

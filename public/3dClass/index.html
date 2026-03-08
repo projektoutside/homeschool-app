@@ -1476,7 +1476,7 @@
   <div class="app">
     <div class="scene-wrap">
       <div class="scene" id="scene">
-        <img class="scene-bg" id="mainBackground" src="NEWmainbackground.png" alt="Classroom scene background" />
+        <img class="scene-bg" id="mainBackground" src="NEWmainbackground.webp" alt="Classroom scene background" />
         <div class="hotspot-layer" id="hotspotLayer" aria-label="Interactive objects"></div>
       </div>
     </div>
@@ -1571,7 +1571,6 @@
   </script>
   <!-- CLASSROOM_EMBEDDED_STATE_END -->
 
-  <script src="scripts/three.min.js"></script>
   <script src="ComponentImages/image-manifest.bootstrap.js?v=2026-02-18-1"></script>
   <script>
     (function () {
@@ -1590,7 +1589,7 @@
       const CLASSROOM_MESSAGE_STATE_SAVE = "LAHS_CLASSROOM_STATE_SAVE";
       const CLASSROOM_MESSAGE_NAVIGATE = "LAHS_CLASSROOM_NAVIGATE";
       const CLASSROOM_REMOTE_SAVE_DEBOUNCE_MS = 350;
-      const CLASSROOM_INITIAL_SYNC_WAIT_MS = 850;
+      const CLASSROOM_INITIAL_SYNC_WAIT_MS = 220;
       const PORTRAIT_COMPONENT_SCALE = 1;
       const PORTRAIT_BACKGROUND_POSITION_PERCENT = 52;
       const LANDSCAPE_BACKGROUND_POSITION_PERCENT = 50;
@@ -2674,11 +2673,13 @@
       function getBackgroundCandidates(isPortrait = isPortraitViewport()) {
         return isPortrait
           ? [
+            "NEWmainbackground.webp",
             "NEWmainbackground.png",
             "newmainbackground.png",
             "NewMainBackground.png"
           ]
           : [
+            "NEWmainbackground.webp",
             "NEWmainbackground.png",
             "newmainbackground.png",
             "NewMainBackground.png"
@@ -4896,7 +4897,7 @@
 
       async function initializeApp() {
         requestParentSync();
-        await waitForInitialSync();
+        const initialSyncPromise = waitForInitialSync();
         await initializeInteractiveObjects();
         if (!hydrateLayoutFromEmbeddedState()) {
           hydrateLayoutFromStorage();
@@ -4908,6 +4909,7 @@
         applyLayoutToAllHotspots();
         updateManagerUi();
         hasUiInitialized = true;
+        await initialSyncPromise;
         if (pendingRemoteState) {
           const snapshot = pendingRemoteState;
           pendingRemoteState = null;
