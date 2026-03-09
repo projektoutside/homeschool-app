@@ -88,6 +88,7 @@
   </div>
 
   <script src="scripts/three.min.js"></script>
+  <script src="scripts/door-intro-runtime.js?v=2026-03-09-2"></script>
   <script>
     (function () {
       const INTRO_ANIMATION_DURATION_MS = 1050;
@@ -101,6 +102,7 @@
       const DOOR_OPEN_AUDIO_BASE_GAIN = 0.42;
       const DOOR_OPEN_AUDIO_FILE = "audio/dooropening.mp3";
       const DOOR_OPEN_AUDIO_TRIGGER_PROGRESS = 0.015;
+      const INTRO_AMBIENT_BASE_GAIN = 0.12;
 
       const doorIntro = document.getElementById("doorIntro");
       const doorIntroStage = document.getElementById("doorIntroStage");
@@ -142,9 +144,11 @@
 
       function readDoorIntroSoundSettings() {
         const fallbackDoorVolume = clamp01(DEFAULT_SFX_VOLUME * DOOR_OPEN_AUDIO_BASE_GAIN);
+        const fallbackAmbientVolume = clamp01(DEFAULT_SFX_VOLUME * INTRO_AMBIENT_BASE_GAIN);
         const fallback = {
           muted: false,
-          doorVolume: fallbackDoorVolume
+          doorVolume: fallbackDoorVolume,
+          ambientVolume: fallbackAmbientVolume
         };
         try {
           const rawSettings = window.localStorage.getItem(SOUND_SETTINGS_STORAGE_KEY);
@@ -161,11 +165,197 @@
 
           return {
             muted: muted,
-            doorVolume: clamp01(effectiveSfxVolume * DOOR_OPEN_AUDIO_BASE_GAIN)
+            doorVolume: clamp01(effectiveSfxVolume * DOOR_OPEN_AUDIO_BASE_GAIN),
+            ambientVolume: clamp01(effectiveSfxVolume * INTRO_AMBIENT_BASE_GAIN)
           };
         } catch {
           return fallback;
         }
+      }
+
+      function createIntroAmbientRoomToneController(soundSettings) {
+        const ambientVolume = clamp01(Number(soundSettings && soundSettings.ambientVolume));
+        const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+        if (Boolean(soundSettings && soundSettings.muted) || ambientVolume <= 0 || !AudioContextRef) {
+          return {
+            updateForIntroProgress: function () {},
+            stop: function () {},
+            dispose: function () {}
+          };
+        }
+
+        let audioContext = null;
+        let masterGain = null;
+        let noiseSource = null;
+        let humOscillatorA = null;
+        let humOscillatorB = null;
+        let graphInitialized = false;
+        let disposed = false;
+        let nextRetryAtMs = 0;
+
+        function ensureGraph(nowMs) {
+          const now = Number(nowMs) || performance.now();
+          if (disposed || graphInitialized || now < nextRetryAtMs) {
+            return;
+          }
+
+          try {
+            audioContext = new AudioContextRef();
+            masterGain = audioContext.createGain();
+            masterGain.gain.value = 0;
+
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+            const channelData = noiseBuffer.getChannelData(0);
+            let filteredNoise = 0;
+            for (let index = 0; index < channelData.length; index += 1) {
+              const whiteNoise = (Math.random() * 2) - 1;
+              filteredNoise = (filteredNoise * 0.986) + (whiteNoise * 0.14);
+              channelData[index] = filteredNoise;
+            }
+
+            noiseSource = audioContext.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+            noiseSource.loop = true;
+
+            const noiseHighPass = audioContext.createBiquadFilter();
+            noiseHighPass.type = "highpass";
+            noiseHighPass.frequency.value = 130;
+            noiseHighPass.Q.value = 0.65;
+
+            const noiseLowPass = audioContext.createBiquadFilter();
+            noiseLowPass.type = "lowpass";
+            noiseLowPass.frequency.value = 940;
+            noiseLowPass.Q.value = 0.55;
+
+            const noiseGain = audioContext.createGain();
+            noiseGain.gain.value = 0.18;
+
+            humOscillatorA = audioContext.createOscillator();
+            humOscillatorA.type = "triangle";
+            humOscillatorA.frequency.value = 156;
+            humOscillatorA.detune.value = -4;
+
+            humOscillatorB = audioContext.createOscillator();
+            humOscillatorB.type = "sine";
+            humOscillatorB.frequency.value = 234;
+            humOscillatorB.detune.value = 3;
+
+            const humGain = audioContext.createGain();
+            humGain.gain.value = 0.038;
+
+            noiseSource.connect(noiseHighPass);
+            noiseHighPass.connect(noiseLowPass);
+            noiseLowPass.connect(noiseGain);
+            noiseGain.connect(masterGain);
+
+            humOscillatorA.connect(humGain);
+            humOscillatorB.connect(humGain);
+            humGain.connect(masterGain);
+
+            masterGain.connect(audioContext.destination);
+
+            noiseSource.start(0);
+            humOscillatorA.start(0);
+            humOscillatorB.start(0);
+
+            graphInitialized = true;
+          } catch {
+            nextRetryAtMs = now + 240;
+          }
+        }
+
+        function ensurePlaybackReady(nowMs) {
+          if (!audioContext || audioContext.state === "running") {
+            return;
+          }
+
+          const now = Number(nowMs) || performance.now();
+          if (now < nextRetryAtMs) {
+            return;
+          }
+
+          nextRetryAtMs = now + 180;
+          try {
+            const resumePromise = audioContext.resume();
+            if (resumePromise && typeof resumePromise.then === "function") {
+              resumePromise.then(function () {
+                nextRetryAtMs = 0;
+              }).catch(function () {
+                nextRetryAtMs = now + 240;
+              });
+            }
+          } catch {
+            nextRetryAtMs = now + 240;
+          }
+        }
+
+        function setAmbientGain(targetGain, rampSeconds) {
+          if (!audioContext || !masterGain) {
+            return;
+          }
+          const now = audioContext.currentTime;
+          masterGain.gain.cancelScheduledValues(now);
+          masterGain.gain.setTargetAtTime(clamp01(targetGain), now, rampSeconds);
+        }
+
+        return {
+          updateForIntroProgress: function (progress, nowMs) {
+            if (disposed) {
+              return;
+            }
+
+            const introProgress = clamp01(progress);
+            const fadeIn = easeOutCubic(clamp01((introProgress - 0.04) / 0.24));
+            const fadeOut = 1 - easeInCubic(clamp01((introProgress - 0.72) / 0.24));
+            const intensity = fadeIn * fadeOut;
+
+            if (intensity <= 0.001) {
+              setAmbientGain(0, 0.08);
+              return;
+            }
+
+            ensureGraph(nowMs);
+            ensurePlaybackReady(nowMs);
+            setAmbientGain(ambientVolume * intensity, 0.16);
+          },
+          stop: function () {
+            setAmbientGain(0, 0.08);
+          },
+          dispose: function () {
+            disposed = true;
+            setAmbientGain(0, 0.05);
+
+            if (noiseSource) {
+              try {
+                noiseSource.stop(0);
+              } catch {
+                // Ignore repeated stop errors.
+              }
+            }
+            if (humOscillatorA) {
+              try {
+                humOscillatorA.stop(0);
+              } catch {
+                // Ignore repeated stop errors.
+              }
+            }
+            if (humOscillatorB) {
+              try {
+                humOscillatorB.stop(0);
+              } catch {
+                // Ignore repeated stop errors.
+              }
+            }
+            if (audioContext && typeof audioContext.close === "function") {
+              const closePromise = audioContext.close();
+              if (closePromise && typeof closePromise.catch === "function") {
+                closePromise.catch(function () {
+                  // Ignore context shutdown failures.
+                });
+              }
+            }
+          }
+        };
       }
 
       function createDoorOpeningAudioController() {
@@ -175,6 +365,7 @@
         const soundSettings = readDoorIntroSoundSettings();
         audio.muted = soundSettings.muted;
         audio.volume = soundSettings.doorVolume;
+        const ambientRoomToneController = createIntroAmbientRoomToneController(soundSettings);
 
         let hasPlayed = false;
         let nextRetryAtMs = 0;
@@ -208,6 +399,9 @@
             }
             play(nowMs);
           },
+          updateForIntroProgress: function (progress, nowMs) {
+            ambientRoomToneController.updateForIntroProgress(progress, nowMs);
+          },
           stop: function () {
             hasPlayed = false;
             nextRetryAtMs = 0;
@@ -217,6 +411,7 @@
             } catch {
               // Ignore media reset errors.
             }
+            ambientRoomToneController.stop();
           },
           dispose: function () {
             hasPlayed = false;
@@ -228,802 +423,14 @@
             } catch {
               // Ignore media disposal errors.
             }
+            ambientRoomToneController.dispose();
           }
         };
       }
 
-      function createWoodTexture(THREE_REF, width, height, palette) {
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        const base = ctx.createLinearGradient(0, 0, width, 0);
-        base.addColorStop(0, palette.baseA);
-        base.addColorStop(0.5, palette.baseB);
-        base.addColorStop(1, palette.baseC);
-        ctx.fillStyle = base;
-        ctx.fillRect(0, 0, width, height);
-
-        for (let x = 0; x < width; x += 3) {
-          const alpha = 0.03 + Math.random() * 0.08;
-          ctx.fillStyle = "rgba(64, 28, 10, " + alpha.toFixed(3) + ")";
-          ctx.fillRect(x, 0, 1 + (Math.random() * 2), height);
-        }
-
-        for (let i = 0; i < 26; i += 1) {
-          const knotX = Math.random() * width;
-          const knotY = Math.random() * height;
-          const knotW = 18 + Math.random() * 44;
-          const knotH = 32 + Math.random() * 86;
-          ctx.strokeStyle = "rgba(84, 34, 14, 0.22)";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.ellipse(knotX, knotY, knotW * 0.5, knotH * 0.5, Math.random() * Math.PI, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-
-        const texture = new THREE_REF.CanvasTexture(canvas);
-        texture.colorSpace = THREE_REF.SRGBColorSpace;
-        texture.needsUpdate = true;
-        return texture;
-      }
-
-      function createCeilingTileTexture(THREE_REF) {
-        const size = 512;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        ctx.fillStyle = "#efe9df";
-        ctx.fillRect(0, 0, size, size);
-        ctx.strokeStyle = "rgba(138, 127, 114, 0.33)";
-        ctx.lineWidth = 2;
-        for (let i = 0; i <= size; i += 64) {
-          ctx.beginPath();
-          ctx.moveTo(i, 0);
-          ctx.lineTo(i, size);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(0, i);
-          ctx.lineTo(size, i);
-          ctx.stroke();
-        }
-
-        const texture = new THREE_REF.CanvasTexture(canvas);
-        texture.wrapS = THREE_REF.RepeatWrapping;
-        texture.wrapT = THREE_REF.RepeatWrapping;
-        texture.repeat.set(3.5, 3.5);
-        texture.colorSpace = THREE_REF.SRGBColorSpace;
-        texture.needsUpdate = true;
-        return texture;
-      }
-
-      function createFloorTexture(THREE_REF) {
-        const size = 768;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, size);
-        gradient.addColorStop(0, "#e6b680");
-        gradient.addColorStop(1, "#ca8c5b");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, size, size);
-
-        for (let i = 0; i < 5200; i += 1) {
-          const x = Math.random() * size;
-          const y = Math.random() * size;
-          const alpha = 0.04 + Math.random() * 0.12;
-          const radius = 0.4 + Math.random() * 1.4;
-          ctx.fillStyle = "rgba(110, 68, 34, " + alpha.toFixed(3) + ")";
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        const texture = new THREE_REF.CanvasTexture(canvas);
-        texture.wrapS = THREE_REF.RepeatWrapping;
-        texture.wrapT = THREE_REF.RepeatWrapping;
-        texture.repeat.set(3.6, 5.4);
-        texture.colorSpace = THREE_REF.SRGBColorSpace;
-        texture.needsUpdate = true;
-        return texture;
-      }
-
-      function createClassroomSignTexture(THREE_REF, label) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1024;
-        canvas.height = 256;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, "#f3f3f4");
-        gradient.addColorStop(1, "#d8d8da");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.strokeStyle = "#828488";
-        ctx.lineWidth = 8;
-        ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
-
-        ctx.fillStyle = "#3a3a3d";
-        ctx.font = "700 112px Trebuchet MS, Segoe UI, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(label, canvas.width / 2, canvas.height / 2 + 4);
-
-        ctx.fillStyle = "#777c82";
-        ctx.beginPath();
-        ctx.arc(58, canvas.height / 2, 13, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(canvas.width - 58, canvas.height / 2, 13, 0, Math.PI * 2);
-        ctx.fill();
-
-        const texture = new THREE_REF.CanvasTexture(canvas);
-        texture.colorSpace = THREE_REF.SRGBColorSpace;
-        texture.needsUpdate = true;
-        return texture;
-      }
-
-      function loadTextureFromCandidates(loader, candidates) {
-        const queue = Array.isArray(candidates) ? candidates.slice() : [];
-        return new Promise(function (resolve, reject) {
-          function tryNext() {
-            if (!queue.length) {
-              reject(new Error("No texture candidates resolved."));
-              return;
-            }
-            const candidate = queue.shift();
-            loader.load(
-              candidate,
-              function (texture) {
-                resolve(texture);
-              },
-              undefined,
-              function () {
-                tryNext();
-              }
-            );
-          }
-          tryNext();
-        });
-      }
-
-      function captureSceneSnapshotCanvas(sceneElement, backgroundImageElement, hotspotLayerElement) {
-        if (!sceneElement || !backgroundImageElement || !backgroundImageElement.complete || !backgroundImageElement.naturalWidth) {
-          return null;
-        }
-
-        const sceneRect = sceneElement.getBoundingClientRect();
-        if (!sceneRect.width || !sceneRect.height) {
-          return null;
-        }
-
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.6);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(2, Math.round(sceneRect.width * pixelRatio));
-        canvas.height = Math.max(2, Math.round(sceneRect.height * pixelRatio));
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.scale(pixelRatio, pixelRatio);
-
-        const backgroundRect = backgroundImageElement.getBoundingClientRect();
-        if (backgroundRect.width > 0 && backgroundRect.height > 0) {
-          ctx.drawImage(
-            backgroundImageElement,
-            backgroundRect.left - sceneRect.left,
-            backgroundRect.top - sceneRect.top,
-            backgroundRect.width,
-            backgroundRect.height
-          );
-        }
-
-        if (hotspotLayerElement) {
-          const hotspotImages = hotspotLayerElement.querySelectorAll(".hotspot img");
-          hotspotImages.forEach(function (hotspotImage) {
-            if (!(hotspotImage instanceof HTMLImageElement) || !hotspotImage.complete || !hotspotImage.naturalWidth) {
-              return;
-            }
-            const imageRect = hotspotImage.getBoundingClientRect();
-            if (imageRect.width <= 0 || imageRect.height <= 0) {
-              return;
-            }
-            const hotspot = hotspotImage.closest(".hotspot");
-            if (hotspot) {
-              const hotspotStyle = window.getComputedStyle(hotspot);
-              if (hotspotStyle.display === "none" || hotspotStyle.visibility === "hidden" || Number(hotspotStyle.opacity || 1) <= 0) {
-                return;
-              }
-            }
-            const imageStyle = window.getComputedStyle(hotspotImage);
-            const opacity = clamp01(Number(imageStyle.opacity || 1));
-            ctx.save();
-            ctx.globalAlpha = opacity;
-            ctx.drawImage(
-              hotspotImage,
-              imageRect.left - sceneRect.left,
-              imageRect.top - sceneRect.top,
-              imageRect.width,
-              imageRect.height
-            );
-            ctx.restore();
-          });
-        }
-
-        return canvas;
-      }
-
-      function createThreeDoorIntroRuntime(options) {
-        const THREE_REF = window.THREE;
-        if (!THREE_REF || !options || !options.container) {
-          return null;
-        }
-
-        const container = options.container;
-        const fadeLayer = options.fadeLayer || null;
-        const durationMs = Math.max(240, Number(options.durationMs) || INTRO_ANIMATION_DURATION_MS);
-        const reduceMotion = Boolean(options.reduceMotion);
-        const textureCandidates = Array.isArray(options.textureCandidates) ? options.textureCandidates : [];
-        const doorAudioController = options.doorAudioController
-          && typeof options.doorAudioController.playForDoorOpeningProgress === "function"
-          ? options.doorAudioController
-          : null;
-
-        const renderer = new THREE_REF.WebGLRenderer({
-          antialias: true,
-          alpha: false,
-          powerPreference: "high-performance"
-        });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.outputColorSpace = THREE_REF.SRGBColorSpace;
-        renderer.toneMapping = THREE_REF.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.03;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE_REF.PCFSoftShadowMap;
-
-        container.textContent = "";
-        container.appendChild(renderer.domElement);
-
-        const scene3d = new THREE_REF.Scene();
-        scene3d.background = new THREE_REF.Color(0xefe7dc);
-
-        const camera = new THREE_REF.PerspectiveCamera(53, 1, 0.05, 80);
-        camera.position.set(0, 1.47, 1.95);
-        camera.lookAt(0, 1.35, -2.2);
-
-        const hemiLight = new THREE_REF.HemisphereLight(0xfff7eb, 0x7c95ac, 0.8);
-        scene3d.add(hemiLight);
-
-        const keyLight = new THREE_REF.DirectionalLight(0xffffff, 1.22);
-        keyLight.position.set(1.8, 3.6, 2.2);
-        keyLight.castShadow = true;
-        keyLight.shadow.mapSize.set(1024, 1024);
-        keyLight.shadow.camera.near = 0.5;
-        keyLight.shadow.camera.far = 20;
-        keyLight.shadow.camera.left = -4;
-        keyLight.shadow.camera.right = 4;
-        keyLight.shadow.camera.top = 4;
-        keyLight.shadow.camera.bottom = -4;
-        scene3d.add(keyLight);
-
-        const fillLight = new THREE_REF.PointLight(0xffe8cc, 0.34, 16, 2);
-        fillLight.position.set(-2.1, 2.3, 1.1);
-        scene3d.add(fillLight);
-
-        const floorTexture = createFloorTexture(THREE_REF);
-        const ceilingTexture = createCeilingTileTexture(THREE_REF);
-        const doorWoodTexture = createWoodTexture(THREE_REF, 1024, 2048, {
-          baseA: "#ba610e",
-          baseB: "#e08613",
-          baseC: "#c96f0b"
-        });
-        const frameWoodTexture = createWoodTexture(THREE_REF, 512, 1024, {
-          baseA: "#6c2411",
-          baseB: "#8a3318",
-          baseC: "#5f1f0f"
-        });
-        const signTexture = createClassroomSignTexture(THREE_REF, "CLASSROOM");
-
-        const wallUpperMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xefe8df,
-          roughness: 0.95
-        });
-        const wallLowerMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xa5b8c7,
-          roughness: 0.88
-        });
-        const baseTrimMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0x1d2f43,
-          roughness: 0.52,
-          metalness: 0.08
-        });
-        const floorMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xe2b17a,
-          map: floorTexture || null,
-          roughness: 0.89,
-          metalness: 0
-        });
-        const ceilingMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xf0eadf,
-          map: ceilingTexture || null,
-          roughness: 0.9,
-          metalness: 0
-        });
-        const boardFrameMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0x92592f,
-          roughness: 0.74
-        });
-        const corkMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xb48356,
-          roughness: 0.96
-        });
-        const frameMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0x7f2f17,
-          map: frameWoodTexture || null,
-          roughness: 0.78,
-          metalness: 0
-        });
-        const doorMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xd6740b,
-          map: doorWoodTexture || null,
-          roughness: 0.7,
-          metalness: 0
-        });
-        const signMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xffffff,
-          map: signTexture || null,
-          roughness: 0.38,
-          metalness: 0.2
-        });
-        const windowFrameMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0x8f3e1e,
-          roughness: 0.65,
-          metalness: 0
-        });
-        const portalMaterial = new THREE_REF.MeshBasicMaterial({
-          color: 0xaec4d8
-        });
-        const windowSceneMaterial = new THREE_REF.MeshBasicMaterial({
-          color: 0xa8bfd3
-        });
-        const glassTintMaterial = new THREE_REF.MeshPhysicalMaterial({
-          color: 0xffffff,
-          roughness: 0.02,
-          metalness: 0,
-          transmission: 0.72,
-          thickness: 0.02,
-          transparent: true,
-          opacity: 0.3
-        });
-        const metalMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xa7afb8,
-          roughness: 0.28,
-          metalness: 0.92
-        });
-        const kickMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xaab1ba,
-          roughness: 0.2,
-          metalness: 0.95
-        });
-        const shadowMaterial = new THREE_REF.MeshBasicMaterial({
-          color: 0x000000,
-          transparent: true,
-          opacity: 0.18
-        });
-        const defaultBackgroundColor = new THREE_REF.Color(0xefe7dc);
-
-        let activePortalTexture = null;
-        let activeWindowTexture = null;
-
-        function disposeOwnedTexture(texture) {
-          if (texture && typeof texture.dispose === "function") {
-            texture.dispose();
-          }
-        }
-
-        function applyPortalTexture(texture, options) {
-          if (!texture) {
-            return;
-          }
-          const settings = options || {};
-
-          if (activePortalTexture && activePortalTexture !== texture) {
-            if (scene3d.background === activePortalTexture) {
-              scene3d.background = defaultBackgroundColor;
-            }
-            disposeOwnedTexture(activePortalTexture);
-          }
-
-          texture.colorSpace = THREE_REF.SRGBColorSpace;
-          texture.needsUpdate = true;
-
-          scene3d.background = texture;
-          portalMaterial.map = texture;
-          portalMaterial.color.setHex(0xffffff);
-          portalMaterial.needsUpdate = true;
-          activePortalTexture = texture;
-
-          if (activeWindowTexture && activeWindowTexture !== texture) {
-            disposeOwnedTexture(activeWindowTexture);
-          }
-          const windowTexture = texture.clone();
-          windowTexture.needsUpdate = true;
-          windowTexture.wrapS = THREE_REF.ClampToEdgeWrapping;
-          windowTexture.wrapT = THREE_REF.ClampToEdgeWrapping;
-          windowTexture.colorSpace = THREE_REF.SRGBColorSpace;
-          windowTexture.repeat.set(
-            settings.windowRepeatX || 0.72,
-            settings.windowRepeatY || 0.56
-          );
-          windowTexture.offset.set(
-            settings.windowOffsetX || 0.14,
-            settings.windowOffsetY || 0.23
-          );
-          windowSceneMaterial.map = windowTexture;
-          windowSceneMaterial.color.setHex(0xffffff);
-          windowSceneMaterial.needsUpdate = true;
-          activeWindowTexture = windowTexture;
-        }
-
-        const floor = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.8, 10.6), floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.set(0, 0, -1.9);
-        floor.receiveShadow = true;
-        scene3d.add(floor);
-
-        const ceiling = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.4, 9.2), ceilingMaterial);
-        ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.set(0, 2.9, -1.9);
-        scene3d.add(ceiling);
-
-        function addSideWall(xPosition, yRotation) {
-          const upper = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 2.2), wallUpperMaterial);
-          upper.position.set(xPosition, 1.8, -1.85);
-          upper.rotation.y = yRotation;
-          scene3d.add(upper);
-
-          const lower = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 0.94), wallLowerMaterial);
-          lower.position.set(xPosition + (xPosition < 0 ? 0.004 : -0.004), 0.72, -1.85);
-          lower.rotation.y = yRotation;
-          scene3d.add(lower);
-
-          const base = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(9.2, 0.14), baseTrimMaterial);
-          base.position.set(xPosition + (xPosition < 0 ? 0.008 : -0.008), 0.14, -1.85);
-          base.rotation.y = yRotation;
-          scene3d.add(base);
-        }
-
-        addSideWall(-2.35, Math.PI / 2);
-        addSideWall(2.35, -Math.PI / 2);
-
-        function createBulletinBoard(x, z, rotationY) {
-          const boardGroup = new THREE_REF.Group();
-          boardGroup.position.set(x, 1.6, z);
-          boardGroup.rotation.y = rotationY;
-
-          const frame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(1.42, 0.9, 0.06), boardFrameMaterial);
-          boardGroup.add(frame);
-
-          const cork = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(1.3, 0.78, 0.04), corkMaterial);
-          cork.position.z = 0.02;
-          boardGroup.add(cork);
-
-          const noteColors = [0x24d44b, 0x2f9fe8, 0xf2d947, 0xf06463];
-          for (let i = 0; i < noteColors.length; i += 1) {
-            const sticky = new THREE_REF.Mesh(
-              new THREE_REF.PlaneGeometry(0.2, 0.2),
-              new THREE_REF.MeshStandardMaterial({
-                color: noteColors[i],
-                roughness: 0.6,
-                metalness: 0
-              })
-            );
-            sticky.position.set(-0.46 + (i * 0.23), 0.08 - (i * 0.03), 0.052);
-            sticky.rotation.z = (-0.08 + (i * 0.05));
-            boardGroup.add(sticky);
-          }
-
-          scene3d.add(boardGroup);
-        }
-
-        createBulletinBoard(-2.18, -0.72, Math.PI / 2);
-        createBulletinBoard(2.18, -0.72, -Math.PI / 2);
-
-        const doorwayZ = -2.25;
-        const doorWidth = 1.08;
-        const doorHeight = 2.08;
-        const doorThickness = 0.046;
-        const frameThickness = 0.14;
-        const frameDepth = 0.2;
-
-        const doorwayGroup = new THREE_REF.Group();
-        doorwayGroup.position.set(0, 0, doorwayZ);
-        scene3d.add(doorwayGroup);
-
-        const leftFrame = new THREE_REF.Mesh(
-          new THREE_REF.BoxGeometry(frameThickness, doorHeight + frameThickness, frameDepth),
-          frameMaterial
-        );
-        leftFrame.position.set(-(doorWidth + frameThickness) / 2, (doorHeight + frameThickness) / 2, 0);
-        leftFrame.castShadow = true;
-        doorwayGroup.add(leftFrame);
-
-        const rightFrame = leftFrame.clone();
-        rightFrame.position.x = (doorWidth + frameThickness) / 2;
-        doorwayGroup.add(rightFrame);
-
-        const topFrame = new THREE_REF.Mesh(
-          new THREE_REF.BoxGeometry(doorWidth + (frameThickness * 2), frameThickness, frameDepth),
-          frameMaterial
-        );
-        topFrame.position.set(0, doorHeight + (frameThickness / 2), 0);
-        topFrame.castShadow = true;
-        doorwayGroup.add(topFrame);
-
-        const portalPlane = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(4.6, 2.6), portalMaterial);
-        portalPlane.position.set(0, 1.33, doorwayZ - 1.6);
-        scene3d.add(portalPlane);
-
-        const softShadow = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(1.28, 0.14), shadowMaterial);
-        softShadow.rotation.x = -Math.PI / 2;
-        softShadow.position.set(0, 0.01, doorwayZ + 0.1);
-        scene3d.add(softShadow);
-
-        const doorPivot = new THREE_REF.Group();
-        doorPivot.position.set(-doorWidth / 2, 0.02, frameDepth * 0.26);
-        doorwayGroup.add(doorPivot);
-
-        const doorMesh = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(doorWidth, doorHeight, doorThickness), doorMaterial);
-        doorMesh.position.set(doorWidth / 2, doorHeight / 2, 0);
-        doorMesh.castShadow = true;
-        doorMesh.receiveShadow = true;
-        doorPivot.add(doorMesh);
-
-        const signMesh = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.72, 0.16), signMaterial);
-        signMesh.position.set(0, 0.82, (doorThickness / 2) + 0.004);
-        doorMesh.add(signMesh);
-
-        const windowFrame = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.68, 0.48, 0.028), windowFrameMaterial);
-        windowFrame.position.set(0, 0.28, (doorThickness / 2) + 0.008);
-        doorMesh.add(windowFrame);
-
-        const windowScene = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.58, 0.38), windowSceneMaterial);
-        windowScene.position.set(0, 0.28, (doorThickness / 2) + 0.022);
-        doorMesh.add(windowScene);
-
-        const glassTint = new THREE_REF.Mesh(new THREE_REF.PlaneGeometry(0.58, 0.38), glassTintMaterial);
-        glassTint.position.set(0, 0.28, (doorThickness / 2) + 0.026);
-        doorMesh.add(glassTint);
-
-        const kickplate = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.9, 0.22, 0.01), kickMaterial);
-        kickplate.position.set(0, -0.86, (doorThickness / 2) + 0.012);
-        doorMesh.add(kickplate);
-
-        const handlePlate = new THREE_REF.Mesh(new THREE_REF.BoxGeometry(0.12, 0.38, 0.012), metalMaterial);
-        handlePlate.position.set(doorWidth * 0.38, -0.2, (doorThickness / 2) + 0.016);
-        doorMesh.add(handlePlate);
-
-        const handlePivot = new THREE_REF.Group();
-        handlePivot.position.set(doorWidth * 0.34, -0.2, (doorThickness / 2) + 0.028);
-        doorMesh.add(handlePivot);
-
-        const handleKnob = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.03, 0.03, 0.02, 16), metalMaterial);
-        handleKnob.rotation.x = Math.PI / 2;
-        handlePivot.add(handleKnob);
-
-        const handleLever = new THREE_REF.Mesh(new THREE_REF.CylinderGeometry(0.014, 0.016, 0.24, 22), metalMaterial);
-        handleLever.rotation.z = Math.PI / 2;
-        handleLever.position.set(0.13, 0, 0);
-        handlePivot.add(handleLever);
-
-        const hingeMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0x8f4f28,
-          roughness: 0.44,
-          metalness: 0.2
-        });
-        const hingeGeometry = new THREE_REF.BoxGeometry(0.022, 0.12, 0.02);
-        const hingeOffsets = [0.66, 0.18, -0.36];
-        hingeOffsets.forEach(function (offsetY) {
-          const hinge = new THREE_REF.Mesh(hingeGeometry, hingeMaterial);
-          hinge.position.set(-doorWidth / 2 + 0.01, offsetY, (doorThickness / 2) + 0.011);
-          doorMesh.add(hinge);
-        });
-
-        const ceilingLightGeometry = new THREE_REF.BoxGeometry(0.52, 0.03, 0.22);
-        const ceilingLightMaterial = new THREE_REF.MeshStandardMaterial({
-          color: 0xe8edf2,
-          emissive: 0xbec7d0,
-          emissiveIntensity: 0.5,
-          roughness: 0.24
-        });
-        const ceilingLightA = new THREE_REF.Mesh(ceilingLightGeometry, ceilingLightMaterial);
-        ceilingLightA.position.set(-0.9, 2.72, -0.78);
-        scene3d.add(ceilingLightA);
-        const ceilingLightB = ceilingLightA.clone();
-        ceilingLightB.position.x = 0.9;
-        scene3d.add(ceilingLightB);
-
-        let animationFrameId = null;
-        let disposed = false;
-        let resolveDone;
-        const donePromise = new Promise(function (resolve) {
-          resolveDone = resolve;
-        });
-        const startTimeMs = performance.now();
-
-        function setFadeProgress(progress) {
-          if (!fadeLayer) {
-            return;
-          }
-          fadeLayer.style.opacity = String(clamp01(progress));
-        }
-
-        function handleResize() {
-          const width = Math.max(1, container.clientWidth || window.innerWidth || 1);
-          const height = Math.max(1, container.clientHeight || window.innerHeight || 1);
-          renderer.setSize(width, height, false);
-          camera.aspect = width / height;
-          camera.updateProjectionMatrix();
-        }
-
-        function frame(nowMs) {
-          if (disposed) {
-            return;
-          }
-
-          const elapsedMs = nowMs - startTimeMs;
-          const t = clamp01(elapsedMs / durationMs);
-
-          const doorOpenProgress = easeOutCubic(clamp01((t - 0.1) / 0.52));
-          if (doorAudioController) {
-            doorAudioController.playForDoorOpeningProgress(doorOpenProgress, nowMs);
-          }
-          doorPivot.rotation.y = -1.95 * doorOpenProgress;
-
-          const handleDown = clamp01((t - 0.06) / 0.18);
-          const handleReset = clamp01((t - 0.24) / 0.2);
-          handlePivot.rotation.z = -0.36 * (handleDown - handleReset);
-
-          const walkProgressPrimary = easeInOutCubic(clamp01((t - 0.08) / 0.66));
-          const walkProgressPush = easeInCubic(clamp01((t - 0.68) / 0.32));
-          const bob = reduceMotion ? 0 : Math.sin((t * Math.PI) * 6) * 0.014 * (1 - t);
-
-          camera.position.set(
-            lerp(0, -0.1, walkProgressPrimary),
-            1.47 + bob,
-            lerp(1.95, -1.2, walkProgressPrimary) + lerp(0, -0.72, walkProgressPush)
-          );
-
-          const lookProgress = easeInOutCubic(clamp01((t - 0.12) / 0.88));
-          camera.lookAt(
-            lerp(0, -0.14, lookProgress),
-            lerp(1.35, 1.26, lookProgress),
-            lerp(doorwayZ - 0.2, doorwayZ - 2.7, lookProgress)
-          );
-
-          const fadeProgress = clamp01((t - 0.74) / 0.26);
-          setFadeProgress(Math.pow(fadeProgress, 1.65));
-
-          renderer.render(scene3d, camera);
-
-          if (t >= 1) {
-            resolveDone();
-            return;
-          }
-          animationFrameId = requestAnimationFrame(frame);
-        }
-
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        setFadeProgress(0);
-
-        if (textureCandidates.length) {
-          const textureLoader = new THREE_REF.TextureLoader();
-          loadTextureFromCandidates(textureLoader, textureCandidates)
-            .then(function (loadedTexture) {
-              applyPortalTexture(loadedTexture, {
-                windowRepeatX: 0.72,
-                windowRepeatY: 0.56,
-                windowOffsetX: 0.14,
-                windowOffsetY: 0.23
-              });
-            })
-            .catch(function () {
-              // Keep built-in colors if background image loading fails.
-            });
-        }
-
-        animationFrameId = requestAnimationFrame(frame);
-
-        return {
-          donePromise: donePromise,
-          applyPortalCanvasSnapshot: function (snapshotCanvas) {
-            if (disposed || !snapshotCanvas) {
-              return false;
-            }
-            const snapshotTexture = new THREE_REF.CanvasTexture(snapshotCanvas);
-            applyPortalTexture(snapshotTexture, {
-              windowRepeatX: 0.64,
-              windowRepeatY: 0.56,
-              windowOffsetX: 0.18,
-              windowOffsetY: 0.24
-            });
-            return true;
-          },
-          dispose: function () {
-            if (disposed) {
-              return;
-            }
-            disposed = true;
-            if (animationFrameId !== null) {
-              cancelAnimationFrame(animationFrameId);
-            }
-            window.removeEventListener("resize", handleResize);
-            if (doorAudioController && typeof doorAudioController.stop === "function") {
-              doorAudioController.stop();
-            }
-            if (container.contains(renderer.domElement)) {
-              container.removeChild(renderer.domElement);
-            }
-            renderer.dispose();
-
-            const disposedTextures = new Set();
-            scene3d.traverse(function (node) {
-              if (node.geometry && typeof node.geometry.dispose === "function") {
-                node.geometry.dispose();
-              }
-              if (!node.material) {
-                return;
-              }
-              const materials = Array.isArray(node.material) ? node.material : [node.material];
-              materials.forEach(function (material) {
-                if (!material || typeof material.dispose !== "function") {
-                  return;
-                }
-                [
-                  "map",
-                  "normalMap",
-                  "roughnessMap",
-                  "metalnessMap",
-                  "aoMap",
-                  "emissiveMap",
-                  "alphaMap",
-                  "transmissionMap"
-                ].forEach(function (key) {
-                  const texture = material[key];
-                  if (texture && typeof texture.dispose === "function" && !disposedTextures.has(texture)) {
-                    disposedTextures.add(texture);
-                    texture.dispose();
-                  }
-                });
-                material.dispose();
-              });
-            });
-          }
-        };
-      }
+      const doorIntroRuntimeApi = window.LAHSDoorIntroRuntime || {};
+      const createThreeDoorIntroRuntime = doorIntroRuntimeApi.createThreeDoorIntroRuntime;
+      const captureSceneSnapshotCanvas = doorIntroRuntimeApi.captureSceneSnapshotCanvas;
 
       function createDoorIntroController() {
         if (!doorIntro) {

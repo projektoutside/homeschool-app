@@ -111,12 +111,12 @@ const HomeProfileRouteShell = () => <div />;
 const ClassroomRouteShell = () => <div />;
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-03-08-1';
+const HOME_PAGE_APP_VERSION = '2026-03-09-27';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
 const CLASSROOM_DOOR_AUDIO_PATH = '3dClass/audio/dooropening.mp3';
-const CLASSROOM_APP_VERSION = '2026-03-08-2';
+const CLASSROOM_APP_VERSION = '2026-03-09-2';
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();

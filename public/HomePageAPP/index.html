@@ -1979,6 +1979,16 @@
             font-weight: 700;
         }
 
+        .preview-controls-hint {
+            margin: 0;
+            font-size: 10px;
+            line-height: 1.45;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: rgba(191, 219, 254, 0.62);
+            font-family: var(--hud-font);
+        }
+
         .preview-close-btn {
             border: 1px solid rgba(191, 219, 254, 0.58);
             border-radius: var(--app-btn-radius);
@@ -2025,6 +2035,11 @@
 
         .preview-viewport.is-dragging {
             cursor: grabbing;
+        }
+
+        .preview-viewport:focus-visible {
+            outline: 2px solid rgba(125, 211, 252, 0.82);
+            outline-offset: 2px;
         }
 
         .preview-viewport::before {
@@ -2660,6 +2675,46 @@
             <p class="store-subtitle" id="category-title">Wing Set</p>
             <div class="store-content">
                 <div class="item-grid">
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="blossomissWings" data-prop-label="Blossomiss Wings">
+                        <span class="item-btn-label">Blossomiss Wings</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Blossomiss Wings" data-preview-for="blossomissWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="canvasOfNavelleWings" data-prop-label="Canvas of Navelle">
+                        <span class="item-btn-label">Canvas of Navelle</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Canvas of Navelle" data-preview-for="canvasOfNavelleWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="goddessOfValleysWings" data-prop-label="Goddess of Valleys">
+                        <span class="item-btn-label">Goddess of Valleys</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Goddess of Valleys" data-preview-for="goddessOfValleysWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="honeycombBloomsWings" data-prop-label="Honeycomb Blooms">
+                        <span class="item-btn-label">Honeycomb Blooms</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Honeycomb Blooms" data-preview-for="honeycombBloomsWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="lavalcanoWings" data-prop-label="Lavalcano Wings">
+                        <span class="item-btn-label">Lavalcano Wings</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Lavalcano Wings" data-preview-for="lavalcanoWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="lightOfSmilesWings" data-prop-label="Light of Smiles">
+                        <span class="item-btn-label">Light of Smiles</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Light of Smiles" data-preview-for="lightOfSmilesWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="moonlightAmayaWings" data-prop-label="Moonlight Amaya">
+                        <span class="item-btn-label">Moonlight Amaya</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Moonlight Amaya" data-preview-for="moonlightAmayaWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="endlessWings" data-prop-label="Endless Wings">
+                        <span class="item-btn-label">Endless Wings</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Endless Wings" data-preview-for="endlessWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="emeraldCoenWings" data-prop-label="Emerald Coen Wings">
+                        <span class="item-btn-label">Emerald Coen Wings</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Emerald Coen Wings" data-preview-for="emeraldCoenWings">◈</span>
+                    </button>
+                    <button class="item-btn" type="button" data-category="wingSet" data-prop="xatoriWings" data-prop-label="Xatori Wings">
+                        <span class="item-btn-label">Xatori Wings</span>
+                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Xatori Wings" data-preview-for="xatoriWings">◈</span>
+                    </button>
                     <button class="item-btn" type="button" data-category="wingSet" data-prop="alphaWings" data-prop-label="Alpha Wings">
                         <span class="item-btn-label">Alpha Wings</span>
                         <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Alpha Wings" data-preview-for="alphaWings">◈</span>
@@ -2718,9 +2773,10 @@
                 <button class="preview-close-btn" id="prop-preview-close" type="button" aria-label="Close prop viewer">×</button>
             </div>
             <p class="preview-subtitle" id="prop-preview-name">Select an item</p>
-            <div class="preview-viewport" id="prop-preview-viewport" aria-live="polite">
+            <div class="preview-viewport" id="prop-preview-viewport" aria-label="Prop viewer orbit camera" aria-live="polite" tabindex="0">
                 <p class="prop-preview-fallback" id="prop-preview-fallback" aria-live="polite"></p>
             </div>
+            <p class="preview-controls-hint">Drag to spin • Pinch, wheel, or +/- zoom • Arrow keys pan • 0 resets</p>
             <div class="preview-actions">
                 <button class="preview-apply-btn preview-inventory-btn" id="prop-preview-inventory-btn" type="button" disabled>Inventory</button>
                 <button class="preview-apply-btn preview-equip-btn" id="prop-preview-equip-btn" type="button" disabled>Equip Now</button>
@@ -3322,6 +3378,8 @@
         leftWingBaseMesh.userData = leftWingBaseMesh.userData || {};
         leftWingBaseMesh.userData.previewWingBase = 'left';
         leftWingGroup.add(leftWingBaseMesh);
+        leftWingGroup.userData = leftWingGroup.userData || {};
+        leftWingGroup.userData.basePosition = leftWingGroup.position.clone();
 
         const rightWingGroup = new THREE.Group();
         rightWingGroup.position.set(1.05, 0.95, -0.1);
@@ -3330,6 +3388,179 @@
         rightWingBaseMesh.userData = rightWingBaseMesh.userData || {};
         rightWingBaseMesh.userData.previewWingBase = 'right';
         rightWingGroup.add(rightWingBaseMesh);
+        rightWingGroup.userData = rightWingGroup.userData || {};
+        rightWingGroup.userData.basePosition = rightWingGroup.position.clone();
+
+        const WING_CLEARANCE_GUARD = Object.freeze({
+            gapRatio: 0.065,
+            minGap: 0.16,
+            maxGap: 0.72,
+            yOverlapSlack: 0.16,
+            zOverlapSlack: 0.12,
+            baseExtraGapShift: 0.08,
+            tallExtraGapShift: 0.22,
+            baseSweepAddScale: 0.14,
+            tallSweepAddScale: 0.24,
+            baseMaxShoulderShift: 0.54,
+            tallMaxShoulderShift: 0.96,
+            baseMaxSweepAdd: 0.24,
+            tallMaxSweepAdd: 0.38,
+            responseHz: 12
+        });
+        const HIGH_CLEARANCE_WING_KEYS = new Set([
+            'canvasOfNavelleWings',
+            'goddessOfValleysWings',
+            'honeycombBloomsWings',
+            'lightOfSmilesWings',
+            'moonlightAmayaWings',
+            'endlessWings',
+            'emeraldCoenWings'
+        ]);
+        const wingClearanceState = {
+            activeKey: null,
+            shoulderShift: 0,
+            sweepAdd: 0,
+            leftBounds: new THREE.Box3(),
+            rightBounds: new THREE.Box3()
+        };
+
+        function getWingClearanceSource() {
+            for (const propKey of activeProps) {
+                const metadata = propRegistry.get(propKey);
+                if (metadata?.category !== 'wingSet') continue;
+                const left = metadata.object?.userData?.left;
+                const right = metadata.object?.userData?.right;
+                if (left && right && left.visible !== false && right.visible !== false) {
+                    return { key: propKey, left, right };
+                }
+            }
+            if (leftWingBaseMesh.visible && rightWingBaseMesh.visible) {
+                return { key: '__base__', left: leftWingBaseMesh, right: rightWingBaseMesh };
+            }
+            return null;
+        }
+
+        function applyWingGroupPose(leftZ, rightZ, wingX, wingSweep, shoulderShift = 0, sweepAdd = 0) {
+            const leftBasePosition = leftWingGroup.userData?.basePosition;
+            const rightBasePosition = rightWingGroup.userData?.basePosition;
+            if (leftBasePosition) {
+                leftWingGroup.position.copy(leftBasePosition);
+            }
+            if (rightBasePosition) {
+                rightWingGroup.position.copy(rightBasePosition);
+            }
+            leftWingGroup.position.x -= shoulderShift;
+            rightWingGroup.position.x += shoulderShift;
+            leftWingGroup.rotation.z = leftZ;
+            rightWingGroup.rotation.z = rightZ;
+            leftWingGroup.rotation.x = wingX;
+            rightWingGroup.rotation.x = wingX;
+            leftWingGroup.rotation.y = wingSweep + sweepAdd;
+            rightWingGroup.rotation.y = -wingSweep - sweepAdd;
+        }
+
+        function measureWingClearanceTargets() {
+            const source = getWingClearanceSource();
+            if (!source) {
+                wingClearanceState.activeKey = null;
+                return { shoulderShift: 0, sweepAdd: 0 };
+            }
+
+            if (wingClearanceState.activeKey !== source.key) {
+                wingClearanceState.activeKey = source.key;
+                wingClearanceState.shoulderShift = 0;
+                wingClearanceState.sweepAdd = 0;
+            }
+
+            leftWingGroup.updateWorldMatrix(true, true);
+            rightWingGroup.updateWorldMatrix(true, true);
+            wingClearanceState.leftBounds.setFromObject(source.left);
+            wingClearanceState.rightBounds.setFromObject(source.right);
+
+            const leftBounds = wingClearanceState.leftBounds;
+            const rightBounds = wingClearanceState.rightBounds;
+            if (leftBounds.isEmpty() || rightBounds.isEmpty()) {
+                return { shoulderShift: 0, sweepAdd: 0 };
+            }
+
+            const yOverlap = Math.min(leftBounds.max.y, rightBounds.max.y) - Math.max(leftBounds.min.y, rightBounds.min.y);
+            const zOverlap = Math.min(leftBounds.max.z, rightBounds.max.z) - Math.max(leftBounds.min.z, rightBounds.min.z);
+            if (yOverlap <= -WING_CLEARANCE_GUARD.yOverlapSlack || zOverlap <= -WING_CLEARANCE_GUARD.zOverlapSlack) {
+                return { shoulderShift: 0, sweepAdd: 0 };
+            }
+
+            const leftWidth = Math.max(0.001, leftBounds.max.x - leftBounds.min.x);
+            const rightWidth = Math.max(0.001, rightBounds.max.x - rightBounds.min.x);
+            const leftHeight = Math.max(0.001, leftBounds.max.y - leftBounds.min.y);
+            const rightHeight = Math.max(0.001, rightBounds.max.y - rightBounds.min.y);
+            const wingWidth = Math.max(leftWidth, rightWidth);
+            const wingHeight = Math.max(leftHeight, rightHeight);
+            const aspectTallness = THREE.MathUtils.clamp(
+                ((wingHeight / Math.max(wingWidth, 0.001)) - 1.05) / 0.85,
+                0,
+                1
+            );
+            const tallWingBoost = HIGH_CLEARANCE_WING_KEYS.has(source.key) ? 0.85 : 0;
+            const tallFactor = Math.max(aspectTallness, tallWingBoost);
+            const desiredGap = THREE.MathUtils.clamp(
+                Math.min(leftWidth, rightWidth) * WING_CLEARANCE_GUARD.gapRatio * (1 + tallFactor * 0.45),
+                WING_CLEARANCE_GUARD.minGap,
+                WING_CLEARANCE_GUARD.maxGap
+            );
+            const centerlinePenetration = leftBounds.max.x + desiredGap - rightBounds.min.x;
+            if (!(centerlinePenetration > 0)) {
+                return { shoulderShift: 0, sweepAdd: 0 };
+            }
+
+            const normalizedPenetration = THREE.MathUtils.clamp(
+                centerlinePenetration / Math.max(desiredGap, 0.001),
+                0,
+                2
+            );
+            const requiredHalfShift = centerlinePenetration * 0.5;
+            const extraGapShift = desiredGap * THREE.MathUtils.lerp(
+                WING_CLEARANCE_GUARD.baseExtraGapShift,
+                WING_CLEARANCE_GUARD.tallExtraGapShift,
+                tallFactor
+            );
+            const maxShoulderShift = THREE.MathUtils.lerp(
+                WING_CLEARANCE_GUARD.baseMaxShoulderShift,
+                WING_CLEARANCE_GUARD.tallMaxShoulderShift,
+                tallFactor
+            );
+            const sweepAddScale = THREE.MathUtils.lerp(
+                WING_CLEARANCE_GUARD.baseSweepAddScale,
+                WING_CLEARANCE_GUARD.tallSweepAddScale,
+                tallFactor
+            );
+            const maxSweepAdd = THREE.MathUtils.lerp(
+                WING_CLEARANCE_GUARD.baseMaxSweepAdd,
+                WING_CLEARANCE_GUARD.tallMaxSweepAdd,
+                tallFactor
+            );
+
+            return {
+                shoulderShift: THREE.MathUtils.clamp(
+                    requiredHalfShift + extraGapShift,
+                    0,
+                    maxShoulderShift
+                ),
+                sweepAdd: THREE.MathUtils.clamp(
+                    normalizedPenetration * sweepAddScale,
+                    0,
+                    maxSweepAdd
+                )
+            };
+        }
+
+        function updateWingClearanceGuard(dt) {
+            const safeDt = Math.max(0, Number.isFinite(dt) ? dt : 0);
+            const target = measureWingClearanceTargets();
+            const alpha = 1 - Math.exp(-safeDt * WING_CLEARANCE_GUARD.responseHz);
+            wingClearanceState.shoulderShift += (target.shoulderShift - wingClearanceState.shoulderShift) * alpha;
+            wingClearanceState.sweepAdd += (target.sweepAdd - wingClearanceState.sweepAdd) * alpha;
+            return wingClearanceState;
+        }
 
         class ReferenceEye {
             constructor() {
@@ -3917,6 +4148,36 @@
             leftGeometry: null,
             rightGeometry: null
         };
+        const endlessWingAssetState = {
+            loader: new GLTFLoader(),
+            modelUrl: './Images/PROPS/Wings/EndlessWings/EndlessWings.glb',
+            previewLoadPromise: null,
+            equippedLoadPromise: null,
+            previewGeometry: null,
+            leftGeometry: null,
+            rightGeometry: null,
+            materialTemplate: null
+        };
+        const emeraldCoenWingAssetState = {
+            loader: new GLTFLoader(),
+            modelUrl: './Images/PROPS/Wings/EmeraldCoen/EmeraldCoen.glb',
+            previewLoadPromise: null,
+            equippedLoadPromise: null,
+            previewGeometry: null,
+            leftGeometry: null,
+            rightGeometry: null,
+            materialTemplate: null
+        };
+        const xatoriWingAssetState = {
+            loader: new GLTFLoader(),
+            modelUrl: './Images/PROPS/Wings/XatoriWings/Xatori.glb',
+            previewLoadPromise: null,
+            equippedLoadPromise: null,
+            previewGeometry: null,
+            leftGeometry: null,
+            rightGeometry: null,
+            materialTemplate: null
+        };
 
         function makeEfernoWingMaps() {
             const size = 1536;
@@ -4129,9 +4390,26 @@
             return { diffuse, emissive, alpha, roughness };
         }
 
-        function getLargestMeshGeometryFromObject(root) {
+        function cloneWingMeshMaterial(material) {
+            if (Array.isArray(material)) {
+                return cloneWingMeshMaterial(material[0] || null);
+            }
+            if (!material?.clone) {
+                return null;
+            }
+            const cloned = material.clone();
+            cloned.side = THREE.DoubleSide;
+            if ('shadowSide' in cloned) {
+                cloned.shadowSide = THREE.DoubleSide;
+            }
+            cloned.needsUpdate = true;
+            return cloned;
+        }
+
+        function getLargestMeshEntryFromObject(root) {
             if (!root) return null;
             let bestGeometry = null;
+            let bestMaterial = null;
             let bestVertexCount = -1;
             root.traverse((node) => {
                 if (!node?.isMesh || !node.geometry?.attributes?.position) {
@@ -4143,13 +4421,36 @@
                 }
                 bestVertexCount = vertexCount;
                 bestGeometry = node.geometry.clone();
+                bestMaterial = node.material || null;
             });
-            return bestGeometry;
+            return bestGeometry
+                ? {
+                    geometry: bestGeometry,
+                    material: bestMaterial
+                }
+                : null;
         }
 
-        function buildGeometryFromPositionArray(positionArray) {
+        function getLargestMeshGeometryFromObject(root) {
+            return getLargestMeshEntryFromObject(root)?.geometry || null;
+        }
+
+        function buildGeometryFromAttributeArrays(sourceAttributes, attributeArrays) {
             const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positionArray, 3));
+            Object.entries(attributeArrays).forEach(([name, values]) => {
+                const source = sourceAttributes[name];
+                if (!source?.array || !values?.length) {
+                    return;
+                }
+                const TypedArray = source.array.constructor || Float32Array;
+                geometry.setAttribute(
+                    name,
+                    new THREE.BufferAttribute(new TypedArray(values), source.itemSize, source.normalized === true)
+                );
+            });
+            if (!geometry.attributes.position) {
+                return null;
+            }
             return geometry;
         }
 
@@ -4165,31 +4466,47 @@
                 return null;
             }
 
-            const leftPositions = [];
-            const rightPositions = [];
-            for (let i = 0; i <= arr.length - 9; i += 9) {
-                const centroidX = (arr[i] + arr[i + 3] + arr[i + 6]) / 3;
-                const target = centroidX <= 0 ? leftPositions : rightPositions;
-                target.push(
-                    arr[i], arr[i + 1], arr[i + 2],
-                    arr[i + 3], arr[i + 4], arr[i + 5],
-                    arr[i + 6], arr[i + 7], arr[i + 8]
-                );
+            const sourceAttributes = Object.fromEntries(
+                Object.entries(nonIndexed.attributes).filter(([, attribute]) => attribute?.array?.length)
+            );
+            const createAttributeBuckets = () => Object.fromEntries(
+                Object.keys(sourceAttributes).map((name) => [name, []])
+            );
+            const leftAttributes = createAttributeBuckets();
+            const rightAttributes = createAttributeBuckets();
+
+            for (let triVertex = 0; triVertex <= position.count - 3; triVertex += 3) {
+                const centroidX = (
+                    position.getX(triVertex) +
+                    position.getX(triVertex + 1) +
+                    position.getX(triVertex + 2)
+                ) / 3;
+                const target = centroidX <= 0 ? leftAttributes : rightAttributes;
+                Object.entries(sourceAttributes).forEach(([name, attribute]) => {
+                    const bucket = target[name];
+                    const itemSize = attribute.itemSize || 1;
+                    for (let vertexOffset = 0; vertexOffset < 3; vertexOffset++) {
+                        const vertexIndex = triVertex + vertexOffset;
+                        for (let component = 0; component < itemSize; component++) {
+                            bucket.push(attribute.array[vertexIndex * itemSize + component]);
+                        }
+                    }
+                });
             }
             if (nonIndexed?.dispose) nonIndexed.dispose();
 
-            if (!leftPositions.length && !rightPositions.length) {
+            if (!leftAttributes.position?.length && !rightAttributes.position?.length) {
                 return null;
             }
 
             let leftGeometry = null;
             let rightGeometry = null;
 
-            if (leftPositions.length) {
-                leftGeometry = buildGeometryFromPositionArray(leftPositions);
+            if (leftAttributes.position?.length) {
+                leftGeometry = buildGeometryFromAttributeArrays(sourceAttributes, leftAttributes);
             }
-            if (rightPositions.length) {
-                rightGeometry = buildGeometryFromPositionArray(rightPositions);
+            if (rightAttributes.position?.length) {
+                rightGeometry = buildGeometryFromAttributeArrays(sourceAttributes, rightAttributes);
             }
 
             if (!leftGeometry && rightGeometry) {
@@ -4300,6 +4617,714 @@
             normalizeWingPivotFromSeam(geometry);
             applyWingUvAndDepthFromGeometry(geometry);
             return geometry;
+        }
+
+        function prepareWingGeometryForSocketAttachment(sourceGeometry) {
+            if (!sourceGeometry?.attributes?.position) {
+                return null;
+            }
+            const geometry = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
+            normalizeWingPivotFromSeam(geometry);
+            if (!geometry.attributes.normal) {
+                geometry.computeVertexNormals();
+            }
+            geometry.computeBoundingBox();
+            geometry.computeBoundingSphere();
+            return geometry;
+        }
+
+        const xatoriWingAssetController = createGlbWingAssetController(xatoriWingAssetState, 'Xatori Wings');
+        const endlessWingAssetController = createGlbWingAssetController(endlessWingAssetState, 'Endless Wings');
+        const emeraldCoenWingAssetController = createGlbWingAssetController(emeraldCoenWingAssetState, 'Emerald Coen Wings');
+
+        function createXatoriWingMaterialInstance() {
+            return xatoriWingAssetController.createMaterialInstance();
+        }
+
+        function createEndlessWingMaterialInstance() {
+            return endlessWingAssetController.createMaterialInstance();
+        }
+
+        function applyPreviewTransformOverrides(target, sourcePart) {
+            const previewTransform = sourcePart?.userData?.previewTransform || null;
+            if (!target || !previewTransform) {
+                return;
+            }
+            const position = Array.isArray(previewTransform.position) ? previewTransform.position : null;
+            const rotation = Array.isArray(previewTransform.rotation) ? previewTransform.rotation : null;
+            const scale = Array.isArray(previewTransform.scale) ? previewTransform.scale : null;
+            if (position?.length === 3) {
+                target.position.set(position[0], position[1], position[2]);
+            }
+            if (rotation?.length === 3) {
+                target.rotation.set(rotation[0], rotation[1], rotation[2]);
+            }
+            if (scale?.length === 3) {
+                target.scale.set(scale[0], scale[1], scale[2]);
+            }
+        }
+
+        function createWingPairPreviewGroup(previewGeometry, materialTemplate) {
+            if (!previewGeometry || !materialTemplate) {
+                return null;
+            }
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(previewGeometry.clone(), cloneWingMeshMaterial(materialTemplate));
+            if (!mesh.material) {
+                return null;
+            }
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = false;
+            group.add(mesh);
+            group.userData.mesh = mesh;
+            return group;
+        }
+
+        function createDetachedWingPreviewMesh(geometry, materialTemplate, transform) {
+            if (!geometry || !materialTemplate) {
+                return null;
+            }
+            const wing = new THREE.Group();
+            applyWingTransform(wing, transform);
+            const mesh = new THREE.Mesh(geometry.clone(), cloneWingMeshMaterial(materialTemplate));
+            if (!mesh.material) {
+                return null;
+            }
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = false;
+            wing.add(mesh);
+            wing.userData.mesh = mesh;
+            return wing;
+        }
+
+        function createGlbWingAssetController(assetState, label) {
+            const createMaterialInstance = () => cloneWingMeshMaterial(assetState.materialTemplate);
+            const clonePreparedEquipped = () => ({
+                left: assetState.leftGeometry?.clone() || null,
+                right: assetState.rightGeometry?.clone() || null
+            });
+
+            const ensurePreparedWingPair = () => {
+                if (assetState.leftGeometry && assetState.rightGeometry) {
+                    return clonePreparedEquipped();
+                }
+                if (!assetState.previewGeometry || !assetState.materialTemplate) {
+                    return {
+                        left: null,
+                        right: null
+                    };
+                }
+                const sourceGeometry = assetState.previewGeometry.clone();
+                const split = splitPairWingGeometry(sourceGeometry);
+                if (sourceGeometry?.dispose) {
+                    sourceGeometry.dispose();
+                }
+                if (!split?.left || !split?.right) {
+                    throw new Error(`${label} GLB could not be split into left/right wings.`);
+                }
+                const preparedLeft = prepareWingGeometryForSocketAttachment(split.left);
+                const preparedRight = prepareWingGeometryForSocketAttachment(split.right);
+                if (split.left?.dispose) split.left.dispose();
+                if (split.right?.dispose) split.right.dispose();
+                if (!preparedLeft || !preparedRight) {
+                    throw new Error(`${label} wing geometry preparation failed.`);
+                }
+                assetState.leftGeometry = preparedLeft;
+                assetState.rightGeometry = preparedRight;
+                return clonePreparedEquipped();
+            };
+
+            const loadPreviewAssets = () => {
+                if (assetState.previewGeometry && assetState.materialTemplate) {
+                    return Promise.resolve(true);
+                }
+                if (!assetState.previewLoadPromise) {
+                    assetState.previewLoadPromise = new Promise((resolve, reject) => {
+                        assetState.loader.load(
+                            assetState.modelUrl,
+                            (gltf) => {
+                                const root = gltf?.scene || gltf?.scenes?.[0] || null;
+                                const sourceEntry = getLargestMeshEntryFromObject(root);
+                                const sourceGeometry = sourceEntry?.geometry || null;
+                                const materialTemplate = cloneWingMeshMaterial(sourceEntry?.material || null);
+                                if (!sourceGeometry) {
+                                    reject(new Error(`${label} GLB did not contain a mesh with geometry.`));
+                                    return;
+                                }
+                                if (!materialTemplate) {
+                                    if (sourceGeometry?.dispose) sourceGeometry.dispose();
+                                    reject(new Error(`${label} GLB did not contain a cloneable material.`));
+                                    return;
+                                }
+                                assetState.previewGeometry = sourceGeometry.clone();
+                                assetState.materialTemplate = materialTemplate;
+                                if (sourceGeometry?.dispose) {
+                                    sourceGeometry.dispose();
+                                }
+                                resolve(true);
+                            },
+                            undefined,
+                            (error) => reject(error)
+                        );
+                    }).catch((error) => {
+                        console.warn(`Unable to load ${label} GLB, leaving ${label} hidden until the asset is available.`, error);
+                        return false;
+                    });
+                }
+                return assetState.previewLoadPromise;
+            };
+
+            const loadEquippedAssets = () => {
+                if (assetState.leftGeometry && assetState.rightGeometry && assetState.materialTemplate) {
+                    return Promise.resolve(clonePreparedEquipped());
+                }
+                if (!assetState.equippedLoadPromise) {
+                    assetState.equippedLoadPromise = loadPreviewAssets().then((ready) => {
+                        if (!ready || !assetState.previewGeometry || !assetState.materialTemplate) {
+                            return;
+                        }
+                        ensurePreparedWingPair();
+                    }).catch((error) => {
+                        console.warn(`Unable to prepare equipped ${label} geometry.`, error);
+                    });
+                }
+                return assetState.equippedLoadPromise.then(() => clonePreparedEquipped());
+            };
+
+            const createPreviewObject = (previewTransform = null) => {
+                if (previewTransform) {
+                    try {
+                        const pair = ensurePreparedWingPair();
+                        if (pair.left && pair.right) {
+                            const group = new THREE.Group();
+                            const left = createDetachedWingPreviewMesh(
+                                pair.left,
+                                assetState.materialTemplate,
+                                buildMirroredWingTransform(previewTransform, -1)
+                            );
+                            const right = createDetachedWingPreviewMesh(
+                                pair.right,
+                                assetState.materialTemplate,
+                                buildMirroredWingTransform(previewTransform, 1)
+                            );
+                            if (left) {
+                                group.add(left);
+                                group.userData.left = left;
+                            }
+                            if (right) {
+                                group.add(right);
+                                group.userData.right = right;
+                            }
+                            if (left || right) {
+                                return group;
+                            }
+                        }
+                    } catch (error) {
+                        console.warn(`Unable to prepare detached preview object for ${label}.`, error);
+                    }
+                }
+                return createWingPairPreviewGroup(assetState.previewGeometry, assetState.materialTemplate);
+            };
+
+            return {
+                createMaterialInstance,
+                loadPreviewAssets,
+                loadEquippedAssets,
+                createPreviewObject
+            };
+        }
+
+        function buildMirroredWingTransform(transform, dir) {
+            const position = Array.isArray(transform?.position) ? transform.position : [0.8, -0.78, 0.22];
+            const rotation = Array.isArray(transform?.rotation) ? transform.rotation : [0.024, 0.076, -0.032];
+            const scaleValue = Array.isArray(transform?.scale)
+                ? transform.scale
+                : [transform?.scale || 19.2, transform?.scale || 19.2, transform?.scale || 19.2];
+            return {
+                position: [dir * position[0], position[1], position[2]],
+                rotation: [rotation[0], dir * rotation[1], dir * rotation[2]],
+                scale: [scaleValue[0], scaleValue[1], scaleValue[2]]
+            };
+        }
+
+        function applyWingTransform(target, transform) {
+            if (!target || !transform) {
+                return;
+            }
+            const position = Array.isArray(transform.position) ? transform.position : null;
+            const rotation = Array.isArray(transform.rotation) ? transform.rotation : null;
+            const scaleValue = Array.isArray(transform.scale) ? transform.scale : null;
+            if (position?.length === 3) {
+                target.position.set(position[0], position[1], position[2]);
+            }
+            if (rotation?.length === 3) {
+                target.rotation.set(rotation[0], rotation[1], rotation[2]);
+            }
+            if (scaleValue?.length === 3) {
+                target.scale.set(scaleValue[0], scaleValue[1], scaleValue[2]);
+            }
+        }
+
+        const SOCKETED_GLB_WING_PRESETS = Object.freeze({
+            compact: Object.freeze({
+                equipTransform: Object.freeze({
+                    position: [0.78, -0.76, 0.2],
+                    rotation: [0.024, 0.072, -0.03],
+                    scale: [19.2, 19.2, 19.2]
+                }),
+                previewTransform: Object.freeze({
+                    position: [0.64, -0.12, 0.08],
+                    rotation: [0.012, 0.018, -0.018],
+                    scale: [8.6, 8.6, 8.6]
+                }),
+                previewFit: Object.freeze({
+                    yOffsetRatio: 0.76,
+                    zOffsetRatio: 0.012,
+                    distanceMultiplier: 1.6,
+                    initialRotationY: 0
+                }),
+                itemThumbFit: Object.freeze({
+                    yOffsetRatio: 0.03,
+                    zOffsetRatio: 0.01,
+                    distanceMultiplier: 1.06
+                })
+            }),
+            tall: Object.freeze({
+                equipTransform: Object.freeze({
+                    position: [0.8, -0.78, 0.22],
+                    rotation: [0.024, 0.076, -0.032],
+                    scale: [19.2, 19.2, 19.2]
+                }),
+                previewTransform: Object.freeze({
+                    position: [0.66, -0.08, 0.06],
+                    rotation: [0.014, 0.018, -0.02],
+                    scale: [8.9, 8.9, 8.9]
+                }),
+                previewFit: Object.freeze({
+                    yOffsetRatio: 0.62,
+                    zOffsetRatio: 0.016,
+                    distanceMultiplier: 1.42,
+                    initialRotationY: 0
+                }),
+                itemThumbFit: Object.freeze({
+                    yOffsetRatio: -0.02,
+                    zOffsetRatio: 0.012,
+                    distanceMultiplier: 1.05
+                })
+            }),
+            tallThin: Object.freeze({
+                equipTransform: Object.freeze({
+                    position: [0.79, -0.77, 0.19],
+                    rotation: [0.023, 0.074, -0.029],
+                    scale: [19.2, 19.2, 19.2]
+                }),
+                previewTransform: Object.freeze({
+                    position: [0.65, -0.1, 0.06],
+                    rotation: [0.012, 0.018, -0.018],
+                    scale: [8.8, 8.8, 8.8]
+                }),
+                previewFit: Object.freeze({
+                    yOffsetRatio: 0.68,
+                    zOffsetRatio: 0.012,
+                    distanceMultiplier: 1.46,
+                    initialRotationY: 0
+                }),
+                itemThumbFit: Object.freeze({
+                    yOffsetRatio: 0,
+                    zOffsetRatio: 0.01,
+                    distanceMultiplier: 1.04
+                })
+            }),
+            flatWide: Object.freeze({
+                equipTransform: Object.freeze({
+                    position: [0.81, -0.82, 0.22],
+                    rotation: [0.022, 0.08, -0.034],
+                    scale: [19.2, 19.2, 19.2]
+                }),
+                previewTransform: Object.freeze({
+                    position: [0.68, -0.14, 0.05],
+                    rotation: [0.01, 0.02, -0.016],
+                    scale: [9.1, 9.1, 9.1]
+                }),
+                previewFit: Object.freeze({
+                    yOffsetRatio: 0.9,
+                    zOffsetRatio: 0.012,
+                    distanceMultiplier: 1.82,
+                    initialRotationY: 0
+                }),
+                itemThumbFit: Object.freeze({
+                    yOffsetRatio: 0.08,
+                    zOffsetRatio: 0.008,
+                    distanceMultiplier: 1.16
+                })
+            })
+        });
+
+        const SOCKETED_GLB_WING_FACTORY_CONFIGS = Object.freeze({
+            blossomissWings: Object.freeze({
+                label: 'Blossomiss Wings',
+                modelUrl: './Images/PROPS/Wings/BlossomissWings/BlossomissWings.glb',
+                ...SOCKETED_GLB_WING_PRESETS.compact
+            }),
+            canvasOfNavelleWings: Object.freeze({
+                label: 'Canvas of Navelle',
+                modelUrl: './Images/PROPS/Wings/Canvas of Navelle/CanvasOfNavelle.glb',
+                ...SOCKETED_GLB_WING_PRESETS.tall
+            }),
+            goddessOfValleysWings: Object.freeze({
+                label: 'Goddess of Valleys',
+                modelUrl: './Images/PROPS/Wings/Goddess of Valleys/GoddessOfValleys.glb',
+                ...SOCKETED_GLB_WING_PRESETS.tall
+            }),
+            honeycombBloomsWings: Object.freeze({
+                label: 'Honeycomb Blooms',
+                modelUrl: './Images/PROPS/Wings/Honeycomb Blooms/HoneycombBlooms.glb',
+                ...SOCKETED_GLB_WING_PRESETS.tall
+            }),
+            lavalcanoWings: Object.freeze({
+                label: 'Lavalcano Wings',
+                modelUrl: './Images/PROPS/Wings/LavalcanoWings/LavalcanoWings.glb',
+                ...SOCKETED_GLB_WING_PRESETS.flatWide
+            }),
+            lightOfSmilesWings: Object.freeze({
+                label: 'Light of Smiles',
+                modelUrl: './Images/PROPS/Wings/LightOfSmiles/LightOfSmiles.glb',
+                ...SOCKETED_GLB_WING_PRESETS.tallThin
+            }),
+            moonlightAmayaWings: Object.freeze({
+                label: 'Moonlight Amaya',
+                modelUrl: './Images/PROPS/Wings/Moonlight Amaya/MoonlightAmaya.glb',
+                ...SOCKETED_GLB_WING_PRESETS.tallThin
+            })
+        });
+
+        function createSocketedGlbWingPropFactory(config) {
+            const assetState = {
+                loader: new GLTFLoader(),
+                modelUrl: config.modelUrl,
+                previewLoadPromise: null,
+                equippedLoadPromise: null,
+                previewGeometry: null,
+                leftGeometry: null,
+                rightGeometry: null,
+                materialTemplate: null
+            };
+            const assetController = createGlbWingAssetController(assetState, config.label);
+
+            const makeWingSide = (side = 'left') => {
+                const dir = side === 'left' ? -1 : 1;
+                const wing = new THREE.Group();
+                applyWingTransform(wing, buildMirroredWingTransform(config.equipTransform, dir));
+                wing.userData.loadedFromGlb = false;
+                wing.userData.previewTransform = buildMirroredWingTransform(config.previewTransform, dir);
+                wing.userData.equippedReadyPromise = null;
+                wing.userData.ensureEquippedReady = () => {
+                    if (wing.userData.equippedReadyPromise) {
+                        return wing.userData.equippedReadyPromise;
+                    }
+                    wing.userData.equippedReadyPromise = assetController.loadEquippedAssets().then((pair) => {
+                        const targetGeometry = side === 'left' ? pair.left : pair.right;
+                        const material = assetController.createMaterialInstance();
+                        if (!targetGeometry || !material) {
+                            return;
+                        }
+                        wing.clear();
+                        const mesh = new THREE.Mesh(targetGeometry, material);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        mesh.frustumCulled = false;
+                        wing.add(mesh);
+                        wing.userData.mesh = mesh;
+                        wing.userData.loadedFromGlb = true;
+                    }).catch(() => null);
+                    return wing.userData.equippedReadyPromise;
+                };
+                return wing;
+            };
+
+            return function makeSocketedGlbWingProp() {
+                const g = new THREE.Group();
+                const left = makeWingSide('left');
+                const right = makeWingSide('right');
+                left.visible = false;
+                right.visible = false;
+                leftWingGroup.add(left);
+                rightWingGroup.add(right);
+                g.userData.left = left;
+                g.userData.right = right;
+                g.userData.previewReadyPromise = null;
+                g.userData.ensurePreviewReady = () => {
+                    if (g.userData.previewReadyPromise) {
+                        return g.userData.previewReadyPromise;
+                    }
+                    g.userData.previewReadyPromise = assetController.loadPreviewAssets();
+                    return g.userData.previewReadyPromise;
+                };
+                g.userData.equippedReadyPromise = null;
+                g.userData.ensureEquippedReady = () => {
+                    if (g.userData.equippedReadyPromise) {
+                        return g.userData.equippedReadyPromise;
+                    }
+                    g.userData.equippedReadyPromise = Promise.allSettled([
+                        left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
+                        right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+                    ]);
+                    return g.userData.equippedReadyPromise;
+                };
+                g.userData.createPreviewObject = () => assetController.createPreviewObject(config.previewTransform);
+                return g;
+            };
+        }
+
+        const makeBlossomissWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.blossomissWings);
+        const makeCanvasOfNavelleWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.canvasOfNavelleWings);
+        const makeGoddessOfValleysWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.goddessOfValleysWings);
+        const makeHoneycombBloomsWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.honeycombBloomsWings);
+        const makeLavalcanoWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.lavalcanoWings);
+        const makeLightOfSmilesWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.lightOfSmilesWings);
+        const makeMoonlightAmayaWingsProp = createSocketedGlbWingPropFactory(SOCKETED_GLB_WING_FACTORY_CONFIGS.moonlightAmayaWings);
+
+        function loadXatoriWingAssets() {
+            return xatoriWingAssetController.loadEquippedAssets();
+        }
+
+        function loadEndlessWingAssets() {
+            return endlessWingAssetController.loadEquippedAssets();
+        }
+
+        function createEmeraldCoenWingMaterialInstance() {
+            return emeraldCoenWingAssetController.createMaterialInstance();
+        }
+
+        function loadEmeraldCoenWingAssets() {
+            return emeraldCoenWingAssetController.loadEquippedAssets();
+        }
+
+        function makeEmeraldCoenWingSide(side = 'left') {
+            const dir = side === 'left' ? -1 : 1;
+            const wing = new THREE.Group();
+            wing.position.set(dir * 0.8, -0.78, 0.22);
+            wing.rotation.set(0.024, dir * 0.076, -0.032 * dir);
+            wing.scale.set(19.2, 19.2, 19.2);
+            wing.userData.loadedFromGlb = false;
+            wing.userData.previewTransform = {
+                position: [dir * 0.66, -0.08, 0.06],
+                rotation: [0.014, dir * 0.018, -0.02 * dir],
+                scale: [8.9, 8.9, 8.9]
+            };
+            wing.userData.equippedReadyPromise = null;
+            wing.userData.ensureEquippedReady = () => {
+                if (wing.userData.equippedReadyPromise) {
+                    return wing.userData.equippedReadyPromise;
+                }
+                wing.userData.equippedReadyPromise = loadEmeraldCoenWingAssets().then((pair) => {
+                    const targetGeometry = side === 'left' ? pair.left : pair.right;
+                    const material = createEmeraldCoenWingMaterialInstance();
+                    if (!targetGeometry || !material) {
+                        return;
+                    }
+                    wing.clear();
+                    const mesh = new THREE.Mesh(targetGeometry, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.frustumCulled = false;
+                    wing.add(mesh);
+                    wing.userData.mesh = mesh;
+                    wing.userData.loadedFromGlb = true;
+                }).catch(() => null);
+                return wing.userData.equippedReadyPromise;
+            };
+
+            return wing;
+        }
+
+        function makeEmeraldCoenWingsProp() {
+            const g = new THREE.Group();
+            const left = makeEmeraldCoenWingSide('left');
+            const right = makeEmeraldCoenWingSide('right');
+            left.visible = false;
+            right.visible = false;
+            leftWingGroup.add(left);
+            rightWingGroup.add(right);
+            g.userData.left = left;
+            g.userData.right = right;
+            g.userData.previewReadyPromise = null;
+            g.userData.ensurePreviewReady = () => {
+                if (g.userData.previewReadyPromise) {
+                    return g.userData.previewReadyPromise;
+                }
+                g.userData.previewReadyPromise = emeraldCoenWingAssetController.loadPreviewAssets();
+                return g.userData.previewReadyPromise;
+            };
+            g.userData.equippedReadyPromise = null;
+            g.userData.ensureEquippedReady = () => {
+                if (g.userData.equippedReadyPromise) {
+                    return g.userData.equippedReadyPromise;
+                }
+                g.userData.equippedReadyPromise = Promise.allSettled([
+                    left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
+                    right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+                ]);
+                return g.userData.equippedReadyPromise;
+            };
+            g.userData.createPreviewObject = () => emeraldCoenWingAssetController.createPreviewObject({
+                position: [0.66, -0.08, 0.06],
+                rotation: [0.014, 0.018, -0.02],
+                scale: [8.9, 8.9, 8.9]
+            });
+            return g;
+        }
+
+        function makeEndlessWingSide(side = 'left') {
+            const dir = side === 'left' ? -1 : 1;
+            const wing = new THREE.Group();
+            wing.position.set(dir * 0.8, -0.8, 0.22);
+            wing.rotation.set(0.024, dir * 0.076, -0.032 * dir);
+            wing.scale.set(19.2, 19.2, 19.2);
+            wing.userData.loadedFromGlb = false;
+            wing.userData.previewTransform = {
+                position: [dir * 0.66, -0.1, 0.06],
+                rotation: [0.014, dir * 0.018, -0.02 * dir],
+                scale: [8.9, 8.9, 8.9]
+            };
+            wing.userData.equippedReadyPromise = null;
+            wing.userData.ensureEquippedReady = () => {
+                if (wing.userData.equippedReadyPromise) {
+                    return wing.userData.equippedReadyPromise;
+                }
+                wing.userData.equippedReadyPromise = loadEndlessWingAssets().then((pair) => {
+                    const targetGeometry = side === 'left' ? pair.left : pair.right;
+                    const material = createEndlessWingMaterialInstance();
+                    if (!targetGeometry || !material) {
+                        return;
+                    }
+                    wing.clear();
+                    const mesh = new THREE.Mesh(targetGeometry, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.frustumCulled = false;
+                    wing.add(mesh);
+                    wing.userData.mesh = mesh;
+                    wing.userData.loadedFromGlb = true;
+                }).catch(() => null);
+                return wing.userData.equippedReadyPromise;
+            };
+
+            return wing;
+        }
+
+        function makeEndlessWingsProp() {
+            const g = new THREE.Group();
+            const left = makeEndlessWingSide('left');
+            const right = makeEndlessWingSide('right');
+            left.visible = false;
+            right.visible = false;
+            leftWingGroup.add(left);
+            rightWingGroup.add(right);
+            g.userData.left = left;
+            g.userData.right = right;
+            g.userData.previewReadyPromise = null;
+            g.userData.ensurePreviewReady = () => {
+                if (g.userData.previewReadyPromise) {
+                    return g.userData.previewReadyPromise;
+                }
+                g.userData.previewReadyPromise = endlessWingAssetController.loadPreviewAssets();
+                return g.userData.previewReadyPromise;
+            };
+            g.userData.equippedReadyPromise = null;
+            g.userData.ensureEquippedReady = () => {
+                if (g.userData.equippedReadyPromise) {
+                    return g.userData.equippedReadyPromise;
+                }
+                g.userData.equippedReadyPromise = Promise.allSettled([
+                    left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
+                    right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+                ]);
+                return g.userData.equippedReadyPromise;
+            };
+            g.userData.createPreviewObject = () => endlessWingAssetController.createPreviewObject({
+                position: [0.66, -0.1, 0.06],
+                rotation: [0.014, 0.018, -0.02],
+                scale: [8.9, 8.9, 8.9]
+            });
+            return g;
+        }
+
+        function makeXatoriWingSide(side = 'left') {
+            const dir = side === 'left' ? -1 : 1;
+            const wing = new THREE.Group();
+            wing.position.set(dir * 0.78, -0.76, 0.2);
+            wing.rotation.set(0.024, dir * 0.072, -0.03 * dir);
+            wing.scale.set(19.2, 19.2, 19.2);
+            wing.userData.loadedFromGlb = false;
+            wing.userData.previewTransform = {
+                position: [dir * 0.64, -0.12, 0.08],
+                rotation: [0.012, dir * 0.018, -0.018 * dir],
+                scale: [8.6, 8.6, 8.6]
+            };
+            wing.userData.equippedReadyPromise = null;
+            wing.userData.ensureEquippedReady = () => {
+                if (wing.userData.equippedReadyPromise) {
+                    return wing.userData.equippedReadyPromise;
+                }
+                wing.userData.equippedReadyPromise = loadXatoriWingAssets().then((pair) => {
+                    const targetGeometry = side === 'left' ? pair.left : pair.right;
+                    const material = createXatoriWingMaterialInstance();
+                    if (!targetGeometry || !material) {
+                        return;
+                    }
+                    wing.clear();
+                    const mesh = new THREE.Mesh(targetGeometry, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.frustumCulled = false;
+                    wing.add(mesh);
+                    wing.userData.mesh = mesh;
+                    wing.userData.loadedFromGlb = true;
+                }).catch(() => null);
+                return wing.userData.equippedReadyPromise;
+            };
+
+            return wing;
+        }
+
+        function makeXatoriWingsProp() {
+            const g = new THREE.Group();
+            const left = makeXatoriWingSide('left');
+            const right = makeXatoriWingSide('right');
+            left.visible = false;
+            right.visible = false;
+            leftWingGroup.add(left);
+            rightWingGroup.add(right);
+            g.userData.left = left;
+            g.userData.right = right;
+            g.userData.previewReadyPromise = null;
+            g.userData.ensurePreviewReady = () => {
+                if (g.userData.previewReadyPromise) {
+                    return g.userData.previewReadyPromise;
+                }
+                g.userData.previewReadyPromise = xatoriWingAssetController.loadPreviewAssets();
+                return g.userData.previewReadyPromise;
+            };
+            g.userData.equippedReadyPromise = null;
+            g.userData.ensureEquippedReady = () => {
+                if (g.userData.equippedReadyPromise) {
+                    return g.userData.equippedReadyPromise;
+                }
+                g.userData.equippedReadyPromise = Promise.allSettled([
+                    left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
+                    right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+                ]);
+                return g.userData.equippedReadyPromise;
+            };
+            g.userData.createPreviewObject = () => xatoriWingAssetController.createPreviewObject({
+                position: [0.64, -0.12, 0.08],
+                rotation: [0.012, 0.018, -0.018],
+                scale: [8.6, 8.6, 8.6]
+            });
+            return g;
         }
 
         function createEfernoFallbackWingGeometry(side = 'left') {
@@ -5949,6 +6974,16 @@
             };
 
             const PROP_CATALOG = [
+                { key: 'blossomissWings', label: 'Blossomiss Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeBlossomissWingsProp' },
+                { key: 'canvasOfNavelleWings', label: 'Canvas of Navelle', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeCanvasOfNavelleWingsProp' },
+                { key: 'goddessOfValleysWings', label: 'Goddess of Valleys', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeGoddessOfValleysWingsProp' },
+                { key: 'honeycombBloomsWings', label: 'Honeycomb Blooms', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeHoneycombBloomsWingsProp' },
+                { key: 'lavalcanoWings', label: 'Lavalcano Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeLavalcanoWingsProp' },
+                { key: 'lightOfSmilesWings', label: 'Light of Smiles', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeLightOfSmilesWingsProp' },
+                { key: 'moonlightAmayaWings', label: 'Moonlight Amaya', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeMoonlightAmayaWingsProp' },
+                { key: 'endlessWings', label: 'Endless Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeEndlessWingsProp' },
+                { key: 'emeraldCoenWings', label: 'Emerald Coen Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeEmeraldCoenWingsProp' },
+                { key: 'xatoriWings', label: 'Xatori Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeXatoriWingsProp' },
                 { key: 'alphaWings', label: 'Alpha Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeAlphaWingsProp' },
                 { key: 'rainbowWings', label: 'Rainbow Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeRainbowWingsProp' },
                 { key: 'roboticWings', label: 'Robotic Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeRoboticWingsProp' },
@@ -5999,6 +7034,16 @@
 
         // Inventory-first structure: keep category rules and labels centralized for easy extension.
         const propFactoryById = {
+            makeBlossomissWingsProp,
+            makeCanvasOfNavelleWingsProp,
+            makeGoddessOfValleysWingsProp,
+            makeHoneycombBloomsWingsProp,
+            makeLavalcanoWingsProp,
+            makeLightOfSmilesWingsProp,
+            makeMoonlightAmayaWingsProp,
+            makeEndlessWingsProp,
+            makeEmeraldCoenWingsProp,
+            makeXatoriWingsProp,
             makeAlphaWingsProp,
             makeRainbowWingsProp,
             makeRoboticWingsProp,
@@ -6019,6 +7064,9 @@
             INVENTORY_CONFIG.categories.map((category) => [category.key, category.equipLimit ?? 1])
         );
         const INVENTORY_LIMIT_PER_CATEGORY = INVENTORY_CONFIG.perCategoryLimit;
+        const PROP_CATALOG_ORDER = new Map(
+            PROP_DEFINITIONS.map((definition, index) => [definition.key, index])
+        );
         const SINGLE_EQUIP_CATEGORIES = new Set(
             INVENTORY_CONFIG.categories
                 .filter((category) => (category.equipLimit ?? 1) === 1)
@@ -6121,6 +7169,15 @@
 
         function getPropCategory(propKey) {
             return propRegistry.get(propKey)?.category || null;
+        }
+
+        function comparePropCatalogOrder(a, b) {
+            const aIndex = PROP_CATALOG_ORDER.has(a) ? PROP_CATALOG_ORDER.get(a) : Number.MAX_SAFE_INTEGER;
+            const bIndex = PROP_CATALOG_ORDER.has(b) ? PROP_CATALOG_ORDER.get(b) : Number.MAX_SAFE_INTEGER;
+            if (aIndex !== bIndex) {
+                return aIndex - bIndex;
+            }
+            return getPropLabelByKey(a).localeCompare(getPropLabelByKey(b));
         }
 
         function getInventoryKeysByCategory(categoryKey) {
@@ -6582,6 +7639,11 @@
         const propButtons = itemButtons.filter((btn) => btn.dataset.prop);
         const itemThumbCache = new Map();
         const itemThumbInFlight = new Map();
+        const itemThumbRenderState = {
+            renderer: null,
+            scene: null,
+            camera: null
+        };
         const ITEM_THUMB_SIZE = 56;
         const ITEM_THUMB_IMAGE_BY_PROP = Object.freeze({
             alphaWings: './Images/PROPS/Thumbnails/alphaWings.png',
@@ -6622,6 +7684,7 @@
         const MYSTERY_BOX_SHAKE_SFX_MIN_INTERVAL_MS = 120;
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
         const HOME_PAGE_MUSIC_STORAGE_KEY = 'homepage_music_track_v1';
+        const MYSTERY_WING_ORDER_STORAGE_KEY = 'homepage_mystery_wing_order_v1';
         const homePageRouteAudioState = {
             isActive: true,
             gain: 1,
@@ -6663,6 +7726,12 @@
             equipPropAudio: null,
             pullActive: false,
             lastBoxShakeAtMs: -Infinity
+        };
+        const mysteryRewardOrderState = {
+            loaded: false,
+            queue: [],
+            seen: [],
+            lastKey: null
         };
 
         function clampUnitVolume(value, fallback = 0.7) {
@@ -7723,21 +8792,269 @@
             propKey: null,
             object: null,
             label: null,
-            rotateY: 0,
-            rotateX: 0,
+            defaultObjectRotateY: 0,
+            objectRotateY: 0,
+            defaultOrbitYaw: 0,
+            defaultOrbitPitch: 0,
+            orbitYaw: 0,
+            orbitPitch: 0,
+            cameraDistance: 2.4,
+            fitCameraDistance: 2.4,
+            minCameraDistance: 1.2,
+            maxCameraDistance: 6.4,
+            defaultCameraTarget: new THREE.Vector3(),
+            cameraTarget: new THREE.Vector3(),
+            panLimitX: 0.72,
+            panLimitY: 0.72,
             hasStandaloneMesh: false,
             viewMode: 'item',
             fitCategory: null,
             fitPropKey: null,
-            autoSpinPauseUntilMs: 0
+            autoSpinPauseUntilMs: 0,
+            requestToken: 0
         };
         const previewDragState = {
             active: false,
+            mode: 'idle',
             pointerId: null,
+            secondaryPointerId: null,
             lastX: 0,
-            lastY: 0
+            lastY: 0,
+            secondaryX: 0,
+            secondaryY: 0,
+            pinchStartDistance: 0,
+            pinchStartCameraDistance: 0,
+            gestureStartMidX: 0,
+            gestureStartMidY: 0,
+            gestureStartTargetX: 0,
+            gestureStartTargetY: 0
         };
+
+        function releasePreviewPointerCapture(pointerId) {
+            if (!propPreviewViewport || pointerId === null || pointerId === undefined) {
+                return;
+            }
+            try {
+                propPreviewViewport.releasePointerCapture(pointerId);
+            } catch (_) {}
+        }
+
+        function resetPreviewDragState() {
+            releasePreviewPointerCapture(previewDragState.pointerId);
+            releasePreviewPointerCapture(previewDragState.secondaryPointerId);
+            previewDragState.active = false;
+            previewDragState.mode = 'idle';
+            previewDragState.pointerId = null;
+            previewDragState.secondaryPointerId = null;
+            previewDragState.lastX = 0;
+            previewDragState.lastY = 0;
+            previewDragState.secondaryX = 0;
+            previewDragState.secondaryY = 0;
+            previewDragState.pinchStartDistance = 0;
+            previewDragState.pinchStartCameraDistance = 0;
+            previewDragState.gestureStartMidX = 0;
+            previewDragState.gestureStartMidY = 0;
+            previewDragState.gestureStartTargetX = 0;
+            previewDragState.gestureStartTargetY = 0;
+            if (propPreviewViewport) {
+                propPreviewViewport.classList.remove('is-dragging');
+            }
+        }
+
+        function clampPreviewOrbitPitch(pitch) {
+            return THREE.MathUtils.clamp(sanitizeFiniteNumber(pitch, 0), -1.18, 1.18);
+        }
+
+        function clampPreviewCameraDistance(distance) {
+            const fallbackDistance = sanitizeFiniteNumber(previewState.fitCameraDistance, 2.4);
+            const safeMin = Math.max(0.45, sanitizeFiniteNumber(previewState.minCameraDistance, Math.max(0.45, fallbackDistance * 0.52)));
+            const safeMax = Math.max(
+                safeMin + 0.4,
+                sanitizeFiniteNumber(previewState.maxCameraDistance, Math.max(safeMin + 0.4, fallbackDistance * 2.4))
+            );
+            return THREE.MathUtils.clamp(sanitizeFiniteNumber(distance, fallbackDistance), safeMin, safeMax);
+        }
+
+        function updatePreviewCameraClipPlanes(distance) {
+            const safeDistance = Math.max(0.4, sanitizeFiniteNumber(distance, 2.4));
+            previewCamera.near = Math.max(0.01, Math.min(0.06, safeDistance * 0.03));
+            previewCamera.far = Math.max(18, safeDistance * 18);
+            previewCamera.updateProjectionMatrix();
+        }
+
+        function syncPreviewObjectRotation(object = previewState.object) {
+            if (!object) {
+                return;
+            }
+            object.rotation.set(0, sanitizeFiniteNumber(previewState.objectRotateY, 0), 0);
+            object.updateMatrixWorld(true);
+        }
+
+        function resetPreviewSpinToDefault() {
+            previewState.objectRotateY = sanitizeFiniteNumber(previewState.defaultObjectRotateY, 0);
+            syncPreviewObjectRotation(previewState.object);
+        }
+
+        function clampPreviewCameraTarget() {
+            const defaultTarget = previewState.defaultCameraTarget || new THREE.Vector3();
+            const limitX = Math.max(0, sanitizeFiniteNumber(previewState.panLimitX, 0));
+            const limitY = Math.max(0, sanitizeFiniteNumber(previewState.panLimitY, 0));
+            previewState.cameraTarget.set(
+                THREE.MathUtils.clamp(
+                    sanitizeFiniteNumber(previewState.cameraTarget.x, defaultTarget.x),
+                    defaultTarget.x - limitX,
+                    defaultTarget.x + limitX
+                ),
+                THREE.MathUtils.clamp(
+                    sanitizeFiniteNumber(previewState.cameraTarget.y, defaultTarget.y),
+                    defaultTarget.y - limitY,
+                    defaultTarget.y + limitY
+                ),
+                sanitizeFiniteNumber(defaultTarget.z, 0)
+            );
+        }
+
+        function applyPreviewCameraOrbit() {
+            if (!previewCamera) {
+                return;
+            }
+            clampPreviewCameraTarget();
+            const target = previewState.cameraTarget || new THREE.Vector3();
+            const yaw = sanitizeFiniteNumber(previewState.orbitYaw, 0);
+            const pitch = clampPreviewOrbitPitch(previewState.orbitPitch);
+            const distance = clampPreviewCameraDistance(previewState.cameraDistance);
+            const cosPitch = Math.max(0.001, Math.cos(pitch));
+            previewState.orbitYaw = yaw;
+            previewState.orbitPitch = pitch;
+            previewState.cameraDistance = distance;
+            previewCamera.position.set(
+                sanitizeFiniteNumber(target.x, 0) + Math.sin(yaw) * cosPitch * distance,
+                sanitizeFiniteNumber(target.y, 0) + Math.sin(pitch) * distance,
+                sanitizeFiniteNumber(target.z, 0) + Math.cos(yaw) * cosPitch * distance
+            );
+            previewCamera.lookAt(target);
+            updatePreviewCameraClipPlanes(distance);
+        }
+
+        function resetPreviewCameraOrbitToFit() {
+            previewState.orbitYaw = sanitizeFiniteNumber(previewState.defaultOrbitYaw, 0);
+            previewState.orbitPitch = sanitizeFiniteNumber(previewState.defaultOrbitPitch, 0);
+            previewState.cameraDistance = sanitizeFiniteNumber(previewState.fitCameraDistance, previewState.cameraDistance || 2.4);
+            previewState.cameraTarget.copy(previewState.defaultCameraTarget || new THREE.Vector3());
+            applyPreviewCameraOrbit();
+        }
+
+        function resetPreviewViewToDefault() {
+            resetPreviewSpinToDefault();
+            resetPreviewCameraOrbitToFit();
+        }
+
+        function focusPropPreviewViewport() {
+            if (!propPreviewViewport || typeof propPreviewViewport.focus !== 'function') {
+                return;
+            }
+            try {
+                propPreviewViewport.focus({ preventScroll: true });
+            } catch (_) {
+                propPreviewViewport.focus();
+            }
+        }
+
+        function pausePreviewAutoSpin(durationMs = 3200) {
+            previewState.autoSpinPauseUntilMs = performance.now() + Math.max(0, sanitizeFiniteNumber(durationMs, 3200));
+        }
+
+        function getPreviewPointerDistance() {
+            if (
+                previewDragState.pointerId === null ||
+                previewDragState.secondaryPointerId === null
+            ) {
+                return 0;
+            }
+            return Math.hypot(
+                previewDragState.secondaryX - previewDragState.lastX,
+                previewDragState.secondaryY - previewDragState.lastY
+            );
+        }
+
+        function panPreviewCameraByPixels(dx, dy, baseTargetX = null, baseTargetY = null, referenceDistance = previewState.cameraDistance) {
+            if (!propPreviewViewport) {
+                return;
+            }
+            const rect = propPreviewViewport.getBoundingClientRect();
+            const width = Math.max(1, rect.width);
+            const height = Math.max(1, rect.height);
+            const safeDistance = clampPreviewCameraDistance(referenceDistance);
+            const halfFov = Math.max(0.01, THREE.MathUtils.degToRad(previewCamera.fov || 34) / 2);
+            const visibleHeight = 2 * safeDistance * Math.tan(halfFov);
+            const visibleWidth = visibleHeight * Math.max(0.35, previewCamera.aspect || 1);
+            const originX = Number.isFinite(baseTargetX) ? baseTargetX : sanitizeFiniteNumber(previewState.cameraTarget.x, 0);
+            const originY = Number.isFinite(baseTargetY) ? baseTargetY : sanitizeFiniteNumber(previewState.cameraTarget.y, 0);
+            previewState.cameraTarget.x = originX - (dx * visibleWidth / width);
+            previewState.cameraTarget.y = originY + (dy * visibleHeight / height);
+            applyPreviewCameraOrbit();
+        }
         const PREVIEW_ITEM_FIT_OVERRIDES = Object.freeze({
+            blossomissWings: Object.freeze({
+                yOffsetRatio: 0.76,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.6,
+                initialRotationY: 0
+            }),
+            canvasOfNavelleWings: Object.freeze({
+                yOffsetRatio: -0.04,
+                zOffsetRatio: 0.016,
+                distanceMultiplier: 1.26,
+                initialRotationY: 0
+            }),
+            goddessOfValleysWings: Object.freeze({
+                yOffsetRatio: -0.3,
+                zOffsetRatio: 0.016,
+                distanceMultiplier: 1.22,
+                initialRotationY: 0
+            }),
+            honeycombBloomsWings: Object.freeze({
+                yOffsetRatio: 0.14,
+                zOffsetRatio: 0.016,
+                distanceMultiplier: 1.2,
+                initialRotationY: 0
+            }),
+            lavalcanoWings: Object.freeze({
+                yOffsetRatio: 0.9,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.82,
+                initialRotationY: 0
+            }),
+            lightOfSmilesWings: Object.freeze({
+                yOffsetRatio: 0.38,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.34,
+                initialRotationY: 0
+            }),
+            moonlightAmayaWings: Object.freeze({
+                yOffsetRatio: -0.16,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.22,
+                initialRotationY: 0
+            }),
+            endlessWings: Object.freeze({
+                yOffsetRatio: 0.02,
+                zOffsetRatio: 0.014,
+                distanceMultiplier: 1.32,
+                initialRotationY: 0
+            }),
+            emeraldCoenWings: Object.freeze({
+                yOffsetRatio: 0.08,
+                zOffsetRatio: 0.016,
+                distanceMultiplier: 1.18,
+                initialRotationY: 0
+            }),
+            xatoriWings: Object.freeze({
+                yOffsetRatio: 0.74,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.7,
+                initialRotationY: 0
+            }),
             alphaWings: Object.freeze({
                 yOffsetRatio: 0.76,
                 zOffsetRatio: 0.02,
@@ -7762,6 +9079,58 @@
                 yOffsetRatio: 1.18,
                 zOffsetRatio: 0.028,
                 distanceMultiplier: 1.36
+            })
+        });
+        const ITEM_THUMB_FIT_OVERRIDES = Object.freeze({
+            blossomissWings: Object.freeze({
+                yOffsetRatio: 0.03,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.06
+            }),
+            canvasOfNavelleWings: Object.freeze({
+                yOffsetRatio: -0.02,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.05
+            }),
+            goddessOfValleysWings: Object.freeze({
+                yOffsetRatio: -0.02,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.05
+            }),
+            honeycombBloomsWings: Object.freeze({
+                yOffsetRatio: -0.02,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.05
+            }),
+            lavalcanoWings: Object.freeze({
+                yOffsetRatio: 0.08,
+                zOffsetRatio: 0.008,
+                distanceMultiplier: 1.16
+            }),
+            lightOfSmilesWings: Object.freeze({
+                yOffsetRatio: 0,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.04
+            }),
+            moonlightAmayaWings: Object.freeze({
+                yOffsetRatio: 0,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.04
+            }),
+            endlessWings: Object.freeze({
+                yOffsetRatio: 0.02,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.12
+            }),
+            emeraldCoenWings: Object.freeze({
+                yOffsetRatio: -0.02,
+                zOffsetRatio: 0.012,
+                distanceMultiplier: 1.05
+            }),
+            xatoriWings: Object.freeze({
+                yOffsetRatio: 0.02,
+                zOffsetRatio: 0.01,
+                distanceMultiplier: 1.08
             })
         });
         const MYSTERY_SIGN_RETURN_AFTER_PANEL_CLOSE_MS = 190;
@@ -7803,6 +9172,14 @@
             returnSpringDamping: 22,
             returnSettleDistancePx: 0.35,
             returnSettleSpeedPx: 8
+        });
+        const MYSTERY_INTERACTION_SAFETY_CONFIG = Object.freeze({
+            signStartCooldownMs: 220,
+            signCancelCooldownMs: 140,
+            signLaunchLockMs: 520,
+            boxPressCooldownMs: 140,
+            boxOpenCooldownMs: 420,
+            postRevealLockMs: 280
         });
         const mysteryHangingSign = {
             enabled: Boolean(
@@ -8096,12 +9473,19 @@
             ascentWingAmpStart: 0.46,
             ascentWingAmpEnd: 0.24,
             ascentYawEnd: 0,
-            offscreenDropDelay: 0.74,
+            offscreenDropDelay: 0.28,
+            offscreenClearDropDelay: 0.14,
+            offscreenFallbackDropDelay: 0.38,
             offscreenMargin: 1.03,
             offscreenFallbackDelay: 0.59,
+            offscreenHardFailDelay: 1.1,
+            offscreenScreenMarginPx: 30,
+            offscreenSilhouetteMarginScale: 0.09,
+            offscreenClearanceLiftSpeed: 16.2,
 
             holdDuration: 0.21,
             holdLift: 20.8,
+            holdLiftMin: 24.6,
             holdSway: 0.2,
             holdWingHz: 2.55,
             holdWingAmp: 0.08,
@@ -8325,7 +9709,58 @@
             eyeTargetY: 0,
             eyeBlend: 0
         };
-        const mysteryFlightCinematicScreenProbe = new THREE.Vector3();
+        function getMysteryFlightVisualClearanceState(config = MYSTERY_CHARACTER_FLIGHT_CONFIG) {
+            const { width, height } = getViewportDimensions();
+            const bounds = computeProjectedObjectScreenBounds(creatureGroup, camera, width, height);
+            const baseMarginPx = Math.max(18, sanitizeFiniteNumber(config.offscreenScreenMarginPx, 30));
+            if (!bounds) {
+                return {
+                    bounds: null,
+                    viewportWidth: width,
+                    viewportHeight: height,
+                    marginPx: baseMarginPx,
+                    fullyOffscreen: false,
+                    fullyAboveTop: false
+                };
+            }
+
+            const silhouetteMargin = THREE.MathUtils.clamp(
+                bounds.height * Math.max(0.02, sanitizeFiniteNumber(config.offscreenSilhouetteMarginScale, 0.09)),
+                10,
+                Math.max(22, height * 0.12)
+            );
+            const marginPx = THREE.MathUtils.clamp(
+                baseMarginPx + silhouetteMargin,
+                baseMarginPx,
+                Math.max(baseMarginPx + 12, height * 0.18)
+            );
+            const fullyAboveTop = bounds.bottom <= -marginPx;
+            const fullyOffscreen =
+                fullyAboveTop ||
+                bounds.right <= -marginPx ||
+                bounds.left >= width + marginPx ||
+                bounds.top >= height + marginPx;
+            return {
+                bounds,
+                viewportWidth: width,
+                viewportHeight: height,
+                marginPx,
+                fullyOffscreen,
+                fullyAboveTop
+            };
+        }
+
+        function getMysteryFlightClearanceLift(timer, duration, config = MYSTERY_CHARACTER_FLIGHT_CONFIG, speedMultiplier = 1, clearanceState = null) {
+            const overflowTime = Math.max(0, sanitizeFiniteNumber(timer, 0) - Math.max(0.001, sanitizeFiniteNumber(duration, 0.001)));
+            if (overflowTime <= 0) {
+                return 0;
+            }
+            const visibility = clearanceState || getMysteryFlightVisualClearanceState(config);
+            if (visibility.fullyAboveTop || visibility.fullyOffscreen) {
+                return 0;
+            }
+            return overflowTime * Math.max(0, sanitizeFiniteNumber(config.offscreenClearanceLiftSpeed, 13.6)) * Math.max(0.2, sanitizeFiniteNumber(speedMultiplier, 1));
+        }
 
         function resetMysteryCinematicState() {
             mysteryFlightCinematic.active = false;
@@ -8820,6 +10255,11 @@
             activeProps.add(propKey);
             updatePropButtonStates();
             if (!wasAlreadyEquipped) {
+                const sourceObject = getItemByPropKey(propKey);
+                const equippedReadyPromise = getPropEquippedReadyPromise(sourceObject);
+                if (equippedReadyPromise) {
+                    void equippedReadyPromise.catch(() => null);
+                }
                 playMysteryEquipPropSfx();
                 const startedGlow = startEquipVisualGlowPulse(propKey);
                 if (startedGlow) {
@@ -8913,30 +10353,212 @@
             const loadDynamicThumb = () => {
                 const cachedPromise = getItemThumbDataUrl(propKey);
                 if (!cachedPromise) {
-                    return Promise.resolve();
+                    return Promise.resolve(false);
                 }
                 return cachedPromise.then((dataUrl) => {
                     if (!dataUrl) {
-                        return;
+                        return false;
                     }
                     applyItemThumbImage(thumbElement, dataUrl);
-                }).catch(() => {});
+                    return true;
+                }).catch(() => false);
             };
 
             const staticThumbPath = ITEM_THUMB_IMAGE_BY_PROP[propKey];
             if (staticThumbPath) {
-                const staticImage = applyItemThumbImage(thumbElement, staticThumbPath);
-                if (!staticImage) {
-                    return loadDynamicThumb();
-                }
-                staticImage.addEventListener('error', () => {
-                    setItemThumbFallback(thumbElement, propKey);
-                    void loadDynamicThumb();
-                }, { once: true });
-                return Promise.resolve();
+                return new Promise((resolve) => {
+                    const staticImage = applyItemThumbImage(thumbElement, staticThumbPath);
+                    if (!staticImage) {
+                        loadDynamicThumb().then(resolve);
+                        return;
+                    }
+                    staticImage.addEventListener('load', () => resolve(true), { once: true });
+                    staticImage.addEventListener('error', () => {
+                        setItemThumbFallback(thumbElement, propKey);
+                        loadDynamicThumb().then(resolve);
+                    }, { once: true });
+                });
             }
 
             return loadDynamicThumb();
+        }
+
+        function getPropPreviewReadyPromise(source) {
+            const ensurePreviewReady = (target) => {
+                if (!target?.userData) {
+                    return null;
+                }
+                const ownPromise = target.userData.previewReadyPromise;
+                if (ownPromise && typeof ownPromise.then === 'function') {
+                    return ownPromise;
+                }
+                const ensure = target.userData.ensurePreviewReady;
+                if (typeof ensure !== 'function') {
+                    return null;
+                }
+                const nextPromise = ensure();
+                if (nextPromise && typeof nextPromise.then === 'function') {
+                    target.userData.previewReadyPromise = nextPromise;
+                    return nextPromise;
+                }
+                return null;
+            };
+
+            const ownPromise = ensurePreviewReady(source);
+            if (ownPromise && typeof ownPromise.then === 'function') {
+                return ownPromise;
+            }
+
+            const detachedPromises = [source?.userData?.left, source?.userData?.right]
+                .map((part) => ensurePreviewReady(part))
+                .filter((promise) => promise && typeof promise.then === 'function');
+
+            if (!detachedPromises.length) {
+                return null;
+            }
+
+            return Promise.allSettled(detachedPromises);
+        }
+
+        function getPropEquippedReadyPromise(source) {
+            const ensureEquippedReady = (target) => {
+                if (!target?.userData) {
+                    return null;
+                }
+                const ownPromise = target.userData.equippedReadyPromise;
+                if (ownPromise && typeof ownPromise.then === 'function') {
+                    return ownPromise;
+                }
+                const ensure = target.userData.ensureEquippedReady;
+                if (typeof ensure !== 'function') {
+                    return null;
+                }
+                const nextPromise = ensure();
+                if (nextPromise && typeof nextPromise.then === 'function') {
+                    target.userData.equippedReadyPromise = nextPromise;
+                    return nextPromise;
+                }
+                return null;
+            };
+
+            const ownPromise = ensureEquippedReady(source);
+            if (ownPromise && typeof ownPromise.then === 'function') {
+                return ownPromise;
+            }
+
+            const detachedPromises = [source?.userData?.left, source?.userData?.right]
+                .map((part) => ensureEquippedReady(part))
+                .filter((promise) => promise && typeof promise.then === 'function');
+
+            if (!detachedPromises.length) {
+                return getPropPreviewReadyPromise(source);
+            }
+
+            return Promise.allSettled(detachedPromises);
+        }
+
+        function waitForPreviewRenderTick() {
+            return new Promise((resolve) => {
+                if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                    window.requestAnimationFrame(() => resolve());
+                    return;
+                }
+                setTimeout(resolve, 16);
+            });
+        }
+
+        function resolvePreviewPlacement(mode, safeSize, fitCategory = null, fitPropKey = null) {
+            const fit = computePreviewAutoFit(mode, safeSize, fitCategory);
+            const isCharacterMode = mode === 'character';
+            let adjustedScale = fit.scale;
+            let adjustedDistance = fit.distance;
+            let yOffsetRatio = 0;
+            let zOffsetRatio = 0;
+
+            if (!isCharacterMode) {
+                const normalizedPropKey = typeof fitPropKey === 'string' ? fitPropKey.trim() : '';
+                const override = normalizedPropKey ? PREVIEW_ITEM_FIT_OVERRIDES[normalizedPropKey] : null;
+                const lowerPropKey = normalizedPropKey.toLowerCase();
+                const isWingLike = lowerPropKey.includes('wing');
+                if (override && Number.isFinite(override.distanceMultiplier) && override.distanceMultiplier > 0) {
+                    adjustedDistance *= override.distanceMultiplier;
+                } else if (fitCategory === 'wingSet' && isWingLike) {
+                    adjustedDistance *= 1.14;
+                }
+                if (override) {
+                    yOffsetRatio = Number.isFinite(override.yOffsetRatio) ? override.yOffsetRatio : 0;
+                    zOffsetRatio = Number.isFinite(override.zOffsetRatio) ? override.zOffsetRatio : 0;
+                }
+            }
+
+            if (!Number.isFinite(adjustedScale) || adjustedScale <= 0) {
+                adjustedScale = fit.scale;
+            }
+            if (!Number.isFinite(adjustedDistance) || adjustedDistance <= 0) {
+                adjustedDistance = fit.distance;
+            }
+
+            return {
+                scale: adjustedScale,
+                distance: adjustedDistance,
+                yOffsetRatio,
+                zOffsetRatio
+            };
+        }
+
+        function resolveItemThumbPlacement(safeSize, fitCategory = null, fitPropKey = null) {
+            const basePlacement = resolvePreviewPlacement('item', safeSize, fitCategory, fitPropKey);
+            const normalizedPropKey = typeof fitPropKey === 'string' ? fitPropKey.trim() : '';
+            const override = normalizedPropKey ? ITEM_THUMB_FIT_OVERRIDES[normalizedPropKey] : null;
+            if (!override) {
+                return basePlacement;
+            }
+
+            let distance = basePlacement.distance;
+            if (Number.isFinite(override.distanceMultiplier) && override.distanceMultiplier > 0) {
+                distance *= override.distanceMultiplier;
+            }
+
+            return {
+                scale: basePlacement.scale,
+                distance,
+                yOffsetRatio: Number.isFinite(override.yOffsetRatio) ? override.yOffsetRatio : basePlacement.yOffsetRatio,
+                zOffsetRatio: Number.isFinite(override.zOffsetRatio) ? override.zOffsetRatio : basePlacement.zOffsetRatio
+            };
+        }
+
+        function ensureItemThumbRenderContext() {
+            if (itemThumbRenderState.renderer && itemThumbRenderState.scene && itemThumbRenderState.camera) {
+                return itemThumbRenderState;
+            }
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 120);
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                preserveDrawingBuffer: true,
+                powerPreference: 'high-performance'
+            });
+            renderer.setPixelRatio(1);
+            renderer.setSize(ITEM_THUMB_SIZE, ITEM_THUMB_SIZE, false);
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.setClearColor(0x0f172a, 1);
+
+            const ambient = new THREE.AmbientLight(0xbecbea, 1);
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
+            const fillLight = new THREE.DirectionalLight(0x9fc8ff, 0.6);
+            const rimLight = new THREE.DirectionalLight(0x9ad9ff, 0.45);
+            keyLight.position.set(1.6, 1.8, 2.2);
+            fillLight.position.set(-1.1, -0.8, 1.3);
+            rimLight.position.set(0, 1.0, -1.8);
+            scene.add(ambient, keyLight, fillLight, rimLight);
+
+            itemThumbRenderState.renderer = renderer;
+            itemThumbRenderState.scene = scene;
+            itemThumbRenderState.camera = camera;
+            return itemThumbRenderState;
         }
 
         async function renderItemThumbImageUrl(propKey) {
@@ -8950,7 +10572,7 @@
                 return itemThumbInFlight.get(propKey);
             }
 
-            const renderTask = async () => {
+            const prepareThumbObject = async () => {
                 try {
                     const metadata = propRegistry.get(propKey);
                     if (!metadata) {
@@ -8958,35 +10580,46 @@
                     }
 
                     const source = metadata.object;
-                    const build = buildPreviewObject(source);
-                    const object = build?.object;
+                    const fitCategory = metadata.category || null;
+                    const previewReadyPromise = getPropPreviewReadyPromise(source);
+                    if (previewReadyPromise) {
+                        await previewReadyPromise;
+                    }
+                    let build = buildPreviewObject(source);
+                    let object = build?.object;
+                    if ((!object || !hasFiniteRenderableGeometry(object)) && previewReadyPromise) {
+                        await waitForPreviewRenderTick();
+                        build = buildPreviewObject(source);
+                        object = build?.object;
+                    }
                     if (!object || !hasFiniteRenderableGeometry(object)) {
                         return null;
                     }
 
+                    return {
+                        fitCategory,
+                        object
+                    };
+                } catch (error) {
+                    console.warn(`Unable to prepare thumbnail for ${propKey}`, error);
+                    return null;
+                }
+            };
+
+            const renderTask = async () => {
+                try {
+                    const prepared = await prepareThumbObject();
+                    if (!prepared?.object) {
+                        return null;
+                    }
+                    const { fitCategory, object } = prepared;
+
                     const size = ITEM_THUMB_SIZE;
-                    const thumbScene = new THREE.Scene();
-                    thumbScene.background = new THREE.Color(0x0f172a);
-                    const thumbCamera = new THREE.PerspectiveCamera(34, 1, 0.01, 120);
-                    const thumbRenderer = new THREE.WebGLRenderer({
-                        antialias: true,
-                        alpha: true,
-                        preserveDrawingBuffer: true
-                    });
-
-                    thumbRenderer.setPixelRatio(1);
+                    const renderContext = ensureItemThumbRenderContext();
+                    const thumbScene = renderContext.scene;
+                    const thumbCamera = renderContext.camera;
+                    const thumbRenderer = renderContext.renderer;
                     thumbRenderer.setSize(size, size, false);
-                    thumbRenderer.outputColorSpace = THREE.SRGBColorSpace;
-                    thumbRenderer.setClearColor(0x0f172a, 1);
-
-                    const thumbAmbient = new THREE.AmbientLight(0xbecbea, 1);
-                    const thumbKeyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-                    const thumbFillLight = new THREE.DirectionalLight(0x9fc8ff, 0.6);
-                    const thumbRimLight = new THREE.DirectionalLight(0x9ad9ff, 0.45);
-                    thumbKeyLight.position.set(1.6, 1.8, 2.2);
-                    thumbFillLight.position.set(-1.1, -0.8, 1.3);
-                    thumbRimLight.position.set(0, 1.0, -1.8);
-                    thumbScene.add(thumbAmbient, thumbKeyLight, thumbFillLight, thumbRimLight);
 
                     sanitizePreviewInvalidGeometry(object);
                     object.frustumCulled = false;
@@ -8996,7 +10629,7 @@
                     object.updateMatrixWorld(true);
 
                     try {
-                        const worldBox = computeSafeObjectBounds(object);
+                        const worldBox = computePreviewObjectBounds(object, 'item', fitCategory);
                         const center = worldBox?.getCenter(new THREE.Vector3());
                         const rawSize = worldBox?.getSize(new THREE.Vector3());
                         if (center && rawSize && !worldBox.isEmpty()) {
@@ -9006,15 +10639,21 @@
                                 sanitizeFiniteNumber(center.y, 0),
                                 sanitizeFiniteNumber(center.z, 0)
                             );
-                            const fit = computePreviewAutoFit('item', safeSize);
+                            const placement = resolveItemThumbPlacement(safeSize, fitCategory, propKey);
                             object.position.sub(safeCenter);
-                            object.scale.setScalar(fit.scale);
+                            if (placement.yOffsetRatio !== 0 || placement.zOffsetRatio !== 0) {
+                                const scaledHeight = safeSize.y * placement.scale;
+                                const scaledDepth = safeSize.z * placement.scale;
+                                object.position.y += scaledHeight * placement.yOffsetRatio;
+                                object.position.z += scaledDepth * placement.zOffsetRatio;
+                            }
+                            object.scale.setScalar(placement.scale);
                             thumbCamera.position.set(
                                 0,
-                                safeSize.y * fit.scale * 0.06 + 0.2,
-                                Math.max(1.05, fit.distance)
+                                0,
+                                Math.max(1.05, placement.distance)
                             );
-                            thumbCamera.near = 0.02;
+                            thumbCamera.near = Math.max(0.01, Math.min(0.06, thumbCamera.position.z * 0.03));
                             thumbCamera.far = Math.max(14, thumbCamera.position.z * 18);
                             thumbCamera.lookAt(0, 0, 0);
                             thumbCamera.updateProjectionMatrix();
@@ -9041,17 +10680,24 @@
                     thumbRenderer.render(thumbScene, thumbCamera);
                     const url = thumbRenderer.domElement.toDataURL('image/png');
 
-                    thumbRenderer.dispose();
                     thumbScene.remove(object);
+                    const detachedNodes = [];
                     object.traverse((node) => {
-                        if (node?.isObject3D && node.parent) {
-                            if (typeof node.removeFromParent === 'function') {
-                                node.removeFromParent();
-                            } else {
-                                node.parent.remove(node);
-                            }
+                        if (node?.isObject3D && node !== object && node.parent) {
+                            detachedNodes.push(node);
                         }
                     });
+                    for (let i = detachedNodes.length - 1; i >= 0; i -= 1) {
+                        const node = detachedNodes[i];
+                        if (!node?.parent) {
+                            continue;
+                        }
+                        if (typeof node.removeFromParent === 'function') {
+                            node.removeFromParent();
+                        } else {
+                            node.parent.remove(node);
+                        }
+                    }
 
                     return url || null;
                 } catch (error) {
@@ -9062,13 +10708,17 @@
             const task = itemThumbRenderQueue
                 .then(() => renderTask())
                 .finally(() => {
-                itemThumbInFlight.delete(propKey);
+                    itemThumbInFlight.delete(propKey);
                 });
             itemThumbRenderQueue = task.catch(() => null);
 
             itemThumbInFlight.set(propKey, task);
             task.then((url) => {
-                itemThumbCache.set(propKey, url || null);
+                if (url) {
+                    itemThumbCache.set(propKey, url);
+                } else {
+                    itemThumbCache.delete(propKey);
+                }
                 return url;
             });
             return task;
@@ -9100,9 +10750,23 @@
                 button.prepend(thumb);
             }
             button.dataset.thumbState = 'loading';
-            attachItemThumbImage(thumb, propKey).finally(() => {
-                button.dataset.thumbState = 'ready';
-            });
+            attachItemThumbImage(thumb, propKey)
+                .then((loaded) => {
+                    if (loaded && thumb.querySelector('img')) {
+                        button.dataset.thumbState = 'ready';
+                        return;
+                    }
+                    delete button.dataset.thumbState;
+                    window.setTimeout(() => {
+                        if (!button.isConnected || button.dataset.thumbState === 'ready' || button.dataset.thumbState === 'loading') {
+                            return;
+                        }
+                        ensureStoreButtonThumb(button);
+                    }, 320);
+                })
+                .catch(() => {
+                    delete button.dataset.thumbState;
+                });
             return thumb;
         }
 
@@ -9113,11 +10777,16 @@
                 return;
             }
             const token = ++storeThumbHydrateToken;
-            const batchSize = isMobileLike ? 1 : 2;
+            const batchSize = 1;
             let index = 0;
+            const isPreviewBusy = () => previewState.open || propPreviewPanel?.classList?.contains('open');
 
             const processBatch = () => {
                 if (token !== storeThumbHydrateToken) {
+                    return;
+                }
+                if (isPreviewBusy()) {
+                    setTimeout(processBatch, 280);
                     return;
                 }
                 const next = Math.min(index + batchSize, buttons.length);
@@ -9126,18 +10795,38 @@
                 }
                 if (index < buttons.length) {
                     if (window.requestIdleCallback) {
-                        window.requestIdleCallback(processBatch, { timeout: 1200 });
+                        window.requestIdleCallback(processBatch, { timeout: 900 });
                     } else {
-                        setTimeout(processBatch, 12);
+                        setTimeout(processBatch, 180);
                     }
                 }
             };
 
             if (window.requestIdleCallback) {
-                window.requestIdleCallback(processBatch, { timeout: 420 });
+                window.requestIdleCallback(processBatch, { timeout: 640 });
             } else {
-                setTimeout(processBatch, 8);
+                setTimeout(processBatch, 140);
             }
+        }
+
+        function warmupStoreCategoryPreviews(categoryKey) {
+            const targetCategory = isInventoryCategory(categoryKey) ? categoryKey : activeCategory;
+            const buttons = itemButtons.filter((btn) => btn.dataset.prop && btn.dataset.category === targetCategory);
+            if (!buttons.length) {
+                return;
+            }
+            buttons
+                .slice(0, 3)
+                .forEach((button, index) => {
+                    const delayMs = index === 0 ? 0 : 1400 + ((index - 1) * 1800);
+                    window.setTimeout(() => {
+                        if (previewState.open || propPreviewPanel?.classList?.contains('open')) {
+                            window.setTimeout(() => warmPreviewAssetsForPropKey(button?.dataset?.prop), 360);
+                            return;
+                        }
+                        warmPreviewAssetsForPropKey(button?.dataset?.prop);
+                    }, delayMs);
+                });
         }
 
         function createInventoryItemThumb(propKey) {
@@ -9174,7 +10863,7 @@
             const stashedKeys = Array.from(playerInventory)
                 .filter((propKey) => propRegistry.has(propKey))
                 .filter((propKey) => getPropCategory(propKey) === currentInventoryCategory)
-                .sort((a, b) => getPropLabelByKey(a).localeCompare(getPropLabelByKey(b)));
+                .sort(comparePropCatalogOrder);
 
             inventoryEmpty.style.display = 'none';
             const totalSlots = Math.max(4, stashedKeys.length);
@@ -9229,6 +10918,32 @@
                     object: null,
                     hasRenderableMesh: false
                 };
+            }
+
+            const createPreviewObject = source.userData?.createPreviewObject;
+            if (typeof createPreviewObject === 'function') {
+                try {
+                    const prebuiltObject = createPreviewObject();
+                    if (prebuiltObject) {
+                        prebuiltObject.visible = true;
+                        forcePreviewVisibility(prebuiltObject);
+                        sanitizePreviewInvalidGeometry(prebuiltObject);
+                        return {
+                            object: prebuiltObject,
+                            hasRenderableMesh: hasStandaloneMesh(prebuiltObject)
+                        };
+                    }
+                    return {
+                        object: null,
+                        hasRenderableMesh: false
+                    };
+                } catch (error) {
+                    console.warn('Unable to create prebuilt preview object.', error);
+                    return {
+                        object: null,
+                        hasRenderableMesh: false
+                    };
+                }
             }
 
             const cloned = source.clone(true);
@@ -9786,12 +11501,14 @@
             if (leftPart) {
                 const leftClone = leftPart.clone(true);
                 leftClone.visible = true;
+                applyPreviewTransformOverrides(leftClone, leftPart);
                 clone.add(leftClone);
             }
 
             if (rightPart && rightPart !== leftPart) {
                 const rightClone = rightPart.clone(true);
                 rightClone.visible = true;
+                applyPreviewTransformOverrides(rightClone, rightPart);
                 clone.add(rightClone);
             }
         }
@@ -9931,19 +11648,36 @@
             const cfg = getPreviewFitConfig(mode, categoryKey);
             const requestedDistance = Number.isFinite(forcedDistance) && forcedDistance > 0 ? forcedDistance : null;
             const baseDistance = computePreviewCameraDistanceForScale(mode, safeSize, safeScale, categoryKey);
-            const cameraDistance = Math.max(cfg.minDistance, requestedDistance ?? baseDistance);
+            const forwardDistance = Math.max(cfg.minDistance, requestedDistance ?? baseDistance);
+            let orbitYaw = 0;
+            let orbitPitch = 0;
+            let orbitDistance = forwardDistance;
+            let targetY = 0;
             if (mode === 'character') {
                 const yLift = cfg.cameraLiftBase + (safeSize.y * safeScale * cfg.cameraLiftScale);
-                previewCamera.position.set(0, yLift, cameraDistance);
-                previewCamera.lookAt(0, cfg.lookYOffset, 0);
-            } else {
-                // Keep item mode optically centered for every prop silhouette.
-                previewCamera.position.set(0, 0, cameraDistance);
-                previewCamera.lookAt(0, 0, 0);
+                targetY = sanitizeFiniteNumber(cfg.lookYOffset, 0);
+                const relativeY = yLift - targetY;
+                orbitDistance = Math.hypot(forwardDistance, relativeY);
+                orbitPitch = Math.atan2(relativeY, Math.max(0.001, forwardDistance));
             }
-            previewCamera.near = Math.max(0.01, Math.min(0.06, cameraDistance * 0.03));
-            previewCamera.far = Math.max(18, cameraDistance * 18);
-            previewCamera.updateProjectionMatrix();
+            previewState.defaultOrbitYaw = orbitYaw;
+            previewState.defaultOrbitPitch = orbitPitch;
+            previewState.orbitYaw = orbitYaw;
+            previewState.orbitPitch = orbitPitch;
+            previewState.fitCameraDistance = orbitDistance;
+            previewState.cameraDistance = orbitDistance;
+            previewState.minCameraDistance = Math.max(0.52, Math.min(forwardDistance * 0.68, orbitDistance * 0.58));
+            previewState.maxCameraDistance = Math.max(orbitDistance * 2.7, previewState.minCameraDistance + 1.8);
+            const scaledWidth = safeSize.x * safeScale;
+            const scaledHeight = safeSize.y * safeScale;
+            const isWingSet = categoryKey === 'wingSet';
+            const panScaleX = mode === 'character' ? 0.2 : (isWingSet ? 0.34 : 0.26);
+            const panScaleY = mode === 'character' ? 0.22 : (isWingSet ? 0.42 : 0.3);
+            previewState.panLimitX = Math.max(0.12, Math.min(2.1, scaledWidth * panScaleX));
+            previewState.panLimitY = Math.max(0.12, Math.min(2.4, scaledHeight * panScaleY));
+            previewState.defaultCameraTarget.set(0, targetY, 0);
+            previewState.cameraTarget.copy(previewState.defaultCameraTarget);
+            applyPreviewCameraOrbit();
         }
 
         function computePreviewObjectBounds(object, mode = 'item', fitCategory = null) {
@@ -10008,42 +11742,18 @@
                     Number.isFinite(safeSize.x) && Number.isFinite(safeSize.y) && Number.isFinite(safeSize.z) &&
                     Number.isFinite(center.x) && Number.isFinite(center.y) && Number.isFinite(center.z)
                 ) {
-                    const fit = computePreviewAutoFit(mode, safeSize, fitCategory);
-                    let adjustedScale = fit.scale;
-                    let adjustedDistance = fit.distance;
-                    let yOffsetRatio = 0;
-                    let zOffsetRatio = 0;
-                    if (!isCharacterMode) {
-                        const normalizedPropKey = typeof fitPropKey === 'string' ? fitPropKey.trim() : '';
-                        const override = normalizedPropKey ? PREVIEW_ITEM_FIT_OVERRIDES[normalizedPropKey] : null;
-                        const lowerPropKey = normalizedPropKey.toLowerCase();
-                        const isWingLike = lowerPropKey.includes('wing');
-                        if (override && Number.isFinite(override.distanceMultiplier) && override.distanceMultiplier > 0) {
-                            adjustedDistance *= override.distanceMultiplier;
-                        } else if (fitCategory === 'wingSet' && isWingLike) {
-                            adjustedDistance *= 1.14;
-                        }
-                        if (override) {
-                            yOffsetRatio = Number.isFinite(override.yOffsetRatio) ? override.yOffsetRatio : 0;
-                            zOffsetRatio = Number.isFinite(override.zOffsetRatio) ? override.zOffsetRatio : 0;
-                        }
-                    }
-                    if (!Number.isFinite(adjustedScale) || adjustedScale <= 0) {
-                        adjustedScale = fit.scale;
-                    }
-                    if (!Number.isFinite(adjustedDistance) || adjustedDistance <= 0) {
-                        adjustedDistance = fit.distance;
-                    }
+                    const placement = resolvePreviewPlacement(mode, safeSize, fitCategory, fitPropKey);
                     object.position.sub(safeCenter);
-                    if (!isCharacterMode && (yOffsetRatio !== 0 || zOffsetRatio !== 0)) {
-                        const scaledHeight = safeSize.y * adjustedScale;
-                        const scaledDepth = safeSize.z * adjustedScale;
-                        object.position.y += scaledHeight * yOffsetRatio;
-                        object.position.z += scaledDepth * zOffsetRatio;
+                    if (!isCharacterMode && (placement.yOffsetRatio !== 0 || placement.zOffsetRatio !== 0)) {
+                        const scaledHeight = safeSize.y * placement.scale;
+                        const scaledDepth = safeSize.z * placement.scale;
+                        object.position.y += scaledHeight * placement.yOffsetRatio;
+                        object.position.z += scaledDepth * placement.zOffsetRatio;
                     }
-                    object.scale.setScalar(adjustedScale);
-                    setPreviewCameraForObjectMode(mode, safeSize, adjustedScale, adjustedDistance, fitCategory);
-                    updatePreviewStageForObject(mode, safeSize, adjustedScale);
+                    object.scale.setScalar(placement.scale);
+                    syncPreviewObjectRotation(object);
+                    setPreviewCameraForObjectMode(mode, safeSize, placement.scale, placement.distance, fitCategory);
+                    updatePreviewStageForObject(mode, safeSize, placement.scale);
                     setPreviewFallbackMessage('');
                     return true;
                 }
@@ -10057,6 +11767,7 @@
             if (isCharacterMode) {
                 object.position.set(0, -0.95, 0);
                 object.scale.setScalar(0.43);
+                syncPreviewObjectRotation(object);
                 setPreviewCameraForObjectMode('character', new THREE.Vector3(1, 3.8, 1), 0.43, null, fitCategory);
                 updatePreviewStageForObject('character', new THREE.Vector3(1, 3.8, 1), 0.43);
                 setPreviewFallbackMessage(fallbackMessage || 'Unable to calculate character preview bounds.');
@@ -10065,6 +11776,7 @@
 
             object.position.set(0, -0.2, 0);
             object.scale.setScalar(0.55);
+            syncPreviewObjectRotation(object);
             setPreviewCameraForObjectMode('item', new THREE.Vector3(1.2, 1.2, 1.2), 0.55, null, fitCategory);
             updatePreviewStageForObject('item', new THREE.Vector3(1.2, 1.2, 1.2), 0.55);
             setPreviewFallbackMessage(fallbackMessage);
@@ -10097,7 +11809,8 @@
                     fitCategory: previewState.fitCategory,
                     fitPropKey: previewState.fitPropKey
                 });
-                previewState.object.rotation.set(previewState.rotateX || 0, previewState.rotateY, 0);
+                syncPreviewObjectRotation(previewState.object);
+                applyPreviewCameraOrbit();
             }
         }
 
@@ -10120,25 +11833,44 @@
             return fallbackGroup;
         }
 
-        function setPreviewObject(propKey, label = 'Unknown item', prebuiltPreview = null) {
+        async function setPreviewObject(propKey, label = 'Unknown item', prebuiltPreview = null) {
             const source = getItemByPropKey(propKey);
             const hasPrebuiltObject = Boolean(prebuiltPreview?.object && prebuiltPreview.propKey === propKey);
             if (!source && !hasPrebuiltObject) {
                 setPreviewActionButtonsDisabled(true);
                 return;
             }
+            const requestToken = (previewState.requestToken || 0) + 1;
+            previewState.requestToken = requestToken;
             const propCategory = source?.userData?.propCategory || propRegistry.get(propKey)?.category || null;
+            const previewFitOverride = propKey ? PREVIEW_ITEM_FIT_OVERRIDES[propKey] : null;
+            const initialRotateY = Number.isFinite(previewFitOverride?.initialRotationY)
+                ? previewFitOverride.initialRotationY
+                : 0;
             const initialMode = 'item';
             propPreviewPanel.classList.add('open');
             previewState.open = true;
+            resetPreviewDragState();
             previewState.viewMode = initialMode;
             previewState.fitCategory = propCategory || null;
             previewState.fitPropKey = propKey;
-            previewState.rotateX = 0;
-            previewState.autoSpinPauseUntilMs = 0;
+            previewState.propKey = propKey;
+            previewState.label = label;
+            previewState.defaultObjectRotateY = initialRotateY;
+            previewState.objectRotateY = initialRotateY;
+            previewState.defaultOrbitYaw = 0;
+            previewState.defaultOrbitPitch = 0;
+            previewState.orbitYaw = 0;
+            previewState.orbitPitch = 0;
+            previewState.cameraDistance = sanitizeFiniteNumber(previewState.fitCameraDistance, 2.4);
+            pausePreviewAutoSpin(0);
             if (propPreviewOverlay) {
                 propPreviewOverlay.classList.add('open');
             }
+            if (propPreviewName) {
+                propPreviewName.textContent = `${label} Preview`;
+            }
+            focusPropPreviewViewport();
             setPreviewFallbackMessage('Loading preview…');
             setPreviewActionButtonsDisabled(true);
             if (previewState.object) {
@@ -10146,7 +11878,21 @@
                 previewState.object = null;
             }
 
+            if (!hasPrebuiltObject) {
+                const previewReadyPromise = getPropPreviewReadyPromise(source);
+                if (previewReadyPromise) {
+                    await previewReadyPromise;
+                    await waitForPreviewRenderTick();
+                    if (previewState.requestToken !== requestToken) {
+                        return;
+                    }
+                }
+            }
+
             const previewBuild = hasPrebuiltObject ? prebuiltPreview : buildPreviewObject(source);
+            if (previewState.requestToken !== requestToken) {
+                return;
+            }
             const cloned = previewBuild?.object;
             const hasRenderableMesh = previewBuild?.hasRenderableMesh ?? false;
             if (!cloned) {
@@ -10160,13 +11906,16 @@
                 ? 'Unable to calculate preview bounds.'
                 : 'This prop does not yet have a standalone preview mesh. Place it on the character to see it in context.';
             if (!hasFiniteGeometry) {
+                if (previewState.requestToken !== requestToken) {
+                    return;
+                }
                 const fallback = createPreviewFallbackModel();
                 fallback.position.set(0, 0, 0);
                 previewState.object = fallback;
                 previewState.propKey = propKey;
                 previewState.label = label;
-                previewState.rotateY = 0;
-                previewState.rotateX = 0;
+                previewState.defaultObjectRotateY = 0;
+                previewState.objectRotateY = 0;
                 previewState.hasStandaloneMesh = false;
                 if (previewScene) {
                     previewScene.add(fallback);
@@ -10177,19 +11926,19 @@
                     fitPropKey: previewState.fitPropKey,
                     fallbackMessage
                 });
-                propPreviewName.textContent = `${label} Preview`;
                 setPreviewActionButtonsDisabled(false);
                 resizePropViewport();
                 return;
             }
 
+            if (previewState.requestToken !== requestToken) {
+                return;
+            }
             previewState.object = cloned;
-            previewState.propKey = propKey;
-            previewState.label = label;
-            previewState.rotateY = 0;
-            previewState.rotateX = 0;
+            previewState.defaultObjectRotateY = initialRotateY;
+            previewState.objectRotateY = initialRotateY;
             cloned.position.set(0, 0, 0);
-            cloned.rotation.set(0, 0, 0);
+            syncPreviewObjectRotation(cloned);
             cloned.scale.set(1, 1, 1);
             previewState.hasStandaloneMesh = placeObjectInPreviewViewport(cloned, {
                 mode: initialMode,
@@ -10212,6 +11961,8 @@
                 });
             } else {
                 previewScene.add(cloned);
+                syncPreviewObjectRotation(cloned);
+                setPreviewFallbackMessage('');
             }
 
             setPreviewActionButtonsDisabled(false);
@@ -10610,21 +12361,156 @@
             contact.visible = contact.material.opacity > 0.004;
         }
 
-        function pickMysteryRewardKey() {
-            const keys = [];
-            const unseen = [];
-            propRegistry.forEach((meta) => {
-                if (!meta?.key) return;
-                keys.push(meta.key);
-                if (!playerInventory.has(meta.key)) {
-                    unseen.push(meta.key);
+        const PRIORITY_MYSTERY_REWARD_KEYS = Object.freeze([
+            'blossomissWings',
+            'canvasOfNavelleWings',
+            'goddessOfValleysWings',
+            'honeycombBloomsWings',
+            'lavalcanoWings',
+            'lightOfSmilesWings',
+            'moonlightAmayaWings',
+            'endlessWings',
+            'emeraldCoenWings',
+            'xatoriWings'
+        ]);
+
+        function getMysteryWingRewardKeys() {
+            return Array.from(propRegistry.values())
+                .filter((meta) => meta?.key && meta.category === 'wingSet')
+                .map((meta) => meta.key)
+                .sort(comparePropCatalogOrder);
+        }
+
+        function normalizeMysteryRewardKeyList(list, availableSet) {
+            if (!Array.isArray(list) || !(availableSet instanceof Set) || availableSet.size === 0) {
+                return [];
+            }
+            const normalized = [];
+            const seenKeys = new Set();
+            for (const key of list) {
+                if (typeof key !== 'string' || !availableSet.has(key) || seenKeys.has(key)) {
+                    continue;
                 }
-            });
-            const rewardPool = unseen.length ? unseen : keys;
-            if (rewardPool.length === 0) {
+                seenKeys.add(key);
+                normalized.push(key);
+            }
+            return normalized;
+        }
+
+        function shuffleMysteryRewardKeys(keys, blockedFirstKey = null) {
+            const shuffled = Array.isArray(keys) ? [...keys] : [];
+            for (let i = shuffled.length - 1; i > 0; i -= 1) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            if (blockedFirstKey && shuffled.length > 1 && shuffled[0] === blockedFirstKey) {
+                const swapIndex = shuffled.findIndex((key) => key !== blockedFirstKey);
+                if (swapIndex > 0) {
+                    [shuffled[0], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[0]];
+                }
+            }
+            return shuffled;
+        }
+
+        function readStoredMysteryRewardOrderState() {
+            try {
+                const raw = localStorage.getItem(MYSTERY_WING_ORDER_STORAGE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (_) {
                 return null;
             }
-            return rewardPool[Math.floor(Math.random() * rewardPool.length)];
+        }
+
+        function persistMysteryRewardOrderState() {
+            try {
+                localStorage.setItem(MYSTERY_WING_ORDER_STORAGE_KEY, JSON.stringify({
+                    queue: Array.isArray(mysteryRewardOrderState.queue) ? mysteryRewardOrderState.queue : [],
+                    seen: Array.isArray(mysteryRewardOrderState.seen) ? mysteryRewardOrderState.seen : [],
+                    lastKey: typeof mysteryRewardOrderState.lastKey === 'string' ? mysteryRewardOrderState.lastKey : null
+                }));
+            } catch (_) {}
+        }
+
+        function syncMysteryRewardOrderState() {
+            const availableKeys = getMysteryWingRewardKeys();
+            const availableSet = new Set(availableKeys);
+
+            if (!mysteryRewardOrderState.loaded) {
+                const storedState = readStoredMysteryRewardOrderState();
+                mysteryRewardOrderState.queue = normalizeMysteryRewardKeyList(storedState?.queue, availableSet);
+                mysteryRewardOrderState.seen = normalizeMysteryRewardKeyList(storedState?.seen, availableSet);
+                mysteryRewardOrderState.lastKey =
+                    typeof storedState?.lastKey === 'string' && availableSet.has(storedState.lastKey)
+                        ? storedState.lastKey
+                        : null;
+                mysteryRewardOrderState.loaded = true;
+            }
+
+            const queue = normalizeMysteryRewardKeyList(mysteryRewardOrderState.queue, availableSet);
+            const queueSet = new Set(queue);
+            const seen = normalizeMysteryRewardKeyList(
+                mysteryRewardOrderState.seen.filter((key) => !queueSet.has(key)),
+                availableSet
+            );
+            const seenSet = new Set(seen);
+            const missingKeys = availableKeys.filter((key) => !queueSet.has(key) && !seenSet.has(key));
+
+            if (missingKeys.length) {
+                queue.push(...shuffleMysteryRewardKeys(missingKeys));
+            }
+
+            if (!queue.length && availableKeys.length) {
+                queue.push(...shuffleMysteryRewardKeys(availableKeys, mysteryRewardOrderState.lastKey));
+                seen.length = 0;
+            }
+
+            mysteryRewardOrderState.queue = queue;
+            mysteryRewardOrderState.seen = seen;
+            if (!availableSet.has(mysteryRewardOrderState.lastKey)) {
+                mysteryRewardOrderState.lastKey = null;
+            }
+            persistMysteryRewardOrderState();
+            return queue;
+        }
+
+        function pickMysteryRewardKey() {
+            const queue = syncMysteryRewardOrderState();
+            return queue[0] || null;
+        }
+
+        function markMysteryRewardKeySummoned(rewardKey) {
+            if (typeof rewardKey !== 'string' || !rewardKey) {
+                return null;
+            }
+            const availableKeys = getMysteryWingRewardKeys();
+            const availableSet = new Set(availableKeys);
+            if (!availableSet.has(rewardKey)) {
+                return null;
+            }
+
+            syncMysteryRewardOrderState();
+
+            const queue = normalizeMysteryRewardKeyList(mysteryRewardOrderState.queue, availableSet);
+            const seen = normalizeMysteryRewardKeyList(mysteryRewardOrderState.seen, availableSet)
+                .filter((key) => key !== rewardKey);
+            const rewardIndex = queue.indexOf(rewardKey);
+            if (rewardIndex >= 0) {
+                queue.splice(rewardIndex, 1);
+            }
+            seen.push(rewardKey);
+
+            mysteryRewardOrderState.lastKey = rewardKey;
+            if (queue.length === 0 && availableKeys.length) {
+                mysteryRewardOrderState.queue = shuffleMysteryRewardKeys(availableKeys, rewardKey);
+                mysteryRewardOrderState.seen = [];
+            } else {
+                mysteryRewardOrderState.queue = queue;
+                mysteryRewardOrderState.seen = seen;
+            }
+            persistMysteryRewardOrderState();
+            return mysteryRewardOrderState.queue[0] || null;
         }
 
         function cacheMysteryRewardPreviewBuild(propKey) {
@@ -10640,8 +12526,26 @@
                 mysteryState.preloadedPreview = null;
                 return null;
             }
+            const previewReadyPromise = getPropPreviewReadyPromise(source);
+            if (previewReadyPromise) {
+                void previewReadyPromise.then(async () => {
+                    await waitForPreviewRenderTick();
+                    if (mysteryState.rewardKey && mysteryState.rewardKey !== propKey) {
+                        return;
+                    }
+                    const settledBuild = buildPreviewObject(source);
+                    if (!settledBuild?.object || !settledBuild.hasRenderableMesh || !hasFiniteRenderableGeometry(settledBuild.object)) {
+                        return;
+                    }
+                    mysteryState.preloadedPreview = {
+                        propKey,
+                        object: settledBuild.object,
+                        hasRenderableMesh: true
+                    };
+                }).catch(() => null);
+            }
             const previewBuild = buildPreviewObject(source);
-            if (!previewBuild?.object) {
+            if (!previewBuild?.object || !previewBuild.hasRenderableMesh || !hasFiniteRenderableGeometry(previewBuild.object)) {
                 mysteryState.preloadedPreview = null;
                 return null;
             }
@@ -10685,6 +12589,20 @@
                     return;
                 }
                 if (mysteryState.rewardKey !== propKey) {
+                    return;
+                }
+                const source = getItemByPropKey(propKey);
+                if (!source) {
+                    return;
+                }
+                const previewReadyPromise = getPropPreviewReadyPromise(source);
+                if (previewReadyPromise) {
+                    void previewReadyPromise.then(() => {
+                        if (mysteryState.phase === 'idle' || mysteryState.rewardKey !== propKey) {
+                            return;
+                        }
+                        cacheMysteryRewardPreviewBuild(propKey);
+                    }).catch(() => null);
                     return;
                 }
                 cacheMysteryRewardPreviewBuild(propKey);
@@ -10925,7 +12843,7 @@
         }
 
         function startMysteryFlightCinematic(waitForSelectionReturn = false) {
-            const canStart = mysteryState.phase === 'idle' || mysteryState.phase === 'cooldown';
+            const canStart = mysteryState.phase === 'idle' && !isMysteryInteractionLocked();
             if (!canStart) {
                 return false;
             }
@@ -11064,6 +12982,20 @@
                 );
                 return { down, up, drive, moveDrive };
             };
+            const getOffscreenFallbackDelay = () => Math.max(
+                0.001,
+                cfg.offscreenHardFailDelay ?? cfg.offscreenFallbackDelay ?? 1.85
+            );
+            const getOffscreenDropDelay = (clearanceState = null) => {
+                const visibility = clearanceState || getMysteryFlightVisualClearanceState(cfg);
+                if (visibility.fullyAboveTop) {
+                    return Math.max(0.06, cfg.offscreenClearDropDelay ?? 0.14);
+                }
+                if (visibility.fullyOffscreen) {
+                    return Math.max(0.08, cfg.offscreenDropDelay ?? 0.28);
+                }
+                return Math.max(0.12, cfg.offscreenFallbackDropDelay ?? cfg.offscreenDropDelay ?? 0.38);
+            };
 
             fx.timer += dt;
             if (fx.actionSuppress > 0) {
@@ -11077,16 +13009,6 @@
             const signedSide = rawSide !== 0 ? rawSide : 1;
             const finalSide = fx.finalSide || (-signedSide);
             const spinYawBase = fx.spinYaw || 0;
-            const checkOffscreen = (x, y, z) => {
-                const worldPoint = mysteryFlightCinematicScreenProbe.set(x, y, z).project(camera);
-                const margin = cfg.offscreenMargin || 1.03;
-                return (
-                    Math.abs(worldPoint.x) > margin ||
-                    Math.abs(worldPoint.y) > margin ||
-                    worldPoint.z > 1.02 ||
-                    worldPoint.z < -1.02
-                );
-            };
 
             if (fx.phase === 'backflip') {
                 const dur = Math.max(0.001, cfg.backflipDuration ?? 0.52);
@@ -11161,8 +13083,10 @@
 
                 const xBlend = 1 - Math.exp(-(cfg.verticalAscentXDamp ?? 5.8) * p);
                 const zBlend = 1 - Math.exp(-(cfg.verticalAscentZDamp ?? 2.1) * p);
+                const clearanceState = getMysteryFlightVisualClearanceState(cfg);
                 const lift = (cfg.verticalAscentHeight ?? 14.2) * Math.pow(e, cfg.verticalAscentLiftCurve ?? 1.24);
-                const y = fx.burstStartOffset.y + lift + drive * 0.16;
+                const clearanceLift = getMysteryFlightClearanceLift(fx.timer, dur, cfg, 1.08, clearanceState);
+                const y = fx.burstStartOffset.y + lift + drive * 0.16 + clearanceLift;
                 const x = THREE.MathUtils.lerp(fx.burstStartOffset.x, 0, xBlend);
                 const z = THREE.MathUtils.lerp(fx.burstStartOffset.z, cfg.verticalAscentZTarget ?? -0.46, zBlend);
                 fx.rigOffset.set(x, y, z);
@@ -11185,18 +13109,15 @@
                 fx.eyeBlend = 1;
                 fx.eyeTargetY = 0.1;
 
-                const isOffscreen = checkOffscreen(
-                    creatureGroup.position.x + stuntRig.position.x + fx.rigOffset.x,
-                    creatureGroup.position.y + stuntRig.position.y + fx.rigOffset.y,
-                    creatureGroup.position.z + stuntRig.position.z + fx.rigOffset.z
-                );
+                const isOffscreen = clearanceState.fullyAboveTop || clearanceState.fullyOffscreen;
+                const dropDelay = getOffscreenDropDelay(clearanceState);
                 if (!fx.offscreenTriggered) {
                     if (isOffscreen) {
                         fx.offscreenTriggered = true;
                         fx.offscreenTimer = 0;
                     } else if (p >= 1) {
                         fx.offscreenTimer += dt;
-                        if (fx.offscreenTimer >= (cfg.offscreenFallbackDelay ?? 0.59)) {
+                        if (fx.offscreenTimer >= getOffscreenFallbackDelay()) {
                             fx.offscreenTriggered = true;
                             fx.offscreenTimer = 0;
                         }
@@ -11212,7 +13133,7 @@
                     !fx.dropTriggered &&
                     p >= noDropWindow &&
                     fx.offscreenTriggered &&
-                    fx.offscreenTimer >= (cfg.offscreenDropDelay ?? 0.74)
+                    fx.offscreenTimer >= dropDelay
                 ) {
                     fx.dropTriggered = true;
                     fx.spinYaw = fx.bodyYaw;
@@ -11294,7 +13215,9 @@
                 const ay = cfg.diagonalAccelY ?? 3.45;
                 const az = cfg.diagonalAccelZ ?? -0.18;
                 const x = fx.burstStartOffset.x + fx.burstVelocity.x * tPhys + 0.5 * ax * tPhys * tPhys;
-                const y = fx.burstStartOffset.y + fx.burstVelocity.y * tPhys + 0.5 * ay * tPhys * tPhys;
+                const clearanceState = getMysteryFlightVisualClearanceState(cfg);
+                const clearanceLift = getMysteryFlightClearanceLift(fx.timer, dur, cfg, 1.18, clearanceState);
+                const y = fx.burstStartOffset.y + fx.burstVelocity.y * tPhys + 0.5 * ay * tPhys * tPhys + clearanceLift;
                 const z = fx.burstStartOffset.z + fx.burstVelocity.z * tPhys + 0.5 * az * tPhys * tPhys;
                 fx.rigOffset.set(x, y, z);
 
@@ -11468,18 +13391,15 @@
                 fx.eyeBlend = 1;
                 fx.eyeTargetY = 0.1;
 
-                const isOffscreen = checkOffscreen(
-                    creatureGroup.position.x + stuntRig.position.x + fx.rigOffset.x,
-                    creatureGroup.position.y + stuntRig.position.y + fx.rigOffset.y,
-                    creatureGroup.position.z + stuntRig.position.z + fx.rigOffset.z
-                );
+                const isOffscreen = clearanceState.fullyAboveTop || clearanceState.fullyOffscreen;
+                const dropDelay = getOffscreenDropDelay(clearanceState);
                 if (!fx.offscreenTriggered) {
                     if (isOffscreen) {
                         fx.offscreenTriggered = true;
                         fx.offscreenTimer = 0;
                     } else if (p >= 1) {
                         fx.offscreenTimer += dt;
-                        if (fx.offscreenTimer >= (cfg.offscreenFallbackDelay ?? 0.59)) {
+                        if (fx.offscreenTimer >= getOffscreenFallbackDelay()) {
                             fx.offscreenTriggered = true;
                             fx.offscreenTimer = 0;
                         }
@@ -11495,7 +13415,7 @@
                     !fx.dropTriggered &&
                     p >= minDropProgress &&
                     fx.offscreenTriggered &&
-                    fx.offscreenTimer >= (cfg.offscreenDropDelay ?? 0.74)
+                    fx.offscreenTimer >= dropDelay
                 ) {
                     fx.dropTriggered = true;
                     fx.spinYaw = fx.bodyYaw;
@@ -11750,7 +13670,9 @@
                 fx.ascentBoostY += Math.max(0, fx.ascentBoostVel) * dt * (0.35 + 0.65 * drive);
 
                 const speedRampLift = (cfg.ascentSpeedRampLift ?? 1.2) * driveProgress * driveProgress;
-                const yRaw = fx.burstStartOffset.y + fx.burstVelocity.y * tDrive + 0.5 * ay * tDrive * tDrive + speedRampLift + fx.ascentBoostY;
+                const clearanceState = getMysteryFlightVisualClearanceState(cfg);
+                const clearanceLift = getMysteryFlightClearanceLift(fx.timer, dur, cfg, 1.3, clearanceState);
+                const yRaw = fx.burstStartOffset.y + fx.burstVelocity.y * tDrive + 0.5 * ay * tDrive * tDrive + speedRampLift + fx.ascentBoostY + clearanceLift;
                 const prevY = Number.isFinite(fx.ascentPrevY) ? fx.ascentPrevY : fx.burstStartOffset.y;
                 const y = Math.max(yRaw, prevY + dt * 0.02);
                 fx.ascentPrevY = y;
@@ -11780,18 +13702,15 @@
                 fx.eyeBlend = 1;
                 fx.eyeTargetY = cfg.lookUpEyeY ?? 0.1;
 
-                const isOffscreen = checkOffscreen(
-                    creatureGroup.position.x + stuntRig.position.x + fx.rigOffset.x,
-                    creatureGroup.position.y + stuntRig.position.y + fx.rigOffset.y,
-                    creatureGroup.position.z + stuntRig.position.z + fx.rigOffset.z
-                );
+                const isOffscreen = clearanceState.fullyAboveTop || clearanceState.fullyOffscreen;
+                const dropDelay = getOffscreenDropDelay(clearanceState);
                 if (!fx.offscreenTriggered) {
                     if (isOffscreen) {
                         fx.offscreenTriggered = true;
                         fx.offscreenTimer = 0;
                     } else if (p >= 1) {
                         fx.offscreenTimer += dt;
-                        if (fx.offscreenTimer >= (cfg.offscreenFallbackDelay ?? 0.72)) {
+                        if (fx.offscreenTimer >= getOffscreenFallbackDelay()) {
                             fx.offscreenTriggered = true;
                             fx.offscreenTimer = 0;
                         }
@@ -11802,7 +13721,7 @@
                     fx.offscreenTimer += dt;
                 }
 
-                if (!fx.dropTriggered && fx.offscreenTriggered && (fx.offscreenTimer >= (cfg.offscreenDropDelay ?? 1))) {
+                if (!fx.dropTriggered && fx.offscreenTriggered && (fx.offscreenTimer >= dropDelay)) {
                     fx.dropTriggered = true;
                     fx.spinYaw = fx.bodyYaw;
                     fx.ascentDrivenTime = 0;
@@ -11823,7 +13742,12 @@
             }
 
             if (fx.phase === 'hold') {
-                fx.rigOffset.y = cfg.holdLift ?? 20.8;
+                const holdTargetLift = Math.max(
+                    cfg.holdLift ?? 20.8,
+                    cfg.holdLiftMin ?? 24.6,
+                    Number.isFinite(fx.returnStartOffset?.y) ? fx.returnStartOffset.y : 0
+                );
+                fx.rigOffset.y = holdTargetLift;
                 fx.rigOffset.x = Math.sin(fx.wingPhase * 0.22) * (cfg.holdSway ?? 0.2);
                 fx.rigOffset.z = Math.cos(fx.wingPhase * 0.18) * (cfg.holdSway ?? 0.2) * 0.35;
 
@@ -12052,9 +13976,11 @@
             if (!mysteryState.root || mysteryState.phase !== 'landed') return;
             const rewardKey = mysteryState.rewardKey || pickMysteryRewardKey();
             if (!rewardKey) return;
+            noteMysteryBoxOpen();
             const rewardLabel = mysteryState.rewardLabel || getPropLabelByKey(rewardKey);
             mysteryState.rewardKey = rewardKey;
             mysteryState.rewardLabel = rewardLabel;
+            markMysteryRewardKeySummoned(rewardKey);
             cacheMysteryRewardPreviewBuild(rewardKey);
             schedulePropWarmForMainRenderer(rewardKey);
             const stashResult = stashPropInInventory(rewardKey, { deferRender: true });
@@ -12086,10 +14012,20 @@
             }
         }
 
+        function isPointOnMysteryBox(clientX, clientY) {
+            if (!mysteryState.root || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+                return false;
+            }
+            return intersectObjectsAt(clientX, clientY, mysteryState.root, true).length > 0;
+        }
+
         function handleMysteryBoxPointerDown(clientX, clientY, pointerId = null) {
             if (!mysteryState.root || mysteryState.phase === 'idle') return false;
-            if (!intersectObjectsAt(clientX, clientY, mysteryState.root, true).length) {
+            if (!isPointOnMysteryBox(clientX, clientY)) {
                 return false;
+            }
+            if (isMysteryInteractionLocked()) {
+                return true;
             }
 
             if (mysteryState.phase === 'falling') {
@@ -12099,6 +14035,12 @@
             if (mysteryState.phase === 'opening' || mysteryState.phase === 'revealed' || mysteryState.phase === 'cooldown') {
                 return true;
             }
+
+            const now = getMysteryInteractionNowMs();
+            if ((now - mysteryInteractionSafetyState.lastBoxPressAt) < MYSTERY_INTERACTION_SAFETY_CONFIG.boxPressCooldownMs) {
+                return true;
+            }
+            mysteryInteractionSafetyState.lastBoxPressAt = now;
 
             mysteryState.pressActive = true;
             mysteryState.pressPointerId = Number.isFinite(pointerId) ? pointerId : null;
@@ -12113,12 +14055,33 @@
             return true;
         }
 
-        function handleMysteryBoxPointerUp(pointerId = null) {
+        function handleMysteryBoxPointerMove(clientX, clientY, pointerId = null) {
+            if (!mysteryState.pressActive) return false;
+            if (mysteryState.pressPointerId !== null && pointerId !== mysteryState.pressPointerId) {
+                return false;
+            }
+            mysteryState.pressQueuedOpen =
+                mysteryState.phase === 'landed' &&
+                isPointOnMysteryBox(clientX, clientY);
+            return true;
+        }
+
+        function handleMysteryBoxPointerUp(pointerId = null, clientX = null, clientY = null) {
             if (!mysteryState.root || !mysteryState.pressActive) return false;
             if (mysteryState.pressPointerId !== null && pointerId !== mysteryState.pressPointerId) {
                 return false;
             }
-            const shouldOpen = mysteryState.phase === 'landed' && mysteryState.pressQueuedOpen;
+            const now = getMysteryInteractionNowMs();
+            const releasedOnBox =
+                Number.isFinite(clientX) &&
+                Number.isFinite(clientY) &&
+                isPointOnMysteryBox(clientX, clientY);
+            const shouldOpen =
+                mysteryState.phase === 'landed' &&
+                mysteryState.pressQueuedOpen &&
+                releasedOnBox &&
+                !isMysteryInteractionLocked() &&
+                (now - mysteryInteractionSafetyState.lastBoxOpenAt) >= MYSTERY_INTERACTION_SAFETY_CONFIG.boxOpenCooldownMs;
             mysteryState.pressActive = false;
             mysteryState.pressPointerId = null;
             mysteryState.pressQueuedOpen = false;
@@ -12139,17 +14102,117 @@
             return true;
         }
 
+        function getMysteryInteractionNowMs() {
+            if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+                return performance.now();
+            }
+            return Date.now();
+        }
+
+        function lockMysteryInteractions(durationMs = 0) {
+            const safeDuration = Math.max(0, Number.isFinite(durationMs) ? durationMs : 0);
+            const now = getMysteryInteractionNowMs();
+            mysteryInteractionSafetyState.blockedUntilMs = Math.max(
+                mysteryInteractionSafetyState.blockedUntilMs || 0,
+                now + safeDuration
+            );
+        }
+
+        function isMysteryInteractionLocked() {
+            return getMysteryInteractionNowMs() < (mysteryInteractionSafetyState.blockedUntilMs || 0);
+        }
+
+        function noteMysterySignInteractionEnd(lockMs = MYSTERY_INTERACTION_SAFETY_CONFIG.signCancelCooldownMs) {
+            mysteryInteractionSafetyState.lastSignEndAt = getMysteryInteractionNowMs();
+            lockMysteryInteractions(lockMs);
+        }
+
+        function noteMysteryBoxOpen() {
+            mysteryInteractionSafetyState.lastBoxOpenAt = getMysteryInteractionNowMs();
+            lockMysteryInteractions(MYSTERY_INTERACTION_SAFETY_CONFIG.postRevealLockMs);
+        }
+
+        function isMysteryPreviewVisible() {
+            return Boolean(
+                previewState?.open ||
+                propPreviewPanel?.classList?.contains('open') ||
+                propPreviewOverlay?.classList?.contains('open')
+            );
+        }
+
         function canStartMysterySignFlight() {
+            const now = getMysteryInteractionNowMs();
             return (
                 !mysteryFlightCinematic.active &&
                 mysteryScrollSign &&
-                (mysteryState.phase === 'idle' || mysteryState.phase === 'cooldown')
+                mysteryState.phase === 'idle' &&
+                !isMysteryPreviewVisible() &&
+                !isMysteryInteractionLocked() &&
+                (now - mysteryInteractionSafetyState.lastSignStartAt) >= MYSTERY_INTERACTION_SAFETY_CONFIG.signStartCooldownMs &&
+                (now - mysteryInteractionSafetyState.lastSignEndAt) >= MYSTERY_INTERACTION_SAFETY_CONFIG.signStartCooldownMs
             );
+        }
+
+        function setMysteryScrollPointerCapture(pointerId) {
+            if (!mysteryScrollSign?.setPointerCapture || !Number.isFinite(pointerId)) {
+                return;
+            }
+            try {
+                mysteryScrollSign.setPointerCapture(pointerId);
+            } catch (_) {}
+        }
+
+        function releaseMysteryScrollPointerCapture(pointerId) {
+            if (!mysteryScrollSign?.releasePointerCapture || !Number.isFinite(pointerId)) {
+                return;
+            }
+            try {
+                if (!mysteryScrollSign.hasPointerCapture || mysteryScrollSign.hasPointerCapture(pointerId)) {
+                    mysteryScrollSign.releasePointerCapture(pointerId);
+                }
+            } catch (_) {}
+        }
+
+        function resetMysterySignSlingshotState(nextPhase = 'idle') {
+            mysterySignSlingshotState.active = false;
+            mysterySignSlingshotState.pointerId = null;
+            mysterySignSlingshotState.startY = 0;
+            mysterySignSlingshotState.pullOffset = 0;
+            mysterySignSlingshotState.launchOffset = 0;
+            mysterySignSlingshotState.launchStartOffset = 0;
+            mysterySignSlingshotState.launchPeakOffset = 0;
+            mysterySignSlingshotState.launchTimer = 0;
+            mysterySignSlingshotState.returnTimer = 0;
+            mysterySignSlingshotState.returnStartOffset = 0;
+            mysterySignSlingshotState.returnVelocity = 0;
+            mysterySignSlingshotState.phase = nextPhase;
+            if (mysteryScrollSign) {
+                mysteryScrollSign.style.cursor = 'grab';
+            }
+            stopMysteryScrollPullSfx(true);
+        }
+
+        function cancelMysterySignSlingshot(pointerId = null) {
+            if (!mysterySignSlingshotState.active) {
+                return false;
+            }
+            if (
+                mysterySignSlingshotState.pointerId !== null &&
+                pointerId !== null &&
+                pointerId !== mysterySignSlingshotState.pointerId
+            ) {
+                return false;
+            }
+            releaseMysteryScrollPointerCapture(mysterySignSlingshotState.pointerId);
+            resetMysterySignSlingshotState('idle');
+            noteMysterySignInteractionEnd();
+            return true;
         }
 
         function beginMysterySignSlingshot(pointerId, clientY) {
             if (!canStartMysterySignFlight()) return false;
             if (mysterySignSlingshotState.active) return false;
+            mysteryInteractionSafetyState.lastSignStartAt = getMysteryInteractionNowMs();
             mysterySignSlingshotState.active = true;
             mysterySignSlingshotState.pointerId = Number.isFinite(pointerId) ? pointerId : null;
             mysterySignSlingshotState.startY = clientY;
@@ -12163,6 +14226,7 @@
             mysterySignSlingshotState.returnVelocity = 0;
             mysterySignSlingshotState.phase = 'drag';
             mysteryScrollSign.style.cursor = 'grabbing';
+            setMysteryScrollPointerCapture(mysterySignSlingshotState.pointerId);
             startMysteryScrollPullSfx();
             return true;
         }
@@ -12178,16 +14242,25 @@
             if (mysterySignSlingshotState.pointerId !== null && pointerId !== mysterySignSlingshotState.pointerId) return false;
             const didPullEnough = mysterySignSlingshotState.pullOffset >= MYSTERY_SIGN_SLINGSHOT_CONFIG.minPullPx;
             const pulledOffset = mysterySignSlingshotState.pullOffset;
+            releaseMysteryScrollPointerCapture(mysterySignSlingshotState.pointerId);
+            if (!didPullEnough) {
+                resetMysterySignSlingshotState('idle');
+                noteMysterySignInteractionEnd();
+                return false;
+            }
             mysterySignSlingshotState.active = false;
             mysterySignSlingshotState.pointerId = null;
             mysterySignSlingshotState.startY = 0;
             mysterySignSlingshotState.pullOffset = 0;
             mysteryScrollSign.style.cursor = 'grab';
             stopMysteryScrollPullSfx(true);
-            if (!didPullEnough) return false;
             const launched = launchMysterySignByPull(pulledOffset);
             if (launched) {
                 playMysteryStringReleaseSfx();
+                noteMysterySignInteractionEnd(MYSTERY_INTERACTION_SAFETY_CONFIG.signLaunchLockMs);
+            } else {
+                resetMysterySignSlingshotState('idle');
+                noteMysterySignInteractionEnd();
             }
             return launched;
         }
@@ -12632,14 +14705,19 @@
                         previewState.object = null;
                     }
                     previewState.open = true;
+                    resetPreviewDragState();
                     previewState.viewMode = 'item';
                     previewState.propKey = mysteryState.rewardKey;
                     previewState.label = mysteryState.rewardLabel;
-                    previewState.rotateY = 0;
-                    previewState.rotateX = 0;
+                    previewState.defaultObjectRotateY = 0;
+                    previewState.objectRotateY = 0;
+                    previewState.defaultOrbitYaw = 0;
+                    previewState.defaultOrbitPitch = 0;
+                    previewState.orbitYaw = 0;
+                    previewState.orbitPitch = 0;
                     previewState.fitCategory = propRegistry.get(mysteryState.rewardKey)?.category || null;
                     previewState.fitPropKey = mysteryState.rewardKey;
-                    previewState.autoSpinPauseUntilMs = 0;
+                    pausePreviewAutoSpin(0);
                     previewState.hasStandaloneMesh = false;
                     if (propPreviewPanel) {
                         propPreviewPanel.classList.add('open');
@@ -12647,6 +14725,7 @@
                     if (propPreviewOverlay) {
                         propPreviewOverlay.classList.add('open');
                     }
+                    focusPropPreviewViewport();
                     setPreviewActionButtonsDisabled(true);
                     if (propPreviewName) {
                         propPreviewName.textContent = `Mystery Reward: ${mysteryState.rewardLabel} (Added to Inventory)`;
@@ -12672,14 +14751,19 @@
                 if (!mysteryState.rewardShown && mysteryState.rewardKey && dustRatio >= rewardRevealRatio) {
                     mysteryState.rewardShown = true;
                     const preloadedRewardPreview = takeMysteryRewardPreviewBuild(mysteryState.rewardKey);
-                    setPreviewObject(
+                    void openPropPreviewSafely(
                         mysteryState.rewardKey,
                         `${mysteryState.rewardLabel} (Mystery Reward)`,
                         preloadedRewardPreview
-                    );
-                    if (propPreviewName) {
-                        propPreviewName.textContent = `Mystery Reward: ${mysteryState.rewardLabel} (Added to Inventory)`;
-                    }
+                    ).then(() => {
+                        if (
+                            propPreviewName &&
+                            previewState.open &&
+                            previewState.propKey === mysteryState.rewardKey
+                        ) {
+                            propPreviewName.textContent = `Mystery Reward: ${mysteryState.rewardLabel} (Added to Inventory)`;
+                        }
+                    });
                 }
                 if (mysteryState.timer >= MYSTERY_BOX_CONFIG.revealHoldDuration) {
                     mysteryState.phase = 'cooldown';
@@ -12731,17 +14815,19 @@
             previewState.viewMode = 'item';
             previewState.propKey = null;
             previewState.label = null;
-            previewState.rotateY = 0;
-            previewState.rotateX = 0;
+            previewState.defaultObjectRotateY = 0;
+            previewState.objectRotateY = 0;
+            previewState.defaultOrbitYaw = 0;
+            previewState.defaultOrbitPitch = 0;
+            previewState.orbitYaw = 0;
+            previewState.orbitPitch = 0;
+            previewState.cameraDistance = sanitizeFiniteNumber(previewState.fitCameraDistance, 2.4);
             previewState.fitCategory = null;
             previewState.fitPropKey = null;
-            previewState.autoSpinPauseUntilMs = 0;
+            pausePreviewAutoSpin(0);
+            previewState.requestToken = (previewState.requestToken || 0) + 1;
             previewState.hasStandaloneMesh = false;
-            previewDragState.active = false;
-            previewDragState.pointerId = null;
-            if (propPreviewViewport) {
-                propPreviewViewport.classList.remove('is-dragging');
-            }
+            resetPreviewDragState();
             const oldObj = previewState.object;
             if (oldObj) {
                 previewScene.remove(oldObj);
@@ -12782,11 +14868,19 @@
             }
         }
 
+        function openPropPreviewSafely(propKey, label = 'Unknown item', prebuiltPreview = null) {
+            return setPreviewObject(propKey, label, prebuiltPreview).catch((error) => {
+                console.error(`Unable to open preview for ${propKey || 'unknown prop'}`, error);
+                setPreviewFallbackMessage('Unable to load this preview right now.');
+                setPreviewActionButtonsDisabled(true);
+            });
+        }
+
         function previewOpenForButton(button) {
             const selected = button?.dataset?.prop;
             if (!selected) return;
             const label = getItemLabel(button);
-            setPreviewObject(selected, label);
+            void openPropPreviewSafely(selected, label);
         }
 
         function updatePropButtonStates() {
@@ -12809,6 +14903,7 @@
             }
             if (storePanel?.classList?.contains('open')) {
                 warmupStoreCategoryThumbs(activeCategory);
+                warmupStoreCategoryPreviews(activeCategory);
             }
         }
 
@@ -12847,7 +14942,7 @@
                 if (isOpen) {
                     inventoryToggle.blur();
                     if (mysterySignSlingshotState.active) {
-                        endMysterySignSlingshot(mysterySignSlingshotState.pointerId);
+                        cancelMysterySignSlingshot(mysterySignSlingshotState.pointerId);
                     }
                     inventoryPanelAnchorState.initialized = false;
                     if (storePanel) {
@@ -12973,31 +15068,67 @@
         }
 
         if (propPreviewViewport) {
-            const endPreviewDrag = (event) => {
-                if (!previewDragState.active) return;
-                if (previewDragState.pointerId !== null && event.pointerId !== previewDragState.pointerId) return;
-                previewDragState.active = false;
-                previewDragState.pointerId = null;
-                propPreviewViewport.classList.remove('is-dragging');
-                previewState.autoSpinPauseUntilMs = performance.now() + 2200;
-                if (event.pointerId !== undefined && event.pointerId !== null) {
-                    try {
-                        propPreviewViewport.releasePointerCapture(event.pointerId);
-                    } catch (_) {}
+            const endPreviewDrag = () => {
+                if (!previewDragState.active) {
+                    return;
                 }
+                resetPreviewDragState();
+                pausePreviewAutoSpin(2200);
             };
 
             propPreviewViewport.addEventListener('pointerdown', (event) => {
                 if (!previewState.open || !previewState.object) return;
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                const pointerId = Number.isFinite(event.pointerId) ? event.pointerId : null;
+                focusPropPreviewViewport();
+                pausePreviewAutoSpin(5000);
+
+                if (
+                    previewDragState.active &&
+                    previewDragState.pointerId !== null &&
+                    previewDragState.pointerId !== pointerId &&
+                    previewDragState.secondaryPointerId === null &&
+                    event.pointerType !== 'mouse'
+                ) {
+                    previewDragState.mode = 'gesture';
+                    previewDragState.secondaryPointerId = pointerId;
+                    previewDragState.secondaryX = event.clientX;
+                    previewDragState.secondaryY = event.clientY;
+                    previewDragState.pinchStartDistance = getPreviewPointerDistance();
+                    previewDragState.pinchStartCameraDistance = previewState.cameraDistance;
+                    previewDragState.gestureStartMidX = (previewDragState.lastX + previewDragState.secondaryX) * 0.5;
+                    previewDragState.gestureStartMidY = (previewDragState.lastY + previewDragState.secondaryY) * 0.5;
+                    previewDragState.gestureStartTargetX = previewState.cameraTarget.x;
+                    previewDragState.gestureStartTargetY = previewState.cameraTarget.y;
+                    propPreviewViewport.classList.add('is-dragging');
+                    if (pointerId !== null) {
+                        try {
+                            propPreviewViewport.setPointerCapture(pointerId);
+                        } catch (_) {}
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
+
                 previewDragState.active = true;
-                previewDragState.pointerId = Number.isFinite(event.pointerId) ? event.pointerId : null;
+                previewDragState.mode = 'spin';
+                previewDragState.pointerId = pointerId;
+                previewDragState.secondaryPointerId = null;
                 previewDragState.lastX = event.clientX;
                 previewDragState.lastY = event.clientY;
-                previewState.autoSpinPauseUntilMs = performance.now() + 5000;
+                previewDragState.secondaryX = 0;
+                previewDragState.secondaryY = 0;
+                previewDragState.pinchStartDistance = 0;
+                previewDragState.pinchStartCameraDistance = previewState.cameraDistance;
+                previewDragState.gestureStartMidX = 0;
+                previewDragState.gestureStartMidY = 0;
+                previewDragState.gestureStartTargetX = previewState.cameraTarget.x;
+                previewDragState.gestureStartTargetY = previewState.cameraTarget.y;
                 propPreviewViewport.classList.add('is-dragging');
-                if (event.pointerId !== undefined && event.pointerId !== null) {
+                if (pointerId !== null) {
                     try {
-                        propPreviewViewport.setPointerCapture(event.pointerId);
+                        propPreviewViewport.setPointerCapture(pointerId);
                     } catch (_) {}
                 }
                 event.preventDefault();
@@ -13006,28 +15137,71 @@
 
             propPreviewViewport.addEventListener('pointermove', (event) => {
                 if (!previewDragState.active) return;
+                if (previewDragState.mode === 'gesture') {
+                    if (previewDragState.pointerId === event.pointerId) {
+                        previewDragState.lastX = event.clientX;
+                        previewDragState.lastY = event.clientY;
+                    } else if (previewDragState.secondaryPointerId === event.pointerId) {
+                        previewDragState.secondaryX = event.clientX;
+                        previewDragState.secondaryY = event.clientY;
+                    } else {
+                        return;
+                    }
+                    const currentDistance = getPreviewPointerDistance();
+                    if (previewDragState.pinchStartDistance > 0 && currentDistance > 6) {
+                        previewState.cameraDistance = clampPreviewCameraDistance(
+                            previewDragState.pinchStartCameraDistance * (previewDragState.pinchStartDistance / currentDistance)
+                        );
+                    }
+                    const midpointX = (previewDragState.lastX + previewDragState.secondaryX) * 0.5;
+                    const midpointY = (previewDragState.lastY + previewDragState.secondaryY) * 0.5;
+                    panPreviewCameraByPixels(
+                        midpointX - previewDragState.gestureStartMidX,
+                        midpointY - previewDragState.gestureStartMidY,
+                        previewDragState.gestureStartTargetX,
+                        previewDragState.gestureStartTargetY,
+                        previewState.cameraDistance
+                    );
+                    pausePreviewAutoSpin(3200);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
                 if (previewDragState.pointerId !== null && event.pointerId !== previewDragState.pointerId) return;
                 const dx = event.clientX - previewDragState.lastX;
-                const dy = event.clientY - previewDragState.lastY;
                 previewDragState.lastX = event.clientX;
                 previewDragState.lastY = event.clientY;
 
-                const yawSensitivity = 0.012;
-                const pitchSensitivity = 0.01;
-                previewState.rotateY += dx * yawSensitivity;
-                previewState.rotateX = THREE.MathUtils.clamp(previewState.rotateX + dy * pitchSensitivity, -0.72, 0.72);
-                previewState.autoSpinPauseUntilMs = performance.now() + 2600;
+                const yawSensitivity = 0.0115;
+                previewState.objectRotateY -= dx * yawSensitivity;
+                syncPreviewObjectRotation(previewState.object);
+                pausePreviewAutoSpin(3200);
+                event.preventDefault();
+                event.stopPropagation();
+            }, { passive: false });
 
-                if (previewState.object) {
-                    previewState.object.rotation.set(previewState.rotateX, previewState.rotateY, 0);
-                }
+            propPreviewViewport.addEventListener('wheel', (event) => {
+                if (!previewState.open || !previewState.object) return;
+                focusPropPreviewViewport();
+                const zoomFactor = Math.exp(event.deltaY * 0.00115);
+                previewState.cameraDistance = clampPreviewCameraDistance(previewState.cameraDistance * zoomFactor);
+                applyPreviewCameraOrbit();
+                pausePreviewAutoSpin(3600);
+                event.preventDefault();
+                event.stopPropagation();
+            }, { passive: false });
+
+            propPreviewViewport.addEventListener('dblclick', (event) => {
+                if (!previewState.open || !previewState.object) return;
+                resetPreviewViewToDefault();
+                pausePreviewAutoSpin(1600);
                 event.preventDefault();
                 event.stopPropagation();
             }, { passive: false });
 
             propPreviewViewport.addEventListener('pointerup', endPreviewDrag, { passive: true });
             propPreviewViewport.addEventListener('pointercancel', endPreviewDrag, { passive: true });
-            propPreviewViewport.addEventListener('pointerleave', endPreviewDrag, { passive: true });
+            propPreviewViewport.addEventListener('lostpointercapture', endPreviewDrag, { passive: true });
         }
 
         if (propPreviewCloseBtn) {
@@ -13043,8 +15217,78 @@
         }
 
         document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            closePropPreview();
+            const target = event.target;
+            const isTypingTarget =
+                target instanceof HTMLElement &&
+                (
+                    target.isContentEditable ||
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.tagName === 'SELECT'
+                );
+            if (isTypingTarget) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                closePropPreview();
+                return;
+            }
+            if (!previewState.open || !previewState.object) {
+                return;
+            }
+            let handled = true;
+            const spinStep = 0.22;
+            const panStepX = Math.max(0.05, sanitizeFiniteNumber(previewState.panLimitX, 0.7) * 0.18);
+            const panStepY = Math.max(0.05, sanitizeFiniteNumber(previewState.panLimitY, 0.7) * 0.18);
+            const zoomFactor = 0.12;
+            switch (event.key) {
+                case 'ArrowLeft':
+                    previewState.cameraTarget.x -= panStepX;
+                    break;
+                case 'ArrowRight':
+                    previewState.cameraTarget.x += panStepX;
+                    break;
+                case 'ArrowUp':
+                    previewState.cameraTarget.y += panStepY;
+                    break;
+                case 'ArrowDown':
+                    previewState.cameraTarget.y -= panStepY;
+                    break;
+                case '+':
+                case '=':
+                case 'PageUp':
+                    previewState.cameraDistance = clampPreviewCameraDistance(previewState.cameraDistance * (1 - zoomFactor));
+                    break;
+                case '-':
+                case '_':
+                case 'PageDown':
+                    previewState.cameraDistance = clampPreviewCameraDistance(previewState.cameraDistance * (1 + zoomFactor));
+                    break;
+                case '[':
+                    previewState.objectRotateY -= spinStep;
+                    break;
+                case ']':
+                    previewState.objectRotateY += spinStep;
+                    break;
+                case '0':
+                case 'Home':
+                    resetPreviewViewToDefault();
+                    break;
+                default:
+                    handled = false;
+                    break;
+            }
+            if (!handled) {
+                return;
+            }
+            focusPropPreviewViewport();
+            if (event.key !== '0' && event.key !== 'Home') {
+                syncPreviewObjectRotation(previewState.object);
+                applyPreviewCameraOrbit();
+            }
+            pausePreviewAutoSpin(2800);
+            event.preventDefault();
+            event.stopPropagation();
         });
 
         if (inventoryList) {
@@ -13069,6 +15313,58 @@
         setActiveInventoryCategory(INVENTORY_CONFIG.defaultCategory);
         renderInventoryList();
         updatePropButtonStates();
+
+        if (storePanel && typeof MutationObserver === 'function') {
+            const storePanelWarmupObserver = new MutationObserver(() => {
+                if (!storePanel.classList.contains('open')) {
+                    return;
+                }
+                warmupStoreCategoryThumbs(activeCategory);
+                warmupStoreCategoryPreviews(activeCategory);
+            });
+            storePanelWarmupObserver.observe(storePanel, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+
+        function warmPreviewAssetsForPropKey(propKey) {
+            if (!propKey || (typeof document !== 'undefined' && document.hidden)) {
+                return;
+            }
+            const source = getItemByPropKey(propKey);
+            const previewReadyPromise = getPropPreviewReadyPromise(source);
+            if (!previewReadyPromise) {
+                return;
+            }
+            void previewReadyPromise.catch(() => null);
+        }
+
+        const schedulePriorityWingPreviewWarmup = () => {
+            const runWarmup = () => {
+                PRIORITY_MYSTERY_REWARD_KEYS
+                    .filter((propKey) => propRegistry.has(propKey))
+                    .forEach((propKey, index) => {
+                        const delayMs = index < 3 ? index * 320 : 1100 + ((index - 3) * 780);
+                        window.setTimeout(() => {
+                            warmPreviewAssetsForPropKey(propKey);
+                        }, delayMs);
+                    });
+                const nextRewardKey = pickMysteryRewardKey();
+                if (nextRewardKey) {
+                    window.setTimeout(() => {
+                        warmPreviewAssetsForPropKey(nextRewardKey);
+                        cacheMysteryRewardPreviewBuild(nextRewardKey);
+                    }, 240);
+                }
+            };
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(runWarmup, { timeout: 1400 });
+            } else {
+                window.setTimeout(runWarmup, 420);
+            }
+        };
+        schedulePriorityWingPreviewWarmup();
 
         // --- ANIMATION ---
         const clock = new THREE.Clock();
@@ -13333,6 +15629,13 @@
             returnStartOffset: 0,
             returnVelocity: 0,
             phase: 'idle'
+        };
+        const mysteryInteractionSafetyState = {
+            blockedUntilMs: 0,
+            lastSignStartAt: -Infinity,
+            lastSignEndAt: -Infinity,
+            lastBoxPressAt: -Infinity,
+            lastBoxOpenAt: -Infinity
         };
         const HOLD_TO_BURST_MS = 3000;
         const stuntSim = {
@@ -14705,6 +17008,7 @@
             )) {
                 updateMysterySignSlingshot(e.clientY);
             }
+            handleMysteryBoxPointerMove(e.clientX, e.clientY, e.pointerId);
             updateCursorFromClientPoint(e.clientX, e.clientY);
         }, { passive: true });
 
@@ -14759,7 +17063,7 @@
             if (mysterySignSlingshotState.active) {
                 endMysterySignSlingshot(e.pointerId);
             }
-            if (handleMysteryBoxPointerUp(e.pointerId)) return;
+            if (handleMysteryBoxPointerUp(e.pointerId, e.clientX, e.clientY)) return;
             if (!holdInput.active) return;
             if (holdInput.pointerId !== null && e.pointerId !== holdInput.pointerId) return;
             const heldMs = performance.now() - holdInput.startedMs;
@@ -14776,9 +17080,26 @@
 
         window.addEventListener('pointercancel', (e) => {
             if (mysterySignSlingshotState.active) {
-                endMysterySignSlingshot(e.pointerId ?? mysterySignSlingshotState.pointerId);
+                cancelMysterySignSlingshot(e.pointerId ?? mysterySignSlingshotState.pointerId);
             }
             handleMysteryBoxPointerCancel(e.pointerId ?? null);
+            holdInput.active = false;
+            holdInput.pointerId = null;
+            holdInput.startedMs = 0;
+            holdInput.triggered = false;
+        });
+        window.addEventListener('blur', () => {
+            cancelMysterySignSlingshot(mysterySignSlingshotState.pointerId);
+            handleMysteryBoxPointerCancel(mysteryState.pressPointerId ?? null);
+            holdInput.active = false;
+            holdInput.pointerId = null;
+            holdInput.startedMs = 0;
+            holdInput.triggered = false;
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') return;
+            cancelMysterySignSlingshot(mysterySignSlingshotState.pointerId);
+            handleMysteryBoxPointerCancel(mysteryState.pressPointerId ?? null);
             holdInput.active = false;
             holdInput.pointerId = null;
             holdInput.startedMs = 0;
@@ -15303,15 +17624,29 @@
 
             const flap = stroke * wingAmplitude * emotion.wingAmpMul * stuntSim.wingAmpMul * (mysteryFlightFx.wingBoost ?? 1);
             const strokeHarmonic = Math.sin(flightState.phase * 2 - 0.35) * 0.12;
-            leftWingGroup.rotation.z = flap + strokeHarmonic - 0.2 + (mysteryFlightFx.hardFlap ?? 0);
-            rightWingGroup.rotation.z = -flap - strokeHarmonic + 0.2 - (mysteryFlightFx.hardFlap ?? 0);
+            const leftWingRotationZ = flap + strokeHarmonic - 0.2 + (mysteryFlightFx.hardFlap ?? 0);
+            const rightWingRotationZ = -flap - strokeHarmonic + 0.2 - (mysteryFlightFx.hardFlap ?? 0);
 
             const wingFeather = 0.07 + upstroke * 0.2 + emotion.wingFeatherAdd;
             const wingSweep = 0.03 + downstroke * 0.09 - upstroke * 0.025 + emotion.wingSweepAdd;
-            leftWingGroup.rotation.x = wingFeather + stroke * 0.03 + strokeHarmonic * 0.25 + (mysteryFlightFx.wingLift ?? 0);
-            rightWingGroup.rotation.x = wingFeather + stroke * 0.03 + strokeHarmonic * 0.25 + (mysteryFlightFx.wingLift ?? 0);
-            leftWingGroup.rotation.y = wingSweep;
-            rightWingGroup.rotation.y = -wingSweep;
+            const wingRotationX = wingFeather + stroke * 0.03 + strokeHarmonic * 0.25 + (mysteryFlightFx.wingLift ?? 0);
+            applyWingGroupPose(
+                leftWingRotationZ,
+                rightWingRotationZ,
+                wingRotationX,
+                wingSweep,
+                wingClearanceState.shoulderShift,
+                wingClearanceState.sweepAdd
+            );
+            const wingClearance = updateWingClearanceGuard(dt);
+            applyWingGroupPose(
+                leftWingRotationZ,
+                rightWingRotationZ,
+                wingRotationX,
+                wingSweep,
+                wingClearance.shoulderShift,
+                wingClearance.sweepAdd
+            );
 
             if (activeProps.has('roboticWings')) {
                 const roboticProp = propObjects.roboticWings;
@@ -15533,9 +17868,13 @@
                     !previewDragState.active &&
                     performance.now() >= (previewState.autoSpinPauseUntilMs || 0);
                 if (canAutoSpin) {
-                    previewState.rotateY += dt * 0.55;
+                    previewState.objectRotateY += dt * 0.55;
                 }
-                previewState.object.rotation.set(previewState.rotateX || 0, previewState.rotateY, 0);
+                if (previewState.hasStandaloneMesh) {
+                    setPreviewFallbackMessage('');
+                }
+                syncPreviewObjectRotation(previewState.object);
+                applyPreviewCameraOrbit();
                 previewRenderer.render(previewScene, previewCamera);
             }
 
@@ -15580,7 +17919,7 @@
         const prewarmProps = [...propRegistry.values()]
             .sort((a, b) => {
                 if (b.priority !== a.priority) return b.priority - a.priority;
-                return a.key.localeCompare(b.key);
+                return comparePropCatalogOrder(a.key, b.key);
             })
             .map(({ key, object }) => {
                 const prop = object;
