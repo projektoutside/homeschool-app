@@ -9158,8 +9158,15 @@
             gravityInfluence: 0.52,
             torqueInfluence: 1.18,
             pitchInfluence: 0.11,
+            dragGravityInfluence: 0.14,
+            dragTorqueInfluence: 0.38,
+            dragPitchInfluence: 0.045,
             idleTimeoutMs: 720
         });
+        const MYSTERY_DEVICE_TILT_STATUS_MESSAGE = 'homepage-deviceorientation-status';
+        const MYSTERY_DEVICE_TILT_SAMPLE_MESSAGE = 'homepage-deviceorientation';
+        const MYSTERY_DEVICE_TILT_PERMISSION_REQUEST_MESSAGE = 'homepage-deviceorientation-request-permission';
+        const MYSTERY_DEVICE_TILT_SYNC_REQUEST_MESSAGE = 'homepage-deviceorientation-sync-status';
         const MYSTERY_SIGN_SLINGSHOT_CONFIG = Object.freeze({
             minPullPx: 34,
             maxPullPx: 180,
@@ -14178,6 +14185,8 @@
             mysterySignSlingshotState.pointerId = null;
             mysterySignSlingshotState.startY = 0;
             mysterySignSlingshotState.pullOffset = 0;
+            mysterySignSlingshotState.dragBaseTipX = NaN;
+            mysterySignSlingshotState.dragBaseTipY = NaN;
             mysterySignSlingshotState.launchOffset = 0;
             mysterySignSlingshotState.launchStartOffset = 0;
             mysterySignSlingshotState.launchPeakOffset = 0;
@@ -14224,6 +14233,13 @@
             mysterySignSlingshotState.returnTimer = 0;
             mysterySignSlingshotState.returnStartOffset = 0;
             mysterySignSlingshotState.returnVelocity = 0;
+            const currentTip = mysteryHangingSign.nodes[mysteryHangingSign.nodes.length - 1];
+            mysterySignSlingshotState.dragBaseTipX = Number.isFinite(currentTip?.x)
+                ? currentTip.x
+                : mysteryHangingSign.anchorX;
+            mysterySignSlingshotState.dragBaseTipY = Number.isFinite(currentTip?.y)
+                ? currentTip.y
+                : (mysteryHangingSign.anchorY + mysteryHangingSign.ropeLength);
             mysterySignSlingshotState.phase = 'drag';
             mysteryScrollSign.style.cursor = 'grabbing';
             setMysteryScrollPointerCapture(mysterySignSlingshotState.pointerId);
@@ -14252,6 +14268,8 @@
             mysterySignSlingshotState.pointerId = null;
             mysterySignSlingshotState.startY = 0;
             mysterySignSlingshotState.pullOffset = 0;
+            mysterySignSlingshotState.dragBaseTipX = NaN;
+            mysterySignSlingshotState.dragBaseTipY = NaN;
             mysteryScrollSign.style.cursor = 'grab';
             stopMysteryScrollPullSfx(true);
             const launched = launchMysterySignByPull(pulledOffset);
@@ -15621,6 +15639,8 @@
             pointerId: null,
             startY: 0,
             pullOffset: 0,
+            dragBaseTipX: NaN,
+            dragBaseTipY: NaN,
             launchOffset: 0,
             launchStartOffset: 0,
             launchPeakOffset: 0,
@@ -16566,8 +16586,67 @@
             mysteryDeviceTilt.lastSampleAt = 0;
         }
 
-        function handleMysteryDeviceOrientation(event) {
-            const normalizedTilt = normalizeMysteryDeviceTilt(event?.beta, event?.gamma);
+        function getMysteryDeviceTiltBridge() {
+            if (window.parent === window) {
+                return null;
+            }
+            try {
+                const bridge = window.parent?.__homePageTiltBridge;
+                if (
+                    !bridge ||
+                    typeof bridge.ensureStarted !== 'function' ||
+                    typeof bridge.getState !== 'function'
+                ) {
+                    return null;
+                }
+                return bridge;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function refreshMysteryDeviceTiltSupport() {
+            const bridge = getMysteryDeviceTiltBridge();
+            if (bridge) {
+                try {
+                    const bridgeState = bridge.getState();
+                    if (bridgeState?.permission === 'unsupported') {
+                        mysteryDeviceTilt.supported = false;
+                        return false;
+                    }
+                } catch (_) {}
+            }
+            mysteryDeviceTilt.supported = Boolean(typeof window.DeviceOrientationEvent !== 'undefined' || bridge);
+            return mysteryDeviceTilt.supported;
+        }
+
+        function postMysteryDeviceTiltBridgeMessage(type) {
+            if (!type || window.parent === window) {
+                return false;
+            }
+            try {
+                window.parent.postMessage({ type }, window.location.origin);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function applyMysteryDeviceTiltPermissionStatus(permission, { listening = false, resetCalibration = false } = {}) {
+            mysteryDeviceTilt.permission = typeof permission === 'string' ? permission : 'unknown';
+            mysteryDeviceTilt.listening = mysteryDeviceTilt.permission === 'granted' && Boolean(listening);
+            mysteryDeviceTilt.supported = mysteryDeviceTilt.permission !== 'unsupported' && refreshMysteryDeviceTiltSupport();
+            if (!mysteryDeviceTilt.listening) {
+                mysteryDeviceTilt.active = false;
+                mysteryDeviceTilt.lastSampleAt = 0;
+            }
+            if (resetCalibration) {
+                resetMysteryDeviceTiltCalibration();
+            }
+        }
+
+        function applyMysteryDeviceTiltSample(beta, gamma) {
+            const normalizedTilt = normalizeMysteryDeviceTilt(beta, gamma);
             if (!normalizedTilt) {
                 return;
             }
@@ -16584,18 +16663,118 @@
             mysteryDeviceTilt.lastSampleAt = performance.now();
         }
 
+        function handleMysteryDeviceOrientation(event) {
+            applyMysteryDeviceTiltSample(event?.beta, event?.gamma);
+        }
+
+        function handleMysteryDeviceTiltBridgeMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+            const data = event?.data;
+            if (!data || typeof data !== 'object') {
+                return;
+            }
+
+            if (data.type === MYSTERY_DEVICE_TILT_STATUS_MESSAGE) {
+                const permission = typeof data.permission === 'string' ? data.permission : 'unknown';
+                const shouldResetCalibration =
+                    permission === 'granted' &&
+                    (mysteryDeviceTilt.permission !== 'granted' || !mysteryDeviceTilt.listening);
+                applyMysteryDeviceTiltPermissionStatus(permission, {
+                    listening: Boolean(data.listening),
+                    resetCalibration: shouldResetCalibration
+                });
+                return;
+            }
+
+            if (data.type !== MYSTERY_DEVICE_TILT_SAMPLE_MESSAGE) {
+                return;
+            }
+
+            const shouldResetCalibration =
+                mysteryDeviceTilt.permission !== 'granted' || !mysteryDeviceTilt.listening;
+            applyMysteryDeviceTiltPermissionStatus('granted', {
+                listening: true,
+                resetCalibration: shouldResetCalibration
+            });
+            applyMysteryDeviceTiltSample(data.beta, data.gamma);
+        }
+
+        function shouldRequestMysteryDeviceTiltPermissionOnTap() {
+            if (mysteryDeviceTilt.listening || mysteryDeviceTilt.permission === 'denied') {
+                return false;
+            }
+
+            const bridge = getMysteryDeviceTiltBridge();
+            if (bridge) {
+                try {
+                    const bridgeState = bridge.getState();
+                    if (bridgeState?.permission === 'prompt') {
+                        return true;
+                    }
+                    if (bridgeState?.permission === 'granted') {
+                        return false;
+                    }
+                } catch (_) {}
+            }
+
+            if (mysteryDeviceTilt.permission === 'prompt') {
+                return true;
+            }
+
+            return (
+                mysteryDeviceTilt.permission === 'unknown' &&
+                typeof window.DeviceOrientationEvent?.requestPermission === 'function'
+            );
+        }
+
         function startMysteryDeviceTiltTracking() {
-            if (!mysteryDeviceTilt.supported || mysteryDeviceTilt.listening) {
+            if (typeof window.DeviceOrientationEvent === 'undefined' || mysteryDeviceTilt.listening) {
                 return;
             }
             window.addEventListener('deviceorientation', handleMysteryDeviceOrientation, { passive: true });
-            mysteryDeviceTilt.listening = true;
-            mysteryDeviceTilt.permission = 'granted';
-            resetMysteryDeviceTiltCalibration();
+            applyMysteryDeviceTiltPermissionStatus('granted', {
+                listening: true,
+                resetCalibration: true
+            });
         }
 
         async function ensureMysteryDeviceTiltPermission({ userGesture = false } = {}) {
-            if (!mysteryDeviceTilt.supported) {
+            const bridge = getMysteryDeviceTiltBridge();
+            if (bridge) {
+                const syncBridgeState = (state, fallbackListening = false) => {
+                    if (!state || typeof state !== 'object') {
+                        return;
+                    }
+                    const permission = typeof state.permission === 'string' ? state.permission : 'unknown';
+                    const listening = permission === 'granted'
+                        ? Boolean(state.listening || fallbackListening)
+                        : false;
+                    const shouldResetCalibration =
+                        permission === 'granted' &&
+                        (mysteryDeviceTilt.permission !== 'granted' || !mysteryDeviceTilt.listening);
+                    applyMysteryDeviceTiltPermissionStatus(permission, {
+                        listening,
+                        resetCalibration: shouldResetCalibration
+                    });
+                };
+
+                try {
+                    syncBridgeState(bridge.getState());
+                    const started = await bridge.ensureStarted({ userGesture });
+                    syncBridgeState(bridge.getState(), started);
+                    return mysteryDeviceTilt.permission === 'granted';
+                } catch (_) {}
+            } else if (window.parent !== window) {
+                postMysteryDeviceTiltBridgeMessage(
+                    userGesture
+                        ? MYSTERY_DEVICE_TILT_PERMISSION_REQUEST_MESSAGE
+                        : MYSTERY_DEVICE_TILT_SYNC_REQUEST_MESSAGE
+                );
+            }
+
+            if (!refreshMysteryDeviceTiltSupport()) {
                 mysteryDeviceTilt.permission = 'unsupported';
                 return false;
             }
@@ -16636,6 +16815,8 @@
             return true;
         }
 
+        window.addEventListener('message', handleMysteryDeviceTiltBridgeMessage);
+
         function shouldApplyMysteryDeviceTilt() {
             if (!mysteryDeviceTilt.supported || mysteryDeviceTilt.permission !== 'granted') {
                 return false;
@@ -16649,7 +16830,10 @@
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 return false;
             }
-            if (mysterySignSlingshotState.active || mysterySignSlingshotState.phase !== 'idle') {
+            const tiltAllowedPhase =
+                mysterySignSlingshotState.phase === 'idle' ||
+                mysterySignSlingshotState.phase === 'drag';
+            if (!tiltAllowedPhase) {
                 return false;
             }
             if (document.body.classList.contains('inventory-open')) {
@@ -16706,29 +16890,56 @@
             return path;
         }
 
+        function getMysteryHangingSignDragTarget() {
+            if (
+                !mysteryHangingSign.enabled ||
+                mysterySignSlingshotState.phase !== 'drag' ||
+                !mysteryHangingSign.nodes.length
+            ) {
+                return null;
+            }
+
+            const segmentCount = Math.max(1, MYSTERY_HANGING_SIGN_CONFIG.segmentCount);
+            const tipNode = mysteryHangingSign.nodes[segmentCount] || mysteryHangingSign.nodes[mysteryHangingSign.nodes.length - 1];
+            const pullOffset = THREE.MathUtils.clamp(
+                mysterySignSlingshotState.pullOffset,
+                0,
+                MYSTERY_SIGN_SLINGSHOT_CONFIG.maxPullPx
+            );
+            const tipX = Number.isFinite(mysterySignSlingshotState.dragBaseTipX)
+                ? mysterySignSlingshotState.dragBaseTipX
+                : (Number.isFinite(tipNode?.x) ? tipNode.x : mysteryHangingSign.anchorX);
+            const baseTipY = Number.isFinite(mysterySignSlingshotState.dragBaseTipY)
+                ? mysterySignSlingshotState.dragBaseTipY
+                : (
+                    Number.isFinite(tipNode?.y)
+                        ? tipNode.y
+                        : (mysteryHangingSign.anchorY + mysteryHangingSign.ropeLength)
+                );
+
+            return {
+                tipX,
+                tipY: baseTipY + pullOffset,
+                pullOffset,
+                effectiveSegmentLength: Math.max(
+                    0.0001,
+                    (mysteryHangingSign.ropeLength + pullOffset) / segmentCount
+                )
+            };
+        }
+
         function syncMysteryHangingSignDom() {
             if (!mysteryHangingSign.enabled) return;
             const nodes = mysteryHangingSign.nodes;
             if (!nodes.length) return;
 
             const signLift = Number.isFinite(mysterySignSlingshotState?.launchOffset) ? mysterySignSlingshotState.launchOffset : 0;
-            let pathPoints;
-            if (signLift < 0) {
-                // During slingshot launch/hold above the viewport, move rope + sign together.
-                pathPoints = nodes.map((node) => ({
+            const pathPoints = signLift < 0
+                ? nodes.map((node) => ({
                     x: node.x,
                     y: node.y + signLift
-                }));
-            } else {
-                // While dragging down, keep top rope fixed and stretch toward the sign tip.
-                const ropeTipPoint = {
-                    x: nodes[nodes.length - 1].x,
-                    y: nodes[nodes.length - 1].y + signLift
-                };
-                pathPoints = nodes.length > 1
-                    ? nodes.slice(0, -1).concat(ropeTipPoint)
-                    : [ropeTipPoint];
-            }
+                }))
+                : nodes;
 
             mysteryHangingSignPath.setAttribute('d', buildMysteryHangingSignPath(pathPoints));
             mysteryHangingSignAnchor.setAttribute('cx', mysteryHangingSign.anchorX.toFixed(2));
@@ -16869,22 +17080,31 @@
             const nodes = mysteryHangingSign.nodes;
             const prevNodes = mysteryHangingSign.prevNodes;
             const segmentCount = MYSTERY_HANGING_SIGN_CONFIG.segmentCount;
+            const dragTarget = getMysteryHangingSignDragTarget();
+            const isDraggingSign = Boolean(dragTarget);
+            const activeSegmentLength = dragTarget?.effectiveSegmentLength ?? mysteryHangingSign.segmentLength;
             const deviceTilt = sampleMysteryDeviceTilt(stepDt);
 
             const windBase =
                 Math.sin(t * 0.42 + 0.4) * 0.66 +
                 Math.sin(t * 0.97 + 1.7) * 0.26 +
                 Math.sin(t * 2.2 + 0.9) * 0.08;
-            const gustCarrier = Math.max(0, Math.sin(t * 0.15 - 0.52));
+            const gustCarrier = isDraggingSign ? 0 : Math.max(0, Math.sin(t * 0.15 - 0.52));
             const gust = gustCarrier * gustCarrier * MYSTERY_HANGING_SIGN_CONFIG.windGustForce;
+            const tiltGravityInfluence = isDraggingSign
+                ? MYSTERY_DEVICE_TILT_CONFIG.dragGravityInfluence
+                : MYSTERY_DEVICE_TILT_CONFIG.gravityInfluence;
             const tiltLateralAcceleration =
                 Math.sin(deviceTilt.rollRad) *
                 MYSTERY_HANGING_SIGN_CONFIG.gravity *
-                MYSTERY_DEVICE_TILT_CONFIG.gravityInfluence;
-            const lateralAcceleration =
-                windBase * MYSTERY_HANGING_SIGN_CONFIG.windLateralForce +
-                gust +
-                tiltLateralAcceleration;
+                tiltGravityInfluence;
+            const lateralAcceleration = isDraggingSign
+                ? tiltLateralAcceleration
+                : (
+                    windBase * MYSTERY_HANGING_SIGN_CONFIG.windLateralForce +
+                    gust +
+                    tiltLateralAcceleration
+                );
 
             const damping = Math.pow(MYSTERY_HANGING_SIGN_CONFIG.damping, stepDt * 60);
             const gravityStep = MYSTERY_HANGING_SIGN_CONFIG.gravity * stepDt * stepDt;
@@ -16897,6 +17117,13 @@
             for (let i = 1; i <= segmentCount; i++) {
                 const node = nodes[i];
                 const previous = prevNodes[i];
+                if (isDraggingSign && i === segmentCount) {
+                    node.x = dragTarget.tipX;
+                    node.y = dragTarget.tipY;
+                    previous.x = dragTarget.tipX;
+                    previous.y = dragTarget.tipY;
+                    continue;
+                }
                 const currentX = node.x;
                 const currentY = node.y;
                 const velX = (node.x - previous.x) * damping;
@@ -16907,22 +17134,33 @@
                 node.x = currentX + velX + lateralAcceleration * windInfluence * stepDt * stepDt;
                 node.y = currentY + velY + gravityStep;
             }
-            nodes[segmentCount].y += gravityStep * 1.35;
+            if (!isDraggingSign) {
+                nodes[segmentCount].y += gravityStep * 1.35;
+            }
 
             for (let iteration = 0; iteration < MYSTERY_HANGING_SIGN_CONFIG.solverIterations; iteration++) {
                 nodes[0].x = mysteryHangingSign.anchorX;
                 nodes[0].y = mysteryHangingSign.anchorY;
+                if (isDraggingSign) {
+                    nodes[segmentCount].x = dragTarget.tipX;
+                    nodes[segmentCount].y = dragTarget.tipY;
+                    prevNodes[segmentCount].x = dragTarget.tipX;
+                    prevNodes[segmentCount].y = dragTarget.tipY;
+                }
                 for (let i = 1; i <= segmentCount; i++) {
                     const p1 = nodes[i - 1];
                     const p2 = nodes[i];
                     const dx = p2.x - p1.x;
                     const dy = p2.y - p1.y;
                     const distance = Math.max(0.0001, Math.hypot(dx, dy));
-                    const diff = (distance - mysteryHangingSign.segmentLength) / distance;
+                    const diff = (distance - activeSegmentLength) / distance;
 
                     if (i === 1) {
                         p2.x -= dx * diff;
                         p2.y -= dy * diff;
+                    } else if (isDraggingSign && i === segmentCount) {
+                        p1.x += dx * diff;
+                        p1.y += dy * diff;
                     } else {
                         const correctionX = dx * diff * 0.5;
                         const correctionY = dy * diff * 0.5;
@@ -16937,11 +17175,28 @@
             const tip = nodes[segmentCount];
             const neck = nodes[segmentCount - 1] || tip;
             const ropeLean = Math.atan2(tip.x - neck.x, tip.y - neck.y);
-            const windTorque = (lateralAcceleration / Math.max(1, MYSTERY_HANGING_SIGN_CONFIG.windLateralForce)) * 0.35;
-            const tiltTorque = deviceTilt.rollRad * MYSTERY_DEVICE_TILT_CONFIG.torqueInfluence;
+            if (isDraggingSign) {
+                mysteryHangingSign.angularVelocity *= Math.max(0, 1 - stepDt * 12);
+            }
+            const windTorque = isDraggingSign
+                ? 0
+                : (lateralAcceleration / Math.max(1, MYSTERY_HANGING_SIGN_CONFIG.windLateralForce)) * 0.35;
+            const tiltTorque = deviceTilt.rollRad * (
+                isDraggingSign
+                    ? MYSTERY_DEVICE_TILT_CONFIG.dragTorqueInfluence
+                    : MYSTERY_DEVICE_TILT_CONFIG.torqueInfluence
+            );
             const gravityTorque = -Math.sin(mysteryHangingSign.angle) * 7.05;
-            const alignmentTorque = (ropeLean * 0.92 - mysteryHangingSign.angle) * MYSTERY_HANGING_SIGN_CONFIG.angularStiffness;
-            const dampingTorque = -mysteryHangingSign.angularVelocity * MYSTERY_HANGING_SIGN_CONFIG.angularDamping;
+            const alignmentTorque =
+                (ropeLean * 0.92 - mysteryHangingSign.angle) *
+                (isDraggingSign
+                    ? MYSTERY_HANGING_SIGN_CONFIG.angularStiffness * 1.18
+                    : MYSTERY_HANGING_SIGN_CONFIG.angularStiffness);
+            const dampingTorque =
+                -mysteryHangingSign.angularVelocity *
+                (isDraggingSign
+                    ? MYSTERY_HANGING_SIGN_CONFIG.angularDamping * 2.2
+                    : MYSTERY_HANGING_SIGN_CONFIG.angularDamping);
             const angularAcceleration = gravityTorque + alignmentTorque + dampingTorque + windTorque + tiltTorque;
             mysteryHangingSign.angularVelocity += angularAcceleration * stepDt;
             mysteryHangingSign.angularVelocity = THREE.MathUtils.clamp(mysteryHangingSign.angularVelocity, -2.4, 2.4);
@@ -16949,9 +17204,13 @@
             mysteryHangingSign.angle = THREE.MathUtils.clamp(mysteryHangingSign.angle, -0.62, 0.62);
 
             const depthTarget = THREE.MathUtils.clamp(
-                ((tip.y - neck.y) - mysteryHangingSign.segmentLength) * -0.052 +
+                ((tip.y - neck.y) - activeSegmentLength) * -0.052 +
                 (tip.x - prevNodes[segmentCount].x) * 0.016 -
-                Math.sin(deviceTilt.pitchRad) * MYSTERY_DEVICE_TILT_CONFIG.pitchInfluence,
+                Math.sin(deviceTilt.pitchRad) * (
+                    isDraggingSign
+                        ? MYSTERY_DEVICE_TILT_CONFIG.dragPitchInfluence
+                        : MYSTERY_DEVICE_TILT_CONFIG.pitchInfluence
+                ),
                 -0.16,
                 0.12
             );
@@ -17026,10 +17285,7 @@
                 isPointOnMysteryScrollSign(e.clientX, e.clientY) &&
                 Number.isFinite(e.pointerId)
             ) {
-                const needsPermissionTap =
-                    mysteryDeviceTilt.permission !== 'denied' &&
-                    !mysteryDeviceTilt.listening &&
-                    typeof window.DeviceOrientationEvent?.requestPermission === 'function';
+                const needsPermissionTap = shouldRequestMysteryDeviceTiltPermissionOnTap();
                 if (needsPermissionTap) {
                     const permissionGranted = await ensureMysteryDeviceTiltPermission({ userGesture: true });
                     if (!permissionGranted) {

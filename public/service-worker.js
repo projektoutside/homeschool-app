@@ -1,11 +1,11 @@
 /**
  * Service Worker for La's Homeschool Hub App
  * Provides offline support, caching, and auto-update functionality
- * @version 1.0.5
+ * @version 1.0.7
  */
 
-const CACHE_NAME = 'homeschool-hub-v1.0.5';
-const SW_VERSION = '1.0.5';
+const CACHE_NAME = 'homeschool-hub-v1.0.7';
+const SW_VERSION = '1.0.7';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -71,6 +71,7 @@ const shouldSkip = (url) => {
 };
 
 const LIVE_CONTENT_SEGMENTS = [
+  '/HomePageAPP/',
   '/3dClass/',
   '/PolygonAPP/',
   '/Games/',
