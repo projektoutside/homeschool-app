@@ -7,7 +7,7 @@ import { buildAssetPath } from '../utils/pathUtils';
 import './Home.css';
 import './ClassroomPage.css';
 
-const CLASSROOM_APP_VERSION = '2026-03-09-2';
+const CLASSROOM_APP_VERSION = '2026-03-10-1';
 const CLASSROOM_SYNC_SCOPE = 'classroom-3d';
 const CLASSROOM_GLOBAL_STATE_TABLE = 'classroom_global_states';
 const CLASSROOM_GLOBAL_STATE_APP_ID = '3dClass';

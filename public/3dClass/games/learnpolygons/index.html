@@ -441,8 +441,8 @@
             top: var(--toolbar-top);
             /* Pushed down by top tools bar with additional gap */
             left: 0;
-            right: auto;
-            width: min(100%, var(--viewport-width));
+            right: 0;
+            width: 100vw;
             background: white;
             border-bottom: 1px solid var(--color-border);
             padding: clamp(8px, 1.5vw, 12px) max(clamp(8px, 1.5vw, 12px), var(--app-safe-right)) clamp(8px, 1.5vw, 12px) max(clamp(8px, 1.5vw, 12px), var(--app-safe-left));
@@ -687,6 +687,43 @@
             }
         }
 
+        body.overlay-sidebars .sidebar {
+            position: fixed !important;
+            top: var(--top-ui-bottom) !important;
+            left: 0;
+            width: min(85vw, 340px);
+            height: calc(var(--viewport-height) - var(--top-ui-bottom));
+            max-height: calc(var(--viewport-height) - var(--top-ui-bottom));
+            z-index: var(--z-menu);
+            transform: translateX(calc(-100% - 18px)) !important;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.16);
+            margin-top: 0 !important;
+            align-self: auto !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+        }
+
+        body.overlay-sidebars .sidebar.sidebar-right {
+            left: auto;
+            right: 0;
+            border-left: none;
+            border-right: 1px solid var(--color-border);
+            transform: translateX(calc(100% + 18px)) !important;
+        }
+
+        body.overlay-sidebars .sidebar.mobile-open {
+            transform: translateX(0) !important;
+        }
+
+        body.overlay-sidebars .sidebar.sidebar-right.mobile-open {
+            transform: translateX(0) !important;
+        }
+
+        body.overlay-sidebars .sidebar-backdrop {
+            display: block;
+        }
+
         .panel {
             border-bottom: 1px solid #e0e0e0;
             flex: 1;
@@ -844,37 +881,20 @@
         }
 
         /* Properties Display - Responsive */
-        .property-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 8px;
-            font-size: clamp(12px, 1.4vw, 14px);
-            gap: 12px;
-            min-height: 28px;
-            align-items: center;
-            border-radius: 4px;
-            transition: background-color 0.15s ease;
-        }
-
-        .property-row:hover {
-            background-color: #f8f9fa;
-        }
-
-        .property-label {
-            color: #64748b;
-            flex-shrink: 0;
-            font-weight: 500;
-            font-size: clamp(11px, 1.3vw, 13px);
-        }
-
-        .property-value {
-            font-weight: 600;
-            color: #1e293b;
-            text-align: right;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: clamp(12px, 1.4vw, 14px);
+        .properties-empty-state {
+            display: grid;
+            place-items: center;
+            min-height: 108px;
+            padding: 16px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            color: #065f46;
+            text-align: center;
+            font-size: clamp(12px, 1.5vw, 14px);
+            font-weight: 700;
+            line-height: 1.45;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
         }
 
         /* Layer Item - Responsive */
@@ -1020,59 +1040,187 @@
             line-height: 1.4;
         }
 
-        /* Triangle Classifier - Responsive */
-        .triangle-classifier {
+        /* Shape Classifier - Responsive */
+        .shape-classifier {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            padding: 8px 10px;
-            border-radius: 6px;
+            padding: 14px;
+            border-radius: 18px;
             margin: 0;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+            min-width: 0;
+            overflow: hidden;
+            width: 100%;
+            box-shadow: 0 18px 32px rgba(5, 150, 105, 0.24);
+            flex: 0 0 auto;
+            align-self: stretch;
+        }
+
+        .shape-classifier-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .shape-classifier-header {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .shape-classifier-title {
+            font-weight: 700;
+            font-size: clamp(10px, 1.05vw, 12px);
+            letter-spacing: 0.08em;
+            opacity: 0.82;
+            text-transform: uppercase;
+        }
+
+        .shape-classifier-primary {
+            font-size: clamp(20px, 2.4vw, 28px);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        .shape-classifier-subtitle {
+            font-size: clamp(11px, 1.15vw, 13px);
+            font-weight: 500;
+            line-height: 1.35;
+            opacity: 0.9;
+            max-width: 40ch;
+        }
+
+        .shape-classifier-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .shape-classifier-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(70px, 1fr));
+            gap: 8px;
+            min-width: min(100%, 236px);
+        }
+
+        .shape-classifier-metric {
+            display: grid;
+            gap: 2px;
+            align-content: start;
+            padding: 9px 10px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(6px);
+            min-width: 0;
+        }
+
+        .shape-classifier-metric-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.8;
+        }
+
+        .shape-classifier-metric-value {
+            font-size: clamp(13px, 1.3vw, 16px);
+            font-weight: 700;
+            line-height: 1.2;
+            min-width: 0;
+            word-break: break-word;
+        }
+
+        .shape-classifier-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            align-items: start;
+        }
+
+        .shape-classifier-card {
+            display: grid;
+            gap: 8px;
+            min-width: 0;
+            padding: 11px 12px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(6px);
+        }
+
+        .shape-classifier-card--notes {
             grid-column: 1 / -1;
         }
 
-        .triangle-classifier-title {
+        .shape-classifier-section-label {
+            font-size: clamp(10px, 1.15vw, 12px);
             font-weight: 600;
-            margin-bottom: 6px;
-            font-size: clamp(11px, 1.3vw, 13px);
-            opacity: 0.95;
+            opacity: 0.82;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .shape-classifier-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-width: 0;
         }
 
         .classifier-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.25);
-            padding: 3px 8px;
-            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.18);
+            padding: 5px 9px;
+            border-radius: 999px;
             font-size: clamp(10px, 1.2vw, 12px);
-            margin-right: 6px;
-            margin-top: 2px;
-            font-weight: 500;
+            font-weight: 600;
             backdrop-filter: blur(4px);
+            max-width: 100%;
+            line-height: 1.35;
+            word-break: break-word;
+            border: 1px solid rgba(255, 255, 255, 0.14);
         }
 
-        /* Coordinate Display - Responsive */
-        .coord-display {
-            position: absolute;
-            bottom: clamp(12px, 2vw, 20px);
-            left: clamp(12px, 2vw, 20px);
-            background: white;
-            padding: var(--spacing-sm) var(--spacing-md);
-            border-radius: var(--radius-md);
-            font-size: clamp(11px, 1.5vw, 14px);
-            font-family: monospace;
-            box-shadow: 0 clamp(2px, 0.5vw, 4px) clamp(6px, 1vw, 8px) rgba(0, 0, 0, 0.1);
-            z-index: calc(var(--z-toolbar) - 1);
-            max-width: calc(100% - var(--spacing-2xl));
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .shape-classifier-note-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
         }
 
-        /* Mobile: Adjust position */
-        @media (max-width: 768px) {
-            .coord-display {
-                bottom: clamp(80px, 12vw, 100px);
-                left: var(--spacing-md);
-                max-width: calc(100% - clamp(120px, 20vw, 160px));
+        .shape-classifier-note {
+            font-size: clamp(10px, 1.15vw, 12px);
+            line-height: 1.45;
+            opacity: 0.96;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 8px 10px;
+            min-width: 0;
+        }
+
+        @media (max-width: 520px) {
+            .shape-classifier-top {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .shape-classifier-summary {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                min-width: 0;
+            }
+
+            .shape-classifier-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .shape-classifier-note-list {
+                grid-template-columns: minmax(0, 1fr);
             }
         }
 
@@ -1370,8 +1518,8 @@
             position: fixed;
             top: var(--app-safe-top);
             left: 0;
-            right: auto;
-            width: min(100%, var(--viewport-width));
+            right: 0;
+            width: 100vw;
             height: clamp(48px, 6vw, 56px);
             /* Increased height matches toolbar */
             display: flex;
@@ -1385,6 +1533,14 @@
             /* z-index must be higher than toolbar */
             z-index: calc(var(--z-toolbar) + 1);
             box-sizing: border-box;
+        }
+
+        .toolbar-home-anchor {
+            display: none;
+        }
+
+        .toolbar-inline-slot {
+            display: none;
         }
 
         .top-tool-item {
@@ -1638,9 +1794,81 @@
                 bottom: clamp(50px, 8vw, 70px);
             }
 
-            .coord-display {
-                bottom: clamp(50px, 8vw, 70px);
-            }
+        }
+
+        body.compact-landscape-controls .top-tools-bar {
+            height: auto;
+            min-height: clamp(44px, 11vh, 58px);
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 6px max(10px, var(--app-safe-right)) 6px max(10px, var(--app-safe-left));
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        body.compact-landscape-controls .top-tools-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        body.compact-landscape-controls .learn-tab-btn,
+        body.compact-landscape-controls .top-bar-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+
+        body.compact-landscape-controls .toolbar-inline-slot {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-left: 10px;
+            margin-left: 2px;
+            border-left: 1px solid rgba(148, 163, 184, 0.4);
+            flex: 0 0 auto;
+            min-width: max-content;
+        }
+
+        body.compact-landscape-controls .toolbar {
+            position: static;
+            top: auto;
+            left: auto;
+            right: auto;
+            width: auto;
+            min-height: 0;
+            max-height: none;
+            padding: 0;
+            border-bottom: none;
+            background: transparent;
+            box-shadow: none;
+            gap: 6px;
+            justify-content: flex-start;
+            overflow: visible;
+            scrollbar-width: none;
+            flex: 0 0 auto;
+        }
+
+        body.compact-landscape-controls .toolbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        body.compact-landscape-controls .tool-btn {
+            width: 36px;
+            min-width: 36px;
+            height: 36px;
+            min-height: 36px;
+            font-size: 16px;
+        }
+
+        body.compact-landscape-controls .tool-btn.combine-btn,
+        body.compact-landscape-controls .tool-btn.split-btn,
+        body.compact-landscape-controls .tool-btn.duplicate-btn {
+            width: auto;
+            min-width: 0;
+            padding: 0 9px;
+            font-size: 11px;
         }
 
         /* Portrait mobile optimizations */
@@ -1729,6 +1957,43 @@
             user-select: none;
         }
 
+        .mobile-quick-actions {
+            position: absolute;
+            right: 12px;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .mobile-quick-actions .mobile-menu-toggle {
+            position: static;
+            pointer-events: auto;
+        }
+
+        .mobile-delete-toggle {
+            color: #c53030;
+        }
+
+        .mobile-delete-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .mobile-delete-toggle:not(:disabled):hover {
+            background: #fff5f5;
+            border-color: rgba(197, 48, 48, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .mobile-delete-toggle:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+            color: #cbd5e1;
+        }
+
         .mobile-menu-toggle:active {
             transform: scale(0.95);
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
@@ -1739,12 +2004,28 @@
             .mobile-menu-toggle {
                 display: none !important;
             }
+
+            .mobile-quick-actions {
+                display: none !important;
+            }
+        }
+
+        body.overlay-sidebars .mobile-menu-toggle {
+            display: flex !important;
+        }
+
+        body.overlay-sidebars .mobile-quick-actions {
+            display: flex !important;
         }
 
         /* Ensure buttons don't interfere with canvas interactions */
         @media (max-width: 768px) {
             .mobile-menu-toggle {
                 pointer-events: auto;
+            }
+
+            .mobile-quick-actions {
+                pointer-events: none;
             }
 
             /* Make sure canvas container allows pointer events through except for buttons */
@@ -1765,23 +2046,6 @@
             z-index: var(--z-canvas-ui);
         }
 
-        /* Coordinate Display */
-        .coord-display {
-            position: absolute;
-            bottom: clamp(60px, 8vw, 80px);
-            /* Pushed up */
-            left: clamp(16px, 2vw, 24px);
-            background: rgba(255, 255, 255, 0.9);
-            padding: 6px 12px;
-            border-radius: var(--radius-md);
-            font-family: monospace;
-            font-size: 12px;
-            pointer-events: none;
-            z-index: var(--z-canvas-ui);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(4px);
-        }
-
         /* Bottom Properties Panel */
         .bottom-panel {
             width: 100%;
@@ -1790,29 +2054,30 @@
             display: flex;
             flex-direction: column;
             transition: height 0.3s ease;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.08);
             z-index: 1001;
-            position: sticky;
-            bottom: 0;
+            position: relative;
+            bottom: auto;
             flex: 0 0 auto;
             flex-shrink: 0;
             height: var(--bottom-panel-expanded-height);
             min-height: var(--bottom-panel-collapsed-height);
             max-height: var(--bottom-panel-max-height);
-            padding-bottom: var(--app-safe-bottom);
             overflow: hidden;
+            box-sizing: border-box;
+            align-self: stretch;
+            border-top-left-radius: clamp(16px, 2vw, 22px);
+            border-top-right-radius: clamp(16px, 2vw, 22px);
+            background:
+                linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(255, 255, 255, 0.98) 22%),
+                white;
             /* Default expanded height */
         }
 
         .bottom-panel.collapsed {
             height: var(--bottom-panel-collapsed-height);
             /* Header height only */
-            pointer-events: none;
             position: relative;
-        }
-
-        .bottom-panel.collapsed * {
-            pointer-events: none;
         }
 
         .bottom-panel.collapsed .bottom-panel-content {
@@ -1826,23 +2091,44 @@
             z-index: 1002;
         }
 
-        .bottom-panel.collapsed .bottom-panel-header * {
-            pointer-events: auto;
+        .bottom-panel.is-dragging {
+            transition: none;
+        }
+
+        .bottom-panel.is-dragging .bottom-panel-content {
+            display: flex;
         }
 
         .bottom-panel-header {
-            height: 40px;
-            padding: 0 16px;
+            min-height: 48px;
+            padding: 14px 16px 10px;
             background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 8px;
             border-bottom: 1px solid var(--color-border);
             cursor: pointer;
-            position: sticky;
-            top: 0;
+            position: relative;
             z-index: 1003;
             flex-shrink: 0;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bottom-panel-header::before {
+            content: '';
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            width: 42px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(100, 116, 139, 0.28);
+            transform: translateX(-50%);
+            pointer-events: none;
         }
 
         .bottom-panel-title {
@@ -1851,30 +2137,56 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .bottom-panel-toggle {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            color: #718096;
-            transition: transform 0.3s;
-        }
-
-        .bottom-panel.collapsed .bottom-panel-toggle {
-            transform: rotate(180deg);
+            padding-top: 6px;
+            font-size: clamp(13px, 1.65vw, 16px);
         }
 
         .bottom-panel-content {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 12px max(10px, var(--app-safe-bottom));
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 8px;
-            align-content: start;
+            padding: 12px 14px max(18px, calc(var(--app-safe-bottom) + 16px));
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             min-height: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable both-edges;
+            scroll-padding-bottom: max(18px, calc(var(--app-safe-bottom) + 16px));
+            -webkit-overflow-scrolling: touch;
+            align-items: stretch;
+        }
+
+        @media (max-width: 768px) {
+            .bottom-panel {
+                border-top-left-radius: 22px;
+                border-top-right-radius: 22px;
+                box-shadow: 0 -18px 42px rgba(15, 23, 42, 0.14);
+            }
+
+            .bottom-panel-header {
+                min-height: 56px;
+                padding: 16px 16px 12px;
+            }
+
+            .bottom-panel-title {
+                padding-top: 8px;
+            }
+
+            .shape-classifier {
+                padding: 12px;
+                border-radius: 14px;
+            }
+
+            .shape-classifier-summary {
+                gap: 6px;
+            }
+
+            .properties-empty-state {
+                min-height: 94px;
+                padding: 14px;
+            }
         }
 
         /* Ensure app container uses column flow */
@@ -2016,6 +2328,32 @@
 <body>
 
     <div class="app-container">
+        <!-- Top Tools Bar (Tabs) -->
+        <div class="top-tools-bar">
+            <button class="learn-tab-btn" id="openLearnPageBtn">
+                🎓 Learn Polygons
+            </button>
+            <button class="top-bar-btn" data-tool="save" title="Save Project">
+                💾 Save
+            </button>
+            <button class="top-bar-btn" data-tool="load" title="Open Project">
+                📁 Open
+            </button>
+            <button class="top-bar-btn classroom-return-btn" id="classroomReturnBtn"
+                title="Return to Classroom" aria-label="Return to Classroom">
+                <svg class="classroom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 10.5 12 3l9 7.5" />
+                    <path d="M5 9.5V21h14V9.5" />
+                    <path d="M9 21v-6h6v6" />
+                    <path d="M10 11h.01" />
+                    <path d="M14 11h.01" />
+                </svg>
+                <span class="classroom-label">Classroom</span>
+            </button>
+            <div id="toolbarInlineSlot" class="toolbar-inline-slot" aria-hidden="true"></div>
+        </div>
+
         <!-- Main Body Row (Sidebars + Canvas) -->
         <div class="main-body-row" style="display: flex; flex: 1; min-height: 0; width: 100%; position: relative;">
 
@@ -2071,6 +2409,7 @@
                 <canvas id="mainCanvas"></canvas>
 
                 <!-- Toolbar -->
+                <div id="toolbarHomeAnchor" class="toolbar-home-anchor" aria-hidden="true"></div>
                 <div class="toolbar">
                     <button class="tool-btn" id="toolbarCreateBtn" data-tooltip="Create New Polygon">➕</button>
                     <button class="tool-btn active" data-tool="select" data-tooltip="Select/Move (S)">✋</button>
@@ -2097,31 +2436,6 @@
                     <button class="tool-btn" data-tool="redo" data-tooltip="Redo (Ctrl+Y)">↷</button>
                 </div>
 
-                <!-- Top Tools Bar (Tabs) -->
-                <div class="top-tools-bar">
-                    <button class="learn-tab-btn" id="openLearnPageBtn">
-                        🎓 Learn Polygons
-                    </button>
-                    <button class="top-bar-btn" data-tool="save" title="Save Project">
-                        💾 Save
-                    </button>
-                    <button class="top-bar-btn" data-tool="load" title="Open Project">
-                        📁 Open
-                    </button>
-                    <button class="top-bar-btn classroom-return-btn" id="classroomReturnBtn"
-                        title="Return to Classroom" aria-label="Return to Classroom">
-                        <svg class="classroom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 10.5 12 3l9 7.5" />
-                            <path d="M5 9.5V21h14V9.5" />
-                            <path d="M9 21v-6h6v6" />
-                            <path d="M10 11h.01" />
-                            <path d="M14 11h.01" />
-                        </svg>
-                        <span class="classroom-label">Classroom</span>
-                    </button>
-                </div>
-
                 <!-- Zoom Controls -->
                 <div class="zoom-controls">
                     <button class="zoom-btn" id="zoomIn">➕</button>
@@ -2129,8 +2443,6 @@
                     <button class="zoom-btn" id="zoomReset">🔍</button>
                 </div>
 
-                <!-- Coordinate Display -->
-                <div class="coord-display" id="coordDisplay">X: 0, Y: 0</div>
             </div>
 
             <!-- Right Sidebar -->
@@ -2190,15 +2502,9 @@
                 <div class="bottom-panel-title">
                     <span>📊 Properties</span>
                 </div>
-                <button class="bottom-panel-toggle" id="bottomPanelToggle">
-                    <span class="toggle-icon">▼</span>
-                </button>
             </div>
             <div class="bottom-panel-content" id="propertiesPanelContent">
-                <div class="property-row" style="justify-content: center; padding: 12px;">
-                    <span class="property-label" style="color: #94a3b8; font-style: italic;">Select a polygon to view
-                        properties</span>
-                </div>
+                <div class="properties-empty-state">Select a polygon to view its live shape recognition.</div>
             </div>
         </div>
     </div>
@@ -2209,7 +2515,6 @@
             <h1>🎓 Learn Polygon</h1>
             <button class="close-learn-btn" id="closeLearnPageBtn">
                 <span>Back to App</span>
-                ✕
             </button>
         </div>
         <div class="learn-content-grid" id="learnPageContent">
@@ -2313,7 +2618,6 @@
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
                 <span>Create New Polygon</span>
-                <button id="closeCreateShapeModal" class="modal-close-btn">&times;</button>
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 20px; color: #4a5568; font-size: 15px;">Which shape polygon would you like to
@@ -2418,10 +2722,58 @@
 
         let viewportSafetySyncFrame = null;
         let viewportSafetyCanvasFrame = null;
+        let bottomPanelStateSyncTimeout = null;
+        const BOTTOM_PANEL_TRANSITION_MS = 380;
+
+        function shouldUseCompactLandscapeControls(metrics = getViewportMetrics()) {
+            return metrics.width <= 1024 && metrics.height < metrics.width;
+        }
+
+        function shouldUseOverlaySidebars(deviceInfo = deviceDetector ? deviceDetector.getInfo() : null, metrics = getViewportMetrics()) {
+            const isMobileViewport = metrics.width <= 768;
+            return isMobileViewport || shouldUseCompactLandscapeControls(metrics);
+        }
+
+        function syncOverlaySidebarMode(deviceInfo = deviceDetector ? deviceDetector.getInfo() : null, metrics = getViewportMetrics()) {
+            const useOverlaySidebars = shouldUseOverlaySidebars(deviceInfo, metrics);
+            if (document.body) {
+                document.body.classList.toggle('overlay-sidebars', useOverlaySidebars);
+            }
+            return useOverlaySidebars;
+        }
+
+        function syncCompactLandscapeControls(metrics = getViewportMetrics()) {
+            const body = document.body;
+            const toolbar = document.querySelector('.toolbar');
+            const topToolsBar = document.querySelector('.top-tools-bar');
+            const toolbarHomeAnchor = document.getElementById('toolbarHomeAnchor');
+            const toolbarInlineSlot = document.getElementById('toolbarInlineSlot');
+            if (!body || !toolbar || !topToolsBar || !toolbarHomeAnchor || !toolbarInlineSlot) {
+                return false;
+            }
+
+            const useCompactLandscape = shouldUseCompactLandscapeControls(metrics);
+            body.classList.toggle('compact-landscape-controls', useCompactLandscape);
+
+            if (useCompactLandscape) {
+                if (toolbar.parentElement !== toolbarInlineSlot) {
+                    toolbarInlineSlot.appendChild(toolbar);
+                }
+                topToolsBar.scrollLeft = 0;
+                toolbar.scrollLeft = 0;
+            } else if (toolbar.parentElement !== toolbarHomeAnchor.parentElement || toolbar.previousElementSibling !== toolbarHomeAnchor) {
+                toolbarHomeAnchor.insertAdjacentElement('afterend', toolbar);
+                toolbar.scrollLeft = 0;
+            }
+
+            return useCompactLandscape;
+        }
 
         function syncViewportSafetyVars() {
             const root = document.documentElement;
             const { width, height } = getViewportMetrics();
+            const compactLandscapeControls = syncCompactLandscapeControls({ width, height });
+            syncOverlaySidebarMode(deviceDetector ? deviceDetector.getInfo() : null, { width, height });
             root.style.setProperty('--viewport-width', `${Math.round(width)}px`);
             root.style.setProperty('--viewport-height', `${Math.round(height)}px`);
 
@@ -2429,62 +2781,133 @@
             const toolbar = document.querySelector('.toolbar');
             const topToolsRect = topToolsBar ? topToolsBar.getBoundingClientRect() : null;
             const toolbarRect = toolbar ? toolbar.getBoundingClientRect() : null;
-
-            const toolbarTop = toolbarRect
-                ? toolbarRect.top
-                : (topToolsRect ? topToolsRect.bottom : 0);
+            const topToolsBottom = topToolsRect ? topToolsRect.bottom : 0;
+            const toolbarHeight = toolbarRect ? toolbarRect.height : 0;
+            const toolbarTop = compactLandscapeControls
+                ? (topToolsRect ? topToolsRect.top : (toolbarRect ? toolbarRect.top : 0))
+                : (topToolsRect ? topToolsBottom : (toolbarRect ? toolbarRect.top : 0));
+            const predictedToolbarBottom = toolbarTop + toolbarHeight;
             const topUiBottom = Math.max(
-                topToolsRect ? topToolsRect.bottom : 0,
-                toolbarRect ? toolbarRect.bottom : 0,
+                topToolsBottom,
+                predictedToolbarBottom,
                 0
             );
 
             root.style.setProperty('--toolbar-top', `${Math.max(0, Math.round(toolbarTop))}px`);
             root.style.setProperty('--top-ui-bottom', `${Math.max(0, Math.round(topUiBottom))}px`);
 
-            const collapsedHeight = 40;
-            const availableHeight = Math.max(height - topUiBottom, collapsedHeight + 96);
-            const isLandscapeMobile = window.matchMedia('(max-width: 768px) and (orientation: landscape)').matches;
-            const preferredExpandedHeight = isLandscapeMobile
-                ? Math.min(120, Math.max(88, Math.round(availableHeight * 0.42)))
-                : Math.min(180, Math.max(96, Math.round(height * 0.27)));
+            const isMobileViewport = width <= 768;
+            const isPortraitMobile = isMobileViewport && height >= width;
+            const isLandscapeMobile = isMobileViewport && height < width;
+            const collapsedHeight = isMobileViewport ? 56 : 44;
+            const availableHeight = Math.max(height - topUiBottom, collapsedHeight + 120);
+            const preferredExpandedHeight = isPortraitMobile
+                ? Math.min(320, Math.max(220, Math.round(height * 0.4)))
+                : isLandscapeMobile
+                    ? Math.min(180, Math.max(112, Math.round(availableHeight * 0.5)))
+                    : Math.min(240, Math.max(140, Math.round(height * 0.3)));
+            const minimumCanvasSpace = isPortraitMobile ? 160 : 112;
             const expandedHeight = Math.max(
                 collapsedHeight,
-                Math.min(preferredExpandedHeight, Math.max(collapsedHeight, availableHeight - 96))
+                Math.min(preferredExpandedHeight, Math.max(collapsedHeight, availableHeight - minimumCanvasSpace))
             );
-            const maxPanelHeight = Math.max(collapsedHeight, availableHeight - 12);
+            const maxPanelHeight = Math.max(collapsedHeight, availableHeight - 8);
 
             root.style.setProperty('--bottom-panel-collapsed-height', `${collapsedHeight}px`);
             root.style.setProperty('--bottom-panel-expanded-height', `${expandedHeight}px`);
             root.style.setProperty('--bottom-panel-max-height', `${Math.round(maxPanelHeight)}px`);
         }
 
-        function ensureBottomPanelSafety() {
+        function getBottomPanelElements() {
             const panel = document.getElementById('bottomPropertiesPanel');
             const header = panel ? panel.querySelector('.bottom-panel-header') : null;
-            if (!panel || !header) {
+            const content = panel ? panel.querySelector('.bottom-panel-content') : null;
+            return { panel, header, content };
+        }
+
+        function setBottomPanelExpandedState(expanded) {
+            const { panel, header, content } = getBottomPanelElements();
+            if (!panel) {
+                return false;
+            }
+
+            panel.dataset.userExpanded = expanded ? 'true' : 'false';
+            panel.classList.toggle('expanded', expanded);
+            panel.classList.toggle('collapsed', !expanded);
+            panel.classList.remove('is-dragging');
+            if (content) {
+                content.style.display = '';
+            }
+            if (header) {
+                header.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            }
+
+            if (bottomPanelStateSyncTimeout !== null) {
+                clearTimeout(bottomPanelStateSyncTimeout);
+            }
+
+            bottomPanelStateSyncTimeout = setTimeout(() => {
+                bottomPanelStateSyncTimeout = null;
+                ensureBottomPanelSafety();
+            }, BOTTOM_PANEL_TRANSITION_MS);
+
+            return true;
+        }
+
+        function ensureBottomPanelSafety() {
+            const { panel, header, content } = getBottomPanelElements();
+            if (!panel || !header || !content) {
                 return;
             }
 
             const { height: viewportHeight } = getViewportMetrics();
+            const rootStyles = getComputedStyle(document.documentElement);
             const headerHeight = Math.max(40, Math.round(header.getBoundingClientRect().height || 40));
-            const topUiBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top-ui-bottom')) || 0;
-            const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-safe-bottom')) || 0;
+            const topUiBottom = parseFloat(rootStyles.getPropertyValue('--top-ui-bottom')) || 0;
+            const safeBottom = parseFloat(rootStyles.getPropertyValue('--app-safe-bottom')) || 0;
+            const expandedHeight = parseFloat(rootStyles.getPropertyValue('--bottom-panel-expanded-height')) || 180;
             const viewportFloor = Math.max(0, viewportHeight - safeBottom);
             const maxHeight = Math.max(headerHeight, Math.round(viewportFloor - topUiBottom - 12));
+            const headerRect = header.getBoundingClientRect();
+            const headerReachable = headerRect.bottom >= (topUiBottom + 8) && headerRect.top <= (viewportFloor - 8);
+            const shouldForceCollapsed = maxHeight <= (headerHeight + 8) || !headerReachable;
+            const userWantsExpanded = panel.dataset.userExpanded !== 'false';
+            const shouldExpand = !shouldForceCollapsed && userWantsExpanded;
+            const desiredHeight = shouldExpand ? Math.min(expandedHeight, maxHeight) : headerHeight;
+            const contentHeight = shouldExpand ? Math.max(0, desiredHeight - headerHeight) : 0;
 
+            panel.classList.toggle('expanded', shouldExpand);
+            panel.classList.toggle('collapsed', !shouldExpand);
+            if (header) {
+                header.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
+            }
+            if (!panel.classList.contains('is-dragging')) {
+                content.style.display = '';
+            }
+
+            panel.style.minHeight = `${headerHeight}px`;
             panel.style.maxHeight = `${maxHeight}px`;
+            panel.style.height = `${desiredHeight}px`;
             header.style.minHeight = `${headerHeight}px`;
+            content.style.maxHeight = `${contentHeight}px`;
+            content.style.height = shouldExpand ? `${contentHeight}px` : '0px';
+            content.style.overflowY = shouldExpand ? 'auto' : 'hidden';
 
             const panelRect = panel.getBoundingClientRect();
-            const headerRect = header.getBoundingClientRect();
-            const headerFullyVisible = headerRect.top >= (topUiBottom - 1) && headerRect.bottom <= (viewportFloor + 1);
+            const contentRect = content.getBoundingClientRect();
             const panelBleedsViewport = panelRect.top < (topUiBottom - 1) || panelRect.bottom > (viewportFloor + 1);
+            const contentBleedsViewport = shouldExpand && contentRect.bottom > (viewportFloor + 1);
 
-            if (panelBleedsViewport || !headerFullyVisible) {
-                panel.classList.add('collapsed');
-                panel.classList.remove('expanded');
+            if (shouldForceCollapsed) {
                 panel.scrollTop = 0;
+                panel.style.height = `${headerHeight}px`;
+                content.style.height = '0px';
+                content.style.maxHeight = '0px';
+                content.style.overflowY = 'hidden';
+            } else if (shouldExpand && (panelBleedsViewport || contentBleedsViewport)) {
+                panel.style.height = `${desiredHeight}px`;
+                content.style.height = `${contentHeight}px`;
+                content.style.maxHeight = `${contentHeight}px`;
             }
         }
 
@@ -2843,37 +3266,23 @@
             handleViewportChange() {
                 scheduleViewportSafetySync();
                 ensureBottomPanelSafety();
+                const useOverlaySidebars = syncOverlaySidebarMode(this.deviceInfo);
+                const backdrop = document.getElementById('sidebarBackdrop');
 
-                // Update sidebar visibility based on device type
-                if (this.deviceInfo.isMobile || window.innerWidth <= 768) {
-                    // Mobile: sidebars are overlays that start closed
+                // Update sidebar visibility based on active presentation mode
+                if (!useOverlaySidebars) {
                     document.querySelectorAll('.sidebar').forEach(sidebar => {
                         sidebar.classList.remove('mobile-open');
                     });
-                    // Hide backdrop
-                    const backdrop = document.getElementById('sidebarBackdrop');
                     if (backdrop) {
                         backdrop.classList.remove('active');
-                    }
-                } else if (this.deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024)) {
-                    // Tablet: sidebars are visible by default (like desktop)
-                    // Remove mobile-open class to make them visible in normal position
-                    document.querySelectorAll('.sidebar').forEach(sidebar => {
-                        sidebar.classList.remove('mobile-open');
-                    });
-                    // Hide backdrop (sidebars are visible, not overlays)
-                    const backdrop = document.getElementById('sidebarBackdrop');
-                    if (backdrop) {
-                        backdrop.classList.remove('active');
+                        backdrop.removeEventListener('click', closeMobileSidebars);
                     }
                 } else {
-                    // Desktop: sidebars are always visible (not overlays)
-                    document.querySelectorAll('.sidebar').forEach(sidebar => {
-                        sidebar.classList.remove('mobile-open');
-                    });
-                    const backdrop = document.getElementById('sidebarBackdrop');
-                    if (backdrop) {
+                    const hasOpenSidebar = document.querySelector('.sidebar.mobile-open');
+                    if (backdrop && !hasOpenSidebar) {
                         backdrop.classList.remove('active');
+                        backdrop.removeEventListener('click', closeMobileSidebars);
                     }
                 }
 
@@ -2953,22 +3362,39 @@
 
             setupBottomPanel() {
                 const setupPanel = () => {
-                    const panel = document.getElementById('bottomPropertiesPanel');
-                    const header = document.querySelector('#bottomPropertiesPanel .bottom-panel-header');
-                    const toggleButton = document.getElementById('bottomPanelToggle');
-
-                    if (!panel || !header || !toggleButton) {
+                    const { panel, header, content } = getBottomPanelElements();
+                    if (!panel || !header || !content) {
                         // Retry if elements not found yet
                         setTimeout(setupPanel, 50);
                         return;
                     }
 
-                    // Helper function to toggle the panel
-                    const togglePanel = () => {
-                        panel.classList.toggle('collapsed');
-                        panel.classList.toggle('expanded');
-                        scheduleViewportSafetySync();
+                    if (!panel.dataset.userExpanded) {
+                        panel.dataset.userExpanded = panel.classList.contains('collapsed') ? 'false' : 'true';
+                    }
+
+                    if (header.dataset.bottomPanelBound === 'true') {
                         ensureBottomPanelSafety();
+                        return;
+                    }
+
+                    header.dataset.bottomPanelBound = 'true';
+                    header.setAttribute('role', 'button');
+                    header.setAttribute('tabindex', '0');
+                    header.setAttribute('aria-controls', 'propertiesPanelContent');
+                    header.setAttribute('aria-expanded', panel.dataset.userExpanded !== 'false' ? 'true' : 'false');
+
+                    // Helper function to toggle the panel
+                    const runBottomPanelResizeAnimation = () => {
+                        if (bottomPanelStateSyncTimeout !== null) {
+                            clearTimeout(bottomPanelStateSyncTimeout);
+                        }
+
+                        bottomPanelStateSyncTimeout = setTimeout(() => {
+                            bottomPanelStateSyncTimeout = null;
+                            ensureBottomPanelSafety();
+                            this.resizeCanvas();
+                        }, BOTTOM_PANEL_TRANSITION_MS);
 
                         // Animate resize during transition to prevent stretching/squashing
                         const startTime = Date.now();
@@ -2995,38 +3421,142 @@
                         requestAnimationFrame(animateResize);
                     };
 
-                    // Handle header click first - but ignore clicks on the button
-                    header.addEventListener('click', (e) => {
-                        // Check if the click originated from the button or its children
-                        const clickedButton = e.target.closest('.bottom-panel-toggle') ||
-                            e.target.closest('#bottomPanelToggle');
-                        if (clickedButton || e.target === toggleButton) {
-                            return; // Let button handler deal with it
+                    const togglePanel = (expanded = panel.classList.contains('collapsed')) => {
+                        setBottomPanelExpandedState(expanded);
+                        scheduleViewportSafetySync();
+                        ensureBottomPanelSafety();
+                        runBottomPanelResizeAnimation();
+                    };
+
+                    let panelGesture = null;
+
+                    const finishPanelGesture = (event, canceled = false) => {
+                        if (!panelGesture) {
+                            return;
                         }
-                        e.preventDefault();
-                        togglePanel();
+                        if (event && panelGesture.pointerId !== null && event.pointerId !== panelGesture.pointerId) {
+                            return;
+                        }
+
+                        const rootStyles = getComputedStyle(document.documentElement);
+                        const headerHeight = Math.max(40, Math.round(header.getBoundingClientRect().height || 40));
+                        const expandedHeight = Math.min(
+                            parseFloat(rootStyles.getPropertyValue('--bottom-panel-expanded-height')) || 180,
+                            parseFloat(panel.style.maxHeight) || Number.POSITIVE_INFINITY
+                        );
+                        const currentHeight = parseFloat(panel.style.height) || (panelGesture.wasExpanded ? expandedHeight : headerHeight);
+                        const deltaY = panelGesture.lastY - panelGesture.startY;
+                        const draggedFarEnough = Math.abs(deltaY) > 18;
+                        let nextExpanded = panelGesture.wasExpanded;
+
+                        if (!canceled) {
+                            if (!panelGesture.didDrag || !draggedFarEnough) {
+                                nextExpanded = !panelGesture.wasExpanded;
+                            } else if (deltaY > 18) {
+                                nextExpanded = false;
+                            } else if (deltaY < -18) {
+                                nextExpanded = true;
+                            } else {
+                                const midpoint = headerHeight + ((expandedHeight - headerHeight) * 0.45);
+                                nextExpanded = currentHeight >= midpoint;
+                            }
+                        }
+
+                        panel.classList.remove('is-dragging');
+                        content.style.display = '';
+                        content.style.pointerEvents = '';
+                        content.style.overflowY = nextExpanded ? 'auto' : 'hidden';
+
+                        if (panelGesture.pointerId !== null && header.hasPointerCapture && header.hasPointerCapture(panelGesture.pointerId)) {
+                            header.releasePointerCapture(panelGesture.pointerId);
+                        }
+
+                        panelGesture = null;
+                        togglePanel(nextExpanded);
+                    };
+
+                    header.addEventListener('pointerdown', (event) => {
+                        if (event.pointerType !== 'touch' && event.pointerType !== 'pen' && event.button !== 0) {
+                            return;
+                        }
+
+                        const rootStyles = getComputedStyle(document.documentElement);
+                        const headerHeight = Math.max(40, Math.round(header.getBoundingClientRect().height || 40));
+                        const expandedHeight = Math.min(
+                            parseFloat(rootStyles.getPropertyValue('--bottom-panel-expanded-height')) || 180,
+                            parseFloat(panel.style.maxHeight) || Number.POSITIVE_INFINITY
+                        );
+
+                        panelGesture = {
+                            pointerId: event.pointerId,
+                            startY: event.clientY,
+                            lastY: event.clientY,
+                            startHeight: parseFloat(panel.style.height) || (panel.classList.contains('collapsed') ? headerHeight : expandedHeight),
+                            wasExpanded: panel.classList.contains('expanded'),
+                            didDrag: false,
+                        };
+
+                        panel.classList.add('is-dragging');
+                        content.style.display = 'flex';
+                        content.style.pointerEvents = 'none';
+                        content.style.overflowY = 'hidden';
+
+                        if (header.setPointerCapture) {
+                            header.setPointerCapture(event.pointerId);
+                        }
                     });
 
-                    // Handle button click - stop propagation so header doesn't also trigger
-                    toggleButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        togglePanel();
-                        return false;
+                    header.addEventListener('pointermove', (event) => {
+                        if (!panelGesture || event.pointerId !== panelGesture.pointerId) {
+                            return;
+                        }
+
+                        const rootStyles = getComputedStyle(document.documentElement);
+                        const headerHeight = Math.max(40, Math.round(header.getBoundingClientRect().height || 40));
+                        const expandedHeight = Math.min(
+                            parseFloat(rootStyles.getPropertyValue('--bottom-panel-expanded-height')) || 180,
+                            parseFloat(panel.style.maxHeight) || Number.POSITIVE_INFINITY
+                        );
+                        const nextHeight = Math.max(
+                            headerHeight,
+                            Math.min(expandedHeight, panelGesture.startHeight - (event.clientY - panelGesture.startY))
+                        );
+                        const contentHeight = Math.max(0, nextHeight - headerHeight);
+
+                        panelGesture.lastY = event.clientY;
+                        if (Math.abs(event.clientY - panelGesture.startY) > 6) {
+                            panelGesture.didDrag = true;
+                        }
+
+                        if (panelGesture.didDrag) {
+                            event.preventDefault();
+                            panel.style.height = `${nextHeight}px`;
+                            content.style.display = 'flex';
+                            content.style.height = `${contentHeight}px`;
+                            content.style.maxHeight = `${contentHeight}px`;
+                        }
                     });
 
-                    // Also handle clicks on the toggle icon span inside the button
-                    const toggleIcon = toggleButton.querySelector('.toggle-icon');
-                    if (toggleIcon) {
-                        toggleIcon.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.stopImmediatePropagation();
+                    header.addEventListener('pointerup', (event) => {
+                        finishPanelGesture(event, false);
+                    });
+
+                    header.addEventListener('pointercancel', (event) => {
+                        finishPanelGesture(event, true);
+                    });
+
+                    header.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
                             togglePanel();
-                            return false;
-                        });
-                    }
+                        }
+                    });
+
+                    panel.addEventListener('transitionend', (event) => {
+                        if (event.propertyName === 'height') {
+                            ensureBottomPanelSafety();
+                        }
+                    });
 
                     ensureBottomPanelSafety();
                 };
@@ -3129,11 +3659,6 @@
                 const classroomReturnBtn = document.getElementById('classroomReturnBtn');
                 if (classroomReturnBtn) {
                     classroomReturnBtn.addEventListener('click', () => this.returnToClassroom());
-                }
-
-                const fullscreenToggle = document.getElementById('fullscreenToggle');
-                if (fullscreenToggle) {
-                    fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
                 }
 
                 // Fullscreen change event listeners (with browser prefixes)
@@ -3315,10 +3840,12 @@
                 if (createPolygonBtn) createPolygonBtn.addEventListener('click', openMenu);
                 if (toolbarCreateBtn) toolbarCreateBtn.addEventListener('click', openMenu);
 
-                // Close Modal with X button
-                closeBtn.addEventListener('click', () => {
-                    this.closeShapeMenu();
-                });
+                // Close Modal with optional X button
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        this.closeShapeMenu();
+                    });
+                }
 
                 // Close Modal when clicking outside
                 modal.addEventListener('click', (e) => {
@@ -4646,12 +5173,6 @@
                 const worldPos = this.screenToWorld(x, y);
                 const snappedPos = this.snapToGrid(worldPos);
 
-                // Update coordinate display (throttled for performance)
-                const coordDisplay = document.getElementById('coordDisplay');
-                if (coordDisplay) {
-                    coordDisplay.textContent = `X: ${Math.round(snappedPos.x)}, Y: ${Math.round(snappedPos.y)}`;
-                }
-
                 // Handle Split Line Dragging
                 if (this.splitMode && this.isDragging && this.splitStep === 1) {
                     if (this.splitLineStart) {
@@ -4977,12 +5498,6 @@
                     this.touchVelocity.y = (y - this.touchStartPos.y) / timeDelta;
                 }
                 this.touchLastMoveTime = now;
-
-                // Update coordinate display (throttled)
-                const coordDisplay = document.getElementById('coordDisplay');
-                if (coordDisplay) {
-                    coordDisplay.textContent = `X: ${Math.round(snappedPos.x)}, Y: ${Math.round(snappedPos.y)}`;
-                }
 
                 // Calculate movement distance from touch start
                 let moveDistance = 0;
@@ -5319,6 +5834,373 @@
                 return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
             }
 
+            escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            getUniqueLabels(labels) {
+                return [...new Set((labels || []).filter(Boolean))];
+            }
+
+            areValuesClose(a, b, tolerance) {
+                return Math.abs(a - b) <= tolerance;
+            }
+
+            getPolygonFamilyName(sideCount) {
+                const familyNames = {
+                    3: 'Triangle',
+                    4: 'Quadrilateral',
+                    5: 'Pentagon',
+                    6: 'Hexagon',
+                    7: 'Heptagon',
+                    8: 'Octagon',
+                    9: 'Nonagon',
+                    10: 'Decagon',
+                    11: 'Hendecagon',
+                    12: 'Dodecagon'
+                };
+
+                return familyNames[sideCount] || `${sideCount}-gon`;
+            }
+
+            getSignedArea(vertices) {
+                let area = 0;
+                for (let i = 0; i < vertices.length; i++) {
+                    const j = (i + 1) % vertices.length;
+                    area += vertices[i].x * vertices[j].y;
+                    area -= vertices[j].x * vertices[i].y;
+                }
+                return area / 2;
+            }
+
+            getLengthTolerance(lengths) {
+                const validLengths = lengths.filter(length => Number.isFinite(length) && length > 0);
+                if (!validLengths.length) {
+                    return Math.max(0.5, this.gridSize * 0.04);
+                }
+
+                const averageLength = validLengths.reduce((sum, length) => sum + length, 0) / validLengths.length;
+                return Math.max(0.5, this.gridSize * 0.04, averageLength * 0.015);
+            }
+
+            getSegmentOrientation(a, b, c, epsilon = 1e-6) {
+                const value = ((b.y - a.y) * (c.x - b.x)) - ((b.x - a.x) * (c.y - b.y));
+                if (Math.abs(value) <= epsilon) {
+                    return 0;
+                }
+                return value > 0 ? 1 : -1;
+            }
+
+            isPointOnSegment(point, start, end, epsilon = 1e-6) {
+                return point.x <= Math.max(start.x, end.x) + epsilon &&
+                    point.x >= Math.min(start.x, end.x) - epsilon &&
+                    point.y <= Math.max(start.y, end.y) + epsilon &&
+                    point.y >= Math.min(start.y, end.y) - epsilon;
+            }
+
+            segmentsIntersect(a, b, c, d, epsilon = 1e-6) {
+                const o1 = this.getSegmentOrientation(a, b, c, epsilon);
+                const o2 = this.getSegmentOrientation(a, b, d, epsilon);
+                const o3 = this.getSegmentOrientation(c, d, a, epsilon);
+                const o4 = this.getSegmentOrientation(c, d, b, epsilon);
+
+                if (o1 !== o2 && o3 !== o4) {
+                    return true;
+                }
+
+                if (o1 === 0 && this.isPointOnSegment(c, a, b, epsilon)) return true;
+                if (o2 === 0 && this.isPointOnSegment(d, a, b, epsilon)) return true;
+                if (o3 === 0 && this.isPointOnSegment(a, c, d, epsilon)) return true;
+                if (o4 === 0 && this.isPointOnSegment(b, c, d, epsilon)) return true;
+
+                return false;
+            }
+
+            isSelfIntersectingPolygon(vertices) {
+                const count = vertices.length;
+                if (count < 4) {
+                    return false;
+                }
+
+                for (let i = 0; i < count; i++) {
+                    const nextI = (i + 1) % count;
+                    for (let j = i + 1; j < count; j++) {
+                        const nextJ = (j + 1) % count;
+                        const sharesEndpoint = i === j || i === nextJ || nextI === j;
+                        const closesLoop = i === 0 && nextJ === 0;
+                        if (sharesEndpoint || closesLoop) {
+                            continue;
+                        }
+
+                        if (this.segmentsIntersect(vertices[i], vertices[nextI], vertices[j], vertices[nextJ])) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            isParallel(vecA, vecB, tolerance = 0.035) {
+                const lenA = Math.hypot(vecA.x, vecA.y);
+                const lenB = Math.hypot(vecB.x, vecB.y);
+                if (lenA === 0 || lenB === 0) {
+                    return false;
+                }
+
+                const cross = vecA.x * vecB.y - vecA.y * vecB.x;
+                return Math.abs(cross / (lenA * lenB)) <= tolerance;
+            }
+
+            getInteriorAngles(vertices) {
+                const signedArea = this.getSignedArea(vertices);
+                const orientationSign = signedArea >= 0 ? 1 : -1;
+                const angles = [];
+
+                for (let i = 0; i < vertices.length; i++) {
+                    const prev = vertices[(i - 1 + vertices.length) % vertices.length];
+                    const current = vertices[i];
+                    const next = vertices[(i + 1) % vertices.length];
+                    const toPrev = { x: prev.x - current.x, y: prev.y - current.y };
+                    const toNext = { x: next.x - current.x, y: next.y - current.y };
+                    const prevLength = Math.hypot(toPrev.x, toPrev.y);
+                    const nextLength = Math.hypot(toNext.x, toNext.y);
+
+                    if (prevLength === 0 || nextLength === 0) {
+                        angles.push(Number.NaN);
+                        continue;
+                    }
+
+                    const dot = (toPrev.x * toNext.x) + (toPrev.y * toNext.y);
+                    const cross = (toPrev.x * toNext.y) - (toPrev.y * toNext.x);
+                    const cosine = Math.min(1, Math.max(-1, dot / (prevLength * nextLength)));
+                    const baseAngle = Math.acos(cosine) * 180 / Math.PI;
+                    const isReflex = (cross * orientationSign) > 1e-6;
+                    angles.push(isReflex ? 360 - baseAngle : baseAngle);
+                }
+
+                return angles;
+            }
+
+            getPolygonAnalysis(polygon) {
+                const vertices = polygon && Array.isArray(polygon.vertices) ? polygon.vertices : [];
+                const sideCount = vertices.length;
+                const familyName = this.getPolygonFamilyName(sideCount);
+                const familyLabels = ['Polygon', familyName];
+                const exactMatches = [];
+                const traits = [];
+                const notes = [];
+
+                const sideLengths = vertices.map((vertex, index) => this.distance(vertex, vertices[(index + 1) % sideCount]));
+                const lengthTolerance = this.getLengthTolerance(sideLengths);
+                const angleTolerance = 1.5;
+                const areaMagnitude = Math.abs(this.getSignedArea(vertices));
+                const areaTolerance = Math.max(1, this.gridSize * this.gridSize * 0.01);
+                const hasZeroLengthSide = sideLengths.some(length => length <= Math.max(0.5, lengthTolerance * 0.5));
+                const isSimple = !this.isSelfIntersectingPolygon(vertices);
+                const interiorAngles = isSimple ? this.getInteriorAngles(vertices) : [];
+                const hasInvalidAngles = interiorAngles.some(angle => !Number.isFinite(angle));
+                const isDegenerate = areaMagnitude <= areaTolerance || hasZeroLengthSide || hasInvalidAngles;
+                const isConvex = isSimple && !isDegenerate && interiorAngles.every(angle => angle < (180 + angleTolerance));
+                const isConcave = isSimple && !isDegenerate && !isConvex;
+                const equilateral = sideLengths.length > 0 && sideLengths.every(length => this.areValuesClose(length, sideLengths[0], lengthTolerance));
+                const equiangular = interiorAngles.length === sideCount && interiorAngles.every(angle => this.areValuesClose(angle, interiorAngles[0], angleTolerance));
+                const isRegular = isSimple && !isDegenerate && isConvex && equilateral && equiangular;
+
+                if (isSimple) {
+                    traits.push(isConcave ? 'Concave' : 'Convex');
+                } else {
+                    traits.push('Complex Polygon');
+                    notes.push('Self-intersecting shape');
+                }
+
+                if (isDegenerate) {
+                    traits.push('Degenerate');
+                    notes.push('Move the vertices so the polygon encloses area for full classification');
+                }
+
+                if (equilateral && !isDegenerate) {
+                    traits.push('Equilateral');
+                }
+
+                if (equiangular && !isDegenerate) {
+                    traits.push('Equiangular');
+                }
+
+                traits.push(isRegular ? 'Regular Polygon' : 'Irregular Polygon');
+
+                if (isSimple && !isDegenerate) {
+                    notes.push(`Interior angle sum: ${(sideCount - 2) * 180} degrees`);
+                }
+
+                if (sideCount === 3 && isSimple && !isDegenerate) {
+                    const equalPairs = [
+                        this.areValuesClose(sideLengths[0], sideLengths[1], lengthTolerance),
+                        this.areValuesClose(sideLengths[1], sideLengths[2], lengthTolerance),
+                        this.areValuesClose(sideLengths[0], sideLengths[2], lengthTolerance)
+                    ];
+
+                    if (equilateral) {
+                        exactMatches.push('Equilateral Triangle', 'Isosceles Triangle');
+                    } else if (equalPairs.some(Boolean)) {
+                        exactMatches.push('Isosceles Triangle');
+                    } else {
+                        exactMatches.push('Scalene Triangle');
+                    }
+
+                    if (interiorAngles.some(angle => this.areValuesClose(angle, 90, angleTolerance))) {
+                        exactMatches.push('Right Triangle');
+                    } else if (interiorAngles.some(angle => angle > (90 + angleTolerance))) {
+                        exactMatches.push('Obtuse Triangle');
+                    } else {
+                        exactMatches.push('Acute Triangle');
+                    }
+                }
+
+                if (sideCount === 4 && isSimple && !isDegenerate) {
+                    const edges = vertices.map((vertex, index) => ({
+                        x: vertices[(index + 1) % sideCount].x - vertex.x,
+                        y: vertices[(index + 1) % sideCount].y - vertex.y
+                    }));
+                    const oppositeParallelA = this.isParallel(edges[0], edges[2]);
+                    const oppositeParallelB = this.isParallel(edges[1], edges[3]);
+                    const parallelPairCount = Number(oppositeParallelA) + Number(oppositeParallelB);
+                    const rightAngleCount = interiorAngles.filter(angle => this.areValuesClose(angle, 90, angleTolerance)).length;
+                    const allSidesEqual = equilateral;
+                    const rectangle = rightAngleCount === 4;
+                    const rhombus = allSidesEqual;
+                    const parallelogram = oppositeParallelA && oppositeParallelB;
+                    const trapezoid = parallelPairCount === 1;
+                    const legLengths = oppositeParallelA
+                        ? [sideLengths[1], sideLengths[3]]
+                        : [sideLengths[0], sideLengths[2]];
+                    const isoscelesTrapezoid = trapezoid && this.areValuesClose(legLengths[0], legLengths[1], lengthTolerance);
+                    const adjacentPairPattern = (
+                        (this.areValuesClose(sideLengths[0], sideLengths[1], lengthTolerance) &&
+                            this.areValuesClose(sideLengths[2], sideLengths[3], lengthTolerance)) ||
+                        (this.areValuesClose(sideLengths[1], sideLengths[2], lengthTolerance) &&
+                            this.areValuesClose(sideLengths[3], sideLengths[0], lengthTolerance))
+                    );
+                    const kite = adjacentPairPattern && !allSidesEqual && !parallelogram;
+
+                    if (rectangle && rhombus) {
+                        exactMatches.push('Square');
+                    }
+                    if (rectangle) {
+                        exactMatches.push('Rectangle');
+                    }
+                    if (rhombus) {
+                        exactMatches.push('Rhombus');
+                    }
+                    if (parallelogram) {
+                        exactMatches.push('Parallelogram');
+                    }
+                    if (isoscelesTrapezoid) {
+                        exactMatches.push('Isosceles Trapezoid');
+                    }
+                    if (trapezoid) {
+                        exactMatches.push('Trapezoid');
+                        notes.push('Trapezoid uses exactly one pair of parallel opposite sides here');
+                    }
+                    if (kite) {
+                        exactMatches.push(isConvex ? 'Kite' : 'Dart');
+                    }
+
+                    if (parallelPairCount > 0) {
+                        notes.push(`Parallel sides: ${parallelPairCount} pair${parallelPairCount === 1 ? '' : 's'}`);
+                    }
+                    if (rightAngleCount > 0) {
+                        notes.push(`Right angles: ${rightAngleCount}`);
+                    }
+                }
+
+                if (sideCount >= 5 && isRegular) {
+                    exactMatches.push(`Regular ${familyName}`);
+                }
+
+                const uniqueFamilyLabels = this.getUniqueLabels(familyLabels);
+                const uniqueExactMatches = this.getUniqueLabels(exactMatches);
+                const uniqueTraits = this.getUniqueLabels(traits);
+                const uniqueNotes = this.getUniqueLabels(notes);
+                const primaryLabel = uniqueExactMatches[0] || (isRegular ? `Regular ${familyName}` : familyName);
+
+                return {
+                    primaryLabel,
+                    familyLabels: uniqueFamilyLabels,
+                    exactMatches: uniqueExactMatches,
+                    traits: uniqueTraits,
+                    notes: uniqueNotes
+                };
+            }
+
+            renderClassifierBadges(labels) {
+                return labels.map(label => `<span class="classifier-badge">${this.escapeHtml(label)}</span>`).join('');
+            }
+
+            buildShapeClassifierMarkup(analysis, summary = {}) {
+                const exactMatchMarkup = analysis.exactMatches.length
+                    ? this.renderClassifierBadges(analysis.exactMatches)
+                    : '<span class="classifier-badge">No special subtype match yet</span>';
+                const traitMarkup = this.renderClassifierBadges(analysis.traits);
+                const savedNameMarkup = typeof summary.savedName === 'string' && summary.savedName.trim()
+                    ? `<div class="shape-classifier-meta"><span class="classifier-badge">Saved Name: ${this.escapeHtml(summary.savedName.trim())}</span></div>`
+                    : '';
+                const metricMarkup = [
+                    { label: 'Vertices', value: Number.isFinite(summary.vertices) ? `${summary.vertices}` : '--' },
+                    { label: 'Perimeter', value: Number.isFinite(summary.perimeter) ? `${summary.perimeter.toFixed(2)} u` : '--' },
+                    { label: 'Area', value: Number.isFinite(summary.area) ? `${summary.area.toFixed(2)} sq` : '--' }
+                ].map(metric => `
+                <div class="shape-classifier-metric">
+                    <div class="shape-classifier-metric-label">${metric.label}</div>
+                    <div class="shape-classifier-metric-value">${this.escapeHtml(metric.value)}</div>
+                </div>
+            `).join('');
+                const noteMarkup = analysis.notes.length
+                    ? `
+                <div class="shape-classifier-card shape-classifier-card--notes">
+                    <div class="shape-classifier-section-label">Math Notes</div>
+                    <div class="shape-classifier-note-list">
+                        ${analysis.notes.map(note => `<div class="shape-classifier-note">${this.escapeHtml(note)}</div>`).join('')}
+                    </div>
+                </div>
+            `
+                    : '';
+
+                return `
+            <div class="shape-classifier">
+                <div class="shape-classifier-top">
+                    <div class="shape-classifier-header">
+                        <div class="shape-classifier-title">Live Shape Recognition</div>
+                        <div class="shape-classifier-primary">${this.escapeHtml(analysis.primaryLabel)}</div>
+                        ${savedNameMarkup}
+                        <div class="shape-classifier-subtitle">Families, recognized types, and traits update instantly as the polygon changes.</div>
+                    </div>
+                    <div class="shape-classifier-summary">${metricMarkup}</div>
+                </div>
+                <div class="shape-classifier-grid">
+                    <div class="shape-classifier-card">
+                        <div class="shape-classifier-section-label">Shape Family</div>
+                        <div class="shape-classifier-badges">${this.renderClassifierBadges(analysis.familyLabels)}</div>
+                    </div>
+                    <div class="shape-classifier-card">
+                        <div class="shape-classifier-section-label">Recognized Types</div>
+                        <div class="shape-classifier-badges">${exactMatchMarkup}</div>
+                    </div>
+                    <div class="shape-classifier-card">
+                        <div class="shape-classifier-section-label">Geometry Traits</div>
+                        <div class="shape-classifier-badges">${traitMarkup}</div>
+                    </div>
+                    ${noteMarkup}
+                </div>
+            </div>
+        `;
+            }
+
             // UI Updates
             updateCursor() {
                 // Don't override grab/grabbing cursors during panning
@@ -5333,54 +6215,43 @@
                 this.canvas.style.cursor = cursors[this.currentTool] || 'default';
             }
 
+            updateMobileDeleteButtonState() {
+                const deleteBtn = document.getElementById('mobileDeleteSelectedBtn');
+                if (!deleteBtn) {
+                    return;
+                }
+
+                const hasSelectedPolygon = !!(this.selectedPolygon && this.polygons.includes(this.selectedPolygon));
+                deleteBtn.disabled = !hasSelectedPolygon;
+                deleteBtn.setAttribute('aria-disabled', String(!hasSelectedPolygon));
+                deleteBtn.title = hasSelectedPolygon
+                    ? `Delete ${this.selectedPolygon.name}`
+                    : 'Select a polygon to delete';
+            }
+
             updateProperties() {
                 const panel = document.getElementById('propertiesPanelContent');
+                this.updateMobileDeleteButtonState();
 
                 if (!this.selectedPolygon) {
-                    panel.innerHTML = '<div class="property-row" style="justify-content: center; padding: 12px;"><span class="property-label" style="color: #94a3b8; font-style: italic;">Select a polygon to view properties</span></div>';
+                    panel.innerHTML = '<div class="properties-empty-state">Select a polygon to view its live shape recognition.</div>';
                     scheduleViewportSafetySync();
                     return;
                 }
 
                 const areaPx = Math.abs(this.selectedPolygon.getArea());
                 const perimeterPx = this.selectedPolygon.getPerimeter();
-
+                const analysis = this.getPolygonAnalysis(this.selectedPolygon);
                 const area = areaPx / (this.gridSize * this.gridSize);
                 const perimeter = perimeterPx / this.gridSize;
                 const vertices = this.selectedPolygon.vertices.length;
 
-                let html = `
-            <div class="property-row">
-                <span class="property-label">Name:</span>
-                <span class="property-value">${this.selectedPolygon.name}</span>
-            </div>
-            <div class="property-row">
-                <span class="property-label">Vertices:</span>
-                <span class="property-value">${vertices}</span>
-            </div>
-            <div class="property-row">
-                <span class="property-label">Perimeter:</span>
-                <span class="property-value">${perimeter.toFixed(2)} units</span>
-            </div>
-            <div class="property-row">
-                <span class="property-label">Area:</span>
-                <span class="property-value">${area.toFixed(2)} sq units</span>
-            </div>
-        `;
-
-                // Add triangle classifier if it's a triangle
-                if (vertices === 3) {
-                    const classification = this.classifyTriangle(this.selectedPolygon);
-                    html += `
-                <div class="triangle-classifier">
-                    <div class="triangle-classifier-title">Triangle Type:</div>
-                    <span class="classifier-badge">${classification.sides}</span>
-                    <span class="classifier-badge">${classification.angles}</span>
-                </div>
-            `;
-                }
-
-                panel.innerHTML = html;
+                panel.innerHTML = this.buildShapeClassifierMarkup(analysis, {
+                    vertices,
+                    perimeter,
+                    area,
+                    savedName: this.selectedPolygon.name
+                });
                 scheduleViewportSafetySync();
             }
 
@@ -5431,59 +6302,6 @@
 
                     list.appendChild(item);
                 });
-            }
-
-            classifyTriangle(polygon) {
-                const v = polygon.vertices;
-                if (v.length !== 3) return null;
-
-                // Calculate side lengths
-                const sides = [
-                    this.distance(v[0], v[1]),
-                    this.distance(v[1], v[2]),
-                    this.distance(v[2], v[0])
-                ];
-
-                // Classify by sides
-                let sideType;
-                const tolerance = 1;
-                if (Math.abs(sides[0] - sides[1]) < tolerance &&
-                    Math.abs(sides[1] - sides[2]) < tolerance) {
-                    sideType = 'Equilateral';
-                } else if (Math.abs(sides[0] - sides[1]) < tolerance ||
-                    Math.abs(sides[1] - sides[2]) < tolerance ||
-                    Math.abs(sides[0] - sides[2]) < tolerance) {
-                    sideType = 'Isosceles';
-                } else {
-                    sideType = 'Scalene';
-                }
-
-                // Calculate angles
-                const angles = [];
-                for (let i = 0; i < 3; i++) {
-                    const v1 = v[i];
-                    const v2 = v[(i + 1) % 3];
-                    const v3 = v[(i + 2) % 3];
-
-                    const a = this.distance(v2, v3);
-                    const b = this.distance(v1, v3);
-                    const c = this.distance(v1, v2);
-
-                    const angle = Math.acos((b * b + c * c - a * a) / (2 * b * c)) * 180 / Math.PI;
-                    angles.push(angle);
-                }
-
-                // Classify by angles
-                let angleType;
-                if (angles.some(a => Math.abs(a - 90) < 1)) {
-                    angleType = 'Right';
-                } else if (angles.some(a => a > 90)) {
-                    angleType = 'Obtuse';
-                } else {
-                    angleType = 'Acute';
-                }
-
-                return { sides: sideType, angles: angleType };
             }
 
             // Rendering
@@ -6798,25 +7616,12 @@
             }
 
             handleFullscreenChange() {
-                const fullscreenBtn = document.getElementById('fullscreenToggle');
                 const isFullscreen = !!(document.fullscreenElement ||
                     document.webkitFullscreenElement ||
                     document.mozFullScreenElement ||
                     document.msFullscreenElement);
 
                 document.body.classList.toggle('fullscreen-active', isFullscreen);
-
-                if (fullscreenBtn) {
-                    if (isFullscreen) {
-                        fullscreenBtn.classList.add('active');
-                        fullscreenBtn.textContent = '⤡'; // Exit fullscreen icon
-                        fullscreenBtn.title = 'Exit Fullscreen';
-                    } else {
-                        fullscreenBtn.classList.remove('active');
-                        fullscreenBtn.textContent = '⤢'; // Enter fullscreen icon
-                        fullscreenBtn.title = 'Enter Fullscreen';
-                    }
-                }
 
                 // Resize canvas after a short delay to ensure dimensions are updated
                 setTimeout(() => {
@@ -6990,13 +7795,16 @@
         // Mobile and Tablet menu toggle functionality
         function toggleMobileSidebar(sidebar) {
             const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
-            const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
-            const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
+            const useOverlaySidebars = shouldUseOverlaySidebars(deviceInfo);
 
-            // Enable for mobile and tablet devices
-            if (isMobile || isTablet) {
-                const wasOpen = sidebar.classList.contains('mobile-open');
-                sidebar.classList.toggle('mobile-open');
+            if (useOverlaySidebars) {
+                const willOpen = !sidebar.classList.contains('mobile-open');
+                document.querySelectorAll('.sidebar').forEach(s => {
+                    if (s !== sidebar) {
+                        s.classList.remove('mobile-open');
+                    }
+                });
+                sidebar.classList.toggle('mobile-open', willOpen);
 
                 // Update backdrop - show only when sidebar is open as overlay
                 const backdrop = document.getElementById('sidebarBackdrop');
@@ -7014,15 +7822,6 @@
                             backdrop.removeEventListener('click', closeMobileSidebars);
                         }
                     }
-                }
-
-                // On mobile, close other sidebars when opening one
-                if (isMobile) {
-                    document.querySelectorAll('.sidebar').forEach(s => {
-                        if (s !== sidebar) {
-                            s.classList.remove('mobile-open');
-                        }
-                    });
                 }
             }
         }
@@ -7054,14 +7853,7 @@
                     const layersSidebar = document.querySelector('.sidebar:not(.sidebar-right)');
                     if (layersSidebar) {
                         const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
-                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
-                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
-
-                        if (isMobile) {
-                            // On mobile, close the overlay
-                            closeMobileSidebars();
-                        } else if (isTablet) {
-                            // On tablet, toggle sidebar visibility (hide/show)
+                        if (shouldUseOverlaySidebars(deviceInfo)) {
                             toggleMobileSidebar(layersSidebar);
                         }
                     }
@@ -7081,14 +7873,7 @@
                     const visualizersSidebar = document.querySelector('.sidebar-right');
                     if (visualizersSidebar) {
                         const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
-                        const isMobile = deviceInfo.isMobile || window.innerWidth <= 768;
-                        const isTablet = deviceInfo.isTablet || (window.innerWidth > 768 && window.innerWidth <= 1024);
-
-                        if (isMobile) {
-                            // On mobile, close the overlay
-                            closeMobileSidebars();
-                        } else if (isTablet) {
-                            // On tablet, toggle sidebar visibility (hide/show)
+                        if (shouldUseOverlaySidebars(deviceInfo)) {
                             toggleMobileSidebar(visualizersSidebar);
                         }
                     }
@@ -7100,11 +7885,10 @@
         function setupMobileMenus() {
             const deviceInfo = deviceDetector ? deviceDetector.getInfo() : { isMobile: false, isTablet: false };
             const { width: viewportWidth } = getViewportMetrics();
-            const isMobile = deviceInfo.isMobile || viewportWidth <= 768;
-            const isTablet = deviceInfo.isTablet || (viewportWidth > 768 && viewportWidth <= 1024);
+            syncCompactLandscapeControls();
+            const useOverlaySidebars = shouldUseOverlaySidebars(deviceInfo, { width: viewportWidth, height: getViewportMetrics().height });
 
-            // Show toggle buttons on mobile (required) and optionally on tablets (for overlay mode)
-            if (isMobile || isTablet) {
+            if (useOverlaySidebars) {
                 // Add menu toggle buttons to canvas container
                 const canvasContainer = document.getElementById('canvasContainer');
 
@@ -7117,7 +7901,9 @@
                 if (topToolsBar && toolbar) {
                     const topToolsBarHeight = topToolsBar.getBoundingClientRect().height;
                     const toolbarHeight = toolbar.getBoundingClientRect().height;
-                    topOffset = topToolsBarHeight + toolbarHeight + 8; // 8px gap below toolbar
+                    topOffset = document.body.classList.contains('compact-landscape-controls')
+                        ? topToolsBarHeight + 8
+                        : topToolsBarHeight + toolbarHeight + 8; // 8px gap below toolbar
                 } else {
                     // Fallback calculation based on CSS values
                     // Top tools bar: clamp(48px, 6vw, 56px) + mobile offset clamp(10px, 2vw, 15px)
@@ -7125,7 +7911,9 @@
                     const topBarHeight = Math.max(48, Math.min(56, viewportWidth * 0.06)) +
                         (viewportWidth <= 768 ? Math.max(10, Math.min(15, viewportWidth * 0.02)) : 0);
                     const toolbarHeight = Math.max(48, Math.min(70, viewportWidth * 0.08));
-                    topOffset = topBarHeight + toolbarHeight + 8;
+                    topOffset = document.body.classList.contains('compact-landscape-controls')
+                        ? topBarHeight + 8
+                        : topBarHeight + toolbarHeight + 8;
                 }
 
                 // Left sidebar toggle (Layers)
@@ -7148,6 +7936,31 @@
                 // Update position
                 leftToggle.style.top = `${topOffset}px`;
 
+                let quickActions = document.getElementById('mobileQuickActions');
+                if (!quickActions) {
+                    quickActions = document.createElement('div');
+                    quickActions.id = 'mobileQuickActions';
+                    quickActions.className = 'mobile-quick-actions';
+                    canvasContainer.appendChild(quickActions);
+                }
+
+                let deleteToggle = document.getElementById('mobileDeleteSelectedBtn');
+                if (!deleteToggle) {
+                    deleteToggle = document.createElement('button');
+                    deleteToggle.id = 'mobileDeleteSelectedBtn';
+                    deleteToggle.className = 'mobile-menu-toggle mobile-delete-toggle';
+                    deleteToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
+                    deleteToggle.setAttribute('aria-label', 'Delete Selected Polygon');
+                    deleteToggle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (app) {
+                            app.deleteSelected();
+                        }
+                    });
+                    quickActions.appendChild(deleteToggle);
+                }
+
                 // Right sidebar toggle (Visualizers)
                 let rightToggle = document.getElementById('mobileMenuRight');
                 if (!rightToggle) {
@@ -7163,16 +7976,19 @@
                         const sidebar = document.querySelector('.sidebar-right');
                         if (sidebar) toggleMobileSidebar(sidebar);
                     });
-                    canvasContainer.appendChild(rightToggle);
+                    quickActions.appendChild(rightToggle);
                 }
-                // Update position
-                rightToggle.style.top = `${topOffset}px`;
+
+                quickActions.style.top = `${topOffset}px`;
+                if (app) {
+                    app.updateMobileDeleteButtonState();
+                }
             } else {
                 // Remove mobile menu buttons on desktop
                 const leftToggle = document.getElementById('mobileMenuLeft');
-                const rightToggle = document.getElementById('mobileMenuRight');
+                const quickActions = document.getElementById('mobileQuickActions');
                 if (leftToggle) leftToggle.remove();
-                if (rightToggle) rightToggle.remove();
+                if (quickActions) quickActions.remove();
             }
 
             scheduleViewportSafetySync();

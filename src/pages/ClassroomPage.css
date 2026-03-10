@@ -1,22 +1,30 @@
 .classroom-app-page {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    box-sizing: border-box;
 }
 
 .classroom-app-area {
     display: flex;
     flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
     padding: 0;
     overflow: hidden;
+    min-width: 0;
     min-height: 0;
 }
 
 .classroom-app-shell {
     position: relative;
     flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
     min-height: 0;
     height: 100%;
     border-radius: 0;

@@ -14,11 +14,19 @@ const HOME_TRANSITION_FADE_OUT_MS = 280;
 const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 const STATS_WAKE_GLOW_MS = 2000;
+const CLASSROOM_IMMERSIVE_SCOPE = 'classroom-3d';
+const CLASSROOM_IMMERSIVE_OPEN_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_OPEN';
+const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const isPlayRoute = location.pathname.startsWith('/play/');
+    const searchParams = new URLSearchParams(location.search);
+    const activeTab = searchParams.get('tab')?.toLowerCase();
+    const isClassroomViewerRoute =
+        location.pathname === '/html-viewer' &&
+        searchParams.get('source')?.toLowerCase() === 'classroom';
     
     const [isMinimized, setIsMinimized] = useState(false);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
@@ -28,6 +36,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const [statsPulseCount, setStatsPulseCount] = useState(1);
     const [expandedMode, setExpandedMode] = useState(false);
     const [failedGameIconIds, setFailedGameIconIds] = useState<Set<string>>(new Set());
+    const [isClassroomImmersiveActive, setIsClassroomImmersiveActive] = useState(false);
     const sliderRef = useRef<HTMLDivElement>(null);
     const statsTouchStartX = useRef<number | null>(null);
     const hasStatsSwiped = useRef<boolean>(false);
@@ -82,6 +91,38 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         setIsMinimized(true);
         setIsStatsMinimized(true);
     }, []);
+
+    const isGameLikeImmersive = isPlayRoute || isClassroomViewerRoute || isClassroomImmersiveActive;
+
+    useEffect(() => {
+        if (location.pathname !== '/classroom') {
+            setIsClassroomImmersiveActive(false);
+            return;
+        }
+
+        const onWindowMessage = (event: MessageEvent<unknown>) => {
+            if (event.origin !== window.location.origin) {
+                return;
+            }
+
+            const data = event.data as { scope?: unknown; type?: unknown } | null;
+            if (!data || data.scope !== CLASSROOM_IMMERSIVE_SCOPE || typeof data.type !== 'string') {
+                return;
+            }
+
+            if (data.type === CLASSROOM_IMMERSIVE_OPEN_MESSAGE) {
+                setIsClassroomImmersiveActive(true);
+                return;
+            }
+
+            if (data.type === CLASSROOM_IMMERSIVE_CLOSE_MESSAGE) {
+                setIsClassroomImmersiveActive(false);
+            }
+        };
+
+        window.addEventListener('message', onWindowMessage);
+        return () => window.removeEventListener('message', onWindowMessage);
+    }, [location.pathname]);
 
     const triggerStatsAwakeFlash = useCallback((durationMs: number) => {
         setIsStatsLineDormant(false);
@@ -148,9 +189,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         return () => window.cancelAnimationFrame(frameId);
     }, [location.pathname]);
 
-    // Auto-collapse the bottom dock when a game route opens so only the flush gold bar remains.
+    // Auto-collapse the bottom dock when immersive content opens so only the flush gold bar remains.
     useLayoutEffect(() => {
-        if (!isPlayRoute) {
+        if (!isGameLikeImmersive) {
             lastAutoFlushGameRouteRef.current = '';
             return;
         }
@@ -160,11 +201,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [enforceGameDockFlush, isPlayRoute]);
+    }, [enforceGameDockFlush, isGameLikeImmersive]);
 
-    // Keep flush-left dock anchored through orientation/viewport changes while game route is active.
+    // Keep flush-left dock anchored through orientation/viewport changes while immersive content is active.
     useEffect(() => {
-        if (!isPlayRoute) return;
+        if (!isGameLikeImmersive) return;
 
         const syncFlushState = () => {
             window.requestAnimationFrame(() => {
@@ -179,18 +220,18 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             window.removeEventListener('orientationchange', syncFlushState);
             window.removeEventListener('resize', syncFlushState);
         };
-    }, [enforceGameDockFlush, isPlayRoute]);
+    }, [enforceGameDockFlush, isGameLikeImmersive]);
 
-    // Flash the flush gold bar once per opened game route as a discoverability hint.
+    // Flash the flush gold bar once per opened immersive context as a discoverability hint.
     useEffect(() => {
-        if (!isPlayRoute) {
+        if (!isGameLikeImmersive) {
             return;
         }
         if (!isMinimized || !isStatsMinimized) {
             return;
         }
 
-        const routeKey = `${location.pathname}${location.search}`;
+        const routeKey = `${location.pathname}${location.search}|${isClassroomImmersiveActive ? 'classroom-immersive' : 'route-immersive'}`;
         if (lastAutoFlushGameRouteRef.current === routeKey) {
             return;
         }
@@ -199,7 +240,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             triggerStatsPulseGlow(AUTO_GAME_DOCK_PULSE_COUNT);
         });
         return () => window.cancelAnimationFrame(frameId);
-    }, [isMinimized, isPlayRoute, isStatsMinimized, location.pathname, location.search, triggerStatsPulseGlow]);
+    }, [isClassroomImmersiveActive, isGameLikeImmersive, isMinimized, isStatsMinimized, location.pathname, location.search, triggerStatsPulseGlow]);
 
     useEffect(() => {
         if (homeTransitionPhase !== 'fading-out') {
@@ -221,8 +262,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         const frameId = window.requestAnimationFrame(() => {
             if (isMinimized) {
                 setExpandedMode(false);
-                // Keep gold dock fully flushed while playing games.
-                setIsStatsMinimized(isPlayRoute);
+                // Keep gold dock fully flushed while immersive content is active.
+                setIsStatsMinimized(isGameLikeImmersive);
             } else {
                 setIsStatsMinimized(false);
                 setIsStatsLineDormant(false);
@@ -231,7 +272,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             }
         });
         return () => window.cancelAnimationFrame(frameId);
-    }, [isMinimized, isPlayRoute]);
+    }, [isGameLikeImmersive, isMinimized]);
 
     // Always clear dormant/pulse state when stats panel is opened.
     useEffect(() => {
@@ -447,7 +488,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
             const routeFullscreenLike =
                 location.pathname.startsWith('/play/') ||
-                location.pathname.startsWith('/open/');
+                location.pathname.startsWith('/open/') ||
+                isClassroomViewerRoute ||
+                isClassroomImmersiveActive;
 
             const pageFullscreenLike = !!document.querySelector(
                 '.html-viewer-page.is-fullscreen, .viewer-page.fullscreen-mode, .iframe-container.fullscreen-active'
@@ -455,7 +498,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
             const isNowFullscreenLike = browserFullscreen || routeFullscreenLike || pageFullscreenLike;
             const activationKey = routeFullscreenLike
-                ? `${location.pathname}${location.search}`
+                ? `${location.pathname}${location.search}|${isClassroomImmersiveActive ? 'classroom-immersive' : 'route-immersive'}`
                 : isNowFullscreenLike
                     ? 'fullscreen-context'
                     : '';
@@ -555,7 +598,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 fullscreenEvaluateFrameRef.current = null;
             }
         };
-    }, [location.pathname, location.search, isMinimized, isStatsMinimized]);
+    }, [isClassroomImmersiveActive, isClassroomViewerRoute, isMinimized, isStatsMinimized, location.pathname, location.search]);
 
     useEffect(() => {
         return () => {
@@ -622,8 +665,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     // Helper to determine active state
     const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
     const shouldShowStatsDock = isMinimized;
-    const isGamesActive = location.pathname === '/apps' && new URLSearchParams(location.search).get('tab')?.toLowerCase() === 'game';
-    const tab = new URLSearchParams(location.search).get('tab')?.toLowerCase();
+    const isGamesActive = location.pathname === '/apps' && activeTab === 'game';
+    const tab = activeTab;
     const isClassroomActive = 
         location.pathname === '/classroom' ||
         (location.pathname === '/apps' && (tab === 'worksheet' || tab === 'worksheets' || tab === 'tool' || tab === 'tools')) ||
