@@ -52,3 +52,164 @@ Original prompt: when the box lands onto the bottom screen, can you have it kind
 - Validation after fix:
   - `npm run lint` passed.
   - `npm run build` passed.
+- Visual overhaul prompt: upgrade only the `HomePageAPP` mystery box so it feels more unique, premium, and realistic while preserving the existing size, shadows, shake/rattle cadence, and touch/open behavior.
+- Reworked `createMysteryBoxModel()` in `public/HomePageAPP/index.html` from the old simple color-block mesh stack into a layered relic chest build:
+  - rounded obsidian shell
+  - enamel inset panels
+  - antique brass rails/corner caps
+  - side handle hardware
+  - crest/lock detailing
+  - inner crystal/core light
+  - reactive trail ring
+- Added regression-safe helper utilities around the box visuals:
+  - `rememberMysteryMaterialDefaults(...)`
+  - `applyMysteryPieceOpacity(...)`
+  - `updateMysteryGlowMaterials(...)`
+  - `syncMysteryShadowState(...)`
+- Updated mystery-box runtime hooks so the new grouped pieces keep the existing motion behavior:
+  - launch reset now restores grouped burst pieces safely
+  - fall/landed/open/reveal/cooldown phases now drive the new glow/core/light materials without changing the existing state-machine timing
+  - opening burst fade now works for grouped multi-mesh pieces instead of assuming each burst piece is a single mesh
+- Small renderer cleanup: removed the eager `tex.needsUpdate = true` from `createMysteryShadowTexture()` to avoid `THREE.WebGLRenderer: Texture marked for update but no image data found` warnings during stress testing.
+- Validation:
+  - `npm run lint` passed after the box overhaul.
+  - `npm run build` passed after the box overhaul.
+  - Playwright page-load smoke check against `http://127.0.0.1:5173/HomePageAPP/index.html` produced 0 console errors / 0 warnings.
+  - Ran the `develop-web-game` Playwright client again after final changes; it generated fresh screenshots in `output/web-game-mystery-box-final/`.
+  - For visual inspection, I temporarily exposed local-only debug launch hooks, captured landed/opening screenshots of the upgraded box, and then removed those hooks from the shipping code. Useful captures:
+    - `output/mystery-forced-landed.png`
+    - `output/mystery-forced-open.png`
+    - `output/mystery-forced-open-late.png`
+- Testing note for future agents:
+  - the generic headless slingshot action file in `public/HomePageAPP/_workspace/tmp/tmp_actions_mystery.json` does not reliably drive the full mystery sign -> cinematic -> box flow in automation, even though page-load smoke checks are clean. Manual browser interaction or a purpose-built mystery-flow action script is more reliable for visual validation.
+- Brightness follow-up prompt: make the upgraded mystery box feel more vibrant and kid-friendly because the previous premium pass still read too dark.
+- Updated only the mystery-box material/light palette in `public/HomePageAPP/index.html`:
+  - shell shifted from near-black obsidian to brighter sapphire blue
+  - panels shifted to brighter aqua/teal enamel
+  - brass trim pushed warmer/brighter gold
+  - rune accent shifted to a more playful pink-magenta glow
+  - crystal/trail/impact tones brightened so the box reads better in-scene
+  - inner point light intensity/distance increased slightly to help the new palette pop
+- Validation after brightening pass:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Playwright page-load smoke check against `http://127.0.0.1:5173/HomePageAPP/index.html` produced 0 console errors / 0 warnings.
+- Circle-removal follow-up prompt: remove the visible white circle effect from the mystery box.
+- Removed the under-box ring meshes from `public/HomePageAPP/index.html`:
+  - removed the persistent trail ring
+  - removed the impact ring mesh
+  - kept the box body, lighting, dust, sizing, and animation/state logic unchanged
+- Validation after circle removal:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Playwright homepage smoke check still loads cleanly.
+- Rarity-box follow-up prompt: add three mystery box rarity variants before moving on with the broader rarity system.
+- Implemented rarity theming in `public/HomePageAPP/index.html` without changing box sizing, shake/rattle cadence, shadows, or the existing open/reveal state machine:
+  - added explicit `common`, `rare`, and `legendary` mystery-box theme data
+  - kept the current bright blue box as the `Rare` tier
+  - added a brighter green `Common` tier
+  - added a warm gold `Legendary` tier with stronger light response and animated sparkle sprites around the box
+  - made the dust/glow/core-light materials theme-aware so each rarity reads as its own box instead of just a flat recolor
+- Wired reward-to-box rarity selection into the existing mystery reward queue so box visuals now reflect a first-pass rarity pool without rewriting reward order logic.
+- First-pass reward rarity assumption used for this pass:
+  - `Common`: `blossomissWings`, `canvasOfNavelleWings`, `goddessOfValleysWings`, `honeycombBloomsWings`, `lavalcanoWings`, `lightOfSmilesWings`, `emeraldCoenWings`
+  - `Rare`: `moonlightAmayaWings`, `endlessWings`, `xatoriWings`, `efernoWings`
+  - `Legendary`: `alphaWings`, `rainbowWings`, `omegaWings`, `roboticWings`
+  - Any future unmapped mystery reward currently falls back to `Rare` so the existing blue-box path stays safe.
+- Validation after rarity-box pass:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Ran the `develop-web-game` Playwright client against `http://127.0.0.1:4173/HomePageAPP/index.html` and captured `output/web-game-rarity-box/shot-0.png` with no generated error log.
+  - Additional Playwright browser smoke/interaction pass kept the page interactive after dragging the mystery scroll; only console issue remained the existing `favicon.ico` 404 from the local dev server.
+  - Interaction note: the full mystery scroll -> flight -> box drop cinematic is still awkward to verify headlessly, so visual confirmation of all three rarity variants will be more reliable in a manual browser pass or with a dedicated mystery-flow automation script.
+- Reveal cleanup follow-up prompt: remove the circle and diamond reveal particles that appear after the mystery box disappears.
+- Removed the floating reveal-core meshes from `public/HomePageAPP/index.html`:
+  - removed the circular `coreRing` torus reveal mesh
+  - removed the diamond `coreCrystal` octahedron reveal mesh
+  - kept the rest of the mystery box visuals, rarity themes, glow lighting, shake behavior, and reveal flow intact
+- Validation after reveal-core removal:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+- Legendary expansion follow-up prompt: create two new ultra-special mystery chest variants, `Legendary Light` and `Legendary Dark`, with a white and dark-red visual direction that feels more exciting than the existing gold legendary.
+- Expanded the mystery-box theme system in `public/HomePageAPP/index.html`:
+  - added `legendaryLight` and `legendaryDark` as supported mystery box theme keys
+  - kept the existing gold `Legendary` theme in the codebase as a fallback / future-use variant
+  - updated rarity normalization so the new legendary variants can flow through the existing spawn/open/update path safely
+- Added bespoke visual treatments so the two new legendary boxes feel like distinct hero chests instead of recolors:
+  - `Legendary Light`: pearlescent white shell, bright icy panels, warm champagne trim, crown-like lid arcs, angelic side-feather crystal clusters, and softer halo-style sparkles
+  - `Legendary Dark`: deep crimson shell, ember seams, copper-gold trim, lid spires, side blade fans, front crest slashes, and ember-style sparks
+  - both variants reuse the existing box scale, burst, shake/rattle timing, and shadow system
+- Wired the current top-tier rewards into the new chest variants so they can appear immediately:
+  - `Legendary Light`: `alphaWings`, `rainbowWings`
+  - `Legendary Dark`: `omegaWings`, `roboticWings`
+  - existing gold `Legendary` currently remains unused by the first-pass mapping, but stays available as a safe fallback / future premium variant
+- Validation after legendary light/dark pass:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Playwright smoke check against `http://127.0.0.1:4173/public/HomePageAPP/index.html` loaded successfully with 0 console errors.
+- Legendary Light cleanup follow-up prompt: remove the white curved circle-like pieces from the Legendary Light box.
+- Removed the torus-based curved ornaments from the `Legendary Light` build in `public/HomePageAPP/index.html`:
+  - removed the two lid-side arc segments
+  - removed the front halo arc segment
+  - kept the rest of the Legendary Light styling, feathers, crest, sparkles, sizing, and animation behavior intact
+- Validation after Legendary Light arc removal:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+- Reward-routing follow-up prompt: place specific wings into specific mystery box rarities exactly as requested.
+- Updated the mystery reward pool / rarity mapping in `public/HomePageAPP/index.html` to match the requested grouping:
+  - `Legendary Light Boxes`: `xatoriWings`, `lightOfSmilesWings`, `goddessOfValleysWings`, `honeycombBloomsWings`, `blossomissWings`
+  - `Legendary Dark Boxes`: `moonlightAmayaWings`, `lavalcanoWings`, `endlessWings`, `emeraldCoenWings`, `canvasOfNavelleWings`
+  - `Legendary`: `rainbowWings`
+  - `Rare`: `alphaWings`, `roboticWings`
+  - `Common`: `efernoWings`
+- Tightened the mystery reward allowlist so only the wings named in the requested rarity list are available from mystery boxes right now.
+  - `omegaWings` was not in the requested list, so it is currently excluded from the mystery-box reward pool instead of being auto-assigned to a fallback chest.
+- Validation after reward-routing pass:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+- Honeycomb Blooms verification follow-up prompt: double-check whether `Honeycomb Blooms` is working correctly.
+- Verification result for `Honeycomb Blooms`:
+  - confirmed the inventory entry and preview trigger both exist for `honeycombBloomsWings`
+  - confirmed the mystery reward routing still places `honeycombBloomsWings` in `Legendary Light`
+  - confirmed the preview panel opens and the item can be equipped with 0 browser console errors / warnings
+  - fresh-browser preview check consistently renders a dark red wing model in the Honeycomb preview canvas, while control-checking `Eferno Wings` shows a different model correctly
+  - this points to a likely asset/content mismatch in `HoneycombBlooms.glb` rather than a broken inventory or preview hookup
+- Validation artifacts for Honeycomb check:
+  - saved fresh preview capture to `output/playwright/honeycomb-blooms-preview-fresh.png`
+  - saved control preview capture to `output/playwright/eferno-preview-control.png`
+  - saved equipped-scene capture to `output/playwright/honeycomb-blooms-equipped.png`
+- Mystery box crest follow-up prompt: remove the cross image from all rarity boxes and replace it with a simple wing symbol.
+- Updated the shared mystery chest face treatment in `public/HomePageAPP/index.html`:
+  - removed the cross-like front/back seam motif from the box face panels
+  - added a compact mirrored wing crest with a small center gem so the new symbol carries across `Common`, `Rare`, `Legendary`, `Legendary Light`, and `Legendary Dark`
+  - kept the existing box sizing, shake/vibration behavior, shadows, lid mechanics, rarity palette system, and specialty legendary ornaments intact
+- Validation after wing-crest swap:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Playwright homepage smoke reload against `http://127.0.0.1:4173/public/HomePageAPP/index.html` produced 0 console errors / 0 warnings.
+- Mystery rarity odds follow-up prompt: set mystery box summon chances to `Common 40%`, `Rare 30%`, `Legendary 20%`, `Legendary Light 5%`, `Legendary Dark 5%`.
+- Updated the mystery reward selector in `public/HomePageAPP/index.html`:
+  - added explicit weighted rarity chances for the five active box tiers
+  - changed selection flow so the system now chooses rarity first by weight, then picks a reward from that rarity's pool
+  - replaced the old single global reward queue with per-rarity queue/seen tracking so each rarity can still rotate through its own items safely
+  - kept the existing reward-to-rarity mappings intact, so the new odds now drive box appearance and reward category together
+- Active rarity summon weights now configured as:
+  - `Common`: `40`
+  - `Rare`: `30`
+  - `Legendary`: `20`
+  - `Legendary Light`: `5`
+  - `Legendary Dark`: `5`
+- Validation after rarity-weight update:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - Playwright homepage smoke reload against `http://127.0.0.1:4173/public/HomePageAPP/index.html` produced 0 console errors / 0 warnings.
+- Final review / release-hardening pass before landing to `main`:
+  - removed leftover null-only mystery box runtime branches tied to previously removed `impact`, `trailRing`, `coreCrystal`, and `coreRing` visuals
+  - removed the now-unused `coreColor`, `coreEmissive`, and `coreRingColor` theme fields from the active box themes
+  - tightened the reveal fallback so, if `mysteryState.rewardKey` is ever missing at reveal time, it now resolves within the already-chosen `mysteryState.boxRarity` instead of re-rolling from a fresh weighted selection
+  - kept unrelated in-progress `public/3dClass/...` workspace changes out of scope for this mystery-box release pass
+- Validation after final review cleanup:
+  - `npm run lint` passed.
+  - `npm run build` passed.
+  - `git diff --check -- public/HomePageAPP/index.html public/HomePageAPP/docs/progress.md AGENTS.md` passed aside from the existing CRLF warnings in the working tree.
+  - Playwright homepage smoke reload against `http://127.0.0.1:4173/public/HomePageAPP/index.html` produced 0 console errors / 0 warnings and confirmed the page still boots with the mystery scene and inventory button present.

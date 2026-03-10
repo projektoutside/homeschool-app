@@ -2789,6 +2789,7 @@
         import * as THREE from 'three';
         import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
         let createLegacyInventoryAndPropDefinitions = null;
         if (window.location.protocol === 'file:') {
             createLegacyInventoryAndPropDefinitions = createLegacyInventoryAndPropDefinitionsFileFallback;
@@ -7729,9 +7730,9 @@
         };
         const mysteryRewardOrderState = {
             loaded: false,
-            queue: [],
-            seen: [],
-            lastKey: null
+            queuesByRarity: {},
+            seenByRarity: {},
+            lastKeyByRarity: {}
         };
 
         function clampUnitVolume(value, fallback = 0.7) {
@@ -9295,11 +9296,6 @@
             openDuration: 0.56,
             revealHoldDuration: 2.2,
             cleanupDuration: 1.35,
-            impactHold: 0.25,
-            impactHeight: 0.018,
-            impactDecay: 0.68,
-            trailRevealScale: 1.12,
-            trailDamp: 0.12,
             openBurstDistance: 2.7,
             openBurstLift: 1.9,
             openBurstSpin: 2.2,
@@ -9363,6 +9359,220 @@
             shadowWiggleTwistStrength: 1.0,
             shadowClickFadeDuration: 0.18
         };
+        const MYSTERY_BOX_RARITY = Object.freeze({
+            COMMON: 'common',
+            RARE: 'rare',
+            LEGENDARY: 'legendary',
+            LEGENDARY_LIGHT: 'legendaryLight',
+            LEGENDARY_DARK: 'legendaryDark'
+        });
+        const MYSTERY_BOX_RARITY_THEMES = Object.freeze({
+            [MYSTERY_BOX_RARITY.COMMON]: Object.freeze({
+                key: MYSTERY_BOX_RARITY.COMMON,
+                label: 'Common',
+                shellColor: 0x39a55a,
+                shellEmissive: 0x123622,
+                panelColor: 0x7ce6b5,
+                panelEmissive: 0x247654,
+                trimColor: 0xc7f091,
+                trimEmissive: 0x55702a,
+                steelColor: 0xd7f6e2,
+                steelEmissive: 0x1f5c3a,
+                seamColor: 0xc6ffe2,
+                seamEmissive: 0x7dffc2,
+                runeColor: 0xeaffc4,
+                runeEmissive: 0xcaf88d,
+                gemColor: 0xe6fff4,
+                gemEmissive: 0xb2ffd8,
+                dustColor: 0xcfffe4,
+                dustSize: 0.102,
+                innerLightColor: 0x9dffc3,
+                innerLightBaseIntensity: 1.18,
+                innerLightBaseDistance: 6.5,
+                innerLightAmbient: 0.34,
+                innerLightEnergyBoost: 1.08,
+                innerLightPulseBoost: 0.2,
+                innerLightDistanceBoost: 1.18,
+                glowEnergyScale: 0.98,
+                pulseSpeedScale: 0.96,
+                sparkles: null
+            }),
+            [MYSTERY_BOX_RARITY.RARE]: Object.freeze({
+                key: MYSTERY_BOX_RARITY.RARE,
+                label: 'Rare',
+                shellColor: 0x2e63c7,
+                shellEmissive: 0x102f79,
+                panelColor: 0x3ad7dc,
+                panelEmissive: 0x0d5f88,
+                trimColor: 0xf2cb6f,
+                trimEmissive: 0x6d410d,
+                steelColor: 0xaac1de,
+                steelEmissive: 0x163458,
+                seamColor: 0x9cf6ff,
+                seamEmissive: 0x8ff3ff,
+                runeColor: 0xffb8f5,
+                runeEmissive: 0xff9eec,
+                gemColor: 0xb5f9ff,
+                gemEmissive: 0x8cf2ff,
+                dustColor: 0xbbeeff,
+                dustSize: 0.1,
+                innerLightColor: 0xbaf8ff,
+                innerLightBaseIntensity: 1.15,
+                innerLightBaseDistance: 6.4,
+                innerLightAmbient: 0.32,
+                innerLightEnergyBoost: 1.15,
+                innerLightPulseBoost: 0.18,
+                innerLightDistanceBoost: 1.2,
+                glowEnergyScale: 1,
+                pulseSpeedScale: 1,
+                sparkles: null
+            }),
+            [MYSTERY_BOX_RARITY.LEGENDARY]: Object.freeze({
+                key: MYSTERY_BOX_RARITY.LEGENDARY,
+                label: 'Legendary',
+                shellColor: 0xc59226,
+                shellEmissive: 0x6c4108,
+                panelColor: 0xffdc72,
+                panelEmissive: 0xa56e17,
+                trimColor: 0xfff0b0,
+                trimEmissive: 0xb97f1e,
+                steelColor: 0xf6e5a9,
+                steelEmissive: 0x73561d,
+                seamColor: 0xfff8d8,
+                seamEmissive: 0xffefab,
+                runeColor: 0xfff4cf,
+                runeEmissive: 0xfff0b6,
+                gemColor: 0xfff7dd,
+                gemEmissive: 0xfff2b8,
+                dustColor: 0xffefcb,
+                dustSize: 0.112,
+                innerLightColor: 0xffdc82,
+                innerLightBaseIntensity: 1.42,
+                innerLightBaseDistance: 7.35,
+                innerLightAmbient: 0.42,
+                innerLightEnergyBoost: 1.34,
+                innerLightPulseBoost: 0.28,
+                innerLightDistanceBoost: 1.42,
+                glowEnergyScale: 1.18,
+                pulseSpeedScale: 1.12,
+                sparkles: Object.freeze({
+                    style: 'orbit',
+                    count: 10,
+                    color: 0xfff4db,
+                    textureTint: 0xfff9ee,
+                    scaleMin: 0.18,
+                    scaleMax: 0.33,
+                    orbitRadiusMin: 0.78,
+                    orbitRadiusMax: 1.42,
+                    heightMin: 0.16,
+                    heightMax: 1.52,
+                    bobMin: 0.04,
+                    bobMax: 0.12,
+                    opacityMin: 0.22,
+                    opacityMax: 0.5
+                })
+            }),
+            [MYSTERY_BOX_RARITY.LEGENDARY_LIGHT]: Object.freeze({
+                key: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+                label: 'Legendary Light',
+                shellColor: 0xf2f2f6,
+                shellEmissive: 0x716878,
+                panelColor: 0xe4fbff,
+                panelEmissive: 0x78bcd8,
+                trimColor: 0xffe6c4,
+                trimEmissive: 0xc6a881,
+                steelColor: 0xf9fdff,
+                steelEmissive: 0x7ea8bb,
+                seamColor: 0xffffff,
+                seamEmissive: 0xe8faff,
+                runeColor: 0xffebf7,
+                runeEmissive: 0xffd3ef,
+                gemColor: 0xe6fbff,
+                gemEmissive: 0xcdf7ff,
+                dustColor: 0xf8feff,
+                dustSize: 0.12,
+                innerLightColor: 0xfbf7ff,
+                innerLightBaseIntensity: 1.58,
+                innerLightBaseDistance: 7.8,
+                innerLightAmbient: 0.48,
+                innerLightEnergyBoost: 1.4,
+                innerLightPulseBoost: 0.3,
+                innerLightDistanceBoost: 1.48,
+                glowEnergyScale: 1.24,
+                pulseSpeedScale: 1.08,
+                ornamentStyle: 'light',
+                accentMetalColor: 0xfff7ea,
+                accentMetalEmissive: 0xd1b7a1,
+                accentGlassColor: 0xf4fdff,
+                accentGlassEmissive: 0xd8fbff,
+                sparkles: Object.freeze({
+                    style: 'halo',
+                    count: 15,
+                    color: 0xfffcf2,
+                    textureTint: 0xfffdf8,
+                    scaleMin: 0.18,
+                    scaleMax: 0.3,
+                    orbitRadiusMin: 0.92,
+                    orbitRadiusMax: 1.56,
+                    heightMin: 0.54,
+                    heightMax: 1.94,
+                    bobMin: 0.05,
+                    bobMax: 0.13,
+                    opacityMin: 0.2,
+                    opacityMax: 0.52
+                })
+            }),
+            [MYSTERY_BOX_RARITY.LEGENDARY_DARK]: Object.freeze({
+                key: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+                label: 'Legendary Dark',
+                shellColor: 0x6d1119,
+                shellEmissive: 0x24050a,
+                panelColor: 0xb71f30,
+                panelEmissive: 0x5c0915,
+                trimColor: 0xf0b068,
+                trimEmissive: 0x934012,
+                steelColor: 0x5b2528,
+                steelEmissive: 0x2c0a0e,
+                seamColor: 0xff8f60,
+                seamEmissive: 0xff6a3d,
+                runeColor: 0xffc2a0,
+                runeEmissive: 0xff8b62,
+                gemColor: 0xffa27a,
+                gemEmissive: 0xff7c4f,
+                dustColor: 0xffb07f,
+                dustSize: 0.118,
+                innerLightColor: 0xff7447,
+                innerLightBaseIntensity: 1.54,
+                innerLightBaseDistance: 7.55,
+                innerLightAmbient: 0.44,
+                innerLightEnergyBoost: 1.38,
+                innerLightPulseBoost: 0.3,
+                innerLightDistanceBoost: 1.44,
+                glowEnergyScale: 1.22,
+                pulseSpeedScale: 1.14,
+                ornamentStyle: 'dark',
+                accentMetalColor: 0xaa4727,
+                accentMetalEmissive: 0x5b1309,
+                accentGlassColor: 0xffa376,
+                accentGlassEmissive: 0xff6d42,
+                sparkles: Object.freeze({
+                    style: 'ember',
+                    count: 13,
+                    color: 0xffceb2,
+                    textureTint: 0xfff1e6,
+                    scaleMin: 0.16,
+                    scaleMax: 0.28,
+                    orbitRadiusMin: 0.62,
+                    orbitRadiusMax: 1.18,
+                    heightMin: 0.12,
+                    heightMax: 1.32,
+                    bobMin: 0.03,
+                    bobMax: 0.09,
+                    opacityMin: 0.2,
+                    opacityMax: 0.48
+                })
+            })
+        });
         const MYSTERY_CHARACTER_FLIGHT_CONFIG = {
             interruptionBlendDuration: 0.47,
             mysteryStuntSmoothing: 3.5,
@@ -9622,6 +9832,7 @@
             seed: 0,
             rewardKey: null,
             rewardLabel: null,
+            boxRarity: MYSTERY_BOX_RARITY.RARE,
             target: null,
             fallVelocity: 0,
             spinVelX: 0,
@@ -9716,6 +9927,23 @@
             eyeTargetY: 0,
             eyeBlend: 0
         };
+
+        function normalizeMysteryBoxRarity(value) {
+            if (
+                value === MYSTERY_BOX_RARITY.COMMON ||
+                value === MYSTERY_BOX_RARITY.LEGENDARY ||
+                value === MYSTERY_BOX_RARITY.LEGENDARY_LIGHT ||
+                value === MYSTERY_BOX_RARITY.LEGENDARY_DARK
+            ) {
+                return value;
+            }
+            return MYSTERY_BOX_RARITY.RARE;
+        }
+
+        function getMysteryBoxTheme(rarityKey) {
+            const normalizedRarity = normalizeMysteryBoxRarity(rarityKey);
+            return MYSTERY_BOX_RARITY_THEMES[normalizedRarity] || MYSTERY_BOX_RARITY_THEMES[MYSTERY_BOX_RARITY.RARE];
+        }
         function getMysteryFlightVisualClearanceState(config = MYSTERY_CHARACTER_FLIGHT_CONFIG) {
             const { width, height } = getViewportDimensions();
             const bounds = computeProjectedObjectScreenBounds(creatureGroup, camera, width, height);
@@ -11977,112 +12205,614 @@
             resizePropViewport();
         }
 
-        function createMysteryBoxModel() {
+        function rememberMysteryMaterialDefaults(material) {
+            if (!material) {
+                return material;
+            }
+            material.userData = material.userData || {};
+            if (!material.userData.mysteryDefaultsCaptured) {
+                material.userData.mysteryDefaultsCaptured = true;
+                material.userData.baseOpacity = Number.isFinite(material.opacity) ? material.opacity : 1;
+                material.userData.baseTransparent = Boolean(material.transparent);
+                if (typeof material.depthWrite === 'boolean') {
+                    material.userData.baseDepthWrite = material.depthWrite;
+                }
+                if ('emissiveIntensity' in material && Number.isFinite(material.emissiveIntensity)) {
+                    material.userData.baseEmissiveIntensity = material.emissiveIntensity;
+                }
+            }
+            return material;
+        }
+
+        function applyMysteryPieceOpacity(piece, factor = 1) {
+            if (!piece) {
+                return;
+            }
+            const opacityFactor = THREE.MathUtils.clamp(factor, 0, 1);
+            piece.visible = opacityFactor > 0.001;
+            piece.traverse((node) => {
+                if (!node?.material) {
+                    return;
+                }
+                const materials = Array.isArray(node.material) ? node.material : [node.material];
+                materials.forEach((material) => {
+                    if (!material) {
+                        return;
+                    }
+                    rememberMysteryMaterialDefaults(material);
+                    const baseOpacity = material.userData.baseOpacity ?? 1;
+                    const baseTransparent = Boolean(material.userData.baseTransparent);
+                    const baseDepthWrite = material.userData.baseDepthWrite;
+                    material.transparent = opacityFactor < 0.999 || baseTransparent;
+                    material.opacity = baseOpacity * opacityFactor;
+                    if (typeof baseDepthWrite === 'boolean') {
+                        material.depthWrite = material.transparent ? false : baseDepthWrite;
+                    }
+                    material.needsUpdate = true;
+                });
+            });
+        }
+
+        function updateMysteryGlowMaterials(entries, energy = 1, pulse = 0, fade = 1) {
+            if (!Array.isArray(entries) || !entries.length) {
+                return;
+            }
+            const clampedEnergy = Math.max(0, energy);
+            const clampedFade = THREE.MathUtils.clamp(fade, 0, 1.35);
+            entries.forEach((entry, index) => {
+                const material = rememberMysteryMaterialDefaults(entry?.material);
+                if (!material) {
+                    return;
+                }
+                const phase = entry.phase ?? index * 0.63;
+                const wave = 0.5 + 0.5 * Math.sin(pulse + phase);
+                const intensityScale = THREE.MathUtils.lerp(
+                    entry.minScale ?? 0.92,
+                    entry.maxScale ?? 1.2,
+                    wave
+                ) * clampedEnergy;
+                if (Number.isFinite(material.userData.baseEmissiveIntensity) && 'emissiveIntensity' in material) {
+                    material.emissiveIntensity = material.userData.baseEmissiveIntensity * intensityScale;
+                }
+                if (material.userData.mysteryAnimateOpacity) {
+                    const baseOpacity = material.userData.baseOpacity ?? 1;
+                    const opacityScale = THREE.MathUtils.lerp(
+                        entry.minOpacityScale ?? 0.82,
+                        entry.maxOpacityScale ?? 1.24,
+                        wave
+                    );
+                    material.opacity = THREE.MathUtils.clamp(baseOpacity * opacityScale * clampedFade, 0, entry.maxOpacity ?? 1);
+                }
+            });
+        }
+
+        function syncMysteryShadowState(root) {
+            root?.traverse((node) => {
+                if (!node?.isMesh) {
+                    return;
+                }
+                const skipShadow = Boolean(node.userData?.skipMysteryShadowPass);
+                node.castShadow = !skipShadow;
+                node.receiveShadow = false;
+            });
+        }
+
+        const mysterySparkleTextureCache = new Map();
+
+        function getMysterySparkleTexture(rarityKey, tint = 0xffffff) {
+            const normalizedRarity = normalizeMysteryBoxRarity(rarityKey);
+            const cacheKey = `${normalizedRarity}:${Number(tint) || 0xffffff}`;
+            const cachedTexture = mysterySparkleTextureCache.get(cacheKey);
+            if (cachedTexture) {
+                return cachedTexture;
+            }
+
+            const size = 128;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                const fallbackTexture = new THREE.Texture();
+                mysterySparkleTextureCache.set(cacheKey, fallbackTexture);
+                return fallbackTexture;
+            }
+
+            const color = new THREE.Color(tint);
+            const toRgba = (alpha) => `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${alpha})`;
+            const warmWhite = 'rgba(255, 249, 239, 1)';
+            const center = size / 2;
+
+            ctx.clearRect(0, 0, size, size);
+
+            const glow = ctx.createRadialGradient(center, center, 0, center, center, center);
+            glow.addColorStop(0, warmWhite);
+            glow.addColorStop(0.14, toRgba(0.94));
+            glow.addColorStop(0.34, toRgba(0.54));
+            glow.addColorStop(0.72, toRgba(0.09));
+            glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = warmWhite;
+            ctx.shadowColor = toRgba(0.95);
+            ctx.shadowBlur = 14;
+
+            ctx.beginPath();
+            ctx.lineWidth = 6;
+            ctx.moveTo(-28, 0);
+            ctx.lineTo(28, 0);
+            ctx.moveTo(0, -28);
+            ctx.lineTo(0, 28);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.lineWidth = 2.6;
+            ctx.moveTo(-18, -18);
+            ctx.lineTo(18, 18);
+            ctx.moveTo(18, -18);
+            ctx.lineTo(-18, 18);
+            ctx.stroke();
+            ctx.restore();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            texture.needsUpdate = true;
+            mysterySparkleTextureCache.set(cacheKey, texture);
+            return texture;
+        }
+
+        function createMysteryBoxModel(rarityKey = MYSTERY_BOX_RARITY.RARE) {
+            const normalizedRarity = normalizeMysteryBoxRarity(rarityKey);
+            const theme = getMysteryBoxTheme(normalizedRarity);
             const boxGroup = new THREE.Group();
             boxGroup.frustumCulled = false;
-            const purpleMat = new THREE.MeshStandardMaterial({
-                color: 0x9b59b6,
-                roughness: 0.34,
-                metalness: 0.12,
-                emissive: 0x2a1237,
-                emissiveIntensity: 0.24
-            });
-            const blueMat = new THREE.MeshStandardMaterial({
-                color: 0x3498db,
-                roughness: 0.28,
-                metalness: 0.2,
-                emissive: 0x071a34,
-                emissiveIntensity: 0.2
-            });
-            const greenMat = new THREE.MeshStandardMaterial({
-                color: 0x2ecc71,
-                roughness: 0.38,
-                metalness: 0.14,
-                emissive: 0x0b2b18,
-                emissiveIntensity: 0.2
-            });
-            const yellowMat = new THREE.MeshStandardMaterial({
-                color: 0xf1c40f,
-                roughness: 0.22,
-                metalness: 0.36,
-                emissive: 0x4b3305,
-                emissiveIntensity: 0.36
-            });
-            const cornerMat = new THREE.MeshStandardMaterial({
-                color: 0xffb347,
-                roughness: 0.24,
-                metalness: 0.52,
-                emissive: 0x4c2307,
-                emissiveIntensity: 0.42
-            });
-            const shadowMaterial = new THREE.MeshBasicMaterial({
-                color: 0x35566f,
-                transparent: true,
-                opacity: 0.22,
-                side: THREE.DoubleSide,
-                depthWrite: false
-            });
 
+            const reactiveMaterials = [];
+            const registerMaterial = (material) => rememberMysteryMaterialDefaults(material);
+            const registerReactiveMaterial = (material, options = {}) => {
+                rememberMysteryMaterialDefaults(material);
+                reactiveMaterials.push({
+                    material,
+                    ...options
+                });
+                return material;
+            };
+            const addMesh = (parent, geometry, material, position = [0, 0, 0], rotation = null, options = {}) => {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(position[0], position[1], position[2]);
+                if (rotation) {
+                    mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
+                }
+                if (options.scale) {
+                    mesh.scale.set(options.scale[0], options.scale[1], options.scale[2]);
+                }
+                if (options.skipShadow) {
+                    mesh.userData.skipMysteryShadowPass = true;
+                    mesh.castShadow = false;
+                }
+                if (typeof options.renderOrder === 'number') {
+                    mesh.renderOrder = options.renderOrder;
+                }
+                parent.add(mesh);
+                return mesh;
+            };
+
+            const shellMaterial = registerMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.shellColor,
+                roughness: 0.24,
+                metalness: 0.16,
+                clearcoat: 0.84,
+                clearcoatRoughness: 0.16,
+                emissive: theme.shellEmissive,
+                emissiveIntensity: 0.34
+            }));
+            const panelMaterial = registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.panelColor,
+                roughness: 0.22,
+                metalness: 0.16,
+                clearcoat: 0.96,
+                clearcoatRoughness: 0.12,
+                emissive: theme.panelEmissive,
+                emissiveIntensity: 0.42
+            }), {
+                phase: 0.35,
+                minScale: 0.94,
+                maxScale: 1.08
+            });
+            const brassMaterial = registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.trimColor,
+                roughness: 0.22,
+                metalness: 1,
+                clearcoat: 0.24,
+                clearcoatRoughness: 0.18,
+                emissive: theme.trimEmissive,
+                emissiveIntensity: 0.42
+            }), {
+                phase: 1.2,
+                minScale: 0.95,
+                maxScale: 1.1
+            });
+            const steelMaterial = registerMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.steelColor,
+                roughness: 0.22,
+                metalness: 0.72,
+                clearcoat: 0.18,
+                clearcoatRoughness: 0.2,
+                emissive: theme.steelEmissive,
+                emissiveIntensity: 0.18
+            }));
+            const seamMaterial = registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.seamColor,
+                roughness: 0.1,
+                metalness: 0.24,
+                clearcoat: 0.62,
+                clearcoatRoughness: 0.1,
+                emissive: theme.seamEmissive,
+                emissiveIntensity: 1.12
+            }), {
+                phase: 2.1,
+                minScale: 0.82,
+                maxScale: 1.5
+            });
+            const runeMaterial = registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.runeColor,
+                roughness: 0.1,
+                metalness: 0.12,
+                clearcoat: 0.78,
+                clearcoatRoughness: 0.08,
+                emissive: theme.runeEmissive,
+                emissiveIntensity: 1.3
+            }), {
+                phase: 3.2,
+                minScale: 0.9,
+                maxScale: 1.62
+            });
+            const cornerGemMaterial = registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                color: theme.gemColor,
+                roughness: 0.08,
+                metalness: 0.08,
+                clearcoat: 0.96,
+                clearcoatRoughness: 0.06,
+                emissive: theme.gemEmissive,
+                emissiveIntensity: 1.2
+            }), {
+                phase: 4.25,
+                minScale: 0.94,
+                maxScale: 1.32
+            });
+            const accentMetalMaterial = theme.accentMetalColor
+                ? registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                    color: theme.accentMetalColor,
+                    roughness: 0.18,
+                    metalness: 0.92,
+                    clearcoat: 0.32,
+                    clearcoatRoughness: 0.12,
+                    emissive: theme.accentMetalEmissive ?? theme.trimEmissive,
+                    emissiveIntensity: 0.46
+                }), {
+                    phase: 2.65,
+                    minScale: 0.96,
+                    maxScale: 1.24
+                })
+                : null;
+            const accentGlassMaterial = theme.accentGlassColor
+                ? registerReactiveMaterial(new THREE.MeshPhysicalMaterial({
+                    color: theme.accentGlassColor,
+                    roughness: 0.08,
+                    metalness: 0.06,
+                    transmission: 0.12,
+                    transparent: true,
+                    opacity: 0.96,
+                    clearcoat: 0.98,
+                    clearcoatRoughness: 0.06,
+                    emissive: theme.accentGlassEmissive ?? theme.gemEmissive,
+                    emissiveIntensity: 1.2
+                }), {
+                    phase: 4.95,
+                    minScale: 0.96,
+                    maxScale: 1.34,
+                    minOpacityScale: 0.86,
+                    maxOpacityScale: 1.18,
+                    maxOpacity: 0.98
+                })
+                : null;
+            if (accentGlassMaterial) {
+                accentGlassMaterial.userData.mysteryAnimateOpacity = true;
+            }
             const bodyGroup = new THREE.Group();
             bodyGroup.position.set(0, 0, 0);
             boxGroup.add(bodyGroup);
+            const ornamentEntries = [];
+            const registerOrnament = (mesh, options = {}) => {
+                if (!mesh) {
+                    return mesh;
+                }
+                ornamentEntries.push({
+                    mesh,
+                    basePosition: mesh.position.clone(),
+                    baseRotation: mesh.rotation.clone(),
+                    baseScale: mesh.scale.clone(),
+                    ...options
+                });
+                return mesh;
+            };
 
-            const bottom = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 2.2), purpleMat);
+            const bottom = new THREE.Group();
             bottom.position.set(0, 0.1, 0);
-            bottom.castShadow = true;
-            bottom.receiveShadow = false;
             bodyGroup.add(bottom);
+            addMesh(bottom, new RoundedBoxGeometry(2.2, 0.2, 2.2, 6, 0.05), shellMaterial);
+            addMesh(bottom, new RoundedBoxGeometry(1.72, 0.08, 1.72, 4, 0.035), panelMaterial, [0, 0.08, 0]);
+            addMesh(bottom, new THREE.BoxGeometry(1.84, 0.08, 0.12), brassMaterial, [0, 0.08, 0.94]);
+            addMesh(bottom, new THREE.BoxGeometry(1.84, 0.08, 0.12), brassMaterial, [0, 0.08, -0.94]);
+            addMesh(bottom, new THREE.BoxGeometry(0.12, 0.08, 1.84), brassMaterial, [0.94, 0.08, 0]);
+            addMesh(bottom, new THREE.BoxGeometry(0.12, 0.08, 1.84), brassMaterial, [-0.94, 0.08, 0]);
 
-            const left = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.0, 2.2), blueMat);
-            left.position.set(-1.1, 1.1, 0);
-            left.castShadow = true;
-            left.receiveShadow = false;
+            const createMysteryWingCrestHalfShape = (dir = 1, scale = 1) => {
+                const mx = (x) => x * dir * scale;
+                const my = (y) => y * scale;
+                const shape = new THREE.Shape();
+                shape.moveTo(0, my(-0.016));
+                shape.bezierCurveTo(mx(0.08), my(0.064), mx(0.22), my(0.126), mx(0.4), my(0.12));
+                shape.quadraticCurveTo(mx(0.31), my(0.026), mx(0.14), my(0.002));
+                shape.quadraticCurveTo(mx(0.34), my(-0.058), mx(0.48), my(-0.16));
+                shape.quadraticCurveTo(mx(0.26), my(-0.136), mx(0.096), my(-0.072));
+                shape.quadraticCurveTo(mx(0.064), my(-0.118), mx(0), my(-0.15));
+                shape.quadraticCurveTo(mx(-0.024), my(-0.068), mx(0), my(-0.016));
+                shape.closePath();
+                return shape;
+            };
+            const createMysteryWingCrestGeometry = (dir = 1, scale = 1) => {
+                const depth = 0.024 * scale;
+                const geometry = new THREE.ExtrudeGeometry(createMysteryWingCrestHalfShape(dir, scale), {
+                    steps: 1,
+                    depth,
+                    bevelEnabled: true,
+                    bevelSegments: 2,
+                    bevelSize: 0.008 * scale,
+                    bevelThickness: 0.006 * scale,
+                    curveSegments: 18
+                });
+                geometry.translate(0, 0, -depth * 0.5);
+                return geometry;
+            };
+            const wingCrestBaseGeometryLeft = createMysteryWingCrestGeometry(-1, 1);
+            const wingCrestBaseGeometryRight = createMysteryWingCrestGeometry(1, 1);
+            const wingCrestInsetGeometryLeft = createMysteryWingCrestGeometry(-1, 0.72);
+            const wingCrestInsetGeometryRight = createMysteryWingCrestGeometry(1, 0.72);
+            const createMysteryWingCrest = (sign) => {
+                const crest = new THREE.Group();
+                crest.position.set(0, 0.17, sign * 0.132);
+                if (sign < 0) {
+                    crest.rotation.y = Math.PI;
+                }
+                addMesh(crest, new RoundedBoxGeometry(0.2, 0.08, 0.026, 4, 0.014), brassMaterial, [0, -0.022, -0.004]);
+                addMesh(crest, wingCrestBaseGeometryLeft, brassMaterial);
+                addMesh(crest, wingCrestBaseGeometryRight, brassMaterial);
+                addMesh(crest, wingCrestInsetGeometryLeft, runeMaterial, [0, 0.004, 0.018], null, {
+                    skipShadow: true,
+                    renderOrder: 6
+                });
+                addMesh(crest, wingCrestInsetGeometryRight, runeMaterial, [0, 0.004, 0.018], null, {
+                    skipShadow: true,
+                    renderOrder: 6
+                });
+                addMesh(crest, new THREE.OctahedronGeometry(0.052, 0), cornerGemMaterial, [0, -0.018, 0.034], [0, Math.PI / 4, 0], {
+                    scale: [0.78, 1.12, 0.7],
+                    skipShadow: true,
+                    renderOrder: 6
+                });
+                registerOrnament(crest, {
+                    style: 'crest',
+                    bobAmp: 0.014,
+                    swayAmp: 0.04,
+                    swaySpeed: 0.76,
+                    phaseOffset: sign > 0 ? 0.55 : 1.35
+                });
+                return crest;
+            };
+
+            const createFrontBackPiece = (sign) => {
+                const piece = new THREE.Group();
+                piece.position.set(0, 1.1, sign * 1.1);
+                addMesh(piece, new RoundedBoxGeometry(2.2, 2.0, 0.18, 6, 0.07), shellMaterial);
+                addMesh(piece, new RoundedBoxGeometry(1.44, 1.24, 0.06, 4, 0.035), panelMaterial, [0, 0.02, sign * 0.095]);
+                addMesh(piece, new THREE.BoxGeometry(1.7, 0.08, 0.07), brassMaterial, [0, 0.73, sign * 0.108]);
+                addMesh(piece, new THREE.BoxGeometry(1.7, 0.08, 0.07), brassMaterial, [0, -0.69, sign * 0.108]);
+                addMesh(piece, new THREE.BoxGeometry(0.08, 1.42, 0.07), brassMaterial, [0.77, 0.02, sign * 0.108]);
+                addMesh(piece, new THREE.BoxGeometry(0.08, 1.42, 0.07), brassMaterial, [-0.77, 0.02, sign * 0.108]);
+                addMesh(piece, new THREE.BoxGeometry(0.058, 0.3, 0.03), seamMaterial, [0, 0.48, sign * 0.115]);
+                addMesh(piece, new THREE.BoxGeometry(0.058, 0.44, 0.03), seamMaterial, [0, -0.12, sign * 0.115]);
+                piece.add(createMysteryWingCrest(sign));
+                if (sign > 0) {
+                    addMesh(piece, new THREE.CylinderGeometry(0.12, 0.14, 0.05, 6), brassMaterial, [0, -0.34, 0.117], [Math.PI / 2, 0, 0]);
+                }
+                return piece;
+            };
+
+            const createSidePiece = (sign) => {
+                const piece = new THREE.Group();
+                piece.position.set(sign * 1.1, 1.1, 0);
+                addMesh(piece, new RoundedBoxGeometry(0.18, 2.0, 2.2, 6, 0.07), shellMaterial);
+                addMesh(piece, new RoundedBoxGeometry(0.06, 1.26, 1.38, 4, 0.03), panelMaterial, [sign * 0.095, 0.02, 0]);
+                addMesh(piece, new THREE.BoxGeometry(0.07, 0.08, 1.72), brassMaterial, [sign * 0.108, 0.73, 0]);
+                addMesh(piece, new THREE.BoxGeometry(0.07, 0.08, 1.72), brassMaterial, [sign * 0.108, -0.69, 0]);
+                addMesh(piece, new THREE.BoxGeometry(0.07, 1.42, 0.08), brassMaterial, [sign * 0.108, 0.02, 0.77]);
+                addMesh(piece, new THREE.BoxGeometry(0.07, 1.42, 0.08), brassMaterial, [sign * 0.108, 0.02, -0.77]);
+                addMesh(piece, new THREE.BoxGeometry(0.03, 0.9, 0.34), seamMaterial, [sign * 0.116, 0.06, 0]);
+                addMesh(piece, new THREE.TorusGeometry(0.26, 0.034, 10, 24), brassMaterial, [sign * 0.16, 0.08, 0], [0, Math.PI / 2, 0]);
+                addMesh(piece, new THREE.CylinderGeometry(0.028, 0.028, 0.08, 10), steelMaterial, [sign * 0.118, 0.08, 0.13], [0, 0, Math.PI / 2]);
+                addMesh(piece, new THREE.CylinderGeometry(0.028, 0.028, 0.08, 10), steelMaterial, [sign * 0.118, 0.08, -0.13], [0, 0, Math.PI / 2]);
+                return piece;
+            };
+
+            const left = createSidePiece(-1);
+            const right = createSidePiece(1);
+            const front = createFrontBackPiece(1);
+            const back = createFrontBackPiece(-1);
             bodyGroup.add(left);
-
-            const right = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.0, 2.2), blueMat);
-            right.position.set(1.1, 1.1, 0);
-            right.castShadow = true;
-            right.receiveShadow = false;
             bodyGroup.add(right);
-
-            const front = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.0, 0.2), greenMat);
-            front.position.set(0, 1.1, 1.1);
-            front.castShadow = true;
-            front.receiveShadow = false;
             bodyGroup.add(front);
-
-            const back = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.0, 0.2), greenMat);
-            back.position.set(0, 1.1, -1.1);
-            back.castShadow = true;
-            back.receiveShadow = false;
             bodyGroup.add(back);
 
             const lidPivot = new THREE.Group();
             lidPivot.position.set(0, 2.1, -0.85);
             bodyGroup.add(lidPivot);
-            const lid = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 2.4), yellowMat);
-            lid.position.set(0, 0.1, 0.85);
-            lid.castShadow = true;
-            lid.receiveShadow = false;
+
+            const lid = new THREE.Group();
+            lid.position.set(0, 0.11, 0.85);
             lidPivot.add(lid);
-
-            const lockBadge = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 14, 28), yellowMat);
-            lockBadge.position.set(0, -0.02, 2.0);
-            lockBadge.rotation.x = Math.PI * 0.5;
-            lidPivot.add(lockBadge);
-
-            const cornerPositions = [
-                [-1.1, 0.3, -1.1], [1.1, 0.3, -1.1], [-1.1, 0.3, 1.1], [1.1, 0.3, 1.1],
-                [-1.1, 2.0, -1.1], [1.1, 2.0, -1.1], [-1.1, 2.0, 1.1], [1.1, 2.0, 1.1]
-            ];
-            const cornerOrbs = cornerPositions.map((pos) => {
-                const orb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), cornerMat);
-                orb.position.set(pos[0], pos[1], pos[2]);
-                orb.castShadow = true;
-                orb.receiveShadow = false;
-                bodyGroup.add(orb);
-                return orb;
+            addMesh(lid, new RoundedBoxGeometry(2.4, 0.22, 2.4, 8, 0.08), shellMaterial);
+            addMesh(lid, new RoundedBoxGeometry(1.68, 0.1, 1.68, 6, 0.04), panelMaterial, [0, 0.12, 0]);
+            addMesh(lid, new THREE.BoxGeometry(1.9, 0.08, 0.09), brassMaterial, [0, 0.12, 0.95]);
+            addMesh(lid, new THREE.BoxGeometry(1.9, 0.08, 0.09), brassMaterial, [0, 0.12, -0.95]);
+            addMesh(lid, new THREE.BoxGeometry(0.09, 0.08, 1.9), brassMaterial, [0.95, 0.12, 0]);
+            addMesh(lid, new THREE.BoxGeometry(0.09, 0.08, 1.9), brassMaterial, [-0.95, 0.12, 0]);
+            addMesh(lid, new THREE.CylinderGeometry(0.5, 0.58, 0.08, 8), brassMaterial, [0, 0.17, 0], [0, Math.PI / 8, 0]);
+            addMesh(lid, new THREE.RingGeometry(0.16, 0.45, 32), runeMaterial, [0, 0.215, 0], [Math.PI / 2, 0, 0], {
+                skipShadow: true,
+                renderOrder: 6
             });
+            addMesh(lid, new THREE.OctahedronGeometry(0.12, 0), cornerGemMaterial, [0, 0.25, 0]);
+            addMesh(lid, new RoundedBoxGeometry(0.34, 0.44, 0.08, 4, 0.03), brassMaterial, [0, -0.04, 1.08]);
+            addMesh(lid, new THREE.OctahedronGeometry(0.09, 0), cornerGemMaterial, [0, 0.02, 1.16]);
+            addMesh(lid, new THREE.TorusGeometry(0.1, 0.018, 10, 24), brassMaterial, [0, -0.14, 1.17], [Math.PI / 2, 0, 0]);
+
+            const createCornerCap = (x, y, z) => {
+                const piece = new THREE.Group();
+                piece.position.set(x, y, z);
+                addMesh(piece, new RoundedBoxGeometry(0.24, 0.24, 0.24, 4, 0.04), brassMaterial);
+                addMesh(piece, new THREE.OctahedronGeometry(0.08, 0), cornerGemMaterial, [Math.sign(x) * 0.075, 0.02, Math.sign(z) * 0.075]);
+                return piece;
+            };
+
+            const cornerCaps = [
+                createCornerCap(-1.08, 0.28, -1.08),
+                createCornerCap(1.08, 0.28, -1.08),
+                createCornerCap(-1.08, 0.28, 1.08),
+                createCornerCap(1.08, 0.28, 1.08),
+                createCornerCap(-1.08, 2.0, -1.08),
+                createCornerCap(1.08, 2.0, -1.08),
+                createCornerCap(-1.08, 2.0, 1.08),
+                createCornerCap(1.08, 2.0, 1.08)
+            ];
+            cornerCaps.forEach((piece) => bodyGroup.add(piece));
+
+            if (theme.ornamentStyle === 'light' && accentMetalMaterial && accentGlassMaterial) {
+                registerOrnament(
+                    addMesh(front, new THREE.IcosahedronGeometry(0.09, 0), accentGlassMaterial, [0, 0.2, 0.14], [0, Math.PI / 4, 0], {
+                        skipShadow: true,
+                        renderOrder: 6
+                    }),
+                    { style: 'crest', bobAmp: 0.022, swayAmp: 0.08, swaySpeed: 0.9, phaseOffset: 1.4 }
+                );
+                [
+                    { piece: left, sign: -1, phase: 0.45 },
+                    { piece: right, sign: 1, phase: 1.2 }
+                ].forEach(({ piece, sign, phase }) => {
+                    const wingCluster = new THREE.Group();
+                    wingCluster.position.set(sign * 0.08, 0.3, 0);
+                    piece.add(wingCluster);
+                    addMesh(wingCluster, new THREE.CylinderGeometry(0.018, 0.018, 0.36, 8), accentMetalMaterial, [sign * -0.06, 0.05, 0], [0, 0, Math.PI / 2]);
+                    addMesh(wingCluster, new THREE.OctahedronGeometry(0.11, 0), accentGlassMaterial, [sign * 0.16, 0.24, 0], [0, 0, sign * 0.48], {
+                        scale: [0.42, 1.7, 0.72],
+                        skipShadow: true,
+                        renderOrder: 6
+                    });
+                    addMesh(wingCluster, new THREE.OctahedronGeometry(0.1, 0), accentGlassMaterial, [sign * 0.12, 0.06, 0.18], [0.12, 0, sign * 0.3], {
+                        scale: [0.4, 1.5, 0.64],
+                        skipShadow: true,
+                        renderOrder: 6
+                    });
+                    addMesh(wingCluster, new THREE.OctahedronGeometry(0.1, 0), accentGlassMaterial, [sign * 0.12, 0.06, -0.18], [-0.12, 0, sign * 0.3], {
+                        scale: [0.4, 1.5, 0.64],
+                        skipShadow: true,
+                        renderOrder: 6
+                    });
+                    registerOrnament(wingCluster, {
+                        style: 'wing',
+                        bobAmp: 0.026,
+                        swayAmp: 0.12,
+                        swaySpeed: 0.86,
+                        rollAmp: 0.16,
+                        phaseOffset: phase
+                    });
+                });
+            }
+
+            if (theme.ornamentStyle === 'dark' && accentMetalMaterial && accentGlassMaterial) {
+                [
+                    { x: -0.78, z: -0.56, tilt: 0.3, phase: 0.1 },
+                    { x: 0.78, z: -0.56, tilt: -0.3, phase: 0.9 },
+                    { x: -0.78, z: 0.56, tilt: 0.18, phase: 1.7 },
+                    { x: 0.78, z: 0.56, tilt: -0.18, phase: 2.5 }
+                ].forEach(({ x, z, tilt, phase }) => {
+                    registerOrnament(
+                        addMesh(lid, new THREE.ConeGeometry(0.074, 0.34, 6), accentMetalMaterial, [x, 0.3, z], [tilt, 0, x < 0 ? 0.38 : -0.38], {
+                            scale: [0.9, 1.08, 0.9]
+                        }),
+                        { style: 'spire', pulseAmp: 0.12, swayAmp: 0.03, swaySpeed: 0.94, phaseOffset: phase }
+                    );
+                    registerOrnament(
+                        addMesh(lid, new THREE.OctahedronGeometry(0.07, 0), accentGlassMaterial, [x * 0.9, 0.18, z * 0.9], [0, Math.PI / 4, 0], {
+                            scale: [0.72, 1.08, 0.72],
+                            skipShadow: true,
+                            renderOrder: 6
+                        }),
+                        { style: 'emberGem', bobAmp: 0.014, swayAmp: 0.055, swaySpeed: 1.04, phaseOffset: phase + 0.4 }
+                    );
+                });
+                registerOrnament(
+                    addMesh(front, new THREE.BoxGeometry(0.36, 0.05, 0.03), accentMetalMaterial, [-0.22, 0.18, 0.135], [0, 0, 0.48]),
+                    { style: 'crestSlash', pulseAmp: 0.08, swayAmp: 0.025, swaySpeed: 0.9, phaseOffset: 0.6 }
+                );
+                registerOrnament(
+                    addMesh(front, new THREE.BoxGeometry(0.36, 0.05, 0.03), accentMetalMaterial, [0.22, 0.18, 0.135], [0, 0, -0.48]),
+                    { style: 'crestSlash', pulseAmp: 0.08, swayAmp: 0.025, swaySpeed: 0.9, phaseOffset: 1.3 }
+                );
+                [
+                    { piece: left, sign: -1, phase: 0.5 },
+                    { piece: right, sign: 1, phase: 1.4 }
+                ].forEach(({ piece, sign, phase }) => {
+                    const bladeCluster = new THREE.Group();
+                    bladeCluster.position.set(sign * 0.02, 0.14, 0);
+                    piece.add(bladeCluster);
+                    addMesh(bladeCluster, new THREE.BoxGeometry(0.03, 0.52, 0.12), accentMetalMaterial, [sign * 0.11, 0.16, 0.24], [0, 0, sign * -0.44]);
+                    addMesh(bladeCluster, new THREE.BoxGeometry(0.03, 0.58, 0.12), accentMetalMaterial, [sign * 0.14, 0.14, 0], [0, 0, sign * -0.56]);
+                    addMesh(bladeCluster, new THREE.BoxGeometry(0.03, 0.52, 0.12), accentMetalMaterial, [sign * 0.11, 0.16, -0.24], [0, 0, sign * -0.44]);
+                    addMesh(bladeCluster, new THREE.OctahedronGeometry(0.08, 0), accentGlassMaterial, [sign * 0.16, 0.22, 0], [0, 0, sign * 0.24], {
+                        scale: [0.5, 1.28, 0.64],
+                        skipShadow: true,
+                        renderOrder: 6
+                    });
+                    registerOrnament(bladeCluster, {
+                        style: 'bladeFan',
+                        bobAmp: 0.018,
+                        swayAmp: 0.06,
+                        swaySpeed: 0.92,
+                        rollAmp: 0.08,
+                        phaseOffset: phase
+                    });
+                });
+            }
+
+            const corePedestal = addMesh(bodyGroup, new RoundedBoxGeometry(0.88, 0.12, 0.88, 4, 0.04), steelMaterial, [0, 0.28, 0]);
+            corePedestal.castShadow = true;
+
+            const innerLight = new THREE.PointLight(
+                theme.innerLightColor,
+                theme.innerLightBaseIntensity ?? 1.15,
+                theme.innerLightBaseDistance ?? 6.4,
+                1.9
+            );
+            innerLight.position.set(0, 1.02, 0);
+            innerLight.castShadow = false;
+            bodyGroup.add(innerLight);
 
             const dustCount = 140;
             const dustGeometry = new THREE.BufferGeometry();
@@ -12103,28 +12833,94 @@
                 dustPhase[i] = Math.random() * Math.PI * 2;
             }
             dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-            const dustMaterial = new THREE.PointsMaterial({
-                color: 0xbbeeff,
-                size: 0.1,
+            const dustMaterial = registerMaterial(new THREE.PointsMaterial({
+                color: theme.dustColor,
+                size: theme.dustSize ?? 0.1,
                 transparent: true,
                 opacity: 0,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
-            });
+            }));
             const dustPoints = new THREE.Points(dustGeometry, dustMaterial);
             dustPoints.visible = false;
             dustPoints.frustumCulled = false;
             bodyGroup.add(dustPoints);
 
-            const impactRing = new THREE.Mesh(new THREE.RingGeometry(0.18, 1.55, 48), shadowMaterial);
-            impactRing.rotation.x = -Math.PI / 2;
-            impactRing.position.set(0, -0.07, 0);
-            impactRing.visible = false;
-            impactRing.castShadow = false;
-            impactRing.receiveShadow = false;
-            bodyGroup.add(impactRing);
+            const sparkleEntries = [];
+            if (theme.sparkles?.count) {
+                const sparkleTexture = getMysterySparkleTexture(normalizedRarity, theme.sparkles.textureTint ?? theme.sparkles.color);
+                const sparkleAnchor = new THREE.Group();
+                sparkleAnchor.position.set(0, 1.2, 0);
+                sparkleAnchor.frustumCulled = false;
+                bodyGroup.add(sparkleAnchor);
+                for (let i = 0; i < theme.sparkles.count; i += 1) {
+                    const sparkleMaterial = registerMaterial(new THREE.SpriteMaterial({
+                        map: sparkleTexture,
+                        color: theme.sparkles.color,
+                        transparent: true,
+                        opacity: 0,
+                        depthWrite: false,
+                        blending: THREE.AdditiveBlending
+                    }));
+                    const sprite = new THREE.Sprite(sparkleMaterial);
+                    sprite.frustumCulled = false;
+                    sprite.renderOrder = 7;
+                    const baseAngle = (i / theme.sparkles.count) * Math.PI * 2 + Math.random() * 0.55;
+                    const orbitRadius = THREE.MathUtils.lerp(
+                        theme.sparkles.orbitRadiusMin ?? 0.78,
+                        theme.sparkles.orbitRadiusMax ?? 1.42,
+                        Math.random()
+                    );
+                    const ellipse = 0.78 + Math.random() * 0.28;
+                    const baseHeight = THREE.MathUtils.lerp(
+                        theme.sparkles.heightMin ?? 0.16,
+                        theme.sparkles.heightMax ?? 1.52,
+                        Math.random()
+                    );
+                    const baseScale = THREE.MathUtils.lerp(
+                        theme.sparkles.scaleMin ?? 0.18,
+                        theme.sparkles.scaleMax ?? 0.33,
+                        Math.random()
+                    );
+                    sprite.position.set(
+                        Math.cos(baseAngle) * orbitRadius,
+                        baseHeight,
+                        Math.sin(baseAngle) * orbitRadius * ellipse
+                    );
+                    sprite.scale.set(baseScale, baseScale, 1);
+                    sparkleAnchor.add(sprite);
+                    sparkleEntries.push({
+                        sprite,
+                        material: sparkleMaterial,
+                        style: theme.sparkles.style || 'orbit',
+                        baseAngle,
+                        orbitRadius,
+                        ellipse,
+                        baseHeight,
+                        baseScale,
+                        baseOpacity: THREE.MathUtils.lerp(
+                            theme.sparkles.opacityMin ?? 0.22,
+                            theme.sparkles.opacityMax ?? 0.5,
+                            Math.random()
+                        ),
+                        bobAmplitude: THREE.MathUtils.lerp(
+                            theme.sparkles.bobMin ?? 0.04,
+                            theme.sparkles.bobMax ?? 0.12,
+                            Math.random()
+                        ),
+                        bobSpeed: 0.9 + Math.random() * 1.2,
+                        orbitSpeed: 0.42 + Math.random() * 0.8,
+                        flickerSpeed: 1.8 + Math.random() * 2.5,
+                        drift: 0.03 + Math.random() * 0.06,
+                        radiusPulse: 0.02 + Math.random() * 0.06,
+                        rotationSpeed: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.7),
+                        phase: Math.random() * Math.PI * 2,
+                        liftInfluence: 0.18 + Math.random() * 0.3
+                    });
+                }
+            }
 
-            const burstPieces = [bottom, left, right, front, back, lid, ...cornerOrbs];
+            const burstPieces = [bottom, left, right, front, back, lid, ...cornerCaps];
             const burstStartPos = burstPieces.map((piece) => piece.position.clone());
             const burstStartRot = burstPieces.map((piece) => piece.rotation.clone());
             const burstDirs = burstPieces.map((piece) => {
@@ -12140,22 +12936,23 @@
             boxGroup.userData = {
                 lidPivot,
                 lid,
-                impact: impactRing,
-                trailRing: null,
                 dustPoints,
                 dustBase,
                 dustPhase,
                 burstPieces,
                 burstStartPos,
                 burstStartRot,
-                burstDirs
+                burstDirs,
+                glowMaterials: reactiveMaterials,
+                innerLight,
+                rarityKey: normalizedRarity,
+                rarityTheme: theme,
+                ornamentEntries,
+                sparkleEntries,
+                dustDefaultSize: theme.dustSize ?? 0.1
             };
             sanitizePreviewInvalidGeometry(boxGroup);
-            boxGroup.traverse((node) => {
-                if (!node?.isMesh) return;
-                node.castShadow = true;
-                node.receiveShadow = false;
-            });
+            syncMysteryShadowState(boxGroup);
 
             return boxGroup;
         }
@@ -12189,7 +12986,6 @@
             tex.generateMipmaps = false;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
-            tex.needsUpdate = true;
             return tex;
         }
 
@@ -12380,12 +13176,82 @@
             'emeraldCoenWings',
             'xatoriWings'
         ]);
+        const MYSTERY_BOX_REWARD_KEYS = Object.freeze([
+            'xatoriWings',
+            'lightOfSmilesWings',
+            'goddessOfValleysWings',
+            'honeycombBloomsWings',
+            'blossomissWings',
+            'moonlightAmayaWings',
+            'lavalcanoWings',
+            'endlessWings',
+            'emeraldCoenWings',
+            'canvasOfNavelleWings',
+            'rainbowWings',
+            'alphaWings',
+            'roboticWings',
+            'efernoWings'
+        ]);
+        const MYSTERY_REWARD_RARITY_OVERRIDES = Object.freeze({
+            xatoriWings: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            lightOfSmilesWings: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            goddessOfValleysWings: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            honeycombBloomsWings: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            blossomissWings: MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            moonlightAmayaWings: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+            lavalcanoWings: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+            endlessWings: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+            emeraldCoenWings: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+            canvasOfNavelleWings: MYSTERY_BOX_RARITY.LEGENDARY_DARK,
+            rainbowWings: MYSTERY_BOX_RARITY.LEGENDARY,
+            alphaWings: MYSTERY_BOX_RARITY.RARE,
+            roboticWings: MYSTERY_BOX_RARITY.RARE,
+            efernoWings: MYSTERY_BOX_RARITY.COMMON
+        });
+        const MYSTERY_RARITY_SELECTION_ORDER = Object.freeze([
+            MYSTERY_BOX_RARITY.COMMON,
+            MYSTERY_BOX_RARITY.RARE,
+            MYSTERY_BOX_RARITY.LEGENDARY,
+            MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            MYSTERY_BOX_RARITY.LEGENDARY_DARK
+        ]);
+        const MYSTERY_BOX_SUMMON_WEIGHTS = Object.freeze({
+            [MYSTERY_BOX_RARITY.COMMON]: 40,
+            [MYSTERY_BOX_RARITY.RARE]: 30,
+            [MYSTERY_BOX_RARITY.LEGENDARY]: 20,
+            [MYSTERY_BOX_RARITY.LEGENDARY_LIGHT]: 5,
+            [MYSTERY_BOX_RARITY.LEGENDARY_DARK]: 5
+        });
 
         function getMysteryWingRewardKeys() {
+            const allowedKeys = new Set(MYSTERY_BOX_REWARD_KEYS);
             return Array.from(propRegistry.values())
-                .filter((meta) => meta?.key && meta.category === 'wingSet')
+                .filter((meta) => meta?.key && meta.category === 'wingSet' && allowedKeys.has(meta.key))
                 .map((meta) => meta.key)
                 .sort(comparePropCatalogOrder);
+        }
+
+        function createMysteryRewardRarityState(factory) {
+            const state = {};
+            MYSTERY_RARITY_SELECTION_ORDER.forEach((rarityKey, index) => {
+                state[rarityKey] = factory(rarityKey, index);
+            });
+            return state;
+        }
+
+        function getMysteryRewardKeysByRarity() {
+            const keysByRarity = createMysteryRewardRarityState(() => []);
+            getMysteryWingRewardKeys().forEach((rewardKey) => {
+                const rarityKey = getMysteryRewardBoxRarity(rewardKey);
+                if (!Array.isArray(keysByRarity[rarityKey])) {
+                    keysByRarity[rarityKey] = [];
+                }
+                keysByRarity[rarityKey].push(rewardKey);
+            });
+            MYSTERY_RARITY_SELECTION_ORDER.forEach((rarityKey) => {
+                keysByRarity[rarityKey].sort(comparePropCatalogOrder);
+            });
+            return keysByRarity;
         }
 
         function normalizeMysteryRewardKeyList(list, availableSet) {
@@ -12402,6 +13268,13 @@
                 normalized.push(key);
             }
             return normalized;
+        }
+
+        function getMysteryRewardBoxRarity(rewardKey) {
+            if (typeof rewardKey !== 'string' || !rewardKey) {
+                return MYSTERY_BOX_RARITY.RARE;
+            }
+            return normalizeMysteryBoxRarity(MYSTERY_REWARD_RARITY_OVERRIDES[rewardKey]);
         }
 
         function shuffleMysteryRewardKeys(keys, blockedFirstKey = null) {
@@ -12432,66 +13305,177 @@
 
         function persistMysteryRewardOrderState() {
             try {
+                const queuesByRarity = createMysteryRewardRarityState((rarityKey) =>
+                    Array.isArray(mysteryRewardOrderState.queuesByRarity?.[rarityKey])
+                        ? [...mysteryRewardOrderState.queuesByRarity[rarityKey]]
+                        : []
+                );
+                const seenByRarity = createMysteryRewardRarityState((rarityKey) =>
+                    Array.isArray(mysteryRewardOrderState.seenByRarity?.[rarityKey])
+                        ? [...mysteryRewardOrderState.seenByRarity[rarityKey]]
+                        : []
+                );
+                const lastKeyByRarity = createMysteryRewardRarityState((rarityKey) =>
+                    typeof mysteryRewardOrderState.lastKeyByRarity?.[rarityKey] === 'string'
+                        ? mysteryRewardOrderState.lastKeyByRarity[rarityKey]
+                        : null
+                );
                 localStorage.setItem(MYSTERY_WING_ORDER_STORAGE_KEY, JSON.stringify({
-                    queue: Array.isArray(mysteryRewardOrderState.queue) ? mysteryRewardOrderState.queue : [],
-                    seen: Array.isArray(mysteryRewardOrderState.seen) ? mysteryRewardOrderState.seen : [],
-                    lastKey: typeof mysteryRewardOrderState.lastKey === 'string' ? mysteryRewardOrderState.lastKey : null
+                    version: 2,
+                    queuesByRarity,
+                    seenByRarity,
+                    lastKeyByRarity
                 }));
             } catch (_) {}
         }
 
         function syncMysteryRewardOrderState() {
-            const availableKeys = getMysteryWingRewardKeys();
-            const availableSet = new Set(availableKeys);
+            const availableKeysByRarity = getMysteryRewardKeysByRarity();
 
             if (!mysteryRewardOrderState.loaded) {
                 const storedState = readStoredMysteryRewardOrderState();
-                mysteryRewardOrderState.queue = normalizeMysteryRewardKeyList(storedState?.queue, availableSet);
-                mysteryRewardOrderState.seen = normalizeMysteryRewardKeyList(storedState?.seen, availableSet);
-                mysteryRewardOrderState.lastKey =
-                    typeof storedState?.lastKey === 'string' && availableSet.has(storedState.lastKey)
-                        ? storedState.lastKey
+                mysteryRewardOrderState.queuesByRarity = createMysteryRewardRarityState((rarityKey) => {
+                    const availableSet = new Set(availableKeysByRarity[rarityKey] || []);
+                    return normalizeMysteryRewardKeyList(storedState?.queuesByRarity?.[rarityKey], availableSet);
+                });
+                mysteryRewardOrderState.seenByRarity = createMysteryRewardRarityState((rarityKey) => {
+                    const availableSet = new Set(availableKeysByRarity[rarityKey] || []);
+                    return normalizeMysteryRewardKeyList(storedState?.seenByRarity?.[rarityKey], availableSet);
+                });
+                mysteryRewardOrderState.lastKeyByRarity = createMysteryRewardRarityState((rarityKey) => {
+                    const availableSet = new Set(availableKeysByRarity[rarityKey] || []);
+                    const storedLastKey = storedState?.lastKeyByRarity?.[rarityKey];
+                    return typeof storedLastKey === 'string' && availableSet.has(storedLastKey)
+                        ? storedLastKey
                         : null;
+                });
                 mysteryRewardOrderState.loaded = true;
             }
 
-            const queue = normalizeMysteryRewardKeyList(mysteryRewardOrderState.queue, availableSet);
-            const queueSet = new Set(queue);
-            const seen = normalizeMysteryRewardKeyList(
-                mysteryRewardOrderState.seen.filter((key) => !queueSet.has(key)),
-                availableSet
-            );
-            const seenSet = new Set(seen);
-            const missingKeys = availableKeys.filter((key) => !queueSet.has(key) && !seenSet.has(key));
+            const queuesByRarity = createMysteryRewardRarityState((rarityKey) => {
+                const availableKeys = availableKeysByRarity[rarityKey] || [];
+                const availableSet = new Set(availableKeys);
+                const queue = normalizeMysteryRewardKeyList(
+                    mysteryRewardOrderState.queuesByRarity?.[rarityKey],
+                    availableSet
+                );
+                const queueSet = new Set(queue);
+                const seen = normalizeMysteryRewardKeyList(
+                    (mysteryRewardOrderState.seenByRarity?.[rarityKey] || []).filter((key) => !queueSet.has(key)),
+                    availableSet
+                );
+                const seenSet = new Set(seen);
+                const missingKeys = availableKeys.filter((key) => !queueSet.has(key) && !seenSet.has(key));
 
-            if (missingKeys.length) {
-                queue.push(...shuffleMysteryRewardKeys(missingKeys));
-            }
+                if (missingKeys.length) {
+                    queue.push(...shuffleMysteryRewardKeys(missingKeys));
+                }
 
-            if (!queue.length && availableKeys.length) {
-                queue.push(...shuffleMysteryRewardKeys(availableKeys, mysteryRewardOrderState.lastKey));
-                seen.length = 0;
-            }
+                const lastKey = typeof mysteryRewardOrderState.lastKeyByRarity?.[rarityKey] === 'string' &&
+                    availableSet.has(mysteryRewardOrderState.lastKeyByRarity[rarityKey])
+                    ? mysteryRewardOrderState.lastKeyByRarity[rarityKey]
+                    : null;
 
-            mysteryRewardOrderState.queue = queue;
-            mysteryRewardOrderState.seen = seen;
-            if (!availableSet.has(mysteryRewardOrderState.lastKey)) {
-                mysteryRewardOrderState.lastKey = null;
-            }
+                if (!queue.length && availableKeys.length) {
+                    queue.push(...shuffleMysteryRewardKeys(availableKeys, lastKey));
+                    seen.length = 0;
+                }
+
+                return queue;
+            });
+            const seenByRarity = createMysteryRewardRarityState((rarityKey) => {
+                const availableKeys = availableKeysByRarity[rarityKey] || [];
+                const availableSet = new Set(availableKeys);
+                const queueSet = new Set(queuesByRarity[rarityKey] || []);
+                return normalizeMysteryRewardKeyList(
+                    (mysteryRewardOrderState.seenByRarity?.[rarityKey] || []).filter((key) => !queueSet.has(key)),
+                    availableSet
+                );
+            });
+            const lastKeyByRarity = createMysteryRewardRarityState((rarityKey) => {
+                const availableSet = new Set(availableKeysByRarity[rarityKey] || []);
+                const lastKey = mysteryRewardOrderState.lastKeyByRarity?.[rarityKey];
+                return typeof lastKey === 'string' && availableSet.has(lastKey) ? lastKey : null;
+            });
+
+            mysteryRewardOrderState.queuesByRarity = queuesByRarity;
+            mysteryRewardOrderState.seenByRarity = seenByRarity;
+            mysteryRewardOrderState.lastKeyByRarity = lastKeyByRarity;
             persistMysteryRewardOrderState();
-            return queue;
+            return {
+                availableKeysByRarity,
+                queuesByRarity,
+                seenByRarity,
+                lastKeyByRarity
+            };
+        }
+
+        function pickMysteryRewardRarity(availableKeysByRarity) {
+            const weightedRarities = [];
+            let totalWeight = 0;
+
+            MYSTERY_RARITY_SELECTION_ORDER.forEach((rarityKey) => {
+                const availableKeys = availableKeysByRarity?.[rarityKey];
+                if (!Array.isArray(availableKeys) || availableKeys.length === 0) {
+                    return;
+                }
+                const weight = Number(MYSTERY_BOX_SUMMON_WEIGHTS[rarityKey]);
+                if (!Number.isFinite(weight) || weight <= 0) {
+                    return;
+                }
+                totalWeight += weight;
+                weightedRarities.push({
+                    rarityKey,
+                    threshold: totalWeight
+                });
+            });
+
+            if (!weightedRarities.length) {
+                return MYSTERY_RARITY_SELECTION_ORDER.find((rarityKey) =>
+                    Array.isArray(availableKeysByRarity?.[rarityKey]) && availableKeysByRarity[rarityKey].length > 0
+                ) || MYSTERY_BOX_RARITY.RARE;
+            }
+
+            const roll = Math.random() * totalWeight;
+            return weightedRarities.find((entry) => roll < entry.threshold)?.rarityKey
+                || weightedRarities[weightedRarities.length - 1].rarityKey;
+        }
+
+        function pickMysteryRewardSelection() {
+            const {
+                availableKeysByRarity,
+                queuesByRarity
+            } = syncMysteryRewardOrderState();
+            const rarityKey = pickMysteryRewardRarity(availableKeysByRarity);
+            const rewardKey = queuesByRarity?.[rarityKey]?.[0] || availableKeysByRarity?.[rarityKey]?.[0] || null;
+            if (!rewardKey) {
+                return null;
+            }
+            return {
+                rewardKey,
+                rarityKey
+            };
+        }
+
+        function pickMysteryRewardKeyForRarity(rarityKey) {
+            const normalizedRarity = normalizeMysteryBoxRarity(rarityKey);
+            const {
+                availableKeysByRarity,
+                queuesByRarity
+            } = syncMysteryRewardOrderState();
+            return queuesByRarity?.[normalizedRarity]?.[0] || availableKeysByRarity?.[normalizedRarity]?.[0] || null;
         }
 
         function pickMysteryRewardKey() {
-            const queue = syncMysteryRewardOrderState();
-            return queue[0] || null;
+            return pickMysteryRewardSelection()?.rewardKey || null;
         }
 
         function markMysteryRewardKeySummoned(rewardKey) {
             if (typeof rewardKey !== 'string' || !rewardKey) {
                 return null;
             }
-            const availableKeys = getMysteryWingRewardKeys();
+            const rarityKey = getMysteryRewardBoxRarity(rewardKey);
+            const availableKeys = getMysteryRewardKeysByRarity()[rarityKey] || [];
             const availableSet = new Set(availableKeys);
             if (!availableSet.has(rewardKey)) {
                 return null;
@@ -12499,8 +13483,8 @@
 
             syncMysteryRewardOrderState();
 
-            const queue = normalizeMysteryRewardKeyList(mysteryRewardOrderState.queue, availableSet);
-            const seen = normalizeMysteryRewardKeyList(mysteryRewardOrderState.seen, availableSet)
+            const queue = normalizeMysteryRewardKeyList(mysteryRewardOrderState.queuesByRarity?.[rarityKey], availableSet);
+            const seen = normalizeMysteryRewardKeyList(mysteryRewardOrderState.seenByRarity?.[rarityKey], availableSet)
                 .filter((key) => key !== rewardKey);
             const rewardIndex = queue.indexOf(rewardKey);
             if (rewardIndex >= 0) {
@@ -12508,16 +13492,16 @@
             }
             seen.push(rewardKey);
 
-            mysteryRewardOrderState.lastKey = rewardKey;
+            mysteryRewardOrderState.lastKeyByRarity[rarityKey] = rewardKey;
             if (queue.length === 0 && availableKeys.length) {
-                mysteryRewardOrderState.queue = shuffleMysteryRewardKeys(availableKeys, rewardKey);
-                mysteryRewardOrderState.seen = [];
+                mysteryRewardOrderState.queuesByRarity[rarityKey] = shuffleMysteryRewardKeys(availableKeys, rewardKey);
+                mysteryRewardOrderState.seenByRarity[rarityKey] = [];
             } else {
-                mysteryRewardOrderState.queue = queue;
-                mysteryRewardOrderState.seen = seen;
+                mysteryRewardOrderState.queuesByRarity[rarityKey] = queue;
+                mysteryRewardOrderState.seenByRarity[rarityKey] = seen;
             }
             persistMysteryRewardOrderState();
-            return mysteryRewardOrderState.queue[0] || null;
+            return pickMysteryRewardSelection()?.rewardKey || null;
         }
 
         function cacheMysteryRewardPreviewBuild(propKey) {
@@ -12628,7 +13612,11 @@
             clearMysteryBox();
             mysterySfxState.lastBoxShakeAtMs = -Infinity;
 
-            const model = createMysteryBoxModel();
+            const preselectedReward = pickMysteryRewardSelection();
+            const preselectedRewardKey = preselectedReward?.rewardKey || null;
+            const preselectedBoxRarity = preselectedReward?.rarityKey || MYSTERY_BOX_RARITY.RARE;
+            const model = createMysteryBoxModel(preselectedBoxRarity);
+            const boxTheme = model.userData?.rarityTheme || getMysteryBoxTheme(preselectedBoxRarity);
             const creaturePosition = new THREE.Vector3();
             creatureGroup.getWorldPosition(creaturePosition);
             const creatureQuaternion = new THREE.Quaternion();
@@ -12698,20 +13686,51 @@
                     if (startPos) piece.position.copy(startPos);
                     if (startRot) piece.rotation.copy(startRot);
                     piece.scale.setScalar(1);
-                    piece.visible = true;
-                    const mats = Array.isArray(piece.material) ? piece.material : [piece.material];
-                    mats.forEach((mat) => {
-                        if (!mat) return;
-                        mat.transparent = true;
-                        mat.opacity = 1;
-                        mat.needsUpdate = true;
-                    });
+                    applyMysteryPieceOpacity(piece, 1);
                 });
+            }
+            if (model.userData.innerLight) {
+                model.userData.innerLight.position.set(0, 1.1, 0);
+                model.userData.innerLight.intensity = boxTheme.innerLightBaseIntensity ?? 1.15;
+                model.userData.innerLight.distance = boxTheme.innerLightBaseDistance ?? 6.4;
             }
             if (model.userData.dustPoints?.material) {
                 model.userData.dustPoints.visible = false;
                 model.userData.dustPoints.material.opacity = 0;
-                model.userData.dustPoints.material.size = 0.1;
+                model.userData.dustPoints.material.size = model.userData.dustDefaultSize ?? 0.1;
+            }
+            if (Array.isArray(model.userData.sparkleEntries)) {
+                model.userData.sparkleEntries.forEach((entry) => {
+                    if (!entry?.sprite || !entry?.material) {
+                        return;
+                    }
+                    entry.sprite.visible = true;
+                    entry.material.opacity = 0;
+                    entry.material.rotation = 0;
+                    entry.sprite.position.set(
+                        Math.cos(entry.baseAngle) * entry.orbitRadius,
+                        entry.baseHeight,
+                        Math.sin(entry.baseAngle) * entry.orbitRadius * entry.ellipse
+                    );
+                    entry.sprite.scale.set(entry.baseScale, entry.baseScale, 1);
+                });
+            }
+            if (Array.isArray(model.userData.ornamentEntries)) {
+                model.userData.ornamentEntries.forEach((entry) => {
+                    if (!entry?.mesh) {
+                        return;
+                    }
+                    entry.mesh.visible = true;
+                    if (entry.basePosition) {
+                        entry.mesh.position.copy(entry.basePosition);
+                    }
+                    if (entry.baseRotation) {
+                        entry.mesh.rotation.copy(entry.baseRotation);
+                    }
+                    if (entry.baseScale) {
+                        entry.mesh.scale.copy(entry.baseScale);
+                    }
+                });
             }
             if (model.userData.dustPoints?.geometry?.attributes?.position?.array && model.userData.dustBase) {
                 const dustArray = model.userData.dustPoints.geometry.attributes.position.array;
@@ -12721,10 +13740,6 @@
                     dustArray[i] = baseArray[i];
                 }
                 model.userData.dustPoints.geometry.attributes.position.needsUpdate = true;
-            }
-            if (model.userData.impact) {
-                model.userData.impact.visible = false;
-                model.userData.impact.material.opacity = 0;
             }
             const { core: mysteryShadowCore, tail: mysteryShadowTail, contact: mysteryShadowContact } = createMysteryGroundShadows();
             scene.add(mysteryShadowTail);
@@ -12748,10 +13763,10 @@
             mysteryState.spinVelX = (Math.random() * 0.58 + 0.08) * (Math.random() < 0.5 ? -1 : 1);
             mysteryState.spinVelY = (Math.random() * 1.45 + 0.35) * (Math.random() < 0.5 ? -1 : 1);
             mysteryState.spinVelZ = (Math.random() * 0.34 + 0.04) * (Math.random() < 0.5 ? -1 : 1);
-            const preselectedRewardKey = pickMysteryRewardKey();
             mysteryState.settled = false;
             mysteryState.rewardKey = preselectedRewardKey;
             mysteryState.rewardLabel = preselectedRewardKey ? getPropLabelByKey(preselectedRewardKey) : null;
+            mysteryState.boxRarity = preselectedBoxRarity;
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
             mysteryState.previewPreloadQueued = false;
@@ -12773,7 +13788,6 @@
                 scheduleMysteryRewardPreviewPreload(preselectedRewardKey);
             }
         }
-
         function clearMysteryBox() {
             clearMysteryGroundShadows();
             stopMysteryScrollPullSfx(true);
@@ -12793,6 +13807,7 @@
             mysteryState.settled = false;
             mysteryState.rewardKey = null;
             mysteryState.rewardLabel = null;
+            mysteryState.boxRarity = MYSTERY_BOX_RARITY.RARE;
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
             mysteryState.previewPreloadQueued = false;
@@ -13981,7 +14996,7 @@
 
         function revealMysteryReward() {
             if (!mysteryState.root || mysteryState.phase !== 'landed') return;
-            const rewardKey = mysteryState.rewardKey || pickMysteryRewardKey();
+            const rewardKey = mysteryState.rewardKey || pickMysteryRewardKeyForRarity(mysteryState.boxRarity);
             if (!rewardKey) return;
             noteMysteryBoxOpen();
             const rewardLabel = mysteryState.rewardLabel || getPropLabelByKey(rewardKey);
@@ -14470,25 +15485,139 @@
 
             const root = mysteryState.root;
             setContactShadowFade(1);
-            root.traverse((node) => {
-                if (!node?.isMesh) return;
-                node.castShadow = true;
-                node.receiveShadow = false;
-            });
+            syncMysteryShadowState(root);
             const {
                 lidPivot,
-                impact,
-                trailRing,
                 dustPoints,
                 burstPieces,
                 burstStartPos,
                 burstStartRot,
-                burstDirs
+                burstDirs,
+                glowMaterials,
+                innerLight,
+                rarityTheme,
+                ornamentEntries,
+                sparkleEntries
             } = root.userData || {};
-            const trailMaterial = trailRing?.material;
+            const boxTheme = rarityTheme || getMysteryBoxTheme(mysteryState.boxRarity);
             const dustMaterial = dustPoints?.material;
             const fallEase = (t) => 1 - Math.pow(1 - t, 2.75);
             const openEaseOut = (t) => 1 - Math.pow(1 - t, 2.2);
+            const updateMysteryOrnaments = (energy, pulse, fade = 1) => {
+                if (!Array.isArray(ornamentEntries) || !ornamentEntries.length) {
+                    return;
+                }
+                const ornamentEnergy = Math.max(0, energy);
+                ornamentEntries.forEach((entry) => {
+                    const mesh = entry?.mesh;
+                    if (!mesh) {
+                        return;
+                    }
+                    const phase = pulse * (entry.swaySpeed ?? 0.8) + (entry.phaseOffset ?? 0);
+                    const bob = Math.sin(phase) * (entry.bobAmp ?? 0);
+                    const sway = Math.sin(phase * 1.12) * (entry.swayAmp ?? 0) * fade;
+                    const roll = Math.sin(phase * 0.94 + 0.6) * (entry.rollAmp ?? 0) * fade;
+                    const pulseScale = 1 + Math.sin(phase * 1.18 + 0.9) * (entry.pulseAmp ?? 0) * Math.min(1.2, ornamentEnergy);
+                    mesh.visible = fade > 0.01;
+                    mesh.position.copy(entry.basePosition);
+                    mesh.rotation.copy(entry.baseRotation);
+                    mesh.scale.copy(entry.baseScale);
+                    if (entry.style === 'arc') {
+                        mesh.position.y += bob;
+                        mesh.rotation.z += sway;
+                        mesh.rotation.x += roll * 0.2;
+                    } else if (entry.style === 'halo') {
+                        mesh.position.y += bob;
+                        mesh.rotation.y += sway * 0.6;
+                        mesh.rotation.z += roll * 0.3;
+                        mesh.scale.multiplyScalar(1 + Math.max(0, ornamentEnergy - 0.9) * 0.03);
+                    } else if (entry.style === 'wing' || entry.style === 'bladeFan') {
+                        mesh.position.y += bob;
+                        mesh.rotation.z += roll;
+                        mesh.rotation.y += sway * 0.35;
+                    } else if (entry.style === 'spire') {
+                        mesh.rotation.x += sway;
+                        mesh.rotation.z += roll * 0.5;
+                        mesh.scale.y *= pulseScale;
+                    } else if (entry.style === 'crest' || entry.style === 'emberGem') {
+                        mesh.position.y += bob;
+                        mesh.rotation.y += sway * 0.8;
+                        mesh.scale.multiplyScalar(1 + Math.max(0, ornamentEnergy - 0.85) * 0.04);
+                    } else if (entry.style === 'crestSlash') {
+                        mesh.position.y += bob * 0.6;
+                        mesh.rotation.z += sway * 0.45;
+                        mesh.scale.x *= pulseScale;
+                    }
+                });
+            };
+            const updateMysterySparkles = (energy, pulse, fade = 1, lift = 0) => {
+                if (!Array.isArray(sparkleEntries) || !sparkleEntries.length) {
+                    return;
+                }
+                const sparkleFade = THREE.MathUtils.clamp(fade, 0, 1.2);
+                const sparkleEnergy = Math.max(0, energy);
+                sparkleEntries.forEach((entry) => {
+                    const sprite = entry?.sprite;
+                    const material = entry?.material;
+                    if (!sprite || !material) {
+                        return;
+                    }
+                    const shimmer = 0.5 + 0.5 * Math.sin(pulse * entry.flickerSpeed + entry.phase);
+                    const twinkle = shimmer * shimmer;
+                    const style = entry.style || 'orbit';
+                    const orbitAngle = entry.baseAngle + pulse * entry.orbitSpeed;
+                    if (style === 'ember') {
+                        const riseCycle = 0.5 + 0.5 * Math.sin(pulse * entry.orbitSpeed * 0.9 + entry.phase);
+                        const radius = entry.orbitRadius * (0.62 + Math.sin(pulse * 0.48 + entry.phase) * entry.radiusPulse);
+                        sprite.position.set(
+                            Math.cos(orbitAngle) * radius + Math.sin(pulse * 0.38 + entry.phase) * entry.drift * 0.7,
+                            entry.baseHeight + riseCycle * 0.92 + Math.sin(pulse * entry.bobSpeed + entry.phase) * entry.bobAmplitude + lift * entry.liftInfluence,
+                            Math.sin(orbitAngle) * radius * entry.ellipse * 0.74
+                        );
+                    } else if (style === 'halo') {
+                        const radius = entry.orbitRadius * (1 + Math.sin(pulse * 0.52 + entry.phase) * entry.radiusPulse * 0.8);
+                        sprite.position.set(
+                            Math.cos(orbitAngle) * radius,
+                            entry.baseHeight + Math.sin(pulse * entry.bobSpeed + entry.phase) * entry.bobAmplitude * 1.2 + lift * entry.liftInfluence,
+                            Math.sin(orbitAngle) * radius * Math.max(1, entry.ellipse) + Math.cos(pulse * 0.34 + entry.phase) * entry.drift
+                        );
+                    } else {
+                        const radius = entry.orbitRadius * (1 + Math.sin(pulse * 0.58 + entry.phase) * entry.radiusPulse);
+                        sprite.position.set(
+                            Math.cos(orbitAngle) * radius + Math.sin(pulse * 0.44 + entry.phase) * entry.drift,
+                            entry.baseHeight + Math.sin(pulse * entry.bobSpeed + entry.phase) * entry.bobAmplitude + lift * entry.liftInfluence,
+                            Math.sin(orbitAngle) * radius * entry.ellipse + Math.cos(pulse * 0.36 + entry.phase) * entry.drift * 0.55
+                        );
+                    }
+                    const scale = entry.baseScale * (0.82 + twinkle * 0.82 + Math.max(0, sparkleEnergy - 0.9) * 0.14);
+                    sprite.scale.set(scale, scale, 1);
+                    material.opacity = THREE.MathUtils.clamp(
+                        entry.baseOpacity * (0.24 + twinkle * 0.92) * (0.4 + sparkleEnergy * 0.26) * sparkleFade,
+                        0,
+                        0.84
+                    );
+                    material.rotation += dt * entry.rotationSpeed;
+                    sprite.visible = material.opacity > 0.01;
+                });
+            };
+            const updateMysteryCoreVisuals = (energy, pulse, fade = 1, lift = 0) => {
+                const themedEnergy = energy * (boxTheme.glowEnergyScale ?? 1);
+                const themedPulse = pulse * (boxTheme.pulseSpeedScale ?? 1);
+                updateMysteryGlowMaterials(glowMaterials, themedEnergy, themedPulse, fade);
+                if (innerLight) {
+                    innerLight.intensity = (
+                        (boxTheme.innerLightAmbient ?? 0.32) +
+                        Math.max(0, themedEnergy - 0.55) * (boxTheme.innerLightEnergyBoost ?? 1.15) +
+                        (0.5 + 0.5 * Math.sin(themedPulse + 0.4)) * (boxTheme.innerLightPulseBoost ?? 0.18)
+                    ) * fade;
+                    innerLight.distance = (boxTheme.innerLightBaseDistance ?? 5.2) + themedEnergy * (boxTheme.innerLightDistanceBoost ?? 1.2);
+                    innerLight.position.x = Math.sin(themedPulse * 0.54) * 0.05 * themedEnergy;
+                    innerLight.position.y = 1.1 + lift * 0.3;
+                    innerLight.position.z = Math.cos(themedPulse * 0.47) * 0.05 * themedEnergy;
+                }
+                updateMysteryOrnaments(themedEnergy, themedPulse, fade);
+                updateMysterySparkles(themedEnergy, themedPulse, fade, lift);
+            };
 
             if (mysteryState.phase === 'falling') {
                 mysteryState.timer += dt;
@@ -14510,19 +15639,15 @@
                 mysteryState.spinVelY *= spinDamp;
                 mysteryState.spinVelX *= spinDamp;
                 mysteryState.spinVelZ *= spinDamp;
-                if (trailRing) {
-                    const pulse = 1 + Math.sin(fallRatio * Math.PI * 4 + mysteryState.seed) * 0.16;
-                    const revealScale = MYSTERY_BOX_CONFIG.trailRevealScale ?? 1.16;
-                    const baseTrail = trailRing.userData?.baseScale ?? 1;
-                    trailRing.scale.setScalar(baseTrail * revealScale * pulse);
-                    if (trailMaterial) {
-                        trailMaterial.opacity = THREE.MathUtils.lerp(0.18, 0.62, fallRatio);
-                    }
-                    trailRing.rotation.y += dt * 3.2;
-                }
                 if (dustPoints) {
                     dustPoints.visible = false;
                 }
+                updateMysteryCoreVisuals(
+                    0.88 + fallRatio * 0.42,
+                    mysteryState.timer * 6.8 + fallRatio * 7.4,
+                    1,
+                    fallRatio * 0.08
+                );
 
                 if (fallRatio >= 1 || root.position.y <= mysteryState.landingY) {
                     root.position.copy(mysteryState.landingPoint);
@@ -14541,14 +15666,6 @@
                     mysteryState.spinVelX *= 0.75;
                     mysteryState.spinVelY *= 0.75;
                     mysteryState.spinVelZ *= 0.75;
-                    if (impact) {
-                        impact.visible = true;
-                        impact.scale.setScalar(1.2);
-                        impact.material.opacity = 0.52;
-                    }
-                    if (trailMaterial) {
-                        trailMaterial.opacity = 0.62;
-                    }
                     requestMysteryFlightReturn();
                 }
                 updateMysteryGroundShadows(root);
@@ -14602,24 +15719,12 @@
                 const pressSqueezeXZ = 1 + (MYSTERY_BOX_CONFIG.pressSqueezeXZ || 0.1) * mysteryState.pressDepth;
                 const baseScale = mysteryState.baseScale || 1;
                 root.scale.set(baseScale * pressSqueezeXZ, baseScale * pressSqueezeY, baseScale * pressSqueezeXZ);
-
-                if (impact && impact.visible) {
-                    const settle = THREE.MathUtils.clamp(mysteryState.timer / MYSTERY_BOX_CONFIG.settleDuration, 0, 1);
-                    const settleImpact = MYSTERY_BOX_CONFIG.impactDecay ?? 0.75;
-                    const impactScale = THREE.MathUtils.lerp(1.2, MYSTERY_BOX_CONFIG.impactHeight ?? 0.02, settle);
-                    impact.scale.setScalar(impactScale);
-                    impact.material.opacity = THREE.MathUtils.lerp(0.52 * settleImpact, 0, settle);
-                    if (settle >= 1) {
-                        impact.visible = false;
-                    }
-                }
-
-                if (trailRing && trailMaterial) {
-                    const glow = 0.5 + Math.sin(mysteryState.timer * 4.2 + mysteryState.seed) * 0.13;
-                    const pressGlow = mysteryState.pressDepth * 0.08;
-                    trailMaterial.opacity = THREE.MathUtils.clamp(glow + reactiveRattle * 0.08 + pressGlow, 0.12, 0.85);
-                    trailRing.scale.setScalar(1 + Math.sin(mysteryState.timer * 2.4 + mysteryState.seed) * 0.035 + reactiveRattle * 0.04 + mysteryState.pressDepth * 0.05);
-                }
+                updateMysteryCoreVisuals(
+                    0.96 + reactiveRattle * 0.46 + mysteryState.pressDepth * 0.24,
+                    mysteryState.timer * 7.4 + reactiveRattle * 3.2,
+                    1,
+                    mysteryState.pressDepth * 0.04
+                );
                 if (dustPoints) {
                     dustPoints.visible = false;
                 }
@@ -14660,6 +15765,12 @@
                 if (lidPivot) {
                     lidPivot.rotation.x = THREE.MathUtils.lerp(0, -1.25, openEase);
                 }
+                updateMysteryCoreVisuals(
+                    1.28 + openEase * 1.38,
+                    mysteryState.timer * 10.8 + openEase * 4.1,
+                    1,
+                    0.12 + openEase * 0.22
+                );
                 if (Array.isArray(burstPieces) && Array.isArray(burstStartPos) && Array.isArray(burstStartRot) && Array.isArray(burstDirs)) {
                     burstPieces.forEach((piece, index) => {
                         const startPos = burstStartPos[index];
@@ -14680,13 +15791,7 @@
                             startRot.z + spin * (((index + 2) % 3) - 1)
                         );
                         piece.scale.setScalar(Math.max(0.16, 1 - openEase * 0.84));
-                        const mats = Array.isArray(piece.material) ? piece.material : [piece.material];
-                        mats.forEach((mat) => {
-                            if (!mat) return;
-                            mat.transparent = true;
-                            mat.opacity = Math.max(0, 1 - openEase * 1.06);
-                            mat.needsUpdate = true;
-                        });
+                        applyMysteryPieceOpacity(piece, Math.max(0, 1 - openEase * 1.06));
                     });
                 }
                 if (dustPoints && dustMaterial) {
@@ -14694,9 +15799,6 @@
                     updateMysteryDust(root, openEase, false);
                     dustMaterial.opacity = Math.min(0.92, 0.22 + openEase * 0.8);
                     dustMaterial.size = 0.1 + openEase * 0.03;
-                }
-                if (trailRing && trailMaterial) {
-                    trailMaterial.opacity = THREE.MathUtils.lerp(0.36, 0.05, openEase);
                 }
 
                 if (openRatio >= 1) {
@@ -14758,9 +15860,12 @@
                     dustMaterial.opacity = Math.max(0, 0.88 - dustRatio * 0.86);
                     dustMaterial.size = 0.1 + dustRatio * 0.04;
                 }
-                if (trailMaterial) {
-                    trailMaterial.opacity = 0.14 + Math.sin(mysteryState.timer * 2.1 + mysteryState.seed) * 0.06;
-                }
+                updateMysteryCoreVisuals(
+                    1.95 - dustRatio * 0.28,
+                    mysteryState.timer * 8.4 + dustRatio * 3.4,
+                    1,
+                    0.24 - dustRatio * 0.08
+                );
                 const rewardRevealRatio = THREE.MathUtils.clamp(
                     MYSTERY_BOX_CONFIG.rewardRevealRatio ?? 0.92,
                     0,
@@ -14795,10 +15900,12 @@
                 setContactShadowFade(1);
                 mysteryState.timer += dt;
                 const fade = 1 - THREE.MathUtils.clamp(mysteryState.timer / MYSTERY_BOX_CONFIG.cleanupDuration, 0, 1);
-                if (trailRing && trailMaterial) {
-                    trailMaterial.opacity = 0.35 * fade;
-                    trailRing.scale.setScalar(0.8 + 0.2 * fade);
-                }
+                updateMysteryCoreVisuals(
+                    0.5 + fade * 0.72,
+                    mysteryState.timer * 4.6 + fade * 2.2,
+                    fade,
+                    fade * 0.1
+                );
                 if (dustPoints && dustMaterial) {
                     dustMaterial.opacity *= fade;
                     if (dustMaterial.opacity <= 0.01) {
