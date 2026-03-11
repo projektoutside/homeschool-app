@@ -1,0 +1,18 @@
+{
+  "frameCount": 192,
+  "fps": 24.0,
+  "duration": 8.0,
+  "columns": 12,
+  "rows": 16,
+  "frameWidth": 232,
+  "frameHeight": 196,
+  "sheetWidth": 2784,
+  "sheetHeight": 3136,
+  "sourceVideo": "Seamless_Looping_Animation_Generation.mp4",
+  "crop": {
+    "left": 204,
+    "top": 11,
+    "right": 1045,
+    "bottom": 720
+  }
+}

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover"
+    >
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ff8a3d">
+    <meta
+        name="description"
+        content="Preschool Fun! is a bright learning game with ABCs, 123 counting, pattern puzzles, animations, and silly sounds."
+    >
+    <title>Preschool Fun!</title>
+    <link rel="icon" href="thumb.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Bungee&family=Nunito:wght@500;700;800&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="../shared/birdEscape/birdEscape.css">
+    <link rel="stylesheet" href="game.css">
+    <script src="../../3dClass/scripts/three.min.js" defer></script>
+    <script src="../shared/birdEscape/birdEscape.js" defer></script>
+    <script src="game.js" defer></script>
+</head>
+<body>
+    <canvas id="sky-canvas" aria-hidden="true"></canvas>
+
+    <div class="scene-glow scene-glow--left" aria-hidden="true"></div>
+    <div class="scene-glow scene-glow--right" aria-hidden="true"></div>
+
+    <div id="start-overlay" class="start-overlay" aria-hidden="false">
+        <div class="start-card">
+            <div class="start-badge">Preschool Fun!</div>
+            <h1 class="start-title">Fill the missing spot.</h1>
+            <p class="start-copy">Tap start. Then tap or drag the right answer.</p>
+            <button id="start-button" class="start-button" type="button">Start Playing</button>
+        </div>
+    </div>
+
+    <main class="game-shell">
+        <header class="top-bar">
+            <div class="brand-lockup">
+                <div class="brand-badge">ABC • 123 • Patterns</div>
+                <h1>Preschool Fun!</h1>
+                <p class="brand-subtitle">Tap or drag the answer into the missing spot.</p>
+            </div>
+
+            <div class="top-actions">
+                <button id="sound-toggle" class="icon-pill" type="button" aria-pressed="true">
+                    <span class="icon-pill__emoji" aria-hidden="true">🔊</span>
+                    <span class="icon-pill__label">Sound On</span>
+                </button>
+                <button id="home-button" class="icon-pill icon-pill--home" type="button">
+                    <span class="icon-pill__emoji" aria-hidden="true">🏡</span>
+                    <span class="icon-pill__label">Back to Games</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="hero-panel">
+            <div class="mascot-card">
+                <div class="mascot-orb" aria-hidden="true">
+                    <div class="mascot-face">
+                        <span class="eye eye--left"></span>
+                        <span class="eye eye--right"></span>
+                        <span id="mascot-mouth" class="mouth"></span>
+                    </div>
+                    <div class="mascot-ring mascot-ring--one"></div>
+                    <div class="mascot-ring mascot-ring--two"></div>
+                    <div class="mascot-spark mascot-spark--one">A</div>
+                    <div class="mascot-spark mascot-spark--two">3</div>
+                    <div class="mascot-spark mascot-spark--three">★</div>
+                </div>
+                <div class="mascot-copy">
+                    <div id="mascot-title" class="mascot-title">Sunny Buddy is ready to play!</div>
+                    <p id="mascot-message" class="mascot-message">
+                        We will fill the missing spot together.
+                    </p>
+                </div>
+            </div>
+
+            <div class="scoreboard-card">
+                <div class="score-chip">
+                    <span class="score-chip__label">Round</span>
+                    <span id="round-value" class="score-chip__value">1</span>
+                </div>
+                <div class="score-chip score-chip--sparkle">
+                    <span class="score-chip__label">Stars</span>
+                    <span id="stars-value" class="score-chip__value">0</span>
+                </div>
+                <div class="score-chip score-chip--warm">
+                    <span class="score-chip__label">Streak</span>
+                    <span id="streak-value" class="score-chip__value">0</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="play-stage" aria-label="Puzzle stage">
+            <div class="prompt-card">
+                <div class="prompt-card__meta">
+                    <span id="activity-pill" class="activity-pill">Alphabet Parade</span>
+                    <span id="prompt-hint" class="prompt-hint">Find what is missing.</span>
+                </div>
+                <h2 id="prompt-title" class="prompt-title">Find what is missing.</h2>
+                <p id="prompt-description" class="prompt-description">
+                    Tap or drag the right answer.
+                </p>
+
+                <div class="sequence-wrap">
+                    <div id="sequence-track" class="sequence-track" aria-live="polite"></div>
+                </div>
+
+                <div id="story-visual" class="story-visual" aria-hidden="true"></div>
+                <div class="prompt-actions">
+                    <button id="submit-button" class="submit-button" type="button" disabled>Submit</button>
+                </div>
+            </div>
+
+            <aside class="coach-card">
+                <div class="coach-card__header">
+                    <span class="coach-card__emoji" aria-hidden="true">🎈</span>
+                    <span>How to Play</span>
+                </div>
+                <ol class="coach-list">
+                    <li>Look at the row.</li>
+                    <li>Find the answer that fits.</li>
+                    <li>Tap or drag it into the sparkle spot.</li>
+                </ol>
+                <div class="coach-tip" id="coach-tip">Tip: Count slowly or sing the alphabet out loud.</div>
+            </aside>
+        </section>
+
+        <section class="choices-panel">
+            <div class="choices-panel__header">
+                <h3>Pick One</h3>
+            </div>
+            <div id="choices-grid" class="choices-grid"></div>
+        </section>
+
+        <section class="bird-flight-strip" aria-hidden="true">
+            <div id="bird-escape-lane" class="bird-escape-lane"></div>
+        </section>
+
+        <section class="footer-bar">
+            <div class="footer-pill">
+                <span class="footer-pill__label">Last Cheer</span>
+                <span id="status-text" class="footer-pill__value">Welcome to Preschool Fun!</span>
+            </div>
+            <div class="footer-actions">
+                <button id="next-button" class="next-button" type="button">Next Puzzle</button>
+            </div>
+        </section>
+    </main>
+
+    <div id="celebration-overlay" class="celebration-overlay" aria-hidden="true">
+        <div class="celebration-card">
+            <div id="celebration-emoji" class="celebration-emoji" aria-hidden="true">✨</div>
+            <div id="celebration-title" class="celebration-title">Yay!</div>
+            <p id="celebration-copy" class="celebration-copy">You found the right one.</p>
+        </div>
+    </div>
+
+    <div id="session-win-overlay" class="session-win-overlay" aria-hidden="true">
+        <div class="session-win-card">
+            <div class="session-win-card__badge">Bird Escape Complete!</div>
+            <div id="session-win-emoji" class="session-win-emoji" aria-hidden="true">🐦</div>
+            <h2 id="session-win-title" class="session-win-title">You helped the little bird escape!</h2>
+            <p id="session-win-copy" class="session-win-copy">
+                The big bird flew way off screen. What a smart job!
+            </p>
+            <div class="session-win-actions">
+                <button id="session-play-again-button" class="session-win-button session-win-button--primary" type="button">
+                    Play Again
+                </button>
+                <button id="session-main-menu-button" class="session-win-button session-win-button--secondary" type="button">
+                    Main Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="session-lose-overlay" class="session-lose-overlay" aria-hidden="true">
+        <div class="session-lose-card">
+            <div class="session-lose-card__badge">Bird Bump!</div>
+            <div id="session-lose-emoji" class="session-lose-emoji" aria-hidden="true">💥</div>
+            <h2 id="session-lose-title" class="session-lose-title">The big bird caught up!</h2>
+            <p id="session-lose-copy" class="session-lose-copy">
+                Let’s flap away again and help the little bird get safe.
+            </p>
+            <div class="session-lose-actions">
+                <button id="session-try-again-button" class="session-lose-button session-lose-button--primary" type="button">
+                    Try Again
+                </button>
+                <button id="session-lose-main-menu-button" class="session-lose-button session-lose-button--secondary" type="button">
+                    Main Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sr-status" class="sr-only" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,91 @@
+.bird-escape-root {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+    isolation: isolate;
+    --bird-escape-lane-top: rgba(255, 255, 255, 0.56);
+    --bird-escape-lane-mid: rgba(205, 244, 255, 0.72);
+    --bird-escape-lane-bottom: rgba(255, 240, 194, 0.7);
+    --bird-escape-hill-top: rgba(145, 224, 153, 0.3);
+    --bird-escape-hill-bottom: rgba(102, 190, 118, 0.44);
+    --bird-escape-path: rgba(255, 255, 255, 0.56);
+    --bird-escape-bubble: rgba(255, 255, 255, 0.4);
+}
+
+.bird-escape-track,
+.bird-escape-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.bird-escape-track {
+    overflow: hidden;
+    border-radius: inherit;
+    background:
+        radial-gradient(circle at 16% 18%, var(--bird-escape-bubble), rgba(255, 255, 255, 0) 20%),
+        radial-gradient(circle at 74% 22%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 18%),
+        linear-gradient(180deg, var(--bird-escape-lane-top) 0%, var(--bird-escape-lane-mid) 62%, var(--bird-escape-lane-bottom) 100%);
+}
+
+.bird-escape-track::before {
+    content: "";
+    position: absolute;
+    left: clamp(12px, 3vw, 22px);
+    right: clamp(12px, 3vw, 22px);
+    bottom: 12px;
+    height: 8px;
+    border-radius: 999px;
+    opacity: 0.68;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            var(--bird-escape-path) 0 14px,
+            rgba(255, 255, 255, 0) 14px 26px
+        );
+}
+
+.bird-escape-track::after {
+    content: "";
+    position: absolute;
+    left: -8%;
+    right: -8%;
+    bottom: -18%;
+    height: 58%;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--bird-escape-hill-top), var(--bird-escape-hill-bottom));
+}
+
+.bird-escape-canvas {
+    display: block;
+    z-index: 2;
+    transform: translateZ(0);
+}
+
+.bird-escape-root[data-ready="false"] .bird-escape-canvas {
+    opacity: 0;
+}
+
+.bird-escape-root[data-ready="true"] .bird-escape-canvas {
+    opacity: 1;
+    transition: opacity 180ms ease;
+}
+
+.bird-escape-root[data-paused="true"] .bird-escape-track {
+    filter: saturate(0.98);
+}
+
+.bird-escape-root[data-debug="true"] .bird-escape-track {
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.65),
+        inset 0 0 0 2px rgba(73, 168, 255, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bird-escape-track {
+        filter: saturate(0.96);
+    }
+}

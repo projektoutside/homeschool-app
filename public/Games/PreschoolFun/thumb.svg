@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Preschool Fun thumbnail">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6fd6ff"/>
+      <stop offset="50%" stop-color="#ffd86b"/>
+      <stop offset="100%" stop-color="#ff7ca8"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#fff3d9" stop-opacity="0.96"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <circle cx="406" cy="102" r="54" fill="#fff7be" opacity="0.7"/>
+  <rect x="60" y="116" width="392" height="280" rx="52" fill="url(#card)" opacity="0.98"/>
+  <rect x="96" y="168" width="92" height="112" rx="28" fill="#7d74ff"/>
+  <rect x="210" y="168" width="92" height="112" rx="28" fill="#ff9647"/>
+  <rect x="324" y="168" width="92" height="112" rx="28" fill="#3ccf91"/>
+  <text x="142" y="242" text-anchor="middle" font-family="'Baloo 2', 'Arial Rounded MT Bold', sans-serif" font-size="62" font-weight="800" fill="#ffffff">A</text>
+  <text x="256" y="242" text-anchor="middle" font-family="'Baloo 2', 'Arial Rounded MT Bold', sans-serif" font-size="62" font-weight="800" fill="#ffffff">2</text>
+  <text x="370" y="242" text-anchor="middle" font-family="'Baloo 2', 'Arial Rounded MT Bold', sans-serif" font-size="62" font-weight="800" fill="#ffffff">★</text>
+  <text x="256" y="338" text-anchor="middle" font-family="'Baloo 2', 'Arial Rounded MT Bold', sans-serif" font-size="58" font-weight="800" fill="#20405f">Preschool</text>
+  <text x="256" y="390" text-anchor="middle" font-family="'Baloo 2', 'Arial Rounded MT Bold', sans-serif" font-size="58" font-weight="800" fill="#ff5ea8">Fun!</text>
+</svg>

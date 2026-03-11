@@ -38,6 +38,19 @@ export const mathContent: ContentItem[] = [
         dateAdded: '2026-01-26'
     },
     {
+        id: 'preschool-fun-game',
+        title: 'Preschool Fun!',
+        description: 'A bright preschool puzzle game with ABCs, 123 counting, silly pattern play, animations, and funny sounds.',
+        type: 'game',
+        category: 'puzzles',
+        subjects: ['Alphabet', 'Counting', 'Patterns'],
+        gradeLevels: ['Preschool', 'Pre-K', 'Kindergarten'],
+        customHtmlPath: '/Games/PreschoolFun/index.html',
+        thumbnail: '/Games/PreschoolFun/thumb.svg',
+        isFeatured: true,
+        dateAdded: '2026-03-10'
+    },
+    {
         id: 'word-puzzle-game',
         title: 'Word Puzzle',
         description: 'Unscramble themed words using clues and category hints.',
@@ -45,7 +58,7 @@ export const mathContent: ContentItem[] = [
         category: 'language',
         subjects: ['Vocabulary', 'Spelling', 'Word Recognition'],
         gradeLevels: ['All'],
-        customHtmlPath: '/Games/Word%20Puzzle/index.html',
+        customHtmlPath: '/Games/Word Puzzle/index.html',
         thumbnail: '/assets/thumbnails/optimized/word-puzzle-128.webp',
         dateAdded: '2026-03-05'
     },

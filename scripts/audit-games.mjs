@@ -131,11 +131,13 @@ function auditGameFolders() {
     'output',
     '.git_disabled',
     '.vite-temp',
+    'shared',
   ]);
 
   const folders = fs.readdirSync(gamesDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
+    .map((entry) => entry.name)
+    .filter((name) => !runtimeNoiseDirs.has(name));
 
   const shouldIgnoreRef = (refValue) => {
     if (!refValue) return true;
