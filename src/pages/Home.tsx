@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
+import { FAVORITE_GAMES_STORAGE_KEY, notifyFavoriteGamesUpdated, readFavoriteGameIds } from '../utils/favoriteGames';
 import type { ContentItem, ContentType } from '../types/content';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import './Home.css';
@@ -21,7 +22,6 @@ const MULTIPLAYER_PANEL_INDEX = 4;
 const MYSTERY_SHAKE_DURATION_MS = 1500;
 const MYSTERY_REVEAL_DURATION_MS = 3100;
 const FAVORITES_PANEL_TITLE = 'Favorites';
-const FAVORITES_STORAGE_KEY = 'arcade_favorite_games_v1';
 const HOLD_DURATION_MS = 2000;
 
 const SINGLE_PLAYER_GAME_IDS = new Set<string>([
@@ -785,18 +785,7 @@ const HomePage: React.FC = () => {
     const [panelTitles, setPanelTitles] = useState<string[]>(() => [...PANEL_TITLE_DEFAULTS]);
     const [mysteryShakeActive, setMysteryShakeActive] = useState(false);
     const [mysteryTargetGameId, setMysteryTargetGameId] = useState<string | null>(null);
-    const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>(() => {
-        if (typeof window === 'undefined') return [];
-        try {
-            const raw = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
-            if (!raw) return [];
-            const parsed = JSON.parse(raw);
-            if (!Array.isArray(parsed)) return [];
-            return parsed.filter((value): value is string => typeof value === 'string');
-        } catch {
-            return [];
-        }
-    });
+    const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>(() => readFavoriteGameIds());
 
     const currentTabId = useMemo(
         () => (config.tabs.find(tab => tab.id === activeTab)?.id ?? config.tabs[0]?.id ?? ''),
@@ -991,7 +980,8 @@ const HomePage: React.FC = () => {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteGameIds));
+        window.localStorage.setItem(FAVORITE_GAMES_STORAGE_KEY, JSON.stringify(favoriteGameIds));
+        notifyFavoriteGamesUpdated(favoriteGameIds);
     }, [favoriteGameIds]);
 
     useEffect(() => {

@@ -783,6 +783,18 @@
     background: rgba(255, 255, 255, 0.05);
 }
 
+.nav-slider-item-empty {
+    min-width: 164px;
+    padding-inline: 0.9rem;
+}
+
+.nav-slider-item-empty .nav-slider-label {
+    max-width: 120px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+}
+
 .nav-slider-icon {
     font-size: 1.5rem;
     line-height: 1;
@@ -827,6 +839,11 @@
         min-width: 60px;
         height: 54px;
         padding: 0.3rem 0.5rem;
+    }
+
+    .nav-slider-item-empty {
+        min-width: 140px;
+        padding-inline: 0.7rem;
     }
     
     .nav-slider-icon {

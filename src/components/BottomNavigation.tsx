@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CONTENT_ITEMS } from '../data/mockContent';
+import { useManagerConfig } from '../hooks/useManagerConfig';
 import { buildAssetPath } from '../utils/pathUtils';
+import { FAVORITE_GAMES_STORAGE_KEY, FAVORITE_GAMES_UPDATED_EVENT, readFavoriteGameIds } from '../utils/favoriteGames';
 import './BottomNavigation.css';
 
 interface BottomNavigationProps {
@@ -23,6 +24,7 @@ const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { allItems } = useManagerConfig();
     const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
     const searchParams = new URLSearchParams(location.search);
@@ -39,6 +41,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const [statsPulseCount, setStatsPulseCount] = useState(1);
     const [expandedMode, setExpandedMode] = useState(false);
     const [failedGameIconIds, setFailedGameIconIds] = useState<Set<string>>(new Set());
+    const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>(() => readFavoriteGameIds());
     const [isClassroomImmersiveActive, setIsClassroomImmersiveActive] = useState(false);
     const sliderRef = useRef<HTMLDivElement>(null);
     const statsTouchStartX = useRef<number | null>(null);
@@ -97,6 +100,16 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             navigate('/home-profile');
         }, HOME_TRANSITION_FADE_IN_MS);
     }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
+
+    const handleSliderHomeClick = useCallback(() => {
+        setExpandedMode(false);
+        startHomepageTransition();
+    }, [startHomepageTransition]);
+
+    const openMiniAppSlider = useCallback(() => {
+        setFavoriteGameIds(readFavoriteGameIds());
+        setExpandedMode(true);
+    }, []);
 
     const enforceGameDockFlush = useCallback(() => {
         setExpandedMode(false);
@@ -344,18 +357,44 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         }, 2500);
     }, [isStatsMinimized]);
 
-    // Scroll to end when entering expanded mode
+    // Keep the tray anchored from the left so Home and the first favorite stay immediately reachable.
     useEffect(() => {
         if (expandedMode && sliderRef.current) {
-            // Slight timeout to ensure layout is ready/transition has started
             const timer = setTimeout(() => {
                 if (sliderRef.current) {
-                    sliderRef.current.scrollLeft = sliderRef.current.scrollWidth;
+                    sliderRef.current.scrollLeft = 0;
                 }
             }, 10);
             return () => clearTimeout(timer);
         }
     }, [expandedMode]);
+
+    useEffect(() => {
+        const syncFavoriteGameIds = () => {
+            setFavoriteGameIds(readFavoriteGameIds());
+        };
+
+        syncFavoriteGameIds();
+
+        const onStorage = (event: StorageEvent) => {
+            if (event.key !== null && event.key !== FAVORITE_GAMES_STORAGE_KEY) {
+                return;
+            }
+            syncFavoriteGameIds();
+        };
+
+        const onFavoritesUpdated = () => {
+            syncFavoriteGameIds();
+        };
+
+        window.addEventListener('storage', onStorage);
+        window.addEventListener(FAVORITE_GAMES_UPDATED_EVENT, onFavoritesUpdated);
+
+        return () => {
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener(FAVORITE_GAMES_UPDATED_EVENT, onFavoritesUpdated);
+        };
+    }, []);
 
     // Touch swipe handling
     const touchStartX = useRef<number | null>(null);
@@ -403,7 +442,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
         // 3. OPEN SLIDER: Swipe Right (negative diff) on Standard View
         if (diff < -minSwipeDistance && !isMinimized && !expandedMode) {
-            setExpandedMode(true);
+            openMiniAppSlider();
             touchStartX.current = null;
             return;
         }
@@ -881,7 +920,17 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         location.pathname === '/html-viewer';
 
     // Content for Expanded Mode
-    const games = CONTENT_ITEMS.filter(item => item.type === 'game');
+    const favoriteGames = useMemo(() => {
+        const gamesById = new Map(
+            allItems
+                .filter(item => item.type === 'game')
+                .map(item => [item.id, item] as const),
+        );
+
+        return favoriteGameIds
+            .map(id => gamesById.get(id))
+            .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    }, [allItems, favoriteGameIds]);
 
     return (
         <>
@@ -973,7 +1022,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         <button
                             type="button"
                             className="nav-slider-item"
-                            onClick={() => navigate('/home-profile')}
+                            onClick={handleSliderHomeClick}
                             title="Home"
                             tabIndex={expandedMode ? 0 : -1}
                         >
@@ -982,9 +1031,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         </button>
                     </div>
 
-                    {/* GAMES SECTION */}
-                    <div className="nav-slider-section games-section">
-                        {games.map(game => {
+                    {/* FAVORITES SECTION */}
+                    <div className="nav-slider-section favorites-section">
+                        {favoriteGames.length > 0 ? favoriteGames.map(game => {
                             const iconPath = game.thumbnail ? buildAssetPath(game.thumbnail) : null;
                             const showGameImage = !!iconPath && !failedGameIconIds.has(game.id);
 
@@ -1017,30 +1066,23 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                     <span className="nav-slider-label">{game.title}</span>
                                 </button>
                             );
-                        })}
+                        }) : (
+                            <button
+                                type="button"
+                                className="nav-slider-item nav-slider-item-empty"
+                                onClick={() => {
+                                    setExpandedMode(false);
+                                    navigate('/apps?tab=game');
+                                }}
+                                title="Open Games to save favorites"
+                                tabIndex={expandedMode ? 0 : -1}
+                            >
+                                <span className="nav-slider-icon" aria-hidden="true">⭐</span>
+                                <span className="nav-slider-label">Save favorites in Games</span>
+                            </button>
+                        )}
                     </div>
 
-                    {/* CLASSROOM SECTION (Rightmost) */}
-                    <div className="nav-slider-section classroom-section">
-                        <button
-                            className="nav-slider-item"
-                            onClick={() => navigate('/apps?tab=tools')}
-                            title="Tools"
-                            tabIndex={expandedMode ? 0 : -1}
-                        >
-                            <span className="nav-slider-icon">🧰</span>
-                            <span className="nav-slider-label">Tools</span>
-                        </button>
-                        <button
-                            className="nav-slider-item"
-                            onClick={() => navigate('/html-viewer')}
-                            title="Worksheets"
-                            tabIndex={expandedMode ? 0 : -1}
-                        >
-                            <span className="nav-slider-icon">📄</span>
-                            <span className="nav-slider-label">Worksheets</span>
-                        </button>
-                    </div>
                 </div>
 
             </div>
