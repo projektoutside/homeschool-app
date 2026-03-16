@@ -25,19 +25,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
+    const client = supabase;
 
-    if (!supabase || !isSupabaseConfigured) {
+    if (!client || !isSupabaseConfigured) {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    const initializeSession = async () => {
+      const { data } = await client.auth.getSession();
       if (!isMounted) return;
-      setSession(data.session ?? null);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const currentSession = data.session ?? null;
+      if (!currentSession) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data: refreshedData } = await client.auth.refreshSession();
+      if (!isMounted) return;
+
+      const nextSession = refreshedData.session ?? currentSession;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+    };
+
+    void initializeSession();
+
+    const { data: authListener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);

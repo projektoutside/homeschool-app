@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CONTENT_ITEMS } from '../data/mockContent';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import type { ContentType } from '../types/content';
@@ -88,7 +89,12 @@ const ManagerPage: React.FC = () => {
         <div className="manager-page">
             <header className="manager-header">
                 <h1>Manager Lab</h1>
-                <p>Hidden Developer Mode • Drag & drop files into tabs and folders</p>
+                <p>Workspace Controls • Drag & drop files into tabs and folders</p>
+                <div className="manager-inline-form">
+                    <Link to="/character-creator" className="file-chip" style={{ textDecoration: 'none' }}>
+                        Open XiO Studio
+                    </Link>
+                </div>
             </header>
 
             <section className="manager-row">

@@ -49,5 +49,14 @@ coverage
 # OS files
 Thumbs.db
 
-# Prevent oversized media from being committed
-public/HomePageAPP/_workspace/reference-media/windy_scene_loop_school_still_hyperreal_clouds.gif
+# Local development artifacts
+.codex/
+.playwright-cli/
+output/
+tmp/
+tmp-*.png
+.tmp-dev-*.html
+tmp-cors-static-server.cjs
+{
+public/HomePageAPP/_workspace/
+public/HomePageAPP/debug-glb-viewer.html

@@ -4,8 +4,10 @@ import type { User } from '@supabase/supabase-js';
 import MainLayout from './layouts/MainLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { usePWA } from './hooks/usePWA';
+import { useAppAssetPrefetch } from './hooks/useAppAssetPrefetch';
 import { UpdateNotification } from './components/UpdateNotification';
 import { useAuth } from './context/AuthContext';
+import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { buildAssetPath } from './utils/pathUtils';
 import './App.css';
 import './components/ErrorBoundary.css';
@@ -18,6 +20,7 @@ const loadHTMLViewerRoute = () => import('./pages/HTMLViewer');
 const loadInstallRoute = () => import('./pages/InstallPage');
 const loadAuthRoute = () => import('./pages/AuthPage');
 const loadClassroomRoute = () => import('./pages/ClassroomPage');
+const loadCharacterCreatorRoute = () => import('./pages/CharacterCreatorPage');
 
 // Lazy load pages for performance
 const Home = React.lazy(loadHomeRoute);
@@ -27,6 +30,7 @@ const Viewer = React.lazy(loadViewerRoute);
 const HTMLViewer = React.lazy(loadHTMLViewerRoute);
 const InstallPage = React.lazy(loadInstallRoute);
 const AuthPage = React.lazy(loadAuthRoute);
+const CharacterCreatorPage = React.lazy(loadCharacterCreatorRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
@@ -52,7 +56,7 @@ type PWAState = ReturnType<typeof usePWA>;
 const CONTENT_ROUTES = ['/play/', '/open/', '/resource/', '/html-viewer'];
 
 // Main app routes where auto-fullscreen should be active
-const MAIN_APP_ROUTES = ['/', '/apps', '/home-profile', '/manager', '/classroom'];
+const MAIN_APP_ROUTES = ['/', '/apps', '/home-profile', '/manager', '/classroom', '/character-creator'];
 
 const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
     const { enterFullscreen, isFullscreen } = pwa;
@@ -111,7 +115,6 @@ const HomeProfileRouteShell = () => <div />;
 const ClassroomRouteShell = () => <div />;
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-03-09-29';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
@@ -121,182 +124,26 @@ const CLASSROOM_APP_VERSION = '2026-03-10-1';
 const App: React.FC = () => {
     const { user, loading } = useAuth();
     const pwa = usePWA();
-    const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOME_PAGE_APP_VERSION}`);
+    const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}`);
     const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_APP_VERSION}&intro=0`);
     const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_APP_VERSION}`);
     const classroomDoorAudioUrl = buildAssetPath(CLASSROOM_DOOR_AUDIO_PATH);
 
-    useEffect(() => {
-        if (loading) return;
-
-        const routeWarmupHandles: number[] = [];
-        const scheduleRouteWarmup = (delayMs: number, loader: () => Promise<unknown>) => {
-            const timerId = window.setTimeout(() => {
-                void loader();
-            }, delayMs);
-            routeWarmupHandles.push(timerId);
-        };
-
-        const preconnectHref = `${window.location.origin}/`;
-        const preconnectRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-preconnect"]',
-        );
-        if (!preconnectRel) {
-            const preconnectLink = document.createElement('link');
-            preconnectLink.rel = 'preconnect';
-            preconnectLink.href = preconnectHref;
-            preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-preconnect');
-            document.head.appendChild(preconnectLink);
-        }
-
-        const unpkgPreconnectRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-external-unpkg-preconnect"]',
-        );
-        if (!unpkgPreconnectRel) {
-            const unpkgPreconnectLink = document.createElement('link');
-            unpkgPreconnectLink.rel = 'preconnect';
-            unpkgPreconnectLink.href = 'https://unpkg.com';
-            unpkgPreconnectLink.crossOrigin = 'anonymous';
-            unpkgPreconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-unpkg-preconnect');
-            document.head.appendChild(unpkgPreconnectLink);
-        }
-
-        const fontsPreconnectRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-external-fonts-preconnect"]',
-        );
-        if (!fontsPreconnectRel) {
-            const fontsPreconnectLink = document.createElement('link');
-            fontsPreconnectLink.rel = 'preconnect';
-            fontsPreconnectLink.href = 'https://fonts.googleapis.com';
-            fontsPreconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-fonts-preconnect');
-            document.head.appendChild(fontsPreconnectLink);
-        }
-
-        const fontsStaticPreconnectRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-external-fonts-static-preconnect"]',
-        );
-        if (!fontsStaticPreconnectRel) {
-            const fontsStaticPreconnectLink = document.createElement('link');
-            fontsStaticPreconnectLink.rel = 'preconnect';
-            fontsStaticPreconnectLink.href = 'https://fonts.gstatic.com';
-            fontsStaticPreconnectLink.crossOrigin = 'anonymous';
-            fontsStaticPreconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-fonts-static-preconnect');
-            document.head.appendChild(fontsStaticPreconnectLink);
-        }
-
-        const preloadRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-preload"]',
-        );
-        if (!preloadRel) {
-            const preloadLink = document.createElement('link');
-            preloadLink.rel = 'preload';
-            preloadLink.as = 'document';
-            preloadLink.href = homePageAppUrl;
-            preloadLink.setAttribute('data-prefetch', 'homeschool-home-app-preload');
-            preloadLink.setAttribute('fetchpriority', 'high');
-            document.head.appendChild(preloadLink);
-        }
-
-        const prefetchRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-prefetch"]',
-        );
-        if (!prefetchRel) {
-            const prefetchLink = document.createElement('link');
-            prefetchLink.rel = 'prefetch';
-            prefetchLink.as = 'document';
-            prefetchLink.href = homePageAppUrl;
-            prefetchLink.setAttribute('data-prefetch', 'homeschool-home-app-prefetch');
-            document.head.appendChild(prefetchLink);
-        }
-
-        const threePreloadRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-home-app-external-three-preload"]',
-        );
-        if (!threePreloadRel) {
-            const threePreloadLink = document.createElement('link');
-            threePreloadLink.rel = 'preload';
-            threePreloadLink.as = 'script';
-            threePreloadLink.href = HOME_PAGE_APP_THREE_MODULE_URL;
-            threePreloadLink.crossOrigin = 'anonymous';
-            threePreloadLink.setAttribute('data-prefetch', 'homeschool-home-app-external-three-preload');
-            document.head.appendChild(threePreloadLink);
-        }
-
-        const classroomPreloadRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-classroom-app-preload"]',
-        );
-        if (!classroomPreloadRel) {
-            const classroomPreloadLink = document.createElement('link');
-            classroomPreloadLink.rel = 'preload';
-            classroomPreloadLink.as = 'document';
-            classroomPreloadLink.href = classroomAppUrl;
-            classroomPreloadLink.setAttribute('data-prefetch', 'homeschool-classroom-app-preload');
-            classroomPreloadLink.setAttribute('fetchpriority', 'high');
-            document.head.appendChild(classroomPreloadLink);
-        }
-
-        const classroomPrefetchRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-classroom-app-prefetch"]',
-        );
-        if (!classroomPrefetchRel) {
-            const classroomPrefetchLink = document.createElement('link');
-            classroomPrefetchLink.rel = 'prefetch';
-            classroomPrefetchLink.as = 'document';
-            classroomPrefetchLink.href = classroomAppUrl;
-            classroomPrefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-app-prefetch');
-            document.head.appendChild(classroomPrefetchLink);
-        }
-
-        const classroomDoorIntroPrefetchRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-classroom-door-prefetch"]',
-        );
-        if (!classroomDoorIntroPrefetchRel) {
-            const classroomDoorIntroPrefetchLink = document.createElement('link');
-            classroomDoorIntroPrefetchLink.rel = 'prefetch';
-            classroomDoorIntroPrefetchLink.as = 'document';
-            classroomDoorIntroPrefetchLink.href = classroomDoorIntroUrl;
-            classroomDoorIntroPrefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-prefetch');
-            document.head.appendChild(classroomDoorIntroPrefetchLink);
-        }
-
-        const classroomDoorAudioPrefetchRel = document.querySelector<HTMLLinkElement>(
-            'link[data-prefetch="homeschool-classroom-door-audio-prefetch"]',
-        );
-        if (!classroomDoorAudioPrefetchRel) {
-            const classroomDoorAudioPrefetchLink = document.createElement('link');
-            classroomDoorAudioPrefetchLink.rel = 'prefetch';
-            classroomDoorAudioPrefetchLink.as = 'audio';
-            classroomDoorAudioPrefetchLink.href = classroomDoorAudioUrl;
-            classroomDoorAudioPrefetchLink.type = 'audio/mpeg';
-            classroomDoorAudioPrefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-audio-prefetch');
-            document.head.appendChild(classroomDoorAudioPrefetchLink);
-        }
-
-        // Staggered warmups so main tabs/routes feel instant after login and during login flow.
-        // Keep low delays but avoid hammering network/CPU in one burst.
-        scheduleRouteWarmup(80, loadHomeRoute);
-        scheduleRouteWarmup(140, loadClassroomRoute);
-        scheduleRouteWarmup(220, loadHTMLViewerRoute);
-        scheduleRouteWarmup(300, loadGamePlayerRoute);
-        scheduleRouteWarmup(380, loadViewerRoute);
-
-        // Manager route is less frequently used; warm slightly later.
-        scheduleRouteWarmup(520, loadManagerRoute);
-
-        return () => {
-            routeWarmupHandles.forEach((timerId) => window.clearTimeout(timerId));
-        };
-    }, [classroomAppUrl, classroomDoorAudioUrl, classroomDoorIntroUrl, homePageAppUrl, loading]);
-
-    useEffect(() => {
-        return () => {
-            document
-                .querySelectorAll<HTMLLinkElement>(
-                    'link[data-prefetch^="homeschool-home-app-"], link[data-prefetch^="homeschool-classroom-app-"], link[data-prefetch^="homeschool-classroom-door-"], link[data-prefetch^="homeschool-home-app-external-"]',
-                )
-                .forEach((link) => link.remove());
-        };
-    }, []);
+    useAppAssetPrefetch({
+        loading,
+        homePageAppUrl,
+        classroomAppUrl,
+        classroomDoorIntroUrl,
+        classroomDoorAudioUrl,
+        homePageThreeModuleUrl: HOME_PAGE_APP_THREE_MODULE_URL,
+        loadHomeRoute,
+        loadClassroomRoute,
+        loadHTMLViewerRoute,
+        loadGamePlayerRoute,
+        loadViewerRoute,
+        loadCharacterCreatorRoute,
+        loadManagerRoute,
+    });
 
 
     // Use the same base path as Vite config
@@ -325,6 +172,7 @@ const App: React.FC = () => {
                                 <Route path="play/:id" element={<RequireAuth user={user} loading={loading}><GamePlayer /></RequireAuth>} />
                                 <Route path="open/:id" element={<RequireAuth user={user} loading={loading}><GamePlayer /></RequireAuth>} />
                                 <Route path="manager" element={<RequireAuth user={user} loading={loading}><ManagerPage /></RequireAuth>} />
+                                <Route path="character-creator" element={<RequireAuth user={user} loading={loading}><CharacterCreatorPage /></RequireAuth>} />
                                 <Route path="resource/:id" element={<RequireAuth user={user} loading={loading}><Viewer /></RequireAuth>} />
                             <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
                                 <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><HomeProfileRouteShell /></RequireAuth>} />

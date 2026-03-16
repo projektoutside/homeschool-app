@@ -100,6 +100,31 @@ create index if not exists classroom_global_states_updated_at_idx
 
 alter table public.classroom_global_states enable row level security;
 
+create or replace function public.current_user_has_manager_role()
+returns boolean
+language sql
+stable
+as $$
+  select (
+    lower(
+      coalesce(
+        auth.jwt() -> 'app_metadata' ->> 'role',
+        auth.jwt() -> 'user_metadata' ->> 'role',
+        ''
+      )
+    ) in ('manager', 'admin', 'owner')
+    or lower(
+      coalesce(
+        auth.jwt() -> 'app_metadata' ->> 'is_manager',
+        auth.jwt() -> 'user_metadata' ->> 'is_manager',
+        auth.jwt() -> 'app_metadata' ->> 'manager',
+        auth.jwt() -> 'user_metadata' ->> 'manager',
+        'false'
+      )
+    ) in ('1', 'true', 'yes', 'on')
+  );
+$$;
+
 drop policy if exists "Authenticated users can read classroom global state" on public.classroom_global_states;
 create policy "Authenticated users can read classroom global state"
   on public.classroom_global_states
@@ -110,32 +135,20 @@ drop policy if exists "Manager users can insert classroom global state" on publi
 create policy "Manager users can insert classroom global state"
   on public.classroom_global_states
   for insert
-  with check (
-    lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '')) in ('manager', 'admin', 'owner')
-    or lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'is_manager', 'false')) in ('1', 'true', 'yes', 'on')
-  );
+  with check (public.current_user_has_manager_role());
 
 drop policy if exists "Manager users can update classroom global state" on public.classroom_global_states;
 create policy "Manager users can update classroom global state"
   on public.classroom_global_states
   for update
-  using (
-    lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '')) in ('manager', 'admin', 'owner')
-    or lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'is_manager', 'false')) in ('1', 'true', 'yes', 'on')
-  )
-  with check (
-    lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '')) in ('manager', 'admin', 'owner')
-    or lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'is_manager', 'false')) in ('1', 'true', 'yes', 'on')
-  );
+  using (public.current_user_has_manager_role())
+  with check (public.current_user_has_manager_role());
 
 drop policy if exists "Manager users can delete classroom global state" on public.classroom_global_states;
 create policy "Manager users can delete classroom global state"
   on public.classroom_global_states
   for delete
-  using (
-    lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '')) in ('manager', 'admin', 'owner')
-    or lower(coalesce(auth.jwt() -> 'user_metadata' ->> 'is_manager', 'false')) in ('1', 'true', 'yes', 'on')
-  );
+  using (public.current_user_has_manager_role());
 
 do $$
 begin
@@ -145,3 +158,164 @@ exception
   when undefined_object then null;
 end;
 $$;
+
+-- Live HomepageAPP categories controlled by manager users
+create table if not exists public.homepage_prop_categories (
+  key text primary key,
+  label text not null default '',
+  slot_key text not null default 'headWear',
+  equip_limit integer not null default 1,
+  sort_order integer not null default 0,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now(),
+  updated_by_user_id uuid references auth.users (id) on delete set null,
+  updated_by_username text not null default ''
+);
+
+create index if not exists homepage_prop_categories_sort_order_idx
+  on public.homepage_prop_categories (sort_order asc, label asc);
+
+alter table public.homepage_prop_categories enable row level security;
+
+drop policy if exists "Authenticated users can read homepage prop categories" on public.homepage_prop_categories;
+create policy "Authenticated users can read homepage prop categories"
+  on public.homepage_prop_categories
+  for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Manager users can insert homepage prop categories" on public.homepage_prop_categories;
+create policy "Manager users can insert homepage prop categories"
+  on public.homepage_prop_categories
+  for insert
+  with check (public.current_user_has_manager_role());
+
+drop policy if exists "Manager users can update homepage prop categories" on public.homepage_prop_categories;
+create policy "Manager users can update homepage prop categories"
+  on public.homepage_prop_categories
+  for update
+  using (public.current_user_has_manager_role())
+  with check (public.current_user_has_manager_role());
+
+drop policy if exists "Manager users can delete homepage prop categories" on public.homepage_prop_categories;
+create policy "Manager users can delete homepage prop categories"
+  on public.homepage_prop_categories
+  for delete
+  using (public.current_user_has_manager_role());
+
+-- Live HomepageAPP props controlled by manager users
+create table if not exists public.homepage_props (
+  key text primary key,
+  label text not null default '',
+  category_key text not null references public.homepage_prop_categories (key) on delete cascade,
+  rarity text not null default 'rare',
+  asset_url text,
+  storage_path text,
+  attachment jsonb not null default '{}'::jsonb,
+  eye_preset text,
+  material_preset text,
+  mystery_box_enabled boolean not null default true,
+  active boolean not null default true,
+  archived boolean not null default false,
+  tags text[] not null default '{}'::text[],
+  description text not null default '',
+  preview jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  updated_by_user_id uuid references auth.users (id) on delete set null,
+  updated_by_username text not null default ''
+);
+
+create index if not exists homepage_props_category_key_idx
+  on public.homepage_props (category_key);
+
+create index if not exists homepage_props_active_idx
+  on public.homepage_props (active, archived, mystery_box_enabled);
+
+alter table public.homepage_props enable row level security;
+
+drop policy if exists "Authenticated users can read homepage props" on public.homepage_props;
+create policy "Authenticated users can read homepage props"
+  on public.homepage_props
+  for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Manager users can insert homepage props" on public.homepage_props;
+create policy "Manager users can insert homepage props"
+  on public.homepage_props
+  for insert
+  with check (public.current_user_has_manager_role());
+
+drop policy if exists "Manager users can update homepage props" on public.homepage_props;
+create policy "Manager users can update homepage props"
+  on public.homepage_props
+  for update
+  using (public.current_user_has_manager_role())
+  with check (public.current_user_has_manager_role());
+
+drop policy if exists "Manager users can delete homepage props" on public.homepage_props;
+create policy "Manager users can delete homepage props"
+  on public.homepage_props
+  for delete
+  using (public.current_user_has_manager_role());
+
+do $$
+begin
+  alter publication supabase_realtime add table public.homepage_prop_categories;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end;
+$$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.homepage_props;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end;
+$$;
+
+insert into storage.buckets (id, name, public)
+values ('homepage-props', 'homepage-props', true)
+on conflict (id) do update
+  set public = excluded.public;
+
+drop policy if exists "Authenticated users can read homepage prop assets" on storage.objects;
+create policy "Authenticated users can read homepage prop assets"
+  on storage.objects
+  for select
+  using (
+    bucket_id = 'homepage-props'
+    and auth.role() = 'authenticated'
+  );
+
+drop policy if exists "Manager users can upload homepage prop assets" on storage.objects;
+create policy "Manager users can upload homepage prop assets"
+  on storage.objects
+  for insert
+  with check (
+    bucket_id = 'homepage-props'
+    and public.current_user_has_manager_role()
+  );
+
+drop policy if exists "Manager users can update homepage prop assets" on storage.objects;
+create policy "Manager users can update homepage prop assets"
+  on storage.objects
+  for update
+  using (
+    bucket_id = 'homepage-props'
+    and public.current_user_has_manager_role()
+  )
+  with check (
+    bucket_id = 'homepage-props'
+    and public.current_user_has_manager_role()
+  );
+
+drop policy if exists "Manager users can delete homepage prop assets" on storage.objects;
+create policy "Manager users can delete homepage prop assets"
+  on storage.objects
+  for delete
+  using (
+    bucket_id = 'homepage-props'
+    and public.current_user_has_manager_role()
+  );

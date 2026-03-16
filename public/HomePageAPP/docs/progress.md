@@ -81,7 +81,7 @@ Original prompt: when the box lands onto the bottom screen, can you have it kind
     - `output/mystery-forced-open.png`
     - `output/mystery-forced-open-late.png`
 - Testing note for future agents:
-  - the generic headless slingshot action file in `public/HomePageAPP/_workspace/tmp/tmp_actions_mystery.json` does not reliably drive the full mystery sign -> cinematic -> box flow in automation, even though page-load smoke checks are clean. Manual browser interaction or a purpose-built mystery-flow action script is more reliable for visual validation.
+  - the old generic headless slingshot action file that used to live in the retired local `_workspace` bundle did not reliably drive the full mystery sign -> cinematic -> box flow in automation, even when page-load smoke checks were clean. Manual browser interaction or a purpose-built mystery-flow action script is more reliable for visual validation.
 - Brightness follow-up prompt: make the upgraded mystery box feel more vibrant and kid-friendly because the previous premium pass still read too dark.
 - Updated only the mystery-box material/light palette in `public/HomePageAPP/index.html`:
   - shell shifted from near-black obsidian to brighter sapphire blue

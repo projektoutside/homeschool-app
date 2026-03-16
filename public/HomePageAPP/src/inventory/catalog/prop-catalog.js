@@ -1,107 +1,296 @@
+const freezeTuple = (values) => Object.freeze([...values]);
+
+const createAttachmentFit = ({ yOffsetRatio, zOffsetRatio, distanceMultiplier, initialRotationY }) => (
+  Object.freeze({
+    yOffsetRatio,
+    zOffsetRatio,
+    distanceMultiplier,
+    ...(typeof initialRotationY === 'number' ? { initialRotationY } : {}),
+  })
+);
+
+const createWingAttachment = ({ position, rotation, scale, fit }) => Object.freeze({
+  position: freezeTuple(position),
+  rotation: freezeTuple(rotation),
+  scale: freezeTuple(scale),
+  mirrorMode: 'paired',
+  fit: fit ? createAttachmentFit(fit) : null,
+});
+
+const previewKind = (kind) => Object.freeze({ kind });
+
+const WING_ATTACHMENTS = Object.freeze({
+  blossomissWings: createWingAttachment({
+    position: [0.78, -0.76, 0.2],
+    rotation: [0.024, 0.072, -0.03],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.76, zOffsetRatio: 0.012, distanceMultiplier: 1.6, initialRotationY: 0 },
+  }),
+  canvasOfNavelleWings: createWingAttachment({
+    position: [0.8, -0.78, 0.22],
+    rotation: [0.024, 0.076, -0.032],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: -0.04, zOffsetRatio: 0.016, distanceMultiplier: 1.26, initialRotationY: 0 },
+  }),
+  goddessOfValleysWings: createWingAttachment({
+    position: [0.8, -0.78, 0.22],
+    rotation: [0.024, 0.076, -0.032],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: -0.3, zOffsetRatio: 0.016, distanceMultiplier: 1.22, initialRotationY: 0 },
+  }),
+  honeycombBloomsWings: createWingAttachment({
+    position: [0.8, -0.78, 0.22],
+    rotation: [0.024, 0.076, -0.032],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.14, zOffsetRatio: 0.016, distanceMultiplier: 1.2, initialRotationY: 0 },
+  }),
+  lavalcanoWings: createWingAttachment({
+    position: [0.81, -0.82, 0.22],
+    rotation: [0.022, 0.08, -0.034],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.9, zOffsetRatio: 0.012, distanceMultiplier: 1.82, initialRotationY: 0 },
+  }),
+  lightOfSmilesWings: createWingAttachment({
+    position: [0.79, -0.77, 0.19],
+    rotation: [0.023, 0.074, -0.029],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.38, zOffsetRatio: 0.012, distanceMultiplier: 1.34, initialRotationY: 0 },
+  }),
+  moonlightAmayaWings: createWingAttachment({
+    position: [0.79, -0.77, 0.19],
+    rotation: [0.023, 0.074, -0.029],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: -0.16, zOffsetRatio: 0.012, distanceMultiplier: 1.22, initialRotationY: 0 },
+  }),
+  endlessWings: createWingAttachment({
+    position: [0.8, -0.8, 0.22],
+    rotation: [0.024, 0.076, -0.032],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.02, zOffsetRatio: 0.014, distanceMultiplier: 1.32, initialRotationY: 0 },
+  }),
+  emeraldCoenWings: createWingAttachment({
+    position: [0.8, -0.78, 0.22],
+    rotation: [0.024, 0.076, -0.032],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.08, zOffsetRatio: 0.016, distanceMultiplier: 1.18, initialRotationY: 0 },
+  }),
+  xatoriWings: createWingAttachment({
+    position: [0.78, -0.76, 0.2],
+    rotation: [0.024, 0.072, -0.03],
+    scale: [19.2, 19.2, 19.2],
+    fit: { yOffsetRatio: 0.74, zOffsetRatio: 0.01, distanceMultiplier: 1.7, initialRotationY: 0 },
+  }),
+  alphaWings: createWingAttachment({
+    position: [0.66, -0.2, 0.24],
+    rotation: [0.02, 0.04, -0.01],
+    scale: [1.68, 1.68, 1.68],
+    fit: { yOffsetRatio: 0.76, zOffsetRatio: 0.02, distanceMultiplier: 1.2 },
+  }),
+  rainbowWings: createWingAttachment({
+    position: [0.86, -0.12, -0.16],
+    rotation: [0, 0.045, -0.015],
+    scale: [2.32, 2.32, 2.32],
+    fit: { yOffsetRatio: 1.6, zOffsetRatio: 0.03, distanceMultiplier: 1.34 },
+  }),
+  roboticWings: createWingAttachment({
+    position: [0.58, -0.34, 0.3],
+    rotation: [0.02, 0.02, -0.02],
+    scale: [2.58, 2.58, 2.58],
+    fit: { yOffsetRatio: 0.38, zOffsetRatio: 0.016, distanceMultiplier: 1.14 },
+  }),
+  omegaWings: createWingAttachment({
+    position: [0.3, -0.34, -1],
+    rotation: [-0.05, 0.08, 0.04],
+    scale: [1.3, 1.3, 1.3],
+    fit: { yOffsetRatio: 0.9, zOffsetRatio: 0.026, distanceMultiplier: 1.2 },
+  }),
+  efernoWings: createWingAttachment({
+    position: [0.58, -0.22, 0.18],
+    rotation: [0.02, 0.045, -0.015],
+    scale: [6.3, 6.3, 6.3],
+    fit: { yOffsetRatio: 1.18, zOffsetRatio: 0.028, distanceMultiplier: 1.36 },
+  }),
+});
+
 export const PROP_CATALOG = Object.freeze([
   Object.freeze({
     key: 'blossomissWings',
     label: 'Blossomiss Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeBlossomissWingsProp'
+    factoryId: 'makeBlossomissWingsProp',
+    assetUrl: './Images/PROPS/Wings/BlossomissWings/BlossomissWings.glb',
+    attachment: WING_ATTACHMENTS.blossomissWings,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'canvasOfNavelleWings',
     label: 'Canvas of Navelle',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeCanvasOfNavelleWingsProp'
+    factoryId: 'makeCanvasOfNavelleWingsProp',
+    assetUrl: './Images/PROPS/Wings/Canvas of Navelle/CanvasOfNavelle.glb',
+    attachment: WING_ATTACHMENTS.canvasOfNavelleWings,
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'goddessOfValleysWings',
     label: 'Goddess of Valleys',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeGoddessOfValleysWingsProp'
+    factoryId: 'makeGoddessOfValleysWingsProp',
+    assetUrl: './Images/PROPS/Wings/Goddess of Valleys/GoddessOfValleys.glb',
+    attachment: WING_ATTACHMENTS.goddessOfValleysWings,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'honeycombBloomsWings',
     label: 'Honeycomb Blooms',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeHoneycombBloomsWingsProp'
+    factoryId: 'makeHoneycombBloomsWingsProp',
+    assetUrl: './Images/PROPS/Wings/Honeycomb Blooms/HoneycombBlooms.glb',
+    attachment: WING_ATTACHMENTS.honeycombBloomsWings,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'lavalcanoWings',
     label: 'Lavalcano Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeLavalcanoWingsProp'
+    factoryId: 'makeLavalcanoWingsProp',
+    assetUrl: './Images/PROPS/Wings/LavalcanoWings/LavalcanoWings.glb',
+    attachment: WING_ATTACHMENTS.lavalcanoWings,
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'lightOfSmilesWings',
     label: 'Light of Smiles',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeLightOfSmilesWingsProp'
+    factoryId: 'makeLightOfSmilesWingsProp',
+    assetUrl: './Images/PROPS/Wings/LightOfSmiles/LightOfSmiles.glb',
+    attachment: WING_ATTACHMENTS.lightOfSmilesWings,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'moonlightAmayaWings',
     label: 'Moonlight Amaya',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeMoonlightAmayaWingsProp'
+    factoryId: 'makeMoonlightAmayaWingsProp',
+    assetUrl: './Images/PROPS/Wings/Moonlight Amaya/MoonlightAmaya.glb',
+    attachment: WING_ATTACHMENTS.moonlightAmayaWings,
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'endlessWings',
     label: 'Endless Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeEndlessWingsProp'
+    factoryId: 'makeEndlessWingsProp',
+    assetUrl: './Images/PROPS/Wings/EndlessWings/EndlessWings.glb',
+    attachment: WING_ATTACHMENTS.endlessWings,
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'emeraldCoenWings',
     label: 'Emerald Coen Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeEmeraldCoenWingsProp'
+    factoryId: 'makeEmeraldCoenWingsProp',
+    assetUrl: './Images/PROPS/Wings/EmeraldCoen/EmeraldCoen.glb',
+    attachment: WING_ATTACHMENTS.emeraldCoenWings,
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'xatoriWings',
     label: 'Xatori Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeXatoriWingsProp'
+    factoryId: 'makeXatoriWingsProp',
+    assetUrl: './Images/PROPS/Wings/XatoriWings/Xatori.glb',
+    attachment: WING_ATTACHMENTS.xatoriWings,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'alphaWings',
     label: 'Alpha Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeAlphaWingsProp'
+    factoryId: 'makeAlphaWingsProp',
+    attachment: WING_ATTACHMENTS.alphaWings,
+    preview: previewKind('alphaWingProxy'),
+    rarity: 'rare',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'rainbowWings',
     label: 'Rainbow Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeRainbowWingsProp'
+    factoryId: 'makeRainbowWingsProp',
+    attachment: WING_ATTACHMENTS.rainbowWings,
+    preview: previewKind('rainbowWingProxy'),
+    rarity: 'legendary',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'roboticWings',
     label: 'Robotic Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeRoboticWingsProp'
+    factoryId: 'makeRoboticWingsProp',
+    attachment: WING_ATTACHMENTS.roboticWings,
+    preview: previewKind('roboticWingProxy'),
+    rarity: 'rare',
+    mysteryBoxEnabled: true,
+    active: true,
   }),
   Object.freeze({
     key: 'omegaWings',
     label: 'Omega Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeOmegaWingsProp'
+    factoryId: 'makeOmegaWingsProp',
+    attachment: WING_ATTACHMENTS.omegaWings,
+    preview: previewKind('omegaWingProxy'),
+    rarity: 'rare',
+    mysteryBoxEnabled: false,
+    active: true,
   }),
   Object.freeze({
     key: 'efernoWings',
     label: 'Eferno Wings',
     category: 'wingSet',
     prewarmPriority: 4,
-    factoryId: 'makeEfernoWingsProp'
-  })
+    factoryId: 'makeEfernoWingsProp',
+    assetUrl: './Images/PROPS/Eferno/ComfyUI_00007_.glb',
+    attachment: WING_ATTACHMENTS.efernoWings,
+    rarity: 'common',
+    mysteryBoxEnabled: true,
+    active: true,
+  }),
 ]);

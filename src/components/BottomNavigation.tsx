@@ -14,6 +14,7 @@ const HOME_TRANSITION_FADE_OUT_MS = 280;
 const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 const STATS_WAKE_GLOW_MS = 2000;
+const STATS_SHIFT_HANDLE_DRAG_PX = 28;
 const CLASSROOM_IMMERSIVE_SCOPE = 'classroom-3d';
 const CLASSROOM_IMMERSIVE_OPEN_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_OPEN';
 const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
@@ -21,6 +22,7 @@ const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
     const searchParams = new URLSearchParams(location.search);
     const activeTab = searchParams.get('tab')?.toLowerCase();
@@ -28,7 +30,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         location.pathname === '/html-viewer' &&
         searchParams.get('source')?.toLowerCase() === 'classroom';
     
-    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(true);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
     const [isStatsLineDormant, setIsStatsLineDormant] = useState(false);
     const [isStatsLinePulsing, setIsStatsLinePulsing] = useState(false);
@@ -43,6 +45,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const statsPulseTimeoutRef = useRef<number | null>(null);
     const statsAwakeFlashTimeoutRef = useRef<number | null>(null);
     const statsAutoDimTimeoutRef = useRef<number | null>(null);
+    const statsShiftHandlePointerIdRef = useRef<number | null>(null);
+    const statsShiftHandleStartXRef = useRef<number | null>(null);
+    const statsShiftHandleDraggedRef = useRef<boolean>(false);
     const wasFullscreenLikeActiveRef = useRef<boolean>(false);
     const lastFullscreenActivationKeyRef = useRef<string>('');
     const isStatsMinimizedRef = useRef<boolean>(false);
@@ -95,9 +100,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const isGameLikeImmersive = isPlayRoute || isClassroomViewerRoute || isClassroomImmersiveActive;
 
     useEffect(() => {
-        if (location.pathname !== '/classroom') {
-            setIsClassroomImmersiveActive(false);
-            return;
+        if (!isClassroomRoute) {
+            const frameId = window.requestAnimationFrame(() => {
+                setIsClassroomImmersiveActive(false);
+            });
+            return () => window.cancelAnimationFrame(frameId);
         }
 
         const onWindowMessage = (event: MessageEvent<unknown>) => {
@@ -122,7 +129,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
 
         window.addEventListener('message', onWindowMessage);
         return () => window.removeEventListener('message', onWindowMessage);
-    }, [location.pathname]);
+    }, [isClassroomRoute]);
 
     const triggerStatsAwakeFlash = useCallback((durationMs: number) => {
         setIsStatsLineDormant(false);
@@ -169,6 +176,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             }
             statsAwakeFlashTimeoutRef.current = null;
         }, totalDurationMs);
+    }, []);
+
+    const minimizeStatsDockToEdge = useCallback(() => {
+        setExpandedMode(false);
+        setIsMinimized(true);
+        setIsStatsMinimized(true);
     }, []);
 
     useEffect(() => {
@@ -451,6 +464,61 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         // Ensure the first tap after a swipe can wake the dormant line.
         hasStatsSwiped.current = false;
     };
+
+    const clearStatsShiftHandleGesture = useCallback((eventTarget?: EventTarget | null) => {
+        const target = eventTarget instanceof Element ? eventTarget : null;
+        const pointerId = statsShiftHandlePointerIdRef.current;
+        if (target && pointerId !== null && typeof (target as Element & { releasePointerCapture?: (pointerId: number) => void }).releasePointerCapture === 'function') {
+            try {
+                (target as Element & { releasePointerCapture: (pointerId: number) => void }).releasePointerCapture(pointerId);
+            } catch {
+                // Ignore pointer release failures; clearing refs is enough to end the gesture safely.
+            }
+        }
+        statsShiftHandlePointerIdRef.current = null;
+        statsShiftHandleStartXRef.current = null;
+        statsShiftHandleDraggedRef.current = false;
+    }, []);
+
+    const handleStatsShiftHandlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (!isMinimized || isStatsMinimized) {
+            return;
+        }
+        statsShiftHandlePointerIdRef.current = event.pointerId;
+        statsShiftHandleStartXRef.current = event.clientX;
+        statsShiftHandleDraggedRef.current = false;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }, [isMinimized, isStatsMinimized]);
+
+    const handleStatsShiftHandlePointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (statsShiftHandlePointerIdRef.current !== event.pointerId || statsShiftHandleStartXRef.current === null || isStatsMinimized) {
+            return;
+        }
+        const diff = statsShiftHandleStartXRef.current - event.clientX;
+        if (diff > 10) {
+            statsShiftHandleDraggedRef.current = true;
+        }
+        if (diff >= STATS_SHIFT_HANDLE_DRAG_PX) {
+            minimizeStatsDockToEdge();
+            clearStatsShiftHandleGesture(event.currentTarget);
+        }
+    }, [clearStatsShiftHandleGesture, isStatsMinimized, minimizeStatsDockToEdge]);
+
+    const handleStatsShiftHandlePointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        clearStatsShiftHandleGesture(event.currentTarget);
+    }, [clearStatsShiftHandleGesture]);
+
+    const handleStatsShiftHandleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        if (statsShiftHandleDraggedRef.current) {
+            statsShiftHandleDraggedRef.current = false;
+            return;
+        }
+        if (!isMinimized || isStatsMinimized) {
+            return;
+        }
+        minimizeStatsDockToEdge();
+    }, [isMinimized, isStatsMinimized, minimizeStatsDockToEdge]);
 
     const handleStatsClickCapture = (e: React.MouseEvent) => {
         if (hasStatsSwiped.current) {
@@ -862,7 +930,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 </button>
             </nav>
 
-            <aside
+                <aside
                 className={`bottom-stats-dock ${shouldShowStatsDock ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
                 aria-label="User stats"
                 aria-hidden={!shouldShowStatsDock}
@@ -872,6 +940,20 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 onTouchEnd={onStatsTouchEnd}
                 onClickCapture={handleStatsClickCapture}
             >
+                    <button
+                        type="button"
+                        className="stats-shift-handle"
+                        aria-hidden={isStatsMinimized || !isMinimized}
+                        aria-label="Slide stats dock left"
+                        title="Click or drag left to move the dock out of the way"
+                        onPointerDown={handleStatsShiftHandlePointerDown}
+                        onPointerMove={handleStatsShiftHandlePointerMove}
+                        onPointerUp={handleStatsShiftHandlePointerUp}
+                        onPointerCancel={handleStatsShiftHandlePointerUp}
+                        onClick={handleStatsShiftHandleClick}
+                    >
+                        <div className="stats-shift-line"></div>
+                    </button>
                     <div
                         className="stats-restore-handle"
                         aria-hidden={!isStatsMinimized || !isMinimized}

@@ -1,1 +1,4 @@
-export { createLegacyInventoryAndPropDefinitions } from '../inventory/adapters/legacy-prop-definitions-adapter.js';
+export {
+  createLegacyInventoryAndPropDefinitions,
+  buildRuntimePropDefinitions,
+} from '../inventory/adapters/legacy-prop-definitions-adapter.js';

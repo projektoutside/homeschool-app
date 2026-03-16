@@ -2,6 +2,8 @@ import { INVENTORY_CONFIG as CATALOG_INVENTORY_CONFIG } from '../catalog/invento
 import { PROP_CATALOG } from '../catalog/prop-catalog.js';
 import { buildRuntimePropDefinitions } from '../registry/build-runtime-prop-definitions.js';
 
+export { buildRuntimePropDefinitions } from '../registry/build-runtime-prop-definitions.js';
+
 export function createLegacyInventoryAndPropDefinitions({
   factoryById,
   warn = console.warn
@@ -15,6 +17,7 @@ export function createLegacyInventoryAndPropDefinitions({
 
   return {
     INVENTORY_CONFIG: CATALOG_INVENTORY_CONFIG,
+    PROP_CATALOG,
     PROP_DEFINITIONS
   };
 }

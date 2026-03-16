@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XiO Character Creator</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%234c1d95'/%3E%3Ccircle cx='23' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='41' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='24' cy='31' r='2.8' fill='%230b1220'/%3E%3Ccircle cx='40' cy='31' r='2.8' fill='%230b1220'/%3E%3C/svg%3E"
+  />
+  <link rel="stylesheet" href="./character-creator.css?v=2026-03-15-39" />
+</head>
+<body>
+  <div class="creator-app">
+    <aside class="creator-panel creator-panel--left">
+      <div class="panel-block panel-block--hero panel-dock-header">
+        <div class="panel-block__heading panel-block__heading--hero">
+          <div class="panel-header-main">
+            <p class="panel-eyebrow">Developer Only</p>
+            <h1>XiO Character Creator</h1>
+          </div>
+          <span class="status-chip status-chip--muted" id="draft-origin-chip">Fresh draft</span>
+        </div>
+        <div class="status-row status-row--hero">
+          <span class="status-chip" id="publish-mode-chip">Local Draft Mode</span>
+          <span class="status-chip status-chip--muted" id="selection-chip">No prop selected</span>
+        </div>
+      </div>
+
+      <details class="panel-block panel-block--details panel-shell panel-shell--primary" id="build-import-panel" open>
+        <summary class="block-summary panel-shell__summary">
+          <div>
+            <h2>Quick Start</h2>
+            <p class="mini-copy">Upload a GLB or start a new draft from a live prop.</p>
+          </div>
+          <span class="panel-shell__state" data-panel-shell-state aria-hidden="true">Collapse</span>
+        </summary>
+        <div class="tool-section__body panel-shell__body">
+          <div class="panel-inline-actions panel-inline-actions--split">
+            <button type="button" class="ghost-button" id="clear-stage-button">Reset Stage</button>
+            <button type="button" class="ghost-button" id="link-props-folder-button" hidden>Link Props Folder</button>
+          </div>
+          <span class="status-chip status-chip--muted status-chip--asset-link" id="props-folder-status-chip" hidden>Link required for GLB inventory</span>
+          <label class="upload-zone" for="glb-upload-input">
+            <input id="glb-upload-input" type="file" accept=".glb,model/gltf-binary" hidden />
+            <span class="upload-zone__title">Drop or Select GLB</span>
+            <span class="upload-zone__copy">Loads directly into the XiO stage for instant inspection.</span>
+          </label>
+          <button type="button" class="primary-button primary-button--generator" id="random-prop-generator-button">
+            <span class="primary-button__title">Random Prop Generator</span>
+            <span class="primary-button__subtitle">Stage a coherent XiO-ready wing recipe with rarity, theme, fit, and palette logic.</span>
+          </button>
+          <div class="library-actions library-actions--secondary">
+            <button type="button" class="ghost-button" id="random-wings-button">Load Random Wing</button>
+            <button type="button" class="ghost-button" id="random-crown-button">Load Random Crown</button>
+            <button type="button" class="ghost-button" id="duplicate-prop-button">Duplicate Draft</button>
+          </div>
+          <section class="generated-stage-card" id="generated-stage-card" hidden aria-live="polite">
+            <div class="generated-stage-card__header">
+              <div>
+                <p class="panel-eyebrow">Generated Stage</p>
+                <h3 id="generated-stage-title">Generated wing draft staged</h3>
+              </div>
+              <span class="status-chip status-chip--muted" id="generated-stage-status">Local only</span>
+            </div>
+            <p class="panel-copy panel-copy--compact" id="generated-stage-message">The generated prop is loaded on XiO and safe to test before live publish.</p>
+            <div class="generated-stage-card__grid">
+              <article class="generated-stage-card__stat">
+                <span class="generated-stage-card__label">Theme</span>
+                <strong id="generated-stage-theme">Royal</strong>
+              </article>
+              <article class="generated-stage-card__stat">
+                <span class="generated-stage-card__label">Rarity</span>
+                <strong id="generated-stage-rarity">Rare</strong>
+              </article>
+              <article class="generated-stage-card__stat">
+                <span class="generated-stage-card__label">Material</span>
+                <strong id="generated-stage-material">Royal Enamel</strong>
+              </article>
+              <article class="generated-stage-card__stat">
+                <span class="generated-stage-card__label">Fit</span>
+                <strong id="generated-stage-fit">XiO Wing Master Template</strong>
+              </article>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <details class="panel-block panel-block--details panel-block--grow panel-shell panel-shell--workspace" id="prop-workspace-panel" open>
+        <summary class="block-summary panel-shell__summary">
+          <div>
+            <h2>Current Draft</h2>
+            <p class="mini-copy">Edit the essentials here and open advanced tools only when needed.</p>
+          </div>
+          <span class="panel-shell__state" data-panel-shell-state aria-hidden="true">Collapse</span>
+        </summary>
+        <div class="tool-section__body panel-shell__body">
+          <div class="panel-inline-actions">
+            <button type="button" class="ghost-button" id="load-selected-live-button">Load Live</button>
+          </div>
+          <div class="draft-summary" aria-label="Current draft summary">
+            <article class="draft-summary__row">
+              <span class="draft-summary__label">Asset</span>
+              <strong id="draft-source-inline">No GLB loaded</strong>
+            </article>
+            <article class="draft-summary__row">
+              <span class="draft-summary__label">Category</span>
+              <strong id="draft-category-label">Wing Set</strong>
+            </article>
+            <article class="draft-summary__row">
+              <span class="draft-summary__label">Slot</span>
+              <strong id="draft-slot-label">Wing Set</strong>
+            </article>
+          </div>
+
+          <details class="tool-section" id="prop-core-section" open>
+            <summary class="tool-section__summary">
+              <div>
+                <h3>Core Details</h3>
+                <p class="mini-copy">Name, category, rarity, and publish flags.</p>
+              </div>
+            </summary>
+            <div class="tool-section__body">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Prop Name</span>
+                  <input id="prop-label-input" type="text" placeholder="Celestial Crown" />
+                </label>
+                <label class="field">
+                  <span>Prop Key</span>
+                  <input id="prop-key-input" type="text" placeholder="celestial-crown" />
+                </label>
+                <label class="field">
+                  <span>Category</span>
+                  <select id="prop-category-select"></select>
+                </label>
+                <label class="field">
+                  <span>Rarity</span>
+                  <select id="prop-rarity-select">
+                    <option value="common">Common</option>
+                    <option value="rare">Rare</option>
+                    <option value="legendary">Legendary</option>
+                    <option value="legendaryLight">Legendary Light</option>
+                    <option value="legendaryDark">Legendary Dark</option>
+                  </select>
+                </label>
+                <label class="field field--wide">
+                  <span>Description</span>
+                  <textarea id="prop-description-input" rows="3" placeholder="Notes for Mystery Box players and future editing."></textarea>
+                </label>
+                <label class="field field--wide">
+                  <span>Tags</span>
+                  <input id="prop-tags-input" type="text" placeholder="crown, royal, holiday" />
+                </label>
+              </div>
+              <div class="toggle-row">
+                <label><input id="prop-active-toggle" type="checkbox" checked /> Live in game</label>
+                <label><input id="prop-mystery-toggle" type="checkbox" /> Mystery Box enabled</label>
+                <label><input id="prop-mirror-toggle" type="checkbox" /> Mirror as left/right pair</label>
+              </div>
+            </div>
+          </details>
+
+          <details class="tool-section" id="wing-source-section" open hidden>
+            <summary class="tool-section__summary">
+              <div>
+                <h3>Wing Source</h3>
+                <p class="mini-copy">Isolate one half, fine-tune the seam, and mirror a cleaner wing set.</p>
+              </div>
+            </summary>
+            <div class="tool-section__body">
+              <div class="draft-summary draft-summary--compact" aria-label="Wing source summary">
+                <article class="draft-summary__row">
+                  <span class="draft-summary__label">Source</span>
+                  <strong id="wing-authoring-source-label">Original GLB</strong>
+                </article>
+                <article class="draft-summary__row">
+                  <span class="draft-summary__label">Mirror</span>
+                  <strong id="wing-authoring-mode-label">Both wings preview</strong>
+                </article>
+              </div>
+              <div class="action-row action-row--spread action-row--compact">
+                <button type="button" class="primary-button" id="wing-auto-isolate-button">Auto Isolate Wing</button>
+                <button type="button" class="ghost-button" id="wing-reset-source-button">Reset To Original GLB</button>
+              </div>
+              <div class="library-actions library-actions--pair">
+                <button type="button" class="ghost-button" id="wing-use-left-button">Use Left Half</button>
+                <button type="button" class="ghost-button" id="wing-use-right-button">Use Right Half</button>
+              </div>
+              <div class="toggle-row toggle-row--compact">
+                <label><input id="wing-mirror-both-toggle" type="checkbox" checked /> Mirror To Both Wings</label>
+              </div>
+              <div class="range-grid">
+                <label class="field">
+                  <span>Split Offset</span>
+                  <input id="wing-split-offset-input" type="range" min="-0.85" max="0.85" step="0.01" value="0" />
+                  <small class="field-inline-value" id="wing-split-offset-value">0.00</small>
+                </label>
+                <label class="field">
+                  <span>Trim Margin</span>
+                  <input id="wing-trim-margin-input" type="range" min="0" max="0.36" step="0.005" value="0.02" />
+                  <small class="field-inline-value" id="wing-trim-margin-value">0.02</small>
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <details class="tool-section" id="wing-motion-section" hidden>
+            <summary class="tool-section__summary">
+              <div>
+                <h3>Wing Motion</h3>
+                <p class="mini-copy">Tune flap speed, sweep, direction, and side-by-side motion behavior.</p>
+              </div>
+            </summary>
+            <div class="tool-section__body">
+              <div class="action-row action-row--spread action-row--compact">
+                <button type="button" class="ghost-button" id="wing-motion-preview-button">Play Motion Preview</button>
+              </div>
+              <div class="toggle-row toggle-row--compact">
+                <label><input id="wing-motion-linked-toggle" type="checkbox" checked /> Linked Wings</label>
+              </div>
+              <div class="motion-panel-grid">
+                <section class="motion-card motion-card--master" id="wing-motion-master-card">
+                  <div class="block-header block-header--compact">
+                    <h4>Linked Motion</h4>
+                    <span class="status-chip status-chip--muted" id="wing-motion-master-chip">Both wings</span>
+                  </div>
+                  <div class="form-grid form-grid--motion">
+                    <label class="field">
+                      <span>Flap Speed</span>
+                      <input id="wing-motion-master-flapHz" type="range" min="0.2" max="4.5" step="0.05" value="1.45" />
+                      <small class="field-inline-value" id="wing-motion-master-flapHz-value">1.45</small>
+                    </label>
+                    <label class="field">
+                      <span>Flap Direction</span>
+                      <select id="wing-motion-master-direction">
+                        <option value="normal">Normal</option>
+                        <option value="reverse">Reverse</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Flap Amplitude</span>
+                      <input id="wing-motion-master-amplitude" type="range" min="0.15" max="2.8" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-master-amplitude-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Sweep</span>
+                      <input id="wing-motion-master-sweep" type="range" min="0.15" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-master-sweep-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Pitch</span>
+                      <input id="wing-motion-master-pitch" type="range" min="-1.4" max="1.4" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-master-pitch-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Feather Twist</span>
+                      <input id="wing-motion-master-featherTwist" type="range" min="0" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-master-featherTwist-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Shoulder Spread</span>
+                      <input id="wing-motion-master-shoulderSpread" type="range" min="-0.6" max="1.2" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-master-shoulderSpread-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Phase Offset</span>
+                      <input id="wing-motion-master-phaseOffset" type="range" min="-3.1416" max="3.1416" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-master-phaseOffset-value">0.00</small>
+                    </label>
+                  </div>
+                </section>
+                <section class="motion-card" id="wing-motion-left-card" hidden>
+                  <div class="block-header block-header--compact">
+                    <h4>Left Wing</h4>
+                    <span class="status-chip status-chip--muted">Override</span>
+                  </div>
+                  <div class="form-grid form-grid--motion">
+                    <label class="field">
+                      <span>Flap Speed</span>
+                      <input id="wing-motion-left-flapHz" type="range" min="0.2" max="4.5" step="0.05" value="1.45" />
+                      <small class="field-inline-value" id="wing-motion-left-flapHz-value">1.45</small>
+                    </label>
+                    <label class="field">
+                      <span>Flap Direction</span>
+                      <select id="wing-motion-left-direction">
+                        <option value="normal">Normal</option>
+                        <option value="reverse">Reverse</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Flap Amplitude</span>
+                      <input id="wing-motion-left-amplitude" type="range" min="0.15" max="2.8" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-left-amplitude-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Sweep</span>
+                      <input id="wing-motion-left-sweep" type="range" min="0.15" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-left-sweep-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Pitch</span>
+                      <input id="wing-motion-left-pitch" type="range" min="-1.4" max="1.4" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-left-pitch-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Feather Twist</span>
+                      <input id="wing-motion-left-featherTwist" type="range" min="0" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-left-featherTwist-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Shoulder Spread</span>
+                      <input id="wing-motion-left-shoulderSpread" type="range" min="-0.6" max="1.2" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-left-shoulderSpread-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Phase Offset</span>
+                      <input id="wing-motion-left-phaseOffset" type="range" min="-3.1416" max="3.1416" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-left-phaseOffset-value">0.00</small>
+                    </label>
+                  </div>
+                </section>
+                <section class="motion-card" id="wing-motion-right-card" hidden>
+                  <div class="block-header block-header--compact">
+                    <h4>Right Wing</h4>
+                    <span class="status-chip status-chip--muted">Override</span>
+                  </div>
+                  <div class="form-grid form-grid--motion">
+                    <label class="field">
+                      <span>Flap Speed</span>
+                      <input id="wing-motion-right-flapHz" type="range" min="0.2" max="4.5" step="0.05" value="1.45" />
+                      <small class="field-inline-value" id="wing-motion-right-flapHz-value">1.45</small>
+                    </label>
+                    <label class="field">
+                      <span>Flap Direction</span>
+                      <select id="wing-motion-right-direction">
+                        <option value="normal">Normal</option>
+                        <option value="reverse">Reverse</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Flap Amplitude</span>
+                      <input id="wing-motion-right-amplitude" type="range" min="0.15" max="2.8" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-right-amplitude-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Sweep</span>
+                      <input id="wing-motion-right-sweep" type="range" min="0.15" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-right-sweep-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Wing Pitch</span>
+                      <input id="wing-motion-right-pitch" type="range" min="-1.4" max="1.4" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-right-pitch-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Feather Twist</span>
+                      <input id="wing-motion-right-featherTwist" type="range" min="0" max="2.4" step="0.05" value="1" />
+                      <small class="field-inline-value" id="wing-motion-right-featherTwist-value">1.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Shoulder Spread</span>
+                      <input id="wing-motion-right-shoulderSpread" type="range" min="-0.6" max="1.2" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-right-shoulderSpread-value">0.00</small>
+                    </label>
+                    <label class="field">
+                      <span>Phase Offset</span>
+                      <input id="wing-motion-right-phaseOffset" type="range" min="-3.1416" max="3.1416" step="0.01" value="0" />
+                      <small class="field-inline-value" id="wing-motion-right-phaseOffset-value">0.00</small>
+                    </label>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </details>
+
+          <details class="tool-section" id="appearance-section">
+            <summary class="tool-section__summary">
+              <div>
+                <h3>Look & Finish</h3>
+                <p class="mini-copy">Eye presets and base material styling.</p>
+              </div>
+            </summary>
+            <div class="tool-section__body">
+              <div class="block-header block-header--compact">
+                <h4>Appearance</h4>
+                <button type="button" class="ghost-button" id="reset-appearance-button">Reset</button>
+              </div>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Eye Preset</span>
+                  <select id="eye-preset-select"></select>
+                </label>
+                <label class="field">
+                  <span>Body Material</span>
+                  <select id="material-preset-select"></select>
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <details class="tool-section" id="transform-section">
+            <summary class="tool-section__summary">
+              <div>
+                <h3>Transform & Fit</h3>
+                <p class="mini-copy">Use this when you want move, rotate, or scale controls.</p>
+              </div>
+            </summary>
+            <div class="tool-section__body">
+              <div class="block-header block-header--compact">
+                <h4>Attachment Transform</h4>
+                <div class="gizmo-toolbar">
+                  <button type="button" class="gizmo-button is-active" data-transform-mode="translate">Move</button>
+                  <button type="button" class="gizmo-button" data-transform-mode="rotate">Rotate</button>
+                  <button type="button" class="gizmo-button" data-transform-mode="scale">Scale</button>
+                </div>
+              </div>
+              <div class="transform-grid">
+                <label class="field"><span>Pos X</span><input id="pos-x-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Pos Y</span><input id="pos-y-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Pos Z</span><input id="pos-z-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Rot X</span><input id="rot-x-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Rot Y</span><input id="rot-y-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Rot Z</span><input id="rot-z-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Scale X</span><input id="scale-x-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Scale Y</span><input id="scale-y-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Scale Z</span><input id="scale-z-input" type="number" step="0.01" /></label>
+              </div>
+            </div>
+          </details>
+
+          <div class="action-row action-row--spread">
+            <button type="button" class="primary-button" id="publish-prop-button">Add Prop to Game</button>
+            <button type="button" class="ghost-button" id="archive-prop-button">Archive Selected</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel-block panel-block--details panel-shell panel-shell--admin" id="category-manager-section">
+        <summary class="block-summary panel-shell__summary">
+          <div>
+            <p class="panel-eyebrow panel-eyebrow--admin">Admin</p>
+            <h2>Category Manager</h2>
+            <p class="mini-copy">Create, edit, and clean up the category list used by your prop draft dropdown.</p>
+          </div>
+          <span class="panel-shell__state" data-panel-shell-state aria-hidden="true">Expand</span>
+        </summary>
+        <div class="tool-section__body">
+          <div class="category-admin-picker">
+            <label class="field field--wide">
+              <span>Edit Category</span>
+              <select id="category-editor-select"></select>
+            </label>
+            <div class="category-admin-picker__actions">
+              <button type="button" class="ghost-button" id="new-category-button">Add New</button>
+              <button type="button" class="ghost-button ghost-button--danger" id="delete-category-button">Delete Category</button>
+            </div>
+          </div>
+          <div class="form-grid form-grid--category-admin">
+            <label class="field">
+              <span>Category Key</span>
+              <input id="category-key-input" type="text" placeholder="holiday-crowns" />
+            </label>
+            <label class="field">
+              <span>Label</span>
+              <input id="category-label-input" type="text" placeholder="Holiday Crowns" />
+            </label>
+            <label class="field">
+              <span>Slot</span>
+              <select id="category-slot-select"></select>
+            </label>
+            <label class="field">
+              <span>Equip Limit</span>
+              <input id="category-equip-limit-input" type="number" min="1" max="8" step="1" value="1" />
+            </label>
+            <label class="field">
+              <span>Sort Order</span>
+              <input id="category-sort-order-input" type="number" step="1" value="0" />
+            </label>
+            <label class="field toggle-field">
+              <span>Enabled</span>
+              <input id="category-enabled-toggle" type="checkbox" checked />
+            </label>
+          </div>
+          <div class="action-row action-row--spread">
+            <button type="button" class="ghost-button" id="use-category-button">Use For Draft</button>
+            <button type="button" class="primary-button" id="save-category-button">Save Category</button>
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <main class="creator-stage">
+      <div class="stage-toolbar">
+        <div class="stage-toolbar__group stage-toolbar__group--primary">
+          <button type="button" class="ghost-button" id="fit-view-button">Fit XiO</button>
+          <button type="button" class="ghost-button" id="toggle-preview-motion-button">Play Preview</button>
+          <button type="button" class="ghost-button" id="sync-both-wings-button">Sync Both Wings</button>
+          <button type="button" class="ghost-button" id="sync-one-wing-button">Sync One Wing</button>
+          <button type="button" class="ghost-button" id="focus-prop-button">Focus Prop</button>
+          <button type="button" class="primary-button" id="edit-prop-button">Edit Prop</button>
+          <button type="button" class="ghost-button" id="toggle-turntable-button">Turntable On</button>
+        </div>
+        <div class="stage-toolbar__group stage-toolbar__group--status">
+          <span class="stage-hint" id="stage-hint-label"></span>
+        </div>
+        <div class="stage-toolbar__group edit-session-group" id="edit-session-group" hidden>
+          <span class="status-chip status-chip--edit" id="edit-session-label">Editing current prop</span>
+          <button type="button" class="primary-button" id="save-edit-button">Save Edit</button>
+          <button type="button" class="ghost-button" id="cancel-edit-button">Cancel</button>
+        </div>
+      </div>
+      <div class="stage-shell" id="stage-shell">
+        <div class="stage-quicktools" aria-label="Transform shortcuts">
+          <button
+            type="button"
+            class="stage-quicktools__button"
+            data-transform-mode="translate"
+            data-stage-transform-shortcut
+            aria-label="Move prop"
+            title="Move"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 2l3.3 3.3-1.7 1.7-1.6-1.6v5.1h5.1l-1.6-1.6 1.7-1.7L22 12l-3.3 3.3-1.7-1.7 1.6-1.6H13.5v5.1l1.6-1.6 1.7 1.7L12 22l-3.3-3.3 1.7-1.7 1.6 1.6V13.5H6.9l1.6 1.6-1.7 1.7L2 12l3.3-3.3 1.7 1.7-1.6 1.6h5.1V6.9l-1.6 1.6-1.7-1.7L12 2z"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="stage-quicktools__button"
+            data-transform-mode="rotate"
+            data-stage-transform-shortcut
+            aria-label="Rotate prop"
+            title="Rotate"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 4a8 8 0 017.4 5H17l3.8 3.8L24.6 9h-2.1A10.5 10.5 0 1012 22a10.2 10.2 0 007.4-3.1l-1.8-1.7A7.7 7.7 0 1112 4z"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="stage-quicktools__button"
+            data-transform-mode="scale"
+            data-stage-transform-shortcut
+            aria-label="Scale prop"
+            title="Scale"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 4h7v2H7.4l4.3 4.3-1.4 1.4L6 7.4V11H4V4zm16 16h-7v-2h3.6l-4.3-4.3 1.4-1.4 4.3 4.3V13H20v7zM20 4v7h-2V7.4l-4.3 4.3-1.4-1.4L16.6 6H13V4h7zM4 20v-7h2v3.6l4.3-4.3 1.4 1.4L7.4 18H11v2H4z"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="stage-quicktools__button"
+            id="toggle-placement-depth-button"
+            aria-label="Send prop behind XiO"
+            title="Send prop behind XiO"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 5.5A2.5 2.5 0 018.5 3h7A2.5 2.5 0 0118 5.5v7A2.5 2.5 0 0115.5 15h-7A2.5 2.5 0 016 12.5v-7zm2.5-.5a.5.5 0 00-.5.5v7a.5.5 0 00.5.5h7a.5.5 0 00.5-.5v-7a.5.5 0 00-.5-.5h-7z"/>
+              <path d="M4 11.5A2.5 2.5 0 016.5 9H7v2h-.5a.5.5 0 00-.5.5v7a.5.5 0 00.5.5h7a.5.5 0 00.5-.5V18h2v.5A2.5 2.5 0 0113.5 21h-7A2.5 2.5 0 014 18.5v-7z"/>
+              <path d="M18.2 9.1l-2.8-2.8 1.4-1.4L22 10l-5.2 5.1-1.4-1.4 2.8-2.8H11v-2h7.2z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="stage-historytools" aria-label="History shortcuts">
+          <button type="button" class="ghost-button stage-historytools__button" id="undo-adjustment-button" title="Undo last adjustment (Ctrl+Z)">Undo</button>
+          <button type="button" class="ghost-button stage-historytools__button" id="redo-adjustment-button" title="Redo last adjustment (Ctrl+Shift+Z)">Redo</button>
+        </div>
+        <canvas id="creator-canvas"></canvas>
+        <div class="drop-overlay" id="drop-overlay">
+          <strong>Drop GLB to Attach</strong>
+          <span>It will load with XiO in the active slot.</span>
+        </div>
+      </div>
+      <div class="stage-footer">
+        <div>
+          <span class="stage-footer__label">Current Asset</span>
+          <strong id="current-asset-label">No GLB loaded</strong>
+        </div>
+        <div>
+          <span class="stage-footer__label">Selection</span>
+          <strong id="stage-selection-label">No active prop</strong>
+        </div>
+        <div>
+          <span class="stage-footer__label">Publishing</span>
+          <strong id="publish-state-label">Local-only draft</strong>
+        </div>
+      </div>
+    </main>
+
+    <aside class="creator-panel creator-panel--right">
+      <div class="panel-block panel-block--compact panel-block--inventory">
+        <div class="block-header">
+          <div>
+            <h2>Live Inventory</h2>
+          </div>
+          <button type="button" class="ghost-button" id="refresh-live-button">Refresh</button>
+        </div>
+        <div class="catalog-toolbar">
+          <label class="field field--compact">
+            <span>Search</span>
+            <input id="live-search-input" type="search" placeholder="Search props, rarity, or tags" />
+          </label>
+          <label class="field field--compact">
+            <span>Category</span>
+            <select id="live-category-filter">
+              <option value="all">All categories</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <details class="panel-block panel-block--details panel-shell panel-shell--catalog" id="live-category-section" open>
+        <summary class="block-summary">
+          <div>
+            <h3>Categories</h3>
+            <p class="mini-copy">Live slots and equip limits</p>
+          </div>
+        </summary>
+        <div class="tool-section__body">
+          <div class="list-stack list-stack--tight" id="live-category-list"></div>
+        </div>
+      </details>
+
+      <div class="panel-block panel-block--scroll panel-block--grow">
+        <div class="block-header">
+          <div>
+            <h3>Live Props</h3>
+            <p class="mini-copy">Click to equip. Use Edit Prop only when you want sizing controls.</p>
+          </div>
+          <span class="mini-copy" id="live-prop-count">0 props</span>
+        </div>
+        <div class="list-stack list-stack--tight" id="live-prop-list"></div>
+      </div>
+
+      <details class="panel-block panel-block--details panel-shell panel-shell--log" id="workspace-log-section" open>
+        <summary class="block-summary">
+          <div>
+            <h3>Workspace Log</h3>
+            <p class="mini-copy">Recent creator activity</p>
+          </div>
+        </summary>
+        <div class="tool-section__body">
+          <div class="workspace-log" id="workspace-log" role="log" aria-live="polite"></div>
+        </div>
+      </details>
+    </aside>
+  </div>
+
+  <aside class="creator-notice" id="creator-notice" hidden aria-live="polite" aria-atomic="true">
+    <div class="creator-notice__surface">
+      <div class="creator-notice__content">
+        <span class="creator-notice__eyebrow" id="creator-notice-eyebrow">Status</span>
+        <strong class="creator-notice__title" id="creator-notice-title">Workspace updated</strong>
+        <p class="creator-notice__message" id="creator-notice-message"></p>
+      </div>
+      <button type="button" class="creator-notice__close" id="creator-notice-close" aria-label="Dismiss notice">Close</button>
+    </div>
+  </aside>
+
+  <aside class="creator-generator-modal" id="random-prop-generator-modal" hidden aria-hidden="true">
+    <div class="creator-generator-modal__surface" role="dialog" aria-modal="true" aria-labelledby="random-generator-title" aria-describedby="random-generator-copy">
+      <div class="creator-generator-modal__header">
+        <div>
+          <span class="creator-generator-modal__eyebrow">Studio Generator</span>
+          <strong class="creator-generator-modal__title" id="random-generator-title">Random Prop Generator</strong>
+          <p class="creator-generator-modal__copy" id="random-generator-copy">Generate a coherent XiO-ready prop recipe. v1 supports wing generation with future categories scaffolded for expansion.</p>
+        </div>
+        <button type="button" class="creator-generator-modal__close" id="random-generator-close" aria-label="Close Random Prop Generator">Close</button>
+      </div>
+      <div class="creator-generator-modal__status" id="random-generator-status" hidden></div>
+      <div class="creator-generator-modal__body">
+        <div class="creator-generator-modal__grid">
+          <label class="field">
+            <span>Select Category</span>
+            <select id="random-generator-category-select"></select>
+          </label>
+          <label class="field">
+            <span>Select Rarity</span>
+            <select id="random-generator-rarity-select"></select>
+          </label>
+          <label class="field">
+            <span>Select Theme Mode</span>
+            <select id="random-generator-theme-mode-select"></select>
+          </label>
+          <label class="field" id="random-generator-theme-field">
+            <span>Theme Input</span>
+            <input id="random-generator-theme-input" type="text" list="random-generator-theme-suggestions" placeholder="Royal, Celestial, Ember..." />
+          </label>
+          <label class="field">
+            <span>Detail Density</span>
+            <select id="random-generator-detail-density-select"></select>
+          </label>
+          <label class="field">
+            <span>Color Harmony Mode</span>
+            <select id="random-generator-color-harmony-select"></select>
+          </label>
+          <label class="field">
+            <span>Fit Mode</span>
+            <select id="random-generator-fit-mode-select"></select>
+          </label>
+          <label class="field">
+            <span>Base Reference</span>
+            <select id="random-generator-base-reference-select"></select>
+          </label>
+        </div>
+        <p class="creator-generator-modal__hint" id="random-generator-reference-hint" hidden>
+          Copy Wing Template studies the selected wing through the XiO template pipeline and builds a derivative result from it. The generated wing keeps coherent fit and silhouette guidance, but it is always varied before staging.
+        </p>
+        <aside class="generator-summary-panel" aria-label="Random generator summary">
+          <div class="generator-summary-panel__header">
+            <div>
+              <span class="generator-summary-panel__eyebrow">Preview Summary</span>
+              <strong>What the generator will aim for</strong>
+            </div>
+            <span class="status-chip status-chip--muted" id="random-generator-summary-state">Stage first</span>
+          </div>
+          <div class="generator-summary-panel__grid">
+            <article class="generator-summary-panel__item">
+              <span>Category</span>
+              <strong id="random-generator-summary-category">Wings</strong>
+            </article>
+            <article class="generator-summary-panel__item">
+              <span>Rarity</span>
+              <strong id="random-generator-summary-rarity">Rare</strong>
+            </article>
+            <article class="generator-summary-panel__item">
+              <span>Theme</span>
+              <strong id="random-generator-summary-theme">Royal</strong>
+            </article>
+            <article class="generator-summary-panel__item">
+              <span>Detail</span>
+              <strong id="random-generator-summary-detail">Medium</strong>
+            </article>
+            <article class="generator-summary-panel__item">
+              <span>Material</span>
+              <strong id="random-generator-summary-material">Royal Enamel</strong>
+            </article>
+            <article class="generator-summary-panel__item">
+              <span>Fit</span>
+              <strong id="random-generator-summary-fit">XiO Wing Master Template</strong>
+            </article>
+            <article class="generator-summary-panel__item generator-summary-panel__item--wide">
+              <span>Base Reference</span>
+              <strong id="random-generator-summary-reference">Auto Select</strong>
+            </article>
+          </div>
+        </aside>
+      </div>
+      <div class="creator-generator-modal__actions">
+        <button type="button" class="creator-generator-modal__button creator-generator-modal__button--secondary" id="random-generator-cancel-button">Cancel</button>
+        <button type="button" class="creator-generator-modal__button creator-generator-modal__button--primary" id="random-generator-generate-button">Generate</button>
+      </div>
+    </div>
+  </aside>
+  <datalist id="random-generator-theme-suggestions"></datalist>
+
+  <aside class="creator-confirm" id="delete-confirm-modal" hidden aria-hidden="true">
+    <div class="creator-confirm__surface" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-message">
+      <div class="creator-confirm__header">
+        <span class="creator-confirm__eyebrow" id="delete-confirm-eyebrow">Delete Prop</span>
+        <button type="button" class="creator-confirm__close" id="delete-confirm-close" aria-label="Close delete confirmation">Close</button>
+      </div>
+      <div class="creator-confirm__content">
+        <strong class="creator-confirm__title" id="delete-confirm-title">Delete this prop permanently?</strong>
+        <p class="creator-confirm__message" id="delete-confirm-message">This will remove the prop from the live inventory and the Mystery Box flow.</p>
+      </div>
+      <div class="creator-confirm__actions">
+        <button type="button" class="creator-confirm__button creator-confirm__button--secondary" id="delete-confirm-cancel">Cancel</button>
+        <button type="button" class="creator-confirm__button creator-confirm__button--danger" id="delete-confirm-confirm">Delete Permanently</button>
+      </div>
+    </div>
+  </aside>
+
+  <aside class="creator-confirm creator-confirm--success" id="save-success-modal" hidden aria-hidden="true">
+    <div class="creator-confirm__surface" role="dialog" aria-modal="true" aria-labelledby="save-success-title" aria-describedby="save-success-message">
+      <div class="creator-confirm__header">
+        <span class="creator-confirm__eyebrow" id="save-success-eyebrow">Live Save Complete</span>
+        <button type="button" class="creator-confirm__close" id="save-success-close" aria-label="Close mystery box launch prompt">Close</button>
+      </div>
+      <div class="creator-confirm__content">
+        <strong class="creator-confirm__title" id="save-success-title">Prop saved into the live inventory</strong>
+        <p class="creator-confirm__message" id="save-success-message">Would you like to go to the Homepage now and test the next Mystery Box pull?</p>
+      </div>
+      <div class="creator-confirm__actions">
+        <button type="button" class="creator-confirm__button creator-confirm__button--secondary" id="save-success-stay">Stay in Studio</button>
+        <button type="button" class="creator-confirm__button creator-confirm__button--primary" id="save-success-launch">Go Test Mystery Box</button>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    const creatorAssetVersion = '2026-03-15-39';
+    const creatorScript = document.createElement('script');
+    const creatorScriptPath = window.location.protocol === 'file:'
+      ? './src/creator/character-creator-standalone.js'
+      : './src/creator/character-creator-app.js';
+    creatorScript.src = `${creatorScriptPath}?v=${creatorAssetVersion}`;
+    document.body.appendChild(creatorScript);
+  </script>
+</body>
+</html>

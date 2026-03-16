@@ -1,12 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
 import { buildAssetPath } from '../utils/pathUtils';
+import {
+  consumeHomepageMysteryTestLaunchToken,
+  createCreatorCatalogSyncPayload,
+  persistHomepageCatalogSnapshot,
+  readHomepageMysteryTestSession,
+} from '../utils/homepageCatalogBridge';
+import { isManagerUser } from '../utils/managerAccess';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
+import { HOMEPAGE_APP_RUNTIME_VERSION } from '../constants/homepageAppVersion';
+import type { HomepageCatalogSnapshot } from '../types/homepageCatalog';
+import {
+  buildPendingMysteryLaunchState,
+  createInitialHomepageLaunchState,
+  snapshotContainsPropKey,
+  type PendingMysteryLaunchState,
+} from './userHomePage/homepageLaunchState';
 import './Home.css';
 import './UserHomePage.css';
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_VERSION = '2026-03-09-29';
 const HOME_PAGE_TILT_STATUS_MESSAGE = 'homepage-deviceorientation-status';
 const HOME_PAGE_TILT_SAMPLE_MESSAGE = 'homepage-deviceorientation';
 const HOME_PAGE_TILT_PERMISSION_REQUEST_MESSAGE = 'homepage-deviceorientation-request-permission';
@@ -43,12 +60,54 @@ interface UserHomePageProps {
 }
 
 const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
+  const [initialLaunchState] = useState(createInitialHomepageLaunchState);
+  const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [launchRefreshToken, setLaunchRefreshToken] = useState(() => initialPendingMysteryLaunch?.launchId || initialPendingMysteryLaunch?.createdAt || '');
+  const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
+  const [storedSnapshot, setStoredSnapshot] = useState<HomepageCatalogSnapshot | null>(
+    () => initialLaunchState.storedSnapshot,
+  );
+  const { user } = useAuth();
   const { settings: soundSettings } = useSoundSettings();
+  const { snapshot, isLoading: isCatalogLoading } = useHomepageCatalog({ includeInactive: false });
+  const hasDeveloperAccess = useMemo(() => isManagerUser(user), [user]);
+  const shouldHoldStoredSnapshot = useMemo(() => {
+    if (isCatalogLoading) {
+      return false;
+    }
+    const pendingPropKey = pendingMysteryLaunch?.propKey ?? null;
+    if (!pendingPropKey) {
+      return false;
+    }
+    return (
+      !snapshotContainsPropKey(snapshot, pendingPropKey)
+      && snapshotContainsPropKey(storedSnapshot, pendingPropKey)
+    );
+  }, [isCatalogLoading, pendingMysteryLaunch?.propKey, snapshot, storedSnapshot]);
+  const effectiveSnapshot = useMemo(
+    () => {
+      if (
+        !isCatalogLoading
+        && !shouldHoldStoredSnapshot
+        && (snapshot.categories.length > 0 || snapshot.props.length > 0)
+      ) {
+        return snapshot;
+      }
+      return storedSnapshot ?? snapshot;
+    },
+    [isCatalogLoading, shouldHoldStoredSnapshot, snapshot, storedSnapshot],
+  );
+  const homePageRuntimeToken = useMemo(() => (
+    launchRefreshToken
+    || (!isCatalogLoading ? snapshot.updatedAt : '')
+    || effectiveSnapshot?.updatedAt
+    || 'runtime'
+  ), [effectiveSnapshot?.updatedAt, isCatalogLoading, launchRefreshToken, snapshot.updatedAt]);
   const launchPath = useMemo(
-    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOME_PAGE_APP_VERSION}`),
-    [],
+    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&runtime=${encodeURIComponent(homePageRuntimeToken)}${hasDeveloperAccess ? '&developer=1' : ''}`),
+    [hasDeveloperAccess, homePageRuntimeToken],
   );
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
@@ -78,6 +137,31 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       listening: bridgeState.listening,
     });
   }, [postTiltBridgeMessage]);
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    const activeSession = readHomepageMysteryTestSession();
+    const launchToken = activeSession ? null : consumeHomepageMysteryTestLaunchToken();
+    const nextPendingMysteryLaunch = buildPendingMysteryLaunchState({
+      session: activeSession,
+      launchToken,
+    });
+    if (!nextPendingMysteryLaunch) {
+      return;
+    }
+    const latestStoredSnapshot = initialLaunchState.storedSnapshot ?? storedSnapshot;
+    const frameId = window.requestAnimationFrame(() => {
+      if (latestStoredSnapshot) {
+        setStoredSnapshot(latestStoredSnapshot);
+      }
+      setIsLoading(true);
+      setPendingMysteryLaunch(nextPendingMysteryLaunch);
+      setLaunchRefreshToken(nextPendingMysteryLaunch.launchId || nextPendingMysteryLaunch.createdAt || `${Date.now()}`);
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [initialLaunchState.storedSnapshot, isActive, storedSnapshot]);
 
   useEffect(() => {
     applySoundSettingsToWindow(
@@ -199,6 +283,75 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     };
   }, [postTiltBridgeMessage, syncTiltBridgeStateToIframe]);
 
+  useEffect(() => {
+    if (isCatalogLoading) {
+      return;
+    }
+    if (shouldHoldStoredSnapshot) {
+      console.info('[HomepageHost] Holding fresher local catalog snapshot until the live query contains the pending mystery-test prop.', {
+        pendingPropKey: pendingMysteryLaunch?.propKey ?? null,
+        requiredCatalogRevision: pendingMysteryLaunch?.requiredCatalogRevision ?? null,
+        fetchedSnapshotUpdatedAt: snapshot.updatedAt || null,
+        fetchedSnapshotEmpty: snapshot.categories.length === 0 && snapshot.props.length === 0,
+        storedSnapshotUpdatedAt: storedSnapshot?.updatedAt || null,
+      });
+      return;
+    }
+    persistHomepageCatalogSnapshot(snapshot);
+    const frameId = window.requestAnimationFrame(() => {
+      setStoredSnapshot(snapshot);
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    isCatalogLoading,
+    pendingMysteryLaunch?.propKey,
+    pendingMysteryLaunch?.requiredCatalogRevision,
+    shouldHoldStoredSnapshot,
+    snapshot,
+    storedSnapshot?.updatedAt,
+  ]);
+
+  useEffect(() => {
+    if (isCatalogLoading) {
+      return;
+    }
+    const pendingPropKey = pendingMysteryLaunch?.propKey ?? null;
+    if (!pendingPropKey) {
+      return;
+    }
+    if (!snapshotContainsPropKey(snapshot, pendingPropKey)) {
+      return;
+    }
+    console.info('[HomepageHost] Live catalog query now contains the pending mystery-test prop.', {
+      pendingPropKey,
+      snapshotUpdatedAt: snapshot.updatedAt || null,
+    });
+    const frameId = window.requestAnimationFrame(() => {
+      setPendingMysteryLaunch(null);
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isCatalogLoading, pendingMysteryLaunch, snapshot]);
+
+  useEffect(() => {
+    if (isCatalogLoading) {
+      return;
+    }
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    try {
+      target.postMessage(
+        createCreatorCatalogSyncPayload({
+          snapshot: effectiveSnapshot,
+          publishEnabled: false,
+          reason: null,
+        }),
+        window.location.origin,
+      );
+    } catch {
+      // Ignore early sync failures until the iframe is fully booted.
+    }
+  }, [effectiveSnapshot, isCatalogLoading]);
+
   const handleLoad = () => {
     setIsLoading(false);
     applySoundSettingsToWindow(
@@ -207,6 +360,21 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       { homePageActive: isActive },
     );
     syncTiltBridgeStateToIframe();
+    if (isCatalogLoading) {
+      return;
+    }
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        createCreatorCatalogSyncPayload({
+          snapshot: effectiveSnapshot,
+          publishEnabled: false,
+          reason: null,
+        }),
+        window.location.origin,
+      );
+    } catch {
+      // Ignore transient sync failures on early iframe boot.
+    }
   };
 
   useEffect(() => {
@@ -221,12 +389,23 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     <div className="os-desktop-shell">
       <section className="os-icon-area user-home-os-area" aria-label="Homepage app">
         <div className="user-home-app-shell">
+        {hasDeveloperAccess ? (
+          <Link
+            to="/character-creator"
+            className="user-home-creator-launcher"
+            aria-label="Open XiO Studio"
+          >
+            <span className="user-home-creator-launcher__eyebrow">Studio Access</span>
+            <span className="user-home-creator-launcher__title">Open XiO Studio</span>
+          </Link>
+        ) : null}
         {isLoading && (
           <div className="user-home-app-loading" aria-live="polite">
             Loading homepage...
           </div>
         )}
         <iframe
+          key={launchPath}
           ref={iframeRef}
           src={launchPath}
           title="Homepage App"

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/variables.css';
 import './MainLayout.css';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
 import UserHomePage from '../pages/UserHomePage';
 import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
+import { useAuth } from '../context/AuthContext';
+import { isManagerUser } from '../utils/managerAccess';
 
 const LazyClassroomPage = React.lazy(() => import('../pages/ClassroomPage'));
 
@@ -14,6 +16,7 @@ const MainLayout: React.FC = () => {
 
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [settingsCloseRequestId, setSettingsCloseRequestId] = useState(0);
     const [hasHomePageMounted, setHasHomePageMounted] = useState<boolean>(
@@ -24,11 +27,14 @@ const MainLayout: React.FC = () => {
     const isHomeRoute = location.pathname === '/';
     const isAppsRoute = location.pathname === '/apps';
     const isClassroomRoute = location.pathname === '/classroom';
+    const isCharacterCreatorRoute = location.pathname === '/character-creator';
     const isGamePlayerRoute = location.pathname.startsWith('/play/') || location.pathname.startsWith('/open/');
     const isManagerRoute = location.pathname === '/manager';
-    const isImmersiveRoute = isHomeRoute || isAppsRoute || isUserHomeRoute || isGamePlayerRoute || isManagerRoute || isClassroomRoute;
+    const isImmersiveRoute = isHomeRoute || isAppsRoute || isUserHomeRoute || isGamePlayerRoute || isManagerRoute || isClassroomRoute || isCharacterCreatorRoute;
     const shouldRenderUserHomePage = (hasHomePageMounted || isUserHomeRoute) && !isGamePlayerRoute;
     const shouldRenderClassroomPage = isClassroomRoute;
+    const hasDeveloperAccess = isManagerUser(user);
+    const shouldShowCharacterCreatorLauncher = hasDeveloperAccess && !isCharacterCreatorRoute && !isGamePlayerRoute;
 
     useEffect(() => {
         if (!isUserHomeRoute) {
@@ -99,6 +105,17 @@ const MainLayout: React.FC = () => {
                     </section>
                 ) : null}
             </main>
+
+            {shouldShowCharacterCreatorLauncher ? (
+                <Link
+                    to="/character-creator"
+                    className="character-creator-launcher"
+                    aria-label="Open XiO Studio"
+                >
+                    <span className="character-creator-launcher__eyebrow">Studio Access</span>
+                    <span className="character-creator-launcher__title">XiO Studio</span>
+                </Link>
+            ) : null}
 
             {/* Persistent Bottom Navigation */}
             {/* Render always, or maybe hide on GamePlayer if strictly needed? User said "regardless of which page". */}
