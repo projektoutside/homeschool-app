@@ -1,4 +1,6 @@
 // Farmers Market Frenzy 3D - Main Entry Point
+window.LAHSPointsBridge?.init({ gameId: 'math-farmers-market-frenzy' });
+
 class Main {
     constructor() {
         this.gameManager = null;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePoints } from '../context/PointsContext';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { buildAssetPath } from '../utils/pathUtils';
 import { FAVORITE_GAMES_STORAGE_KEY, FAVORITE_GAMES_UPDATED_EVENT, readFavoriteGameIds } from '../utils/favoriteGames';
@@ -24,6 +25,7 @@ const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { totalPoints, stars } = usePoints();
     const { allItems } = useManagerConfig();
     const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
@@ -68,6 +70,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const homeTransitionFadeOutTimerRef = useRef<number | null>(null);
     const lastAutoFlushGameRouteRef = useRef<string>('');
     const fullscreenEvaluateFrameRef = useRef<number | null>(null);
+    const formattedTotalPoints = useMemo(() => new Intl.NumberFormat().format(totalPoints), [totalPoints]);
+    const formattedStars = useMemo(() => new Intl.NumberFormat().format(stars), [stars]);
 
     const clearHomeTransitionTimers = useCallback(() => {
         if (homeTransitionFadeInTimerRef.current !== null) {
@@ -1148,11 +1152,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                     <div className="stats-content">
                         <div className="stats-item stats-item-left">
                             <span className="stats-icon" aria-hidden="true">🥈</span>
-                            <span className="stats-text">99</span>
+                            <span className="stats-text">{formattedStars}</span>
                         </div>
                         <div className="stats-item stats-item-right">
                             <span className="stats-label">Total Points:</span>
-                            <span className="stats-text">123456</span>
+                            <span className="stats-text">{formattedTotalPoints}</span>
                         </div>
                     </div>
                 </aside>

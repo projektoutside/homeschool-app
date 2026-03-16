@@ -104,7 +104,7 @@ export function renderMenuScreen(state) {
                     <div>
                         <div class="eyebrow">Make. Fix. Pick. Count. Measure.</div>
                         <h1 class="menu-title">Learn polygons by playing.</h1>
-                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Drag shapes, solve fast tasks, and win stars on your map.</p>
+                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Drag shapes, solve fast tasks, and earn points while your map keeps best-star progress.</p>
                     </div>
                     <div class="menu-art" aria-hidden="true">
                         <div class="menu-float-shape shape-a"></div>
@@ -119,8 +119,8 @@ export function renderMenuScreen(state) {
                         <span>3 quick tasks per mission.</span>
                     </div>
                     <div class="menu-info">
-                        <strong>Stars</strong>
-                        <span>Finish clean to earn 3 stars.</span>
+                        <strong>Points</strong>
+                        <span>Clean clears can award up to 150 points.</span>
                     </div>
                     <div class="menu-info">
                         <strong>Next Up</strong>
@@ -152,7 +152,7 @@ export function renderMapScreen(state) {
                     <button class="icon-btn" type="button" data-nav="menu" aria-label="Back to menu">←</button>
                     <div>
                         <div class="brand-title">My Map</div>
-                        <span class="brand-sub">Clear worlds. Win stars. Unlock badges.</span>
+                        <span class="brand-sub">Clear worlds. Earn points. Unlock badges.</span>
                     </div>
                 </div>
                 <div class="top-stats">
@@ -397,6 +397,10 @@ export function renderResultsScreen(state) {
                 </div>
 
                 <div class="summary-grid">
+                    <div class="summary-box">
+                        <strong>Points</strong>
+                        <span>${state.pointsAwarded}</span>
+                    </div>
                     <div class="summary-box">
                         <strong>Stars</strong>
                         <span>${state.stars}</span>

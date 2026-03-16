@@ -4,15 +4,21 @@ import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './context/AuthContext'
+import { PointsProvider } from './context/PointsContext'
+import { StaminaProvider } from './context/StaminaContext'
 import { SoundSettingsProvider } from './context/SoundSettingsContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <SoundSettingsProvider>
-          <App />
-        </SoundSettingsProvider>
+        <PointsProvider>
+          <StaminaProvider>
+            <SoundSettingsProvider>
+              <App />
+            </SoundSettingsProvider>
+          </StaminaProvider>
+        </PointsProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,

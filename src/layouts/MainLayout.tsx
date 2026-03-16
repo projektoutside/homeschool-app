@@ -6,6 +6,7 @@ import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
 import UserHomePage from '../pages/UserHomePage';
 import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
+import { useZoomLock } from '../hooks/useZoomLock';
 import { useAuth } from '../context/AuthContext';
 import { isManagerUser } from '../utils/managerAccess';
 
@@ -39,6 +40,9 @@ const MainLayout: React.FC = () => {
         && !isCharacterCreatorRoute
         && !isGamePlayerRoute
         && !isUserHomeRoute;
+    const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute;
+
+    useZoomLock({ enabled: shouldDisableZoom });
 
     useEffect(() => {
         if (!isUserHomeRoute) {

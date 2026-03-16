@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useZoomLock } from '../hooks/useZoomLock';
 import { supabase } from '../lib/supabase';
 import { buildAssetPath } from '../utils/pathUtils';
 import './Home.css';
@@ -181,6 +182,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
     const [completedDoorIntroKey, setCompletedDoorIntroKey] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const introFrameRef = useRef<HTMLIFrameElement | null>(null);
+    const zoomLockIframes = useMemo(() => [iframeRef, introFrameRef], []);
     const pendingStateRef = useRef<ClassroomPersistedState | null>(null);
     const pendingSaveTimerRef = useRef<number | null>(null);
     const introFallbackTimerRef = useRef<number | null>(null);
@@ -226,6 +228,8 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
     const isFrameLoaded = loadedLaunchPath === launchPath;
     const isDoorIntroComplete = !introActivationKey || completedDoorIntroKey === introActivationKey;
     const isTransitionComplete = isFrameLoaded && isDoorIntroComplete;
+
+    useZoomLock({ enabled: isActive, iframeRefs: zoomLockIframes });
 
     useEffect(() => {
         if (!isActive) {

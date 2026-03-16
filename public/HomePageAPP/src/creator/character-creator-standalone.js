@@ -8224,7 +8224,10 @@
           draftSourceLabel: "No GLB loaded"
         };
       }
-      const shouldUseWingTemplate = draftProp.categoryKey === "wingSet" && draftProp.attachment?.mirrorMode === "paired";
+      const mirrorMode = draftProp?.attachment?.mirrorMode === "paired" ? "paired" : "single";
+      const wingAuthoringPreview = draftProp?.categoryKey === "wingSet" ? getDraftWingAuthoringPreview(draftProp) : null;
+      const effectiveMirrorMode = draftProp?.categoryKey === "wingSet" && wingAuthoringPreview?.mode === "isolatedHalf" ? wingAuthoringPreview.mirrorToBoth ? "paired" : "single" : mirrorMode;
+      const shouldUseWingTemplate = draftProp.categoryKey === "wingSet" && effectiveMirrorMode === "paired" && wingAuthoringPreview?.mode !== "isolatedHalf";
       if (shouldUseWingTemplate) {
         const templateState = await loadWingTemplateState2({ GLTFLoader, THREE, assetUrl });
         if (!templateState?.sourceTemplateRoot && !templateState?.sourceTemplatePair) {

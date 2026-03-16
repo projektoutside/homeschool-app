@@ -4,6 +4,14 @@ import { getMissionRecord, loadProfile, resetProfile, saveProfile, setMissionRec
 import { GameRouter } from './router.js';
 import { renderMapScreen, renderMenuScreen, renderMissionScreen, renderResultsScreen } from './ui/renderers.js';
 
+const QUIZ_IT_POLYGON_POINTS_BY_STARS = {
+    1: 50,
+    2: 100,
+    3: 150
+};
+
+window.LAHSPointsBridge?.init({ gameId: 'math-quiz-it-polygon' });
+
 class QuizItPolygonApp {
     constructor(root) {
         this.root = root;
@@ -67,6 +75,7 @@ class QuizItPolygonApp {
             boardSummary: this.boardSummary,
             resultMessage: this.resultState?.message || '',
             stars: this.resultState?.stars || 0,
+            pointsAwarded: this.resultState?.pointsAwarded || 0,
             shapeChoices: this.shapeChoices
         };
     }
@@ -329,7 +338,7 @@ class QuizItPolygonApp {
             return 'This is your world map. Pick a mission to play.';
         }
         if (this.router.screen === 'results' && this.resultState) {
-            return `${this.resultState.message}. You won ${this.resultState.stars} stars.`;
+            return `${this.resultState.message}. You earned ${this.resultState.pointsAwarded || 0} points and ${this.resultState.stars} stars.`;
         }
         return 'Quiz it Polygon. Make shapes, fix shapes, count, and measure.';
     }
@@ -671,6 +680,7 @@ class QuizItPolygonApp {
         const mission = getMissionById(worldId, missionId);
         const previousRecord = getMissionRecord(this.profile, missionId);
         const stars = this.calculateStars(mistakes, maxHintStageUsed);
+        const pointsAwarded = QUIZ_IT_POLYGON_POINTS_BY_STARS[stars] || QUIZ_IT_POLYGON_POINTS_BY_STARS[1];
         const firstClear = !previousRecord.cleared;
 
         setMissionRecord(this.profile, missionId, {
@@ -695,17 +705,26 @@ class QuizItPolygonApp {
         }
 
         saveProfile(this.profile);
+        window.LAHSPointsBridge?.awardPoints(pointsAwarded, {
+            label: 'Mission Clear',
+            meta: {
+                worldId,
+                missionId,
+                stars
+            }
+        });
         this.resultState = {
             worldId,
             missionId,
             stars,
+            pointsAwarded,
             mistakes,
             maxHintStageUsed,
             message: stars === 3
-                ? 'Star job! You cleared that mission with a clean run.'
+                ? `Star job! You cleared that mission with a clean run and earned ${pointsAwarded} points.`
                 : stars === 2
-                    ? 'Nice work! You earned 2 stars.'
-                    : 'Good job! You finished the mission.'
+                    ? `Nice work! You earned ${pointsAwarded} points.`
+                    : `Good job! You finished the mission and earned ${pointsAwarded} points.`
         };
         this.activeRun = null;
         this.feedback = { kind: '', message: '' };

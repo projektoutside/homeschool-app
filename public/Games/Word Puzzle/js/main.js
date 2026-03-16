@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
         requestWordPuzzleUserContext();
+        window.LAHSPointsBridge?.init({ gameId: 'word-puzzle-game' });
         applyRandomTitlePointColors();
 
         // 1. Initialize Device Detector first (critical for layout)

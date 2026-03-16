@@ -1145,6 +1145,13 @@ class WordGameController {
         const isGoldBonus = Boolean(this.currentRoundScorePlan?.isGoldBonus);
 
         this.score = newScore;
+        window.LAHSPointsBridge?.awardPoints(pointsEarned, {
+            label: isGoldBonus ? 'Gold Rush Bonus' : 'Correct Answer',
+            meta: {
+                isGoldBonus,
+                gameMode: this.gameMode || null
+            }
+        });
 
         this.showFeedback(
             true,

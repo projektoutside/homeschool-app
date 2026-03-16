@@ -6,6 +6,13 @@ const GameState = {
     LEVEL_COMPLETE: 'level_complete',
     GAME_OVER: 'game_over'
 };
+const POLYGON_APP_POINTS_BY_STARS = {
+    1: 50,
+    2: 100,
+    3: 150
+};
+
+window.LAHSPointsBridge?.init({ gameId: 'math-1768955732393-game' });
 
 function normalizePercentagesToHundred(values, decimals = 1) {
     const safeValues = Array.isArray(values)
@@ -3253,8 +3260,16 @@ class BeginnerMode {
         const sticker = document.getElementById('gameResultsSticker');
 
         const isVictory = result.coins > 0;
+        const pointsAwarded = POLYGON_APP_POINTS_BY_STARS[result.coins] || 0;
         if (isVictory) {
             this.recordStarRating(result.coins, result);
+            window.LAHSPointsBridge?.awardPoints(pointsAwarded, {
+                label: 'Level Clear',
+                meta: {
+                    levelIndex: this.currentLevelIndex,
+                    stars: result.coins
+                }
+            });
         }
         if (panel) {
             panel.classList.toggle('victory', isVictory);
@@ -3263,7 +3278,7 @@ class BeginnerMode {
         if (title) title.innerHTML = isVictory ? '<span>Victory!</span>' : '<span>Failed</span>';
         if (subtitle) {
             subtitle.textContent = isVictory
-                ? 'You nailed it! Great split skills!'
+                ? `You nailed it! Great split skills and +${pointsAwarded} points!`
                 : 'Almost there — give it another try!';
         }
         if (sticker) {
@@ -3305,7 +3320,7 @@ class BeginnerMode {
                     width: 100%; text-align: center; font-size: 14px; 
                     color: #7b8bb5; font-weight: 600; margin-top: 4px;
                 `;
-                totalText.innerHTML = `Total Score: <span style="color: #f59e0b;">★ ${totalStars}</span>`;
+                totalText.innerHTML = `Points Earned: <span style="color: #38bdf8;">+${pointsAwarded}</span> · Map Stars: <span style="color: #f59e0b;">★ ${totalStars}</span>`;
                 starContainer.appendChild(totalText);
                 starContainer.style.flexWrap = 'wrap';
 

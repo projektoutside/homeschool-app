@@ -1503,6 +1503,13 @@ class GameManager {
         const baseScore = GameConfig.GAME_SETTINGS.BASE_SCORE_PER_SALE;
         const bonusScore = GameConfig.calculateScore(baseScore, review.accuracy, review.speed, this.currentStreak);
         this.totalScore += bonusScore;
+        window.LAHSPointsBridge?.awardPoints(bonusScore, {
+            label: 'Completed Customer',
+            meta: {
+                reviewStars: review.stars,
+                currentStreak: this.currentStreak
+            }
+        });
 
         // Update rating average
         this.totalRatings += review.stars;

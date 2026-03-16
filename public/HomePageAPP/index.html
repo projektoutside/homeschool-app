@@ -147,16 +147,328 @@
             pointer-events: none;
         }
 
-        #character-creator-quick-open {
+        #bottom-left-utility-stack {
+            --daily-lunchbox-bottom-offset: 96px;
+            position: fixed;
+            left: calc(12px + env(safe-area-inset-left));
+            bottom: calc(var(--daily-lunchbox-bottom-offset) + env(safe-area-inset-bottom));
+            z-index: 72;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            pointer-events: none;
+            max-width: min(320px, calc(100vw - 24px));
+        }
+
+        #bottom-left-utility-stack>* {
+            pointer-events: auto;
+        }
+
+        #daily-lunchbox-btn {
+            width: clamp(88px, 10vw, 108px);
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transform-origin: bottom left;
+            transition: transform 160ms ease, filter 160ms ease;
+            isolation: isolate;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #daily-lunchbox-btn::after {
+            content: "";
+            position: absolute;
+            inset: 9% 11% 15%;
+            border-radius: 24px;
+            border: 2px solid rgba(143, 223, 255, 0);
+            background:
+                radial-gradient(circle at center, rgba(123, 220, 255, 0.32), rgba(123, 220, 255, 0) 72%),
+                linear-gradient(135deg, rgba(220, 246, 255, 0.2), rgba(87, 176, 255, 0));
+            opacity: 0;
+            transform: scale(0.9);
+            z-index: 0;
+            pointer-events: none;
+            box-shadow:
+                0 0 0 1px rgba(216, 244, 255, 0),
+                0 0 0 0 rgba(84, 177, 255, 0);
+            transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+        }
+
+        #daily-lunchbox-btn::before {
+            content: "";
+            position: absolute;
+            left: 16%;
+            right: 12%;
+            bottom: 6%;
+            height: 20%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.34) 0%, rgba(0, 0, 0, 0.08) 66%, rgba(0, 0, 0, 0) 100%);
+            filter: blur(8px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #daily-lunchbox-btn img {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.24));
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #daily-lunchbox-btn.is-reward-ready {
+            animation: dailyLunchboxFloat 2.3s ease-in-out infinite, dailyLunchboxWobble 2.7s ease-in-out infinite;
+        }
+
+        #daily-lunchbox-btn.is-reward-ready::after {
+            opacity: 1;
+            transform: scale(1.08);
+            border-color: rgba(177, 234, 255, 0.92);
+            box-shadow:
+                0 0 0 1px rgba(227, 247, 255, 0.5),
+                0 0 18px rgba(110, 210, 255, 0.82),
+                0 0 30px rgba(64, 153, 255, 0.54);
+            animation: dailyLunchboxGlowPulse 1.9s ease-in-out infinite;
+        }
+
+        #daily-lunchbox-btn.is-reward-ready img {
+            filter:
+                drop-shadow(0 10px 16px rgba(0, 0, 0, 0.24))
+                drop-shadow(0 0 10px rgba(152, 229, 255, 0.86))
+                drop-shadow(0 0 18px rgba(86, 196, 255, 0.64))
+                drop-shadow(0 0 26px rgba(56, 145, 255, 0.38));
+        }
+
+        #daily-lunchbox-btn.is-claim-pending {
+            pointer-events: none;
+            filter: grayscale(0.12) brightness(1.03);
+        }
+
+        #daily-lunchbox-btn:hover,
+        #daily-lunchbox-btn:focus-visible {
+            transform: translateY(-2px) scale(1.03);
+            filter: saturate(1.06) brightness(1.04);
+            outline: none;
+            box-shadow: none;
+        }
+
+        #daily-lunchbox-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        #daily-lunchbox-btn,
+        #daily-lunchbox-btn:hover,
+        #daily-lunchbox-btn:focus,
+        #daily-lunchbox-btn:focus-visible,
+        #daily-lunchbox-btn:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        #daily-lunchbox-btn::-moz-focus-inner {
+            border: 0;
+        }
+
+        @keyframes dailyLunchboxGlowPulse {
+            0%,
+            100% {
+                opacity: 0.62;
+                transform: scale(1);
+                filter: blur(0px);
+            }
+            50% {
+                opacity: 0.96;
+                transform: scale(1.12);
+                filter: blur(1px);
+            }
+        }
+
+        @keyframes dailyLunchboxFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        @keyframes dailyLunchboxWobble {
+            0%,
+            100%,
+            68% {
+                rotate: 0deg;
+            }
+            72% {
+                rotate: -4.6deg;
+            }
+            76% {
+                rotate: 4.2deg;
+            }
+            80% {
+                rotate: -3.6deg;
+            }
+            84% {
+                rotate: 2.9deg;
+            }
+            88% {
+                rotate: -2.1deg;
+            }
+            92% {
+                rotate: 1.4deg;
+            }
+            96% {
+                rotate: -0.7deg;
+            }
+        }
+
+        #daily-lunchbox-popup {
+            width: min(286px, calc(100vw - 30px));
+            display: none;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 15px;
+            border-radius: 18px;
+            border: 1px solid rgba(250, 204, 21, 0.34);
+            background:
+                radial-gradient(circle at top left, rgba(255, 215, 80, 0.2), transparent 48%),
+                linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.94));
+            color: #f8fafc;
+            box-shadow:
+                0 18px 34px rgba(0, 0, 0, 0.34),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        #daily-lunchbox-popup.open {
+            display: flex;
+            animation: panelRevealEdge 160ms cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        #daily-lunchbox-popup::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(110deg, rgba(255, 225, 119, 0.08), rgba(255, 255, 255, 0));
+        }
+
+        .daily-lunchbox-popup-title {
+            margin: 0;
+            font-family: var(--app-font-display);
+            font-size: clamp(14px, 1.1vw, 18px);
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            color: #fff2bf;
+        }
+
+        .daily-lunchbox-popup-body {
+            margin: 0;
+            font-size: clamp(12px, 0.95vw, 14px);
+            line-height: 1.45;
+            color: rgba(241, 245, 249, 0.88);
+        }
+
+        .daily-lunchbox-popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .daily-lunchbox-collect-btn,
+        .daily-lunchbox-close-btn {
+            min-height: 34px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            font-family: var(--app-font-display);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease;
+        }
+
+        .daily-lunchbox-collect-btn {
+            min-width: 128px;
+            border: 1px solid rgba(252, 211, 77, 0.44);
+            background: linear-gradient(180deg, rgba(246, 185, 59, 0.98), rgba(196, 126, 20, 0.94));
+            color: #fffbea;
+            box-shadow: 0 10px 18px rgba(125, 73, 7, 0.18);
+        }
+
+        .daily-lunchbox-collect-btn[hidden] {
+            display: none !important;
+        }
+
+        .daily-lunchbox-collect-btn:disabled {
+            cursor: default;
+            opacity: 0.78;
+            filter: saturate(0.72);
+        }
+
+        .daily-lunchbox-collect-btn:hover:not(:disabled),
+        .daily-lunchbox-collect-btn:focus-visible:not(:disabled) {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            border-color: rgba(255, 236, 174, 0.72);
+            outline: none;
+        }
+
+        .daily-lunchbox-close-btn {
+            min-width: 94px;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            background: linear-gradient(180deg, rgba(83, 47, 8, 0.94), rgba(61, 33, 5, 0.92));
+            color: #fff4cb;
+        }
+
+        .daily-lunchbox-close-btn:hover,
+        .daily-lunchbox-close-btn:focus-visible {
+            transform: translateY(-1px);
+            filter: brightness(1.08);
+            border-color: rgba(252, 211, 77, 0.52);
+            outline: none;
+        }
+
+        #top-right-hud {
             position: fixed;
             top: calc(16px + env(safe-area-inset-top));
             right: calc(16px + env(safe-area-inset-right));
             z-index: 82;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            width: auto;
+            max-width: calc(100vw - 32px);
+            pointer-events: none;
+        }
+
+        #top-right-hud>* {
+            pointer-events: auto;
+        }
+
+        #character-creator-quick-open {
             display: inline-flex;
             flex-direction: column;
             align-items: flex-start;
             gap: 3px;
-            min-width: clamp(124px, 14vw, 180px);
+            width: clamp(128px, 13.5vw, 176px);
+            min-width: 0;
             padding: 11px 14px;
             border-radius: 18px;
             border: 1px solid rgba(212, 236, 255, 0.34);
@@ -171,6 +483,13 @@
             text-align: left;
             cursor: pointer;
             transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+            overflow: hidden;
+        }
+
+        #points-box {
+            width: auto;
+            min-width: 0;
+            align-self: flex-end;
         }
 
         #character-creator-quick-open[hidden] {
@@ -206,10 +525,31 @@
         }
 
         @media (max-width: 720px) {
-            #character-creator-quick-open {
+            #bottom-left-utility-stack {
+                left: calc(10px + env(safe-area-inset-left));
+                gap: 8px;
+                max-width: min(270px, calc(100vw - 20px));
+            }
+
+            #daily-lunchbox-btn {
+                width: clamp(74px, 20vw, 92px);
+            }
+
+            #daily-lunchbox-popup {
+                width: min(250px, calc(100vw - 24px));
+                padding: 12px 13px;
+                border-radius: 16px;
+            }
+
+            #top-right-hud {
                 top: calc(12px + env(safe-area-inset-top));
                 right: calc(12px + env(safe-area-inset-right));
-                min-width: 0;
+                max-width: calc(100vw - 24px);
+                gap: 8px;
+            }
+
+            #character-creator-quick-open {
+                width: clamp(120px, 40vw, 168px);
                 padding: 9px 11px;
                 border-radius: 16px;
             }
@@ -286,6 +626,79 @@
                 inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         }
 
+        #mystery-points-popup {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: min(380px, calc(100vw - 36px));
+            padding: 18px 18px 16px;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 155, 171, 0.58);
+            background:
+                linear-gradient(180deg, rgba(22, 7, 26, 0.96) 0%, rgba(11, 5, 22, 0.95) 100%);
+            box-shadow:
+                0 24px 56px rgba(10, 2, 18, 0.48),
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+            transform: translate(-50%, calc(-50% + 12px)) scale(0.96);
+            transform-origin: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 68;
+            transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+        }
+
+        #mystery-points-popup.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .mystery-points-popup-title {
+            margin: 0;
+            font-size: 1.08rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            color: rgba(255, 236, 244, 0.98);
+            text-align: center;
+        }
+
+        .mystery-points-popup-body {
+            margin: 10px 0 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: rgba(244, 234, 241, 0.92);
+            text-align: center;
+        }
+
+        .mystery-points-popup-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        .mystery-points-popup-close {
+            min-width: 112px;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            color: #150612;
+            background: linear-gradient(180deg, rgba(255, 199, 217, 0.98) 0%, rgba(255, 157, 189, 0.96) 100%);
+            box-shadow:
+                0 10px 22px rgba(64, 8, 28, 0.32),
+                inset 0 1px 0 rgba(255, 255, 255, 0.48);
+            cursor: pointer;
+        }
+
+        .mystery-points-popup-close:active {
+            transform: translateY(1px);
+        }
+
         @media (prefers-reduced-motion: reduce) {
             #startup-fade-overlay {
                 transition: opacity 120ms linear, visibility 0s linear 120ms;
@@ -296,6 +709,10 @@
             }
 
             #mystery-test-status {
+                transition: none;
+            }
+
+            #mystery-points-popup {
                 transition: none;
             }
         }
@@ -564,37 +981,33 @@
             border: 1px solid rgba(125, 211, 252, 0.35);
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(125, 211, 252, 0.2);
             position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            background-clip: padding-box;
+            transform: translateZ(0);
         }
 
         .hud-box::after {
             content: "";
             position: absolute;
             inset: 0;
+            border-radius: inherit;
             pointer-events: none;
             background: linear-gradient(100deg, rgba(125, 211, 252, 0.16), rgba(125, 211, 252, 0));
             opacity: 0.8;
         }
 
-        #score-box {
+        .metric-box {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.3ch;
+            justify-content: flex-start;
+            gap: 10px;
             position: relative;
             z-index: 65;
-            min-width: clamp(142px, 18.5vw, 214px);
-            padding: clamp(10px, 1.1vw, 14px) clamp(14px, 1.45vw, 20px);
-            border-radius: 18px;
-            border-color: rgba(251, 191, 36, 0.52);
+            min-width: clamp(126px, 15vw, 182px);
+            padding: clamp(8px, 0.9vw, 11px) clamp(11px, 1.1vw, 15px);
+            border-radius: 16px;
             font-family: var(--btn-font);
-            font-size: clamp(18px, 1.55vw, 26px);
-            font-weight: 700;
-            letter-spacing: 0.055em;
-            text-transform: uppercase;
-            color: #fff2bf;
-            text-shadow:
-                0 1px 0 rgba(255, 248, 220, 0.7),
-                0 3px 10px rgba(0, 0, 0, 0.5);
             background-image:
                 linear-gradient(112deg, rgba(255, 255, 255, 0) 37%, rgba(255, 255, 255, 0.28) 49%, rgba(255, 255, 255, 0) 61%),
                 radial-gradient(130% 180% at 8% 12%, rgba(125, 211, 252, 0.34) 0%, rgba(125, 211, 252, 0) 44%),
@@ -606,19 +1019,70 @@
             animation: scoreBoxShimmer 5.6s ease-in-out infinite, scoreBoxGlow 3.6s ease-in-out infinite;
         }
 
-        #score-box::before {
-            content: "✦";
-            display: inline-block;
-            margin-right: 0.18ch;
-            color: #fcd34d;
-            font-size: 0.72em;
+        .metric-box .metric-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(28px, 2.4vw, 34px);
+            height: clamp(28px, 2.4vw, 34px);
+            border-radius: 999px;
+            flex: 0 0 auto;
+            font-size: clamp(15px, 1.35vw, 19px);
             text-shadow:
                 0 0 8px rgba(252, 211, 77, 0.72),
                 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
-        #score-box::after {
-            content: none;
+        .metric-box .metric-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .metric-box .metric-label {
+            font-size: clamp(9px, 0.72vw, 11px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 247, 214, 0.74);
+        }
+
+        .metric-box .metric-value {
+            font-size: clamp(15px, 1.22vw, 20px);
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            line-height: 1;
+            color: #fff4cb;
+            text-shadow:
+                0 1px 0 rgba(255, 248, 220, 0.7),
+                0 3px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #score-box {
+            width: fit-content;
+            border-color: rgba(250, 204, 21, 0.54);
+        }
+
+        #score-box .metric-icon {
+            color: #fde68a;
+            background: radial-gradient(circle at 35% 30%, rgba(255, 253, 226, 0.42), rgba(251, 191, 36, 0.08) 58%, rgba(0, 0, 0, 0));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.34),
+                0 0 18px rgba(250, 204, 21, 0.18);
+        }
+
+        #points-box {
+            border-color: rgba(251, 191, 36, 0.52);
+        }
+
+        #points-box .metric-icon {
+            color: #fcd34d;
+            background: radial-gradient(circle at 35% 30%, rgba(255, 248, 220, 0.44), rgba(251, 191, 36, 0.1) 58%, rgba(0, 0, 0, 0));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.34),
+                0 0 20px rgba(251, 191, 36, 0.2);
         }
 
         @keyframes scoreBoxShimmer {
@@ -830,6 +1294,41 @@
 
         .inventory-icon-btn::-moz-focus-inner {
             border: 0;
+        }
+
+        .stamina-indicator {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            pointer-events: none;
+        }
+
+        .stamina-indicator__icon {
+            width: clamp(34px, 4.6vw, 42px);
+            height: clamp(34px, 4.6vw, 42px);
+            object-fit: contain;
+            display: block;
+            filter: none;
+        }
+
+        .stamina-indicator__value {
+            min-width: 0;
+            font-family: var(--btn-font);
+            font-size: clamp(13px, 1vw, 17px);
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: #fff2fd;
+            line-height: 1;
+            text-shadow: none;
+            white-space: nowrap;
+            text-align: center;
         }
 
         .store-panel {
@@ -2537,6 +3036,19 @@
                 border-radius: 12px;
             }
 
+            .stamina-indicator {
+                gap: 1px;
+            }
+
+            .stamina-indicator__icon {
+                width: clamp(30px, 9vw, 36px);
+                height: clamp(30px, 9vw, 36px);
+            }
+
+            .stamina-indicator__value {
+                font-size: clamp(12px, 3.3vw, 15px);
+            }
+
             .hud-box,
             .hud-btn {
                 min-width: fit-content;
@@ -2595,11 +3107,25 @@
                 width: 100%;
             }
 
-            #score-box {
+            .metric-box {
                 width: fit-content;
-                min-width: clamp(128px, 36vw, 188px);
-                font-size: clamp(16px, 4vw, 20px);
-                padding: 8px 12px;
+                min-width: clamp(112px, 32vw, 160px);
+                padding: 7px 10px;
+                gap: 8px;
+            }
+
+            .metric-box .metric-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+            }
+
+            .metric-box .metric-label {
+                font-size: 9px;
+            }
+
+            .metric-box .metric-value {
+                font-size: clamp(14px, 3.6vw, 18px);
             }
 
             .store-panel {
@@ -2937,6 +3463,13 @@
     <div id="gif-tint"></div>
     <div id="game-container"></div>
     <div id="mystery-test-status" aria-live="polite"></div>
+    <section id="mystery-points-popup" aria-label="Mystery Box points notice" aria-hidden="true">
+        <p class="mystery-points-popup-title" id="mystery-points-popup-title">Not enough points</p>
+        <p class="mystery-points-popup-body" id="mystery-points-popup-body">You need 100 total points to pull the Mystery Box.</p>
+        <div class="mystery-points-popup-actions">
+            <button class="mystery-points-popup-close" id="mystery-points-popup-close" type="button">Close</button>
+        </div>
+    </section>
     <div id="mystery-hanging-sign-layer" aria-hidden="true">
         <svg id="mystery-hanging-sign-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
             <path id="mystery-hanging-sign-string"></path>
@@ -2968,15 +3501,47 @@
             </div>
         </div>
     </div>
-    <button id="character-creator-quick-open" type="button" aria-label="Open XiO Studio" hidden>
-        <span class="eyebrow">Studio Access</span>
-        <span class="title">Open XiO Studio</span>
-    </button>
+    <aside id="top-right-hud" aria-label="Points and manager tools">
+        <div class="hud-box metric-box" id="points-box" aria-live="polite">
+            <span class="metric-icon" aria-hidden="true">✦</span>
+            <span class="metric-copy">
+                <span class="metric-label">Total Points</span>
+                <span class="metric-value" id="points-box-value">0</span>
+            </span>
+        </div>
+        <button id="character-creator-quick-open" type="button" aria-label="Open XiO Studios" hidden>
+            <span class="eyebrow">Studio Access</span>
+            <span class="title">Open XiO Studios</span>
+        </button>
+    </aside>
+    <aside id="bottom-left-utility-stack" aria-label="Daily rewards">
+        <section id="daily-lunchbox-popup" aria-label="Daily Lunchbox Rewards">
+            <p class="daily-lunchbox-popup-title" id="daily-lunchbox-popup-title">Collect Daily Lunchbox Rewards!</p>
+            <p class="daily-lunchbox-popup-body" id="daily-lunchbox-popup-body">Your Daily Lunchbox has 100 points ready to collect.</p>
+            <div class="daily-lunchbox-popup-actions">
+                <button class="daily-lunchbox-collect-btn" id="daily-lunchbox-collect" type="button">Collect 100 Points</button>
+                <button class="daily-lunchbox-close-btn" id="daily-lunchbox-close" type="button">Close</button>
+            </div>
+        </section>
+        <button id="daily-lunchbox-btn" type="button" aria-expanded="false" aria-controls="daily-lunchbox-popup" aria-label="Open Daily Lunchbox rewards">
+            <img src="DailyLunchBoxGift.png" alt="Daily Lunchbox rewards">
+        </button>
+    </aside>
     <aside id="ui-overlay">
-        <div class="hud-box" id="score-box">100 pts</div>
+        <div class="hud-box metric-box" id="score-box" aria-live="polite">
+            <span class="metric-icon" aria-hidden="true">★</span>
+            <span class="metric-copy">
+                <span class="metric-label">Stars</span>
+                <span class="metric-value" id="score-box-value">0</span>
+            </span>
+        </div>
         <button class="inventory-icon-btn" id="inventory-toggle" type="button" aria-expanded="false" aria-controls="inventory-panel" aria-label="Open inventory">
             <img src="Images/ICONS/Inventory.png" alt="" aria-hidden="true">
         </button>
+        <div class="stamina-indicator" id="stamina-indicator" aria-live="polite" aria-label="Stamina 20 out of 20">
+            <img class="stamina-indicator__icon" src="Stamina.png" alt="" aria-hidden="true">
+            <span class="stamina-indicator__value" id="stamina-indicator-value">20/20</span>
+        </div>
         <section class="store-panel" id="store-panel" aria-label="Prop inventory">
             <h2 class="store-title">Store: Props</h2>
             <p class="store-subtitle">Categories</p>
@@ -8234,7 +8799,19 @@
         const inventoryCloseBtn = document.getElementById('inventory-close-btn');
         const inventoryList = document.getElementById('inventory-list');
         const inventoryEmpty = document.getElementById('inventory-empty');
+        const dailyLunchboxBtn = document.getElementById('daily-lunchbox-btn');
+        const dailyLunchboxPopup = document.getElementById('daily-lunchbox-popup');
+        const dailyLunchboxPopupTitle = document.getElementById('daily-lunchbox-popup-title');
+        const dailyLunchboxPopupBody = document.getElementById('daily-lunchbox-popup-body');
+        const dailyLunchboxCollectBtn = document.getElementById('daily-lunchbox-collect');
+        const dailyLunchboxCloseBtn = document.getElementById('daily-lunchbox-close');
+        const bottomLeftUtilityStack = document.getElementById('bottom-left-utility-stack');
         const scoreBox = document.getElementById('score-box');
+        const scoreBoxValue = document.getElementById('score-box-value');
+        const staminaIndicator = document.getElementById('stamina-indicator');
+        const staminaIndicatorValue = document.getElementById('stamina-indicator-value');
+        const pointsBox = document.getElementById('points-box');
+        const pointsBoxValue = document.getElementById('points-box-value');
         const characterCreatorQuickOpen = document.getElementById('character-creator-quick-open');
         const startupFadeOverlay = document.getElementById('startup-fade-overlay');
         const gifBackgroundVideo = document.getElementById('gif-background');
@@ -8260,11 +8837,385 @@
         const mysteryRevealStage = document.getElementById('mystery-reveal-stage');
         const mysteryRevealStill = document.getElementById('mystery-reveal-still');
         const mysteryTestStatus = document.getElementById('mystery-test-status');
+        const mysteryPointsPopup = document.getElementById('mystery-points-popup');
+        const mysteryPointsPopupTitle = document.getElementById('mystery-points-popup-title');
+        const mysteryPointsPopupBody = document.getElementById('mystery-points-popup-body');
+        const mysteryPointsPopupCloseBtn = document.getElementById('mystery-points-popup-close');
         const homepageAppSearchParams = new URLSearchParams(window.location.search);
         const developerModeEnabled = ['1', 'true', 'yes', 'on'].includes((homepageAppSearchParams.get('developer') || '').trim().toLowerCase());
+        const HOMEPAGE_POINTS_SYNC_MESSAGE = 'LAHS_HOMEPAGE_POINTS_SYNC';
+        const HOMEPAGE_POINTS_SYNC_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_POINTS_SYNC_REQUEST';
+        const HOMEPAGE_DAILY_LUNCHBOX_CLAIM_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM';
+        const HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT';
+        const HOMEPAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUEST';
+        const HOMEPAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
+        const DAILY_LUNCHBOX_DEFAULT_POINTS = 100;
+        const MYSTERY_PULL_COST_POINTS = 100;
+        const MYSTERY_PULL_REQUEST_TIMEOUT_MS = 8000;
+        const homepageHudMetricState = {
+            totalPoints: 0,
+            stars: 0,
+            stamina: 20,
+            staminaMax: 20,
+            userId: null,
+            isAuthenticated: false
+        };
+        const dailyLunchboxRewardState = {
+            rewardReady: window.parent === window,
+            rewardPoints: DAILY_LUNCHBOX_DEFAULT_POINTS,
+            claimPending: false,
+            claimed: false,
+            lastClaimAccepted: false
+        };
+        const mysteryPullSpendState = {
+            pending: false,
+            requestId: null,
+            timeoutId: null,
+            resolve: null
+        };
+        const DAILY_LUNCHBOX_MIN_BOTTOM_OFFSET_PX = 96;
+        const DAILY_LUNCHBOX_EXTRA_GAP_PX = 12;
+        let dailyLunchboxLayoutQueued = false;
 
         if (characterCreatorQuickOpen) {
             characterCreatorQuickOpen.hidden = !developerModeEnabled;
+        }
+
+        function normalizeHudMetricValue(value) {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric) || numeric <= 0) {
+                return 0;
+            }
+            return Math.max(0, Math.round(numeric));
+        }
+
+        function formatHudMetricValue(value) {
+            try {
+                return new Intl.NumberFormat('en-US').format(normalizeHudMetricValue(value));
+            } catch (_) {
+                return `${normalizeHudMetricValue(value)}`;
+            }
+        }
+
+        function updateHomepageHudMetrics() {
+            if (scoreBoxValue) {
+                scoreBoxValue.textContent = formatHudMetricValue(homepageHudMetricState.stars);
+            }
+            if (pointsBoxValue) {
+                pointsBoxValue.textContent = formatHudMetricValue(homepageHudMetricState.totalPoints);
+            }
+            if (staminaIndicatorValue) {
+                const normalizedStamina = Math.max(0, Math.min(normalizeHudMetricValue(homepageHudMetricState.stamina), normalizeHudMetricValue(homepageHudMetricState.staminaMax) || 20));
+                const normalizedStaminaMax = Math.max(1, normalizeHudMetricValue(homepageHudMetricState.staminaMax) || 20);
+                staminaIndicatorValue.textContent = `${normalizedStamina}/${normalizedStaminaMax}`;
+            }
+            if (scoreBox) {
+                scoreBox.setAttribute('aria-label', `Stars ${formatHudMetricValue(homepageHudMetricState.stars)}`);
+            }
+            if (pointsBox) {
+                pointsBox.setAttribute('aria-label', `Total points ${formatHudMetricValue(homepageHudMetricState.totalPoints)}`);
+            }
+            if (staminaIndicator) {
+                const normalizedStamina = Math.max(0, Math.min(normalizeHudMetricValue(homepageHudMetricState.stamina), normalizeHudMetricValue(homepageHudMetricState.staminaMax) || 20));
+                const normalizedStaminaMax = Math.max(1, normalizeHudMetricValue(homepageHudMetricState.staminaMax) || 20);
+                staminaIndicator.setAttribute('aria-label', `Stamina ${normalizedStamina} out of ${normalizedStaminaMax}`);
+            }
+        }
+
+        function requestHomepageHudMetricsSync() {
+            if (window.parent === window) {
+                return false;
+            }
+            try {
+                window.parent.postMessage({ type: HOMEPAGE_POINTS_SYNC_REQUEST_MESSAGE }, window.location.origin);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function setMysteryPointsPopupOpen(isOpen) {
+            if (!mysteryPointsPopup) {
+                return;
+            }
+            mysteryPointsPopup.classList.toggle('open', Boolean(isOpen));
+            mysteryPointsPopup.setAttribute('aria-hidden', String(!isOpen));
+        }
+
+        function showMysteryNotEnoughPointsPopup(requiredPoints = MYSTERY_PULL_COST_POINTS) {
+            const normalizedRequiredPoints = Math.max(1, normalizeHudMetricValue(requiredPoints) || MYSTERY_PULL_COST_POINTS);
+            if (mysteryPointsPopupTitle) {
+                mysteryPointsPopupTitle.textContent = 'Not enough points';
+            }
+            if (mysteryPointsPopupBody) {
+                mysteryPointsPopupBody.textContent = `Not enough points. You need ${formatHudMetricValue(normalizedRequiredPoints)} total points to pull the Mystery Box.`;
+            }
+            setMysteryPointsPopupOpen(true);
+        }
+
+        function buildMysteryPullRequestId() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return `mystery-pull-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        }
+
+        function resolvePendingMysteryPullSpend(result) {
+            const resolver = typeof mysteryPullSpendState.resolve === 'function' ? mysteryPullSpendState.resolve : null;
+            if (mysteryPullSpendState.timeoutId !== null) {
+                window.clearTimeout(mysteryPullSpendState.timeoutId);
+            }
+            mysteryPullSpendState.pending = false;
+            mysteryPullSpendState.requestId = null;
+            mysteryPullSpendState.timeoutId = null;
+            mysteryPullSpendState.resolve = null;
+            if (resolver) {
+                resolver(result);
+            }
+        }
+
+        function handleMysteryPullResultMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+
+            const data = event?.data;
+            if (!data || typeof data !== 'object' || data.type !== HOMEPAGE_MYSTERY_PULL_RESULT_MESSAGE) {
+                return;
+            }
+
+            const requestId = typeof data.requestId === 'string' ? data.requestId.trim() : '';
+            if (!mysteryPullSpendState.pending || !requestId || requestId !== mysteryPullSpendState.requestId) {
+                return;
+            }
+
+            if (typeof data.totalPoints !== 'undefined') {
+                homepageHudMetricState.totalPoints = normalizeHudMetricValue(data.totalPoints);
+            }
+            if (typeof data.stars !== 'undefined') {
+                homepageHudMetricState.stars = normalizeHudMetricValue(data.stars);
+            }
+            updateHomepageHudMetrics();
+
+            resolvePendingMysteryPullSpend({
+                accepted: Boolean(data.accepted),
+                reason: typeof data.reason === 'string' && data.reason.trim() ? data.reason.trim() : null,
+                totalPoints: homepageHudMetricState.totalPoints,
+                stars: homepageHudMetricState.stars,
+                costPoints: Math.max(1, normalizeHudMetricValue(data.costPoints) || MYSTERY_PULL_COST_POINTS),
+                requestId
+            });
+        }
+
+        function updateDailyLunchboxUi() {
+            const rewardPointsText = formatHudMetricValue(dailyLunchboxRewardState.rewardPoints);
+            if (dailyLunchboxBtn) {
+                dailyLunchboxBtn.classList.toggle(
+                    'is-reward-ready',
+                    Boolean(dailyLunchboxRewardState.rewardReady && !dailyLunchboxRewardState.claimPending)
+                );
+                dailyLunchboxBtn.classList.toggle('is-claim-pending', Boolean(dailyLunchboxRewardState.claimPending));
+                const ariaLabel = dailyLunchboxRewardState.rewardReady
+                    ? `Open Daily Lunchbox rewards. ${rewardPointsText} points ready to collect.`
+                    : dailyLunchboxRewardState.claimed
+                        ? 'Open Daily Lunchbox rewards. Reward already collected.'
+                        : 'Open Daily Lunchbox rewards.';
+                dailyLunchboxBtn.setAttribute('aria-label', ariaLabel);
+            }
+            if (dailyLunchboxPopupTitle) {
+                if (dailyLunchboxRewardState.rewardReady) {
+                    dailyLunchboxPopupTitle.textContent = 'Collect Daily Lunchbox Rewards!';
+                } else if (dailyLunchboxRewardState.claimed) {
+                    dailyLunchboxPopupTitle.textContent = 'Daily Lunchbox Collected!';
+                } else {
+                    dailyLunchboxPopupTitle.textContent = 'Daily Lunchbox Rewards';
+                }
+            }
+            if (dailyLunchboxPopupBody) {
+                if (dailyLunchboxRewardState.claimPending) {
+                    dailyLunchboxPopupBody.textContent = `Collecting ${rewardPointsText} points...`;
+                } else if (dailyLunchboxRewardState.rewardReady) {
+                    dailyLunchboxPopupBody.textContent = `Your Daily Lunchbox has ${rewardPointsText} points ready to collect.`;
+                } else if (dailyLunchboxRewardState.claimed) {
+                    dailyLunchboxPopupBody.textContent = `${rewardPointsText} points collected. The lunchbox will refresh again in about 10 seconds.`;
+                } else {
+                    dailyLunchboxPopupBody.textContent = 'No lunchbox reward is ready right now.';
+                }
+            }
+            if (dailyLunchboxCollectBtn) {
+                dailyLunchboxCollectBtn.hidden = !dailyLunchboxRewardState.rewardReady;
+                dailyLunchboxCollectBtn.disabled = Boolean(dailyLunchboxRewardState.claimPending);
+                dailyLunchboxCollectBtn.textContent = dailyLunchboxRewardState.claimPending
+                    ? 'Collecting...'
+                    : `Collect ${rewardPointsText} Points`;
+            }
+            if (dailyLunchboxCloseBtn) {
+                dailyLunchboxCloseBtn.textContent = dailyLunchboxRewardState.rewardReady ? 'Later' : 'Close';
+            }
+        }
+
+        function handleHomepagePointsBridgeMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+
+            const data = event?.data;
+            if (!data || typeof data !== 'object' || data.type !== HOMEPAGE_POINTS_SYNC_MESSAGE) {
+                return;
+            }
+
+            homepageHudMetricState.totalPoints = normalizeHudMetricValue(data.totalPoints);
+            homepageHudMetricState.stars = normalizeHudMetricValue(data.stars);
+            homepageHudMetricState.stamina = Math.max(0, normalizeHudMetricValue(data.stamina));
+            homepageHudMetricState.staminaMax = Math.max(1, normalizeHudMetricValue(data.staminaMax) || 20);
+            homepageHudMetricState.userId = typeof data.userId === 'string' && data.userId.trim()
+                ? data.userId.trim()
+                : null;
+            homepageHudMetricState.isAuthenticated = Boolean(data.isAuthenticated && homepageHudMetricState.userId);
+            dailyLunchboxRewardState.rewardReady = Boolean(data.dailyLunchboxRewardReady);
+            dailyLunchboxRewardState.rewardPoints = normalizeHudMetricValue(data.dailyLunchboxRewardPoints || DAILY_LUNCHBOX_DEFAULT_POINTS) || DAILY_LUNCHBOX_DEFAULT_POINTS;
+            dailyLunchboxRewardState.claimPending = Boolean(data.dailyLunchboxClaimPending);
+            dailyLunchboxRewardState.claimed = Boolean(data.dailyLunchboxClaimed);
+            updateHomepageHudMetrics();
+            updateDailyLunchboxUi();
+        }
+
+        function handleDailyLunchboxClaimResultMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+
+            const data = event?.data;
+            if (!data || typeof data !== 'object' || data.type !== HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE) {
+                return;
+            }
+
+            dailyLunchboxRewardState.rewardReady = Boolean(data.dailyLunchboxRewardReady);
+            dailyLunchboxRewardState.rewardPoints = normalizeHudMetricValue(data.dailyLunchboxRewardPoints || DAILY_LUNCHBOX_DEFAULT_POINTS) || DAILY_LUNCHBOX_DEFAULT_POINTS;
+            dailyLunchboxRewardState.claimPending = Boolean(data.dailyLunchboxClaimPending);
+            dailyLunchboxRewardState.claimed = Boolean(data.dailyLunchboxClaimed);
+            dailyLunchboxRewardState.lastClaimAccepted = Boolean(data.accepted);
+            if (typeof data.totalPoints !== 'undefined') {
+                homepageHudMetricState.totalPoints = normalizeHudMetricValue(data.totalPoints);
+            }
+            if (typeof data.stars !== 'undefined') {
+                homepageHudMetricState.stars = normalizeHudMetricValue(data.stars);
+            }
+            updateHomepageHudMetrics();
+            updateDailyLunchboxUi();
+        }
+
+        updateHomepageHudMetrics();
+        updateDailyLunchboxUi();
+        window.addEventListener('message', handleHomepagePointsBridgeMessage);
+        window.addEventListener('message', handleDailyLunchboxClaimResultMessage);
+        window.addEventListener('message', handleMysteryPullResultMessage);
+        requestHomepageHudMetricsSync();
+
+        function setDailyLunchboxPopupOpen(isOpen) {
+            if (!dailyLunchboxPopup || !dailyLunchboxBtn) {
+                return;
+            }
+            dailyLunchboxPopup.classList.toggle('open', Boolean(isOpen));
+            dailyLunchboxBtn.setAttribute('aria-expanded', String(Boolean(isOpen)));
+        }
+
+        function requestDailyLunchboxClaim() {
+            if (dailyLunchboxRewardState.claimPending || !dailyLunchboxRewardState.rewardReady) {
+                return false;
+            }
+
+            if (window.parent === window) {
+                dailyLunchboxRewardState.claimPending = false;
+                dailyLunchboxRewardState.rewardReady = false;
+                dailyLunchboxRewardState.claimed = true;
+                dailyLunchboxRewardState.lastClaimAccepted = true;
+                homepageHudMetricState.totalPoints += dailyLunchboxRewardState.rewardPoints;
+                updateHomepageHudMetrics();
+                updateDailyLunchboxUi();
+                return true;
+            }
+
+            try {
+                dailyLunchboxRewardState.claimPending = true;
+                updateDailyLunchboxUi();
+                window.parent.postMessage({ type: HOMEPAGE_DAILY_LUNCHBOX_CLAIM_MESSAGE }, window.location.origin);
+                return true;
+            } catch (_) {
+                dailyLunchboxRewardState.claimPending = false;
+                updateDailyLunchboxUi();
+                return false;
+            }
+        }
+
+        function requestMysteryPullSpend(costPoints = MYSTERY_PULL_COST_POINTS) {
+            const normalizedCostPoints = Math.max(1, normalizeHudMetricValue(costPoints) || MYSTERY_PULL_COST_POINTS);
+            if (mysteryPullSpendState.pending) {
+                return Promise.resolve({
+                    accepted: false,
+                    reason: 'pending',
+                    totalPoints: homepageHudMetricState.totalPoints,
+                    stars: homepageHudMetricState.stars,
+                    costPoints: normalizedCostPoints
+                });
+            }
+
+            if (window.parent === window) {
+                if (homepageHudMetricState.totalPoints < normalizedCostPoints) {
+                    return Promise.resolve({
+                        accepted: false,
+                        reason: 'insufficient_points',
+                        totalPoints: homepageHudMetricState.totalPoints,
+                        stars: homepageHudMetricState.stars,
+                        costPoints: normalizedCostPoints
+                    });
+                }
+
+                homepageHudMetricState.totalPoints = Math.max(0, homepageHudMetricState.totalPoints - normalizedCostPoints);
+                updateHomepageHudMetrics();
+                return Promise.resolve({
+                    accepted: true,
+                    reason: null,
+                    totalPoints: homepageHudMetricState.totalPoints,
+                    stars: homepageHudMetricState.stars,
+                    costPoints: normalizedCostPoints
+                });
+            }
+
+            return new Promise((resolve) => {
+                const requestId = buildMysteryPullRequestId();
+                mysteryPullSpendState.pending = true;
+                mysteryPullSpendState.requestId = requestId;
+                mysteryPullSpendState.resolve = resolve;
+                mysteryPullSpendState.timeoutId = window.setTimeout(() => {
+                    resolvePendingMysteryPullSpend({
+                        accepted: false,
+                        reason: 'sync_failed',
+                        totalPoints: homepageHudMetricState.totalPoints,
+                        stars: homepageHudMetricState.stars,
+                        costPoints: normalizedCostPoints,
+                        requestId
+                    });
+                }, MYSTERY_PULL_REQUEST_TIMEOUT_MS);
+
+                try {
+                    window.parent.postMessage({
+                        type: HOMEPAGE_MYSTERY_PULL_REQUEST_MESSAGE,
+                        requestId,
+                        costPoints: normalizedCostPoints,
+                        occurredAt: new Date().toISOString()
+                    }, window.location.origin);
+                } catch (_) {
+                    resolvePendingMysteryPullSpend({
+                        accepted: false,
+                        reason: 'sync_failed',
+                        totalPoints: homepageHudMetricState.totalPoints,
+                        stars: homepageHudMetricState.stars,
+                        costPoints: normalizedCostPoints,
+                        requestId
+                    });
+                }
+            });
         }
 
         const getCharacterCreatorLaunchUrl = () => {
@@ -8327,12 +9278,18 @@ const creatorVersion = '2026-03-15-39';
         const MYSTERY_REVEAL_STILL_HEIGHT = 540;
         const MYSTERY_REVEAL_CACHE_DB_NAME = 'LAHS_HOMEPAGE_MYSTERY_REVEAL_CACHE';
         const MYSTERY_REVEAL_CACHE_STORE_NAME = 'stills';
-const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
+const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         const MYSTERY_REVEAL_PRIMARY_TITLE = 'Mystery Reveal';
+        const MYSTERY_REVEAL_FLIGHT_DURATION_SCALE = 0.86;
+        const MYSTERY_REVEAL_SETTLE_DURATION_SCALE = 0.82;
+        const MYSTERY_REVEAL_HANDOFF_DURATION_SCALE = 0.86;
+        function scaleMysteryRevealDuration(baseSeconds, scale = 1) {
+            return Number((baseSeconds * scale).toFixed(3));
+        }
         const MYSTERY_REVEAL_PROFILES = Object.freeze({
             common: Object.freeze({
-                introDuration: 0.78,
-                settleDuration: 0.44,
+                introDuration: scaleMysteryRevealDuration(0.78, MYSTERY_REVEAL_FLIGHT_DURATION_SCALE),
+                settleDuration: scaleMysteryRevealDuration(0.44, MYSTERY_REVEAL_SETTLE_DURATION_SCALE),
                 startScale: 0.72,
                 overshootScale: 1.03,
                 burstStrength: 0.54,
@@ -8348,8 +9305,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 accentIntensity: 0.28
             }),
             rare: Object.freeze({
-                introDuration: 0.92,
-                settleDuration: 0.52,
+                introDuration: scaleMysteryRevealDuration(0.92, MYSTERY_REVEAL_FLIGHT_DURATION_SCALE),
+                settleDuration: scaleMysteryRevealDuration(0.52, MYSTERY_REVEAL_SETTLE_DURATION_SCALE),
                 startScale: 0.68,
                 overshootScale: 1.05,
                 burstStrength: 0.72,
@@ -8365,8 +9322,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 accentIntensity: 0.42
             }),
             legendary: Object.freeze({
-                introDuration: 1.18,
-                settleDuration: 0.66,
+                introDuration: scaleMysteryRevealDuration(1.18, MYSTERY_REVEAL_FLIGHT_DURATION_SCALE),
+                settleDuration: scaleMysteryRevealDuration(0.66, MYSTERY_REVEAL_SETTLE_DURATION_SCALE),
                 startScale: 0.6,
                 overshootScale: 1.08,
                 burstStrength: 1,
@@ -8382,8 +9339,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 accentIntensity: 0.54
             }),
             legendaryLight: Object.freeze({
-                introDuration: 1.2,
-                settleDuration: 0.66,
+                introDuration: scaleMysteryRevealDuration(1.2, MYSTERY_REVEAL_FLIGHT_DURATION_SCALE),
+                settleDuration: scaleMysteryRevealDuration(0.66, MYSTERY_REVEAL_SETTLE_DURATION_SCALE),
                 startScale: 0.58,
                 overshootScale: 1.08,
                 burstStrength: 1,
@@ -8399,8 +9356,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 accentIntensity: 0.56
             }),
             legendaryDark: Object.freeze({
-                introDuration: 1.22,
-                settleDuration: 0.68,
+                introDuration: scaleMysteryRevealDuration(1.22, MYSTERY_REVEAL_FLIGHT_DURATION_SCALE),
+                settleDuration: scaleMysteryRevealDuration(0.68, MYSTERY_REVEAL_SETTLE_DURATION_SCALE),
                 startScale: 0.58,
                 overshootScale: 1.07,
                 burstStrength: 0.96,
@@ -9561,22 +10518,22 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
         previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
         previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-        previewRenderer.toneMappingExposure = 1.08;
+        previewRenderer.toneMappingExposure = 1;
         previewRenderer.setClearColor(0x000000, 0);
         if (propPreviewViewport) {
             propPreviewViewport.appendChild(previewRenderer.domElement);
         }
-        previewScene.add(new THREE.AmbientLight(0xd8eafe, 0.72));
-        const previewHemisphere = new THREE.HemisphereLight(0xe0f2fe, 0x0b1220, 0.7);
+        previewScene.add(new THREE.AmbientLight(0xffffff, 0.68));
+        const previewHemisphere = new THREE.HemisphereLight(0xffffff, 0x2f3640, 0.58);
         previewScene.add(previewHemisphere);
-        const previewKey = new THREE.DirectionalLight(0xffffff, 1.48);
+        const previewKey = new THREE.DirectionalLight(0xffffff, 1.28);
         previewKey.position.set(1.35, 1.95, 2.35);
-        const previewFill = new THREE.DirectionalLight(0x7dd3fc, 0.84);
+        const previewFill = new THREE.DirectionalLight(0xffffff, 0.46);
         previewFill.position.set(-1.4, 0.3, 1.25);
-        const previewRim = new THREE.DirectionalLight(0x67e8f9, 0.58);
+        const previewRim = new THREE.DirectionalLight(0xffffff, 0.24);
         previewRim.position.set(0.25, 0.9, -2.8);
         previewScene.add(previewKey, previewFill, previewRim);
-        const previewAccent = new THREE.PointLight(0x38bdf8, 0.38, 14, 2);
+        const previewAccent = new THREE.PointLight(0xffffff, 0.12, 14, 2);
         previewAccent.position.set(0, 0.72, 1.62);
         previewScene.add(previewAccent);
         const previewRevealKey = new THREE.DirectionalLight(0x7dd3fc, 0);
@@ -10323,13 +11280,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             fallSpinDamp: 0.9992,
             settleDuration: 0.62,
             openDuration: 0.56,
-            revealHoldDuration: 2.2,
+            revealHoldDuration: scaleMysteryRevealDuration(2.2, MYSTERY_REVEAL_HANDOFF_DURATION_SCALE),
             cleanupDuration: 1.35,
             openBurstDistance: 2.7,
             openBurstLift: 1.9,
             openBurstSpin: 2.2,
-            dustFlowDuration: 0.62,
-            rewardRevealRatio: 0.46,
+            dustFlowDuration: scaleMysteryRevealDuration(0.62, MYSTERY_REVEAL_HANDOFF_DURATION_SCALE),
+            rewardRevealRatio: 0.38,
             landedRattleInterval: 2.5,
             landedRattleDuration: 0.44,
             landedRattleHz: 17.8,
@@ -10611,6 +11568,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysteryRenderActiveSmoothing: 10.6,
             mysteryRenderReleaseSmoothing: 15,
             mysteryRenderMaxRotRate: 7.2,
+            scrollPullFlightSpeedMin: 1.12,
+            scrollPullFlightSpeedMax: 1.34,
+            scrollPullHeightBoostMax: 1.12,
+            scrollPullOffscreenDelayMinScale: 0.72,
 
             anticipationDuration: 2.75,
             anticipationSplit: 0.48,
@@ -10895,6 +11856,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             returnQueued: false,
             returnAfterSelectionOnly: false,
             holdReturnClock: 0,
+            scrollPullStrength: 0,
+            launchSpeedMultiplier: 1,
+            launchHeightMultiplier: 1,
+            offscreenDelayScale: 1,
             rigOffset: new THREE.Vector3(),
             wingBoost: 1,
             hardFlap: 0,
@@ -10984,7 +11949,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                     viewportHeight: height,
                     marginPx: baseMarginPx,
                     fullyOffscreen: false,
-                    fullyAboveTop: false
+                    fullyAboveTop: false,
+                    bufferedFullyOffscreen: false,
+                    bufferedFullyAboveTop: false,
                 };
             }
 
@@ -10998,9 +11965,15 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 baseMarginPx,
                 Math.max(baseMarginPx + 12, height * 0.18)
             );
-            const fullyAboveTop = bounds.bottom <= -marginPx;
+            const fullyAboveTop = bounds.bottom <= 0;
             const fullyOffscreen =
                 fullyAboveTop ||
+                bounds.right <= 0 ||
+                bounds.left >= width ||
+                bounds.top >= height;
+            const bufferedFullyAboveTop = bounds.bottom <= -marginPx;
+            const bufferedFullyOffscreen =
+                bufferedFullyAboveTop ||
                 bounds.right <= -marginPx ||
                 bounds.left >= width + marginPx ||
                 bounds.top >= height + marginPx;
@@ -11010,7 +11983,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 viewportHeight: height,
                 marginPx,
                 fullyOffscreen,
-                fullyAboveTop
+                fullyAboveTop,
+                bufferedFullyOffscreen,
+                bufferedFullyAboveTop,
             };
         }
 
@@ -11033,6 +12008,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysteryFlightCinematic.dropTriggered = false;
             mysteryFlightCinematic.returnQueued = false;
             mysteryFlightCinematic.returnAfterSelectionOnly = false;
+            mysteryFlightCinematic.scrollPullStrength = 0;
+            mysteryFlightCinematic.launchSpeedMultiplier = 1;
+            mysteryFlightCinematic.launchHeightMultiplier = 1;
+            mysteryFlightCinematic.offscreenDelayScale = 1;
             mysteryFlightCinematic.rigOffset.set(0, 0, 0);
             mysteryFlightCinematic.wingBoost = 1;
             mysteryFlightCinematic.hardFlap = 0;
@@ -11625,14 +12604,33 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             let guardPx = Math.max(baseBottomGapPx, visualViewportInset);
             const candidates = new Set();
 
-            INVENTORY_BOTTOM_GUARD_SELECTORS.forEach((selector) => {
-                try {
-                    document.querySelectorAll(selector).forEach((node) => {
-                        if (node) {
-                            candidates.add(node);
-                        }
-                    });
-                } catch (_) {}
+            const candidateDocuments = [document];
+            try {
+                if (window.parent && window.parent !== window && window.parent.document) {
+                    candidateDocuments.push(window.parent.document);
+                }
+            } catch (_) {}
+            try {
+                if (
+                    window.top &&
+                    window.top !== window &&
+                    window.top !== window.parent &&
+                    window.top.document
+                ) {
+                    candidateDocuments.push(window.top.document);
+                }
+            } catch (_) {}
+
+            candidateDocuments.forEach((doc) => {
+                INVENTORY_BOTTOM_GUARD_SELECTORS.forEach((selector) => {
+                    try {
+                        doc.querySelectorAll(selector).forEach((node) => {
+                            if (node) {
+                                candidates.add(node);
+                            }
+                        });
+                    } catch (_) {}
+                });
             });
 
             candidates.forEach((node) => {
@@ -11662,6 +12660,41 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             });
 
             return THREE.MathUtils.clamp(guardPx, 0, viewportHeight * 0.42);
+        }
+
+        function updateDailyLunchboxLayout() {
+            if (!bottomLeftUtilityStack) {
+                return;
+            }
+            const visualViewport = window.visualViewport;
+            const viewportHeight = Math.max(
+                1,
+                (visualViewport && Number.isFinite(visualViewport.height) ? visualViewport.height : window.innerHeight) || 1
+            );
+            const dockGuardPx = getInventoryBottomGuardPx(viewportHeight);
+            const offsetPx = Math.max(
+                DAILY_LUNCHBOX_MIN_BOTTOM_OFFSET_PX,
+                dockGuardPx + DAILY_LUNCHBOX_EXTRA_GAP_PX
+            );
+            bottomLeftUtilityStack.style.setProperty('--daily-lunchbox-bottom-offset', `${Math.round(offsetPx)}px`);
+        }
+
+        function scheduleDailyLunchboxLayoutUpdate({ afterPaint = false } = {}) {
+            if (!bottomLeftUtilityStack || dailyLunchboxLayoutQueued) {
+                return;
+            }
+            dailyLunchboxLayoutQueued = true;
+            const runLayout = () => {
+                dailyLunchboxLayoutQueued = false;
+                updateDailyLunchboxLayout();
+            };
+            if (afterPaint) {
+                window.requestAnimationFrame(() => {
+                    window.requestAnimationFrame(runLayout);
+                });
+                return;
+            }
+            window.requestAnimationFrame(runLayout);
         }
 
         function updateInventoryPanelAnchor() {
@@ -16783,7 +17816,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysteryFlightCinematic.actionSuppress = blendDur;
         }
 
-        function startMysteryFlightCinematic(waitForSelectionReturn = false) {
+        function startMysteryFlightCinematic(waitForSelectionReturn = false, launchProfile = null) {
             const canStart = mysteryState.phase === 'idle' && !isMysteryInteractionLocked();
             if (!canStart) {
                 return false;
@@ -16801,6 +17834,24 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysteryFlightCinematic.dropTriggered = false;
             mysteryFlightCinematic.returnQueued = false;
             mysteryFlightCinematic.returnAfterSelectionOnly = Boolean(waitForSelectionReturn);
+            mysteryFlightCinematic.scrollPullStrength = THREE.MathUtils.clamp(
+                launchProfile?.pullStrength ?? 0,
+                0,
+                1
+            );
+            mysteryFlightCinematic.launchSpeedMultiplier = Math.max(
+                1,
+                Number.isFinite(launchProfile?.speedMultiplier) ? launchProfile.speedMultiplier : 1
+            );
+            mysteryFlightCinematic.launchHeightMultiplier = Math.max(
+                1,
+                Number.isFinite(launchProfile?.heightMultiplier) ? launchProfile.heightMultiplier : 1
+            );
+            mysteryFlightCinematic.offscreenDelayScale = THREE.MathUtils.clamp(
+                launchProfile?.offscreenDelayScale ?? 1,
+                0.55,
+                1
+            );
             mysteryFlightCinematic.rigOffset.set(0, 0, 0);
             mysteryFlightCinematic.wingBoost = 1;
             mysteryFlightCinematic.hardFlap = 0;
@@ -16929,11 +17980,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             );
             const getOffscreenDropDelay = (clearanceState = null) => {
                 const visibility = clearanceState || getMysteryFlightVisualClearanceState(cfg);
-                if (visibility.fullyAboveTop) {
-                    return Math.max(0.06, cfg.offscreenClearDropDelay ?? 0.14);
-                }
                 if (visibility.fullyOffscreen) {
-                    return Math.max(0.08, cfg.offscreenDropDelay ?? 0.28);
+                    return 0;
                 }
                 return Math.max(0.12, cfg.offscreenFallbackDropDelay ?? cfg.offscreenDropDelay ?? 0.38);
             };
@@ -16950,9 +17998,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             const signedSide = rawSide !== 0 ? rawSide : 1;
             const finalSide = fx.finalSide || (-signedSide);
             const spinYawBase = fx.spinYaw || 0;
+            const launchSpeedMultiplier = Math.max(1, fx.launchSpeedMultiplier ?? 1);
+            const launchHeightMultiplier = Math.max(1, fx.launchHeightMultiplier ?? 1);
+            const offscreenDelayScale = THREE.MathUtils.clamp(fx.offscreenDelayScale ?? 1, 0.55, 1);
 
             if (fx.phase === 'backflip') {
-                const dur = Math.max(0.001, cfg.backflipDuration ?? 0.52);
+                const dur = Math.max(0.001, (cfg.backflipDuration ?? 0.52) / Math.sqrt(launchSpeedMultiplier));
                 const p = clamp01(fx.timer / dur);
                 const e = smoother01(p);
                 const side = finalSide || 1;
@@ -17001,7 +18052,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             }
 
             if (fx.phase === 'verticalAscent') {
-                const dur = Math.max(0.001, cfg.verticalAscentDuration ?? 2.12);
+                const dur = Math.max(0.001, (cfg.verticalAscentDuration ?? 2.12) / launchSpeedMultiplier);
                 const p = clamp01(fx.timer / dur);
                 const e = easeOutCubic(p);
                 const side = finalSide || 1;
@@ -17025,8 +18076,14 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 const xBlend = 1 - Math.exp(-(cfg.verticalAscentXDamp ?? 5.8) * p);
                 const zBlend = 1 - Math.exp(-(cfg.verticalAscentZDamp ?? 2.1) * p);
                 const clearanceState = getMysteryFlightVisualClearanceState(cfg);
-                const lift = (cfg.verticalAscentHeight ?? 14.2) * Math.pow(e, cfg.verticalAscentLiftCurve ?? 1.24);
-                const clearanceLift = getMysteryFlightClearanceLift(fx.timer, dur, cfg, 1.08, clearanceState);
+                const lift = (cfg.verticalAscentHeight ?? 14.2) * launchHeightMultiplier * Math.pow(e, cfg.verticalAscentLiftCurve ?? 1.24);
+                const clearanceLift = getMysteryFlightClearanceLift(
+                    fx.timer,
+                    dur,
+                    cfg,
+                    1.08 * launchSpeedMultiplier,
+                    clearanceState
+                );
                 const y = fx.burstStartOffset.y + lift + drive * 0.16 + clearanceLift;
                 const x = THREE.MathUtils.lerp(fx.burstStartOffset.x, 0, xBlend);
                 const z = THREE.MathUtils.lerp(fx.burstStartOffset.z, cfg.verticalAscentZTarget ?? -0.46, zBlend);
@@ -17051,7 +18108,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 fx.eyeTargetY = 0.1;
 
                 const isOffscreen = clearanceState.fullyAboveTop || clearanceState.fullyOffscreen;
-                const dropDelay = getOffscreenDropDelay(clearanceState);
+                const dropDelay = getOffscreenDropDelay(clearanceState) * offscreenDelayScale;
                 if (!fx.offscreenTriggered) {
                     if (isOffscreen) {
                         fx.offscreenTriggered = true;
@@ -18091,9 +19148,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
         function canStartMysterySignFlight() {
             const now = getMysteryInteractionNowMs();
             return (
+                !mysteryPullSpendState.pending &&
                 !mysteryFlightCinematic.active &&
                 mysteryScrollSign &&
                 mysteryState.phase === 'idle' &&
+                !mysteryPointsPopup?.classList?.contains('open') &&
                 !isMysteryPreviewVisible() &&
                 !isMysteryInteractionLocked() &&
                 (now - mysteryInteractionSafetyState.lastSignStartAt) >= MYSTERY_INTERACTION_SAFETY_CONFIG.signStartCooldownMs &&
@@ -18199,7 +19258,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysterySignSlingshotState.pullOffset = THREE.MathUtils.clamp(drag, 0, MYSTERY_SIGN_SLINGSHOT_CONFIG.maxPullPx);
         }
 
-        function endMysterySignSlingshot(pointerId) {
+        async function endMysterySignSlingshot(pointerId) {
             if (!mysterySignSlingshotState.active) return false;
             if (mysterySignSlingshotState.pointerId !== null && pointerId !== mysterySignSlingshotState.pointerId) return false;
             const didPullEnough = mysterySignSlingshotState.pullOffset >= MYSTERY_SIGN_SLINGSHOT_CONFIG.minPullPx;
@@ -18218,12 +19277,22 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             mysterySignSlingshotState.dragBaseTipY = NaN;
             mysteryScrollSign.style.cursor = 'grab';
             stopMysteryScrollPullSfx(true);
-            const launched = launchMysterySignByPull(pulledOffset);
+            mysterySignSlingshotState.phase = 'awaiting-spend';
+            mysterySignSlingshotState.launchOffset = pulledOffset;
+            mysterySignSlingshotState.launchStartOffset = pulledOffset;
+            const spendResult = await requestMysteryPullSpend(MYSTERY_PULL_COST_POINTS);
+            const launched = Boolean(spendResult?.accepted) && launchMysterySignByPull(pulledOffset);
             if (launched) {
+                setMysteryPointsPopupOpen(false);
                 playMysteryStringReleaseSfx();
                 noteMysterySignInteractionEnd(MYSTERY_INTERACTION_SAFETY_CONFIG.signLaunchLockMs);
             } else {
                 resetMysterySignSlingshotState('idle');
+                if (spendResult?.reason === 'insufficient_points') {
+                    showMysteryNotEnoughPointsPopup(spendResult.costPoints || MYSTERY_PULL_COST_POINTS);
+                } else if (spendResult?.reason && spendResult.reason !== 'pending') {
+                    showMysteryTestStatus('Mystery pull unavailable right now. Please try again.', { tone: 'error' });
+                }
                 noteMysterySignInteractionEnd();
             }
             return launched;
@@ -18240,9 +19309,39 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             return baseHeight + bonus;
         }
 
+        function getMysteryScrollPullLaunchProfile(pullOffset = 0) {
+            const cfg = MYSTERY_SIGN_SLINGSHOT_CONFIG;
+            const flightCfg = MYSTERY_CHARACTER_FLIGHT_CONFIG;
+            const clampedPull = THREE.MathUtils.clamp(pullOffset, 0, cfg.maxPullPx);
+            const usablePull = Math.max(0, clampedPull - (cfg.minPullPx ?? 0));
+            const usableRange = Math.max(1, (cfg.maxPullPx ?? 0) - (cfg.minPullPx ?? 0));
+            const normalizedPull = THREE.MathUtils.clamp(usablePull / usableRange, 0, 1);
+            const easedPull = 1 - Math.pow(1 - normalizedPull, 1.2);
+            return {
+                pullStrength: easedPull,
+                speedMultiplier: THREE.MathUtils.lerp(
+                    flightCfg.scrollPullFlightSpeedMin ?? 1.12,
+                    flightCfg.scrollPullFlightSpeedMax ?? 1.34,
+                    easedPull
+                ),
+                heightMultiplier: THREE.MathUtils.lerp(
+                    1.02,
+                    flightCfg.scrollPullHeightBoostMax ?? 1.12,
+                    easedPull
+                ),
+                offscreenDelayScale: THREE.MathUtils.lerp(
+                    0.9,
+                    flightCfg.scrollPullOffscreenDelayMinScale ?? 0.72,
+                    easedPull
+                )
+            };
+        }
+
         function launchMysterySignByPull(pullOffset) {
             const cfg = MYSTERY_SIGN_SLINGSHOT_CONFIG;
-            if (!startMysteryFlightCinematic()) {
+            const clampedPull = THREE.MathUtils.clamp(pullOffset, 0, cfg.maxPullPx);
+            const launchProfile = getMysteryScrollPullLaunchProfile(clampedPull);
+            if (!startMysteryFlightCinematic(false, launchProfile)) {
                 mysterySignSlingshotState.phase = 'idle';
                 mysterySignSlingshotState.launchOffset = 0;
                 mysterySignSlingshotState.returnTimer = 0;
@@ -18254,7 +19353,6 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 return false;
             }
 
-            const clampedPull = THREE.MathUtils.clamp(pullOffset, 0, cfg.maxPullPx);
             mysterySignSlingshotState.phase = 'launch';
             mysterySignSlingshotState.launchOffset = clampedPull;
             mysterySignSlingshotState.launchStartOffset = clampedPull;
@@ -19015,6 +20113,62 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
                 }
             });
         }
+
+        if (dailyLunchboxBtn) {
+            dailyLunchboxBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                const nextOpenState = !dailyLunchboxPopup?.classList.contains('open');
+                setDailyLunchboxPopupOpen(nextOpenState);
+            });
+        }
+
+        if (dailyLunchboxCollectBtn) {
+            dailyLunchboxCollectBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                requestDailyLunchboxClaim();
+            });
+        }
+
+        if (dailyLunchboxCloseBtn) {
+            dailyLunchboxCloseBtn.addEventListener('click', () => {
+                setDailyLunchboxPopupOpen(false);
+            });
+        }
+
+        if (mysteryPointsPopupCloseBtn) {
+            mysteryPointsPopupCloseBtn.addEventListener('click', () => {
+                setMysteryPointsPopupOpen(false);
+            });
+        }
+
+        document.addEventListener('pointerdown', (event) => {
+            if (!dailyLunchboxPopup?.classList.contains('open') || !bottomLeftUtilityStack) {
+                return;
+            }
+            if (event.target instanceof Node && bottomLeftUtilityStack.contains(event.target)) {
+                return;
+            }
+            setDailyLunchboxPopupOpen(false);
+        });
+
+        document.addEventListener('pointerdown', (event) => {
+            if (!mysteryPointsPopup?.classList.contains('open')) {
+                return;
+            }
+            if (event.target instanceof Node && mysteryPointsPopup.contains(event.target)) {
+                return;
+            }
+            setMysteryPointsPopupOpen(false);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && dailyLunchboxPopup?.classList.contains('open')) {
+                setDailyLunchboxPopupOpen(false);
+            }
+            if (event.key === 'Escape' && mysteryPointsPopup?.classList.contains('open')) {
+                setMysteryPointsPopupOpen(false);
+            }
+        });
 
         if (inventoryCloseBtn) {
             inventoryCloseBtn.addEventListener('click', () => {
@@ -21361,9 +22515,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             }
         }, { passive: true });
 
-        window.addEventListener('pointerup', (e) => {
+        window.addEventListener('pointerup', async (e) => {
             if (mysterySignSlingshotState.active) {
-                endMysterySignSlingshot(e.pointerId);
+                await endMysterySignSlingshot(e.pointerId);
             }
             if (handleMysteryBoxPointerUp(e.pointerId, e.clientX, e.clientY)) return;
             if (!holdInput.active) return;
@@ -21768,6 +22922,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
             resizeMysteryScroll3D();
             inventoryPanelAnchorState.initialized = false;
             scheduleInventoryPanelAnchorUpdate({ afterPaint: true });
+            scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
         }
 
         function animate() {
@@ -22245,6 +23400,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-15-39';
         initMysteryScroll3D();
         layoutMysteryHangingSign(true);
         applyResponsiveLayout();
+        scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
         installMysteryRevealDebugHooks();
         void ensureMysteryDeviceTiltPermission();
         initHomePageMusicController();

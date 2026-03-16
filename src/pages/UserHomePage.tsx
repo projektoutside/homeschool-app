@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { usePoints } from '../context/PointsContext';
+import { useStamina } from '../context/StaminaContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
+import { useZoomLock } from '../hooks/useZoomLock';
 import { buildAssetPath } from '../utils/pathUtils';
 import {
   consumeHomepageMysteryTestLaunchToken,
@@ -27,6 +30,20 @@ const HOME_PAGE_TILT_STATUS_MESSAGE = 'homepage-deviceorientation-status';
 const HOME_PAGE_TILT_SAMPLE_MESSAGE = 'homepage-deviceorientation';
 const HOME_PAGE_TILT_PERMISSION_REQUEST_MESSAGE = 'homepage-deviceorientation-request-permission';
 const HOME_PAGE_TILT_SYNC_REQUEST_MESSAGE = 'homepage-deviceorientation-sync-status';
+const HOME_PAGE_POINTS_SYNC_MESSAGE = 'LAHS_HOMEPAGE_POINTS_SYNC';
+const HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_POINTS_SYNC_REQUEST';
+const HOME_PAGE_DAILY_LUNCHBOX_CLAIM_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM';
+const HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT';
+const HOME_PAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUEST';
+const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
+const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
+const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
+const HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX = 'homepage-daily-lunchbox';
+const HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION = 1;
+const HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS = 10_000;
+const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
+const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
+const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
 
 type HomePageTiltPermissionState =
   | 'unknown'
@@ -58,6 +75,44 @@ interface UserHomePageProps {
   isActive: boolean;
 }
 
+const buildDailyLunchboxClaimStorageKey = (userId: string): string => {
+  return `lahs.homepage-daily-lunchbox.v${HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION}:${userId}`;
+};
+
+const readDailyLunchboxClaimExpiresAt = (userId: string | null | undefined): number | null => {
+  if (typeof window === 'undefined' || !userId) {
+    return null;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(buildDailyLunchboxClaimStorageKey(userId));
+    if (!storedValue || storedValue === 'claimed') {
+      return null;
+    }
+    const parsedValue = Number(storedValue);
+    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeDailyLunchboxClaimExpiresAt = (userId: string | null | undefined, expiresAt: number | null): void => {
+  if (typeof window === 'undefined' || !userId) {
+    return;
+  }
+
+  try {
+    const key = buildDailyLunchboxClaimStorageKey(userId);
+    if (typeof expiresAt === 'number' && Number.isFinite(expiresAt) && expiresAt > 0) {
+      window.localStorage.setItem(key, String(expiresAt));
+    } else {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage failures and keep runtime state in memory.
+  }
+};
+
 const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   const [initialLaunchState] = useState(createInitialHomepageLaunchState);
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
@@ -69,9 +124,15 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     () => initialLaunchState.storedSnapshot,
   );
   const { user } = useAuth();
+  const { totalPoints, stars, awardPoints, spendPoints } = usePoints();
+  const { currentStamina, maxStamina } = useStamina();
   const { settings: soundSettings } = useSoundSettings();
   const { snapshot, isLoading: isCatalogLoading } = useHomepageCatalog({ includeInactive: false });
   const hasDeveloperAccess = useMemo(() => isManagerUser(user), [user]);
+  const [dailyLunchboxClaimExpiresAtByUser, setDailyLunchboxClaimExpiresAtByUser] = useState<Record<string, number | null>>({});
+  const [dailyLunchboxClaimPendingByUser, setDailyLunchboxClaimPendingByUser] = useState<Record<string, boolean>>({});
+  const [dailyLunchboxClockTick, setDailyLunchboxClockTick] = useState(() => Date.now());
+  const zoomLockIframes = useMemo(() => [iframeRef], []);
   const shouldHoldStoredSnapshot = useMemo(() => {
     if (isCatalogLoading) {
       return false;
@@ -117,6 +178,41 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     listening: false,
     handler: null,
   });
+  const currentUserId = user?.id ?? null;
+  const dailyLunchboxClaimExpiresAt = useMemo(() => {
+    if (!currentUserId) {
+      return null;
+    }
+    if (Object.prototype.hasOwnProperty.call(dailyLunchboxClaimExpiresAtByUser, currentUserId)) {
+      return dailyLunchboxClaimExpiresAtByUser[currentUserId] ?? null;
+    }
+    return readDailyLunchboxClaimExpiresAt(currentUserId);
+  }, [currentUserId, dailyLunchboxClaimExpiresAtByUser]);
+  const dailyLunchboxClaimed = useMemo(() => {
+    if (!dailyLunchboxClaimExpiresAt) {
+      return false;
+    }
+    return dailyLunchboxClaimExpiresAt > dailyLunchboxClockTick;
+  }, [dailyLunchboxClaimExpiresAt, dailyLunchboxClockTick]);
+  const dailyLunchboxClaimPending = useMemo(() => {
+    if (!currentUserId) {
+      return false;
+    }
+    return Boolean(dailyLunchboxClaimPendingByUser[currentUserId]);
+  }, [currentUserId, dailyLunchboxClaimPendingByUser]);
+  const dailyLunchboxRewardReady = Boolean(user?.id) && !dailyLunchboxClaimed;
+
+  useZoomLock({ enabled: isActive, iframeRefs: zoomLockIframes });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const intervalId = window.setInterval(() => {
+      setDailyLunchboxClockTick(Date.now());
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const postTiltBridgeMessage = useCallback((payload: Record<string, unknown>) => {
     const target = iframeRef.current?.contentWindow;
@@ -127,6 +223,32 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       return;
     }
   }, []);
+
+  const syncHomepagePointsToIframe = useCallback(() => {
+    postTiltBridgeMessage({
+      type: HOME_PAGE_POINTS_SYNC_MESSAGE,
+      totalPoints,
+      stars,
+      stamina: currentStamina,
+      staminaMax: maxStamina,
+      userId: user?.id ?? null,
+      isAuthenticated: Boolean(user?.id),
+      dailyLunchboxRewardReady,
+      dailyLunchboxRewardPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+      dailyLunchboxClaimPending,
+      dailyLunchboxClaimed,
+    });
+  }, [
+    dailyLunchboxClaimPending,
+    dailyLunchboxClaimed,
+    dailyLunchboxRewardReady,
+    postTiltBridgeMessage,
+    currentStamina,
+    maxStamina,
+    stars,
+    totalPoints,
+    user?.id,
+  ]);
 
   const syncTiltBridgeStateToIframe = useCallback(() => {
     const bridgeState = tiltBridgeStateRef.current;
@@ -169,6 +291,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       { homePageActive: isActive },
     );
   }, [isActive, soundSettings]);
+
+  useEffect(() => {
+    syncHomepagePointsToIframe();
+  }, [syncHomepagePointsToIframe]);
 
   useEffect(() => {
     const bridgeState = tiltBridgeStateRef.current;
@@ -255,6 +381,167 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       if (!event.data || typeof event.data !== 'object') return;
 
       const type = (event.data as { type?: string }).type;
+      if (type === HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE) {
+        syncHomepagePointsToIframe();
+        return;
+      }
+      if (type === HOME_PAGE_DAILY_LUNCHBOX_CLAIM_MESSAGE) {
+        if (!user?.id || dailyLunchboxClaimPending) {
+          postTiltBridgeMessage({
+            type: HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE,
+            accepted: false,
+            totalPoints,
+            stars,
+            dailyLunchboxRewardReady,
+            dailyLunchboxRewardPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+            dailyLunchboxClaimPending,
+            dailyLunchboxClaimed,
+          });
+          return;
+        }
+
+        if (dailyLunchboxClaimed) {
+          postTiltBridgeMessage({
+            type: HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE,
+            accepted: false,
+            totalPoints,
+            stars,
+            dailyLunchboxRewardReady: false,
+            dailyLunchboxRewardPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+            dailyLunchboxClaimPending: false,
+            dailyLunchboxClaimed: true,
+            collectedPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+          });
+          return;
+        }
+
+        const claimStartedAt = Date.now();
+        const claimSessionId = `${HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX}:${user.id}:${claimStartedAt}`;
+        const claimEventId = `claim-${claimStartedAt}`;
+        const occurredAt = new Date(claimStartedAt).toISOString();
+        setDailyLunchboxClaimPendingByUser((current) => ({
+          ...current,
+          [user.id]: true,
+        }));
+        void awardPoints({
+          gameId: HOME_PAGE_DAILY_LUNCHBOX_GAME_ID,
+          sessionId: claimSessionId,
+          eventId: claimEventId,
+          points: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+          occurredAt,
+          label: 'Daily Lunchbox Reward',
+          meta: {
+            source: 'homepage-daily-lunchbox',
+            rewardVersion: 1,
+            testRefreshMs: HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS,
+          },
+        }).then((result) => {
+          const claimAccepted = Boolean(result.accepted);
+          const claimExpiresAt = claimAccepted
+            ? claimStartedAt + HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS
+            : null;
+          writeDailyLunchboxClaimExpiresAt(user.id, claimExpiresAt);
+          setDailyLunchboxClaimExpiresAtByUser((current) => ({
+            ...current,
+            [user.id]: claimExpiresAt,
+          }));
+          setDailyLunchboxClaimPendingByUser((current) => ({
+            ...current,
+            [user.id]: false,
+          }));
+          postTiltBridgeMessage({
+            type: HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE,
+            accepted: claimAccepted,
+            totalPoints: result.totalPoints,
+            stars: result.stars,
+            dailyLunchboxRewardReady: !claimAccepted,
+            dailyLunchboxRewardPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+            dailyLunchboxClaimPending: false,
+            dailyLunchboxClaimed: claimAccepted,
+            collectedPoints: claimAccepted ? HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS : 0,
+          });
+        }).catch(() => {
+          setDailyLunchboxClaimPendingByUser((current) => ({
+            ...current,
+            [user.id]: false,
+          }));
+          postTiltBridgeMessage({
+            type: HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE,
+            accepted: false,
+            totalPoints,
+            stars,
+            dailyLunchboxRewardReady: true,
+            dailyLunchboxRewardPoints: HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS,
+            dailyLunchboxClaimPending: false,
+            dailyLunchboxClaimed: false,
+          });
+        });
+        return;
+      }
+      if (type === HOME_PAGE_MYSTERY_PULL_REQUEST_MESSAGE) {
+        const requestId = typeof (event.data as { requestId?: unknown }).requestId === 'string'
+          ? (event.data as { requestId: string }).requestId.trim()
+          : '';
+        const occurredAt = typeof (event.data as { occurredAt?: unknown }).occurredAt === 'string'
+          ? (event.data as { occurredAt: string }).occurredAt
+          : new Date().toISOString();
+        const requestedCostPoints = Number((event.data as { costPoints?: unknown }).costPoints);
+        const costPoints = Number.isFinite(requestedCostPoints) && requestedCostPoints > 0
+          ? Math.max(1, Math.round(requestedCostPoints))
+          : HOME_PAGE_MYSTERY_PULL_COST_POINTS;
+
+        if (!requestId || !user?.id) {
+          postTiltBridgeMessage({
+            type: HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE,
+            requestId,
+            accepted: false,
+            reason: user?.id ? 'invalid_request' : 'not_authenticated',
+            costPoints,
+            totalPoints,
+            stars,
+          });
+          return;
+        }
+
+        const sessionId = `${HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX}:${user.id}:${requestId}`;
+        const eventId = `pull-${requestId}`;
+
+        void spendPoints({
+          gameId: HOME_PAGE_MYSTERY_PULL_GAME_ID,
+          sessionId,
+          eventId,
+          points: costPoints,
+          occurredAt,
+          label: 'Mystery Box Pull',
+          meta: {
+            source: 'homepage-mystery-box',
+            requestId,
+            costPoints,
+            trigger: 'mystery-scroll-pull',
+          },
+        }).then((result) => {
+          postTiltBridgeMessage({
+            type: HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE,
+            requestId,
+            accepted: Boolean(result.accepted),
+            reason: result.reason ?? null,
+            costPoints,
+            totalPoints: result.totalPoints,
+            stars: result.stars,
+          });
+        }).catch(() => {
+          postTiltBridgeMessage({
+            type: HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE,
+            requestId,
+            accepted: false,
+            reason: 'sync_failed',
+            costPoints,
+            totalPoints,
+            stars,
+          });
+        });
+        return;
+      }
       if (type === HOME_PAGE_TILT_PERMISSION_REQUEST_MESSAGE) {
         void ensureStarted({ userGesture: true });
         return;
@@ -280,7 +567,20 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
         delete window.__homePageTiltBridge;
       }
     };
-  }, [postTiltBridgeMessage, syncTiltBridgeStateToIframe]);
+  }, [
+    awardPoints,
+    spendPoints,
+    dailyLunchboxClaimPending,
+    dailyLunchboxClaimed,
+    dailyLunchboxRewardReady,
+    dailyLunchboxClockTick,
+    postTiltBridgeMessage,
+    stars,
+    syncHomepagePointsToIframe,
+    syncTiltBridgeStateToIframe,
+    totalPoints,
+    user?.id,
+  ]);
 
   useEffect(() => {
     if (isCatalogLoading) {
@@ -358,6 +658,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       soundSettings,
       { homePageActive: isActive },
     );
+    syncHomepagePointsToIframe();
     syncTiltBridgeStateToIframe();
     if (isCatalogLoading) {
       return;

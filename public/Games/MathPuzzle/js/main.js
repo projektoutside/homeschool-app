@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Math Puzzle: Initializing...');
 
     try {
+        window.LAHSPointsBridge?.init({ gameId: 'MathPuzzle' });
         applyRandomTitlePointColors();
 
         // 1. Initialize Device Detector first (critical for layout)

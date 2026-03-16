@@ -6,9 +6,24 @@ import { buildAssetPath } from '../utils/pathUtils';
 import type { ContentItem } from '../types/content';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { useAuth } from '../context/AuthContext';
+import { usePoints } from '../context/PointsContext';
+import { useStamina } from '../context/StaminaContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { useZoomLock } from '../hooks/useZoomLock';
 import { supabase } from '../lib/supabase';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
+import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
+import {
+    type GamePointsAckMessage,
+    type GamePointsContextMessage,
+    GAME_POINTS_ACK_MESSAGE,
+    GAME_POINTS_CONTEXT_MESSAGE,
+    GAME_POINTS_EARNED_MESSAGE,
+    createGamePointsSessionId,
+    getPointEventKey,
+    isSinglePlayerPointsGameId,
+    sanitizePointValue,
+} from '../utils/gamePoints';
 import './GamePlayer.css';
 
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
@@ -115,10 +130,19 @@ const GamePlayer: React.FC = () => {
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const zoomLockIframes = useMemo(() => [iframeRef], []);
+    const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
     const [wordPuzzleBootstrapStamp, setWordPuzzleBootstrapStamp] = useState<string | null>(null);
+    const [staminaGateState, setStaminaGateState] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+    const [staminaAttemptNonce, setStaminaAttemptNonce] = useState(0);
+    const [staminaCountdownNowMs, setStaminaCountdownNowMs] = useState(() => Date.now());
     const { user } = useAuth();
+    const { totalPoints, stars, awardPoints } = usePoints();
+    const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
     const { settings: soundSettings } = useSoundSettings();
+
+    useZoomLock({ enabled: true, iframeRefs: zoomLockIframes });
+    const processedPointEventsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
@@ -149,24 +173,54 @@ const GamePlayer: React.FC = () => {
         if (item.externalUrl) return item.externalUrl;
         return '';
     }, [item]);
-    const isCarKingGame = item?.id === CAR_KING_GAME_ID;
-    const isWordPuzzleGame = item?.id === WORD_PUZZLE_GAME_ID;
+    const currentGameId = item?.id ?? null;
+    const isGameItem = item?.type === 'game';
+    const isCarKingGame = currentGameId === CAR_KING_GAME_ID;
+    const isWordPuzzleGame = currentGameId === WORD_PUZZLE_GAME_ID;
+    const isSinglePlayerPointsGame = item?.type === 'game' && isSinglePlayerPointsGameId(currentGameId);
     const carKingMicPreference = useMemo(() => getUserCarKingMicPreference(user), [user]);
     const wordPuzzleUserContext = useMemo(() => buildWordPuzzleUserContext(user), [user]);
+    const pointsSessionId = useMemo(() => {
+        return createGamePointsSessionId(currentGameId ?? id ?? 'game');
+    }, [currentGameId, id]);
     const wordPuzzleBootstrapKey = useMemo(() => {
         return `${WORD_PUZZLE_GAME_ID}:${wordPuzzleUserContext.userId ?? 'anonymous'}`;
     }, [wordPuzzleUserContext.userId]);
+    const staminaLaunchEventId = useMemo(() => {
+        if (!isGameItem || !currentGameId) {
+            return null;
+        }
+
+        const safeLocationKey = location.key && location.key !== 'default'
+            ? location.key
+            : `${location.pathname}:${currentGameId}`;
+        return `launch:${currentGameId}:${safeLocationKey}`;
+    }, [currentGameId, isGameItem, location.key, location.pathname]);
+    const secondsUntilNextStamina = useMemo(() => {
+        return getSecondsUntilNextRecharge(nextRechargeAtMs, staminaCountdownNowMs);
+    }, [nextRechargeAtMs, staminaCountdownNowMs]);
+    const nextStaminaCountdownLabel = useMemo(() => {
+        const minutes = Math.floor(secondsUntilNextStamina / 60);
+        const seconds = secondsUntilNextStamina % 60;
+        return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }, [secondsUntilNextStamina]);
 
     // Only handle games and tools in fullscreen mode
     // Worksheets are handled by the Viewer with print preview mode
     const isImmersiveType = item?.type === 'game' || item?.type === 'tool';
+    const requiresStaminaCharge = Boolean(item && launchPath && item.type === 'game' && staminaLaunchEventId);
+    const isFrameLoading = loadedLaunchPath !== launchPath;
 
-    const postMessageToGame = useCallback((payload: Record<string, unknown>) => {
+    const postMessageToGame = useCallback((payload: object) => {
         const targetWindow = iframeRef.current?.contentWindow;
         if (!targetWindow) return;
 
         targetWindow.postMessage(payload, window.location.origin);
     }, []);
+
+    useEffect(() => {
+        processedPointEventsRef.current.clear();
+    }, [pointsSessionId]);
 
     const syncCarKingMicPreference = useCallback(() => {
         if (!isCarKingGame) return;
@@ -215,6 +269,72 @@ const GamePlayer: React.FC = () => {
         syncWordPuzzleUserContext();
     }, [syncWordPuzzleUserContext]);
 
+    const syncGamePointsContext = useCallback(() => {
+        if (!isSinglePlayerPointsGame || !currentGameId) return;
+
+        const message: GamePointsContextMessage = {
+            type: GAME_POINTS_CONTEXT_MESSAGE,
+            gameId: currentGameId,
+            sessionId: pointsSessionId,
+            totalPoints,
+            stars,
+            userId: user?.id ?? null,
+            isAuthenticated: Boolean(user?.id),
+        };
+
+        postMessageToGame(message);
+    }, [currentGameId, isSinglePlayerPointsGame, pointsSessionId, postMessageToGame, stars, totalPoints, user?.id]);
+
+    useEffect(() => {
+        syncGamePointsContext();
+    }, [syncGamePointsContext]);
+
+    useEffect(() => {
+        if (!requiresStaminaCharge || !item || !staminaLaunchEventId) {
+            return;
+        }
+
+        let cancelled = false;
+        const frameId = window.requestAnimationFrame(() => {
+            setStaminaGateState('checking');
+        });
+
+        void consumeStamina({
+            amount: GAME_STAMINA_COST,
+            eventId: staminaLaunchEventId,
+            reason: `launch:${item.id}`,
+        }).then((result) => {
+            if (cancelled) {
+                return;
+            }
+
+            setStaminaGateState(result.accepted ? 'allowed' : 'blocked');
+        }).catch(() => {
+            if (cancelled) {
+                return;
+            }
+
+            setStaminaGateState('blocked');
+        });
+
+        return () => {
+            cancelled = true;
+            window.cancelAnimationFrame(frameId);
+        };
+    }, [consumeStamina, item, requiresStaminaCharge, staminaAttemptNonce, staminaLaunchEventId]);
+
+    useEffect(() => {
+        if (staminaGateState !== 'blocked') {
+            return undefined;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setStaminaCountdownNowMs(Date.now());
+        }, 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [staminaGateState]);
+
     const exitFullscreen = useCallback(async () => {
         const doc = document as FullscreenDocumentType;
         try {
@@ -243,7 +363,91 @@ const GamePlayer: React.FC = () => {
                 preference?: unknown;
                 gameId?: unknown;
                 tab?: unknown;
+                request?: unknown;
+                sessionId?: unknown;
+                eventId?: unknown;
+                points?: unknown;
+                occurredAt?: unknown;
+                label?: unknown;
+                meta?: unknown;
             } | null;
+
+            if (
+                isSinglePlayerPointsGame &&
+                currentGameId &&
+                message &&
+                message.type === GAME_POINTS_CONTEXT_MESSAGE &&
+                (!message.gameId || message.gameId === currentGameId) &&
+                Boolean(message.request)
+            ) {
+                syncGamePointsContext();
+                return;
+            }
+
+            if (isSinglePlayerPointsGame && currentGameId && message && message.type === GAME_POINTS_EARNED_MESSAGE) {
+                const messageGameId = typeof message.gameId === 'string' && message.gameId.trim()
+                    ? message.gameId.trim()
+                    : currentGameId;
+                if (messageGameId !== currentGameId) {
+                    return;
+                }
+
+                const messageSessionId = typeof message.sessionId === 'string' && message.sessionId.trim()
+                    ? message.sessionId.trim()
+                    : pointsSessionId;
+                if (messageSessionId !== pointsSessionId) {
+                    return;
+                }
+
+                const messageEventId = typeof message.eventId === 'string' && message.eventId.trim()
+                    ? message.eventId.trim()
+                    : '';
+                const messagePoints = sanitizePointValue(message.points);
+                if (!messageEventId || messagePoints <= 0) {
+                    return;
+                }
+
+                const pointEventKey = getPointEventKey(messageGameId, messageSessionId, messageEventId);
+                const postPointsAck = (accepted: boolean, nextTotalPoints: number, nextStars: number) => {
+                    const ackMessage: GamePointsAckMessage = {
+                        type: GAME_POINTS_ACK_MESSAGE,
+                        gameId: messageGameId,
+                        sessionId: messageSessionId,
+                        eventId: messageEventId,
+                        accepted,
+                        totalPoints: nextTotalPoints,
+                        stars: nextStars,
+                    };
+
+                    postMessageToGame(ackMessage);
+                };
+
+                if (processedPointEventsRef.current.has(pointEventKey)) {
+                    postPointsAck(false, totalPoints, stars);
+                    return;
+                }
+
+                processedPointEventsRef.current.add(pointEventKey);
+
+                void awardPoints({
+                    gameId: messageGameId,
+                    sessionId: messageSessionId,
+                    eventId: messageEventId,
+                    points: messagePoints,
+                    occurredAt: typeof message.occurredAt === 'string' ? message.occurredAt : undefined,
+                    label: typeof message.label === 'string' ? message.label : null,
+                    meta: typeof message.meta === 'object' && message.meta ? message.meta as Record<string, unknown> : undefined,
+                }).then((result) => {
+                    postPointsAck(result.accepted, result.totalPoints, result.stars);
+                    syncGamePointsContext();
+                }).catch(() => {
+                    processedPointEventsRef.current.delete(pointEventKey);
+                    postPointsAck(false, totalPoints, stars);
+                });
+
+                return;
+            }
+
             if (!message || message.type !== GAME_EXIT_TO_HOME_MESSAGE) {
                 if (
                     isWordPuzzleGame &&
@@ -339,7 +543,7 @@ const GamePlayer: React.FC = () => {
 
         window.addEventListener('message', handleGameMessage);
         return () => window.removeEventListener('message', handleGameMessage);
-    }, [exitFullscreen, isCarKingGame, isWordPuzzleGame, navigate, postMessageToGame, syncCarKingMicPreference, syncWordPuzzleUserContext, user]);
+    }, [awardPoints, currentGameId, exitFullscreen, isCarKingGame, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
 
     const enterFullscreen = useCallback(async () => {
         const element = document.documentElement as FullscreenHTMLElementType;
@@ -369,25 +573,71 @@ const GamePlayer: React.FC = () => {
     }
 
     const isIframeReady = !isWordPuzzleGame || wordPuzzleBootstrapStamp === wordPuzzleBootstrapKey;
+    const effectiveStaminaGateState = requiresStaminaCharge ? staminaGateState : 'allowed';
+    const isGameLaunchAllowed = !isGameItem || effectiveStaminaGateState === 'allowed';
+    const showLoadingOverlay = (isGameItem && effectiveStaminaGateState === 'checking') || (isGameLaunchAllowed && isFrameLoading);
 
     return (
         <div className="game-player-shell" ref={containerRef}>
-            {isLoading && <div className="game-player-loading" aria-live="polite">Launching {item.type}...</div>}
+            {showLoadingOverlay ? (
+                <div className="game-player-loading" aria-live="polite">
+                    {isGameItem && effectiveStaminaGateState === 'checking'
+                        ? `Preparing ${item.title}...`
+                        : `Launching ${item.type}...`}
+                </div>
+            ) : null}
 
-            {isIframeReady && (
+            {isGameItem && effectiveStaminaGateState === 'blocked' ? (
+                <section className="game-player-stamina-gate" aria-live="polite">
+                    <div className="game-player-stamina-gate__card">
+                        <p className="game-player-stamina-gate__eyebrow">Not Enough Stamina</p>
+                        <h1 className="game-player-stamina-gate__title">{item.title} needs 1 stamina to start.</h1>
+                        <p className="game-player-stamina-gate__body">
+                            You currently have {currentStamina}/20 stamina. One point recharges every 10 minutes.
+                        </p>
+                        <p className="game-player-stamina-gate__countdown">
+                            {nextRechargeAtMs
+                                ? `Next stamina in ${nextStaminaCountdownLabel}`
+                                : 'Stamina is recharging.'}
+                        </p>
+                        <div className="game-player-stamina-gate__actions">
+                            <button
+                                type="button"
+                                className="game-player-stamina-gate__btn game-player-stamina-gate__btn--primary"
+                                onClick={() => {
+                                    setStaminaAttemptNonce((current) => current + 1);
+                                }}
+                                disabled={currentStamina < GAME_STAMINA_COST}
+                            >
+                                Start Game
+                            </button>
+                            <button
+                                type="button"
+                                className="game-player-stamina-gate__btn"
+                                onClick={() => navigate('/apps')}
+                            >
+                                Back To Games
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
+            {isIframeReady && isGameLaunchAllowed && (
                 <iframe
                     ref={iframeRef}
                     src={launchPath}
                     title={item.title}
-                    className={`game-player-frame ${isLoading ? 'is-loading' : ''}`}
+                    className={`game-player-frame ${isFrameLoading ? 'is-loading' : ''}`}
                     allow="fullscreen; camera; microphone; geolocation"
                     allowFullScreen
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                     onLoad={() => {
-                        setIsLoading(false);
+                        setLoadedLaunchPath(launchPath);
                         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                         syncCarKingMicPreference();
                         syncWordPuzzleUserContext();
+                        syncGamePointsContext();
                         setTimeout(() => {
                             enterFullscreen().catch(() => {
                                 // noop

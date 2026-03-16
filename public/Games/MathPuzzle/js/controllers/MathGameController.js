@@ -1100,6 +1100,12 @@ class MathGameController {
         const newScore = oldScore + pointsEarned;
 
         this.score = newScore;
+        window.LAHSPointsBridge?.awardPoints(pointsEarned, {
+            label: 'Correct Answer',
+            meta: {
+                gameMode: this.gameMode || null
+            }
+        });
 
         this.showFeedback(true, 'Correct!', '🎉', {
             scoreGain: {

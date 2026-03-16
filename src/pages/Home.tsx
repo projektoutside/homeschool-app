@@ -1007,7 +1007,7 @@ const HomePage: React.FC = () => {
             prefetchGameLaunchDocument(launchDocumentUrl);
         }
 
-        if (item.externalUrl) {
+        if (item.externalUrl && item.type !== 'game') {
             navigate(item.externalUrl);
             return;
         }

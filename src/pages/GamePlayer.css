@@ -51,6 +51,113 @@
     background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.24), rgba(2, 6, 23, 0.9));
 }
 
+.game-player-stamina-gate {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 3vw, 2rem);
+    background:
+        radial-gradient(circle at top, rgba(236, 72, 153, 0.16), transparent 38%),
+        radial-gradient(circle at bottom, rgba(59, 130, 246, 0.14), transparent 44%),
+        rgba(2, 6, 23, 0.92);
+    z-index: 2;
+}
+
+.game-player-stamina-gate__card {
+    width: min(480px, 100%);
+    display: grid;
+    gap: 0.8rem;
+    padding: clamp(1.1rem, 3vw, 1.6rem);
+    border-radius: 24px;
+    border: 1px solid rgba(250, 204, 21, 0.28);
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.96));
+    box-shadow:
+        0 22px 48px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+
+.game-player-stamina-gate__eyebrow {
+    margin: 0;
+    color: #fcd34d;
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.game-player-stamina-gate__title {
+    margin: 0;
+    color: #f8fafc;
+    font-size: clamp(1.35rem, 3vw, 1.9rem);
+    line-height: 1.14;
+}
+
+.game-player-stamina-gate__body,
+.game-player-stamina-gate__countdown {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.9);
+    line-height: 1.5;
+}
+
+.game-player-stamina-gate__countdown {
+    color: #7dd3fc;
+    font-weight: 700;
+}
+
+.game-player-stamina-gate__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.game-player-stamina-gate__btn {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(15, 23, 42, 0.88);
+    color: #f8fafc;
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 160ms ease, border-color 160ms ease, filter 160ms ease;
+}
+
+.game-player-stamina-gate__btn--primary {
+    border-color: rgba(250, 204, 21, 0.38);
+    background: linear-gradient(180deg, rgba(234, 179, 8, 0.96), rgba(180, 83, 9, 0.94));
+    color: #fffaf0;
+}
+
+.game-player-stamina-gate__btn:hover:not(:disabled),
+.game-player-stamina-gate__btn:focus-visible:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+    border-color: rgba(125, 211, 252, 0.48);
+    outline: none;
+}
+
+.game-player-stamina-gate__btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+    filter: saturate(0.72);
+}
+
+@media (max-width: 640px) {
+    .game-player-stamina-gate__actions {
+        flex-direction: column;
+    }
+
+    .game-player-stamina-gate__btn {
+        width: 100%;
+    }
+}
+
 @keyframes gamePlayerFadeIn {
     from {
         opacity: 0;

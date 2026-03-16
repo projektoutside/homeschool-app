@@ -4,6 +4,8 @@
  * Created with start menu, flawless hand movements, and no glitches
  */
 
+window.LAHSPointsBridge?.init({ gameId: 'math-analog-clock-game-v2' });
+
 /* =============================================
    GAME CONFIGURATION
    ============================================= */
@@ -3496,6 +3498,13 @@ class PerfectGameLogic {
     handleCorrectAnswer() {
         // Score and rewards are only processed once due to the lock above
         const pointsEarned = this.gameState.incrementScore(this.gameState.currentTimeFormat);
+        window.LAHSPointsBridge?.awardPoints(pointsEarned, {
+            label: 'Correct Answer',
+            meta: {
+                timeFormat: this.gameState.currentTimeFormat,
+                level: this.gameState.currentLevel
+            }
+        });
 
         // Play success sound
         if (this.soundManager) {
@@ -5076,6 +5085,12 @@ class RewardShop {
         this.gameLogic.updatePointsDisplay();
         this.gameLogic.updateTotalScoreDisplay();
         this.domManager.showPointsPopup(points);
+        window.LAHSPointsBridge?.awardPoints(points, {
+            label: 'Reward Shop Bonus',
+            meta: {
+                source: 'reward-shop'
+            }
+        });
         GameUtils.log(`⭐ Added ${points} points to score. New total: ${this.gameState.points}`);
 
         // Check for level up after purchasing points

@@ -3996,8 +3996,19 @@ async function prepareDraftTemplateStateFromAsset(assetUrl, sourceLabel, draftPr
     };
   }
 
+  const mirrorMode = draftProp?.attachment?.mirrorMode === 'paired'
+    ? 'paired'
+    : 'single';
+  const wingAuthoringPreview = draftProp?.categoryKey === 'wingSet'
+    ? getDraftWingAuthoringPreview(draftProp)
+    : null;
+  const effectiveMirrorMode = draftProp?.categoryKey === 'wingSet'
+    && wingAuthoringPreview?.mode === 'isolatedHalf'
+    ? (wingAuthoringPreview.mirrorToBoth ? 'paired' : 'single')
+    : mirrorMode;
   const shouldUseWingTemplate = draftProp.categoryKey === 'wingSet'
-    && draftProp.attachment?.mirrorMode === 'paired';
+    && effectiveMirrorMode === 'paired'
+    && wingAuthoringPreview?.mode !== 'isolatedHalf';
   if (shouldUseWingTemplate) {
     const templateState = await loadWingTemplateState({ GLTFLoader, THREE, assetUrl });
     if (!templateState?.sourceTemplateRoot && !templateState?.sourceTemplatePair) {

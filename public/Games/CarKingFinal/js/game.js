@@ -4,6 +4,9 @@ const CAR_KING_MIC_PREF_REQUEST = 'LAHS_CAR_KING_MIC_PREF_REQUEST';
 const CAR_KING_MIC_PREF_SAVE = 'LAHS_CAR_KING_MIC_PREF_SAVE';
 const CAR_KING_MIC_PREF_SAVE_RESULT = 'LAHS_CAR_KING_MIC_PREF_SAVE_RESULT';
 const CAR_KING_VALID_MIC_PREFERENCES = new Set(['ask', 'session', 'always']);
+const CAR_KING_CORRECT_POINTS = 10;
+
+window.LAHSPointsBridge?.init({ gameId: 'math-car-king' });
 
 class CarGuessingGame {
     constructor() {
@@ -2550,8 +2553,15 @@ class CarGuessingGame {
         // Mute mic during celebration
         this.stopListening();
 
-        this.score += 10;
+        this.score += CAR_KING_CORRECT_POINTS;
         this.streak += 1;
+        window.LAHSPointsBridge?.awardPoints(CAR_KING_CORRECT_POINTS, {
+            label: 'Correct Guess',
+            meta: {
+                carName: this.currentCar?.name || null,
+                gameMode: this.gameMode
+            }
+        });
 
         this.updateScore();
         this.showFeedback("🎉 Amazing! It IS a " + this.currentCar.name + "! 🎉", 'correct');

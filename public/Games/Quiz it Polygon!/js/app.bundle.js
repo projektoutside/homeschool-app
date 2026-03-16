@@ -267,8 +267,8 @@
     return WORLDS.find((world) => world.id === worldId) || null;
   }
   function getMissionById(worldId, missionId) {
-    var _a;
-    return ((_a = getWorldById(worldId)) == null ? void 0 : _a.missions.find((mission) => mission.id === missionId)) || null;
+    var _a2;
+    return ((_a2 = getWorldById(worldId)) == null ? void 0 : _a2.missions.find((mission) => mission.id === missionId)) || null;
   }
   function cloneTasks(tasks) {
     if (typeof globalThis.structuredClone === "function") {
@@ -787,13 +787,13 @@
       }
     }
     destroy() {
-      var _a;
+      var _a2;
       this.canvas.removeEventListener("pointerdown", this.boundHandlePointerDown);
       window.removeEventListener("pointermove", this.boundHandlePointerMove);
       window.removeEventListener("pointerup", this.boundHandlePointerUp);
       window.removeEventListener("pointercancel", this.boundHandlePointerUp);
       window.removeEventListener("resize", this.boundHandleResize);
-      (_a = this.resizeObserver) == null ? void 0 : _a.disconnect();
+      (_a2 = this.resizeObserver) == null ? void 0 : _a2.disconnect();
     }
     resize() {
       const rect = this.canvas.getBoundingClientRect();
@@ -918,12 +918,12 @@
       return editable ? getPolygonSummary(editable, this.gridSize) : this.getSummaries()[0] || null;
     }
     getDebugState() {
-      var _a;
+      var _a2;
       return {
         readonly: this.readonly,
         mode: this.mode,
         polygonCount: this.polygons.length,
-        selectedName: ((_a = this.selectedPolygon) == null ? void 0 : _a.name) || null,
+        selectedName: ((_a2 = this.selectedPolygon) == null ? void 0 : _a2.name) || null,
         summaries: this.getSummaries().map((summary) => ({
           name: summary.polygon.name,
           area: Number(summary.area.toFixed(2)),
@@ -962,7 +962,7 @@
       return null;
     }
     handlePointerDown(event) {
-      var _a, _b, _c, _d;
+      var _a2, _b, _c, _d;
       if (this.readonly) return;
       if (event.button !== 0 && event.pointerType !== "touch") return;
       const worldPoint = this.screenToWorld(event.clientX, event.clientY);
@@ -976,7 +976,7 @@
           vertexIndex: hitVertex.vertexIndex
         };
         this.pointerId = event.pointerId;
-        (_b = (_a = this.canvas).setPointerCapture) == null ? void 0 : _b.call(_a, event.pointerId);
+        (_b = (_a2 = this.canvas).setPointerCapture) == null ? void 0 : _b.call(_a2, event.pointerId);
         this.render();
         return;
       }
@@ -1017,12 +1017,12 @@
       }
     }
     handlePointerUp(event) {
-      var _a, _b;
+      var _a2, _b;
       if (!this.drag) return;
       if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
       this.pointerId = null;
       this.drag = null;
-      (_b = (_a = this.canvas).releasePointerCapture) == null ? void 0 : _b.call(_a, event.pointerId);
+      (_b = (_a2 = this.canvas).releasePointerCapture) == null ? void 0 : _b.call(_a2, event.pointerId);
       this.saveHistory();
       this.notifyChange();
     }
@@ -1130,8 +1130,8 @@
       this.ctx.restore();
     }
     drawMetricBadge() {
-      var _a;
-      if (this.hintStage < 2 || !((_a = this.taskGuide) == null ? void 0 : _a.showLiveMetric)) return;
+      var _a2;
+      if (this.hintStage < 2 || !((_a2 = this.taskGuide) == null ? void 0 : _a2.showLiveMetric)) return;
       const summary = this.getPrimarySummary();
       if (!summary) return;
       const label = this.taskGuide.showLiveMetric === "area" ? `Area ${summary.area.toFixed(summary.area % 1 === 0 ? 0 : 1)}` : `Around ${summary.perimeter.toFixed(summary.perimeter % 1 === 0 ? 0 : 1)}`;
@@ -1179,17 +1179,17 @@
   var LEGACY_SETTINGS_KEY = "quizItPolygon.settings.v1";
   var LEGACY_PROGRESS_KEY = "quizItPolygon.progress.v1";
   function safeGetItem(key) {
-    var _a, _b;
+    var _a2, _b;
     try {
-      return (_b = (_a = globalThis.localStorage) == null ? void 0 : _a.getItem(key)) != null ? _b : null;
+      return (_b = (_a2 = globalThis.localStorage) == null ? void 0 : _a2.getItem(key)) != null ? _b : null;
     } catch (error) {
       return null;
     }
   }
   function safeSetItem(key, value) {
-    var _a;
+    var _a2;
     try {
-      (_a = globalThis.localStorage) == null ? void 0 : _a.setItem(key, value);
+      (_a2 = globalThis.localStorage) == null ? void 0 : _a2.setItem(key, value);
       return true;
     } catch (error) {
       return false;
@@ -1406,7 +1406,7 @@
                     <div>
                         <div class="eyebrow">Make. Fix. Pick. Count. Measure.</div>
                         <h1 class="menu-title">Learn polygons by playing.</h1>
-                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Drag shapes, solve fast tasks, and win stars on your map.</p>
+                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Drag shapes, solve fast tasks, and earn points while your map keeps best-star progress.</p>
                     </div>
                     <div class="menu-art" aria-hidden="true">
                         <div class="menu-float-shape shape-a"></div>
@@ -1421,8 +1421,8 @@
                         <span>3 quick tasks per mission.</span>
                     </div>
                     <div class="menu-info">
-                        <strong>Stars</strong>
-                        <span>Finish clean to earn 3 stars.</span>
+                        <strong>Points</strong>
+                        <span>Clean clears can award up to 150 points.</span>
                     </div>
                     <div class="menu-info">
                         <strong>Next Up</strong>
@@ -1453,7 +1453,7 @@
                     <button class="icon-btn" type="button" data-nav="menu" aria-label="Back to menu">\u2190</button>
                     <div>
                         <div class="brand-title">My Map</div>
-                        <span class="brand-sub">Clear worlds. Win stars. Unlock badges.</span>
+                        <span class="brand-sub">Clear worlds. Earn points. Unlock badges.</span>
                     </div>
                 </div>
                 <div class="top-stats">
@@ -1546,11 +1546,11 @@
     `;
   }
   function renderMissionScreen(state) {
-    var _a;
+    var _a2;
     const world = state.activeWorld;
     const mission = state.activeMission;
     const task = state.activeTask;
-    const canEditBoard = ((_a = task.board) == null ? void 0 : _a.editable) !== false;
+    const canEditBoard = ((_a2 = task.board) == null ? void 0 : _a2.editable) !== false;
     const answerModeClass = task.answerMode ? `answer-${task.answerMode}` : "";
     const nextHintText = state.hintStage === 0 ? "Tap Help for a clue." : state.hintStage === 1 ? task.hintLadder[0] : state.hintStage === 2 ? task.hintLadder[1] : task.hintLadder[2];
     const feedbackClass = state.feedback.kind === "good" ? "good" : state.feedback.kind === "try" ? "try" : "";
@@ -1678,6 +1678,10 @@
 
                 <div class="summary-grid">
                     <div class="summary-box">
+                        <strong>Points</strong>
+                        <span>${state.pointsAwarded}</span>
+                    </div>
+                    <div class="summary-box">
                         <strong>Stars</strong>
                         <span>${state.stars}</span>
                     </div>
@@ -1703,6 +1707,13 @@
   }
 
   // public/Games/Quiz it Polygon!/js/main.js
+  var QUIZ_IT_POLYGON_POINTS_BY_STARS = {
+    1: 50,
+    2: 100,
+    3: 150
+  };
+  var _a;
+  (_a = window.LAHSPointsBridge) == null ? void 0 : _a.init({ gameId: "math-quiz-it-polygon" });
   var QuizItPolygonApp = class {
     constructor(root) {
       this.root = root;
@@ -1729,7 +1740,7 @@
       this.render();
     }
     getState() {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+      var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
       const route = this.router.getState();
       const worlds = this.getWorldViewModels();
       const activeWorld = this.activeRun ? getWorldById(this.activeRun.worldId) : this.resultState ? getWorldById(this.resultState.worldId) : null;
@@ -1747,7 +1758,7 @@
         activeMission,
         activeTask: this.activeRun ? this.activeRun.tasks[this.activeRun.taskIndex] : null,
         missionIndex: this.activeRun ? getWorldById(this.activeRun.worldId).missions.findIndex((mission) => mission.id === this.activeRun.missionId) : -1,
-        taskIndex: ((_a = this.activeRun) == null ? void 0 : _a.taskIndex) || 0,
+        taskIndex: ((_a2 = this.activeRun) == null ? void 0 : _a2.taskIndex) || 0,
         hintStage: ((_b = this.activeRun) == null ? void 0 : _b.hintStage) || 0,
         maxHintStageUsed: (_f = (_e = (_c = this.activeRun) == null ? void 0 : _c.maxHintStageUsed) != null ? _e : (_d = this.resultState) == null ? void 0 : _d.maxHintStageUsed) != null ? _f : 0,
         mistakes: (_j = (_i = (_g = this.activeRun) == null ? void 0 : _g.mistakes) != null ? _i : (_h = this.resultState) == null ? void 0 : _h.mistakes) != null ? _j : 0,
@@ -1757,6 +1768,7 @@
         boardSummary: this.boardSummary,
         resultMessage: ((_k = this.resultState) == null ? void 0 : _k.message) || "",
         stars: ((_l = this.resultState) == null ? void 0 : _l.stars) || 0,
+        pointsAwarded: ((_m = this.resultState) == null ? void 0 : _m.pointsAwarded) || 0,
         shapeChoices: this.shapeChoices
       };
     }
@@ -1779,7 +1791,7 @@
     }
     bindEvents() {
       this.root.onclick = (event) => {
-        var _a, _b, _c;
+        var _a2, _b, _c;
         const target = event.target.closest("button");
         if (!target) {
           const modal = event.target.closest("[data-close-modal]");
@@ -1834,7 +1846,7 @@
           return;
         }
         if (target.dataset.boardAction === "undo") {
-          (_a = this.board) == null ? void 0 : _a.undo();
+          (_a2 = this.board) == null ? void 0 : _a2.undo();
           return;
         }
         if (target.dataset.boardAction === "reset") {
@@ -1983,7 +1995,7 @@
         return "This is your world map. Pick a mission to play.";
       }
       if (this.router.screen === "results" && this.resultState) {
-        return `${this.resultState.message}. You won ${this.resultState.stars} stars.`;
+        return `${this.resultState.message}. You earned ${this.resultState.pointsAwarded || 0} points and ${this.resultState.stars} stars.`;
       }
       return "Quiz it Polygon. Make shapes, fix shapes, count, and measure.";
     }
@@ -2152,8 +2164,8 @@
       this.advanceTimer = null;
     }
     handleBoardChange() {
-      var _a;
-      this.boardSummary = ((_a = this.board) == null ? void 0 : _a.getPrimarySummary()) || null;
+      var _a2;
+      this.boardSummary = ((_a2 = this.board) == null ? void 0 : _a2.getPrimarySummary()) || null;
       this.refreshLiveMissionBits();
       if (!this.activeRun) return;
       const task = this.activeRun.tasks[this.activeRun.taskIndex];
@@ -2167,18 +2179,18 @@
       }, 240);
     }
     validateBoardTask(task) {
-      var _a;
-      const summaries = ((_a = this.board) == null ? void 0 : _a.getSummaries()) || [];
+      var _a2;
+      const summaries = ((_a2 = this.board) == null ? void 0 : _a2.getSummaries()) || [];
       const editableSummaries = summaries.filter((summary) => !summary.polygon.locked);
       if (!editableSummaries.length) {
         return { correct: false, message: "Make or move a shape first." };
       }
       const matched = editableSummaries.find((summary) => {
-        var _a2;
+        var _a3;
         const primary = summary.analysis.primaryLabel;
         const exactMatches = summary.analysis.exactMatches || [];
         const families = summary.analysis.familyLabels || [];
-        if ((_a2 = task.success.rejectPrimary) == null ? void 0 : _a2.includes(primary)) return false;
+        if ((_a3 = task.success.rejectPrimary) == null ? void 0 : _a3.includes(primary)) return false;
         if (task.success.primary && primary !== task.success.primary) return false;
         if (task.success.exact && !(exactMatches.includes(task.success.exact) || primary === task.success.exact)) return false;
         if (task.success.family && !families.includes(task.success.family)) return false;
@@ -2221,7 +2233,7 @@
       this.numberCheckTimer = window.setTimeout(() => this.checkNumber(false), 220);
     }
     checkNumber(manual) {
-      var _a;
+      var _a2;
       if (!this.activeRun) return;
       const task = this.activeRun.tasks[this.activeRun.taskIndex];
       if (task.answerMode !== "number") return;
@@ -2230,7 +2242,7 @@
         if (manual) this.registerMistake("Type a number first.");
         return;
       }
-      const summary = this.boardSummary || ((_a = this.board) == null ? void 0 : _a.getPrimarySummary());
+      const summary = this.boardSummary || ((_a2 = this.board) == null ? void 0 : _a2.getPrimarySummary());
       const target = summary ? summary[task.success.metric] : Number.NaN;
       const correct = Number.isFinite(target) && Math.abs(value - target) <= task.success.tolerance;
       if (correct) {
@@ -2240,11 +2252,11 @@
       }
     }
     useHelp() {
-      var _a;
+      var _a2;
       if (!this.activeRun) return;
       this.activeRun.hintStage = Math.min(3, this.activeRun.hintStage + 1);
       this.activeRun.maxHintStageUsed = Math.max(this.activeRun.maxHintStageUsed, this.activeRun.hintStage);
-      (_a = this.board) == null ? void 0 : _a.setHintStage(this.activeRun.hintStage);
+      (_a2 = this.board) == null ? void 0 : _a2.setHintStage(this.activeRun.hintStage);
       const task = this.activeRun.tasks[this.activeRun.taskIndex];
       this.feedback = {
         kind: "try",
@@ -2278,12 +2290,14 @@
       }, 850);
     }
     finishMission() {
+      var _a2;
       if (!this.activeRun) return;
       const { worldId, missionId, mistakes, maxHintStageUsed } = this.activeRun;
       const world = getWorldById(worldId);
       const mission = getMissionById(worldId, missionId);
       const previousRecord = getMissionRecord(this.profile, missionId);
       const stars = this.calculateStars(mistakes, maxHintStageUsed);
+      const pointsAwarded = QUIZ_IT_POLYGON_POINTS_BY_STARS[stars] || QUIZ_IT_POLYGON_POINTS_BY_STARS[1];
       const firstClear = !previousRecord.cleared;
       setMissionRecord(this.profile, missionId, {
         cleared: true,
@@ -2304,13 +2318,22 @@
         }
       }
       saveProfile(this.profile);
+      (_a2 = window.LAHSPointsBridge) == null ? void 0 : _a2.awardPoints(pointsAwarded, {
+        label: "Mission Clear",
+        meta: {
+          worldId,
+          missionId,
+          stars
+        }
+      });
       this.resultState = {
         worldId,
         missionId,
         stars,
+        pointsAwarded,
         mistakes,
         maxHintStageUsed,
-        message: stars === 3 ? "Star job! You cleared that mission with a clean run." : stars === 2 ? "Nice work! You earned 2 stars." : "Good job! You finished the mission."
+        message: stars === 3 ? `Star job! You cleared that mission with a clean run and earned ${pointsAwarded} points.` : stars === 2 ? `Nice work! You earned ${pointsAwarded} points.` : `Good job! You finished the mission and earned ${pointsAwarded} points.`
       };
       this.activeRun = null;
       this.feedback = { kind: "", message: "" };
@@ -2334,8 +2357,8 @@
       this.router.go("map");
     }
     pickShape(shapeType) {
-      var _a;
-      (_a = this.board) == null ? void 0 : _a.createOrReplaceShape(shapeType);
+      var _a2;
+      (_a2 = this.board) == null ? void 0 : _a2.createOrReplaceShape(shapeType);
       this.showShapePicker = false;
       this.render();
     }
@@ -2343,10 +2366,10 @@
   var app = new QuizItPolygonApp(document.getElementById("app"));
   window.quizItPolygonApp = app;
   window.render_game_to_text = () => {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a2, _b, _c, _d, _e, _f, _g;
     return JSON.stringify({
       screen: app.router.screen,
-      world: ((_a = app.activeRun) == null ? void 0 : _a.worldId) || ((_b = app.resultState) == null ? void 0 : _b.worldId) || null,
+      world: ((_a2 = app.activeRun) == null ? void 0 : _a2.worldId) || ((_b = app.resultState) == null ? void 0 : _b.worldId) || null,
       mission: ((_c = app.activeRun) == null ? void 0 : _c.missionId) || ((_d = app.resultState) == null ? void 0 : _d.missionId) || null,
       taskIndex: (_f = (_e = app.activeRun) == null ? void 0 : _e.taskIndex) != null ? _f : null,
       prompt: app.activeRun ? app.activeRun.tasks[app.activeRun.taskIndex].prompt : null,

@@ -640,13 +640,13 @@ function createSafePreviewDisplayMaterial(THREE, material) {
   );
   const previewEmissive = emissiveStrength > 0.0002
     ? sourceEmissive
-    : previewColor.clone().lerp(new THREE.Color(0xffffff), 0.36).multiplyScalar(0.22);
+    : new THREE.Color(0x000000);
   const previewOpacity = Number.isFinite(material.opacity) ? material.opacity : 1;
   const previewTransparent = material.transparent === true || previewOpacity < 1 || (material.alphaTest || 0) > 0;
 
   const previewMaterial = new THREE.MeshStandardMaterial({
     name: material.name ? `${material.name}__preview` : 'preview-material',
-    color: previewColor.clone().lerp(new THREE.Color(0xc9ecff), material.map ? 0.1 : 0),
+    color: previewColor,
     map: material.map || null,
     alphaMap: material.alphaMap || null,
     aoMap: material.aoMap || null,
@@ -664,10 +664,7 @@ function createSafePreviewDisplayMaterial(THREE, material) {
     metalness: Number.isFinite(material.metalness) ? Math.min(material.metalness, 0.16) : 0.08,
     roughness: Number.isFinite(material.roughness) ? Math.min(Math.max(material.roughness, 0.32), 0.72) : 0.56,
     emissive: previewEmissive,
-    emissiveIntensity: Math.max(
-      Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 0,
-      material.map ? 0.7 : 0.46
-    ),
+    emissiveIntensity: Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 0,
     fog: material.fog !== false,
     vertexColors: material.vertexColors === true,
     wireframe: material.wireframe === true,

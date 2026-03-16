@@ -75,6 +75,9 @@
     const POINTER_DRAG_DISTANCE_PX = 12;
     const DROP_TARGET_PADDING_PX = 24;
     const SUPPRESSED_CLICK_MS = 450;
+    const PRESCHOOL_CORRECT_POINTS = 10;
+
+    window.LAHSPointsBridge?.init({ gameId: 'preschool-fun-game' });
 
     const dom = {
         canvas: document.getElementById('sky-canvas'),
@@ -1660,6 +1663,13 @@
             state.stars += 1;
             state.streak += 1;
             state.round += 1;
+            window.LAHSPointsBridge?.awardPoints(PRESCHOOL_CORRECT_POINTS, {
+                label: 'Correct Answer',
+                meta: {
+                    activityType: state.currentPuzzle?.type || null,
+                    round: state.round
+                }
+            });
             updateHud();
             renderPuzzle();
             flashChoice(choiceId, true);
@@ -1671,8 +1681,8 @@
                 ACTIVITY_META[state.currentPuzzle.type].successTitle,
                 CORRECT_LINES[randomInt(CORRECT_LINES.length)]
             );
-            setStatus('Correct! The row is complete.');
-            announce('Correct! Great job.');
+            setStatus(`Correct! The row is complete. +${PRESCHOOL_CORRECT_POINTS} points!`);
+            announce(`Correct! Great job. +${PRESCHOOL_CORRECT_POINTS} points.`);
             Promise.resolve(state.birdEscape?.onCorrect?.() ?? null).then(() => {
                 if (!state.started || state.puzzleToken !== puzzleToken) return;
                 if (state.birdEscape?.checkWin?.()) {

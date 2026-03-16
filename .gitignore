@@ -37,6 +37,7 @@ coverage
 
 # Cache
 .cache
+.vite/
 .parcel-cache
 .eslintcache
 .stylelintcache
@@ -57,6 +58,5 @@ tmp/
 tmp-*.png
 .tmp-dev-*.html
 tmp-cors-static-server.cjs
-{
 public/HomePageAPP/_workspace/
 public/HomePageAPP/debug-glb-viewer.html
