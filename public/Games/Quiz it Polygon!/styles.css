@@ -495,13 +495,13 @@ button:disabled {
 }
 
 .screen-mission {
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
 }
 
 .mission-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 400px);
-    gap: var(--pad-lg);
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 350px);
+    gap: var(--pad-md);
     min-height: 0;
     height: 100%;
 }
@@ -513,6 +513,56 @@ button:disabled {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     height: 100%;
+}
+
+.mission-toolbar,
+.mission-toolbar-main,
+.mission-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.mission-toolbar {
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.mission-toolbar-main {
+    flex: 1 1 auto;
+}
+
+.mission-toolbar-copy {
+    min-width: 0;
+}
+
+.mission-toolbar-copy strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.94rem;
+}
+
+.mission-toolbar .stat-chip {
+    padding: 0.42rem 0.72rem;
+    font-size: 0.76rem;
+}
+
+.mission-toolbar-back,
+.mission-toolbar-settings {
+    min-height: 40px;
+}
+
+.mission-toolbar-back {
+    width: 40px;
+    padding: 0;
+    flex: 0 0 auto;
+}
+
+.mission-toolbar-settings {
+    padding: 0.55rem 0.85rem;
 }
 
 .board-stage {
@@ -539,7 +589,7 @@ button:disabled {
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--pad-sm);
-    padding: var(--pad-md);
+    padding: 0.7rem 0.8rem;
     pointer-events: none;
 }
 
@@ -549,34 +599,47 @@ button:disabled {
 }
 
 .board-note {
-    max-width: 16rem;
-    padding: 0.75rem 0.95rem;
-    border-radius: 18px;
+    max-width: 13rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.9);
     color: var(--ink);
-    font-size: var(--small-size);
+    font-size: 0.78rem;
     border: 1px solid rgba(22, 49, 77, 0.08);
     box-shadow: 0 12px 28px rgba(22, 49, 77, 0.1);
+}
+
+.board-note-mode {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0.42rem 0.72rem;
+    border-radius: 999px;
+    font-weight: 800;
+    color: var(--primary-strong);
 }
 
 .tool-dock {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.7rem;
-    padding: var(--pad-md);
+    gap: 0.35rem;
+    padding: 0.42rem 0.55rem 0.5rem;
     border-top: 1px solid rgba(22, 49, 77, 0.08);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.97));
 }
 
 .tool-btn {
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 0.25rem;
-    padding: 0.85rem 0.5rem;
+    min-height: 40px;
+    padding: 0.38rem 0.3rem;
     text-align: center;
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(22, 49, 77, 0.1);
     color: var(--ink);
+    border-radius: 16px;
 }
 
 .tool-btn.active {
@@ -586,19 +649,22 @@ button:disabled {
 }
 
 .tool-btn span {
-    font-size: 1.3rem;
+    font-size: 0.92rem;
+    line-height: 1;
 }
 
 .tool-btn small {
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1;
 }
 
 .mission-card {
-    padding: var(--pad-lg);
+    padding: 0.82rem 0.9rem;
     display: grid;
-    grid-template-rows: auto auto auto 1fr auto;
-    gap: var(--pad-md);
+    align-content: start;
+    gap: 0.6rem;
     min-height: 0;
     overflow: hidden;
 }
@@ -630,22 +696,15 @@ button:disabled {
     color: var(--ink-soft);
 }
 
-.mission-progress {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--pad-sm);
-    flex-wrap: wrap;
-}
-
 .task-dots {
     display: inline-flex;
-    gap: 0.45rem;
+    gap: 0.35rem;
+    flex: 0 0 auto;
 }
 
 .task-dot {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 999px;
     background: rgba(22, 49, 77, 0.14);
 }
@@ -661,15 +720,26 @@ button:disabled {
 
 .task-card {
     display: grid;
-    gap: var(--pad-md);
+    gap: 0.6rem;
     align-content: start;
     min-height: 0;
     overflow: hidden;
 }
 
+.task-copy {
+    display: grid;
+    gap: 0.2rem;
+}
+
 .task-prompt {
     margin: 0;
-    font-size: clamp(1.3rem, 2.2vw, 1.75rem);
+    font-size: clamp(1rem, 1.55vw, 1.3rem);
+    line-height: 1.18;
+}
+
+.task-help {
+    font-size: 0.94rem;
+    line-height: 1.25;
 }
 
 .task-hint-panel,
@@ -684,14 +754,14 @@ button:disabled {
 }
 
 .task-hint-panel {
-    padding: var(--pad-md);
+    padding: 0.65rem 0.78rem;
 }
 
 .task-actions,
 .choice-grid,
 .setting-grid {
     display: grid;
-    gap: 0.7rem;
+    gap: 0.58rem;
 }
 
 .choice-grid {
@@ -702,12 +772,12 @@ button:disabled {
 
 .choice-btn {
     min-width: 0;
-    min-height: clamp(3rem, 6vw, 3.5rem);
+    min-height: clamp(2.85rem, 5vw, 3.2rem);
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(0.75rem, 2vw, 0.95rem);
+    padding: clamp(0.62rem, 1.6vw, 0.82rem);
     border-radius: var(--radius-md);
     text-align: center;
     line-height: 1.15;
@@ -726,14 +796,14 @@ button:disabled {
 
 .number-row {
     display: flex;
-    gap: 0.7rem;
+    gap: 0.55rem;
     align-items: stretch;
     flex-wrap: wrap;
 }
 
 .number-input {
     flex: 1 1 180px;
-    min-height: 52px;
+    min-height: 46px;
     border-radius: 16px;
     border: 1px solid rgba(22, 49, 77, 0.12);
     background: rgba(255, 255, 255, 0.94);
@@ -742,7 +812,7 @@ button:disabled {
 }
 
 .task-feedback {
-    padding: 0.95rem 1rem;
+    padding: 0.65rem 0.78rem;
     color: var(--ink);
 }
 
@@ -759,7 +829,7 @@ button:disabled {
 .task-side-box {
     display: grid;
     gap: 0.45rem;
-    padding: var(--pad-md);
+    padding: 0.65rem 0.78rem;
 }
 
 .task-side-box strong {
@@ -769,6 +839,15 @@ button:disabled {
     color: var(--primary);
 }
 
+.screen-mission.answer-choice .task-hint-panel,
+.screen-mission.answer-choice .task-side-box {
+    display: none;
+}
+
+.screen-mission.answer-choice .task-card {
+    gap: 0.5rem;
+}
+
 .live-metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -776,7 +855,7 @@ button:disabled {
 }
 
 .live-metric {
-    padding: 0.8rem 0.9rem;
+    padding: 0.7rem 0.78rem;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(22, 49, 77, 0.08);
@@ -1021,12 +1100,13 @@ button:disabled {
     }
 
     .tool-dock {
-        gap: 0.45rem;
-        padding: 0.8rem;
+        gap: 0.35rem;
+        padding: 0.48rem 0.52rem 0.52rem;
     }
 
     .tool-btn {
-        padding: 0.75rem 0.25rem;
+        min-height: 38px;
+        padding: 0.35rem 0.16rem;
     }
 }
 
@@ -1066,7 +1146,7 @@ button:disabled {
     }
 
     .mission-card {
-        padding: 1rem;
+        padding: 0.82rem 0.88rem;
     }
 
     .number-row {
@@ -1075,16 +1155,12 @@ button:disabled {
 }
 
 @media (max-width: 520px) {
-    .screen-mission {
-        grid-template-rows: auto minmax(0, 1fr);
-    }
-
     .board-panel {
         min-height: 0;
     }
 
     .board-canvas {
-        min-height: min(32vh, 260px);
+        min-height: min(34vh, 280px);
     }
 
     .mission-card {
@@ -1096,7 +1172,7 @@ button:disabled {
     }
 
     .tool-btn small {
-        font-size: 0.72rem;
+        font-size: 0.64rem;
     }
 
     .choice-grid {
@@ -1150,47 +1226,80 @@ button:disabled {
     }
 
     .screen-mission .mission-layout {
-        grid-template-rows: minmax(220px, 0.88fr) minmax(0, 1.12fr);
-        gap: 0.75rem;
+        grid-template-rows: minmax(240px, 1fr) minmax(0, 0.94fr);
+        gap: 0.62rem;
     }
 
     .screen-mission .mission-card {
-        padding: 0.9rem;
-        gap: 0.75rem;
+        padding: 0.78rem 0.82rem;
+        gap: 0.55rem;
     }
 
     .screen-mission .task-prompt {
-        font-size: clamp(1.12rem, 5vw, 1.35rem);
+        font-size: clamp(1.02rem, 4.4vw, 1.22rem);
     }
 
     .screen-mission .task-hint-panel,
     .screen-mission .task-side-box,
     .screen-mission .live-metric {
-        padding: 0.72rem;
+        padding: 0.62rem 0.7rem;
     }
 
     .screen-mission .board-note {
-        max-width: 11rem;
-        padding: 0.55rem 0.75rem;
+        max-width: 10rem;
+        padding: 0.48rem 0.62rem;
+    }
+
+    .screen-mission .mission-toolbar {
+        gap: 0.45rem;
+    }
+
+    .screen-mission .mission-toolbar-copy strong {
+        font-size: 0.88rem;
+    }
+
+    .screen-mission .mission-toolbar-settings {
+        padding: 0.45rem 0.72rem;
+        font-size: 0.84rem;
+    }
+
+    .screen-mission .mission-toolbar .stat-chip {
+        padding: 0.38rem 0.6rem;
+        font-size: 0.72rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .screen-mission .mission-toolbar-copy {
+        display: none;
+    }
+
+    .screen-mission .mission-toolbar-main {
+        gap: 0.42rem;
+    }
+
+    .screen-mission .mission-toolbar-actions {
+        gap: 0.38rem;
+    }
+
+    .screen-mission .mission-toolbar-settings {
+        padding: 0.42rem 0.62rem;
+        font-size: 0.8rem;
     }
 }
 
 @media (max-width: 360px), (max-height: 640px) {
-    .screen-mission.answer-choice .mission-head {
-        display: none;
-    }
-
     .screen-mission.answer-choice .mission-card {
-        padding: 0.82rem;
-        gap: 0.55rem;
-    }
-
-    .screen-mission.answer-choice .task-card {
+        padding: 0.72rem 0.76rem;
         gap: 0.45rem;
     }
 
+    .screen-mission.answer-choice .task-card {
+        gap: 0.38rem;
+    }
+
     .screen-mission.answer-choice .task-prompt {
-        font-size: clamp(1rem, 4.4vw, 1.2rem);
+        font-size: clamp(0.94rem, 4vw, 1.1rem);
     }
 
     .screen-mission.answer-choice .task-copy .task-help,
@@ -1200,24 +1309,46 @@ button:disabled {
     }
 
     .screen-mission.answer-choice .board-canvas {
-        min-height: min(18vh, 150px);
+        min-height: min(19vh, 160px);
     }
 
     .screen-mission.answer-choice .tool-dock {
-        padding: 0.4rem;
-        gap: 0.3rem;
+        padding: 0.34rem 0.4rem 0.38rem;
+        gap: 0.26rem;
     }
 
     .screen-mission.answer-choice .tool-btn {
-        min-height: 38px;
-        padding: 0.35rem 0.15rem;
+        min-height: 34px;
+        padding: 0.28rem 0.1rem;
+    }
+
+    .screen-mission.answer-choice .tool-btn span {
+        font-size: 0.82rem;
+    }
+
+    .screen-mission.answer-choice .tool-btn small {
+        font-size: 0.58rem;
+    }
+
+    .screen-mission.answer-choice .mission-toolbar-copy strong {
+        font-size: 0.82rem;
+    }
+
+    .screen-mission.answer-choice .mission-toolbar-settings {
+        min-height: 34px;
+        padding: 0.38rem 0.55rem;
+    }
+
+    .screen-mission.answer-choice .mission-toolbar .stat-chip {
+        padding: 0.32rem 0.48rem;
+        font-size: 0.66rem;
     }
 }
 
 @media (max-width: 360px) {
     .screen-mission.answer-choice .mission-layout {
-        grid-template-rows: minmax(148px, 0.52fr) minmax(0, 1.48fr);
-        gap: 0.5rem;
+        grid-template-rows: minmax(160px, 0.58fr) minmax(0, 1.42fr);
+        gap: 0.42rem;
     }
 }
 
@@ -1317,25 +1448,25 @@ button:disabled {
     }
 
     .screen-mission .mission-card {
-        gap: 0.6rem;
+        gap: 0.52rem;
     }
 
     .screen-mission .task-card {
-        gap: 0.55rem;
+        gap: 0.48rem;
     }
 
     .screen-mission .tool-dock {
-        padding: 0.55rem;
-        gap: 0.35rem;
+        padding: 0.4rem 0.45rem 0.45rem;
+        gap: 0.28rem;
     }
 
     .screen-mission .tool-btn {
-        min-height: 42px;
-        padding: 0.45rem 0.2rem;
+        min-height: 36px;
+        padding: 0.3rem 0.14rem;
     }
 
     .screen-mission .board-note {
-        padding: 0.5rem 0.7rem;
+        padding: 0.42rem 0.58rem;
     }
 
     .screen-map .map-world {

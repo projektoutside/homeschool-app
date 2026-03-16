@@ -1557,22 +1557,6 @@
     const primarySummary = state.boardSummary;
     return `
         <div class="app-shell screen-mission ${answerModeClass}">
-            <div class="top-strip">
-                <div class="brand">
-                    <button class="icon-btn" type="button" data-nav="map" aria-label="Back to map">\u2190</button>
-                    <div>
-                        <div class="brand-title">${escapeHtml(world.title)}</div>
-                        <span class="brand-sub">${escapeHtml(mission.title)}</span>
-                    </div>
-                </div>
-                <div class="top-stats">
-                    <span class="stat-chip">Task ${state.taskIndex + 1}/3</span>
-                    <span class="stat-chip">Hints ${state.maxHintStageUsed}</span>
-                    <span class="stat-chip">Tries ${state.mistakes}</span>
-                    <button class="ghost-btn" type="button" data-open-modal="settings">Settings</button>
-                </div>
-            </div>
-
             <div class="mission-layout">
                 <section class="board-panel">
                     <div class="board-stage">
@@ -1583,14 +1567,14 @@
                                 ${state.hintStage >= 2 && task.visualNote ? `<div class="board-note">${escapeHtml(task.visualNote)}</div>` : ""}
                             </div>
                             <div class="board-note-stack">
-                                <div class="board-note">${escapeHtml(task.modeTitle)}</div>
+                                <div class="board-note board-note-mode">${escapeHtml(task.modeTitle)}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="tool-dock">
                         <button class="tool-btn" type="button" data-open-modal="shape-picker" ${canEditBoard ? "" : "disabled"}>
-                            <span>\u2B20</span><small>Make Shape</small>
+                            <span>\u2B20</span><small>Make</small>
                         </button>
                         <button class="tool-btn active" type="button" data-board-tool="move" ${canEditBoard ? "" : "disabled"}>
                             <span>\u270B</span><small>Move</small>
@@ -1608,19 +1592,22 @@
                 </section>
 
                 <aside class="mission-card">
-                    <div class="mission-head">
-                        <div class="eyebrow">${escapeHtml(world.title)} \u2022 Mission ${state.missionIndex + 1}</div>
-                        <h1 class="mission-title">${escapeHtml(mission.title)}</h1>
-                        <p class="mission-copy">${escapeHtml(mission.intro)}</p>
-                    </div>
-
-                    <div class="mission-progress">
-                        <div class="task-dots">
-                            ${[0, 1, 2].map((index) => `
-                                <span class="task-dot ${index < state.taskIndex ? "done" : index === state.taskIndex ? "live" : ""}"></span>
-                            `).join("")}
+                    <div class="mission-toolbar">
+                        <div class="mission-toolbar-main">
+                            <button class="icon-btn mission-toolbar-back" type="button" data-nav="map" aria-label="Back to map">\u2190</button>
+                            <div class="mission-toolbar-copy">
+                                <strong>${escapeHtml(world.title)}</strong>
+                            </div>
+                            <div class="task-dots">
+                                ${[0, 1, 2].map((index) => `
+                                    <span class="task-dot ${index < state.taskIndex ? "done" : index === state.taskIndex ? "live" : ""}"></span>
+                                `).join("")}
+                            </div>
                         </div>
-                        <span class="task-tag">${escapeHtml(task.modeTitle)}</span>
+                        <div class="mission-toolbar-actions">
+                            <span class="stat-chip">Task ${state.taskIndex + 1}/3</span>
+                            <button class="ghost-btn mission-toolbar-settings" type="button" data-open-modal="settings">Settings</button>
+                        </div>
                     </div>
 
                     <section class="task-card">
@@ -1631,10 +1618,12 @@
 
                         ${renderTaskControls(task, state)}
 
-                        <div class="task-hint-panel">
-                            <strong>Help</strong>
-                            <p class="task-help">${escapeHtml(nextHintText)}</p>
-                        </div>
+                        ${state.hintStage > 0 ? `
+                            <div class="task-hint-panel">
+                                <strong>Help</strong>
+                                <p class="task-help">${escapeHtml(nextHintText)}</p>
+                            </div>
+                        ` : ""}
 
                         ${state.feedback.message ? `
                             <div class="task-feedback ${feedbackClass}">
