@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
@@ -389,16 +388,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     <div className="os-desktop-shell">
       <section className="os-icon-area user-home-os-area" aria-label="Homepage app">
         <div className="user-home-app-shell">
-        {hasDeveloperAccess ? (
-          <Link
-            to="/character-creator"
-            className="user-home-creator-launcher"
-            aria-label="Open XiO Studio"
-          >
-            <span className="user-home-creator-launcher__eyebrow">Studio Access</span>
-            <span className="user-home-creator-launcher__title">Open XiO Studio</span>
-          </Link>
-        ) : null}
         {isLoading && (
           <div className="user-home-app-loading" aria-live="polite">
             Loading homepage...

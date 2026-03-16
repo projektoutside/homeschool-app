@@ -34,7 +34,11 @@ const MainLayout: React.FC = () => {
     const shouldRenderUserHomePage = (hasHomePageMounted || isUserHomeRoute) && !isGamePlayerRoute;
     const shouldRenderClassroomPage = isClassroomRoute;
     const hasDeveloperAccess = isManagerUser(user);
-    const shouldShowCharacterCreatorLauncher = hasDeveloperAccess && !isCharacterCreatorRoute && !isGamePlayerRoute;
+    const shouldShowCharacterCreatorLauncher =
+        hasDeveloperAccess
+        && !isCharacterCreatorRoute
+        && !isGamePlayerRoute
+        && !isUserHomeRoute;
 
     useEffect(() => {
         if (!isUserHomeRoute) {

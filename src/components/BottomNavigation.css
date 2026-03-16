@@ -352,14 +352,15 @@
 /* STATS DOCK (appears once main nav is minimized) */
 .bottom-stats-dock {
     position: fixed;
-    left: max(env(safe-area-inset-left, 0px), 0px);
+    left: 50%;
     bottom: max(env(safe-area-inset-bottom, 0px), 12px);
-    width: min(980px, calc(100vw - 1.5rem - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    transform: translateX(-50%);
+    width: min(980px, calc(100vw - 1.5rem));
     min-height: 84px;
     display: flex;
     align-items: center;
     padding: 0.75rem;
-    padding-right: 3.2rem;
+    padding-right: 0.95rem;
     box-sizing: border-box;
     background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
     border: 2px solid rgba(250, 204, 21, 0.58);
@@ -381,16 +382,17 @@
 }
 
 .bottom-stats-dock.visible {
-    transform: translateX(0);
+    transform: translateX(-50%);
     pointer-events: auto;
 }
 
 
 .stats-content {
     width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
+    justify-items: center;
     gap: 1rem;
 }
 
@@ -421,12 +423,18 @@
     font-size: 1.22rem;
 }
 
+.stats-item-left {
+    justify-self: start;
+}
+
 .stats-item-right {
-    justify-content: flex-end;
-    text-align: right;
+    grid-column: 2;
+    justify-content: center;
+    text-align: center;
 }
 
 .bottom-stats-dock.minimized {
+    left: max(env(safe-area-inset-left, 0px), 0px);
     transform: translateX(calc(-100% + 24px));
     background: transparent;
     border-color: transparent;
@@ -461,10 +469,10 @@
 
 .stats-shift-handle {
     position: absolute;
-    right: 10px;
+    right: -16px;
     top: 0;
     bottom: 0;
-    width: 44px;
+    width: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -494,7 +502,7 @@
 
 .stats-shift-line {
     width: 8px;
-    height: 58px;
+    height: 60px;
     border-radius: 999px;
     background: linear-gradient(180deg, rgba(254, 240, 138, 1), rgba(250, 204, 21, 0.96));
     box-shadow:
@@ -640,15 +648,20 @@
     }
 
     .bottom-stats-dock {
-        width: calc(100vw - 1rem - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+        width: calc(100vw - 1rem);
         min-height: 68px;
         padding: 0.5rem;
-        padding-right: 2.5rem;
+        padding-right: 0.8rem;
     }
 
 
     .stats-content {
         gap: 0.55rem;
+    }
+
+    .stats-shift-handle {
+        right: -14px;
+        width: 28px;
     }
 
     .stats-label,
