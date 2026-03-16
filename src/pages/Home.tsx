@@ -29,6 +29,7 @@ const SINGLE_PLAYER_GAME_IDS = new Set<string>([
     'preschool-fun-game',
     'word-puzzle-game',
     'math-1768955732393-game', // PolygonAPP (game entry)
+    'math-quiz-it-polygon',
     'math-car-king',
     'math-analog-clock-game-v2',
     'math-farmers-market-frenzy',

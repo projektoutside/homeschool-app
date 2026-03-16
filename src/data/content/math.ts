@@ -1033,6 +1033,20 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-01-21"
     },
     {
+        "id": "math-quiz-it-polygon",
+        "title": "Quiz it Polygon!",
+        "description": "Build, classify, and measure polygons in a polished 10-question geometry challenge.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Geometry"],
+        "gradeLevels": [
+            "All"
+        ],
+        "customHtmlPath": "/Games/Quiz it Polygon!/index.html",
+        "thumbnail": "/Games/Quiz it Polygon!/thumb.png",
+        "dateAdded": "2026-03-16"
+    },
+    {
         "id": "math-spy-academy",
         "title": "The Spy Academy",
         "description": "An immersive escape room experience with team-based puzzles, color code mysteries, and timed challenges. Work together to solve the mystery!",
