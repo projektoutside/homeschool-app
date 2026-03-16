@@ -15,6 +15,7 @@ const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 const STATS_WAKE_GLOW_MS = 2000;
 const STATS_SHIFT_HANDLE_DRAG_PX = 28;
+const RESTORE_HANDLE_DRAG_PX = 28;
 const CLASSROOM_IMMERSIVE_SCOPE = 'classroom-3d';
 const CLASSROOM_IMMERSIVE_OPEN_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_OPEN';
 const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
@@ -48,6 +49,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const statsShiftHandlePointerIdRef = useRef<number | null>(null);
     const statsShiftHandleStartXRef = useRef<number | null>(null);
     const statsShiftHandleDraggedRef = useRef<boolean>(false);
+    const navRestoreHandlePointerIdRef = useRef<number | null>(null);
+    const navRestoreHandleStartXRef = useRef<number | null>(null);
+    const navRestoreHandleDraggedRef = useRef<boolean>(false);
+    const statsRestoreHandlePointerIdRef = useRef<number | null>(null);
+    const statsRestoreHandleStartXRef = useRef<number | null>(null);
+    const statsRestoreHandleDraggedRef = useRef<boolean>(false);
     const wasFullscreenLikeActiveRef = useRef<boolean>(false);
     const lastFullscreenActivationKeyRef = useRef<string>('');
     const isStatsMinimizedRef = useRef<boolean>(false);
@@ -182,6 +189,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         setExpandedMode(false);
         setIsMinimized(true);
         setIsStatsMinimized(true);
+    }, []);
+
+    const restoreStatsDockFromEdge = useCallback(() => {
+        setIsStatsMinimized(false);
+    }, []);
+
+    const restoreNavigationDock = useCallback(() => {
+        setIsMinimized(false);
     }, []);
 
     useEffect(() => {
@@ -477,7 +492,34 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         }
         statsShiftHandlePointerIdRef.current = null;
         statsShiftHandleStartXRef.current = null;
-        statsShiftHandleDraggedRef.current = false;
+    }, []);
+
+    const clearNavRestoreHandleGesture = useCallback((eventTarget?: EventTarget | null) => {
+        const target = eventTarget instanceof Element ? eventTarget : null;
+        const pointerId = navRestoreHandlePointerIdRef.current;
+        if (target && pointerId !== null && typeof (target as Element & { releasePointerCapture?: (pointerId: number) => void }).releasePointerCapture === 'function') {
+            try {
+                (target as Element & { releasePointerCapture: (pointerId: number) => void }).releasePointerCapture(pointerId);
+            } catch {
+                // Ignore pointer release failures; clearing refs is enough to end the gesture safely.
+            }
+        }
+        navRestoreHandlePointerIdRef.current = null;
+        navRestoreHandleStartXRef.current = null;
+    }, []);
+
+    const clearStatsRestoreHandleGesture = useCallback((eventTarget?: EventTarget | null) => {
+        const target = eventTarget instanceof Element ? eventTarget : null;
+        const pointerId = statsRestoreHandlePointerIdRef.current;
+        if (target && pointerId !== null && typeof (target as Element & { releasePointerCapture?: (pointerId: number) => void }).releasePointerCapture === 'function') {
+            try {
+                (target as Element & { releasePointerCapture: (pointerId: number) => void }).releasePointerCapture(pointerId);
+            } catch {
+                // Ignore pointer release failures; clearing refs is enough to end the gesture safely.
+            }
+        }
+        statsRestoreHandlePointerIdRef.current = null;
+        statsRestoreHandleStartXRef.current = null;
     }, []);
 
     const handleStatsShiftHandlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
@@ -519,6 +561,104 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         }
         minimizeStatsDockToEdge();
     }, [isMinimized, isStatsMinimized, minimizeStatsDockToEdge]);
+
+    const handleNavRestoreHandlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (!isMinimized || isStatsMinimized) {
+            return;
+        }
+        navRestoreHandlePointerIdRef.current = event.pointerId;
+        navRestoreHandleStartXRef.current = event.clientX;
+        navRestoreHandleDraggedRef.current = false;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }, [isMinimized, isStatsMinimized]);
+
+    const handleNavRestoreHandlePointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (
+            navRestoreHandlePointerIdRef.current !== event.pointerId ||
+            navRestoreHandleStartXRef.current === null ||
+            !isMinimized ||
+            isStatsMinimized
+        ) {
+            return;
+        }
+        const diff = event.clientX - navRestoreHandleStartXRef.current;
+        if (diff > 10) {
+            navRestoreHandleDraggedRef.current = true;
+        }
+        if (diff >= RESTORE_HANDLE_DRAG_PX) {
+            restoreNavigationDock();
+            clearNavRestoreHandleGesture(event.currentTarget);
+        }
+    }, [clearNavRestoreHandleGesture, isMinimized, isStatsMinimized, restoreNavigationDock]);
+
+    const handleNavRestoreHandlePointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        clearNavRestoreHandleGesture(event.currentTarget);
+    }, [clearNavRestoreHandleGesture]);
+
+    const handleNavRestoreHandleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        if (navRestoreHandleDraggedRef.current) {
+            navRestoreHandleDraggedRef.current = false;
+            return;
+        }
+        if (!isMinimized) {
+            return;
+        }
+        if (isStatsMinimized) {
+            restoreStatsDockFromEdge();
+            return;
+        }
+        restoreNavigationDock();
+    }, [isMinimized, isStatsMinimized, restoreNavigationDock, restoreStatsDockFromEdge]);
+
+    const handleStatsRestoreHandlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (!isMinimized || !isStatsMinimized) {
+            return;
+        }
+        statsRestoreHandlePointerIdRef.current = event.pointerId;
+        statsRestoreHandleStartXRef.current = event.clientX;
+        statsRestoreHandleDraggedRef.current = false;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }, [isMinimized, isStatsMinimized]);
+
+    const handleStatsRestoreHandlePointerMove = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (
+            statsRestoreHandlePointerIdRef.current !== event.pointerId ||
+            statsRestoreHandleStartXRef.current === null ||
+            !isMinimized ||
+            !isStatsMinimized
+        ) {
+            return;
+        }
+        const diff = event.clientX - statsRestoreHandleStartXRef.current;
+        if (diff > 10) {
+            statsRestoreHandleDraggedRef.current = true;
+        }
+        if (diff >= RESTORE_HANDLE_DRAG_PX) {
+            restoreStatsDockFromEdge();
+            clearStatsRestoreHandleGesture(event.currentTarget);
+        }
+    }, [clearStatsRestoreHandleGesture, isMinimized, isStatsMinimized, restoreStatsDockFromEdge]);
+
+    const handleStatsRestoreHandlePointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        clearStatsRestoreHandleGesture(event.currentTarget);
+    }, [clearStatsRestoreHandleGesture]);
+
+    const handleStatsRestoreHandleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        if (statsRestoreHandleDraggedRef.current) {
+            statsRestoreHandleDraggedRef.current = false;
+            return;
+        }
+        if (!(isStatsMinimized && isMinimized)) {
+            return;
+        }
+        if (isStatsLineDormant) {
+            triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
+            return;
+        }
+        restoreStatsDockFromEdge();
+    }, [isMinimized, isStatsLineDormant, isStatsMinimized, restoreStatsDockFromEdge, triggerStatsAwakeFlash]);
 
     const handleStatsClickCapture = (e: React.MouseEvent) => {
         if (hasStatsSwiped.current) {
@@ -754,26 +894,20 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 onClickCapture={handleClickCapture}
             >
             {/* Restore Handle (Thin Line) - Visible only when minimized */}
-            <div 
+            <button
+                type="button"
                 className="nav-restore-handle" 
                 aria-hidden={!isMinimized}
-                onClick={(e) => {
-                    if (isMinimized) {
-                        // Stage restore flow: click once opens yellow panel,
-                        // click again restores gray nav tabs.
-                        if (isStatsMinimized) {
-                            setIsStatsMinimized(false);
-                            e.stopPropagation();
-                            return;
-                        }
-                        setIsMinimized(false);
-                        e.stopPropagation(); 
-                    }
-                }}
+                aria-label="Slide navigation right to restore"
+                onPointerDown={handleNavRestoreHandlePointerDown}
+                onPointerMove={handleNavRestoreHandlePointerMove}
+                onPointerUp={handleNavRestoreHandlePointerUp}
+                onPointerCancel={handleNavRestoreHandlePointerUp}
+                onClick={handleNavRestoreHandleClick}
                 title="Slide right or click to restore"
             >
                 <div className="nav-restore-line"></div>
-            </div>
+            </button>
 
             {/* View Stack: Holds both Standard and Slider views overlapping */}
             <div className="dock-view-stack">
@@ -954,24 +1088,20 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                     >
                         <div className="stats-shift-line"></div>
                     </button>
-                    <div
+                    <button
+                        type="button"
                         className="stats-restore-handle"
                         aria-hidden={!isStatsMinimized || !isMinimized}
-                        onClick={(e) => {
-                            if (isStatsMinimized && isMinimized) {
-                                if (isStatsLineDormant) {
-                                    triggerStatsAwakeFlash(STATS_WAKE_GLOW_MS);
-                                    e.stopPropagation();
-                                    return;
-                                }
-                                setIsStatsMinimized(false);
-                                e.stopPropagation();
-                            }
-                        }}
+                        aria-label="Slide stats panel right to restore"
+                        onPointerDown={handleStatsRestoreHandlePointerDown}
+                        onPointerMove={handleStatsRestoreHandlePointerMove}
+                        onPointerUp={handleStatsRestoreHandlePointerUp}
+                        onPointerCancel={handleStatsRestoreHandlePointerUp}
+                        onClick={handleStatsRestoreHandleClick}
                         title="Tap to wake/open, or slide right to open"
                     >
                         <div className="stats-restore-line"></div>
-                    </div>
+                    </button>
 
                     <div className="stats-content">
                         <div className="stats-item stats-item-left">

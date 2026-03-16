@@ -137,9 +137,14 @@
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: 10011;
-    cursor: pointer;
+    cursor: ew-resize;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    touch-action: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .bottom-navigation-dock.minimized .nav-restore-handle {
@@ -158,8 +163,17 @@
     background-color: rgba(255, 255, 255, 0.7);
     border-radius: 99px;
     box-shadow: none;
+    transition: transform 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
     -webkit-tap-highlight-color: transparent;
     outline: none;
+}
+
+.nav-restore-handle:hover .nav-restore-line,
+.nav-restore-handle:focus-visible .nav-restore-line,
+.nav-restore-handle:active .nav-restore-line {
+    transform: scaleX(1.08);
+    background-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.22);
 }
 
 .nav-restore-handle:focus,
@@ -461,10 +475,15 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    cursor: pointer;
+    cursor: ew-resize;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     outline: none;
+    touch-action: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .stats-shift-handle {
@@ -535,8 +554,15 @@
     border-radius: 99px;
     box-shadow: none;
     opacity: 1;
-    transition: opacity 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+    transition: opacity 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
     -webkit-tap-highlight-color: transparent;
+}
+
+.stats-restore-handle:hover .stats-restore-line,
+.stats-restore-handle:focus-visible .stats-restore-line,
+.stats-restore-handle:active .stats-restore-line {
+    transform: scaleX(1.08);
+    box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
 }
 
 .stats-restore-handle:focus,
