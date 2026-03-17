@@ -1,12 +1,44 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CONTENT_ITEMS } from '../data/mockContent';
-import type { ContentItem, ContentType } from '../types/content';
-import type { ManagerConfig, ManagerFolder, ManagerTab } from '../types/manager';
+import type { ContentType } from '../types/content';
+import type { AppAreaId, ModuleDefinition, ModuleVisibility } from '../types/appAreas';
+import type { ManagerConfig, ManagerFolder } from '../types/manager';
+import { APP_AREAS, BASE_MODULES, findBaseModuleById, getDefaultAreaIdForType, normalizeAreaId } from '../data/moduleRegistry';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const STORAGE_KEY = 'homeschool_manager_config_v2';
-const LEGACY_STORAGE_KEY = STORAGE_KEY;
+const STORAGE_KEY = 'homeschool_manager_config_v3';
+const LEGACY_STORAGE_KEY = 'homeschool_manager_config_v2';
+const MANAGED_AREA_IDS: AppAreaId[] = ['games', 'classroom'];
+
+type LegacyManagerTab = {
+  id?: string;
+  label?: string;
+  sourceType?: ContentType;
+};
+
+type LegacyManagerFolder = {
+  id?: string;
+  tabId?: string;
+  areaId?: AppAreaId;
+  name?: string;
+  itemIds?: string[];
+};
+
+type LegacyManagerConfig = Partial<ManagerConfig> & {
+  tabs?: LegacyManagerTab[];
+  tabItems?: Record<string, string[]>;
+  folders?: LegacyManagerFolder[];
+};
+
+const buildScopedStorageKey = (baseKey: string, userId: string | null | undefined): string => {
+  return userId ? `${baseKey}_${userId}` : baseKey;
+};
+
+const readStringArray = (value: unknown): string[] => {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim()).filter(Boolean)
+    : [];
+};
 
 const normalizeContentType = (value: unknown): ContentType => {
   if (value === 'game' || value === 'worksheet' || value === 'tool' || value === 'resource') {
@@ -15,52 +47,122 @@ const normalizeContentType = (value: unknown): ContentType => {
   return 'tool';
 };
 
-const BASE_CONTENT_ITEMS: ContentItem[] = CONTENT_ITEMS.filter((item): item is ContentItem => {
-  return Boolean(
-    item
-    && typeof item === 'object'
-    && typeof item.id === 'string'
-    && item.id.length > 0
-    && typeof item.title === 'string'
-    && typeof item.description === 'string'
-    && typeof item.category === 'string'
-    && Array.isArray(item.subjects)
-    && Array.isArray(item.gradeLevels)
-    && typeof item.dateAdded === 'string',
-  );
-}).map(item => ({
-  ...item,
-  type: normalizeContentType(item.type),
-}));
-
-const DEFAULT_TABS: ManagerTab[] = [
-  { id: 'game', label: 'Games', icon: '🎮', sourceType: 'game' },
-  { id: 'worksheet', label: 'Worksheets', icon: '📝', sourceType: 'worksheet' },
-  { id: 'tool', label: 'Tools', icon: '🛠️', sourceType: 'tool' },
-];
-
-const normalizeTabId = (value: string | undefined, index: number): string => {
-  const normalized = (value ?? '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
-  return normalized || `tab-${index + 1}`;
+const normalizeVisibility = (value: unknown): ModuleVisibility => {
+  return value === 'hidden' ? 'hidden' : 'visible';
 };
 
-const getPreferredTabIdForItem = (
-  itemType: ContentType,
-  tabs: ManagerTab[],
-): string | undefined => {
-  return tabs.find(tab => tab.sourceType === itemType)?.id ?? tabs[0]?.id;
+const normalizeManagedAreaId = (value: unknown, type: ContentType): AppAreaId => {
+  const normalized = normalizeAreaId(value);
+  if (normalized === 'games' && type === 'game') {
+    return normalized;
+  }
+  if (normalized === 'classroom' && type !== 'game') {
+    return normalized;
+  }
+  return getDefaultAreaIdForType(type);
 };
+
+const isManageableArea = (value: AppAreaId): boolean => {
+  return value === 'games' || value === 'classroom';
+};
+
+const inferLegacyAreaId = (tabId: string | undefined, tabs: LegacyManagerTab[] = []): AppAreaId => {
+  const tab = tabs.find((entry) => entry.id === tabId);
+  const sourceType = normalizeContentType(tab?.sourceType);
+  if (sourceType === 'game') {
+    return 'games';
+  }
+
+  const normalizedId = (tabId ?? tab?.label ?? '').trim().toLowerCase();
+  if (normalizedId === 'game' || normalizedId === 'games') {
+    return 'games';
+  }
+
+  return 'classroom';
+};
+
+const sanitizeModule = (raw: unknown): ModuleDefinition | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return null;
+  }
+
+  const item = raw as Record<string, unknown>;
+  const id = typeof item.id === 'string' ? item.id.trim() : '';
+  const title = typeof item.title === 'string' ? item.title.trim() : '';
+  if (!id || !title) {
+    return null;
+  }
+
+  const type = normalizeContentType(item.type);
+  return {
+    id,
+    title,
+    description: typeof item.description === 'string' ? item.description : '',
+    type,
+    areaId: normalizeManagedAreaId(item.areaId, type),
+    visibility: normalizeVisibility(item.visibility),
+    adminOnly: item.adminOnly === true,
+    category: typeof item.category === 'string' ? item.category : 'custom',
+    subjects: readStringArray(item.subjects),
+    gradeLevels: readStringArray(item.gradeLevels).length > 0 ? readStringArray(item.gradeLevels) : ['All'],
+    ...(typeof item.thumbnail === 'string' && item.thumbnail.trim() ? { thumbnail: item.thumbnail.trim() } : {}),
+    ...(typeof item.downloadUrl === 'string' && item.downloadUrl.trim() ? { downloadUrl: item.downloadUrl.trim() } : {}),
+    ...(typeof item.externalUrl === 'string' && item.externalUrl.trim() ? { externalUrl: item.externalUrl.trim() } : {}),
+    ...(typeof item.customHtmlPath === 'string' && item.customHtmlPath.trim() ? { customHtmlPath: item.customHtmlPath.trim() } : {}),
+    ...(typeof item.componentName === 'string' && item.componentName.trim() ? { componentName: item.componentName.trim() } : {}),
+    ...(Array.isArray(item.tags) ? { tags: readStringArray(item.tags) } : {}),
+    ...(typeof item.isFeatured === 'boolean' ? { isFeatured: item.isFeatured } : {}),
+    dateAdded: typeof item.dateAdded === 'string' && item.dateAdded.trim()
+      ? item.dateAdded
+      : new Date().toISOString().split('T')[0],
+  };
+};
+
+const sanitizeOverridePatch = (raw: unknown): Partial<ModuleDefinition> | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return null;
+  }
+
+  const patch = raw as Record<string, unknown>;
+  const nextPatch: Partial<ModuleDefinition> = {};
+
+  if (typeof patch.title === 'string') nextPatch.title = patch.title;
+  if (typeof patch.description === 'string') nextPatch.description = patch.description;
+  if (typeof patch.category === 'string') nextPatch.category = patch.category;
+  if (typeof patch.thumbnail === 'string') nextPatch.thumbnail = patch.thumbnail;
+  if (typeof patch.downloadUrl === 'string') nextPatch.downloadUrl = patch.downloadUrl;
+  if (typeof patch.externalUrl === 'string') nextPatch.externalUrl = patch.externalUrl;
+  if (typeof patch.customHtmlPath === 'string') nextPatch.customHtmlPath = patch.customHtmlPath;
+  if (typeof patch.componentName === 'string') nextPatch.componentName = patch.componentName;
+  if (Array.isArray(patch.subjects)) nextPatch.subjects = readStringArray(patch.subjects);
+  if (Array.isArray(patch.gradeLevels)) nextPatch.gradeLevels = readStringArray(patch.gradeLevels);
+  if (Array.isArray(patch.tags)) nextPatch.tags = readStringArray(patch.tags);
+  if (typeof patch.dateAdded === 'string') nextPatch.dateAdded = patch.dateAdded;
+  if (typeof patch.isFeatured === 'boolean') nextPatch.isFeatured = patch.isFeatured;
+  if (typeof patch.adminOnly === 'boolean') nextPatch.adminOnly = patch.adminOnly;
+  if (patch.visibility === 'visible' || patch.visibility === 'hidden') nextPatch.visibility = patch.visibility;
+  if (patch.type === 'game' || patch.type === 'worksheet' || patch.type === 'tool' || patch.type === 'resource') {
+    nextPatch.type = patch.type;
+  }
+
+  return Object.keys(nextPatch).length > 0 ? nextPatch : null;
+};
+
+const createEmptyAreaItems = (): Record<AppAreaId, string[]> => ({
+  home: [],
+  games: [],
+  classroom: [],
+});
 
 const buildDefaultConfig = (): ManagerConfig => {
-  const tabItems: Record<string, string[]> = {
-    game: BASE_CONTENT_ITEMS.filter(item => item.type === 'game').map(item => item.id),
-    worksheet: BASE_CONTENT_ITEMS.filter(item => item.type === 'worksheet').map(item => item.id),
-    tool: BASE_CONTENT_ITEMS.filter(item => item.type === 'tool').map(item => item.id),
-  };
+  const areaItems = createEmptyAreaItems();
+
+  BASE_MODULES.forEach((item) => {
+    areaItems[item.areaId].push(item.id);
+  });
 
   return {
-    tabs: DEFAULT_TABS,
-    tabItems,
+    areaItems,
     folders: [],
     itemOverrides: {},
     customItems: [],
@@ -68,102 +170,106 @@ const buildDefaultConfig = (): ManagerConfig => {
   };
 };
 
-const sanitizeConfig = (raw: Partial<ManagerConfig>): ManagerConfig => {
-  const defaultConfig = buildDefaultConfig();
+const sanitizeConfig = (raw: LegacyManagerConfig): ManagerConfig => {
+  const tabs = Array.isArray(raw.tabs) ? raw.tabs : [];
+  const rawFolders = Array.isArray(raw.folders) ? raw.folders as LegacyManagerFolder[] : [];
 
-  const rawTabs = (raw.tabs?.length ? raw.tabs : defaultConfig.tabs)
-    .map(tab => ({
-      id: tab.id,
-      label: tab.label?.trim() || 'Untitled',
-      icon: tab.icon?.trim() || '📁',
-      sourceType: tab.sourceType,
-    }));
+  const customItems = Array.isArray(raw.customItems)
+    ? raw.customItems.map(sanitizeModule).filter((item): item is ModuleDefinition => Boolean(item))
+    : [];
 
-  const seenTabIds = new Set<string>();
-  const tabs = rawTabs
-    .map((tab, index) => {
-      let id = normalizeTabId(tab.id, index);
-      while (seenTabIds.has(id)) {
-        id = `${id}-${index + 1}`;
-      }
-      seenTabIds.add(id);
+  const deletedItemIds = readStringArray(raw.deletedItemIds)
+    .filter((id) => Boolean(findBaseModuleById(id)));
+
+  const baseItems = BASE_MODULES.filter((item) => !deletedItemIds.includes(item.id));
+  const allKnownItems = [...baseItems, ...customItems];
+  const validItemIds = new Set(allKnownItems.map((item) => item.id));
+
+  const itemOverrides = Object.fromEntries(
+    Object.entries(raw.itemOverrides ?? {})
+      .map(([itemId, patch]) => {
+        const sanitizedPatch = sanitizeOverridePatch(patch);
+        return sanitizedPatch && validItemIds.has(itemId) ? [itemId, sanitizedPatch] : null;
+      })
+      .filter((entry): entry is [string, Partial<ModuleDefinition>] => Boolean(entry)),
+  );
+
+  const nextAreaItems = createEmptyAreaItems();
+  const rawAreaItems = raw.areaItems ?? {};
+  const rawLegacyTabItems = raw.tabItems ?? {};
+
+  MANAGED_AREA_IDS.forEach((areaId) => {
+    const itemIds = readStringArray((rawAreaItems as Record<string, unknown>)[areaId]);
+    nextAreaItems[areaId] = itemIds.filter((itemId) => validItemIds.has(itemId));
+  });
+
+  Object.entries(rawLegacyTabItems).forEach(([tabId, itemIds]) => {
+    const areaId = inferLegacyAreaId(tabId, tabs);
+    nextAreaItems[areaId] = [
+      ...nextAreaItems[areaId],
+      ...readStringArray(itemIds).filter((itemId) => validItemIds.has(itemId)),
+    ];
+  });
+
+  const folders = rawFolders
+    .map((folder, index) => {
+      const name = typeof folder.name === 'string' ? folder.name.trim() : '';
+      if (!name) return null;
+
+      const areaId = folder.areaId && isManageableArea(folder.areaId)
+        ? folder.areaId
+        : inferLegacyAreaId(folder.tabId, tabs);
+
       return {
-        ...tab,
-        id,
-      };
+        id: typeof folder.id === 'string' && folder.id.trim() ? folder.id.trim() : `folder-${index + 1}`,
+        areaId,
+        name,
+        itemIds: readStringArray(folder.itemIds).filter((itemId) => validItemIds.has(itemId)),
+      } satisfies ManagerFolder;
+    })
+    .filter((folder): folder is ManagerFolder => Boolean(folder));
+
+  const seenItemIds = new Set<string>();
+  MANAGED_AREA_IDS.forEach((areaId) => {
+    nextAreaItems[areaId] = Array.from(
+      new Set(nextAreaItems[areaId].filter((itemId) => !seenItemIds.has(itemId))),
+    );
+    nextAreaItems[areaId].forEach((itemId) => seenItemIds.add(itemId));
+  });
+
+  const dedupedFolders = folders.map((folder) => {
+    const itemIds = folder.itemIds.filter((itemId) => {
+      if (seenItemIds.has(itemId)) return false;
+      seenItemIds.add(itemId);
+      return true;
     });
 
-  const rawCustomItems = Array.isArray(raw.customItems) ? (raw.customItems as unknown[]) : [];
-
-  const customItems = rawCustomItems
-    .filter((item): item is Partial<ContentItem> & Pick<ContentItem, 'id'> => (
-      Boolean(item && typeof item === 'object' && 'id' in item && typeof item.id === 'string')
-    ))
-    .map(item => ({
-      ...item,
-      id: item.id,
-      title: item.title?.trim() || 'Untitled Item',
-      description: item.description ?? '',
-      type: normalizeContentType(item.type),
-      category: item.category ?? 'custom',
-      subjects: Array.isArray(item.subjects) ? item.subjects : [],
-      gradeLevels: Array.isArray(item.gradeLevels) ? item.gradeLevels : ['All'],
-      dateAdded: item.dateAdded ?? new Date().toISOString().split('T')[0],
-    }));
-
-  const baseItems = BASE_CONTENT_ITEMS.filter(item => !(raw.deletedItemIds ?? []).includes(item.id));
-  const validItemIds = new Set([...baseItems, ...customItems].map(item => item.id));
-  const validTabIds = new Set(tabs.map(tab => tab.id));
-
-  const inputTabItems = raw.tabItems ?? defaultConfig.tabItems;
-
-  const tabItems = Object.fromEntries(
-    tabs.map(tab => [
-      tab.id,
-      Array.from(new Set((inputTabItems[tab.id] ?? []).filter(id => validItemIds.has(id)))),
-    ]),
-  ) as Record<string, string[]>;
-
-  const folders = (raw.folders ?? [])
-    .filter(folder => validTabIds.has(folder.tabId))
-    .map(folder => ({
+    return {
       ...folder,
-      itemIds: Array.from(new Set(folder.itemIds.filter(id => validItemIds.has(id)))),
-    }));
+      itemIds,
+    };
+  });
 
-  // Ensure newly added base items are included for existing saved configs
-  // while preserving explicit deletions and current folder/tab placements.
-  const assignedItemIds = new Set<string>([
-    ...Object.values(tabItems).flat(),
-    ...folders.flatMap(folder => folder.itemIds),
-  ]);
-
-  baseItems.forEach(item => {
-    if (assignedItemIds.has(item.id)) return;
-
-    const targetTabId = getPreferredTabIdForItem(item.type, tabs);
-    if (!targetTabId) return;
-
-    tabItems[targetTabId] = [...(tabItems[targetTabId] ?? []), item.id];
-    assignedItemIds.add(item.id);
+  allKnownItems.forEach((item) => {
+    if (seenItemIds.has(item.id)) return;
+    const preferredAreaId = getDefaultAreaIdForType(item.type);
+    nextAreaItems[preferredAreaId].push(item.id);
+    seenItemIds.add(item.id);
   });
 
   return {
-    tabs,
-    tabItems,
-    folders,
-    itemOverrides: raw.itemOverrides ?? {},
+    areaItems: nextAreaItems,
+    folders: dedupedFolders,
+    itemOverrides,
     customItems,
-    deletedItemIds: (raw.deletedItemIds ?? []).filter(id => BASE_CONTENT_ITEMS.some(item => item.id === id)),
+    deletedItemIds,
   };
 };
 
 const parseConfig = (saved: string | null): ManagerConfig => {
   try {
     if (!saved) return buildDefaultConfig();
-
-    const parsed = JSON.parse(saved) as Partial<ManagerConfig>;
-    return sanitizeConfig(parsed);
+    return sanitizeConfig(JSON.parse(saved) as LegacyManagerConfig);
   } catch {
     return buildDefaultConfig();
   }
@@ -175,21 +281,27 @@ export const useManagerConfig = () => {
   const [isHydratedFromStorage, setIsHydratedFromStorage] = useState(false);
   const [isHydratedFromRemote, setIsHydratedFromRemote] = useState(false);
 
-  const userScopedStorageKey = user ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
+  const userScopedStorageKey = buildScopedStorageKey(STORAGE_KEY, user?.id);
+  const legacyScopedStorageKey = buildScopedStorageKey(LEGACY_STORAGE_KEY, user?.id);
 
   useEffect(() => {
-    let nextConfig = buildDefaultConfig();
-    const scopedConfig = localStorage.getItem(userScopedStorageKey);
+    const candidateKeys = [
+      userScopedStorageKey,
+      legacyScopedStorageKey,
+      STORAGE_KEY,
+      LEGACY_STORAGE_KEY,
+    ];
 
-    if (scopedConfig) {
-      nextConfig = parseConfig(scopedConfig);
-    } else {
-      // Legacy migration path for existing local users
-      const legacyConfig = localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (legacyConfig) {
-        localStorage.setItem(userScopedStorageKey, legacyConfig);
-        nextConfig = parseConfig(legacyConfig);
+    let nextConfig = buildDefaultConfig();
+    for (const key of candidateKeys) {
+      const saved = window.localStorage.getItem(key);
+      if (!saved) continue;
+
+      nextConfig = parseConfig(saved);
+      if (key !== userScopedStorageKey) {
+        window.localStorage.setItem(userScopedStorageKey, JSON.stringify(nextConfig));
       }
+      break;
     }
 
     const frameId = window.requestAnimationFrame(() => {
@@ -197,14 +309,12 @@ export const useManagerConfig = () => {
       setIsHydratedFromStorage(true);
     });
 
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [userScopedStorageKey]);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [legacyScopedStorageKey, userScopedStorageKey]);
 
   useEffect(() => {
     if (!isHydratedFromStorage) return;
-    localStorage.setItem(userScopedStorageKey, JSON.stringify(config));
+    window.localStorage.setItem(userScopedStorageKey, JSON.stringify(config));
   }, [config, isHydratedFromStorage, userScopedStorageKey]);
 
   useEffect(() => {
@@ -235,13 +345,13 @@ export const useManagerConfig = () => {
       }
 
       if (data?.config) {
-        setConfig(sanitizeConfig(data.config as Partial<ManagerConfig>));
+        setConfig(sanitizeConfig(data.config as LegacyManagerConfig));
       }
 
       setIsHydratedFromRemote(true);
     };
 
-    loadRemoteConfig();
+    void loadRemoteConfig();
 
     return () => {
       cancelled = true;
@@ -251,7 +361,6 @@ export const useManagerConfig = () => {
   useEffect(() => {
     if (!isHydratedFromStorage || !isHydratedFromRemote) return;
     if (!supabase || !user) return;
-
     const supabaseClient = supabase;
 
     const timeout = window.setTimeout(async () => {
@@ -273,151 +382,165 @@ export const useManagerConfig = () => {
       }
     }, 600);
 
-    return () => {
-      window.clearTimeout(timeout);
-    };
+    return () => window.clearTimeout(timeout);
   }, [config, isHydratedFromStorage, isHydratedFromRemote, user]);
 
-  const allItems = useMemo(() => {
-    const baseItems = BASE_CONTENT_ITEMS.filter(item => !config.deletedItemIds.includes(item.id));
-    return [...baseItems, ...config.customItems];
-  }, [config.customItems, config.deletedItemIds]);
+  const areaAssignments = useMemo(() => {
+    const assignments = new Map<string, AppAreaId>();
+
+    MANAGED_AREA_IDS.forEach((areaId) => {
+      (config.areaItems[areaId] ?? []).forEach((itemId) => assignments.set(itemId, areaId));
+    });
+    config.folders.forEach((folder) => {
+      folder.itemIds.forEach((itemId) => assignments.set(itemId, folder.areaId));
+    });
+
+    return assignments;
+  }, [config.areaItems, config.folders]);
 
   const resolvedItems = useMemo(() => {
-    const map = new Map<string, ContentItem>();
-    allItems.forEach(item => {
-      map.set(item.id, { ...item, ...(config.itemOverrides[item.id] ?? {}) });
-    });
-    return map;
-  }, [allItems, config.itemOverrides]);
+    const map = new Map<string, ModuleDefinition>();
 
-  const createTab = useCallback((label: string, icon: string) => {
-    const id = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`;
-    setConfig(prev => ({
-      ...prev,
-      tabs: [...prev.tabs, { id, label: label.trim(), icon: icon.trim() || '📁' }],
-      tabItems: { ...prev.tabItems, [id]: [] },
-    }));
-  }, []);
+    [...BASE_MODULES.filter((item) => !config.deletedItemIds.includes(item.id)), ...config.customItems]
+      .forEach((item) => {
+        const patch = config.itemOverrides[item.id] ?? {};
+        const nextType = normalizeContentType(patch.type ?? item.type);
+        const effectiveAreaId = areaAssignments.get(item.id) ?? normalizeManagedAreaId(item.areaId, nextType);
 
-  const updateTab = useCallback((tabId: string, patch: Partial<Pick<ManagerTab, 'label' | 'icon'>>) => {
-    setConfig(prev => ({
-      ...prev,
-      tabs: prev.tabs.map(tab => tab.id === tabId
-        ? { ...tab, label: patch.label?.trim() || tab.label, icon: patch.icon?.trim() || tab.icon }
-        : tab),
-    }));
-  }, []);
-
-  const deleteTab = useCallback((tabId: string) => {
-    setConfig(prev => {
-      if (prev.tabs.length <= 1) return prev;
-
-      const remainingTabs = prev.tabs.filter(tab => tab.id !== tabId);
-      const fallbackTabId = remainingTabs[0].id;
-      const movedItemIds = [
-        ...(prev.tabItems[tabId] ?? []),
-        ...prev.folders.filter(folder => folder.tabId === tabId).flatMap(folder => folder.itemIds),
-      ];
-
-      const nextTabItems: Record<string, string[]> = {};
-      remainingTabs.forEach(tab => {
-        const baseIds = (prev.tabItems[tab.id] ?? []).filter(id => !movedItemIds.includes(id));
-        nextTabItems[tab.id] = tab.id === fallbackTabId
-          ? Array.from(new Set([...baseIds, ...movedItemIds]))
-          : baseIds;
+        map.set(item.id, {
+          ...item,
+          ...patch,
+          type: nextType,
+          areaId: effectiveAreaId,
+          visibility: normalizeVisibility(patch.visibility ?? item.visibility),
+          adminOnly: typeof patch.adminOnly === 'boolean' ? patch.adminOnly : item.adminOnly,
+        });
       });
 
-      return {
-        ...prev,
-        tabs: remainingTabs,
-        tabItems: nextTabItems,
-        folders: prev.folders.filter(folder => folder.tabId !== tabId),
-      };
-    });
-  }, []);
+    return map;
+  }, [areaAssignments, config.customItems, config.deletedItemIds, config.itemOverrides]);
 
-  const createFolder = useCallback((tabId: string, name: string) => {
+  const allItems = useMemo(() => Array.from(resolvedItems.values()), [resolvedItems]);
+
+  const createFolder = useCallback((areaId: AppAreaId, name: string) => {
+    if (!isManageableArea(areaId)) return;
+
     const folder: ManagerFolder = {
       id: `folder-${Date.now()}`,
-      tabId,
+      areaId,
       name: name.trim(),
       itemIds: [],
     };
-    setConfig(prev => ({ ...prev, folders: [...prev.folders, folder] }));
+
+    setConfig((prev) => ({
+      ...prev,
+      folders: [...prev.folders, folder],
+    }));
   }, []);
 
   const updateFolder = useCallback((folderId: string, patch: Partial<Pick<ManagerFolder, 'name'>>) => {
-    setConfig(prev => ({
+    setConfig((prev) => ({
       ...prev,
-      folders: prev.folders.map(folder => folder.id === folderId
-        ? { ...folder, name: patch.name?.trim() || folder.name }
-        : folder),
+      folders: prev.folders.map((folder) => (
+        folder.id === folderId
+          ? { ...folder, name: patch.name?.trim() || folder.name }
+          : folder
+      )),
     }));
   }, []);
 
   const deleteFolder = useCallback((folderId: string) => {
-    setConfig(prev => {
-      const target = prev.folders.find(folder => folder.id === folderId);
+    setConfig((prev) => {
+      const target = prev.folders.find((folder) => folder.id === folderId);
       if (!target) return prev;
-
-      const nextTabItems = {
-        ...prev.tabItems,
-        [target.tabId]: Array.from(new Set([...(prev.tabItems[target.tabId] ?? []), ...target.itemIds])),
-      };
 
       return {
         ...prev,
-        tabItems: nextTabItems,
-        folders: prev.folders.filter(folder => folder.id !== folderId),
+        areaItems: {
+          ...prev.areaItems,
+          [target.areaId]: Array.from(new Set([...(prev.areaItems[target.areaId] ?? []), ...target.itemIds])),
+        },
+        folders: prev.folders.filter((folder) => folder.id !== folderId),
       };
     });
   }, []);
 
-  const assignItemToTabRoot = useCallback((itemId: string, tabId: string) => {
-    setConfig(prev => {
-      const clearedFolders = prev.folders.map(folder => ({
-        ...folder,
-        itemIds: folder.itemIds.filter(id => id !== itemId),
-      }));
+  const assignItemToAreaRoot = useCallback((itemId: string, requestedAreaId: AppAreaId) => {
+    setConfig((prev) => {
+      const currentItem = resolvedItems.get(itemId) ?? findBaseModuleById(itemId);
+      if (!currentItem) return prev;
 
-      const nextTabItems: Record<string, string[]> = {};
-      prev.tabs.forEach(tab => {
-        const existing = (prev.tabItems[tab.id] ?? []).filter(id => id !== itemId);
-        nextTabItems[tab.id] = tab.id === tabId ? [...existing, itemId] : existing;
-      });
+      const targetAreaId = normalizeManagedAreaId(requestedAreaId, currentItem.type);
+      if (targetAreaId !== requestedAreaId) {
+        return prev;
+      }
 
-      return { ...prev, folders: clearedFolders, tabItems: nextTabItems };
+      const nextAreaItems: Record<AppAreaId, string[]> = {
+        ...prev.areaItems,
+        home: [],
+        games: (prev.areaItems.games ?? []).filter((id) => id !== itemId),
+        classroom: (prev.areaItems.classroom ?? []).filter((id) => id !== itemId),
+      };
+      nextAreaItems[targetAreaId] = [...nextAreaItems[targetAreaId], itemId];
+
+      return {
+        ...prev,
+        areaItems: {
+          ...nextAreaItems,
+          [targetAreaId]: Array.from(new Set(nextAreaItems[targetAreaId])),
+        },
+        folders: prev.folders.map((folder) => ({
+          ...folder,
+          itemIds: folder.itemIds.filter((id) => id !== itemId),
+        })),
+      };
     });
-  }, []);
+  }, [resolvedItems]);
 
   const assignItemToFolder = useCallback((itemId: string, folderId: string) => {
-    setConfig(prev => {
-      const folder = prev.folders.find(f => f.id === folderId);
-      if (!folder) return prev;
+    setConfig((prev) => {
+      const folder = prev.folders.find((entry) => entry.id === folderId);
+      const currentItem = resolvedItems.get(itemId) ?? findBaseModuleById(itemId);
+      if (!folder || !currentItem) return prev;
 
-      const nextTabItems: Record<string, string[]> = {};
-      prev.tabs.forEach(tab => {
-        nextTabItems[tab.id] = (prev.tabItems[tab.id] ?? []).filter(id => id !== itemId);
-      });
+      const targetAreaId = normalizeManagedAreaId(folder.areaId, currentItem.type);
+      if (targetAreaId !== folder.areaId) {
+        return prev;
+      }
 
-      const folders = prev.folders.map(f => ({
-        ...f,
-        itemIds: f.id === folderId
-          ? Array.from(new Set([...f.itemIds.filter(id => id !== itemId), itemId]))
-          : f.itemIds.filter(id => id !== itemId),
-      }));
-
-      return { ...prev, tabItems: nextTabItems, folders };
+      return {
+        ...prev,
+        areaItems: {
+          ...prev.areaItems,
+          home: [],
+          games: (prev.areaItems.games ?? []).filter((id) => id !== itemId),
+          classroom: (prev.areaItems.classroom ?? []).filter((id) => id !== itemId),
+        },
+        folders: prev.folders.map((entry) => ({
+          ...entry,
+          itemIds: entry.id === folderId
+            ? Array.from(new Set([...entry.itemIds.filter((id) => id !== itemId), itemId]))
+            : entry.itemIds.filter((id) => id !== itemId),
+        })),
+      };
     });
-  }, []);
+  }, [resolvedItems]);
 
-  const updateItemOverride = useCallback((itemId: string, patch: Partial<ContentItem>) => {
-    setConfig(prev => {
-      const customItemIndex = prev.customItems.findIndex(item => item.id === itemId);
+  const updateItemOverride = useCallback((itemId: string, patch: Partial<ModuleDefinition>) => {
+    setConfig((prev) => {
+      const customItemIndex = prev.customItems.findIndex((item) => item.id === itemId);
       if (customItemIndex >= 0) {
         const customItems = [...prev.customItems];
-        customItems[customItemIndex] = { ...customItems[customItemIndex], ...patch };
+        const currentItem = customItems[customItemIndex];
+        const nextType = normalizeContentType(patch.type ?? currentItem.type);
+        customItems[customItemIndex] = {
+          ...currentItem,
+          ...patch,
+          type: nextType,
+          areaId: normalizeManagedAreaId(currentItem.areaId, nextType),
+          visibility: normalizeVisibility(patch.visibility ?? currentItem.visibility),
+        };
+
         return { ...prev, customItems };
       }
 
@@ -441,14 +564,18 @@ export const useManagerConfig = () => {
     externalUrl?: string;
     category?: string;
     description?: string;
-    tabId?: string;
+    areaId?: AppAreaId;
   }) => {
     const id = `custom-${Date.now()}`;
-    const item: ContentItem = {
+    const type = normalizeContentType(input.type);
+    const areaId = normalizeManagedAreaId(input.areaId, type);
+    const item: ModuleDefinition = {
       id,
       title: input.title.trim() || 'Untitled Item',
       description: input.description?.trim() || 'Custom item',
-      type: input.type,
+      type,
+      areaId,
+      visibility: 'visible',
       category: input.category?.trim() || 'custom',
       subjects: [],
       gradeLevels: ['All'],
@@ -457,47 +584,34 @@ export const useManagerConfig = () => {
       ...(input.externalUrl ? { externalUrl: input.externalUrl.trim() } : {}),
     };
 
-    setConfig(prev => {
-      const tabId = input.tabId && prev.tabs.some(tab => tab.id === input.tabId)
-        ? input.tabId
-        : getPreferredTabIdForItem(input.type, prev.tabs);
-
-      if (!tabId) {
-        return { ...prev, customItems: [...prev.customItems, item] };
-      }
-
-      return {
-        ...prev,
-        customItems: [...prev.customItems, item],
-        tabItems: {
-          ...prev.tabItems,
-          [tabId]: [...(prev.tabItems[tabId] ?? []), id],
-        },
-      };
-    });
+    setConfig((prev) => ({
+      ...prev,
+      customItems: [...prev.customItems, item],
+      areaItems: {
+        ...prev.areaItems,
+        [areaId]: [...(prev.areaItems[areaId] ?? []), id],
+      },
+    }));
 
     return id;
   }, []);
 
   const deleteItem = useCallback((itemId: string) => {
-    setConfig(prev => {
-      const isBaseItem = BASE_CONTENT_ITEMS.some(item => item.id === itemId);
-
-      const nextTabItems: Record<string, string[]> = {};
-      prev.tabs.forEach(tab => {
-        nextTabItems[tab.id] = (prev.tabItems[tab.id] ?? []).filter(id => id !== itemId);
-      });
-
-      const folders = prev.folders.map(folder => ({
-        ...folder,
-        itemIds: folder.itemIds.filter(id => id !== itemId),
-      }));
+    setConfig((prev) => {
+      const isBaseItem = Boolean(findBaseModuleById(itemId));
 
       return {
         ...prev,
-        tabItems: nextTabItems,
-        folders,
-        customItems: prev.customItems.filter(item => item.id !== itemId),
+        areaItems: {
+          home: [],
+          games: (prev.areaItems.games ?? []).filter((id) => id !== itemId),
+          classroom: (prev.areaItems.classroom ?? []).filter((id) => id !== itemId),
+        },
+        folders: prev.folders.map((folder) => ({
+          ...folder,
+          itemIds: folder.itemIds.filter((id) => id !== itemId),
+        })),
+        customItems: prev.customItems.filter((item) => item.id !== itemId),
         deletedItemIds: isBaseItem
           ? Array.from(new Set([...prev.deletedItemIds, itemId]))
           : prev.deletedItemIds,
@@ -509,42 +623,35 @@ export const useManagerConfig = () => {
   }, []);
 
   const restoreBaseItem = useCallback((itemId: string) => {
-    setConfig(prev => {
-      const baseItem = BASE_CONTENT_ITEMS.find(item => item.id === itemId);
+    setConfig((prev) => {
+      const baseItem = findBaseModuleById(itemId);
       if (!baseItem) return prev;
 
-      const isAlreadyAssignedToTab = prev.tabs.some(tab => (prev.tabItems[tab.id] ?? []).includes(itemId));
-      const isAlreadyAssignedToFolder = prev.folders.some(folder => folder.itemIds.includes(itemId));
+      const alreadyAssigned = MANAGED_AREA_IDS.some((areaId) => (prev.areaItems[areaId] ?? []).includes(itemId))
+        || prev.folders.some((folder) => folder.itemIds.includes(itemId));
 
-      if (isAlreadyAssignedToTab || isAlreadyAssignedToFolder) {
+      if (alreadyAssigned) {
         return {
           ...prev,
-          deletedItemIds: prev.deletedItemIds.filter(id => id !== itemId),
+          deletedItemIds: prev.deletedItemIds.filter((id) => id !== itemId),
         };
       }
 
-      const targetTabId = getPreferredTabIdForItem(baseItem.type, prev.tabs);
-      if (!targetTabId) {
-        return {
-          ...prev,
-          deletedItemIds: prev.deletedItemIds.filter(id => id !== itemId),
-        };
-      }
+      const targetAreaId = getDefaultAreaIdForType(baseItem.type);
 
       return {
         ...prev,
-        deletedItemIds: prev.deletedItemIds.filter(id => id !== itemId),
-        tabItems: {
-          ...prev.tabItems,
-          [targetTabId]: Array.from(new Set([...(prev.tabItems[targetTabId] ?? []), itemId])),
+        deletedItemIds: prev.deletedItemIds.filter((id) => id !== itemId),
+        areaItems: {
+          ...prev.areaItems,
+          [targetAreaId]: Array.from(new Set([...(prev.areaItems[targetAreaId] ?? []), itemId])),
         },
       };
     });
   }, []);
 
   const importConfigJson = useCallback((jsonText: string) => {
-    const parsed = JSON.parse(jsonText) as Partial<ManagerConfig>;
-    setConfig(sanitizeConfig(parsed));
+    setConfig(sanitizeConfig(JSON.parse(jsonText) as LegacyManagerConfig));
   }, []);
 
   const resetConfig = useCallback(() => {
@@ -552,16 +659,14 @@ export const useManagerConfig = () => {
   }, []);
 
   return {
+    areas: APP_AREAS,
     config,
     allItems,
     resolvedItems,
-    createTab,
-    updateTab,
-    deleteTab,
     createFolder,
     updateFolder,
     deleteFolder,
-    assignItemToTabRoot,
+    assignItemToAreaRoot,
     assignItemToFolder,
     updateItemOverride,
     createItem,

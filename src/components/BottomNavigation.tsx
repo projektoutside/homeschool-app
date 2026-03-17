@@ -29,11 +29,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const { allItems } = useManagerConfig();
     const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
-    const searchParams = new URLSearchParams(location.search);
-    const activeTab = searchParams.get('tab')?.toLowerCase();
+    const isOpenRoute = location.pathname.startsWith('/open/');
+    const isResourceRoute = location.pathname.startsWith('/resource/');
     const isClassroomViewerRoute =
-        location.pathname === '/html-viewer' &&
-        searchParams.get('source')?.toLowerCase() === 'classroom';
+        location.pathname === '/html-viewer'
+        || isOpenRoute
+        || isResourceRoute;
     
     const [isMinimized, setIsMinimized] = useState(true);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
@@ -916,18 +917,16 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     // Helper to determine active state
     const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
     const shouldShowStatsDock = isMinimized;
-    const isGamesActive = location.pathname === '/apps' && activeTab === 'game';
-    const tab = activeTab;
+    const isGamesActive = location.pathname === '/apps' || isPlayRoute;
     const isClassroomActive = 
         location.pathname === '/classroom' ||
-        (location.pathname === '/apps' && (tab === 'worksheet' || tab === 'worksheets' || tab === 'tool' || tab === 'tools')) ||
-        location.pathname === '/html-viewer';
+        isClassroomViewerRoute;
 
     // Content for Expanded Mode
     const favoriteGames = useMemo(() => {
         const gamesById = new Map(
             allItems
-                .filter(item => item.type === 'game')
+                .filter(item => item.areaId === 'games' && item.type === 'game' && item.visibility !== 'hidden')
                 .map(item => [item.id, item] as const),
         );
 
@@ -996,7 +995,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                     <button
                         type="button"
                         className={`nav-tab-btn ${isGamesActive ? 'active' : ''}`}
-                        onClick={() => navigate('/apps?tab=game')}
+                        onClick={() => navigate('/apps')}
                         aria-label="Games"
                         tabIndex={expandedMode ? -1 : 0}
                     >
@@ -1076,7 +1075,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                 className="nav-slider-item nav-slider-item-empty"
                                 onClick={() => {
                                     setExpandedMode(false);
-                                    navigate('/apps?tab=game');
+                                    navigate('/apps');
                                 }}
                                 title="Open Games to save favorites"
                                 tabIndex={expandedMode ? 0 : -1}

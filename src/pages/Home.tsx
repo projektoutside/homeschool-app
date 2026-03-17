@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
 import { FAVORITE_GAMES_STORAGE_KEY, notifyFavoriteGamesUpdated, readFavoriteGameIds } from '../utils/favoriteGames';
 import type { ContentItem, ContentType } from '../types/content';
+import type { ModuleDefinition } from '../types/appAreas';
+import { isLegacyClassroomTabRequest, resolveModuleLaunchTarget } from '../data/moduleRegistry';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import './Home.css';
 
@@ -39,6 +41,7 @@ const MULTIPLAYER_GAME_IDS = new Set<string>([
     'math-2-players-math-write',
     'math-spy-academy',
 ]);
+const GAMES_AREA_ID = 'games';
 
 type FavoriteActionMode = 'add' | 'remove' | 'none';
 type FeedbackKind = 'heart' | 'sad';
@@ -780,52 +783,41 @@ const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { config, resolvedItems, allItems } = useManagerConfig();
-    const [activeTab, setActiveTab] = useState<string>(config.tabs[0]?.id ?? '');
     const [openFolderId, setOpenFolderId] = useState<string | null>(null);
     const [panelTitles, setPanelTitles] = useState<string[]>(() => [...PANEL_TITLE_DEFAULTS]);
     const [mysteryShakeActive, setMysteryShakeActive] = useState(false);
     const [mysteryTargetGameId, setMysteryTargetGameId] = useState<string | null>(null);
     const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>(() => readFavoriteGameIds());
 
-    const currentTabId = useMemo(
-        () => (config.tabs.find(tab => tab.id === activeTab)?.id ?? config.tabs[0]?.id ?? ''),
-        [activeTab, config.tabs],
-    );
-
-    const foldersForTab = useMemo(
-        () => config.folders.filter(folder => folder.tabId === currentTabId),
-        [config.folders, currentTabId],
+    const foldersForArea = useMemo(
+        () => config.folders.filter(folder => folder.areaId === GAMES_AREA_ID),
+        [config.folders],
     );
 
     const rootItems = useMemo(() => {
-        const itemIds = config.tabItems[currentTabId] ?? [];
+        const itemIds = config.areaItems[GAMES_AREA_ID] ?? [];
         return itemIds
             .map(id => resolvedItems.get(id))
-            .filter((item): item is NonNullable<typeof item> => Boolean(item))
+            .filter((item): item is ModuleDefinition => Boolean(item))
+            .filter((item) => item.visibility !== 'hidden')
             .slice(0, 30);
-    }, [config.tabItems, currentTabId, resolvedItems]);
+    }, [config.areaItems, resolvedItems]);
 
     const folderItems = useMemo(() => {
         if (!openFolderId) return [];
-        const folder = foldersForTab.find(f => f.id === openFolderId);
+        const folder = foldersForArea.find(f => f.id === openFolderId);
         if (!folder) return [];
 
         return folder.itemIds
             .map(id => resolvedItems.get(id))
-            .filter((item): item is NonNullable<typeof item> => Boolean(item));
-    }, [foldersForTab, openFolderId, resolvedItems]);
+            .filter((item): item is ModuleDefinition => Boolean(item))
+            .filter((item) => item.visibility !== 'hidden');
+    }, [foldersForArea, openFolderId, resolvedItems]);
 
     const visibleItems = openFolderId ? folderItems : rootItems;
-    const currentTab = useMemo(
-        () => config.tabs.find(tab => tab.id === currentTabId),
-        [config.tabs, currentTabId],
-    );
-    const isGamesTab = currentTab?.sourceType === 'game'
-        || currentTab?.label.trim().toLowerCase() === 'games'
-        || currentTab?.id === 'game';
 
     const allGameItems = useMemo(
-        () => allItems.filter(item => item.type === 'game'),
+        () => allItems.filter(item => item.areaId === GAMES_AREA_ID && item.type === 'game' && item.visibility !== 'hidden'),
         [allItems],
     );
     const singlePlayerGames = useMemo(
@@ -863,9 +855,9 @@ const HomePage: React.FC = () => {
         const byId = new Map(allGameItems.map(item => [item.id, item]));
         return favoriteGameIds
             .map(id => byId.get(id))
-            .filter((item): item is ContentItem => Boolean(item));
+            .filter((item): item is ModuleDefinition => Boolean(item));
     }, [allGameItems, favoriteGameIds]);
-    const shouldRenderArcadePanels = isGamesTab && !openFolderId && allGameItems.length > 0;
+    const shouldRenderArcadePanels = !openFolderId && allGameItems.length > 0;
 
     const favoritesPanelIndex = useMemo(
         () => panelTitles.findIndex(title => title.trim().toLowerCase() === FAVORITES_PANEL_TITLE.toLowerCase()),
@@ -929,27 +921,15 @@ const HomePage: React.FC = () => {
     useEffect(() => {
         const requestedTab = new URLSearchParams(location.search).get('tab')?.trim().toLowerCase();
         if (!requestedTab) return;
-
-        // Always route worksheets tab requests to the dedicated HTML viewer.
-        if (requestedTab === 'worksheets') {
-            navigate('/html-viewer', { replace: true });
+        if (requestedTab === 'game' || requestedTab === 'games') {
+            if (location.search === '?tab=game' || location.search === '?tab=games') {
+                navigate('/apps', { replace: true });
+            }
             return;
         }
-
-        const tabFromQuery = config.tabs.find(tab => tab.label.trim().toLowerCase() === requestedTab);
-        if (!tabFromQuery) return;
-
-        if (tabFromQuery.id === activeTab && openFolderId === null) {
-            return;
-        }
-
-        const frameId = window.requestAnimationFrame(() => {
-            setActiveTab(tabFromQuery.id);
-            setOpenFolderId(null);
-        });
-
-        return () => window.cancelAnimationFrame(frameId);
-    }, [activeTab, config.tabs, location.search, navigate, openFolderId]);
+        if (!isLegacyClassroomTabRequest(requestedTab)) return;
+        navigate('/classroom', { replace: true });
+    }, [location.search, navigate]);
 
     // Prime the most visible icons for faster first paint on slower connections/devices.
     useEffect(() => {
@@ -1007,17 +987,13 @@ const HomePage: React.FC = () => {
             prefetchGameLaunchDocument(launchDocumentUrl);
         }
 
-        if (item.externalUrl && item.type !== 'game') {
-            navigate(item.externalUrl);
+        const launchTarget = resolveModuleLaunchTarget(item);
+        if (launchTarget.kind === 'external') {
+            navigate(launchTarget.path);
             return;
         }
 
-        const targetPath = item.type === 'game'
-            ? `/play/${item.id}`
-            : (item.type === 'worksheet' || item.type === 'tool')
-                ? `/open/${item.id}`
-                : `/resource/${item.id}`;
-        navigate(targetPath, { state: { launchItem: item } });
+        navigate(launchTarget.path, { state: { launchItem: item } });
     }, [navigate, prefetchGameLaunchDocument]);
 
     const handleFavoriteHoldAction = useCallback((item: ContentItem, action: Exclude<FavoriteActionMode, 'none'>) => {
@@ -1075,14 +1051,14 @@ const HomePage: React.FC = () => {
         <div className="os-desktop-shell">
             <section
                 className={`os-icon-area ${shouldRenderArcadePanels ? 'os-icon-area--arcade' : ''}`}
-                aria-label={`${currentTabId} apps`}
+                aria-label="games area"
             >
                 {shouldRenderArcadePanels ? (
                     <div className="arcade-games-board">
                         {panelTitles.map((title, index) => {
                             const isFavoritesPanel = index === favoritesPanelIndex && favoritesPanelIndex !== -1;
                             const isMysteryPanel = index === MYSTERY_PANEL_INDEX;
-                            const gamesForPanel = isMysteryPanel
+                            const gamesForPanel: ContentItem[] = isMysteryPanel
                                 ? []
                                 : (isFavoritesPanel ? favoriteGames : (gamesForPanelByIndex.get(index) ?? allGameItems));
                             const favoriteActionMode: FavoriteActionMode = isMysteryPanel
@@ -1109,7 +1085,7 @@ const HomePage: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        {!openFolderId && foldersForTab.map(folder => (
+                        {!openFolderId && foldersForArea.map(folder => (
                             <button
                                 key={folder.id}
                                 type="button"
@@ -1128,7 +1104,7 @@ const HomePage: React.FC = () => {
                                 type="button"
                                 className="desktop-app-icon desktop-app-folder"
                                 onClick={() => setOpenFolderId(null)}
-                                aria-label="Back to tab root"
+                                aria-label="Back to games root"
                             >
                                 <span className="desktop-app-icon-inner" aria-hidden="true">
                                     <span className="desktop-app-fallback folder-glyph">↩️</span>

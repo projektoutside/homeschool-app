@@ -1,22 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONTENT_ITEMS } from '../data/mockContent';
+import { findBaseModuleById } from '../data/moduleRegistry';
 import { useManagerConfig } from '../hooks/useManagerConfig';
+import type { AppAreaId, ModuleDefinition } from '../types/appAreas';
 import type { ContentType } from '../types/content';
 import './ManagerPage.css';
 
 const ManagerPage: React.FC = () => {
     const {
+        areas,
         config,
         allItems,
         resolvedItems,
-        createTab,
-        updateTab,
-        deleteTab,
         createFolder,
         updateFolder,
         deleteFolder,
-        assignItemToTabRoot,
+        assignItemToAreaRoot,
         assignItemToFolder,
         updateItemOverride,
         createItem,
@@ -26,70 +25,124 @@ const ManagerPage: React.FC = () => {
         resetConfig,
     } = useManagerConfig();
 
-    const [selectedTabId, setSelectedTabId] = useState(config.tabs[0]?.id ?? '');
-    const [newTabLabel, setNewTabLabel] = useState('');
-    const [newTabIcon, setNewTabIcon] = useState('📁');
+    const manageableAreas = useMemo(
+        () => areas.filter((area) => area.supportsModules),
+        [areas],
+    );
+    const [selectedAreaId, setSelectedAreaId] = useState<AppAreaId>('games');
     const [newFolderName, setNewFolderName] = useState('');
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
     const [selectedItemId, setSelectedItemId] = useState<string>('');
     const [newItemTitle, setNewItemTitle] = useState('');
     const [newItemType, setNewItemType] = useState<ContentType>('tool');
+    const [newItemAreaId, setNewItemAreaId] = useState<AppAreaId>('classroom');
     const [newItemPath, setNewItemPath] = useState('');
     const [newItemExternalUrl, setNewItemExternalUrl] = useState('');
     const [newItemDescription, setNewItemDescription] = useState('');
-    const [selectedItemTabTarget, setSelectedItemTabTarget] = useState('');
+    const [selectedItemAreaTarget, setSelectedItemAreaTarget] = useState<AppAreaId>('games');
     const [selectedItemFolderTarget, setSelectedItemFolderTarget] = useState('');
     const [jsonText, setJsonText] = useState('');
     const [jsonStatus, setJsonStatus] = useState('');
 
     useEffect(() => {
-        if (!config.tabs.find(tab => tab.id === selectedTabId)) {
-            setSelectedTabId(config.tabs[0]?.id ?? '');
+        if (!manageableAreas.some((area) => area.id === selectedAreaId)) {
+            setSelectedAreaId(manageableAreas[0]?.id ?? 'games');
         }
-    }, [config.tabs, selectedTabId]);
+    }, [manageableAreas, selectedAreaId]);
 
     useEffect(() => {
         setJsonText(JSON.stringify(config, null, 2));
     }, [config]);
 
-    const foldersForTab = useMemo(
-        () => config.folders.filter(folder => folder.tabId === selectedTabId),
-        [config.folders, selectedTabId],
+    const foldersForArea = useMemo(
+        () => config.folders.filter((folder) => folder.areaId === selectedAreaId),
+        [config.folders, selectedAreaId],
     );
 
+    const areaRootItems = useMemo(() => {
+        return (config.areaItems[selectedAreaId] ?? [])
+            .map((id) => resolvedItems.get(id))
+            .filter((item): item is ModuleDefinition => Boolean(item));
+    }, [config.areaItems, resolvedItems, selectedAreaId]);
+
     const availableItems = useMemo(() => {
-        return [...allItems]
-            .map(item => resolvedItems.get(item.id) ?? item)
-            .sort((a, b) => a.title.localeCompare(b.title));
-    }, [allItems, resolvedItems]);
+        return [...allItems].sort((a, b) => a.title.localeCompare(b.title));
+    }, [allItems]);
 
     const deletedBaseItems = useMemo(() => {
         return config.deletedItemIds
-            .map(id => CONTENT_ITEMS.find(item => item.id === id))
+            .map((id) => findBaseModuleById(id))
             .filter((item): item is NonNullable<typeof item> => Boolean(item));
     }, [config.deletedItemIds]);
 
-    const selectedItem = selectedItemId ? resolvedItems.get(selectedItemId) : null;
+    const selectedItem = selectedItemId ? resolvedItems.get(selectedItemId) ?? null : null;
+
+    const createItemAreaOptions = useMemo(() => {
+        return manageableAreas.filter((area) => {
+            if (newItemType === 'game') {
+                return area.id === 'games';
+            }
+            return area.id === 'classroom';
+        });
+    }, [manageableAreas, newItemType]);
+
+    const selectedItemAreaOptions = useMemo(() => {
+        if (!selectedItem) {
+            return manageableAreas;
+        }
+
+        return manageableAreas.filter((area) => {
+            if (selectedItem.type === 'game') {
+                return area.id === 'games';
+            }
+            return area.id === 'classroom';
+        });
+    }, [manageableAreas, selectedItem]);
+
+    useEffect(() => {
+        if (!createItemAreaOptions.some((area) => area.id === newItemAreaId)) {
+            setNewItemAreaId(createItemAreaOptions[0]?.id ?? 'games');
+        }
+    }, [createItemAreaOptions, newItemAreaId]);
 
     useEffect(() => {
         if (!selectedItemId) {
-            setSelectedItemTabTarget('');
+            setSelectedItemAreaTarget(selectedAreaId);
             setSelectedItemFolderTarget('');
             return;
         }
 
-        const tabWithItem = config.tabs.find(tab => (config.tabItems[tab.id] ?? []).includes(selectedItemId));
-        const folderWithItem = config.folders.find(folder => folder.itemIds.includes(selectedItemId));
+        const areaWithItem = manageableAreas.find((area) => (config.areaItems[area.id] ?? []).includes(selectedItemId));
+        const folderWithItem = config.folders.find((folder) => folder.itemIds.includes(selectedItemId));
+        const fallbackAreaId = selectedItem?.type === 'game' ? 'games' : 'classroom';
+        const nextAreaId = folderWithItem?.areaId ?? areaWithItem?.id ?? fallbackAreaId;
 
-        setSelectedItemTabTarget(tabWithItem?.id ?? folderWithItem?.tabId ?? selectedTabId);
+        setSelectedItemAreaTarget(nextAreaId);
         setSelectedItemFolderTarget(folderWithItem?.id ?? '');
-    }, [config.folders, config.tabItems, config.tabs, selectedItemId, selectedTabId]);
+    }, [config.areaItems, config.folders, manageableAreas, selectedAreaId, selectedItem, selectedItemId]);
+
+    const areaSummaries = useMemo(() => {
+        return manageableAreas.map((area) => {
+            const rootCount = (config.areaItems[area.id] ?? []).length;
+            const folderCount = config.folders.filter((folder) => folder.areaId === area.id).length;
+            const folderItemCount = config.folders
+                .filter((folder) => folder.areaId === area.id)
+                .reduce((total, folder) => total + folder.itemIds.length, 0);
+
+            return {
+                ...area,
+                moduleCount: rootCount + folderItemCount,
+                rootCount,
+                folderCount,
+            };
+        });
+    }, [config.areaItems, config.folders, manageableAreas]);
 
     return (
         <div className="manager-page">
             <header className="manager-header">
                 <h1>Manager Lab</h1>
-                <p>Workspace Controls • Drag & drop files into tabs and folders</p>
+                <p>Fixed-area registry controls for Games and Classroom. Homepage stays a dedicated root experience.</p>
                 <div className="manager-inline-form">
                     <Link to="/character-creator" className="file-chip" style={{ textDecoration: 'none' }}>
                         Open XiO Studio
@@ -99,63 +152,50 @@ const ManagerPage: React.FC = () => {
 
             <section className="manager-row">
                 <div className="manager-card">
-                    <h2>Create Tab</h2>
-                    <div className="manager-inline-form">
-                        <input value={newTabLabel} onChange={e => setNewTabLabel(e.target.value)} placeholder="Tab label" />
-                        <input value={newTabIcon} onChange={e => setNewTabIcon(e.target.value)} placeholder="Icon" maxLength={2} />
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (!newTabLabel.trim()) return;
-                                createTab(newTabLabel, newTabIcon);
-                                setNewTabLabel('');
-                            }}
-                        >
-                            Add
-                        </button>
-                    </div>
+                    <h2>Fixed Areas</h2>
+                    <div className="manager-area-list">
+                        {areas.map((area) => {
+                            const summary = areaSummaries.find((entry) => entry.id === area.id);
+                            const isSelected = selectedAreaId === area.id;
 
-                    <div className="manager-stack-list">
-                        {config.tabs.map(tab => (
-                            <div key={tab.id} className="manager-inline-form">
-                                <input
-                                    value={tab.label}
-                                    onChange={e => updateTab(tab.id, { label: e.target.value })}
-                                    aria-label={`Edit label for ${tab.label}`}
-                                />
-                                <input
-                                    value={tab.icon}
-                                    onChange={e => updateTab(tab.id, { icon: e.target.value })}
-                                    aria-label={`Edit icon for ${tab.label}`}
-                                />
+                            return (
                                 <button
+                                    key={area.id}
                                     type="button"
-                                    className="btn-danger"
-                                    onClick={() => deleteTab(tab.id)}
-                                    disabled={config.tabs.length <= 1}
-                                    title={config.tabs.length <= 1 ? 'At least one tab is required' : 'Delete tab'}
+                                    className={`manager-area-pill ${isSelected ? 'is-selected' : ''}`}
+                                    onClick={() => {
+                                        if (area.supportsModules) {
+                                            setSelectedAreaId(area.id);
+                                        }
+                                    }}
+                                    disabled={!area.supportsModules}
                                 >
-                                    Delete
+                                    <span>{area.icon} {area.label}</span>
+                                    <span className="manager-area-pill__meta">
+                                        {area.supportsModules && summary
+                                            ? `${summary.moduleCount} modules · ${summary.folderCount} folders`
+                                            : 'Dedicated root'}
+                                    </span>
                                 </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
                 <div className="manager-card">
-                    <h2>Create Folder in Active Tab</h2>
+                    <h2>Create Folder in Active Area</h2>
                     <div className="manager-inline-form">
-                        <select aria-label="Choose active tab" value={selectedTabId} onChange={e => setSelectedTabId(e.target.value)}>
-                            {config.tabs.map(tab => (
-                                <option key={tab.id} value={tab.id}>{tab.icon} {tab.label}</option>
+                        <select aria-label="Choose active area" value={selectedAreaId} onChange={(e) => setSelectedAreaId(e.target.value as AppAreaId)}>
+                            {manageableAreas.map((area) => (
+                                <option key={area.id} value={area.id}>{area.icon} {area.label}</option>
                             ))}
                         </select>
-                        <input value={newFolderName} onChange={e => setNewFolderName(e.target.value)} placeholder="Folder name" />
+                        <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Folder name" />
                         <button
                             type="button"
                             onClick={() => {
-                                if (!selectedTabId || !newFolderName.trim()) return;
-                                createFolder(selectedTabId, newFolderName);
+                                if (!newFolderName.trim()) return;
+                                createFolder(selectedAreaId, newFolderName);
                                 setNewFolderName('');
                             }}
                         >
@@ -164,11 +204,11 @@ const ManagerPage: React.FC = () => {
                     </div>
 
                     <div className="manager-stack-list">
-                        {foldersForTab.map(folder => (
+                        {foldersForArea.map((folder) => (
                             <div key={folder.id} className="manager-inline-form">
                                 <input
                                     value={folder.name}
-                                    onChange={e => updateFolder(folder.id, { name: e.target.value })}
+                                    onChange={(e) => updateFolder(folder.id, { name: e.target.value })}
                                     aria-label={`Edit folder ${folder.name}`}
                                 />
                                 <button type="button" className="btn-danger" onClick={() => deleteFolder(folder.id)}>
@@ -182,9 +222,9 @@ const ManagerPage: React.FC = () => {
 
             <section className="manager-grid-layout">
                 <div className="manager-card">
-                    <h2>File Library</h2>
+                    <h2>Module Library</h2>
                     <div className="item-pool">
-                        {availableItems.map(item => (
+                        {availableItems.map((item) => (
                             <button
                                 key={item.id}
                                 type="button"
@@ -200,43 +240,39 @@ const ManagerPage: React.FC = () => {
                 </div>
 
                 <div className="manager-card">
-                    <h2>Tab Root Drop Zone</h2>
+                    <h2>Active Area Root</h2>
                     <div
                         className="drop-zone"
-                        onDragOver={e => e.preventDefault()}
+                        onDragOver={(e) => e.preventDefault()}
                         onDrop={() => {
-                            if (!draggingItemId || !selectedTabId) return;
-                            assignItemToTabRoot(draggingItemId, selectedTabId);
+                            if (!draggingItemId) return;
+                            assignItemToAreaRoot(draggingItemId, selectedAreaId);
                             setDraggingItemId(null);
                         }}
                     >
-                        {(config.tabItems[selectedTabId] ?? []).map(id => {
-                            const item = resolvedItems.get(id);
-                            if (!item) return null;
-                            return (
-                                <button
-                                    key={id}
-                                    type="button"
-                                    draggable
-                                    onDragStart={() => setDraggingItemId(id)}
-                                    onClick={() => setSelectedItemId(id)}
-                                    className="file-chip"
-                                >
-                                    {item.title}
-                                </button>
-                            );
-                        })}
+                        {areaRootItems.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                draggable
+                                onDragStart={() => setDraggingItemId(item.id)}
+                                onClick={() => setSelectedItemId(item.id)}
+                                className="file-chip"
+                            >
+                                {item.title}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 <div className="manager-card manager-card-wide">
-                    <h2>Folders in Active Tab</h2>
+                    <h2>Folders in Active Area</h2>
                     <div className="folder-grid">
-                        {foldersForTab.map(folder => (
+                        {foldersForArea.map((folder) => (
                             <div
                                 key={folder.id}
                                 className="folder-drop-zone"
-                                onDragOver={e => e.preventDefault()}
+                                onDragOver={(e) => e.preventDefault()}
                                 onDrop={() => {
                                     if (!draggingItemId) return;
                                     assignItemToFolder(draggingItemId, folder.id);
@@ -245,9 +281,10 @@ const ManagerPage: React.FC = () => {
                             >
                                 <h3>📁 {folder.name}</h3>
                                 <div className="item-pool">
-                                    {folder.itemIds.map(id => {
+                                    {folder.itemIds.map((id) => {
                                         const item = resolvedItems.get(id);
                                         if (!item) return null;
+
                                         return (
                                             <button
                                                 key={id}
@@ -270,17 +307,17 @@ const ManagerPage: React.FC = () => {
 
             <section className="manager-row">
                 <div className="manager-card manager-card-wide">
-                    <h2>Create App/File</h2>
+                    <h2>Create Module</h2>
                     <div className="editor-form">
                         <input
                             value={newItemTitle}
-                            onChange={e => setNewItemTitle(e.target.value)}
+                            onChange={(e) => setNewItemTitle(e.target.value)}
                             placeholder="Title"
                             aria-label="New item title"
                         />
                         <select
                             value={newItemType}
-                            onChange={e => setNewItemType(e.target.value as ContentType)}
+                            onChange={(e) => setNewItemType(e.target.value as ContentType)}
                             aria-label="New item type"
                         >
                             <option value="game">Game</option>
@@ -288,21 +325,30 @@ const ManagerPage: React.FC = () => {
                             <option value="tool">Tool</option>
                             <option value="resource">Resource</option>
                         </select>
+                        <select
+                            value={newItemAreaId}
+                            onChange={(e) => setNewItemAreaId(e.target.value as AppAreaId)}
+                            aria-label="New item area"
+                        >
+                            {createItemAreaOptions.map((area) => (
+                                <option key={area.id} value={area.id}>{area.icon} {area.label}</option>
+                            ))}
+                        </select>
                         <input
                             value={newItemPath}
-                            onChange={e => setNewItemPath(e.target.value)}
+                            onChange={(e) => setNewItemPath(e.target.value)}
                             placeholder="Custom HTML path (/Worksheets/.../index.html)"
                             aria-label="New item local html path"
                         />
                         <input
                             value={newItemExternalUrl}
-                            onChange={e => setNewItemExternalUrl(e.target.value)}
+                            onChange={(e) => setNewItemExternalUrl(e.target.value)}
                             placeholder="External URL (optional)"
                             aria-label="New item external url"
                         />
                         <textarea
                             value={newItemDescription}
-                            onChange={e => setNewItemDescription(e.target.value)}
+                            onChange={(e) => setNewItemDescription(e.target.value)}
                             placeholder="Description"
                             aria-label="New item description"
                         />
@@ -316,7 +362,7 @@ const ManagerPage: React.FC = () => {
                                     customHtmlPath: newItemPath,
                                     externalUrl: newItemExternalUrl,
                                     description: newItemDescription,
-                                    tabId: selectedTabId,
+                                    areaId: newItemAreaId,
                                 });
                                 setNewItemTitle('');
                                 setNewItemPath('');
@@ -324,33 +370,33 @@ const ManagerPage: React.FC = () => {
                                 setNewItemDescription('');
                             }}
                         >
-                            Create Item
+                            Create Module
                         </button>
                     </div>
                 </div>
 
                 <div className="manager-card manager-card-wide">
-                    <h2>Quick Code/Data Editor</h2>
+                    <h2>Module Editor</h2>
                     {selectedItem ? (
                         <div className="editor-form">
                             <input
                                 value={selectedItem.title}
-                                onChange={e => updateItemOverride(selectedItem.id, { title: e.target.value })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { title: e.target.value })}
                                 placeholder="Title"
                             />
                             <input
                                 value={selectedItem.customHtmlPath ?? ''}
-                                onChange={e => updateItemOverride(selectedItem.id, { customHtmlPath: e.target.value })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { customHtmlPath: e.target.value })}
                                 placeholder="Local HTML Path"
                             />
                             <input
                                 value={selectedItem.externalUrl ?? ''}
-                                onChange={e => updateItemOverride(selectedItem.id, { externalUrl: e.target.value })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { externalUrl: e.target.value })}
                                 placeholder="External URL"
                             />
                             <select
                                 value={selectedItem.type}
-                                onChange={e => updateItemOverride(selectedItem.id, { type: e.target.value as ContentType })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { type: e.target.value as ContentType })}
                                 aria-label="Selected item type"
                             >
                                 <option value="game">Game</option>
@@ -360,49 +406,46 @@ const ManagerPage: React.FC = () => {
                             </select>
                             <input
                                 value={selectedItem.category ?? ''}
-                                onChange={e => updateItemOverride(selectedItem.id, { category: e.target.value })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { category: e.target.value })}
                                 placeholder="Category"
                                 aria-label="Selected item category"
                             />
                             <textarea
                                 value={selectedItem.description}
-                                onChange={e => updateItemOverride(selectedItem.id, { description: e.target.value })}
+                                onChange={(e) => updateItemOverride(selectedItem.id, { description: e.target.value })}
                                 placeholder="Description"
                             />
                             <div className="location-editor-row">
                                 <select
-                                    value={selectedItemTabTarget}
-                                    onChange={e => {
-                                        setSelectedItemTabTarget(e.target.value);
+                                    value={selectedItemAreaTarget}
+                                    onChange={(e) => {
+                                        setSelectedItemAreaTarget(e.target.value as AppAreaId);
                                         setSelectedItemFolderTarget('');
                                     }}
-                                    aria-label="Move selected item to tab"
+                                    aria-label="Move selected item to area"
                                 >
-                                    {config.tabs.map(tab => (
-                                        <option key={tab.id} value={tab.id}>{tab.icon} {tab.label}</option>
+                                    {selectedItemAreaOptions.map((area) => (
+                                        <option key={area.id} value={area.id}>{area.icon} {area.label}</option>
                                     ))}
                                 </select>
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        if (!selectedItemTabTarget) return;
-                                        assignItemToTabRoot(selectedItem.id, selectedItemTabTarget);
-                                    }}
+                                    onClick={() => assignItemToAreaRoot(selectedItem.id, selectedItemAreaTarget)}
                                 >
-                                    Move to Tab Root
+                                    Move to Area Root
                                 </button>
                             </div>
 
                             <div className="location-editor-row">
                                 <select
                                     value={selectedItemFolderTarget}
-                                    onChange={e => setSelectedItemFolderTarget(e.target.value)}
+                                    onChange={(e) => setSelectedItemFolderTarget(e.target.value)}
                                     aria-label="Move selected item to folder"
                                 >
-                                    <option value="">Select folder in chosen tab</option>
+                                    <option value="">Select folder in chosen area</option>
                                     {config.folders
-                                        .filter(folder => folder.tabId === selectedItemTabTarget)
-                                        .map(folder => (
+                                        .filter((folder) => folder.areaId === selectedItemAreaTarget)
+                                        .map((folder) => (
                                             <option key={folder.id} value={folder.id}>📁 {folder.name}</option>
                                         ))}
                                 </select>
@@ -425,19 +468,19 @@ const ManagerPage: React.FC = () => {
                                     setSelectedItemId('');
                                 }}
                             >
-                                Delete App/File
+                                Delete Module
                             </button>
                         </div>
                     ) : (
-                        <p>Select a file chip to edit.</p>
+                        <p>Select a module chip to edit.</p>
                     )}
                 </div>
 
                 <div className="manager-card manager-card-wide">
-                    <h2>Restore Deleted Built-in Items</h2>
+                    <h2>Restore Deleted Built-in Modules</h2>
                     <div className="item-pool">
-                        {deletedBaseItems.length === 0 && <p>No built-in items deleted.</p>}
-                        {deletedBaseItems.map(item => (
+                        {deletedBaseItems.length === 0 && <p>No built-in modules deleted.</p>}
+                        {deletedBaseItems.map((item) => (
                             <button key={item.id} type="button" onClick={() => restoreBaseItem(item.id)}>
                                 Restore {item.title}
                             </button>
@@ -447,7 +490,7 @@ const ManagerPage: React.FC = () => {
 
                 <div className="manager-card manager-card-wide">
                     <h2>JSON Config Console</h2>
-                    <textarea aria-label="Manager JSON config" value={jsonText} onChange={e => setJsonText(e.target.value)} className="json-area" />
+                    <textarea aria-label="Manager JSON config" value={jsonText} onChange={(e) => setJsonText(e.target.value)} className="json-area" />
                     <div className="manager-inline-form">
                         <button
                             type="button"

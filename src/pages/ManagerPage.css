@@ -47,6 +47,40 @@
     margin-top: 0.75rem;
 }
 
+.manager-area-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.manager-area-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--color-input-bg);
+    color: var(--color-input-text);
+    text-align: left;
+}
+
+.manager-area-pill.is-selected {
+    border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.manager-area-pill:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.manager-area-pill__meta {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
 .manager-inline-form input,
 .manager-inline-form select,
 .manager-inline-form button,

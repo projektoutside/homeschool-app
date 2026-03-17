@@ -1,24 +1,16 @@
-import type { ContentItem, ContentType } from './content';
-
-export interface ManagerTab {
-  id: string;
-  label: string;
-  icon: string;
-  sourceType?: Extract<ContentType, 'game' | 'worksheet' | 'tool'>;
-}
+import type { AppAreaId, ModuleDefinition } from './appAreas';
 
 export interface ManagerFolder {
   id: string;
-  tabId: string;
+  areaId: AppAreaId;
   name: string;
   itemIds: string[];
 }
 
 export interface ManagerConfig {
-  tabs: ManagerTab[];
-  tabItems: Record<string, string[]>;
+  areaItems: Record<AppAreaId, string[]>;
   folders: ManagerFolder[];
-  itemOverrides: Record<string, Partial<ContentItem>>;
-  customItems: ContentItem[];
+  itemOverrides: Record<string, Partial<ModuleDefinition>>;
+  customItems: ModuleDefinition[];
   deletedItemIds: string[];
 }

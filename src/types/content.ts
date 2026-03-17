@@ -22,10 +22,3 @@ export interface ContentItem {
   isFeatured?: boolean;
   dateAdded: string;
 }
-
-export interface CategoryDef {
-  id: string;
-  label: string;
-  description?: string;
-  icon?: string;
-}

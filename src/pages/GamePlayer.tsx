@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { CONTENT_ITEMS } from '../data/mockContent';
+import { findBaseModuleById, resolveAreaFromRequest, resolveAreaRoute } from '../data/moduleRegistry';
 import { buildAssetPath } from '../utils/pathUtils';
 import type { ContentItem } from '../types/content';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
@@ -10,6 +10,7 @@ import { usePoints } from '../context/PointsContext';
 import { useStamina } from '../context/StaminaContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useZoomLock } from '../hooks/useZoomLock';
+import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
@@ -38,7 +39,6 @@ const WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY = 'LAHS_WORD_PUZZLE_USER_CONTEXT_BO
 const WORD_PUZZLE_USER_CONTEXT_SYNC = 'LAHS_WORD_PUZZLE_USER_CONTEXT_SYNC';
 const WORD_PUZZLE_USER_CONTEXT_REQUEST = 'LAHS_WORD_PUZZLE_USER_CONTEXT_REQUEST';
 const DEV_CACHE_BUST = import.meta.env.DEV ? Date.now().toString() : '';
-const HOME_TAB_QUERY_SAFE_PATTERN = /^[a-z0-9-]+$/;
 
 type CarKingMicPreference = 'ask' | 'session' | 'always';
 type WordPuzzleUserContext = {
@@ -55,13 +55,6 @@ type StaminaGateStatus = {
 
 const isCarKingMicPreference = (value: unknown): value is CarKingMicPreference => {
     return value === 'ask' || value === 'session' || value === 'always';
-};
-
-const normalizeHomeTabRequest = (value: unknown): string | null => {
-    if (typeof value !== 'string') return null;
-
-    const normalized = value.trim().toLowerCase();
-    return normalized && HOME_TAB_QUERY_SAFE_PATTERN.test(normalized) ? normalized : null;
 };
 
 const getCarKingMicPreferenceStorageKey = (userId: string) => {
@@ -145,6 +138,7 @@ const GamePlayer: React.FC = () => {
     const [staminaAttemptNonce, setStaminaAttemptNonce] = useState(0);
     const [staminaCountdownNowMs, setStaminaCountdownNowMs] = useState(() => Date.now());
     const { user } = useAuth();
+    const { resolvedItems } = useManagerConfig();
     const { totalPoints, stars, awardPoints } = usePoints();
     const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
     const { settings: soundSettings } = useSoundSettings();
@@ -166,8 +160,8 @@ const GamePlayer: React.FC = () => {
         if (launchStateItem && launchStateItem.id === id) {
             return launchStateItem;
         }
-        return CONTENT_ITEMS.find(content => content.id === id);
-    }, [id, launchStateItem]);
+        return resolvedItems.get(id ?? '') ?? findBaseModuleById(id);
+    }, [id, launchStateItem, resolvedItems]);
     const launchPath = useMemo(() => {
         if (!item) return '';
         if (item.customHtmlPath) {
@@ -548,10 +542,8 @@ const GamePlayer: React.FC = () => {
                 return;
             }
 
-            const requestedTab = normalizeHomeTabRequest(message.tab);
-            const targetPath = requestedTab
-                ? `/home-profile?tab=${encodeURIComponent(requestedTab)}`
-                : '/home-profile';
+            const requestedArea = resolveAreaFromRequest(message.tab);
+            const targetPath = resolveAreaRoute(requestedArea ?? 'home');
 
             void exitFullscreen().finally(() => {
                 navigate(targetPath);

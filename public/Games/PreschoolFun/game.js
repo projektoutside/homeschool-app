@@ -1813,7 +1813,7 @@
         } catch {
             // Fall through to local navigation.
         }
-        window.location.href = '../../home-profile?tab=games';
+        window.location.href = '../../apps';
     }
 
     function tokenFor(seed) {

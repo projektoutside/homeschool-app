@@ -1,10 +1,11 @@
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CONTENT_ITEMS } from '../data/mockContent';
+import { findBaseModuleById } from '../data/moduleRegistry';
 import { buildAssetPath } from '../utils/pathUtils';
 import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { usePWA } from '../hooks/usePWA';
+import { useManagerConfig } from '../hooks/useManagerConfig';
 import { PWAInstallModal } from '../components/PWAInstallModal';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
@@ -22,8 +23,12 @@ const ViewerPage: React.FC = () => {
     const [showControls, setShowControls] = useState(true);
     const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { resolvedItems } = useManagerConfig();
 
-    const item = useMemo(() => CONTENT_ITEMS.find(i => i.id === id), [id]);
+    const item = useMemo(
+        () => resolvedItems.get(id ?? '') ?? findBaseModuleById(id),
+        [id, resolvedItems],
+    );
 
     // Derived state - defined early for use in callbacks
     const isGameContent = item?.type === 'game';

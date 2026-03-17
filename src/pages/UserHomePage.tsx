@@ -40,7 +40,7 @@ const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
 const HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX = 'homepage-daily-lunchbox';
 const HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION = 1;
-const HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS = 10_000;
+const HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS = 24 * 60 * 60 * 1000;
 const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
@@ -378,6 +378,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
+      if (event.source !== iframeRef.current?.contentWindow) return;
       if (!event.data || typeof event.data !== 'object') return;
 
       const type = (event.data as { type?: string }).type;
@@ -433,12 +434,12 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
           meta: {
             source: 'homepage-daily-lunchbox',
             rewardVersion: 1,
-            testRefreshMs: HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS,
+            refreshMs: HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS,
           },
         }).then((result) => {
           const claimAccepted = Boolean(result.accepted);
           const claimExpiresAt = claimAccepted
-            ? claimStartedAt + HOME_PAGE_DAILY_LUNCHBOX_TEST_REFRESH_MS
+            ? claimStartedAt + HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS
             : null;
           writeDailyLunchboxClaimExpiresAt(user.id, claimExpiresAt);
           setDailyLunchboxClaimExpiresAtByUser((current) => ({
@@ -573,7 +574,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     dailyLunchboxClaimPending,
     dailyLunchboxClaimed,
     dailyLunchboxRewardReady,
-    dailyLunchboxClockTick,
     postTiltBridgeMessage,
     stars,
     syncHomepagePointsToIframe,
