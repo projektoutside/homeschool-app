@@ -12,6 +12,16 @@ import {
 
 const DEFAULT_COLORS = ['#4f8cff', '#ff8a5b', '#27b07d', '#8c63ff', '#ffbf47'];
 
+function createEmptyActionStats() {
+    return {
+        shapeCreates: 0,
+        plottedPoints: 0,
+        drawnPolygons: 0,
+        vertexMoves: 0,
+        shapeMoves: 0
+    };
+}
+
 export class PolygonBoard {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
@@ -30,7 +40,12 @@ export class PolygonBoard {
         this.historyIndex = -1;
         this.drag = null;
         this.pointerId = null;
+        this.activePointerType = 'mouse';
+        this.pendingDragPoint = null;
+        this.dragFrame = 0;
         this.resizeObserver = null;
+        this.draftVertices = [];
+        this.actionStats = createEmptyActionStats();
 
         this.boundHandlePointerDown = this.handlePointerDown.bind(this);
         this.boundHandlePointerMove = this.handlePointerMove.bind(this);
@@ -61,6 +76,10 @@ export class PolygonBoard {
         window.removeEventListener('pointerup', this.boundHandlePointerUp);
         window.removeEventListener('pointercancel', this.boundHandlePointerUp);
         window.removeEventListener('resize', this.boundHandleResize);
+        if (this.dragFrame) {
+            window.cancelAnimationFrame(this.dragFrame);
+            this.dragFrame = 0;
+        }
         this.resizeObserver?.disconnect();
     }
 
@@ -93,6 +112,9 @@ export class PolygonBoard {
 
     setMode(mode) {
         this.mode = mode;
+        if (mode === 'draw') {
+            this.selectedVertexIndex = -1;
+        }
         this.render();
     }
 
@@ -111,13 +133,21 @@ export class PolygonBoard {
             ...taskBoard,
             guideDefinitions: (taskBoard.guideDefinitions || []).map(cloneDefinition),
             helperBadges: Array.isArray(taskBoard.helperBadges) ? taskBoard.helperBadges.slice() : [],
-            showLiveMetric: taskBoard.showLiveMetric || null
+            showLiveMetric: taskBoard.showLiveMetric || null,
+            allowDraw: taskBoard.allowDraw !== false,
+            allowShapePicker: taskBoard.allowShapePicker !== false,
+            preferredTool: taskBoard.preferredTool || 'move'
         };
 
         const starterDefinitions = (taskBoard.starterDefinitions || []).map(cloneDefinition);
         this.initialDefinitions = starterDefinitions.map(cloneDefinition);
-        this.setDefinitions(starterDefinitions, { preserveHistory: false });
+        this.setDefinitions(starterDefinitions, {
+            preserveHistory: false,
+            clearDraft: true,
+            resetActions: true
+        });
         this.setReadonly(taskBoard.editable === false ? true : false);
+        this.setMode(taskBoard.editable === false ? 'move' : (this.taskGuide.preferredTool || 'move'));
     }
 
     setDefinitions(definitions = [], options = {}) {
@@ -132,6 +162,12 @@ export class PolygonBoard {
 
         this.selectedPolygon = this.polygons.find((polygon) => !polygon.locked) || this.polygons[0] || null;
         this.selectedVertexIndex = -1;
+        if (options.clearDraft === true) {
+            this.draftVertices = [];
+        }
+        if (options.resetActions === true) {
+            this.resetActionStats();
+        }
 
         if (options.preserveHistory !== true) {
             this.history = [];
@@ -154,18 +190,67 @@ export class PolygonBoard {
         this.polygons = [freshPolygon, ...lockedPolygons];
         this.selectedPolygon = freshPolygon;
         this.selectedVertexIndex = -1;
+        this.draftVertices = [];
+        this.actionStats.shapeCreates += 1;
         this.saveHistory();
         this.notifyChange();
     }
 
     reset() {
-        this.setDefinitions(this.initialDefinitions.map(cloneDefinition), { preserveHistory: false });
+        this.setDefinitions(this.initialDefinitions.map(cloneDefinition), {
+            preserveHistory: false,
+            clearDraft: true,
+            resetActions: true
+        });
     }
 
     undo() {
+        if (this.draftVertices.length) {
+            this.draftVertices = this.draftVertices.slice(0, -1);
+            this.notifyChange();
+            return;
+        }
         if (this.historyIndex <= 0) return;
         this.historyIndex -= 1;
         this.restoreHistoryState(this.history[this.historyIndex]);
+    }
+
+    resetActionStats() {
+        this.actionStats = createEmptyActionStats();
+    }
+
+    getActionStats() {
+        return { ...this.actionStats };
+    }
+
+    clearDraft(options = {}) {
+        if (!this.draftVertices.length) return;
+        this.draftVertices = [];
+        if (options.notify !== false) {
+            this.notifyChange();
+        }
+    }
+
+    finishDraft() {
+        if (this.draftVertices.length < 3) {
+            return false;
+        }
+
+        const freshPolygon = new Polygon(this.draftVertices, {
+            color: DEFAULT_COLORS[0],
+            name: 'Drawn Polygon',
+            role: 'main'
+        });
+        const lockedPolygons = this.polygons.filter((polygon) => polygon.locked).map((polygon) => polygon.clone());
+        this.polygons = [freshPolygon, ...lockedPolygons];
+        this.selectedPolygon = freshPolygon;
+        this.selectedVertexIndex = -1;
+        this.draftVertices = [];
+        this.actionStats.drawnPolygons += 1;
+        this.mode = 'move';
+        this.saveHistory();
+        this.notifyChange();
+        return true;
     }
 
     saveHistory() {
@@ -215,6 +300,8 @@ export class PolygonBoard {
             mode: this.mode,
             polygonCount: this.polygons.length,
             selectedName: this.selectedPolygon?.name || null,
+            draftVertexCount: this.draftVertices.length,
+            actionStats: this.getActionStats(),
             summaries: this.getSummaries().map((summary) => ({
                 name: summary.polygon.name,
                 area: Number(summary.area.toFixed(2)),
@@ -231,8 +318,32 @@ export class PolygonBoard {
         this.onChange(this.getDebugState());
     }
 
-    hitVertex(worldPoint) {
-        const threshold = Math.max(14, this.gridSize * 0.55);
+    getVertexHitThreshold(pointerType = this.activePointerType) {
+        if (pointerType === 'touch') {
+            return Math.max(20, this.gridSize * 0.92);
+        }
+        if (pointerType === 'pen') {
+            return Math.max(16, this.gridSize * 0.72);
+        }
+        return Math.max(14, this.gridSize * 0.55);
+    }
+
+    getDraftCloseThreshold(pointerType = this.activePointerType) {
+        if (pointerType === 'touch') {
+            return Math.max(20, this.gridSize * 0.95);
+        }
+        if (pointerType === 'pen') {
+            return Math.max(16, this.gridSize * 0.78);
+        }
+        return Math.max(14, this.gridSize * 0.7);
+    }
+
+    snapPolygonToGrid(polygon) {
+        polygon.vertices = polygon.vertices.map((vertex) => snapPointToGrid(vertex, this.gridSize));
+    }
+
+    hitVertex(worldPoint, pointerType = this.activePointerType) {
+        const threshold = this.getVertexHitThreshold(pointerType);
         for (let i = this.polygons.length - 1; i >= 0; i -= 1) {
             const polygon = this.polygons[i];
             if (polygon.locked) continue;
@@ -259,17 +370,33 @@ export class PolygonBoard {
     handlePointerDown(event) {
         if (this.readonly) return;
         if (event.button !== 0 && event.pointerType !== 'touch') return;
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+
+        this.activePointerType = event.pointerType || 'mouse';
 
         const worldPoint = this.screenToWorld(event.clientX, event.clientY);
-        const hitVertex = this.hitVertex(worldPoint);
+        if (this.mode === 'draw') {
+            this.handleDrawPointerDown(worldPoint, this.activePointerType);
+            return;
+        }
+        const hitVertex = this.hitVertex(worldPoint, this.activePointerType);
 
         if (hitVertex) {
+            const anchor = hitVertex.polygon.vertices[hitVertex.vertexIndex];
             this.selectedPolygon = hitVertex.polygon;
             this.selectedVertexIndex = hitVertex.vertexIndex;
             this.drag = {
                 type: 'vertex',
                 polygon: hitVertex.polygon,
-                vertexIndex: hitVertex.vertexIndex
+                vertexIndex: hitVertex.vertexIndex,
+                moved: false,
+                pointerType: this.activePointerType,
+                offset: {
+                    x: anchor.x - worldPoint.x,
+                    y: anchor.y - worldPoint.y
+                }
             };
             this.pointerId = event.pointerId;
             this.canvas.setPointerCapture?.(event.pointerId);
@@ -284,7 +411,9 @@ export class PolygonBoard {
             this.drag = {
                 type: 'shape',
                 polygon,
-                start: worldPoint
+                start: worldPoint,
+                moved: false,
+                pointerType: this.activePointerType
             };
             this.pointerId = event.pointerId;
             this.canvas.setPointerCapture?.(event.pointerId);
@@ -297,31 +426,110 @@ export class PolygonBoard {
         this.render();
     }
 
-    handlePointerMove(event) {
-        if (!this.drag) return;
-        if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
+    handleDrawPointerDown(worldPoint, pointerType = this.activePointerType) {
+        const snappedPoint = snapPointToGrid(worldPoint, this.gridSize);
+        const closeThreshold = this.getDraftCloseThreshold(pointerType);
 
-        const worldPoint = snapPointToGrid(this.screenToWorld(event.clientX, event.clientY), this.gridSize);
+        if (this.draftVertices.length >= 3 && distance(snappedPoint, this.draftVertices[0]) <= closeThreshold) {
+            this.finishDraft();
+            return;
+        }
+
+        const lastPoint = this.draftVertices[this.draftVertices.length - 1];
+        if (lastPoint && distance(snappedPoint, lastPoint) <= 1) {
+            return;
+        }
+
+        this.draftVertices = [...this.draftVertices, snappedPoint];
+        this.actionStats.plottedPoints += 1;
+        this.notifyChange();
+    }
+
+    flushPendingDrag() {
+        if (!this.drag || !this.pendingDragPoint) return;
+
+        const worldPoint = this.pendingDragPoint;
+        this.pendingDragPoint = null;
 
         if (this.drag.type === 'vertex') {
-            this.drag.polygon.vertices[this.drag.vertexIndex] = worldPoint;
+            const adjustedPoint = {
+                x: worldPoint.x + (this.drag.offset?.x || 0),
+                y: worldPoint.y + (this.drag.offset?.y || 0)
+            };
+            const nextPoint = this.drag.pointerType === 'touch'
+                ? adjustedPoint
+                : snapPointToGrid(adjustedPoint, this.gridSize);
+            const currentPoint = this.drag.polygon.vertices[this.drag.vertexIndex];
+
+            if (distance(currentPoint, nextPoint) <= 0.25) {
+                return;
+            }
+
+            this.drag.polygon.vertices[this.drag.vertexIndex] = nextPoint;
+            this.drag.moved = true;
             this.notifyChange();
             return;
         }
 
         if (this.drag.type === 'shape') {
-            const deltaX = worldPoint.x - this.drag.start.x;
-            const deltaY = worldPoint.y - this.drag.start.y;
-            if (deltaX === 0 && deltaY === 0) return;
+            const nextPoint = this.drag.pointerType === 'touch'
+                ? worldPoint
+                : snapPointToGrid(worldPoint, this.gridSize);
+            const deltaX = nextPoint.x - this.drag.start.x;
+            const deltaY = nextPoint.y - this.drag.start.y;
+            if (Math.abs(deltaX) < 0.25 && Math.abs(deltaY) < 0.25) {
+                return;
+            }
             this.drag.polygon.move(deltaX, deltaY);
-            this.drag.start = worldPoint;
+            this.drag.start = nextPoint;
+            this.drag.moved = true;
             this.notifyChange();
+        }
+    }
+
+    handlePointerMove(event) {
+        if (!this.drag) return;
+        if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+
+        this.pendingDragPoint = this.screenToWorld(event.clientX, event.clientY);
+        if (!this.dragFrame) {
+            this.dragFrame = window.requestAnimationFrame(() => {
+                this.dragFrame = 0;
+                this.flushPendingDrag();
+            });
         }
     }
 
     handlePointerUp(event) {
         if (!this.drag) return;
         if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+        if (this.dragFrame) {
+            window.cancelAnimationFrame(this.dragFrame);
+            this.dragFrame = 0;
+        }
+        this.flushPendingDrag();
+        if (this.drag.pointerType === 'touch') {
+            if (this.drag.type === 'vertex') {
+                const currentPoint = this.drag.polygon.vertices[this.drag.vertexIndex];
+                this.drag.polygon.vertices[this.drag.vertexIndex] = snapPointToGrid(currentPoint, this.gridSize);
+            } else if (this.drag.type === 'shape') {
+                this.snapPolygonToGrid(this.drag.polygon);
+            }
+        }
+        if (this.drag.moved) {
+            if (this.drag.type === 'vertex') {
+                this.actionStats.vertexMoves += 1;
+            } else if (this.drag.type === 'shape') {
+                this.actionStats.shapeMoves += 1;
+            }
+        }
+        this.pendingDragPoint = null;
         this.pointerId = null;
         this.drag = null;
         this.canvas.releasePointerCapture?.(event.pointerId);
@@ -389,6 +597,40 @@ export class PolygonBoard {
         this.ctx.strokeStyle = 'rgba(255, 174, 51, 0.9)';
         this.ctx.fillStyle = 'rgba(255, 174, 51, 0.12)';
         guidePolygons.forEach((polygon) => this.drawPolygonShape(polygon, { fill: true, handles: false, dashedOnly: true }));
+        this.ctx.restore();
+    }
+
+    drawDraftShape() {
+        if (!this.draftVertices.length) return;
+
+        const screenVertices = this.draftVertices.map((vertex) => this.worldToScreen(vertex));
+        this.ctx.save();
+        this.ctx.setLineDash([8, 6]);
+        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeStyle = 'rgba(15, 103, 184, 0.92)';
+        this.ctx.beginPath();
+        this.ctx.moveTo(screenVertices[0].x, screenVertices[0].y);
+        for (let i = 1; i < screenVertices.length; i += 1) {
+            this.ctx.lineTo(screenVertices[i].x, screenVertices[i].y);
+        }
+        if (screenVertices.length >= 3) {
+            this.ctx.closePath();
+            this.ctx.fillStyle = 'rgba(15, 103, 184, 0.12)';
+            this.ctx.fill();
+        }
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        screenVertices.forEach((point, index) => {
+            const isFirst = index === 0 && screenVertices.length >= 3;
+            this.ctx.beginPath();
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.strokeStyle = isFirst ? '#ff7c3c' : '#0f67b8';
+            this.ctx.lineWidth = isFirst ? 3 : 2;
+            this.ctx.arc(point.x, point.y, isFirst ? 7 : 6, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+        });
         this.ctx.restore();
     }
 
@@ -482,6 +724,7 @@ export class PolygonBoard {
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.drawGrid();
         this.drawGuide();
+        this.drawDraftShape();
         this.polygons.forEach((polygon) => {
             const isSelected = polygon === this.selectedPolygon && !this.readonly;
             this.drawPolygonShape(polygon, {

@@ -2,7 +2,13 @@ import { WORLDS, buildMissionTasks, getMissionById, getShapeChoices, getWorldByI
 import { PolygonBoard } from './engine/polygon-board.js';
 import { getMissionRecord, loadProfile, resetProfile, saveProfile, setMissionRecord } from './storage/profile-store.js';
 import { GameRouter } from './router.js';
-import { renderMapScreen, renderMenuScreen, renderMissionScreen, renderResultsScreen } from './ui/renderers.js';
+import {
+    renderLiveShapeContent,
+    renderMapScreen,
+    renderMenuScreen,
+    renderMissionScreen,
+    renderResultsScreen
+} from './ui/renderers.js';
 
 const QUIZ_IT_POLYGON_POINTS_BY_STARS = {
     1: 50,
@@ -33,6 +39,7 @@ class QuizItPolygonApp {
         this.lastWrongChoice = '';
         this.activeRun = null;
         this.resultState = null;
+        this.mapFocusWorldId = null;
         this.shapeChoices = getShapeChoices();
 
         document.body.classList.toggle('big-text', this.profile.settings.bigText);
@@ -42,6 +49,8 @@ class QuizItPolygonApp {
     getState() {
         const route = this.router.getState();
         const worlds = this.getWorldViewModels();
+        const mapState = this.getMapScreenState(worlds);
+        const boardState = this.board?.getDebugState() || null;
         const activeWorld = this.activeRun
             ? getWorldById(this.activeRun.worldId)
             : this.resultState
@@ -61,18 +70,25 @@ class QuizItPolygonApp {
             showSettings: this.showSettings,
             showShapePicker: this.showShapePicker,
             nextMission: this.findNextMission(),
+            mapSummary: mapState.summary,
+            mapFocusWorld: mapState.focusWorld,
+            mapOtherWorlds: mapState.otherWorlds,
             activeWorld,
             activeMission,
             activeTask: this.activeRun ? this.activeRun.tasks[this.activeRun.taskIndex] : null,
-            missionIndex: this.activeRun ? getWorldById(this.activeRun.worldId).missions.findIndex((mission) => mission.id === this.activeRun.missionId) : -1,
             taskIndex: this.activeRun?.taskIndex || 0,
             hintStage: this.activeRun?.hintStage || 0,
+            currentHintText: this.getCurrentHintText(),
             maxHintStageUsed: this.activeRun?.maxHintStageUsed ?? this.resultState?.maxHintStageUsed ?? 0,
             mistakes: this.activeRun?.mistakes ?? this.resultState?.mistakes ?? 0,
+            helpPanelOpen: this.activeRun?.helpPanelOpen ?? false,
+            boardGuideOpen: this.activeRun?.boardGuideOpen ?? true,
             answerValue: this.answerValue,
             lastWrongChoice: this.lastWrongChoice,
             feedback: this.feedback,
             boardSummary: this.boardSummary,
+            boardMode: boardState?.mode || 'move',
+            boardDraftCount: boardState?.draftVertexCount || 0,
             resultMessage: this.resultState?.message || '',
             stars: this.resultState?.stars || 0,
             pointsAwarded: this.resultState?.pointsAwarded || 0,
@@ -97,6 +113,7 @@ class QuizItPolygonApp {
         this.bindEvents();
         this.mountBoardIfNeeded();
         this.refreshLiveMissionBits();
+        this.syncMissionToolState();
         this.syncMusicLoop();
     }
 
@@ -145,6 +162,11 @@ class QuizItPolygonApp {
                 return;
             }
 
+            if (target.dataset.focusWorld) {
+                this.focusMapWorld(target.dataset.focusWorld);
+                return;
+            }
+
             if (target.dataset.choice) {
                 this.handleChoice(target.dataset.choice);
                 return;
@@ -161,7 +183,17 @@ class QuizItPolygonApp {
             }
 
             if (target.dataset.useHelp) {
-                this.useHelp();
+                this.toggleHelpPanel();
+                return;
+            }
+
+            if (target.dataset.moreHelp) {
+                this.advanceHelpStage();
+                return;
+            }
+
+            if (target.dataset.boardGuideToggle) {
+                this.setBoardGuideOpen(target.dataset.boardGuideToggle === 'show');
                 return;
             }
 
@@ -175,8 +207,20 @@ class QuizItPolygonApp {
                 return;
             }
 
+            if (target.dataset.boardAction === 'clear-draft') {
+                this.board?.clearDraft();
+                return;
+            }
+
+            if (target.dataset.boardTool === 'draw') {
+                this.board?.setMode('draw');
+                this.render();
+                return;
+            }
+
             if (target.dataset.boardTool === 'move') {
                 this.board?.setMode('move');
+                this.render();
                 return;
             }
 
@@ -256,10 +300,10 @@ class QuizItPolygonApp {
         }
 
         if (this.activeRun.needsBoardLoad) {
-            this.board.loadTaskBoard(this.activeRun.tasks[this.activeRun.taskIndex].board);
-            this.board.setHintStage(this.activeRun.hintStage);
-            this.boardSummary = this.board.getPrimarySummary();
             this.activeRun.needsBoardLoad = false;
+            this.board.loadTaskBoard(this.activeRun.tasks[this.activeRun.taskIndex].board);
+            this.board.setHintStage(this.activeRun.hintStage || 0);
+            this.boardSummary = this.board.getPrimarySummary();
         }
     }
 
@@ -268,18 +312,21 @@ class QuizItPolygonApp {
         const state = this.getState();
         const summaryBox = this.root.querySelector('[data-live-shape]');
         if (summaryBox) {
-            const summary = state.boardSummary;
-            summaryBox.innerHTML = summary
-                ? `
-                    <div class="live-metrics">
-                        <div class="live-metric"><strong>Name</strong><span>${summary.analysis.primaryLabel}</span></div>
-                        <div class="live-metric"><strong>Sides</strong><span>${summary.vertices}</span></div>
-                        <div class="live-metric"><strong>Area</strong><span>${summary.area.toFixed(summary.area % 1 === 0 ? 0 : 1)}</span></div>
-                        <div class="live-metric"><strong>Around</strong><span>${summary.perimeter.toFixed(summary.perimeter % 1 === 0 ? 0 : 1)}</span></div>
-                    </div>
-                `
-                : '<div class="empty-note">This task starts with an empty board. Use Make Shape when you are ready.</div>';
+            summaryBox.innerHTML = renderLiveShapeContent({
+                summary: state.boardSummary,
+                draftCount: state.boardDraftCount
+            });
         }
+    }
+
+    syncMissionToolState() {
+        if (this.router.screen !== 'mission') return;
+        const mode = this.board?.getDebugState()?.mode || 'move';
+        const drawButton = this.root.querySelector('[data-board-tool="draw"]');
+        const moveButton = this.root.querySelector('[data-board-tool="move"]');
+
+        drawButton?.classList.toggle('active', mode === 'draw');
+        moveButton?.classList.toggle('active', mode !== 'draw');
     }
 
     openModal(name) {
@@ -310,6 +357,7 @@ class QuizItPolygonApp {
         this.feedback = { kind: '', message: '' };
         this.answerValue = '';
         this.lastWrongChoice = '';
+        this.mapFocusWorldId = null;
         saveProfile(this.profile);
         this.router.go('menu');
     }
@@ -426,6 +474,7 @@ class QuizItPolygonApp {
             const regularCleared = world.missions
                 .filter((mission) => !mission.boss)
                 .every((mission) => getMissionRecord(this.profile, mission.id).cleared);
+            const previousWorld = worldIndex > 0 ? WORLDS[worldIndex - 1] : null;
 
             const missions = world.missions.map((mission) => {
                 const record = getMissionRecord(this.profile, mission.id);
@@ -433,6 +482,8 @@ class QuizItPolygonApp {
                 return {
                     ...mission,
                     stars: record.stars,
+                    cleared: record.cleared,
+                    worldId: world.id,
                     locked: missionLocked
                 };
             });
@@ -440,11 +491,168 @@ class QuizItPolygonApp {
             return {
                 ...world,
                 locked: worldLocked,
+                completedMissions: missions.filter((mission) => mission.cleared).length,
                 completedStars: missions.reduce((sum, mission) => sum + mission.stars, 0),
                 totalStars: missions.length * 3,
+                totalMissions: missions.length,
+                lockCopy: worldLocked && previousWorld
+                    ? `Clear ${previousWorld.title} Boss to unlock this world.`
+                    : 'This world is locked.',
                 missions
             };
         });
+    }
+
+    getCurrentTargetMission(worlds = this.getWorldViewModels()) {
+        const flat = worlds.flatMap((world) => world.missions.map((mission) => ({
+            worldId: world.id,
+            worldTitle: world.title,
+            missionId: mission.id,
+            title: mission.title,
+            short: mission.short,
+            locked: world.locked || mission.locked,
+            cleared: mission.cleared
+        })));
+
+        return flat.find((entry) => !entry.locked && !entry.cleared) || null;
+    }
+
+    resolveMapFocusWorldId(worlds, currentTargetMission) {
+        const selectableWorlds = worlds.filter((world) => !world.locked);
+        if (this.mapFocusWorldId && selectableWorlds.some((world) => world.id === this.mapFocusWorldId)) {
+            return this.mapFocusWorldId;
+        }
+
+        if (currentTargetMission?.worldId && selectableWorlds.some((world) => world.id === currentTargetMission.worldId)) {
+            return currentTargetMission.worldId;
+        }
+
+        return selectableWorlds[selectableWorlds.length - 1]?.id || worlds[0]?.id || null;
+    }
+
+    buildMapMissionStatuses(mission, currentTargetMission) {
+        const isNext = Boolean(
+            currentTargetMission
+            && currentTargetMission.worldId === mission.worldId
+            && currentTargetMission.missionId === mission.id
+        );
+        const statuses = [];
+
+        if (isNext) {
+            statuses.push({ label: 'Next', tone: 'next' });
+        }
+        if (mission.cleared) {
+            statuses.push({ label: 'Done', tone: 'done' });
+        }
+        if (mission.locked) {
+            statuses.push({ label: 'Locked', tone: 'locked' });
+        }
+        if (mission.boss) {
+            statuses.push({ label: 'Boss', tone: 'boss' });
+        }
+
+        return { isNext, statuses };
+    }
+
+    buildMapFocusWorld(world, currentTargetMission) {
+        const missions = world.missions.map((mission, index) => {
+            const { isNext, statuses } = this.buildMapMissionStatuses(mission, currentTargetMission);
+            return {
+                ...mission,
+                order: index + 1,
+                isNext,
+                statuses
+            };
+        });
+
+        const focusedNextMission = missions.find((mission) => mission.isNext) || null;
+        const calloutTitle = focusedNextMission
+            ? `Next up: ${focusedNextMission.title}`
+            : currentTargetMission
+                ? `${currentTargetMission.worldTitle} is your active path`
+                : 'Every mission is clear';
+        const calloutCopy = focusedNextMission
+            ? focusedNextMission.short
+            : currentTargetMission
+                ? `Replay here any time. The next new mission is in ${currentTargetMission.worldTitle}.`
+                : 'Replay any mission you want. Your stars and badges stay saved.';
+
+        return {
+            ...world,
+            missions,
+            calloutTitle,
+            calloutCopy
+        };
+    }
+
+    buildMapOtherWorld(world, currentTargetMission) {
+        const nextOpenMission = world.missions.find((mission) => !mission.locked && !mission.cleared) || null;
+        const isCurrentPath = currentTargetMission?.worldId === world.id;
+        let note = world.lockCopy;
+
+        if (!world.locked) {
+            if (isCurrentPath && nextOpenMission) {
+                note = `Current path: ${nextOpenMission.title}`;
+            } else if (nextOpenMission) {
+                note = `${nextOpenMission.title} is ready to play.`;
+            } else {
+                note = 'All missions here are clear. Replay for practice.';
+            }
+        }
+
+        return {
+            ...world,
+            canFocus: !world.locked,
+            isCurrentPath,
+            note
+        };
+    }
+
+    getMapScreenState(worlds = this.getWorldViewModels()) {
+        const currentTargetMission = this.getCurrentTargetMission(worlds);
+        const focusWorldId = this.resolveMapFocusWorldId(worlds, currentTargetMission);
+        const focusWorldSource = worlds.find((world) => world.id === focusWorldId) || worlds[0] || null;
+        this.mapFocusWorldId = focusWorldId;
+
+        const totalStars = worlds.reduce((sum, world) => sum + world.totalStars, 0);
+        const earnedStars = worlds.reduce((sum, world) => sum + world.completedStars, 0);
+        const totalMissions = worlds.reduce((sum, world) => sum + world.totalMissions, 0);
+        const missionsCleared = worlds.reduce((sum, world) => sum + world.completedMissions, 0);
+        const worldsCleared = worlds.filter((world) => world.completedMissions === world.totalMissions).length;
+
+        return {
+            summary: {
+                earnedStars,
+                totalStars,
+                totalMissions,
+                missionsCleared,
+                worldCount: worlds.length,
+                worldsCleared,
+                badgeCount: this.profile.badges.length,
+                currentStreak: this.profile.currentStreak,
+                badges: [...this.profile.badges],
+                nextMissionLabel: currentTargetMission
+                    ? `${currentTargetMission.worldTitle}: ${currentTargetMission.title}`
+                    : 'All missions cleared. Pick any mission to replay.',
+                nextMissionCopy: currentTargetMission
+                    ? currentTargetMission.short
+                    : 'Your full path is complete, so this map is now a replay board.'
+            },
+            focusWorld: focusWorldSource ? this.buildMapFocusWorld(focusWorldSource, currentTargetMission) : null,
+            otherWorlds: worlds
+                .filter((world) => world.id !== focusWorldId)
+                .map((world) => this.buildMapOtherWorld(world, currentTargetMission))
+        };
+    }
+
+    focusMapWorld(worldId) {
+        const world = this.getWorldViewModels().find((entry) => entry.id === worldId);
+        if (!world || world.locked) {
+            return;
+        }
+
+        this.mapFocusWorldId = worldId;
+        this.render();
     }
 
     findNextMission(fromWorldId = null, fromMissionId = null) {
@@ -495,6 +703,8 @@ class QuizItPolygonApp {
             tasks: buildMissionTasks(world, mission, replay),
             taskIndex: 0,
             hintStage: 0,
+            helpPanelOpen: false,
+            boardGuideOpen: true,
             maxHintStageUsed: 0,
             mistakes: 0,
             replay
@@ -505,6 +715,7 @@ class QuizItPolygonApp {
         this.feedback = { kind: '', message: '' };
         this.answerValue = '';
         this.lastWrongChoice = '';
+        this.mapFocusWorldId = worldId;
         this.prepareTask();
         this.router.go('mission', { worldId, missionId });
     }
@@ -512,10 +723,13 @@ class QuizItPolygonApp {
     prepareTask() {
         if (!this.activeRun) return;
         this.activeRun.hintStage = 0;
+        this.activeRun.helpPanelOpen = false;
+        this.activeRun.boardGuideOpen = true;
         this.answerValue = '';
         this.lastWrongChoice = '';
         this.feedback = { kind: '', message: '' };
         this.activeRun.needsBoardLoad = true;
+        this.board?.setHintStage(0);
         this.clearTimers();
         this.render();
         if (this.profile.settings.readAloud) {
@@ -536,6 +750,7 @@ class QuizItPolygonApp {
     handleBoardChange() {
         this.boardSummary = this.board?.getPrimarySummary() || null;
         this.refreshLiveMissionBits();
+        this.syncMissionToolState();
         if (!this.activeRun) return;
         const task = this.activeRun.tasks[this.activeRun.taskIndex];
         if (task.answerMode !== 'board') return;
@@ -553,29 +768,80 @@ class QuizItPolygonApp {
         const summaries = this.board?.getSummaries() || [];
         const editableSummaries = summaries.filter((summary) => !summary.polygon.locked);
         if (!editableSummaries.length) {
-            return { correct: false, message: 'Make or move a shape first.' };
+            if (this.board?.getDebugState()?.draftVertexCount) {
+                return { correct: false, message: 'Close your polygon by tapping the first point again.' };
+            }
+            return {
+                correct: false,
+                message: task.proof?.requireDrawnShape
+                    ? 'Use Plot to draw the polygon first.'
+                    : 'Make or move a shape first.'
+            };
         }
 
         const matched = editableSummaries.find((summary) => {
-            const primary = summary.analysis.primaryLabel;
-            const exactMatches = summary.analysis.exactMatches || [];
-            const families = summary.analysis.familyLabels || [];
-
-            if (task.success.rejectPrimary?.includes(primary)) return false;
-            if (task.success.primary && primary !== task.success.primary) return false;
-            if (task.success.exact && !(exactMatches.includes(task.success.exact) || primary === task.success.exact)) return false;
-            if (task.success.family && !families.includes(task.success.family)) return false;
-            return true;
+            return this.matchesBoardTarget(summary, task.success);
         });
 
         if (!matched) {
             return { correct: false, message: 'That shape does not match yet.' };
         }
 
+        const proofResult = this.validateBoardProof(task);
+        if (!proofResult.correct) {
+            return proofResult;
+        }
+
         return {
             correct: true,
             message: task.celebrationText || `Nice! You made ${matched.analysis.primaryLabel}.`
         };
+    }
+
+    matchesBoardTarget(summary, success = {}) {
+        const primary = summary.analysis.primaryLabel;
+        const exactMatches = summary.analysis.exactMatches || [];
+        const families = summary.analysis.familyLabels || [];
+        const traits = summary.analysis.traits || [];
+        const includesExact = (label) => exactMatches.includes(label) || primary === label;
+
+        if (success.rejectPrimary?.includes(primary)) return false;
+        if (success.rejectExact?.some((label) => includesExact(label))) return false;
+        if (success.rejectTraits?.some((label) => traits.includes(label))) return false;
+        if (success.primary && primary !== success.primary) return false;
+        if (success.exact && !includesExact(success.exact)) return false;
+        if (success.exactAny?.length && !success.exactAny.some((label) => includesExact(label))) return false;
+        if (success.exactAll?.some((label) => !includesExact(label))) return false;
+        if (success.family && !families.includes(success.family)) return false;
+        if (success.requireTraits?.some((label) => !traits.includes(label))) return false;
+        return true;
+    }
+
+    validateBoardProof(task) {
+        const proof = task.proof || {};
+        const actionStats = this.board?.getActionStats() || {};
+
+        if (proof.requireDrawnShape && (actionStats.drawnPolygons || 0) < 1) {
+            return { correct: false, message: proof.drawMessage || 'Use Plot to draw this polygon yourself.' };
+        }
+
+        if ((proof.requireShapeCreate || 0) && (actionStats.shapeCreates || 0) < 1) {
+            return { correct: false, message: proof.createMessage || 'Use Make Shape before you check.' };
+        }
+
+        if ((proof.minPlacedVertices || 0) > (actionStats.plottedPoints || 0)) {
+            return { correct: false, message: proof.plotMessage || `Plot ${proof.minPlacedVertices} points before you check.` };
+        }
+
+        if ((proof.minVertexMoves || 0) > (actionStats.vertexMoves || 0)) {
+            return { correct: false, message: proof.moveMessage || 'Move at least one corner point to prove the shape rule.' };
+        }
+
+        if ((proof.minShapeMoves || 0) > (actionStats.shapeMoves || 0)) {
+            return { correct: false, message: proof.shapeMoveMessage || 'Slide the whole shape before you check.' };
+        }
+
+        return { correct: true };
     }
 
     checkBoardManual() {
@@ -633,19 +899,56 @@ class QuizItPolygonApp {
         }
     }
 
-    useHelp() {
+    getCurrentHintText() {
+        if (!this.activeRun) return '';
+        const task = this.activeRun.tasks[this.activeRun.taskIndex];
+        if (!task?.hintLadder?.length) {
+            return '';
+        }
+
+        const safeIndex = Math.max(0, Math.min(task.hintLadder.length - 1, (this.activeRun.hintStage || 1) - 1));
+        return task.hintLadder[safeIndex] || '';
+    }
+
+    toggleHelpPanel() {
+        if (!this.activeRun) return;
+        if (this.activeRun.helpPanelOpen) {
+            this.activeRun.helpPanelOpen = false;
+            this.render();
+            return;
+        }
+
+        if (this.activeRun.hintStage === 0) {
+            this.advanceHelpStage();
+            return;
+        }
+
+        this.activeRun.helpPanelOpen = true;
+        this.activeRun.boardGuideOpen = true;
+        const hintText = this.getCurrentHintText();
+        if (this.profile.settings.readAloud && hintText) {
+            this.speak(hintText);
+        }
+        this.render();
+    }
+
+    advanceHelpStage() {
         if (!this.activeRun) return;
         this.activeRun.hintStage = Math.min(3, this.activeRun.hintStage + 1);
+        this.activeRun.helpPanelOpen = true;
+        this.activeRun.boardGuideOpen = true;
         this.activeRun.maxHintStageUsed = Math.max(this.activeRun.maxHintStageUsed, this.activeRun.hintStage);
         this.board?.setHintStage(this.activeRun.hintStage);
-        const task = this.activeRun.tasks[this.activeRun.taskIndex];
-        this.feedback = {
-            kind: 'try',
-            message: task.hintLadder[Math.max(0, this.activeRun.hintStage - 1)]
-        };
-        if (this.profile.settings.readAloud) {
-            this.speak(this.feedback.message);
+        const hintText = this.getCurrentHintText();
+        if (this.profile.settings.readAloud && hintText) {
+            this.speak(hintText);
         }
+        this.render();
+    }
+
+    setBoardGuideOpen(open) {
+        if (!this.activeRun) return;
+        this.activeRun.boardGuideOpen = open;
         this.render();
     }
 
@@ -751,6 +1054,10 @@ class QuizItPolygonApp {
     }
 
     pickShape(shapeType) {
+        const task = this.activeRun ? this.activeRun.tasks[this.activeRun.taskIndex] : null;
+        if (task?.board?.allowShapePicker === false) {
+            return;
+        }
         this.board?.createOrReplaceShape(shapeType);
         this.showShapePicker = false;
         this.render();

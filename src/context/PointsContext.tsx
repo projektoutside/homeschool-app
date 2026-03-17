@@ -95,6 +95,10 @@ const buildPointsCacheKey = (userId: string): string => {
   return `lahs.user-points.v${POINTS_CACHE_VERSION}:${userId}`;
 };
 
+const buildPointsSyncDisabledKey = (userId: string): string => {
+  return `lahs.user-points-sync-disabled.v${POINTS_CACHE_VERSION}:${userId}`;
+};
+
 const readCachedPointsState = (userId: string): CachedPointsState => {
   if (typeof window === 'undefined') {
     return { version: POINTS_CACHE_VERSION, serverTotalPoints: 0, pendingEvents: [] };
@@ -129,6 +133,69 @@ const writeCachedPointsState = (userId: string, state: CachedPointsState): void 
   } catch {
     // Ignore local cache failures and continue with in-memory state.
   }
+};
+
+const readPointsSyncDisabled = (userId: string): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    return window.sessionStorage.getItem(buildPointsSyncDisabledKey(userId)) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const writePointsSyncDisabled = (userId: string, disabled: boolean): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const storageKey = buildPointsSyncDisabledKey(userId);
+    if (disabled) {
+      window.sessionStorage.setItem(storageKey, '1');
+      return;
+    }
+
+    window.sessionStorage.removeItem(storageKey);
+  } catch {
+    // Ignore session storage failures and continue with in-memory state.
+  }
+};
+
+const getSupabaseErrorText = (value: unknown): string => {
+  if (!isPlainRecord(value)) {
+    return typeof value === 'string' ? value.toLowerCase() : '';
+  }
+
+  return [
+    typeof value.message === 'string' ? value.message : '',
+    typeof value.details === 'string' ? value.details : '',
+    typeof value.hint === 'string' ? value.hint : '',
+    typeof value.code === 'string' ? value.code : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+};
+
+const isMissingPointsSchemaError = (error: unknown): boolean => {
+  const status = isPlainRecord(error) && typeof error.status === 'number' ? error.status : null;
+  const text = getSupabaseErrorText(error);
+
+  if (status === 404) {
+    return true;
+  }
+
+  const mentionsPointsResource = text.includes(USER_POINTS_TOTALS_TABLE) || text.includes(APPLY_GAME_POINTS_RPC);
+  const indicatesMissingResource =
+    text.includes('schema cache') ||
+    text.includes('could not find the table') ||
+    text.includes('could not find the function') ||
+    text.includes('does not exist') ||
+    text.includes('undefined function');
+
+  return mentionsPointsResource && indicatesMissingResource;
 };
 
 const parseRpcTotal = (value: unknown): number => {
@@ -204,6 +271,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const pendingEventsRef = useRef<PendingPointEvent[]>([]);
   const flushInProgressRef = useRef(false);
   const seenEventKeysRef = useRef<Set<string>>(new Set());
+  const pointsSyncUnavailableRef = useRef(false);
 
   const getCurrentTotalPoints = useCallback(() => {
     return normalizeStoredPointTotal(serverTotalRef.current + getPendingPointsTotal(pendingEventsRef.current));
@@ -224,9 +292,30 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user?.id]);
 
+  const disablePointsSync = useCallback((reason: string, error: unknown) => {
+    if (pointsSyncUnavailableRef.current) {
+      return;
+    }
+
+    pointsSyncUnavailableRef.current = true;
+    if (user?.id) {
+      writePointsSyncDisabled(user.id, true);
+    }
+    console.warn('Points sync is unavailable for this session because the Supabase points schema is missing.', {
+      reason,
+      error,
+    });
+  }, [user?.id]);
+
     const flushPendingEvents = useCallback(async () => {
         const client = supabase;
-        if (flushInProgressRef.current || !user?.id || !client || !isSupabaseConfigured) {
+        if (
+            flushInProgressRef.current
+            || pointsSyncUnavailableRef.current
+            || !user?.id
+            || !client
+            || !isSupabaseConfigured
+        ) {
             return;
         }
 
@@ -245,6 +334,11 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
 
         if (error) {
+          if (isMissingPointsSchemaError(error)) {
+            disablePointsSync('apply_game_points_event', error);
+            break;
+          }
+
           console.warn('Points sync failed. Pending event will retry later.', error);
           break;
         }
@@ -272,24 +366,26 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       flushInProgressRef.current = false;
     }
-    }, [commitState, user?.id]);
+    }, [commitState, disablePointsSync, user?.id]);
 
     useEffect(() => {
         const client = supabase;
         if (!user?.id) {
+            pointsSyncUnavailableRef.current = false;
             seenEventKeysRef.current.clear();
             commitState(0, []);
             setLoading(false);
             return;
     }
 
+    pointsSyncUnavailableRef.current = readPointsSyncDisabled(user.id);
     const cachedState = readCachedPointsState(user.id);
     seenEventKeysRef.current = new Set(
       cachedState.pendingEvents.map((event) => getPointEventKey(event.gameId, event.sessionId, event.eventId)),
     );
     commitState(cachedState.serverTotalPoints, cachedState.pendingEvents);
 
-        if (!client || !isSupabaseConfigured) {
+        if (!client || !isSupabaseConfigured || pointsSyncUnavailableRef.current) {
             setLoading(false);
             return;
         }
@@ -308,6 +404,11 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (cancelled) return;
 
         if (error) {
+          if (isMissingPointsSchemaError(error)) {
+            disablePointsSync(USER_POINTS_TOTALS_TABLE, error);
+            return;
+          }
+
           console.warn('Unable to fetch canonical user points total.', error);
           return;
         }
@@ -327,7 +428,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       cancelled = true;
     };
-  }, [commitState, flushPendingEvents, user?.id]);
+  }, [commitState, disablePointsSync, flushPendingEvents, user?.id]);
 
     useEffect(() => {
         const client = supabase;

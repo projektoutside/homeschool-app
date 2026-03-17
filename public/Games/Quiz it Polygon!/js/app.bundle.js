@@ -11,65 +11,117 @@
     rhombus: "#8c63ff",
     trapezoid: "#ff6d8f",
     pentagon: "#00a5a7",
-    hexagon: "#5d7cff"
+    hexagon: "#5d7cff",
+    heptagon: "#5f90ff",
+    octagon: "#ff8c42",
+    kite: "#ff5f8f"
   };
   var shapeChoices = [
     { type: "triangle", title: "Triangle", copy: "3 sides" },
     { type: "square", title: "Square", copy: "4 same sides" },
-    { type: "rectangle", title: "Rectangle", copy: "4 corners" },
-    { type: "parallelogram", title: "Slant Box", copy: "2 side pairs match" },
+    { type: "rectangle", title: "Rectangle", copy: "4 square corners" },
+    { type: "parallelogram", title: "Parallelogram", copy: "2 side pairs match" },
     { type: "trapezoid", title: "Trapezoid", copy: "1 side pair matches" },
+    { type: "rhombus", title: "Rhombus", copy: "4 same sides" },
     { type: "pentagon", title: "Pentagon", copy: "5 sides" },
     { type: "hexagon", title: "Hexagon", copy: "6 sides" },
-    { type: "rhombus", title: "Rhombus", copy: "4 same sides" }
+    { type: "heptagon", title: "Heptagon", copy: "7 sides" },
+    { type: "octagon", title: "Octagon", copy: "8 sides" }
   ];
-  var def = (shapeType, extra = {}) => ({
-    shapeType,
-    color: palette[shapeType] || "#4f8cff",
-    name: extra.name || shapeType,
-    ...extra
-  });
-  var custom = (vertices, extra = {}) => ({
-    vertices,
-    color: extra.color || "#4f8cff",
-    name: extra.name || "Shape",
-    ...extra
-  });
-  var pair = (left, right) => [
-    def(left.shapeType, { ...left, center: left.center || { x: -120, y: 0 }, label: "A", locked: true }),
-    def(right.shapeType, { ...right, center: right.center || { x: 120, y: 0 }, label: "B", locked: true })
-  ];
-  function buildShapeTask(id, prompt, target, extra = {}) {
+  function def(shapeType, extra = {}) {
     return {
-      id,
-      type: extra.fix ? "fix-shape" : "make-shape",
-      modeTitle: extra.fix ? "Fix" : "Make",
-      answerMode: "board",
-      prompt,
-      shortHelp: extra.shortHelp || "Drag corners until it looks right.",
-      boardNote: extra.boardNote || "Move a corner or make a new shape.",
-      celebrationText: extra.celebrationText || "Nice shape!",
-      hintLadder: extra.hintLadder || [
-        extra.fix ? "Look at the side lengths first." : "Think about sides and corners.",
-        extra.fix ? "The helper shape is on the board now." : "The helper outline is on the board now.",
-        extra.fix ? "Use equal sides, square corners, or parallel sides to fix it." : "Use the shape rules to match the helper."
-      ],
-      visualNote: extra.visualNote || "The yellow guide shows what to aim for.",
-      board: {
-        editable: true,
-        starterDefinitions: extra.starterDefinitions || [],
-        guideShape: extra.guideShape || target.shapeType || null,
-        guideDefinitions: extra.guideDefinitions || []
-      },
-      success: {
-        type: "shape-match",
-        primary: target.primary || null,
-        exact: target.exact || null,
-        family: target.family || null,
-        rejectPrimary: target.rejectPrimary || []
-      }
+      shapeType,
+      color: palette[shapeType] || "#4f8cff",
+      name: extra.name || shapeType,
+      ...extra
     };
   }
+  function custom(vertices, extra = {}) {
+    return {
+      vertices,
+      color: extra.color || "#4f8cff",
+      name: extra.name || "Shape",
+      ...extra
+    };
+  }
+  var ISOSCELES_TRAPEZOID_GUIDE = custom([
+    { x: -72, y: 42 },
+    { x: 72, y: 42 },
+    { x: 42, y: -42 },
+    { x: -42, y: -42 }
+  ], { name: "Isosceles Trapezoid", color: palette.trapezoid });
+  var KITE_GUIDE = custom([
+    { x: 0, y: -72 },
+    { x: 48, y: -12 },
+    { x: 0, y: 72 },
+    { x: -72, y: -12 }
+  ], { name: "Kite", color: palette.kite });
+  var RHOMBUS_GUIDE = custom([
+    { x: 0, y: -48 },
+    { x: 72, y: 0 },
+    { x: 0, y: 48 },
+    { x: -72, y: 0 }
+  ], { name: "Rhombus", color: palette.rhombus });
+  var CONCAVE_PENTAGON_GUIDE = custom([
+    { x: 0, y: -72 },
+    { x: 72, y: -24 },
+    { x: 24, y: 0 },
+    { x: 48, y: 72 },
+    { x: -72, y: 48 }
+  ], { name: "Concave Pentagon", color: palette.pentagon });
+  var CONCAVE_HEXAGON_GUIDE = custom([
+    { x: -72, y: -48 },
+    { x: 24, y: -48 },
+    { x: 24, y: -12 },
+    { x: 72, y: 0 },
+    { x: 24, y: 48 },
+    { x: -72, y: 48 }
+  ], { name: "Concave Hexagon", color: palette.hexagon });
+  var ISOSCELES_TRIANGLE_GUIDE = custom([
+    { x: -48, y: 48 },
+    { x: 48, y: 48 },
+    { x: 0, y: -48 }
+  ], { name: "Isosceles Triangle", color: palette.triangle });
+  var SCALENE_TRIANGLE_GUIDE = custom([
+    { x: -72, y: 48 },
+    { x: 48, y: 48 },
+    { x: -24, y: -36 }
+  ], { name: "Scalene Triangle", color: palette.triangle });
+  var ISOSCELES_RIGHT_TRIANGLE_GUIDE = custom([
+    { x: -48, y: 48 },
+    { x: 48, y: 48 },
+    { x: -48, y: -48 }
+  ], { name: "Isosceles Right Triangle", color: palette["right-triangle"] });
+  var OBTUSE_SCALENE_TRIANGLE_GUIDE = custom([
+    { x: -72, y: 48 },
+    { x: 72, y: 48 },
+    { x: -48, y: 0 }
+  ], { name: "Obtuse Scalene Triangle", color: palette["obtuse-triangle"] });
+  var REGULAR_PENTAGON_STARTER = custom([
+    { x: 0, y: -72 },
+    { x: 48, y: -24 },
+    { x: 24, y: 48 },
+    { x: -24, y: 48 },
+    { x: -48, y: -24 }
+  ], { name: "Starter", color: palette.pentagon });
+  var REGULAR_HEXAGON_STARTER = custom([
+    { x: 0, y: -72 },
+    { x: 48, y: -24 },
+    { x: 72, y: 24 },
+    { x: 0, y: 48 },
+    { x: -48, y: 24 },
+    { x: -48, y: -24 }
+  ], { name: "Starter", color: palette.hexagon });
+  var REGULAR_OCTAGON_STARTER = custom([
+    { x: 0, y: -72 },
+    { x: 24, y: -24 },
+    { x: 72, y: 0 },
+    { x: 24, y: 24 },
+    { x: 0, y: 48 },
+    { x: -24, y: 24 },
+    { x: -48, y: 0 },
+    { x: -24, y: -24 }
+  ], { name: "Starter", color: palette.octagon });
   function ensureFourOptions(options = [], fallbackOptions = []) {
     const next = [];
     const seen = /* @__PURE__ */ new Set();
@@ -79,6 +131,107 @@
       next.push(option);
     });
     return next;
+  }
+  function guessVertexCount(target = {}, extra = {}) {
+    var _a2, _b;
+    if (Number.isFinite(extra.points)) return extra.points;
+    if (Array.isArray(extra.guideDefinitions) && ((_b = (_a2 = extra.guideDefinitions[0]) == null ? void 0 : _a2.vertices) == null ? void 0 : _b.length)) {
+      return extra.guideDefinitions[0].vertices.length;
+    }
+    const label = String(target.exact || target.primary || target.family || extra.guideShape || "").toLowerCase();
+    if (label.includes("triangle")) return 3;
+    if (label.includes("quadrilateral") || label.includes("square") || label.includes("rectangle") || label.includes("trapezoid") || label.includes("rhombus") || label.includes("kite") || label.includes("parallelogram")) return 4;
+    if (label.includes("pentagon")) return 5;
+    if (label.includes("hexagon")) return 6;
+    if (label.includes("heptagon")) return 7;
+    if (label.includes("octagon")) return 8;
+    return 4;
+  }
+  function buildShapeTask(id, prompt, target, extra = {}) {
+    const helperBadges = extra.helperBadges || [];
+    return {
+      id,
+      type: extra.fix ? "fix-shape" : extra.type || "make-shape",
+      modeTitle: extra.modeTitle || (extra.fix ? "Fix" : "Make"),
+      answerMode: "board",
+      prompt,
+      shortHelp: extra.shortHelp || "Drag corners until the polygon matches.",
+      boardNote: extra.boardNote || "Move a corner point or plot a new shape on the grid.",
+      celebrationText: extra.celebrationText || "Nice polygon!",
+      hintLadder: extra.hintLadder || [
+        extra.fix ? "Start by checking the side count and corner rules." : "Think about the side count and shape rules first.",
+        extra.fix ? "The helper guide is on the board now." : "The helper outline is on the board now.",
+        extra.teachText || "Use the polygon rules, not just the name."
+      ],
+      visualNote: extra.visualNote || "The yellow guide shows what to aim for when help is on.",
+      board: {
+        editable: true,
+        starterDefinitions: extra.starterDefinitions || [],
+        guideShape: extra.guideShape || target.shapeType || null,
+        guideDefinitions: extra.guideDefinitions || [],
+        guideCenter: extra.guideCenter || null,
+        guideScale: extra.guideScale,
+        allowDraw: extra.allowDraw !== false,
+        allowShapePicker: extra.allowShapePicker !== false,
+        preferredTool: extra.preferredTool || (extra.requireDrawnShape ? "draw" : "move"),
+        helperBadges
+      },
+      success: {
+        type: "shape-match",
+        primary: target.primary || null,
+        exact: target.exact || null,
+        exactAny: target.exactAny || [],
+        exactAll: target.exactAll || [],
+        family: target.family || null,
+        requireTraits: target.requireTraits || [],
+        rejectTraits: target.rejectTraits || [],
+        rejectPrimary: target.rejectPrimary || [],
+        rejectExact: target.rejectExact || []
+      },
+      proof: {
+        requireDrawnShape: extra.requireDrawnShape === true,
+        requireShapeCreate: extra.requireShapeCreate === true,
+        minPlacedVertices: extra.minPlacedVertices || 0,
+        minVertexMoves: extra.minVertexMoves || 0,
+        minShapeMoves: extra.minShapeMoves || 0,
+        drawMessage: extra.drawMessage,
+        createMessage: extra.createMessage,
+        plotMessage: extra.plotMessage,
+        moveMessage: extra.moveMessage,
+        shapeMoveMessage: extra.shapeMoveMessage
+      }
+    };
+  }
+  function plotTask(id, prompt, target, extra = {}) {
+    const points = guessVertexCount(target, extra);
+    return buildShapeTask(id, prompt, target, {
+      ...extra,
+      type: "plot-shape",
+      modeTitle: extra.modeTitle || "Plot",
+      allowShapePicker: false,
+      allowDraw: true,
+      preferredTool: "draw",
+      requireDrawnShape: true,
+      minPlacedVertices: points,
+      shortHelp: extra.shortHelp || `Plot ${points} corner points, then tap the first point again to close the polygon.`,
+      boardNote: extra.boardNote || "Use Plot to place corner points on the grid. Tap the first point again when you are ready to close the shape.",
+      helperBadges: extra.helperBadges || [`Plot ${points} points`, "Tap first point to close"],
+      celebrationText: extra.celebrationText || "You drew the polygon!"
+    });
+  }
+  function moveTask(id, prompt, target, extra = {}) {
+    var _a2, _b, _c;
+    return buildShapeTask(id, prompt, target, {
+      ...extra,
+      modeTitle: extra.modeTitle || (extra.fix ? "Fix" : "Move"),
+      allowShapePicker: (_a2 = extra.allowShapePicker) != null ? _a2 : false,
+      allowDraw: (_b = extra.allowDraw) != null ? _b : false,
+      preferredTool: "move",
+      minVertexMoves: (_c = extra.minVertexMoves) != null ? _c : 1,
+      shortHelp: extra.shortHelp || "Move one or more corner points until the polygon matches.",
+      boardNote: extra.boardNote || "Drag the corner points on the grid.",
+      helperBadges: extra.helperBadges || ["Move corner points", "Use the grid to line it up"]
+    });
   }
   function choiceTask(id, prompt, boardDefinitions, options, answer, extra = {}) {
     return {
@@ -99,166 +252,369 @@
       board: {
         editable: false,
         starterDefinitions: boardDefinitions,
-        showLiveMetric: extra.showLiveMetric || null
+        showLiveMetric: extra.showLiveMetric || null,
+        allowDraw: false,
+        allowShapePicker: false,
+        preferredTool: "move",
+        helperBadges: extra.helperBadges || []
       },
       options: ensureFourOptions(options, extra.fallbackOptions),
-      success: { type: "choice", answer }
-    };
-  }
-  function measureTask(id, prompt, boardDefinitions, metric, extra = {}) {
-    return {
-      id,
-      type: "measure",
-      modeTitle: "Measure",
-      answerMode: "number",
-      prompt,
-      shortHelp: extra.shortHelp || `Type the ${metric}.`,
-      boardNote: extra.boardNote || "Use the grid to count carefully.",
-      celebrationText: extra.celebrationText || "You measured it!",
-      placeholder: extra.placeholder || `Type the ${metric}`,
-      hintLadder: extra.hintLadder || [
-        metric === "area" ? "Count inside space." : "Go all the way around the outside.",
-        metric === "area" ? "The live area clue is on the board now." : "The live around clue is on the board now.",
-        extra.teachText || (metric === "area" ? "Area means inside space." : "Perimeter means the outside path.")
-      ],
-      visualNote: extra.visualNote || (metric === "area" ? "The board now shows a live area clue." : "The board now shows a live around clue."),
-      board: {
-        editable: false,
-        starterDefinitions: boardDefinitions,
-        showLiveMetric: metric
-      },
-      success: { type: "measure", metric, tolerance: extra.tolerance || 0.1 }
-    };
-  }
-  function compareTask(id, prompt, boardDefinitions, answer, extra = {}) {
-    return {
-      id,
-      type: "compare",
-      modeTitle: "Compare",
-      answerMode: "choice",
-      prompt,
-      shortHelp: extra.shortHelp || "Pick A, B, Same, or None.",
-      boardNote: extra.boardNote || "Look at both shapes.",
-      celebrationText: extra.celebrationText || "You compared them right!",
-      hintLadder: extra.hintLadder || [
-        "Check the sides first.",
-        "The board helper is on now.",
-        extra.teachText || "Compare only what the question asks for."
-      ],
-      visualNote: extra.visualNote || "A and B labels are there to help.",
-      board: { editable: false, starterDefinitions: boardDefinitions },
-      options: ensureFourOptions(extra.options || ["A", "B", "Same"], extra.fallbackOptions || ["None"]),
-      success: { type: "choice", answer }
+      success: { type: "choice", answer },
+      proof: {}
     };
   }
   var factories = {
     countTriangle: () => choiceTask("count-triangle", "How many sides does this shape have?", [def("triangle", { locked: true })], ["3", "4", "5", "6"], "3", { type: "count-sides", modeTitle: "Count", teachText: "A triangle has 3 sides." }),
     countSquare: () => choiceTask("count-square", "How many sides does this shape have?", [def("square", { locked: true })], ["3", "4", "5", "6"], "4", { type: "count-sides", modeTitle: "Count", teachText: "A square has 4 sides." }),
     countPentagon: () => choiceTask("count-pentagon", "How many sides does this shape have?", [def("pentagon", { locked: true })], ["4", "5", "6", "8"], "5", { type: "count-sides", modeTitle: "Count", teachText: "A pentagon has 5 sides." }),
-    makeTriangle: () => buildShapeTask("make-triangle", "Make a triangle.", { family: "Triangle" }, { shortHelp: "Any 3-sided shape works.", boardNote: "Use Make Shape if the board is empty." }),
-    makeSquare: () => buildShapeTask("make-square", "Make a square.", { primary: "Square" }, { shortHelp: "4 same sides. 4 square corners.", hintLadder: ["Try 4 equal sides.", "The square guide is on the board now.", "A square has 4 equal sides and 4 right corners."] }),
-    makePentagon: () => buildShapeTask("make-pentagon", "Make a pentagon.", { primary: "Pentagon" }, { shortHelp: "This one needs 5 sides.", boardNote: "Pick Pentagon in Make Shape." }),
     pickSquare: () => choiceTask("pick-square", "What is the best name for this shape?", [def("square", { locked: true })], ["Square", "Rectangle", "Rhombus", "Parallelogram"], "Square", { teachText: "Square is the most exact true name." }),
     pickRectangle: () => choiceTask("pick-rectangle", "What is the best name for this shape?", [def("rectangle", { locked: true })], ["Square", "Rectangle", "Trapezoid", "Rhombus"], "Rectangle", { teachText: "A rectangle has 4 right corners." }),
     pickPentagon: () => choiceTask("pick-pentagon", "What is the best name for this shape?", [def("pentagon", { locked: true })], ["Pentagon", "Hexagon", "Square", "Polygon"], "Pentagon", { teachText: "A pentagon is a 5-sided polygon." }),
-    fixSquare: () => buildShapeTask("fix-square", "Fix this shape so it becomes a square.", { primary: "Square" }, { fix: true, starterDefinitions: [custom([{ x: -48, y: -36 }, { x: 48, y: -24 }, { x: 60, y: 48 }, { x: -60, y: 36 }], { name: "Starter", color: palette.square })], guideShape: "square", shortHelp: "Make all 4 sides the same. Make all 4 corners square." }),
-    fixRectangle: () => buildShapeTask("fix-rectangle", "Fix this shape so it becomes a rectangle.", { primary: "Rectangle" }, { fix: true, starterDefinitions: [custom([{ x: -72, y: -48 }, { x: 72, y: -48 }, { x: 96, y: 48 }, { x: -48, y: 48 }], { name: "Starter", color: palette.rectangle })], guideShape: "rectangle", shortHelp: "Make 4 square corners. Opposite sides should match." }),
-    compareMoreSides: () => compareTask("compare-more-sides", "Which shape has more sides?", pair({ shapeType: "triangle" }, { shapeType: "pentagon" }), "B", { teachText: "A pentagon has more sides than a triangle." }),
-    compareBiggerArea: () => compareTask("compare-bigger-area", "Which shape has more inside space?", pair({ shapeType: "square", scale: 1 }, { shapeType: "square", scale: 1.35 }), "B", { teachText: "More area means more inside space." }),
-    squareArea: () => measureTask("square-area", "What is the area of this square?", [def("square", { locked: true })], "area", { shortHelp: "Count inside squares.", placeholder: "Type area" }),
-    squareAround: () => measureTask("square-around", "What is the perimeter of this square?", [def("square", { locked: true })], "perimeter", { shortHelp: "Add all 4 sides around the square.", placeholder: "Type perimeter" }),
-    rectangleArea: () => measureTask("rectangle-area", "What is the area of this rectangle?", [def("rectangle", { locked: true })], "area", { shortHelp: "Area means the inside space.", placeholder: "Type area" }),
-    rectangleAround: () => measureTask("rectangle-around", "What is the perimeter of this rectangle?", [def("rectangle", { locked: true })], "perimeter", { shortHelp: "Go all the way around.", placeholder: "Type perimeter" }),
     pickTriangleTypeRight: () => choiceTask("pick-triangle-right", "What kind of triangle is this?", [def("right-triangle", { locked: true })], ["Acute Triangle", "Right Triangle", "Obtuse Triangle", "Scalene Triangle"], "Right Triangle", { teachText: "A right triangle has one square corner." }),
     pickTriangleTypeAcute: () => choiceTask("pick-triangle-acute", "What kind of triangle is this?", [def("acute-triangle", { locked: true })], ["Acute Triangle", "Right Triangle", "Obtuse Triangle", "Scalene Triangle"], "Acute Triangle", { teachText: "An acute triangle has all angles smaller than a right angle." }),
     pickTriangleTypeObtuse: () => choiceTask("pick-triangle-obtuse", "What kind of triangle is this?", [def("obtuse-triangle", { locked: true })], ["Acute Triangle", "Right Triangle", "Obtuse Triangle", "Isosceles Triangle"], "Obtuse Triangle", { teachText: "An obtuse triangle has one angle bigger than a right angle." }),
-    makeRightTriangle: () => buildShapeTask("make-right-triangle", "Make a right triangle.", { exact: "Right Triangle", family: "Triangle" }, { shortHelp: "Make one square corner.", guideShape: "right-triangle" }),
-    makeAcuteTriangle: () => buildShapeTask("make-acute-triangle", "Make an acute triangle.", { exact: "Acute Triangle", family: "Triangle" }, { shortHelp: "All corners must stay smaller than a right corner.", guideShape: "acute-triangle" }),
-    makeObtuseTriangle: () => buildShapeTask("make-obtuse-triangle", "Make an obtuse triangle.", { exact: "Obtuse Triangle", family: "Triangle" }, { shortHelp: "One corner should open wider than a right corner.", guideShape: "obtuse-triangle" }),
-    fixObtuseTriangle: () => buildShapeTask("fix-obtuse-triangle", "Fix this so it becomes an obtuse triangle.", { exact: "Obtuse Triangle", family: "Triangle" }, { fix: true, starterDefinitions: [def("triangle")], guideShape: "obtuse-triangle", shortHelp: "One angle needs to open wide." }),
-    fixRightTriangle: () => buildShapeTask("fix-right-triangle", "Fix this so it becomes a right triangle.", { exact: "Right Triangle", family: "Triangle" }, { fix: true, starterDefinitions: [custom([{ x: -72, y: 48 }, { x: 72, y: 48 }, { x: 48, y: -48 }], { name: "Starter", color: palette["right-triangle"] })], guideShape: "right-triangle", shortHelp: "Move one corner until you make a square corner." }),
-    fixAcuteTriangle: () => buildShapeTask("fix-acute-triangle", "Fix this so it becomes an acute triangle.", { exact: "Acute Triangle", family: "Triangle" }, { fix: true, starterDefinitions: [custom([{ x: -72, y: 48 }, { x: 72, y: 48 }, { x: 0, y: 0 }], { name: "Starter", color: palette["acute-triangle"] })], guideShape: "acute-triangle", shortHelp: "All 3 angles should end up smaller than a right angle." }),
-    triangleArea: () => measureTask("triangle-area", "What is the area of this right triangle?", [def("right-triangle", { locked: true })], "area", { shortHelp: "Half of base times height.", placeholder: "Type area" }),
-    triangleAround: () => measureTask("triangle-around", "What is the perimeter of this right triangle?", [def("right-triangle", { locked: true })], "perimeter", { shortHelp: "Add all 3 sides.", placeholder: "Type perimeter" }),
-    acuteTriangleArea: () => measureTask("acute-triangle-area", "What is the area of this acute triangle?", [def("acute-triangle", { locked: true })], "area", { shortHelp: "Count the inside space in square units.", placeholder: "Type area" }),
-    acuteTriangleAround: () => measureTask("acute-triangle-around", "What is the perimeter of this acute triangle?", [def("acute-triangle", { locked: true })], "perimeter", { shortHelp: "Add all 3 side lengths.", placeholder: "Type perimeter" }),
-    compareTriangleType: () => compareTask("compare-triangle-type", "Which triangle has the bigger angle?", pair({ shapeType: "acute-triangle" }, { shapeType: "obtuse-triangle" }), "B", { teachText: "An obtuse triangle has the bigger angle." }),
-    compareTriangleArea: () => compareTask("compare-triangle-area", "Which triangle has more inside space?", pair({ shapeType: "acute-triangle", scale: 0.85 }, { shapeType: "right-triangle", scale: 1.2 }), "B", { teachText: "Compare the inside space, not just the side count." }),
-    compareTriangleAround: () => compareTask("compare-triangle-around", "Which triangle has the longer outside path?", pair({ shapeType: "acute-triangle", scale: 0.85 }, { shapeType: "right-triangle", scale: 1.2 }), "B", { teachText: "A longer perimeter means a longer outside path." }),
     pickParallelogram: () => choiceTask("pick-parallelogram", "What is the best name for this shape?", [def("parallelogram", { locked: true })], ["Parallelogram", "Rectangle", "Trapezoid", "Kite"], "Parallelogram", { teachText: "A parallelogram has 2 opposite side pairs that stay parallel." }),
     pickRhombus: () => choiceTask("pick-rhombus", "What is the best name for this shape?", [def("rhombus", { locked: true })], ["Rhombus", "Square", "Trapezoid", "Rectangle"], "Rhombus", { teachText: "A rhombus has 4 equal sides." }),
     pickTrapezoid: () => choiceTask("pick-trapezoid", "What is the best name for this shape?", [def("trapezoid", { locked: true })], ["Trapezoid", "Parallelogram", "Rectangle", "Rhombus"], "Trapezoid", { teachText: "A trapezoid has one matching pair of opposite sides here." }),
-    makeParallelogram: () => buildShapeTask("make-parallelogram", "Make a slant box.", { primary: "Parallelogram", rejectPrimary: ["Square", "Rectangle"] }, { shortHelp: "Make both opposite side pairs stay parallel.", guideShape: "parallelogram" }),
-    makeTrapezoid: () => buildShapeTask("make-trapezoid", "Make a trapezoid.", { exact: "Trapezoid", family: "Quadrilateral" }, { shortHelp: "Make one pair of opposite sides stay parallel.", boardNote: "Pick Trapezoid in Make Shape.", guideShape: "trapezoid" }),
-    fixTrapezoid: () => buildShapeTask("fix-trapezoid", "Fix this so it becomes a trapezoid.", { primary: "Trapezoid" }, { fix: true, starterDefinitions: [def("rectangle")], guideShape: "trapezoid", shortHelp: "Keep only one pair of opposite sides parallel." }),
-    makeRhombus: () => buildShapeTask("make-rhombus", "Make a rhombus, not a square.", { primary: "Rhombus", rejectPrimary: ["Square"] }, { shortHelp: "All 4 sides the same. Corners should not all be square.", guideShape: "rhombus" }),
-    fixParallelogram: () => buildShapeTask("fix-parallelogram", "Fix this so it becomes a slant box.", { primary: "Parallelogram", rejectPrimary: ["Square", "Rectangle"] }, { fix: true, starterDefinitions: [custom([{ x: -72, y: -48 }, { x: 48, y: -48 }, { x: 96, y: 48 }, { x: -48, y: 24 }], { name: "Starter", color: palette.parallelogram })], guideShape: "parallelogram", shortHelp: "Make both opposite side pairs stay parallel." }),
-    fixRhombus: () => buildShapeTask("fix-rhombus", "Fix this so it becomes a rhombus.", { primary: "Rhombus" }, { fix: true, starterDefinitions: [custom([{ x: 0, y: -72 }, { x: 48, y: -24 }, { x: 24, y: 72 }, { x: -48, y: 24 }], { name: "Starter", color: palette.rhombus })], guideShape: "rhombus", shortHelp: "Make all 4 sides the same length." }),
-    moreExactSquare: () => choiceTask("more-exact-square", "Which name is more exact?", [def("square", { locked: true })], ["Square", "Rectangle", "Quadrilateral", "Polygon"], "Square", { type: "more-exact", teachText: "The more exact true name tells the most." }),
-    moreExactRhombus: () => choiceTask("more-exact-rhombus", "Which name is more exact?", [def("rhombus", { locked: true })], ["Rhombus", "Quadrilateral", "Polygon", "Rectangle"], "Rhombus", { type: "more-exact", teachText: "Pick the strongest true name." }),
-    parallelogramArea: () => measureTask("parallelogram-area", "What is the area of this slant box?", [def("parallelogram", { locked: true })], "area", { shortHelp: "Base times height.", placeholder: "Type area" }),
-    rhombusArea: () => measureTask("rhombus-area", "What is the area of this rhombus?", [def("rhombus", { locked: true })], "area", { shortHelp: "Use the inside space or diagonals.", placeholder: "Type area" }),
-    compareAround: () => compareTask("compare-around", "Which shape has a longer outside path?", pair({ shapeType: "square", scale: 1 }, { shapeType: "rectangle", scale: 1.2 }), "B", { teachText: "Longer perimeter means a longer outside path." }),
-    compareSameSides: () => compareTask("compare-same-sides", "Do these shapes have the same number of sides?", pair({ shapeType: "square" }, { shapeType: "rectangle" }), "Same", { teachText: "Both have 4 sides." }),
-    compareQuadArea: () => compareTask("compare-quad-area", "Which box shape has more inside space?", pair({ shapeType: "parallelogram", scale: 0.9 }, { shapeType: "trapezoid", scale: 1.2 }), "B", { teachText: "Compare the inside space, not just the side names." }),
-    pickIsoscelesTrap: () => choiceTask("pick-isosceles-trap", "What is the best name for this shape?", [custom([{ x: -72, y: 42 }, { x: 72, y: 42 }, { x: 42, y: -42 }, { x: -42, y: -42 }], { locked: true, color: palette.trapezoid, name: "Isosceles Trapezoid" })], ["Isosceles Trapezoid", "Trapezoid", "Parallelogram", "Kite"], "Isosceles Trapezoid", { teachText: "This trapezoid has matching legs, so it has a more exact name." })
+    plotTriangle: () => plotTask("plot-triangle", "Plot 3 corner points to draw a triangle.", { family: "Triangle" }, { guideShape: "triangle", helperBadges: ["Plot 3 points", "Any triangle works"] }),
+    plotSquare: () => plotTask("plot-square", "Plot 4 corner points to draw a square.", { primary: "Square" }, { guideShape: "square", helperBadges: ["Plot 4 points", "4 equal sides"] }),
+    plotRectangle: () => plotTask("plot-rectangle", "Plot 4 corner points to draw a rectangle.", { primary: "Rectangle" }, { guideShape: "rectangle", helperBadges: ["Plot 4 points", "4 right corners"] }),
+    plotPentagon: () => plotTask("plot-pentagon", "Plot 5 corner points to draw a pentagon.", { family: "Pentagon" }, { guideShape: "pentagon" }),
+    plotHexagon: () => plotTask("plot-hexagon", "Plot 6 corner points to draw a hexagon.", { family: "Hexagon" }, { guideShape: "hexagon" }),
+    plotHeptagon: () => plotTask("plot-heptagon", "Plot 7 corner points to draw a heptagon.", { family: "Heptagon" }, { guideShape: "heptagon" }),
+    plotOctagon: () => plotTask("plot-octagon", "Plot 8 corner points to draw an octagon.", { family: "Octagon" }, { guideShape: "octagon" }),
+    fixSquare: () => moveTask("fix-square", "Fix this shape so it becomes a square.", { primary: "Square" }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -48, y: -36 }, { x: 48, y: -24 }, { x: 60, y: 48 }, { x: -60, y: 36 }], { name: "Starter", color: palette.square })],
+      guideShape: "square",
+      shortHelp: "Make all 4 sides the same and all 4 corners square."
+    }),
+    fixRectangle: () => moveTask("fix-rectangle", "Fix this shape so it becomes a rectangle.", { primary: "Rectangle" }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -72, y: -48 }, { x: 72, y: -48 }, { x: 96, y: 48 }, { x: -48, y: 48 }], { name: "Starter", color: palette.rectangle })],
+      guideShape: "rectangle",
+      shortHelp: "Make 4 square corners. Opposite sides should match."
+    }),
+    fixPentagon: () => moveTask("fix-pentagon", "Fix this shape so it becomes a clean pentagon.", { family: "Pentagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: 0, y: -72 }, { x: 72, y: 24 }, { x: -72, y: -24 }, { x: 72, y: -24 }, { x: -24, y: 72 }], { name: "Starter", color: palette.pentagon })],
+      guideShape: "pentagon",
+      shortHelp: "Make 5 sides that do not cross each other.",
+      moveMessage: "Move the corner points until the pentagon is clean and convex."
+    }),
+    fixHexagon: () => moveTask("fix-hexagon", "Fix this shape so it becomes a clean hexagon.", { family: "Hexagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -72, y: -48 }, { x: 0, y: 72 }, { x: 72, y: -48 }, { x: -24, y: 0 }, { x: 72, y: 48 }, { x: -72, y: 48 }], { name: "Starter", color: palette.hexagon })],
+      guideShape: "hexagon",
+      shortHelp: "Keep 6 corners, but stop the sides from crossing.",
+      moveMessage: "Move the corner points until the hexagon is clean and convex."
+    }),
+    fixHeptagon: () => moveTask("fix-heptagon", "Fix this shape so it becomes a clean heptagon.", { family: "Heptagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: 0, y: -72 }, { x: 48, y: -48 }, { x: 72, y: 0 }, { x: 24, y: 0 }, { x: 72, y: 72 }, { x: -48, y: 72 }, { x: -72, y: -24 }], { name: "Starter", color: palette.heptagon })],
+      guideShape: "heptagon",
+      shortHelp: "A heptagon needs 7 clean sides.",
+      moveMessage: "Move the corner points until the heptagon is clean and convex."
+    }),
+    fixOctagon: () => moveTask("fix-octagon", "Fix this shape so it becomes a clean octagon.", { family: "Octagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: 0, y: -72 }, { x: 48, y: -48 }, { x: 72, y: 0 }, { x: 24, y: 0 }, { x: 48, y: 72 }, { x: 0, y: 48 }, { x: -48, y: 72 }, { x: -72, y: -24 }], { name: "Starter", color: palette.octagon })],
+      guideShape: "octagon",
+      shortHelp: "An octagon needs 8 clean sides.",
+      moveMessage: "Move the corner points until the octagon is clean and convex."
+    }),
+    moveSquareIntoRectangle: () => moveTask("move-square-into-rectangle", "Move points so this square becomes a rectangle, not a square.", { primary: "Rectangle" }, {
+      starterDefinitions: [def("square")],
+      guideShape: "rectangle",
+      shortHelp: "Stretch one side pair so not all 4 sides stay equal."
+    }),
+    rectangleToSquare: () => moveTask("rectangle-to-square", "Move points so this rectangle becomes a square.", { primary: "Square" }, {
+      starterDefinitions: [def("rectangle")],
+      guideShape: "square",
+      shortHelp: "Make all 4 sides the same and keep all 4 right corners."
+    }),
+    plotRightTriangle: () => plotTask("plot-right-triangle", "Plot 3 points to draw a right triangle.", { exact: "Right Triangle" }, {
+      guideShape: "right-triangle",
+      helperBadges: ["Plot 3 points", "Make one square corner"]
+    }),
+    plotAcuteTriangle: () => plotTask("plot-acute-triangle", "Plot 3 points to draw an acute triangle.", { exact: "Acute Triangle" }, {
+      guideShape: "acute-triangle",
+      helperBadges: ["Plot 3 points", "All angles smaller than 90\xB0"]
+    }),
+    plotObtuseTriangle: () => plotTask("plot-obtuse-triangle", "Plot 3 points to draw an obtuse triangle.", { exact: "Obtuse Triangle" }, {
+      guideShape: "obtuse-triangle",
+      helperBadges: ["Plot 3 points", "One angle bigger than 90\xB0"]
+    }),
+    fixRightTriangle: () => moveTask("fix-right-triangle", "Fix this so it becomes a right triangle.", { exact: "Right Triangle" }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -72, y: 48 }, { x: 72, y: 48 }, { x: 48, y: -48 }], { name: "Starter", color: palette["right-triangle"] })],
+      guideShape: "right-triangle",
+      shortHelp: "Move one corner until you make a square corner."
+    }),
+    fixAcuteTriangle: () => moveTask("fix-acute-triangle", "Fix this so it becomes an acute triangle.", { exact: "Acute Triangle" }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -72, y: 48 }, { x: 72, y: 48 }, { x: 0, y: 0 }], { name: "Starter", color: palette["acute-triangle"] })],
+      guideShape: "acute-triangle",
+      shortHelp: "All 3 angles should end up smaller than a right angle."
+    }),
+    fixObtuseTriangle: () => moveTask("fix-obtuse-triangle", "Fix this so it becomes an obtuse triangle.", { exact: "Obtuse Triangle" }, {
+      fix: true,
+      starterDefinitions: [def("triangle")],
+      guideShape: "obtuse-triangle",
+      shortHelp: "One angle needs to open wide."
+    }),
+    plotScaleneTriangle: () => plotTask("plot-scalene-triangle", "Plot 3 points to draw a scalene triangle.", { exact: "Scalene Triangle" }, {
+      guideDefinitions: [SCALENE_TRIANGLE_GUIDE],
+      shortHelp: "All 3 sides should end up different lengths.",
+      helperBadges: ["Plot 3 points", "All sides different"]
+    }),
+    plotIsoscelesTriangle: () => plotTask("plot-isosceles-triangle", "Plot 3 points to draw an isosceles triangle.", { exact: "Isosceles Triangle", rejectExact: ["Equilateral Triangle"] }, {
+      guideDefinitions: [ISOSCELES_TRIANGLE_GUIDE],
+      shortHelp: "Exactly 2 sides should match.",
+      helperBadges: ["Plot 3 points", "2 equal sides"]
+    }),
+    plotAcuteIsoscelesTriangle: () => plotTask("plot-acute-isosceles-triangle", "Plot 3 points to draw an acute isosceles triangle.", { exactAll: ["Acute Triangle", "Isosceles Triangle"], rejectExact: ["Equilateral Triangle"] }, {
+      guideDefinitions: [ISOSCELES_TRIANGLE_GUIDE],
+      shortHelp: "Make 2 equal sides and keep all 3 angles smaller than 90\xB0.",
+      helperBadges: ["Plot 3 points", "Acute + 2 equal sides"]
+    }),
+    turnRightToAcute: () => moveTask("turn-right-to-acute", "Move points so this right triangle becomes an acute triangle.", { exact: "Acute Triangle" }, {
+      starterDefinitions: [def("right-triangle")],
+      guideShape: "acute-triangle",
+      shortHelp: "Remove the square corner so all 3 angles are smaller than 90\xB0."
+    }),
+    turnAcuteToObtuse: () => moveTask("turn-acute-to-obtuse", "Move points so this acute triangle becomes an obtuse triangle.", { exact: "Obtuse Triangle" }, {
+      starterDefinitions: [def("acute-triangle")],
+      guideShape: "obtuse-triangle",
+      shortHelp: "Open one angle wider than 90\xB0."
+    }),
+    turnObtuseToRight: () => moveTask("turn-obtuse-to-right", "Move points so this obtuse triangle becomes a right triangle.", { exact: "Right Triangle" }, {
+      starterDefinitions: [def("obtuse-triangle")],
+      guideShape: "right-triangle",
+      shortHelp: "Close the wide angle until one corner becomes a square corner."
+    }),
+    turnAcuteToRight: () => moveTask("turn-acute-to-right", "Move points so this acute triangle becomes a right triangle.", { exact: "Right Triangle" }, {
+      starterDefinitions: [def("acute-triangle")],
+      guideShape: "right-triangle",
+      shortHelp: "Make exactly one square corner."
+    }),
+    fixScaleneTriangle: () => moveTask("fix-scalene-triangle", "Move points so this triangle becomes scalene.", { exact: "Scalene Triangle" }, {
+      starterDefinitions: [def("triangle")],
+      guideDefinitions: [SCALENE_TRIANGLE_GUIDE],
+      shortHelp: "All 3 side lengths should end up different."
+    }),
+    plotIsoscelesRightTriangle: () => plotTask("plot-isosceles-right-triangle", "Plot 3 points to draw an isosceles right triangle.", { exactAll: ["Right Triangle", "Isosceles Triangle"] }, {
+      guideDefinitions: [ISOSCELES_RIGHT_TRIANGLE_GUIDE],
+      shortHelp: "Make one square corner and 2 equal sides.",
+      helperBadges: ["Plot 3 points", "Right angle + 2 equal sides"]
+    }),
+    plotObtuseScaleneTriangle: () => plotTask("plot-obtuse-scalene-triangle", "Plot 3 points to draw an obtuse scalene triangle.", { exactAll: ["Obtuse Triangle", "Scalene Triangle"] }, {
+      guideDefinitions: [OBTUSE_SCALENE_TRIANGLE_GUIDE],
+      shortHelp: "Make one wide angle and keep all 3 side lengths different.",
+      helperBadges: ["Plot 3 points", "Obtuse + all sides different"]
+    }),
+    plotParallelogram: () => plotTask("plot-parallelogram", "Plot 4 points to draw a parallelogram.", { primary: "Parallelogram" }, {
+      guideShape: "parallelogram",
+      helperBadges: ["Plot 4 points", "2 opposite side pairs stay parallel"]
+    }),
+    plotTrapezoid: () => plotTask("plot-trapezoid", "Plot 4 points to draw a trapezoid.", { exactAny: ["Trapezoid", "Isosceles Trapezoid"] }, {
+      guideShape: "trapezoid",
+      helperBadges: ["Plot 4 points", "Only 1 side pair stays parallel"]
+    }),
+    plotRhombus: () => plotTask("plot-rhombus", "Plot 4 points to draw a rhombus.", { primary: "Rhombus" }, {
+      guideDefinitions: [RHOMBUS_GUIDE],
+      helperBadges: ["Plot 4 points", "4 equal sides"]
+    }),
+    fixParallelogram: () => moveTask("fix-parallelogram", "Fix this so it becomes a parallelogram.", { primary: "Parallelogram", rejectPrimary: ["Square", "Rectangle"] }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: -72, y: -48 }, { x: 48, y: -48 }, { x: 96, y: 48 }, { x: -48, y: 24 }], { name: "Starter", color: palette.parallelogram })],
+      guideShape: "parallelogram",
+      shortHelp: "Make both opposite side pairs stay parallel."
+    }),
+    fixTrapezoid: () => moveTask("fix-trapezoid", "Fix this so it becomes a trapezoid.", { exactAny: ["Trapezoid", "Isosceles Trapezoid"] }, {
+      fix: true,
+      starterDefinitions: [def("rectangle")],
+      guideShape: "trapezoid",
+      shortHelp: "Keep only one pair of opposite sides parallel."
+    }),
+    fixRhombus: () => moveTask("fix-rhombus", "Fix this so it becomes a rhombus.", { primary: "Rhombus" }, {
+      fix: true,
+      starterDefinitions: [custom([{ x: 0, y: -72 }, { x: 60, y: -12 }, { x: 0, y: 72 }, { x: -48, y: 12 }], { name: "Starter", color: palette.rhombus })],
+      guideDefinitions: [RHOMBUS_GUIDE],
+      shortHelp: "Make all 4 sides the same length."
+    }),
+    makeRectangleNotSquare: () => plotTask("make-rectangle-not-square", "Plot 4 points to make a rectangle, not a square.", { primary: "Rectangle" }, {
+      guideShape: "rectangle",
+      shortHelp: "Keep 4 square corners, but do not make all 4 sides equal.",
+      helperBadges: ["Plot 4 points", "Rectangle, not square"]
+    }),
+    makeParallelogramNotRectangle: () => plotTask("make-parallelogram-not-rectangle", "Plot 4 points to make a parallelogram, not a rectangle.", { primary: "Parallelogram" }, {
+      guideShape: "parallelogram",
+      shortHelp: "Both opposite side pairs stay parallel, but no full set of square corners.",
+      helperBadges: ["Plot 4 points", "Parallelogram, not rectangle"]
+    }),
+    makeRhombusNotSquare: () => plotTask("make-rhombus-not-square", "Plot 4 points to make a rhombus, not a square.", { primary: "Rhombus" }, {
+      guideDefinitions: [RHOMBUS_GUIDE],
+      shortHelp: "All 4 sides should match, but do not make all 4 right corners.",
+      helperBadges: ["Plot 4 points", "Rhombus, not square"]
+    }),
+    makeIsoscelesTrap: () => plotTask("make-isosceles-trap", "Plot 4 points to make an isosceles trapezoid.", { exact: "Isosceles Trapezoid" }, {
+      guideDefinitions: [ISOSCELES_TRAPEZOID_GUIDE],
+      shortHelp: "Keep one pair of opposite sides parallel and make the legs match.",
+      helperBadges: ["Plot 4 points", "1 parallel pair + matching legs"]
+    }),
+    makeKite: () => plotTask("make-kite", "Plot 4 points to make a kite.", { exact: "Kite" }, {
+      guideDefinitions: [KITE_GUIDE],
+      shortHelp: "Make 2 matching side pairs that meet at the corners.",
+      helperBadges: ["Plot 4 points", "2 adjacent side pairs match"]
+    }),
+    squareToRhombus: () => moveTask("square-to-rhombus", "Move points so this square becomes a rhombus, not a square.", { primary: "Rhombus" }, {
+      starterDefinitions: [def("square")],
+      guideDefinitions: [RHOMBUS_GUIDE],
+      shortHelp: "Keep all 4 sides equal, but lose the full set of right corners."
+    }),
+    trapezoidToIsoscelesTrap: () => moveTask("trapezoid-to-isosceles-trap", "Move points so this trapezoid becomes an isosceles trapezoid.", { exact: "Isosceles Trapezoid" }, {
+      starterDefinitions: [def("trapezoid")],
+      guideDefinitions: [ISOSCELES_TRAPEZOID_GUIDE],
+      shortHelp: "Keep the parallel side pair and make the legs match."
+    }),
+    parallelogramToRectangle: () => moveTask("parallelogram-to-rectangle", "Move points so this parallelogram becomes a rectangle.", { primary: "Rectangle" }, {
+      starterDefinitions: [def("parallelogram")],
+      guideShape: "rectangle",
+      shortHelp: "Make all 4 corners square."
+    }),
+    makeConvexPentagon: () => plotTask("make-convex-pentagon", "Plot 5 points to draw a convex pentagon.", { family: "Pentagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      guideShape: "pentagon",
+      shortHelp: "Keep all corners pointing outward with no crossings.",
+      helperBadges: ["Plot 5 points", "Convex shape"]
+    }),
+    makeConvexHexagon: () => plotTask("make-convex-hexagon", "Plot 6 points to draw a convex hexagon.", { family: "Hexagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      guideShape: "hexagon",
+      shortHelp: "Keep all corners pointing outward with no crossings.",
+      helperBadges: ["Plot 6 points", "Convex shape"]
+    }),
+    makeConcavePentagon: () => plotTask("make-concave-pentagon", "Plot 5 points to draw a concave pentagon.", { family: "Pentagon", requireTraits: ["Concave"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      guideDefinitions: [CONCAVE_PENTAGON_GUIDE],
+      shortHelp: "Push one corner inward so the pentagon caves in.",
+      helperBadges: ["Plot 5 points", "One corner points inward"]
+    }),
+    makeConcaveHexagon: () => plotTask("make-concave-hexagon", "Plot 6 points to draw a concave hexagon.", { family: "Hexagon", requireTraits: ["Concave"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      guideDefinitions: [CONCAVE_HEXAGON_GUIDE],
+      shortHelp: "Push one corner inward so the hexagon caves in.",
+      helperBadges: ["Plot 6 points", "One corner points inward"]
+    }),
+    fixRegularPentagon: () => moveTask("fix-regular-pentagon", "Move points so this pentagon becomes a clean convex pentagon.", { family: "Pentagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      starterDefinitions: [REGULAR_PENTAGON_STARTER],
+      guideShape: "pentagon",
+      shortHelp: "Keep 5 sides, stop crossings, and make the corners point outward."
+    }),
+    fixRegularHexagon: () => moveTask("fix-regular-hexagon", "Move points so this hexagon becomes a clean convex hexagon.", { family: "Hexagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      starterDefinitions: [REGULAR_HEXAGON_STARTER],
+      guideShape: "hexagon",
+      shortHelp: "Keep 6 sides, stop crossings, and make the corners point outward."
+    }),
+    fixRegularOctagon: () => moveTask("fix-regular-octagon", "Move points so this octagon becomes a clean convex octagon.", { family: "Octagon", requireTraits: ["Convex"], rejectTraits: ["Complex Polygon", "Degenerate"] }, {
+      starterDefinitions: [REGULAR_OCTAGON_STARTER],
+      guideShape: "octagon",
+      shortHelp: "Keep 8 sides, stop crossings, and make the corners point outward."
+    })
   };
   var missionKeys = {
     shapeStart: [
-      ["shape-1", "Count the Sides", "Let\u2019s start with side counting.", "Count easy shapes.", ["countTriangle", "countSquare", "countPentagon"]],
-      ["shape-2", "Make New Shapes", "Use Make Shape and the board.", "Build easy shapes.", ["makeTriangle", "makeSquare", "makePentagon"]],
-      ["shape-3", "Pick the Name", "Read the board and pick the best name.", "Name easy shapes.", ["pickSquare", "pickRectangle", "pickPentagon"]],
-      ["shape-4", "Fix the Shape", "A few shapes need your help.", "Fix easy shapes.", ["fixSquare", "fixRectangle", "fixRightTriangle"]],
-      ["shape-5", "Big or Small", "Now compare two shapes.", "Compare simple shapes.", ["compareMoreSides", "compareBiggerArea", "compareSameSides"]],
-      ["shape-6", "Measure It", "Count inside space and outside path.", "Measure simple shapes.", ["squareArea", "squareAround", "rectangleArea"]],
-      ["shape-boss", "Shape Start Boss", "Mix everything you learned.", "Boss mix.", ["makeSquare", "moreExactSquare", "countPentagon"], true]
+      ["shape-1", "Count the Sides", "Start with the basic side counts.", "Count easy polygons.", ["countTriangle", "countSquare", "countPentagon"]],
+      ["shape-2", "Plot the First Shapes", "Now draw the easy polygons yourself.", "Plot simple polygons.", ["plotTriangle", "plotSquare", "plotRectangle"]],
+      ["shape-3", "More Sides", "Add more corners and keep your lines clean.", "Plot 5- and 6-sided polygons.", ["plotPentagon", "plotHexagon", "pickPentagon"]],
+      ["shape-4", "Fix the Shape", "Move the corner points until each polygon is right.", "Fix basic polygons.", ["fixSquare", "fixRectangle", "fixPentagon"]],
+      ["shape-5", "Best Name", "Name the polygons after you build them.", "Pick exact names.", ["pickSquare", "pickRectangle", "moveSquareIntoRectangle"]],
+      ["shape-6", "Stretch and Snap", "Turn one polygon into another by moving points.", "Transform easy polygons.", ["rectangleToSquare", "fixHexagon", "plotHexagon"]],
+      ["shape-boss", "Shape Start Boss", "Mix drawing and fixing in one run.", "Boss mix.", ["plotSquare", "fixRectangle", "plotPentagon"], true]
     ],
     triangleTrail: [
-      ["triangle-1", "Triangle Types", "Look at the angles.", "Name triangle kinds.", ["pickTriangleTypeRight", "pickTriangleTypeAcute", "pickTriangleTypeObtuse"]],
-      ["triangle-2", "Make Triangle Kinds", "Build triangle kinds on the board.", "Make triangle kinds.", ["makeRightTriangle", "makeAcuteTriangle", "makeObtuseTriangle"]],
-      ["triangle-3", "Fix the Corners", "These starters need new corners.", "Fix triangle kinds.", ["fixObtuseTriangle", "fixRightTriangle", "fixAcuteTriangle"]],
-      ["triangle-4", "Count and Name", "Mix side counting and triangle naming.", "Mix triangle facts.", ["countTriangle", "pickTriangleTypeRight", "pickTriangleTypeObtuse"]],
-      ["triangle-5", "Measure Triangles", "Use triangle rules now.", "Measure triangles.", ["triangleArea", "triangleAround", "acuteTriangleAround"]],
-      ["triangle-6", "Compare Triangles", "Which triangle changes the most?", "Compare triangle facts.", ["compareTriangleType", "compareTriangleArea", "compareTriangleAround"]],
-      ["triangle-boss", "Triangle Trail Boss", "One more mixed round.", "Boss mix.", ["makeRightTriangle", "pickTriangleTypeObtuse", "triangleArea"], true]
+      ["triangle-1", "Triangle Types", "Read the angles first.", "Name triangle kinds.", ["pickTriangleTypeRight", "pickTriangleTypeAcute", "pickTriangleTypeObtuse"]],
+      ["triangle-2", "Plot Triangle Types", "Draw each kind of triangle yourself.", "Plot triangle kinds.", ["plotRightTriangle", "plotAcuteTriangle", "plotObtuseTriangle"]],
+      ["triangle-3", "Fix the Corners", "Move one corner and watch the angle type change.", "Fix triangle kinds.", ["fixRightTriangle", "fixAcuteTriangle", "fixObtuseTriangle"]],
+      ["triangle-4", "Side Clues", "Now prove triangle names with side lengths too.", "Plot side-based triangles.", ["plotScaleneTriangle", "plotIsoscelesTriangle", "plotAcuteIsoscelesTriangle"]],
+      ["triangle-5", "Turn One Into Another", "Move points to remake each triangle type.", "Transform triangle kinds.", ["turnRightToAcute", "turnAcuteToObtuse", "turnObtuseToRight"]],
+      ["triangle-6", "Hard Triangle Builds", "Mix angle and side clues in the same drawing.", "Hard triangle build.", ["plotIsoscelesRightTriangle", "fixScaleneTriangle", "turnAcuteToRight"]],
+      ["triangle-boss", "Triangle Trail Boss", "One more triangle proof run.", "Boss mix.", ["plotAcuteIsoscelesTriangle", "plotIsoscelesRightTriangle", "turnObtuseToRight"], true]
     ],
     quadQuest: [
-      ["quad-1", "Name the Box", "Read the shape clues and choose the best name.", "Name box shapes.", ["pickParallelogram", "pickRhombus", "pickTrapezoid"]],
-      ["quad-2", "Make a Slant Box", "Use the board to build quad shapes.", "Make quad shapes.", ["makeParallelogram", "makeTrapezoid", "makeRhombus"]],
-      ["quad-3", "More Exact", "Pick the strongest true name.", "Choose exact names.", ["moreExactSquare", "moreExactRhombus", "pickParallelogram"]],
-      ["quad-4", "Fix the Box", "Some box shapes need one more move.", "Fix quad shapes.", ["fixTrapezoid", "fixParallelogram", "fixRhombus"]],
-      ["quad-5", "Measure the Box", "Find inside space and outside path.", "Measure quad shapes.", ["rectangleAround", "parallelogramArea", "rhombusArea"]],
-      ["quad-6", "Compare the Box", "Use sides and size to compare.", "Compare quad shapes.", ["compareAround", "compareSameSides", "compareQuadArea"]],
-      ["quad-boss", "Quad Quest Boss", "A mixed box challenge.", "Boss mix.", ["makeRhombus", "moreExactSquare", "parallelogramArea"], true]
+      ["quad-1", "Name the Quad", "Read the side clues and choose the best name.", "Name quad shapes.", ["pickParallelogram", "pickRhombus", "pickTrapezoid"]],
+      ["quad-2", "Plot the Quads", "Draw each 4-sided polygon yourself.", "Plot quad shapes.", ["plotParallelogram", "plotTrapezoid", "plotRhombus"]],
+      ["quad-3", "Fix the Quads", "Move the corner points until the quad is right.", "Fix quad shapes.", ["fixParallelogram", "fixTrapezoid", "fixRhombus"]],
+      ["quad-4", "Exact Quads", "Make the more exact polygon, not just any 4-sided shape.", "Build exact quads.", ["makeRectangleNotSquare", "makeParallelogramNotRectangle", "makeRhombusNotSquare"]],
+      ["quad-5", "Special Quads", "These need more than one clue at once.", "Build special quads.", ["makeIsoscelesTrap", "makeKite", "rectangleToSquare"]],
+      ["quad-6", "Quad Transform Lab", "Start with one quad and move points into a new one.", "Transform quads.", ["squareToRhombus", "trapezoidToIsoscelesTrap", "parallelogramToRectangle"]],
+      ["quad-boss", "Quad Quest Boss", "A final mixed quad challenge.", "Boss mix.", ["makeIsoscelesTrap", "makeKite", "squareToRhombus"], true]
     ],
     measureMountain: [
-      ["measure-1", "Inside Space", "Area tells how much space is inside.", "Area tasks.", ["squareArea", "triangleArea", "parallelogramArea"]],
-      ["measure-2", "Outside Path", "Perimeter goes all the way around.", "Perimeter tasks.", ["rectangleAround", "triangleAround", "compareAround"]],
-      ["measure-3", "Area Mix", "Switch between different area rules.", "Mixed area.", ["squareArea", "rhombusArea", "compareBiggerArea"]],
-      ["measure-4", "Perimeter Mix", "Switch between different perimeter checks.", "Mixed perimeter.", ["rectangleAround", "triangleAround", "compareAround"]],
-      ["measure-5", "Compare the Size", "Pick the bigger one.", "Compare size.", ["compareBiggerArea", "compareAround", "compareMoreSides"]],
-      ["measure-6", "Fast Number Mix", "Use the right rule fast.", "Fast mixed measure.", ["squareArea", "rectangleAround", "rhombusArea"]],
-      ["measure-boss", "Measure Mountain Boss", "One more number climb.", "Boss mix.", ["triangleArea", "compareAround", "rhombusArea"], true]
+      ["measure-1", "Polygon Peaks", "Now climb into polygons with many sides.", "Plot 5- to 7-sided polygons.", ["plotPentagon", "plotHexagon", "plotHeptagon"]],
+      ["measure-2", "More Corners", "Eight sides is waiting now.", "Plot and fix many-sided polygons.", ["plotOctagon", "fixPentagon", "fixHexagon"]],
+      ["measure-3", "Clean the Shape", "Keep the side count, but clean up the polygon.", "Fix higher polygons.", ["fixHeptagon", "fixOctagon", "makeConvexHexagon"]],
+      ["measure-4", "Concave or Convex", "Now prove you can control which way a polygon bends.", "Concave and convex practice.", ["makeConcavePentagon", "makeConcaveHexagon", "makeConvexPentagon"]],
+      ["measure-5", "Clean Polygon Challenge", "These polygons need careful point moves to stay clean and convex.", "Fix many-sided polygons.", ["fixRegularPentagon", "fixRegularHexagon", "fixRegularOctagon"]],
+      ["measure-6", "Many-Side Mix", "Switch between clean, regular, and side-count ideas.", "Mixed polygon climb.", ["plotOctagon", "fixHeptagon", "makeConcaveHexagon"]],
+      ["measure-boss", "Polygon Peaks Boss", "One more many-sided proof run.", "Boss mix.", ["makeConcaveHexagon", "fixRegularHexagon", "fixRegularOctagon"], true]
     ],
     masterMix: [
-      ["master-1", "Best Name Wins", "Choose the most exact true name.", "Exact name mix.", ["moreExactSquare", "moreExactRhombus", "pickIsoscelesTrap"]],
-      ["master-2", "Shape Builder", "Make the strongest match you can.", "Build mix.", ["makeParallelogram", "makeRhombus", "makeRightTriangle"]],
-      ["master-3", "Shape Doctor", "Fix shapes that are close but not right yet.", "Fix mix.", ["fixSquare", "fixTrapezoid", "fixObtuseTriangle"]],
-      ["master-4", "Measure and Compare", "Use math and shape reading together.", "Measure mix.", ["rhombusArea", "compareBiggerArea", "compareAround"]],
-      ["master-5", "Quick Brain", "Switch tasks fast.", "Fast mix.", ["countPentagon", "pickParallelogram", "squareArea"]],
-      ["master-6", "Boss Practice", "One last warm-up.", "Practice mix.", ["triangleAround", "pickTriangleTypeRight", "makeSquare"]],
-      ["master-boss", "Master Mix Boss", "Your final star test.", "Boss mix.", ["makeRhombus", "pickIsoscelesTrap", "rhombusArea"], true]
+      ["master-1", "Exact Builder", "Make the strongest true name each time.", "Exact polygon mix.", ["makeRectangleNotSquare", "makeParallelogramNotRectangle", "makeRhombusNotSquare"]],
+      ["master-2", "Angles and Sides", "Now mix angle clues with side clues.", "Triangle mastery mix.", ["plotIsoscelesRightTriangle", "plotObtuseScaleneTriangle", "turnAcuteToRight"]],
+      ["master-3", "Special Polygon Lab", "These shapes need careful point moves.", "Special polygon mix.", ["makeIsoscelesTrap", "makeKite", "makeConcavePentagon"]],
+      ["master-4", "Clean Repair", "Fix the many-sided polygons until they are clean and convex.", "Many-sided repair mix.", ["fixRegularPentagon", "fixRegularHexagon", "fixRegularOctagon"]],
+      ["master-5", "Corner Sprint", "Draw bigger polygons quickly and cleanly.", "Many-side sprint.", ["plotHexagon", "plotHeptagon", "plotOctagon"]],
+      ["master-6", "Prove It by Moving Points", "Start with one shape and move it into another.", "Hard transform mix.", ["squareToRhombus", "trapezoidToIsoscelesTrap", "turnObtuseToRight"]],
+      ["master-boss", "Master Mix Boss", "Your final polygon proof test.", "Boss mix.", ["makeKite", "plotIsoscelesRightTriangle", "fixRegularHexagon"], true]
     ]
   };
   function makeMission([id, title, intro, short, keys, boss = false]) {
     return { id, title, intro, short, tasks: keys.map((key) => factories[key]()), boss };
   }
   var WORLDS = [
-    { id: "shape-start", title: "Shape Start", theme: "Warm Up", copy: "Meet shapes, count sides, and win your first stars.", badge: "Shape Starter", missions: missionKeys.shapeStart.map(makeMission), taskPool: ["countTriangle", "countSquare", "countPentagon", "makeTriangle", "makeSquare", "makePentagon", "pickSquare", "pickRectangle", "pickPentagon", "fixSquare", "fixRectangle", "squareArea", "squareAround", "rectangleArea"] },
-    { id: "triangle-trail", title: "Triangle Trail", theme: "Angle Path", copy: "Learn triangle kinds by fixing and making them.", badge: "Triangle Tracker", missions: missionKeys.triangleTrail.map(makeMission), taskPool: ["pickTriangleTypeRight", "pickTriangleTypeAcute", "pickTriangleTypeObtuse", "makeRightTriangle", "makeAcuteTriangle", "makeObtuseTriangle", "fixObtuseTriangle", "fixRightTriangle", "fixAcuteTriangle", "triangleArea", "triangleAround", "acuteTriangleArea", "acuteTriangleAround", "compareTriangleType"] },
-    { id: "quad-quest", title: "Quad Quest", theme: "Box Trail", copy: "Meet slant boxes, rhombi, and trapezoids.", badge: "Quad Quest Hero", missions: missionKeys.quadQuest.map(makeMission), taskPool: ["pickParallelogram", "pickRhombus", "pickTrapezoid", "makeParallelogram", "makeTrapezoid", "makeRhombus", "fixTrapezoid", "fixParallelogram", "fixRhombus", "moreExactSquare", "moreExactRhombus", "parallelogramArea", "rhombusArea", "compareQuadArea"] },
-    { id: "measure-mountain", title: "Measure Mountain", theme: "Number Climb", copy: "Use area and perimeter all the way up the mountain.", badge: "Measure Master", missions: missionKeys.measureMountain.map(makeMission), taskPool: ["squareArea", "rectangleAround", "triangleArea", "triangleAround", "parallelogramArea", "rhombusArea", "compareBiggerArea", "compareAround"] },
-    { id: "master-mix", title: "Master Mix", theme: "Star Stage", copy: "Mix all of your best shape moves in one world.", badge: "Polygon Pro", missions: missionKeys.masterMix.map(makeMission), taskPool: ["moreExactSquare", "moreExactRhombus", "pickIsoscelesTrap", "makeParallelogram", "makeRhombus", "makeRightTriangle", "rhombusArea", "compareAround", "compareBiggerArea"] }
+    {
+      id: "shape-start",
+      title: "Shape Start",
+      theme: "Warm Up",
+      copy: "Count sides, draw your first polygons, and fix simple shapes by moving points.",
+      badge: "Shape Starter",
+      missions: missionKeys.shapeStart.map(makeMission),
+      taskPool: ["countTriangle", "countSquare", "countPentagon", "plotTriangle", "plotSquare", "plotRectangle", "plotPentagon", "plotHexagon", "fixSquare", "fixRectangle", "fixPentagon", "moveSquareIntoRectangle", "rectangleToSquare"]
+    },
+    {
+      id: "triangle-trail",
+      title: "Triangle Trail",
+      theme: "Angle Path",
+      copy: "Build triangle types, fix near-misses, and prove angle-plus-side triangle names.",
+      badge: "Triangle Tracker",
+      missions: missionKeys.triangleTrail.map(makeMission),
+      taskPool: ["pickTriangleTypeRight", "pickTriangleTypeAcute", "pickTriangleTypeObtuse", "plotRightTriangle", "plotAcuteTriangle", "plotObtuseTriangle", "fixRightTriangle", "fixAcuteTriangle", "fixObtuseTriangle", "plotScaleneTriangle", "plotIsoscelesTriangle", "plotAcuteIsoscelesTriangle", "turnRightToAcute", "turnAcuteToObtuse", "turnObtuseToRight", "turnAcuteToRight", "plotIsoscelesRightTriangle", "plotObtuseScaleneTriangle"]
+    },
+    {
+      id: "quad-quest",
+      title: "Quad Quest",
+      theme: "Quad Lab",
+      copy: "Draw, fix, and transform quadrilaterals until the exact name is true.",
+      badge: "Quad Quest Hero",
+      missions: missionKeys.quadQuest.map(makeMission),
+      taskPool: ["pickParallelogram", "pickRhombus", "pickTrapezoid", "plotParallelogram", "plotTrapezoid", "plotRhombus", "fixParallelogram", "fixTrapezoid", "fixRhombus", "makeRectangleNotSquare", "makeParallelogramNotRectangle", "makeRhombusNotSquare", "makeIsoscelesTrap", "makeKite", "rectangleToSquare", "squareToRhombus", "trapezoidToIsoscelesTrap", "parallelogramToRectangle"]
+    },
+    {
+      id: "measure-mountain",
+      title: "Polygon Peaks",
+      theme: "Many Sides",
+      copy: "Climb from pentagons to octagons and prove you can control clean, concave, convex, and regular polygons.",
+      badge: "Polygon Peak Climber",
+      missions: missionKeys.measureMountain.map(makeMission),
+      taskPool: ["plotPentagon", "plotHexagon", "plotHeptagon", "plotOctagon", "fixPentagon", "fixHexagon", "fixHeptagon", "fixOctagon", "makeConvexPentagon", "makeConvexHexagon", "makeConcavePentagon", "makeConcaveHexagon", "fixRegularPentagon", "fixRegularHexagon", "fixRegularOctagon"]
+    },
+    {
+      id: "master-mix",
+      title: "Master Mix",
+      theme: "Proof Stage",
+      copy: "Mix exact names, tricky fixes, and hard polygon builds in one final world.",
+      badge: "Polygon Pro",
+      missions: missionKeys.masterMix.map(makeMission),
+      taskPool: ["makeRectangleNotSquare", "makeParallelogramNotRectangle", "makeRhombusNotSquare", "plotIsoscelesRightTriangle", "plotObtuseScaleneTriangle", "turnAcuteToRight", "makeIsoscelesTrap", "makeKite", "makeConcavePentagon", "fixRegularPentagon", "fixRegularHexagon", "fixRegularOctagon", "plotHexagon", "plotHeptagon", "plotOctagon", "squareToRhombus", "trapezoidToIsoscelesTrap", "turnObtuseToRight"]
+    }
   ];
   function getShapeChoices() {
     return shapeChoices.slice();
@@ -747,6 +1103,15 @@
 
   // public/Games/Quiz it Polygon!/js/engine/polygon-board.js
   var DEFAULT_COLORS = ["#4f8cff", "#ff8a5b", "#27b07d", "#8c63ff", "#ffbf47"];
+  function createEmptyActionStats() {
+    return {
+      shapeCreates: 0,
+      plottedPoints: 0,
+      drawnPolygons: 0,
+      vertexMoves: 0,
+      shapeMoves: 0
+    };
+  }
   var PolygonBoard = class {
     constructor(canvas, options = {}) {
       this.canvas = canvas;
@@ -766,7 +1131,12 @@
       this.historyIndex = -1;
       this.drag = null;
       this.pointerId = null;
+      this.activePointerType = "mouse";
+      this.pendingDragPoint = null;
+      this.dragFrame = 0;
       this.resizeObserver = null;
+      this.draftVertices = [];
+      this.actionStats = createEmptyActionStats();
       this.boundHandlePointerDown = this.handlePointerDown.bind(this);
       this.boundHandlePointerMove = this.handlePointerMove.bind(this);
       this.boundHandlePointerUp = this.handlePointerUp.bind(this);
@@ -793,6 +1163,10 @@
       window.removeEventListener("pointerup", this.boundHandlePointerUp);
       window.removeEventListener("pointercancel", this.boundHandlePointerUp);
       window.removeEventListener("resize", this.boundHandleResize);
+      if (this.dragFrame) {
+        window.cancelAnimationFrame(this.dragFrame);
+        this.dragFrame = 0;
+      }
       (_a2 = this.resizeObserver) == null ? void 0 : _a2.disconnect();
     }
     resize() {
@@ -821,6 +1195,9 @@
     }
     setMode(mode) {
       this.mode = mode;
+      if (mode === "draw") {
+        this.selectedVertexIndex = -1;
+      }
       this.render();
     }
     setReadonly(readonly) {
@@ -836,12 +1213,20 @@
         ...taskBoard,
         guideDefinitions: (taskBoard.guideDefinitions || []).map(cloneDefinition),
         helperBadges: Array.isArray(taskBoard.helperBadges) ? taskBoard.helperBadges.slice() : [],
-        showLiveMetric: taskBoard.showLiveMetric || null
+        showLiveMetric: taskBoard.showLiveMetric || null,
+        allowDraw: taskBoard.allowDraw !== false,
+        allowShapePicker: taskBoard.allowShapePicker !== false,
+        preferredTool: taskBoard.preferredTool || "move"
       };
       const starterDefinitions = (taskBoard.starterDefinitions || []).map(cloneDefinition);
       this.initialDefinitions = starterDefinitions.map(cloneDefinition);
-      this.setDefinitions(starterDefinitions, { preserveHistory: false });
+      this.setDefinitions(starterDefinitions, {
+        preserveHistory: false,
+        clearDraft: true,
+        resetActions: true
+      });
       this.setReadonly(taskBoard.editable === false ? true : false);
+      this.setMode(taskBoard.editable === false ? "move" : this.taskGuide.preferredTool || "move");
     }
     setDefinitions(definitions = [], options = {}) {
       this.polygons = definitions.map((definition, index) => createPolygonFromDefinition({
@@ -854,6 +1239,12 @@
       }));
       this.selectedPolygon = this.polygons.find((polygon) => !polygon.locked) || this.polygons[0] || null;
       this.selectedVertexIndex = -1;
+      if (options.clearDraft === true) {
+        this.draftVertices = [];
+      }
+      if (options.resetActions === true) {
+        this.resetActionStats();
+      }
       if (options.preserveHistory !== true) {
         this.history = [];
         this.historyIndex = -1;
@@ -872,16 +1263,60 @@
       this.polygons = [freshPolygon, ...lockedPolygons];
       this.selectedPolygon = freshPolygon;
       this.selectedVertexIndex = -1;
+      this.draftVertices = [];
+      this.actionStats.shapeCreates += 1;
       this.saveHistory();
       this.notifyChange();
     }
     reset() {
-      this.setDefinitions(this.initialDefinitions.map(cloneDefinition), { preserveHistory: false });
+      this.setDefinitions(this.initialDefinitions.map(cloneDefinition), {
+        preserveHistory: false,
+        clearDraft: true,
+        resetActions: true
+      });
     }
     undo() {
+      if (this.draftVertices.length) {
+        this.draftVertices = this.draftVertices.slice(0, -1);
+        this.notifyChange();
+        return;
+      }
       if (this.historyIndex <= 0) return;
       this.historyIndex -= 1;
       this.restoreHistoryState(this.history[this.historyIndex]);
+    }
+    resetActionStats() {
+      this.actionStats = createEmptyActionStats();
+    }
+    getActionStats() {
+      return { ...this.actionStats };
+    }
+    clearDraft(options = {}) {
+      if (!this.draftVertices.length) return;
+      this.draftVertices = [];
+      if (options.notify !== false) {
+        this.notifyChange();
+      }
+    }
+    finishDraft() {
+      if (this.draftVertices.length < 3) {
+        return false;
+      }
+      const freshPolygon = new Polygon(this.draftVertices, {
+        color: DEFAULT_COLORS[0],
+        name: "Drawn Polygon",
+        role: "main"
+      });
+      const lockedPolygons = this.polygons.filter((polygon) => polygon.locked).map((polygon) => polygon.clone());
+      this.polygons = [freshPolygon, ...lockedPolygons];
+      this.selectedPolygon = freshPolygon;
+      this.selectedVertexIndex = -1;
+      this.draftVertices = [];
+      this.actionStats.drawnPolygons += 1;
+      this.mode = "move";
+      this.saveHistory();
+      this.notifyChange();
+      return true;
     }
     saveHistory() {
       const payload = JSON.stringify(this.polygons.map((polygon) => ({
@@ -924,6 +1359,8 @@
         mode: this.mode,
         polygonCount: this.polygons.length,
         selectedName: ((_a2 = this.selectedPolygon) == null ? void 0 : _a2.name) || null,
+        draftVertexCount: this.draftVertices.length,
+        actionStats: this.getActionStats(),
         summaries: this.getSummaries().map((summary) => ({
           name: summary.polygon.name,
           area: Number(summary.area.toFixed(2)),
@@ -938,8 +1375,29 @@
       this.render();
       this.onChange(this.getDebugState());
     }
-    hitVertex(worldPoint) {
-      const threshold = Math.max(14, this.gridSize * 0.55);
+    getVertexHitThreshold(pointerType = this.activePointerType) {
+      if (pointerType === "touch") {
+        return Math.max(20, this.gridSize * 0.92);
+      }
+      if (pointerType === "pen") {
+        return Math.max(16, this.gridSize * 0.72);
+      }
+      return Math.max(14, this.gridSize * 0.55);
+    }
+    getDraftCloseThreshold(pointerType = this.activePointerType) {
+      if (pointerType === "touch") {
+        return Math.max(20, this.gridSize * 0.95);
+      }
+      if (pointerType === "pen") {
+        return Math.max(16, this.gridSize * 0.78);
+      }
+      return Math.max(14, this.gridSize * 0.7);
+    }
+    snapPolygonToGrid(polygon) {
+      polygon.vertices = polygon.vertices.map((vertex) => snapPointToGrid(vertex, this.gridSize));
+    }
+    hitVertex(worldPoint, pointerType = this.activePointerType) {
+      const threshold = this.getVertexHitThreshold(pointerType);
       for (let i = this.polygons.length - 1; i >= 0; i -= 1) {
         const polygon = this.polygons[i];
         if (polygon.locked) continue;
@@ -965,15 +1423,30 @@
       var _a2, _b, _c, _d;
       if (this.readonly) return;
       if (event.button !== 0 && event.pointerType !== "touch") return;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      this.activePointerType = event.pointerType || "mouse";
       const worldPoint = this.screenToWorld(event.clientX, event.clientY);
-      const hitVertex = this.hitVertex(worldPoint);
+      if (this.mode === "draw") {
+        this.handleDrawPointerDown(worldPoint, this.activePointerType);
+        return;
+      }
+      const hitVertex = this.hitVertex(worldPoint, this.activePointerType);
       if (hitVertex) {
+        const anchor = hitVertex.polygon.vertices[hitVertex.vertexIndex];
         this.selectedPolygon = hitVertex.polygon;
         this.selectedVertexIndex = hitVertex.vertexIndex;
         this.drag = {
           type: "vertex",
           polygon: hitVertex.polygon,
-          vertexIndex: hitVertex.vertexIndex
+          vertexIndex: hitVertex.vertexIndex,
+          moved: false,
+          pointerType: this.activePointerType,
+          offset: {
+            x: anchor.x - worldPoint.x,
+            y: anchor.y - worldPoint.y
+          }
         };
         this.pointerId = event.pointerId;
         (_b = (_a2 = this.canvas).setPointerCapture) == null ? void 0 : _b.call(_a2, event.pointerId);
@@ -987,7 +1460,9 @@
         this.drag = {
           type: "shape",
           polygon,
-          start: worldPoint
+          start: worldPoint,
+          moved: false,
+          pointerType: this.activePointerType
         };
         this.pointerId = event.pointerId;
         (_d = (_c = this.canvas).setPointerCapture) == null ? void 0 : _d.call(_c, event.pointerId);
@@ -998,28 +1473,96 @@
       this.selectedVertexIndex = -1;
       this.render();
     }
-    handlePointerMove(event) {
-      if (!this.drag) return;
-      if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
-      const worldPoint = snapPointToGrid(this.screenToWorld(event.clientX, event.clientY), this.gridSize);
+    handleDrawPointerDown(worldPoint, pointerType = this.activePointerType) {
+      const snappedPoint = snapPointToGrid(worldPoint, this.gridSize);
+      const closeThreshold = this.getDraftCloseThreshold(pointerType);
+      if (this.draftVertices.length >= 3 && distance(snappedPoint, this.draftVertices[0]) <= closeThreshold) {
+        this.finishDraft();
+        return;
+      }
+      const lastPoint = this.draftVertices[this.draftVertices.length - 1];
+      if (lastPoint && distance(snappedPoint, lastPoint) <= 1) {
+        return;
+      }
+      this.draftVertices = [...this.draftVertices, snappedPoint];
+      this.actionStats.plottedPoints += 1;
+      this.notifyChange();
+    }
+    flushPendingDrag() {
+      var _a2, _b;
+      if (!this.drag || !this.pendingDragPoint) return;
+      const worldPoint = this.pendingDragPoint;
+      this.pendingDragPoint = null;
       if (this.drag.type === "vertex") {
-        this.drag.polygon.vertices[this.drag.vertexIndex] = worldPoint;
+        const adjustedPoint = {
+          x: worldPoint.x + (((_a2 = this.drag.offset) == null ? void 0 : _a2.x) || 0),
+          y: worldPoint.y + (((_b = this.drag.offset) == null ? void 0 : _b.y) || 0)
+        };
+        const nextPoint = this.drag.pointerType === "touch" ? adjustedPoint : snapPointToGrid(adjustedPoint, this.gridSize);
+        const currentPoint = this.drag.polygon.vertices[this.drag.vertexIndex];
+        if (distance(currentPoint, nextPoint) <= 0.25) {
+          return;
+        }
+        this.drag.polygon.vertices[this.drag.vertexIndex] = nextPoint;
+        this.drag.moved = true;
         this.notifyChange();
         return;
       }
       if (this.drag.type === "shape") {
-        const deltaX = worldPoint.x - this.drag.start.x;
-        const deltaY = worldPoint.y - this.drag.start.y;
-        if (deltaX === 0 && deltaY === 0) return;
+        const nextPoint = this.drag.pointerType === "touch" ? worldPoint : snapPointToGrid(worldPoint, this.gridSize);
+        const deltaX = nextPoint.x - this.drag.start.x;
+        const deltaY = nextPoint.y - this.drag.start.y;
+        if (Math.abs(deltaX) < 0.25 && Math.abs(deltaY) < 0.25) {
+          return;
+        }
         this.drag.polygon.move(deltaX, deltaY);
-        this.drag.start = worldPoint;
+        this.drag.start = nextPoint;
+        this.drag.moved = true;
         this.notifyChange();
+      }
+    }
+    handlePointerMove(event) {
+      if (!this.drag) return;
+      if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      this.pendingDragPoint = this.screenToWorld(event.clientX, event.clientY);
+      if (!this.dragFrame) {
+        this.dragFrame = window.requestAnimationFrame(() => {
+          this.dragFrame = 0;
+          this.flushPendingDrag();
+        });
       }
     }
     handlePointerUp(event) {
       var _a2, _b;
       if (!this.drag) return;
       if (this.pointerId !== null && event.pointerId !== this.pointerId) return;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      if (this.dragFrame) {
+        window.cancelAnimationFrame(this.dragFrame);
+        this.dragFrame = 0;
+      }
+      this.flushPendingDrag();
+      if (this.drag.pointerType === "touch") {
+        if (this.drag.type === "vertex") {
+          const currentPoint = this.drag.polygon.vertices[this.drag.vertexIndex];
+          this.drag.polygon.vertices[this.drag.vertexIndex] = snapPointToGrid(currentPoint, this.gridSize);
+        } else if (this.drag.type === "shape") {
+          this.snapPolygonToGrid(this.drag.polygon);
+        }
+      }
+      if (this.drag.moved) {
+        if (this.drag.type === "vertex") {
+          this.actionStats.vertexMoves += 1;
+        } else if (this.drag.type === "shape") {
+          this.actionStats.shapeMoves += 1;
+        }
+      }
+      this.pendingDragPoint = null;
       this.pointerId = null;
       this.drag = null;
       (_b = (_a2 = this.canvas).releasePointerCapture) == null ? void 0 : _b.call(_a2, event.pointerId);
@@ -1079,6 +1622,37 @@
       this.ctx.strokeStyle = "rgba(255, 174, 51, 0.9)";
       this.ctx.fillStyle = "rgba(255, 174, 51, 0.12)";
       guidePolygons.forEach((polygon) => this.drawPolygonShape(polygon, { fill: true, handles: false, dashedOnly: true }));
+      this.ctx.restore();
+    }
+    drawDraftShape() {
+      if (!this.draftVertices.length) return;
+      const screenVertices = this.draftVertices.map((vertex) => this.worldToScreen(vertex));
+      this.ctx.save();
+      this.ctx.setLineDash([8, 6]);
+      this.ctx.lineWidth = 2.5;
+      this.ctx.strokeStyle = "rgba(15, 103, 184, 0.92)";
+      this.ctx.beginPath();
+      this.ctx.moveTo(screenVertices[0].x, screenVertices[0].y);
+      for (let i = 1; i < screenVertices.length; i += 1) {
+        this.ctx.lineTo(screenVertices[i].x, screenVertices[i].y);
+      }
+      if (screenVertices.length >= 3) {
+        this.ctx.closePath();
+        this.ctx.fillStyle = "rgba(15, 103, 184, 0.12)";
+        this.ctx.fill();
+      }
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+      screenVertices.forEach((point, index) => {
+        const isFirst = index === 0 && screenVertices.length >= 3;
+        this.ctx.beginPath();
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.strokeStyle = isFirst ? "#ff7c3c" : "#0f67b8";
+        this.ctx.lineWidth = isFirst ? 3 : 2;
+        this.ctx.arc(point.x, point.y, isFirst ? 7 : 6, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+      });
       this.ctx.restore();
     }
     drawPolygonShape(polygon, options = {}) {
@@ -1160,6 +1734,7 @@
       this.ctx.clearRect(0, 0, this.width, this.height);
       this.drawGrid();
       this.drawGuide();
+      this.drawDraftShape();
       this.polygons.forEach((polygon) => {
         const isSelected = polygon === this.selectedPolygon && !this.readonly;
         this.drawPolygonShape(polygon, {
@@ -1382,6 +1957,97 @@
         </div>
     `;
   }
+  function renderMissionStatePills(mission) {
+    var _a2;
+    if (!((_a2 = mission.statuses) == null ? void 0 : _a2.length)) {
+      return "";
+    }
+    return `
+        <span class="mission-state-row">
+            ${mission.statuses.map((status) => `
+                <span class="mission-state mission-state-${escapeHtml(status.tone)}">${escapeHtml(status.label)}</span>
+            `).join("")}
+        </span>
+    `;
+  }
+  function renderWorldSwitchChip(world, isFocused = false) {
+    const tag = world.canFocus ? "button" : "section";
+    const attributes = world.canFocus ? `type="button" class="map-world-chip ${isFocused ? "is-focused" : ""} ${world.isCurrentPath ? "is-current-path" : ""}" data-focus-world="${escapeHtml(world.id)}" title="${escapeHtml(world.note)}"` : `class="map-world-chip is-locked" title="${escapeHtml(world.note)}"`;
+    return `
+        <${tag} ${attributes}>
+            <span class="map-world-chip-top">
+                <strong>${escapeHtml(world.title)}</strong>
+                <span class="map-world-chip-stars">${world.completedStars}/${world.totalStars} \u2605</span>
+            </span>
+            <span class="map-world-chip-meta">
+                <span>${world.completedMissions}/${world.totalMissions} missions</span>
+                ${world.locked ? '<span class="mission-state mission-state-locked">Locked</span>' : isFocused ? '<span class="mission-state mission-state-next">Showing</span>' : world.isCurrentPath ? '<span class="mission-state mission-state-next">Current path</span>' : '<span class="mission-state mission-state-done">Open</span>'}
+            </span>
+        </${tag}>
+    `;
+  }
+  function renderMapMissionCard(worldId, mission, variant = "ready") {
+    const tag = mission.locked ? "section" : "button";
+    const attrs = mission.locked ? `class="map-mission-card ${variant === "next" ? "is-next" : ""} is-locked"` : `type="button" class="map-mission-card ${variant === "next" ? "is-next" : ""}" data-start-mission="${escapeHtml(worldId)}:${escapeHtml(mission.id)}"`;
+    return `
+        <${tag} ${attrs}>
+            <span class="map-mission-card-top">
+                <span class="focus-mission-order">${mission.order}</span>
+                ${renderMissionStatePills(mission)}
+            </span>
+            <strong>${escapeHtml(mission.title)}</strong>
+            <small>${escapeHtml(mission.short)}</small>
+            <span class="map-mission-card-bottom">${renderStars(mission.stars)}</span>
+        </${tag}>
+    `;
+  }
+  function renderMissionReplayChip(worldId, mission) {
+    return `
+        <button type="button" class="map-mission-chip" data-start-mission="${escapeHtml(worldId)}:${escapeHtml(mission.id)}">
+            <span class="map-mission-chip-title">${mission.order}. ${escapeHtml(mission.title)}</span>
+            <span class="map-mission-chip-stars">${renderStars(mission.stars)}</span>
+        </button>
+    `;
+  }
+  function renderMissionRoadmapChip(mission) {
+    return `
+        <div class="map-roadmap-chip ${mission.isNext ? "is-next" : ""} ${mission.locked ? "is-locked" : ""}">
+            <span class="map-roadmap-order">${mission.order}</span>
+            <span class="map-roadmap-copy">
+                <strong>${escapeHtml(mission.title)}</strong>
+                <small>${escapeHtml(mission.short)}</small>
+            </span>
+        </div>
+    `;
+  }
+  function renderLiveShapeContent({ summary, draftCount }) {
+    if (summary) {
+      return `
+            <div class="live-metrics">
+                <div class="live-metric">
+                    <strong>Name</strong>
+                    <span>${escapeHtml(summary.analysis.primaryLabel)}</span>
+                </div>
+                <div class="live-metric">
+                    <strong>Sides</strong>
+                    <span>${summary.vertices}</span>
+                </div>
+                <div class="live-metric">
+                    <strong>Area</strong>
+                    <span>${summary.area.toFixed(summary.area % 1 === 0 ? 0 : 1)}</span>
+                </div>
+                <div class="live-metric">
+                    <strong>Around</strong>
+                    <span>${summary.perimeter.toFixed(summary.perimeter % 1 === 0 ? 0 : 1)}</span>
+                </div>
+            </div>
+        `;
+    }
+    if (draftCount) {
+      return `<div class="empty-note">${draftCount} point${draftCount === 1 ? "" : "s"} placed. Tap the first point again when you are ready to close the polygon.</div>`;
+    }
+    return '<div class="empty-note">This task starts with an empty board. Use Plot or Make Shape when you are ready.</div>';
+  }
   function renderMenuScreen(state) {
     const nextMission = state.nextMission ? `${state.nextMission.worldTitle}: ${state.nextMission.title}` : "Your first mission is ready.";
     return `
@@ -1391,7 +2057,7 @@
                     <div class="brand-bubble">\u25C6</div>
                     <div>
                         <div class="brand-title">Quiz it Polygon!</div>
-                        <span class="brand-sub">Mission game for shapes, area, and perimeter.</span>
+                        <span class="brand-sub">Mission game for drawing, fixing, and naming polygons.</span>
                     </div>
                 </div>
                 <div class="top-stats">
@@ -1406,7 +2072,7 @@
                     <div>
                         <div class="eyebrow">Make. Fix. Pick. Count. Measure.</div>
                         <h1 class="menu-title">Learn polygons by playing.</h1>
-                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Drag shapes, solve fast tasks, and earn points while your map keeps best-star progress.</p>
+                        <p class="menu-subtitle">Each mission is short, clear, and hands-on. Plot corner points, fix near-miss polygons, and earn points while your map keeps best-star progress.</p>
                     </div>
                     <div class="menu-art" aria-hidden="true">
                         <div class="menu-float-shape shape-a"></div>
@@ -1446,6 +2112,14 @@
     `;
   }
   function renderMapScreen(state) {
+    const focusWorld = state.mapFocusWorld;
+    const otherWorlds = state.mapOtherWorlds || [];
+    const focusMissions = (focusWorld == null ? void 0 : focusWorld.missions) || [];
+    const nextMission = focusMissions.find((mission) => mission.isNext) || focusMissions.find((mission) => !mission.locked && !mission.cleared) || focusMissions[0] || null;
+    const readyMissions = focusMissions.filter((mission) => !mission.locked && !mission.cleared && mission.id !== (nextMission == null ? void 0 : nextMission.id));
+    const clearedMissions = focusMissions.filter((mission) => mission.cleared);
+    const lockedMissions = focusMissions.filter((mission) => mission.locked && mission.id !== (nextMission == null ? void 0 : nextMission.id));
+    const worldSwitcher = focusWorld ? [focusWorld, ...otherWorlds] : otherWorlds;
     return `
         <div class="app-shell screen-map">
             <div class="top-strip">
@@ -1453,51 +2127,113 @@
                     <button class="icon-btn" type="button" data-nav="menu" aria-label="Back to menu">\u2190</button>
                     <div>
                         <div class="brand-title">My Map</div>
-                        <span class="brand-sub">Clear worlds. Earn points. Unlock badges.</span>
+                        <span class="brand-sub">Follow the path, replay old wins, and see what unlocks next.</span>
                     </div>
                 </div>
                 <div class="top-stats">
-                    <span class="stat-chip">Streak ${state.profile.currentStreak}</span>
-                    <span class="stat-chip">${state.profile.badges.length} badges</span>
+                    <span class="stat-chip">Streak ${state.mapSummary.currentStreak}</span>
+                    <span class="stat-chip">${state.mapSummary.badgeCount} badge${state.mapSummary.badgeCount === 1 ? "" : "s"}</span>
                     <button class="ghost-btn" type="button" data-open-modal="settings">Settings</button>
                 </div>
             </div>
 
             <section class="screen-card map-panel">
-                <div class="badge-row">
-                    ${state.profile.badges.length ? state.profile.badges.map((badge) => `<span class="badge-pill">${escapeHtml(badge)}</span>`).join("") : '<span class="empty-note">Clear a boss mission to win your first badge.</span>'}
+                <section class="map-progress-strip">
+                    <div class="map-progress-copy">
+                        <div class="eyebrow">Next Mission</div>
+                        <h2 class="map-progress-title">${escapeHtml(state.mapSummary.nextMissionLabel)}</h2>
+                        <p class="map-progress-note">${escapeHtml(state.mapSummary.nextMissionCopy)}</p>
+                    </div>
+                    <div class="map-progress-stats">
+                        <div class="map-stat-card">
+                            <strong>Stars</strong>
+                            <span>${state.mapSummary.earnedStars}/${state.mapSummary.totalStars}</span>
+                        </div>
+                        <div class="map-stat-card">
+                            <strong>Missions</strong>
+                            <span>${state.mapSummary.missionsCleared}/${state.mapSummary.totalMissions}</span>
+                        </div>
+                        <div class="map-stat-card">
+                            <strong>Worlds</strong>
+                            <span>${state.mapSummary.worldsCleared}/${state.mapSummary.worldCount}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="map-summary-row">
+                    ${state.mapSummary.badges.length ? state.mapSummary.badges.map((badge) => `<span class="badge-pill">${escapeHtml(badge)}</span>`).join("") : '<span class="empty-note map-empty-note">Clear a boss mission to win your first badge.</span>'}
                 </div>
 
-                <div class="map-grid">
-                    ${state.worlds.map((world) => `
-                        <section class="map-world ${world.locked ? "locked" : ""}">
-                            <div class="map-world-header">
-                                <div>
-                                    <div class="eyebrow">${escapeHtml(world.theme)}</div>
-                                    <h2 class="map-world-title">${escapeHtml(world.title)}</h2>
-                                    <p class="map-world-copy">${escapeHtml(world.copy)}</p>
+                <div class="map-content">
+                    ${focusWorld ? `
+                        <section class="map-focus-world">
+                            <div class="map-focus-head">
+                                <div class="map-focus-copy-block">
+                                    <div class="eyebrow">${escapeHtml(focusWorld.theme)}</div>
+                                    <h2 class="map-focus-title">${escapeHtml(focusWorld.title)}</h2>
                                 </div>
-                                <span class="world-badge">${world.completedStars}/${world.totalStars} \u2605</span>
+                                <div class="map-focus-meta">
+                                    <span class="world-badge">${focusWorld.completedStars}/${focusWorld.totalStars} \u2605</span>
+                                    <span class="map-focus-count">${focusWorld.completedMissions}/${focusWorld.totalMissions} missions</span>
+                                </div>
                             </div>
 
-                            <div class="mission-list">
-                                ${world.missions.map((mission, index) => `
-                                    <button
-                                        type="button"
-                                        class="mission-link ${mission.locked ? "locked" : ""}"
-                                        data-start-mission="${world.id}:${mission.id}"
-                                        ${world.locked || mission.locked ? "disabled" : ""}
-                                    >
-                                        <span class="mission-link-text">
-                                            <strong>${index + 1}. ${escapeHtml(mission.title)}</strong>
-                                            <small>${escapeHtml(mission.boss ? "Boss mission" : mission.short)}</small>
-                                        </span>
-                                        ${renderStars(mission.stars)}
-                                    </button>
-                                `).join("")}
+                            <div class="map-focus-hero">
+                                <div class="map-focus-hero-copy">
+                                    <span class="eyebrow">${escapeHtml(focusWorld.calloutTitle)}</span>
+                                    <strong>${escapeHtml((nextMission == null ? void 0 : nextMission.title) || focusWorld.title)}</strong>
+                                    <span>${escapeHtml((nextMission == null ? void 0 : nextMission.short) || focusWorld.calloutCopy)}</span>
+                                </div>
+                                ${nextMission && !nextMission.locked ? `<button type="button" class="primary-btn map-focus-play" data-start-mission="${escapeHtml(focusWorld.id)}:${escapeHtml(nextMission.id)}">${nextMission.cleared ? "Replay Mission" : "Play Next"}</button>` : '<span class="map-focus-lock">World clear. Replay any mission below.</span>'}
+                            </div>
+
+                            ${readyMissions.length ? `
+                                <div class="map-section-block">
+                                    <div class="map-section-head">
+                                        <strong>Keep Going</strong>
+                                        <span>${readyMissions.length} mission${readyMissions.length === 1 ? "" : "s"} ready</span>
+                                    </div>
+                                    <div class="map-mission-grid">
+                                        ${readyMissions.map((mission) => renderMapMissionCard(focusWorld.id, mission, "ready")).join("")}
+                                    </div>
+                                </div>
+                            ` : ""}
+
+                            ${clearedMissions.length ? `
+                                <div class="map-section-block">
+                                    <div class="map-section-head">
+                                        <strong>Replay Wins</strong>
+                                        <span>${clearedMissions.length} cleared</span>
+                                    </div>
+                                    <div class="map-chip-row">
+                                        ${clearedMissions.map((mission) => renderMissionReplayChip(focusWorld.id, mission)).join("")}
+                                    </div>
+                                </div>
+                            ` : ""}
+
+                            ${lockedMissions.length ? `
+                                <div class="map-section-block">
+                                    <div class="map-section-head">
+                                        <strong>Coming Later</strong>
+                                        <span>Clear the path to unlock these</span>
+                                    </div>
+                                    <div class="map-roadmap-row">
+                                        ${lockedMissions.map((mission) => renderMissionRoadmapChip(mission)).join("")}
+                                    </div>
+                                </div>
+                            ` : ""}
+                        </section>
+
+                        <section class="map-world-switcher">
+                            <div class="map-section-head">
+                                <strong>Worlds</strong>
+                                <span>Tap an open world to switch the view.</span>
+                            </div>
+                            <div class="map-world-chip-row">
+                                ${worldSwitcher.map((world) => renderWorldSwitchChip(world, world.id === focusWorld.id)).join("")}
                             </div>
                         </section>
-                    `).join("")}
+                    ` : '<div class="empty-note map-empty-note">Your map is getting ready. Start a mission and come back to see the path.</div>'}
                 </div>
             </section>
             ${renderSettingsModal(state)}
@@ -1532,27 +2268,33 @@
     `;
   }
   function renderTaskControls(task, state) {
+    var _a2, _b;
     if (task.answerMode === "choice") {
       return renderChoiceControls(task, state);
     }
     if (task.answerMode === "number") {
       return renderNumberControls(task, state);
     }
+    const boardInstruction = ((_a2 = task.proof) == null ? void 0 : _a2.requireDrawnShape) ? "Use Plot to place each corner. Tap the first point again to close your polygon." : ((_b = task.board) == null ? void 0 : _b.allowShapePicker) === false ? "Drag the existing corner points until the polygon matches." : "Make or move a shape on the board until it matches.";
     return `
         <div class="number-row">
-            <div class="empty-note" style="flex: 1 1 180px;">Drag the shape on the board until it matches.</div>
+            <div class="empty-note" style="flex: 1 1 180px;">${escapeHtml(boardInstruction)}</div>
             <button class="primary-btn" type="button" data-check-board="true">Try</button>
         </div>
     `;
   }
   function renderMissionScreen(state) {
-    var _a2;
+    var _a2, _b, _c, _d, _e;
     const world = state.activeWorld;
     const mission = state.activeMission;
     const task = state.activeTask;
     const canEditBoard = ((_a2 = task.board) == null ? void 0 : _a2.editable) !== false;
+    const allowShapePicker = canEditBoard && ((_b = task.board) == null ? void 0 : _b.allowShapePicker) !== false;
+    const allowDraw = canEditBoard && ((_c = task.board) == null ? void 0 : _c.allowDraw) !== false;
+    const taskCount = mission.tasks.length;
+    const helperBadges = ((_d = task.board) == null ? void 0 : _d.helperBadges) || [];
     const answerModeClass = task.answerMode ? `answer-${task.answerMode}` : "";
-    const nextHintText = state.hintStage === 0 ? "Tap Help for a clue." : state.hintStage === 1 ? task.hintLadder[0] : state.hintStage === 2 ? task.hintLadder[1] : task.hintLadder[2];
+    const currentHintText = state.currentHintText || ((_e = task.hintLadder) == null ? void 0 : _e[0]) || "Tap Help for a clue.";
     const feedbackClass = state.feedback.kind === "good" ? "good" : state.feedback.kind === "try" ? "try" : "";
     const primarySummary = state.boardSummary;
     return `
@@ -1562,10 +2304,18 @@
                     <div class="board-stage">
                         <div id="boardCanvasSlot" class="board-canvas"></div>
                         <div class="board-overlay">
-                            <div class="board-note-stack">
-                                <div class="board-note">${escapeHtml(task.boardNote || "Move the shape on the grid.")}</div>
-                                ${state.hintStage >= 2 && task.visualNote ? `<div class="board-note">${escapeHtml(task.visualNote)}</div>` : ""}
-                            </div>
+                            ${state.boardGuideOpen ? `
+                                <div class="board-guide-panel">
+                                    <div class="board-guide-head">
+                                        <strong>Guide</strong>
+                                        <button class="board-guide-close" type="button" data-board-guide-toggle="hide" aria-label="Hide guide">\u2212</button>
+                                    </div>
+                                    <div class="board-note-stack">
+                                        <div class="board-note">${escapeHtml(task.boardNote || "Move the shape on the grid.")}</div>
+                                        ${state.hintStage >= 2 && task.visualNote ? `<div class="board-note">${escapeHtml(task.visualNote)}</div>` : ""}
+                                    </div>
+                                </div>
+                            ` : ""}
                             <div class="board-note-stack">
                                 <div class="board-note board-note-mode">${escapeHtml(task.modeTitle)}</div>
                             </div>
@@ -1573,10 +2323,13 @@
                     </div>
 
                     <div class="tool-dock">
-                        <button class="tool-btn" type="button" data-open-modal="shape-picker" ${canEditBoard ? "" : "disabled"}>
+                        <button class="tool-btn" type="button" data-open-modal="shape-picker" ${allowShapePicker ? "" : "disabled"}>
                             <span>\u2B20</span><small>Make</small>
                         </button>
-                        <button class="tool-btn active" type="button" data-board-tool="move" ${canEditBoard ? "" : "disabled"}>
+                        <button class="tool-btn ${state.boardMode === "draw" ? "active" : ""}" type="button" data-board-tool="draw" ${allowDraw ? "" : "disabled"}>
+                            <span>\u270E</span><small>Plot</small>
+                        </button>
+                        <button class="tool-btn ${state.boardMode !== "draw" ? "active" : ""}" type="button" data-board-tool="move" ${canEditBoard ? "" : "disabled"}>
                             <span>\u270B</span><small>Move</small>
                         </button>
                         <button class="tool-btn" type="button" data-board-action="undo" ${canEditBoard ? "" : "disabled"}>
@@ -1585,8 +2338,16 @@
                         <button class="tool-btn" type="button" data-board-action="reset" ${canEditBoard ? "" : "disabled"}>
                             <span>\u21BA</span><small>Reset</small>
                         </button>
-                        <button class="tool-btn" type="button" data-use-help="true">
-                            <span>\u{1F4A1}</span><small>Help</small>
+                        <button class="tool-btn" type="button" data-board-action="clear-draft" ${allowDraw ? "" : "disabled"}>
+                            <span>\u232B</span><small>Clear</small>
+                        </button>
+                        <button
+                            class="tool-btn ${state.helpPanelOpen ? "active" : ""}"
+                            type="button"
+                            data-use-help="true"
+                            aria-pressed="${state.helpPanelOpen ? "true" : "false"}"
+                        >
+                            <span>\u{1F4A1}</span><small>${state.helpPanelOpen ? "Hide" : "Help"}</small>
                         </button>
                     </div>
                 </section>
@@ -1599,13 +2360,13 @@
                                 <strong>${escapeHtml(world.title)}</strong>
                             </div>
                             <div class="task-dots">
-                                ${[0, 1, 2].map((index) => `
+                                ${Array.from({ length: taskCount }, (_, index) => `
                                     <span class="task-dot ${index < state.taskIndex ? "done" : index === state.taskIndex ? "live" : ""}"></span>
                                 `).join("")}
                             </div>
                         </div>
                         <div class="mission-toolbar-actions">
-                            <span class="stat-chip">Task ${state.taskIndex + 1}/3</span>
+                            <span class="stat-chip">Task ${state.taskIndex + 1}/${taskCount}</span>
                             <button class="ghost-btn mission-toolbar-settings" type="button" data-open-modal="settings">Settings</button>
                         </div>
                     </div>
@@ -1614,14 +2375,22 @@
                         <div class="task-copy">
                             <h2 class="task-prompt">${escapeHtml(task.prompt)}</h2>
                             <p class="task-help">${escapeHtml(task.shortHelp)}</p>
+                            ${helperBadges.length ? `
+                                <div class="task-tag-row">
+                                    ${helperBadges.map((badge) => `<span class="task-tag">${escapeHtml(badge)}</span>`).join("")}
+                                </div>
+                            ` : ""}
                         </div>
 
                         ${renderTaskControls(task, state)}
 
-                        ${state.hintStage > 0 ? `
+                        ${state.helpPanelOpen && state.hintStage > 0 ? `
                             <div class="task-hint-panel">
-                                <strong>Help</strong>
-                                <p class="task-help">${escapeHtml(nextHintText)}</p>
+                                <div class="task-hint-head">
+                                    <strong>Help</strong>
+                                    ${state.hintStage < 3 ? '<button class="task-hint-btn" type="button" data-more-help="true">More Help</button>' : '<span class="task-hint-cap">Top clue</span>'}
+                                </div>
+                                <p class="task-help">${escapeHtml(currentHintText)}</p>
                             </div>
                         ` : ""}
 
@@ -1634,26 +2403,10 @@
                         <div class="task-side-box">
                             <strong>Live Shape</strong>
                             <div data-live-shape>
-                            ${primarySummary ? `
-                                <div class="live-metrics">
-                                    <div class="live-metric">
-                                        <strong>Name</strong>
-                                        <span>${escapeHtml(primarySummary.analysis.primaryLabel)}</span>
-                                    </div>
-                                    <div class="live-metric">
-                                        <strong>Sides</strong>
-                                        <span>${primarySummary.vertices}</span>
-                                    </div>
-                                    <div class="live-metric">
-                                        <strong>Area</strong>
-                                        <span>${primarySummary.area.toFixed(primarySummary.area % 1 === 0 ? 0 : 1)}</span>
-                                    </div>
-                                    <div class="live-metric">
-                                        <strong>Around</strong>
-                                        <span>${primarySummary.perimeter.toFixed(primarySummary.perimeter % 1 === 0 ? 0 : 1)}</span>
-                                    </div>
-                                </div>
-                            ` : '<div class="empty-note">This task starts with an empty board. Use Make Shape when you are ready.</div>'}
+                                ${renderLiveShapeContent({
+      summary: primarySummary,
+      draftCount: state.boardDraftCount
+    })}
                             </div>
                         </div>
                     </section>
@@ -1735,14 +2488,17 @@
       this.lastWrongChoice = "";
       this.activeRun = null;
       this.resultState = null;
+      this.mapFocusWorldId = null;
       this.shapeChoices = getShapeChoices();
       document.body.classList.toggle("big-text", this.profile.settings.bigText);
       this.render();
     }
     getState() {
-      var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+      var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r;
       const route = this.router.getState();
       const worlds = this.getWorldViewModels();
+      const mapState = this.getMapScreenState(worlds);
+      const boardState = ((_a2 = this.board) == null ? void 0 : _a2.getDebugState()) || null;
       const activeWorld = this.activeRun ? getWorldById(this.activeRun.worldId) : this.resultState ? getWorldById(this.resultState.worldId) : null;
       const activeMission = this.activeRun ? getMissionById(this.activeRun.worldId, this.activeRun.missionId) : this.resultState ? getMissionById(this.resultState.worldId, this.resultState.missionId) : null;
       return {
@@ -1754,21 +2510,28 @@
         showSettings: this.showSettings,
         showShapePicker: this.showShapePicker,
         nextMission: this.findNextMission(),
+        mapSummary: mapState.summary,
+        mapFocusWorld: mapState.focusWorld,
+        mapOtherWorlds: mapState.otherWorlds,
         activeWorld,
         activeMission,
         activeTask: this.activeRun ? this.activeRun.tasks[this.activeRun.taskIndex] : null,
-        missionIndex: this.activeRun ? getWorldById(this.activeRun.worldId).missions.findIndex((mission) => mission.id === this.activeRun.missionId) : -1,
-        taskIndex: ((_a2 = this.activeRun) == null ? void 0 : _a2.taskIndex) || 0,
-        hintStage: ((_b = this.activeRun) == null ? void 0 : _b.hintStage) || 0,
-        maxHintStageUsed: (_f = (_e = (_c = this.activeRun) == null ? void 0 : _c.maxHintStageUsed) != null ? _e : (_d = this.resultState) == null ? void 0 : _d.maxHintStageUsed) != null ? _f : 0,
-        mistakes: (_j = (_i = (_g = this.activeRun) == null ? void 0 : _g.mistakes) != null ? _i : (_h = this.resultState) == null ? void 0 : _h.mistakes) != null ? _j : 0,
+        taskIndex: ((_b = this.activeRun) == null ? void 0 : _b.taskIndex) || 0,
+        hintStage: ((_c = this.activeRun) == null ? void 0 : _c.hintStage) || 0,
+        currentHintText: this.getCurrentHintText(),
+        maxHintStageUsed: (_g = (_f = (_d = this.activeRun) == null ? void 0 : _d.maxHintStageUsed) != null ? _f : (_e = this.resultState) == null ? void 0 : _e.maxHintStageUsed) != null ? _g : 0,
+        mistakes: (_k = (_j = (_h = this.activeRun) == null ? void 0 : _h.mistakes) != null ? _j : (_i = this.resultState) == null ? void 0 : _i.mistakes) != null ? _k : 0,
+        helpPanelOpen: (_m = (_l = this.activeRun) == null ? void 0 : _l.helpPanelOpen) != null ? _m : false,
+        boardGuideOpen: (_o = (_n = this.activeRun) == null ? void 0 : _n.boardGuideOpen) != null ? _o : true,
         answerValue: this.answerValue,
         lastWrongChoice: this.lastWrongChoice,
         feedback: this.feedback,
         boardSummary: this.boardSummary,
-        resultMessage: ((_k = this.resultState) == null ? void 0 : _k.message) || "",
-        stars: ((_l = this.resultState) == null ? void 0 : _l.stars) || 0,
-        pointsAwarded: ((_m = this.resultState) == null ? void 0 : _m.pointsAwarded) || 0,
+        boardMode: (boardState == null ? void 0 : boardState.mode) || "move",
+        boardDraftCount: (boardState == null ? void 0 : boardState.draftVertexCount) || 0,
+        resultMessage: ((_p = this.resultState) == null ? void 0 : _p.message) || "",
+        stars: ((_q = this.resultState) == null ? void 0 : _q.stars) || 0,
+        pointsAwarded: ((_r = this.resultState) == null ? void 0 : _r.pointsAwarded) || 0,
         shapeChoices: this.shapeChoices
       };
     }
@@ -1787,11 +2550,12 @@
       this.bindEvents();
       this.mountBoardIfNeeded();
       this.refreshLiveMissionBits();
+      this.syncMissionToolState();
       this.syncMusicLoop();
     }
     bindEvents() {
       this.root.onclick = (event) => {
-        var _a2, _b, _c;
+        var _a2, _b, _c, _d, _e;
         const target = event.target.closest("button");
         if (!target) {
           const modal = event.target.closest("[data-close-modal]");
@@ -1829,6 +2593,10 @@
           this.startMission(worldId, missionId);
           return;
         }
+        if (target.dataset.focusWorld) {
+          this.focusMapWorld(target.dataset.focusWorld);
+          return;
+        }
         if (target.dataset.choice) {
           this.handleChoice(target.dataset.choice);
           return;
@@ -1842,7 +2610,15 @@
           return;
         }
         if (target.dataset.useHelp) {
-          this.useHelp();
+          this.toggleHelpPanel();
+          return;
+        }
+        if (target.dataset.moreHelp) {
+          this.advanceHelpStage();
+          return;
+        }
+        if (target.dataset.boardGuideToggle) {
+          this.setBoardGuideOpen(target.dataset.boardGuideToggle === "show");
           return;
         }
         if (target.dataset.boardAction === "undo") {
@@ -1853,8 +2629,18 @@
           (_b = this.board) == null ? void 0 : _b.reset();
           return;
         }
+        if (target.dataset.boardAction === "clear-draft") {
+          (_c = this.board) == null ? void 0 : _c.clearDraft();
+          return;
+        }
+        if (target.dataset.boardTool === "draw") {
+          (_d = this.board) == null ? void 0 : _d.setMode("draw");
+          this.render();
+          return;
+        }
         if (target.dataset.boardTool === "move") {
-          (_c = this.board) == null ? void 0 : _c.setMode("move");
+          (_e = this.board) == null ? void 0 : _e.setMode("move");
+          this.render();
           return;
         }
         if (target.dataset.settingToggle) {
@@ -1921,10 +2707,10 @@
         this.board.resize();
       }
       if (this.activeRun.needsBoardLoad) {
-        this.board.loadTaskBoard(this.activeRun.tasks[this.activeRun.taskIndex].board);
-        this.board.setHintStage(this.activeRun.hintStage);
-        this.boardSummary = this.board.getPrimarySummary();
         this.activeRun.needsBoardLoad = false;
+        this.board.loadTaskBoard(this.activeRun.tasks[this.activeRun.taskIndex].board);
+        this.board.setHintStage(this.activeRun.hintStage || 0);
+        this.boardSummary = this.board.getPrimarySummary();
       }
     }
     refreshLiveMissionBits() {
@@ -1932,16 +2718,20 @@
       const state = this.getState();
       const summaryBox = this.root.querySelector("[data-live-shape]");
       if (summaryBox) {
-        const summary = state.boardSummary;
-        summaryBox.innerHTML = summary ? `
-                    <div class="live-metrics">
-                        <div class="live-metric"><strong>Name</strong><span>${summary.analysis.primaryLabel}</span></div>
-                        <div class="live-metric"><strong>Sides</strong><span>${summary.vertices}</span></div>
-                        <div class="live-metric"><strong>Area</strong><span>${summary.area.toFixed(summary.area % 1 === 0 ? 0 : 1)}</span></div>
-                        <div class="live-metric"><strong>Around</strong><span>${summary.perimeter.toFixed(summary.perimeter % 1 === 0 ? 0 : 1)}</span></div>
-                    </div>
-                ` : '<div class="empty-note">This task starts with an empty board. Use Make Shape when you are ready.</div>';
+        summaryBox.innerHTML = renderLiveShapeContent({
+          summary: state.boardSummary,
+          draftCount: state.boardDraftCount
+        });
       }
+    }
+    syncMissionToolState() {
+      var _a2, _b;
+      if (this.router.screen !== "mission") return;
+      const mode = ((_b = (_a2 = this.board) == null ? void 0 : _a2.getDebugState()) == null ? void 0 : _b.mode) || "move";
+      const drawButton = this.root.querySelector('[data-board-tool="draw"]');
+      const moveButton = this.root.querySelector('[data-board-tool="move"]');
+      drawButton == null ? void 0 : drawButton.classList.toggle("active", mode === "draw");
+      moveButton == null ? void 0 : moveButton.classList.toggle("active", mode !== "draw");
     }
     openModal(name) {
       if (name === "settings") {
@@ -1969,6 +2759,7 @@
       this.feedback = { kind: "", message: "" };
       this.answerValue = "";
       this.lastWrongChoice = "";
+      this.mapFocusWorldId = null;
       saveProfile(this.profile);
       this.router.go("menu");
     }
@@ -2070,23 +2861,147 @@
       return WORLDS.map((world, worldIndex) => {
         const worldLocked = worldIndex > this.profile.unlockedWorld;
         const regularCleared = world.missions.filter((mission) => !mission.boss).every((mission) => getMissionRecord(this.profile, mission.id).cleared);
+        const previousWorld = worldIndex > 0 ? WORLDS[worldIndex - 1] : null;
         const missions = world.missions.map((mission) => {
           const record = getMissionRecord(this.profile, mission.id);
           const missionLocked = worldLocked || mission.boss && !regularCleared;
           return {
             ...mission,
             stars: record.stars,
+            cleared: record.cleared,
+            worldId: world.id,
             locked: missionLocked
           };
         });
         return {
           ...world,
           locked: worldLocked,
+          completedMissions: missions.filter((mission) => mission.cleared).length,
           completedStars: missions.reduce((sum, mission) => sum + mission.stars, 0),
           totalStars: missions.length * 3,
+          totalMissions: missions.length,
+          lockCopy: worldLocked && previousWorld ? `Clear ${previousWorld.title} Boss to unlock this world.` : "This world is locked.",
           missions
         };
       });
+    }
+    getCurrentTargetMission(worlds = this.getWorldViewModels()) {
+      const flat = worlds.flatMap((world) => world.missions.map((mission) => ({
+        worldId: world.id,
+        worldTitle: world.title,
+        missionId: mission.id,
+        title: mission.title,
+        short: mission.short,
+        locked: world.locked || mission.locked,
+        cleared: mission.cleared
+      })));
+      return flat.find((entry) => !entry.locked && !entry.cleared) || null;
+    }
+    resolveMapFocusWorldId(worlds, currentTargetMission) {
+      var _a2, _b;
+      const selectableWorlds = worlds.filter((world) => !world.locked);
+      if (this.mapFocusWorldId && selectableWorlds.some((world) => world.id === this.mapFocusWorldId)) {
+        return this.mapFocusWorldId;
+      }
+      if ((currentTargetMission == null ? void 0 : currentTargetMission.worldId) && selectableWorlds.some((world) => world.id === currentTargetMission.worldId)) {
+        return currentTargetMission.worldId;
+      }
+      return ((_a2 = selectableWorlds[selectableWorlds.length - 1]) == null ? void 0 : _a2.id) || ((_b = worlds[0]) == null ? void 0 : _b.id) || null;
+    }
+    buildMapMissionStatuses(mission, currentTargetMission) {
+      const isNext = Boolean(
+        currentTargetMission && currentTargetMission.worldId === mission.worldId && currentTargetMission.missionId === mission.id
+      );
+      const statuses = [];
+      if (isNext) {
+        statuses.push({ label: "Next", tone: "next" });
+      }
+      if (mission.cleared) {
+        statuses.push({ label: "Done", tone: "done" });
+      }
+      if (mission.locked) {
+        statuses.push({ label: "Locked", tone: "locked" });
+      }
+      if (mission.boss) {
+        statuses.push({ label: "Boss", tone: "boss" });
+      }
+      return { isNext, statuses };
+    }
+    buildMapFocusWorld(world, currentTargetMission) {
+      const missions = world.missions.map((mission, index) => {
+        const { isNext, statuses } = this.buildMapMissionStatuses(mission, currentTargetMission);
+        return {
+          ...mission,
+          order: index + 1,
+          isNext,
+          statuses
+        };
+      });
+      const focusedNextMission = missions.find((mission) => mission.isNext) || null;
+      const calloutTitle = focusedNextMission ? `Next up: ${focusedNextMission.title}` : currentTargetMission ? `${currentTargetMission.worldTitle} is your active path` : "Every mission is clear";
+      const calloutCopy = focusedNextMission ? focusedNextMission.short : currentTargetMission ? `Replay here any time. The next new mission is in ${currentTargetMission.worldTitle}.` : "Replay any mission you want. Your stars and badges stay saved.";
+      return {
+        ...world,
+        missions,
+        calloutTitle,
+        calloutCopy
+      };
+    }
+    buildMapOtherWorld(world, currentTargetMission) {
+      const nextOpenMission = world.missions.find((mission) => !mission.locked && !mission.cleared) || null;
+      const isCurrentPath = (currentTargetMission == null ? void 0 : currentTargetMission.worldId) === world.id;
+      let note = world.lockCopy;
+      if (!world.locked) {
+        if (isCurrentPath && nextOpenMission) {
+          note = `Current path: ${nextOpenMission.title}`;
+        } else if (nextOpenMission) {
+          note = `${nextOpenMission.title} is ready to play.`;
+        } else {
+          note = "All missions here are clear. Replay for practice.";
+        }
+      }
+      return {
+        ...world,
+        canFocus: !world.locked,
+        isCurrentPath,
+        note
+      };
+    }
+    getMapScreenState(worlds = this.getWorldViewModels()) {
+      const currentTargetMission = this.getCurrentTargetMission(worlds);
+      const focusWorldId = this.resolveMapFocusWorldId(worlds, currentTargetMission);
+      const focusWorldSource = worlds.find((world) => world.id === focusWorldId) || worlds[0] || null;
+      this.mapFocusWorldId = focusWorldId;
+      const totalStars = worlds.reduce((sum, world) => sum + world.totalStars, 0);
+      const earnedStars = worlds.reduce((sum, world) => sum + world.completedStars, 0);
+      const totalMissions = worlds.reduce((sum, world) => sum + world.totalMissions, 0);
+      const missionsCleared = worlds.reduce((sum, world) => sum + world.completedMissions, 0);
+      const worldsCleared = worlds.filter((world) => world.completedMissions === world.totalMissions).length;
+      return {
+        summary: {
+          earnedStars,
+          totalStars,
+          totalMissions,
+          missionsCleared,
+          worldCount: worlds.length,
+          worldsCleared,
+          badgeCount: this.profile.badges.length,
+          currentStreak: this.profile.currentStreak,
+          badges: [...this.profile.badges],
+          nextMissionLabel: currentTargetMission ? `${currentTargetMission.worldTitle}: ${currentTargetMission.title}` : "All missions cleared. Pick any mission to replay.",
+          nextMissionCopy: currentTargetMission ? currentTargetMission.short : "Your full path is complete, so this map is now a replay board."
+        },
+        focusWorld: focusWorldSource ? this.buildMapFocusWorld(focusWorldSource, currentTargetMission) : null,
+        otherWorlds: worlds.filter((world) => world.id !== focusWorldId).map((world) => this.buildMapOtherWorld(world, currentTargetMission))
+      };
+    }
+    focusMapWorld(worldId) {
+      const world = this.getWorldViewModels().find((entry) => entry.id === worldId);
+      if (!world || world.locked) {
+        return;
+      }
+      this.mapFocusWorldId = worldId;
+      this.render();
     }
     findNextMission(fromWorldId = null, fromMissionId = null) {
       const worlds = this.getWorldViewModels();
@@ -2128,6 +3043,8 @@
         tasks: buildMissionTasks(world, mission, replay),
         taskIndex: 0,
         hintStage: 0,
+        helpPanelOpen: false,
+        boardGuideOpen: true,
         maxHintStageUsed: 0,
         mistakes: 0,
         replay
@@ -2138,16 +3055,21 @@
       this.feedback = { kind: "", message: "" };
       this.answerValue = "";
       this.lastWrongChoice = "";
+      this.mapFocusWorldId = worldId;
       this.prepareTask();
       this.router.go("mission", { worldId, missionId });
     }
     prepareTask() {
+      var _a2;
       if (!this.activeRun) return;
       this.activeRun.hintStage = 0;
+      this.activeRun.helpPanelOpen = false;
+      this.activeRun.boardGuideOpen = true;
       this.answerValue = "";
       this.lastWrongChoice = "";
       this.feedback = { kind: "", message: "" };
       this.activeRun.needsBoardLoad = true;
+      (_a2 = this.board) == null ? void 0 : _a2.setHintStage(0);
       this.clearTimers();
       this.render();
       if (this.profile.settings.readAloud) {
@@ -2167,6 +3089,7 @@
       var _a2;
       this.boardSummary = ((_a2 = this.board) == null ? void 0 : _a2.getPrimarySummary()) || null;
       this.refreshLiveMissionBits();
+      this.syncMissionToolState();
       if (!this.activeRun) return;
       const task = this.activeRun.tasks[this.activeRun.taskIndex];
       if (task.answerMode !== "board") return;
@@ -2179,30 +3102,71 @@
       }, 240);
     }
     validateBoardTask(task) {
-      var _a2;
+      var _a2, _b, _c, _d;
       const summaries = ((_a2 = this.board) == null ? void 0 : _a2.getSummaries()) || [];
       const editableSummaries = summaries.filter((summary) => !summary.polygon.locked);
       if (!editableSummaries.length) {
-        return { correct: false, message: "Make or move a shape first." };
+        if ((_c = (_b = this.board) == null ? void 0 : _b.getDebugState()) == null ? void 0 : _c.draftVertexCount) {
+          return { correct: false, message: "Close your polygon by tapping the first point again." };
+        }
+        return {
+          correct: false,
+          message: ((_d = task.proof) == null ? void 0 : _d.requireDrawnShape) ? "Use Plot to draw the polygon first." : "Make or move a shape first."
+        };
       }
       const matched = editableSummaries.find((summary) => {
-        var _a3;
-        const primary = summary.analysis.primaryLabel;
-        const exactMatches = summary.analysis.exactMatches || [];
-        const families = summary.analysis.familyLabels || [];
-        if ((_a3 = task.success.rejectPrimary) == null ? void 0 : _a3.includes(primary)) return false;
-        if (task.success.primary && primary !== task.success.primary) return false;
-        if (task.success.exact && !(exactMatches.includes(task.success.exact) || primary === task.success.exact)) return false;
-        if (task.success.family && !families.includes(task.success.family)) return false;
-        return true;
+        return this.matchesBoardTarget(summary, task.success);
       });
       if (!matched) {
         return { correct: false, message: "That shape does not match yet." };
+      }
+      const proofResult = this.validateBoardProof(task);
+      if (!proofResult.correct) {
+        return proofResult;
       }
       return {
         correct: true,
         message: task.celebrationText || `Nice! You made ${matched.analysis.primaryLabel}.`
       };
+    }
+    matchesBoardTarget(summary, success = {}) {
+      var _a2, _b, _c, _d, _e, _f;
+      const primary = summary.analysis.primaryLabel;
+      const exactMatches = summary.analysis.exactMatches || [];
+      const families = summary.analysis.familyLabels || [];
+      const traits = summary.analysis.traits || [];
+      const includesExact = (label) => exactMatches.includes(label) || primary === label;
+      if ((_a2 = success.rejectPrimary) == null ? void 0 : _a2.includes(primary)) return false;
+      if ((_b = success.rejectExact) == null ? void 0 : _b.some((label) => includesExact(label))) return false;
+      if ((_c = success.rejectTraits) == null ? void 0 : _c.some((label) => traits.includes(label))) return false;
+      if (success.primary && primary !== success.primary) return false;
+      if (success.exact && !includesExact(success.exact)) return false;
+      if (((_d = success.exactAny) == null ? void 0 : _d.length) && !success.exactAny.some((label) => includesExact(label))) return false;
+      if ((_e = success.exactAll) == null ? void 0 : _e.some((label) => !includesExact(label))) return false;
+      if (success.family && !families.includes(success.family)) return false;
+      if ((_f = success.requireTraits) == null ? void 0 : _f.some((label) => !traits.includes(label))) return false;
+      return true;
+    }
+    validateBoardProof(task) {
+      var _a2;
+      const proof = task.proof || {};
+      const actionStats = ((_a2 = this.board) == null ? void 0 : _a2.getActionStats()) || {};
+      if (proof.requireDrawnShape && (actionStats.drawnPolygons || 0) < 1) {
+        return { correct: false, message: proof.drawMessage || "Use Plot to draw this polygon yourself." };
+      }
+      if ((proof.requireShapeCreate || 0) && (actionStats.shapeCreates || 0) < 1) {
+        return { correct: false, message: proof.createMessage || "Use Make Shape before you check." };
+      }
+      if ((proof.minPlacedVertices || 0) > (actionStats.plottedPoints || 0)) {
+        return { correct: false, message: proof.plotMessage || `Plot ${proof.minPlacedVertices} points before you check.` };
+      }
+      if ((proof.minVertexMoves || 0) > (actionStats.vertexMoves || 0)) {
+        return { correct: false, message: proof.moveMessage || "Move at least one corner point to prove the shape rule." };
+      }
+      if ((proof.minShapeMoves || 0) > (actionStats.shapeMoves || 0)) {
+        return { correct: false, message: proof.shapeMoveMessage || "Slide the whole shape before you check." };
+      }
+      return { correct: true };
     }
     checkBoardManual() {
       if (!this.activeRun) return;
@@ -2251,20 +3215,52 @@
         this.registerMistake(`Try again. Check the ${task.success.metric === "area" ? "inside space" : "outside path"} one more time.`);
       }
     }
-    useHelp() {
+    getCurrentHintText() {
+      var _a2;
+      if (!this.activeRun) return "";
+      const task = this.activeRun.tasks[this.activeRun.taskIndex];
+      if (!((_a2 = task == null ? void 0 : task.hintLadder) == null ? void 0 : _a2.length)) {
+        return "";
+      }
+      const safeIndex = Math.max(0, Math.min(task.hintLadder.length - 1, (this.activeRun.hintStage || 1) - 1));
+      return task.hintLadder[safeIndex] || "";
+    }
+    toggleHelpPanel() {
+      if (!this.activeRun) return;
+      if (this.activeRun.helpPanelOpen) {
+        this.activeRun.helpPanelOpen = false;
+        this.render();
+        return;
+      }
+      if (this.activeRun.hintStage === 0) {
+        this.advanceHelpStage();
+        return;
+      }
+      this.activeRun.helpPanelOpen = true;
+      this.activeRun.boardGuideOpen = true;
+      const hintText = this.getCurrentHintText();
+      if (this.profile.settings.readAloud && hintText) {
+        this.speak(hintText);
+      }
+      this.render();
+    }
+    advanceHelpStage() {
       var _a2;
       if (!this.activeRun) return;
       this.activeRun.hintStage = Math.min(3, this.activeRun.hintStage + 1);
+      this.activeRun.helpPanelOpen = true;
+      this.activeRun.boardGuideOpen = true;
       this.activeRun.maxHintStageUsed = Math.max(this.activeRun.maxHintStageUsed, this.activeRun.hintStage);
       (_a2 = this.board) == null ? void 0 : _a2.setHintStage(this.activeRun.hintStage);
-      const task = this.activeRun.tasks[this.activeRun.taskIndex];
-      this.feedback = {
-        kind: "try",
-        message: task.hintLadder[Math.max(0, this.activeRun.hintStage - 1)]
-      };
-      if (this.profile.settings.readAloud) {
-        this.speak(this.feedback.message);
+      const hintText = this.getCurrentHintText();
+      if (this.profile.settings.readAloud && hintText) {
+        this.speak(hintText);
       }
+      this.render();
+    }
+    setBoardGuideOpen(open) {
+      if (!this.activeRun) return;
+      this.activeRun.boardGuideOpen = open;
       this.render();
     }
     registerMistake(message) {
@@ -2357,8 +3353,12 @@
       this.router.go("map");
     }
     pickShape(shapeType) {
-      var _a2;
-      (_a2 = this.board) == null ? void 0 : _a2.createOrReplaceShape(shapeType);
+      var _a2, _b;
+      const task = this.activeRun ? this.activeRun.tasks[this.activeRun.taskIndex] : null;
+      if (((_a2 = task == null ? void 0 : task.board) == null ? void 0 : _a2.allowShapePicker) === false) {
+        return;
+      }
+      (_b = this.board) == null ? void 0 : _b.createOrReplaceShape(shapeType);
       this.showShapePicker = false;
       this.render();
     }

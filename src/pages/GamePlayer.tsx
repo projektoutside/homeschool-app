@@ -48,6 +48,11 @@ type WordPuzzleUserContext = {
     storageScope: string;
 };
 
+type StaminaGateStatus = {
+    requestKey: string | null;
+    status: 'checking' | 'allowed' | 'blocked';
+};
+
 const isCarKingMicPreference = (value: unknown): value is CarKingMicPreference => {
     return value === 'ask' || value === 'session' || value === 'always';
 };
@@ -133,7 +138,10 @@ const GamePlayer: React.FC = () => {
     const zoomLockIframes = useMemo(() => [iframeRef], []);
     const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
     const [wordPuzzleBootstrapStamp, setWordPuzzleBootstrapStamp] = useState<string | null>(null);
-    const [staminaGateState, setStaminaGateState] = useState<'checking' | 'allowed' | 'blocked'>('checking');
+    const [staminaGateState, setStaminaGateState] = useState<StaminaGateStatus>({
+        requestKey: null,
+        status: 'checking',
+    });
     const [staminaAttemptNonce, setStaminaAttemptNonce] = useState(0);
     const [staminaCountdownNowMs, setStaminaCountdownNowMs] = useState(() => Date.now());
     const { user } = useAuth();
@@ -196,6 +204,13 @@ const GamePlayer: React.FC = () => {
             : `${location.pathname}:${currentGameId}`;
         return `launch:${currentGameId}:${safeLocationKey}`;
     }, [currentGameId, isGameItem, location.key, location.pathname]);
+    const staminaLaunchRequestKey = useMemo(() => {
+        if (!staminaLaunchEventId) {
+            return null;
+        }
+
+        return `${staminaLaunchEventId}:${staminaAttemptNonce}`;
+    }, [staminaAttemptNonce, staminaLaunchEventId]);
     const secondsUntilNextStamina = useMemo(() => {
         return getSecondsUntilNextRecharge(nextRechargeAtMs, staminaCountdownNowMs);
     }, [nextRechargeAtMs, staminaCountdownNowMs]);
@@ -290,14 +305,11 @@ const GamePlayer: React.FC = () => {
     }, [syncGamePointsContext]);
 
     useEffect(() => {
-        if (!requiresStaminaCharge || !item || !staminaLaunchEventId) {
+        if (!requiresStaminaCharge || !item || !staminaLaunchEventId || !staminaLaunchRequestKey) {
             return;
         }
 
         let cancelled = false;
-        const frameId = window.requestAnimationFrame(() => {
-            setStaminaGateState('checking');
-        });
 
         void consumeStamina({
             amount: GAME_STAMINA_COST,
@@ -308,23 +320,28 @@ const GamePlayer: React.FC = () => {
                 return;
             }
 
-            setStaminaGateState(result.accepted ? 'allowed' : 'blocked');
+            setStaminaGateState({
+                requestKey: staminaLaunchRequestKey,
+                status: result.accepted ? 'allowed' : 'blocked',
+            });
         }).catch(() => {
             if (cancelled) {
                 return;
             }
 
-            setStaminaGateState('blocked');
+            setStaminaGateState({
+                requestKey: staminaLaunchRequestKey,
+                status: 'blocked',
+            });
         });
 
         return () => {
             cancelled = true;
-            window.cancelAnimationFrame(frameId);
         };
-    }, [consumeStamina, item, requiresStaminaCharge, staminaAttemptNonce, staminaLaunchEventId]);
+    }, [consumeStamina, item, requiresStaminaCharge, staminaLaunchEventId, staminaLaunchRequestKey]);
 
     useEffect(() => {
-        if (staminaGateState !== 'blocked') {
+        if (staminaGateState.status !== 'blocked') {
             return undefined;
         }
 
@@ -333,7 +350,7 @@ const GamePlayer: React.FC = () => {
         }, 1000);
 
         return () => window.clearInterval(intervalId);
-    }, [staminaGateState]);
+    }, [staminaGateState.status]);
 
     const exitFullscreen = useCallback(async () => {
         const doc = document as FullscreenDocumentType;
@@ -573,7 +590,9 @@ const GamePlayer: React.FC = () => {
     }
 
     const isIframeReady = !isWordPuzzleGame || wordPuzzleBootstrapStamp === wordPuzzleBootstrapKey;
-    const effectiveStaminaGateState = requiresStaminaCharge ? staminaGateState : 'allowed';
+    const effectiveStaminaGateState = requiresStaminaCharge
+        ? (staminaGateState.requestKey === staminaLaunchRequestKey ? staminaGateState.status : 'checking')
+        : 'allowed';
     const isGameLaunchAllowed = !isGameItem || effectiveStaminaGateState === 'allowed';
     const showLoadingOverlay = (isGameItem && effectiveStaminaGateState === 'checking') || (isGameLaunchAllowed && isFrameLoading);
 

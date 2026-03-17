@@ -1160,7 +1160,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         </div>
                     </div>
                 </aside>
-            {isMinimized && isStatsMinimized ? (
+            {isMinimized && isStatsMinimized && !isGameLikeImmersive ? (
                 <button
                     type="button"
                     className="stats-wake-zone"
