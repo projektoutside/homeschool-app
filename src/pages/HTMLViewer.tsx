@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { usePWA } from '../hooks/usePWA';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import './HTMLViewer.css';
 
@@ -19,7 +20,11 @@ interface WorksheetFolder {
     files: WorksheetFile[];
 }
 
-// Build URL for worksheet files that works with GitHub Pages base URL
+interface WorksheetSize {
+    width: number;
+    height: number;
+}
+
 const buildWorksheetUrl = (folderName: string): string => {
     return buildAssetPath(`Worksheets/${folderName}/index.html`);
 };
@@ -50,55 +55,309 @@ const KNOWN_WORKSHEET_FOLDERS = [
     'uniquepatternworksheetmedium', 'us-states-word-bank'
 ] as const;
 
-const WORKSHEET_BASE_WIDTH = 816;
-const WORKSHEET_BASE_HEIGHT = 1056;
+const FALLBACK_WORKSHEET_SIZE: WorksheetSize = {
+    width: 816,
+    height: 1056,
+};
 
-const clampScale = (value: number, min = 0.25, max = 6): number => {
-    if (!Number.isFinite(value) || value <= 0) return 1;
+const FALLBACK_VIEWPORT_SIZE: WorksheetSize = {
+    width: 816,
+    height: 600,
+};
+
+const MIN_VIEWPORT_FIT_MARGIN = 8;
+const MAX_VIEWPORT_FIT_MARGIN = 18;
+const MIN_EFFECTIVE_SCALE = 0.25;
+const MAX_EFFECTIVE_SCALE = 6;
+const MIN_ZOOM_MULTIPLIER = 0.5;
+const MAX_ZOOM_MULTIPLIER = 12;
+
+const clamp = (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
 };
 
-const computeFitScale = (availableWidth: number, availableHeight: number): number => {
-    if (!Number.isFinite(availableWidth) || !Number.isFinite(availableHeight) || availableWidth <= 0 || availableHeight <= 0) {
+const clampScale = (value: number): number => {
+    if (!Number.isFinite(value) || value <= 0) {
         return 1;
     }
-    const scaleX = availableWidth / WORKSHEET_BASE_WIDTH;
-    const scaleY = availableHeight / WORKSHEET_BASE_HEIGHT;
+    return clamp(value, MIN_EFFECTIVE_SCALE, MAX_EFFECTIVE_SCALE);
+};
+
+const clampZoomMultiplier = (value: number): number => {
+    if (!Number.isFinite(value) || value <= 0) {
+        return 1;
+    }
+    return clamp(value, MIN_ZOOM_MULTIPLIER, MAX_ZOOM_MULTIPLIER);
+};
+
+const areSizesEqual = (left: WorksheetSize, right: WorksheetSize): boolean => {
+    return left.width === right.width && left.height === right.height;
+};
+
+const getRectSize = (element: HTMLElement | null | undefined): WorksheetSize => {
+    if (!element) {
+        return { width: 0, height: 0 };
+    }
+
+    const rect = element.getBoundingClientRect();
+    return {
+        width: Math.ceil(rect.width),
+        height: Math.ceil(rect.height),
+    };
+};
+
+const getDocumentIntrinsicSize = (doc: Document): WorksheetSize => {
+    const root = doc.documentElement as HTMLElement | null;
+    const body = doc.body as HTMLElement | null;
+    const rootRect = getRectSize(root);
+    const bodyRect = getRectSize(body);
+
+    const width = Math.max(
+        FALLBACK_WORKSHEET_SIZE.width,
+        root?.scrollWidth ?? 0,
+        root?.offsetWidth ?? 0,
+        root?.clientWidth ?? 0,
+        body?.scrollWidth ?? 0,
+        body?.offsetWidth ?? 0,
+        body?.clientWidth ?? 0,
+        rootRect.width,
+        bodyRect.width,
+    );
+
+    const height = Math.max(
+        FALLBACK_WORKSHEET_SIZE.height,
+        root?.scrollHeight ?? 0,
+        root?.offsetHeight ?? 0,
+        root?.clientHeight ?? 0,
+        body?.scrollHeight ?? 0,
+        body?.offsetHeight ?? 0,
+        body?.clientHeight ?? 0,
+        rootRect.height,
+        bodyRect.height,
+    );
+
+    return {
+        width: Math.ceil(width),
+        height: Math.ceil(height),
+    };
+};
+
+const waitForStableWorksheetLayout = async (doc: Document): Promise<void> => {
+    try {
+        if ('fonts' in doc && doc.fonts?.ready) {
+            await doc.fonts.ready;
+        }
+    } catch {
+        // Ignore font readiness failures and continue with fallback sizing.
+    }
+
+    await new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => resolve());
+        });
+    });
+};
+
+const resetWorksheetViewport = (doc: Document): void => {
+    const root = doc.documentElement;
+    const body = doc.body;
+
+    if (doc.activeElement instanceof HTMLElement && doc.activeElement !== body) {
+        doc.activeElement.blur();
+    }
+
+    root.scrollTop = 0;
+    root.scrollLeft = 0;
+
+    if (body) {
+        body.scrollTop = 0;
+        body.scrollLeft = 0;
+    }
+
+    try {
+        doc.defaultView?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch {
+        doc.defaultView?.scrollTo(0, 0);
+    }
+};
+
+const getPanelViewportSize = (panel: HTMLDivElement | null): WorksheetSize => {
+    if (!panel) {
+        return FALLBACK_VIEWPORT_SIZE;
+    }
+
+    const panelStyles = window.getComputedStyle(panel);
+    const paddingX = parseFloat(panelStyles.paddingLeft || '0') + parseFloat(panelStyles.paddingRight || '0');
+    const paddingY = parseFloat(panelStyles.paddingTop || '0') + parseFloat(panelStyles.paddingBottom || '0');
+    const innerWidth = Math.max(1, panel.clientWidth - paddingX);
+    const innerHeight = Math.max(1, panel.clientHeight - paddingY);
+    const fitMargin = clamp(
+        Math.floor(Math.min(innerWidth, innerHeight) * 0.025),
+        MIN_VIEWPORT_FIT_MARGIN,
+        MAX_VIEWPORT_FIT_MARGIN,
+    );
+
+    return {
+        width: Math.max(1, innerWidth - fitMargin * 2),
+        height: Math.max(1, innerHeight - fitMargin * 2),
+    };
+};
+
+const computeFitScale = (viewport: WorksheetSize, intrinsic: WorksheetSize): number => {
+    if (viewport.width <= 0 || viewport.height <= 0 || intrinsic.width <= 0 || intrinsic.height <= 0) {
+        return 1;
+    }
+
+    const scaleX = viewport.width / intrinsic.width;
+    const scaleY = viewport.height / intrinsic.height;
     return clampScale(Math.min(scaleX, scaleY));
 };
 
 const HTMLViewer: React.FC = () => {
     const navigate = useNavigate();
+    const { shouldUseNativeFullscreenFallback } = usePWA();
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [fullscreenScale, setFullscreenScale] = useState(1);
-    const [zoomScale, setZoomScale] = useState(1);
     const [selectedFile, setSelectedFile] = useState<WorksheetFile | null>(null);
     const [showFileBrowser, setShowFileBrowser] = useState(false);
     const [folders, setFolders] = useState<WorksheetFolder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+    const [viewportSize, setViewportSize] = useState<WorksheetSize>(FALLBACK_VIEWPORT_SIZE);
+    const [intrinsicSize, setIntrinsicSize] = useState<WorksheetSize>(FALLBACK_WORKSHEET_SIZE);
+    const [zoomMultiplier, setZoomMultiplier] = useState(1);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
+    const measurementCleanupRef = useRef<(() => void) | null>(null);
+    const scheduledMeasureRef = useRef<number | null>(null);
+    const measurementTokenRef = useRef(0);
+    const lastScrollResetKeyRef = useRef<string | null>(null);
+    const viewerOwnsNativeFullscreenRef = useRef(false);
     const { settings: soundSettings } = useSoundSettings();
+
+    const fitScale = computeFitScale(viewportSize, intrinsicSize);
+    const effectiveScale = clampScale(fitScale * zoomMultiplier);
+    const scaledWorksheetWidth = intrinsicSize.width * effectiveScale;
+    const scaledWorksheetHeight = intrinsicSize.height * effectiveScale;
+    const stageWidth = Math.max(viewportSize.width, scaledWorksheetWidth);
+    const stageHeight = Math.max(viewportSize.height, scaledWorksheetHeight);
+    const paperOffsetX = scaledWorksheetWidth < viewportSize.width ? (stageWidth - scaledWorksheetWidth) / 2 : 0;
+    const paperOffsetY = scaledWorksheetHeight < viewportSize.height ? (stageHeight - scaledWorksheetHeight) / 2 : 0;
+
+    const updateViewportSize = useCallback(() => {
+        const nextViewport = getPanelViewportSize(panelRef.current);
+        setViewportSize((currentViewport) => {
+            return areSizesEqual(currentViewport, nextViewport) ? currentViewport : nextViewport;
+        });
+        return nextViewport;
+    }, []);
+
+    const cleanupWorksheetMeasurement = useCallback(() => {
+        measurementCleanupRef.current?.();
+        measurementCleanupRef.current = null;
+
+        if (scheduledMeasureRef.current !== null) {
+            window.cancelAnimationFrame(scheduledMeasureRef.current);
+            scheduledMeasureRef.current = null;
+        }
+    }, []);
+
+    const measureWorksheet = useCallback((doc: Document) => {
+        const nextIntrinsicSize = getDocumentIntrinsicSize(doc);
+        setIntrinsicSize((currentSize) => {
+            return areSizesEqual(currentSize, nextIntrinsicSize) ? currentSize : nextIntrinsicSize;
+        });
+    }, []);
+
+    const scheduleWorksheetMeasurement = useCallback((doc: Document) => {
+        if (scheduledMeasureRef.current !== null) {
+            return;
+        }
+
+        scheduledMeasureRef.current = window.requestAnimationFrame(() => {
+            scheduledMeasureRef.current = null;
+            measureWorksheet(doc);
+        });
+    }, [measureWorksheet]);
+
+    const initializeWorksheetMeasurement = useCallback(async () => {
+        cleanupWorksheetMeasurement();
+
+        const iframe = iframeRef.current;
+        const doc = iframe?.contentDocument;
+        if (!iframe || !doc) {
+            setIntrinsicSize(FALLBACK_WORKSHEET_SIZE);
+            return;
+        }
+
+        const measurementToken = measurementTokenRef.current + 1;
+        measurementTokenRef.current = measurementToken;
+
+        resetWorksheetViewport(doc);
+        await waitForStableWorksheetLayout(doc);
+
+        if (measurementTokenRef.current !== measurementToken) {
+            return;
+        }
+
+        resetWorksheetViewport(doc);
+        measureWorksheet(doc);
+
+        const root = doc.documentElement;
+        const body = doc.body;
+        const resizeObserver = new ResizeObserver(() => scheduleWorksheetMeasurement(doc));
+        resizeObserver.observe(root);
+        if (body) {
+            resizeObserver.observe(body);
+        }
+
+        const mutationObserver = new MutationObserver(() => scheduleWorksheetMeasurement(doc));
+        if (body) {
+            mutationObserver.observe(body, {
+                subtree: true,
+                childList: true,
+                attributes: true,
+                characterData: true,
+            });
+        }
+
+        const handleInnerResize = () => scheduleWorksheetMeasurement(doc);
+        doc.defaultView?.addEventListener('resize', handleInnerResize);
+
+        const enforceTopViewport = () => {
+            resetWorksheetViewport(doc);
+        };
+
+        doc.defaultView?.addEventListener('load', enforceTopViewport);
+        const resetTimers = [
+            window.setTimeout(enforceTopViewport, 0),
+            window.setTimeout(enforceTopViewport, 120),
+            window.setTimeout(enforceTopViewport, 300),
+        ];
+
+        measurementCleanupRef.current = () => {
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+            doc.defaultView?.removeEventListener('resize', handleInnerResize);
+            doc.defaultView?.removeEventListener('load', enforceTopViewport);
+            resetTimers.forEach((timerId) => window.clearTimeout(timerId));
+        };
+    }, [cleanupWorksheetMeasurement, measureWorksheet, scheduleWorksheetMeasurement]);
 
     useEffect(() => {
         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
     }, [soundSettings]);
 
-    // Format folder name for display
     const formatFolderName = (name: string): string => {
         return name
             .replace(/-/g, ' ')
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ');
     };
 
-    // Build worksheet entries from the known static folder set to avoid
-    // runtime probing requests that can stall lower-end devices.
     useEffect(() => {
         setIsLoading(true);
 
@@ -109,30 +368,146 @@ const HTMLViewer: React.FC = () => {
                 path: filePath,
                 folder: folderName,
                 title: formatFolderName(folderName),
-                description: 'Interactive worksheet'
+                description: 'Interactive worksheet',
             };
 
             return {
                 name: folderName,
                 path: buildAssetPath(`Worksheets/${folderName}`),
-                files: [file]
+                files: [file],
             };
         });
 
-        setFolders(scannedFolders.sort((a, b) => a.name.localeCompare(b.name)));
+        setFolders(scannedFolders.sort((left, right) => left.name.localeCompare(right.name)));
         setIsLoading(false);
     }, []);
 
+    useEffect(() => {
+        const panel = panelRef.current;
+        if (!panel) {
+            return;
+        }
+
+        updateViewportSize();
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateViewportSize();
+        });
+
+        resizeObserver.observe(panel);
+
+        const handleWindowResize = () => {
+            updateViewportSize();
+        };
+
+        window.addEventListener('resize', handleWindowResize);
+        window.addEventListener('orientationchange', handleWindowResize);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', handleWindowResize);
+            window.removeEventListener('orientationchange', handleWindowResize);
+        };
+    }, [updateViewportSize]);
+
+    useEffect(() => {
+        if (!selectedFile) {
+            return;
+        }
+
+        updateViewportSize();
+    }, [selectedFile, isFullscreen, updateViewportSize]);
+
+    useEffect(() => {
+        return () => {
+            cleanupWorksheetMeasurement();
+        };
+    }, [cleanupWorksheetMeasurement]);
+
+    useEffect(() => {
+        if (!shouldUseNativeFullscreenFallback) {
+            return;
+        }
+
+        const rootElement = viewerContainerRef.current;
+        if (!rootElement) {
+            return;
+        }
+
+        const syncFullscreenState = () => {
+            const isViewerNativeFullscreen = document.fullscreenElement === rootElement;
+
+            if (isViewerNativeFullscreen) {
+                viewerOwnsNativeFullscreenRef.current = true;
+                setIsFullscreen(true);
+                return;
+            }
+
+            if (viewerOwnsNativeFullscreenRef.current) {
+                viewerOwnsNativeFullscreenRef.current = false;
+                setIsFullscreen(false);
+            }
+        };
+
+        document.addEventListener('fullscreenchange', syncFullscreenState);
+        return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+    }, [shouldUseNativeFullscreenFallback]);
+
+    useEffect(() => {
+        if (!isFullscreen) {
+            return;
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                if (document.fullscreenElement === viewerContainerRef.current && document.exitFullscreen) {
+                    void document.exitFullscreen().catch(() => setIsFullscreen(false));
+                    return;
+                }
+                setIsFullscreen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen]);
+
+    useEffect(() => {
+        if (!selectedFile || !panelRef.current) {
+            return;
+        }
+
+        const resetKey = `${selectedFile.path}|${intrinsicSize.width}x${intrinsicSize.height}`;
+        if (lastScrollResetKeyRef.current === resetKey) {
+            return;
+        }
+
+        lastScrollResetKeyRef.current = resetKey;
+
+        window.requestAnimationFrame(() => {
+            const panel = panelRef.current;
+            if (!panel) {
+                return;
+            }
+
+            const maxScrollLeft = Math.max(0, panel.scrollWidth - panel.clientWidth);
+            panel.scrollLeft = maxScrollLeft / 2;
+            panel.scrollTop = 0;
+        });
+    }, [selectedFile, intrinsicSize]);
+
     const handleZoomIn = useCallback(() => {
-        setZoomScale(prev => Math.min(prev * 1.1, 3));
+        setZoomMultiplier((currentZoom) => clampZoomMultiplier(currentZoom * 1.1));
     }, []);
 
     const handleZoomOut = useCallback(() => {
-        setZoomScale(prev => Math.max(prev * 0.9, 0.5));
+        setZoomMultiplier((currentZoom) => clampZoomMultiplier(currentZoom / 1.1));
     }, []);
 
     const handlePrint = useCallback(() => {
-        if (!selectedFile) return;
+        if (!selectedFile) {
+            return;
+        }
 
         try {
             const frameWindow = iframeRef.current?.contentWindow;
@@ -155,13 +530,17 @@ const HTMLViewer: React.FC = () => {
                     // No-op: browser may block print in this fallback.
                 }
             };
+
             printWindow.addEventListener('load', triggerPrint, { once: true });
             window.setTimeout(triggerPrint, 800);
         }
     }, [selectedFile]);
 
     const handleDownload = useCallback(async () => {
-        if (!selectedFile) return;
+        if (!selectedFile) {
+            return;
+        }
+
         const safeFileName = `${selectedFile.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
 
         try {
@@ -169,6 +548,7 @@ const HTMLViewer: React.FC = () => {
             if (!response.ok) {
                 throw new Error(`Download request failed with status ${response.status}`);
             }
+
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -180,7 +560,7 @@ const HTMLViewer: React.FC = () => {
             URL.revokeObjectURL(blobUrl);
             return;
         } catch {
-            // Fallback: direct URL download attempt.
+            // Fall back to a direct URL download attempt.
         }
 
         const fallbackLink = document.createElement('a');
@@ -192,157 +572,117 @@ const HTMLViewer: React.FC = () => {
         document.body.removeChild(fallbackLink);
     }, [selectedFile]);
 
-    // Calculate auto-fit scale for standard view
-    const calculatePanelFit = useCallback(() => {
-        if (!panelRef.current) return 1;
-
-        const panelRect = panelRef.current.getBoundingClientRect();
-        const horizontalInset = 10;
-        const verticalInset = 10;
-        const availableWidth = Math.max(1, panelRect.width - horizontalInset * 2);
-        const availableHeight = Math.max(1, panelRect.height - verticalInset * 2);
-        return computeFitScale(availableWidth, availableHeight);
-    }, []);
-
     const handleFileSelect = useCallback((file: WorksheetFile) => {
+        cleanupWorksheetMeasurement();
+        lastScrollResetKeyRef.current = null;
         setSelectedFile(file);
         setShowFileBrowser(false);
-        setTimeout(() => {
-            setZoomScale(calculatePanelFit());
-        }, 50);
-    }, [calculatePanelFit]);
-
-    // Update scale on window resize
-    useEffect(() => {
-        const handleResize = () => {
-            if (!isFullscreen && selectedFile) {
-                setZoomScale(calculatePanelFit());
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [isFullscreen, selectedFile, calculatePanelFit]);
-
-    useEffect(() => {
-        if (!selectedFile || !panelRef.current) return;
-
-        const observer = new ResizeObserver(() => {
-            const panel = panelRef.current;
-            if (!panel) return;
-
-            if (isFullscreen) {
-                const rect = panel.getBoundingClientRect();
-                const fitScale = computeFitScale(rect.width, rect.height);
-                setFullscreenScale(fitScale);
-            } else {
-                setZoomScale(calculatePanelFit());
-            }
-        });
-
-        observer.observe(panelRef.current);
-        return () => observer.disconnect();
-    }, [selectedFile, isFullscreen, calculatePanelFit]);
+        setZoomMultiplier(1);
+        setIntrinsicSize(FALLBACK_WORKSHEET_SIZE);
+    }, [cleanupWorksheetMeasurement]);
 
     const toggleFolder = useCallback((folderName: string) => {
-        setExpandedFolders(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(folderName)) {
-                newSet.delete(folderName);
+        setExpandedFolders((currentFolders) => {
+            const nextFolders = new Set(currentFolders);
+            if (nextFolders.has(folderName)) {
+                nextFolders.delete(folderName);
             } else {
-                newSet.add(folderName);
+                nextFolders.add(folderName);
             }
-            return newSet;
+            return nextFolders;
         });
-    }, []);
-
-    const filteredFolders = folders.filter(folder => {
-        const matchesSearch = folder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            folder.files.some(file => file.title.toLowerCase().includes(searchQuery.toLowerCase()));
-        return matchesSearch;
-    });
-
-    // Calculate perfect fit scale when in fullscreen
-    useEffect(() => {
-        if (!isFullscreen) return;
-
-        const calculateFitScale = () => {
-            if (panelRef.current) {
-                const panelRect = panelRef.current.getBoundingClientRect();
-                setFullscreenScale(computeFitScale(panelRect.width, panelRect.height));
-                return;
-            }
-            const screenWidth = window.innerWidth || 1024;
-            const screenHeight = window.innerHeight || 768;
-            setFullscreenScale(computeFitScale(screenWidth, screenHeight));
-        };
-
-        const timer = setTimeout(calculateFitScale, 50);
-
-        window.addEventListener('resize', calculateFitScale);
-        return () => {
-            window.removeEventListener('resize', calculateFitScale);
-            clearTimeout(timer);
-        };
-    }, [isFullscreen]);
-
-    useEffect(() => {
-        const rootElement = viewerContainerRef.current;
-        if (!rootElement) return;
-
-        const syncFullscreenState = () => {
-            const isNativeFullscreen = document.fullscreenElement === rootElement;
-            setIsFullscreen(isNativeFullscreen);
-        };
-
-        document.addEventListener('fullscreenchange', syncFullscreenState);
-        return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
     }, []);
 
     const enterFullscreen = useCallback(() => {
+        if (!shouldUseNativeFullscreenFallback) {
+            viewerOwnsNativeFullscreenRef.current = false;
+            setIsFullscreen(true);
+            return;
+        }
+
         const rootElement = viewerContainerRef.current;
         if (!rootElement) {
             setIsFullscreen(true);
             return;
         }
 
+        if (document.fullscreenElement && document.fullscreenElement !== rootElement) {
+            viewerOwnsNativeFullscreenRef.current = false;
+            setIsFullscreen(true);
+            return;
+        }
+
         if (rootElement.requestFullscreen) {
             void rootElement.requestFullscreen()
-                .then(() => setIsFullscreen(true))
-                .catch(() => setIsFullscreen(true));
+                .then(() => {
+                    viewerOwnsNativeFullscreenRef.current = true;
+                    setIsFullscreen(true);
+                })
+                .catch(() => {
+                    viewerOwnsNativeFullscreenRef.current = false;
+                    setIsFullscreen(true);
+                });
             return;
         }
 
+        viewerOwnsNativeFullscreenRef.current = false;
         setIsFullscreen(true);
-    }, []);
+    }, [shouldUseNativeFullscreenFallback]);
 
     const exitFullscreen = useCallback(() => {
-        if (document.fullscreenElement && document.exitFullscreen) {
-            void document.exitFullscreen()
-                .then(() => setIsFullscreen(false))
-                .catch(() => setIsFullscreen(false));
+        if (!shouldUseNativeFullscreenFallback) {
+            viewerOwnsNativeFullscreenRef.current = false;
+            setIsFullscreen(false);
             return;
         }
+
+        if (document.fullscreenElement === viewerContainerRef.current && document.exitFullscreen) {
+            void document.exitFullscreen()
+                .then(() => {
+                    viewerOwnsNativeFullscreenRef.current = false;
+                    setIsFullscreen(false);
+                })
+                .catch(() => {
+                    viewerOwnsNativeFullscreenRef.current = false;
+                    setIsFullscreen(false);
+                });
+            return;
+        }
+
+        viewerOwnsNativeFullscreenRef.current = false;
         setIsFullscreen(false);
-    }, []);
+    }, [shouldUseNativeFullscreenFallback]);
 
-    useEffect(() => {
-        if (!isFullscreen) return;
+    const filteredFolders = folders.filter((folder) => {
+        const normalizedQuery = searchQuery.toLowerCase();
+        return folder.name.toLowerCase().includes(normalizedQuery)
+            || folder.files.some((file) => file.title.toLowerCase().includes(normalizedQuery));
+    });
 
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                exitFullscreen();
-            }
-        };
+    const stageStyle: React.CSSProperties = {
+        width: `${stageWidth}px`,
+        height: `${stageHeight}px`,
+        minWidth: `${stageWidth}px`,
+        minHeight: `${stageHeight}px`,
+    };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFullscreen, exitFullscreen]);
+    const paperShellStyle: React.CSSProperties = {
+        width: `${scaledWorksheetWidth}px`,
+        height: `${scaledWorksheetHeight}px`,
+        left: `${paperOffsetX}px`,
+        top: `${paperOffsetY}px`,
+    };
 
-    useEffect(() => {
-        if (!selectedFile || isFullscreen) return;
-        setZoomScale(calculatePanelFit());
-    }, [selectedFile, isFullscreen, calculatePanelFit]);
+    const iframeStyle: React.CSSProperties = {
+        width: `${intrinsicSize.width}px`,
+        height: `${intrinsicSize.height}px`,
+        transform: `scale(${effectiveScale})`,
+        transformOrigin: 'top left',
+        background: 'white',
+        border: 'none',
+        margin: 0,
+        padding: 0,
+    };
 
     return (
         <div className={`html-viewer-page ${isFullscreen ? 'is-fullscreen' : ''}`} ref={viewerContainerRef}>
@@ -385,6 +725,7 @@ const HTMLViewer: React.FC = () => {
                         <button
                             className="zoom-btn zoom-out"
                             onClick={handleZoomOut}
+                            disabled={!selectedFile}
                             aria-label="Zoom Out"
                             title="Zoom Out"
                         >
@@ -392,10 +733,11 @@ const HTMLViewer: React.FC = () => {
                                 <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
                         </button>
-                        <span className="zoom-level">{Math.round(zoomScale * 100)}%</span>
+                        <span className="zoom-level">{Math.round(effectiveScale * 100)}%</span>
                         <button
                             className="zoom-btn zoom-in"
                             onClick={handleZoomIn}
+                            disabled={!selectedFile}
                             aria-label="Zoom In"
                             title="Zoom In"
                         >
@@ -447,6 +789,7 @@ const HTMLViewer: React.FC = () => {
                         <button
                             className="toolbar-action-btn fullscreen-btn"
                             onClick={enterFullscreen}
+                            disabled={!selectedFile}
                             aria-label="Fullscreen"
                         >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -457,7 +800,7 @@ const HTMLViewer: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="worksheet-viewer-panel" ref={panelRef}>
+                <div className="html-viewer-panel" ref={panelRef}>
                     <button
                         className="exit-fullscreen-btn"
                         onClick={exitFullscreen}
@@ -469,46 +812,27 @@ const HTMLViewer: React.FC = () => {
                         </svg>
                         <span>Exit Fullscreen</span>
                     </button>
+
                     {selectedFile ? (
-                        <div
-                            className="worksheet-content-wrapper"
-                            style={isFullscreen ? {
-                                transform: `scale(${fullscreenScale})`,
-                                transformOrigin: 'center center',
-                            } : {
-                                width: `${WORKSHEET_BASE_WIDTH * zoomScale}px`,
-                                height: `${WORKSHEET_BASE_HEIGHT * zoomScale}px`,
-                                position: 'relative',
-                                display: 'block'
-                            }}
-                        >
-                            <iframe
-                                ref={iframeRef}
-                                src={selectedFile.path}
-                                title={selectedFile.title}
-                                className="worksheet-iframe"
-                                allowFullScreen
-                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-                                style={isFullscreen ? {
-                                    background: 'white'
-                                } : {
-                                    background: 'white',
-                                    width: `${WORKSHEET_BASE_WIDTH}px`,
-                                    height: `${WORKSHEET_BASE_HEIGHT}px`,
-                                    transform: `scale(${zoomScale})`,
-                                    transformOrigin: 'top left',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    border: 'none'
-                                }}
-                                onLoad={() => {
-                                    applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
-                                }}
-                            />
+                        <div className="html-viewer-stage" style={stageStyle}>
+                            <div className="html-viewer-paper-shell" style={paperShellStyle}>
+                                <iframe
+                                    ref={iframeRef}
+                                    src={selectedFile.path}
+                                    title={selectedFile.title}
+                                    className="html-viewer-iframe"
+                                    allowFullScreen
+                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
+                                    style={iframeStyle}
+                                    onLoad={() => {
+                                        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                                        void initializeWorksheetMeasurement();
+                                    }}
+                                />
+                            </div>
                         </div>
                     ) : (
-                        <div className="worksheet-placeholder">
+                        <div className="html-viewer-placeholder">
                             <p>HTML viewer display panel</p>
                         </div>
                     )}
@@ -517,7 +841,7 @@ const HTMLViewer: React.FC = () => {
 
             {showFileBrowser && (
                 <div className="file-browser-overlay" onClick={() => setShowFileBrowser(false)}>
-                    <div className="file-browser-panel" onClick={e => e.stopPropagation()}>
+                    <div className="file-browser-panel" onClick={(event) => event.stopPropagation()}>
                         <div className="file-browser-header">
                             <h2>Select a Worksheet</h2>
                             <button
@@ -541,7 +865,7 @@ const HTMLViewer: React.FC = () => {
                                 type="text"
                                 placeholder="Search worksheets..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(event) => setSearchQuery(event.target.value)}
                             />
                         </div>
 
@@ -557,7 +881,7 @@ const HTMLViewer: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="folder-list">
-                                    {filteredFolders.map(folder => (
+                                    {filteredFolders.map((folder) => (
                                         <div key={folder.name} className="folder-item">
                                             <button
                                                 className="folder-header"
@@ -575,14 +899,15 @@ const HTMLViewer: React.FC = () => {
                                                 </span>
                                                 <span className="folder-name">{formatFolderName(folder.name)}</span>
                                             </button>
+
                                             {expandedFolders.has(folder.name) && (
                                                 <div className="folder-files">
-                                                    {folder.files.map(file => (
+                                                    {folder.files.map((file) => (
                                                         <button
                                                             key={file.path}
                                                             className={`file-item ${selectedFile?.path === file.path ? 'selected' : ''}`}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
                                                                 handleFileSelect(file);
                                                             }}
                                                         >

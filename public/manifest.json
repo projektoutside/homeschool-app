@@ -1,9 +1,10 @@
 {
-  "name": "La's Homeschool Hub App",
+  "name": "La's Homeschool Hub",
   "short_name": "Homeschool Hub",
   "description": "A central place for all your homeschool educational resources, games, and tools.",
-  "start_url": ".",
-  "scope": ".",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#6366f1",

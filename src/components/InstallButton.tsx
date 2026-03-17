@@ -1,226 +1,163 @@
-import React, { useState, useCallback } from 'react';
-import { usePWA } from '../hooks/usePWA';
+import React, { useMemo, useState } from 'react';
+import { installConfig } from '../config/installConfig';
+import { useInstallResolution } from '../hooks/useInstallResolution';
+import type { InstallResolution, InstallSurface } from '../types/install';
 import './InstallButton.css';
 
 interface InstallButtonProps {
   className?: string;
   showIcon?: boolean;
+  surface?: InstallSurface;
   onInstallStart?: () => void;
   onInstallComplete?: (success: boolean) => void;
 }
 
+interface InstallHelperSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  resolution: InstallResolution;
+  titleOverride?: string;
+}
+
+const getPlatformBadgeTone = (target: InstallResolution['target']) => {
+  if (target === 'installed') {
+    return 'success';
+  }
+
+  if (target === 'unsupported') {
+    return 'warning';
+  }
+
+  return 'info';
+};
+
+export const InstallHelperSheet: React.FC<InstallHelperSheetProps> = ({
+  isOpen,
+  onClose,
+  resolution,
+  titleOverride,
+}) => {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="install-sheet-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="install-sheet"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="install-sheet-title"
+      >
+        <button className="install-sheet__close" onClick={onClose} aria-label="Close install help" type="button">
+          ×
+        </button>
+        <span className={`install-sheet__badge ${getPlatformBadgeTone(resolution.target)}`}>
+          {resolution.platformLabel}
+        </span>
+        <h2 id="install-sheet-title">{titleOverride ?? resolution.helperTitle}</h2>
+        <p className="install-sheet__description">{resolution.helperDescription}</p>
+        <ol className="install-sheet__steps">
+          {resolution.helperSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <button className="install-sheet__confirm" onClick={onClose} type="button">
+          {resolution.helperConfirmLabel}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 /**
- * One-Click Install Button Component
- * Provides a simple button to install the PWA with platform-specific handling
+ * One-click install button that routes to the correct install channel for the current runtime.
  */
 export const InstallButton: React.FC<InstallButtonProps> = ({
   className = '',
   showIcon = true,
+  surface = 'inline',
   onInstallStart,
-  onInstallComplete
+  onInstallComplete,
 }) => {
-  const { isInstallable, isInstalled, installPrompt, installContext } = usePWA();
+  const { installResolution, runInstallAction } = useInstallResolution(surface);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [showHelperSheet, setShowHelperSheet] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
 
-  // Detect iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as { MSStream?: boolean }).MSStream;
-  const supportsShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  const isConsoleUnsupported = installContext.platform === 'console';
+  const buttonLabel = installResolution.buttonLabel;
+  const isInstalledTarget = installResolution.target === 'installed';
 
-  const openShareSheet = useCallback(async (): Promise<boolean> => {
-    if (!supportsShare) return false;
-    try {
-      await navigator.share({
-        title: "La's Homeschool Hub",
-        text: "Install La's Homeschool Hub",
-        url: window.location.href
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [supportsShare]);
-
-  const handleInstall = useCallback(async () => {
+  const handleInstall = async () => {
     onInstallStart?.();
     setIsInstalling(true);
     setInstallError(null);
 
-    if (isConsoleUnsupported) {
-      setShowIOSInstructions(true);
-      setIsInstalling(false);
-      onInstallComplete?.(false);
-      return;
-    }
+    try {
+      const result = await runInstallAction();
+      onInstallComplete?.(result.completed);
 
-    // Preferred path: native one-click install prompt
-    if (isInstallable) {
-      const success = await installPrompt();
-      setIsInstalling(false);
-      onInstallComplete?.(success);
-
-      if (!success) {
+      if (result.target === 'pwa-prompt' && !result.completed) {
         setInstallError('Install prompt was dismissed. Tap again to retry.');
+      } else if (result.openedHelper) {
+        setShowHelperSheet(true);
       }
-      return;
-    }
-
-    // iOS best possible fallback: open native share sheet in one tap.
-    if (isIOS) {
-      await openShareSheet();
-      setShowIOSInstructions(true);
-      setIsInstalling(false);
+    } catch {
       onInstallComplete?.(false);
-      return;
-    }
-
-    // Non-iOS fallback guidance
-    setShowIOSInstructions(true);
-    setIsInstalling(false);
-    onInstallComplete?.(false);
-  }, [isConsoleUnsupported, isInstallable, isIOS, installPrompt, onInstallStart, onInstallComplete, openShareSheet]);
-
-  const getInstallHeading = () => {
-    switch (installContext.platform) {
-      case 'android':
-        return '🤖 Install on Android';
-      case 'chromium-desktop':
-        return '💻 Install on Desktop (Chrome/Edge)';
-      case 'firefox':
-        return '🦊 Install on Firefox';
-      case 'safari-desktop':
-        return '🧭 Install on Safari (macOS)';
-      case 'console':
-        return '🎮 Console Browsers';
-      default:
-        return '💻 Install from Browser Menu';
+      setInstallError('Install is unavailable right now. Use the install steps instead.');
+      setShowHelperSheet(true);
+    } finally {
+      setIsInstalling(false);
     }
   };
 
-  const getInstructionItems = () => {
-    if (installContext.platform === 'console') {
-      return [
-        'Most game consoles do not support full PWA app installation.',
-        'Use a phone, tablet, or desktop browser for the best install experience.',
-        'You can still use the website in the console browser when supported.'
-      ];
-    }
-
-    if (installContext.platform === 'firefox') {
-      return [
-        'Open Firefox menu (☰).',
-        'Use Add to Home Screen / Install shortcut if available on your device.',
-        'If install is not offered, open this app in Chrome or Edge for one-click install.'
-      ];
-    }
-
-    if (installContext.platform === 'safari-desktop') {
-      return [
-        'Open Safari menu bar.',
-        'Use File → Add to Dock (on supported macOS versions).',
-        'Launch from Dock like an app after adding.'
-      ];
-    }
-
-    return [
-      'Open browser menu (⋮ or ...).',
-      'Select Install App or Add to Home Screen.',
-      'Follow prompts to add the app to your device.'
-    ];
-  };
-
-  const installButtonLabel = isInstallable
-    ? 'Install in 1 Tap'
-    : isConsoleUnsupported
-      ? 'Install Not Supported Here'
-      : 'Open Install Steps';
-
-  // If already installed, show launch option
-  if (isInstalled) {
-    return (
-      <button className={`install-button installed ${className}`} disabled>
-        {showIcon && <span className="icon">✓</span>}
-        <span>Installed</span>
-      </button>
-    );
+  if (installResolution.hidePrimaryCta) {
+    return null;
   }
 
   return (
     <>
       <button
-        className={`install-button ${className}`}
+        className={`install-button ${className}`.trim()}
         onClick={handleInstall}
-        disabled={isInstalling}
-        aria-label="Install La's Homeschool Hub App"
+        disabled={isInstalling || isInstalledTarget}
+        aria-label={`Install ${installConfig.appName}`}
+        type="button"
       >
         {isInstalling ? (
-          <span className="loading-spinner" />
+          <span className="loading-spinner" aria-hidden="true" />
         ) : (
           <>
-            {showIcon && <span className="icon">📲</span>}
-            <span>{installButtonLabel}</span>
+            {showIcon ? <span className="icon" aria-hidden="true">↓</span> : null}
+            <span>{buttonLabel}</span>
           </>
         )}
       </button>
-
-      {installError && <p className="install-helper-note">{installError}</p>}
-
-      {/* iOS/Desktop Instructions Modal */}
-      {showIOSInstructions && (
-        <div className="pwa-modal-overlay" onClick={() => setShowIOSInstructions(false)}>
-          <div className="pwa-modal-content" onClick={e => e.stopPropagation()}>
-            <button 
-              className="pwa-modal-close" 
-              onClick={() => setShowIOSInstructions(false)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-            
-            {isIOS ? (
-              <div className="ios-instructions">
-                <h3>📱 Quick Install on iPhone/iPad</h3>
-                {supportsShare && (
-                  <button className="install-quick-action" onClick={openShareSheet}>
-                    Open Share Sheet
-                  </button>
-                )}
-                <ol>
-                  <li>Tap <strong>Share</strong> <span className="share-icon">⎋</span>.</li>
-                  <li>Tap <strong>Add to Home Screen</strong> <span className="add-icon">⊕</span>.</li>
-                  <li>Tap <strong>Add</strong> in the top right corner.</li>
-                </ol>
-              </div>
-            ) : (
-              <div className="desktop-instructions">
-                <h3>{getInstallHeading()}</h3>
-                <ol>
-                  {getInstructionItems().map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ol>
-              </div>
-            )}
-            
-            <button className="pwa-modal-btn" onClick={() => setShowIOSInstructions(false)}>
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
+      {installError ? <p className="install-helper-note">{installError}</p> : null}
+      <InstallHelperSheet
+        isOpen={showHelperSheet}
+        onClose={() => setShowHelperSheet(false)}
+        resolution={installResolution}
+      />
     </>
   );
 };
 
 /**
- * Install Card Component
- * Shows a full install card with app info and install button
+ * Full-page install card used on the dedicated install page.
  */
 export const InstallCard: React.FC = () => {
-  const { isInstalled, isStandalone } = usePWA();
+  const { installResolution } = useInstallResolution('install-page');
   const [showInstalledMessage, setShowInstalledMessage] = useState(false);
+
+  const installStatusLabel = useMemo(() => {
+    if (installResolution.target === 'installed') {
+      return 'Installed and ready';
+    }
+
+    return `${installResolution.platformLabel} install path`;
+  }, [installResolution.platformLabel, installResolution.target]);
 
   const handleInstallComplete = (success: boolean) => {
     if (success) {
@@ -228,41 +165,37 @@ export const InstallCard: React.FC = () => {
     }
   };
 
-  if (showInstalledMessage || (isInstalled && isStandalone)) {
+  if (showInstalledMessage || installResolution.target === 'installed') {
     return (
       <div className="install-success">
-        <div className="success-icon">🎉</div>
-        <h2 className="success-title">Successfully Installed!</h2>
+        <div className="success-icon" aria-hidden="true">✓</div>
+        <h2 className="success-title">Installed</h2>
         <p className="success-message">
-          La's Homeschool Hub has been added to your device.
+          {installConfig.appName} is available on your device like a normal installed application.
         </p>
-        <a href="/" className="launch-button">
-          <span>🚀</span>
-          <span>Launch App</span>
-        </a>
       </div>
     );
   }
 
   return (
     <div className="install-card">
-      <div className="app-icon">🎓</div>
-      <h1 className="app-title">La's Homeschool Hub</h1>
-      <p className="app-description">
-        A central place for all your homeschool educational resources, games, and tools.
-      </p>
-      
+      <span className="install-card__badge">{installStatusLabel}</span>
+      <div className="app-icon" aria-hidden="true">
+        <span>LH</span>
+      </div>
+      <h1 className="app-title">{installConfig.appName}</h1>
+      <p className="app-description">{installConfig.description}</p>
+
       <ul className="feature-list">
-        <li>Access educational games & activities</li>
-        <li>Generate custom worksheets</li>
-        <li>Works offline - no internet required</li>
-        <li>Regular updates with new content</li>
-        <li>Fullscreen, distraction-free learning</li>
+        <li>One install path for phone, tablet, desktop, and native app packaging.</li>
+        <li>Fullscreen learning experience with chrome-free classroom, games, and worksheets.</li>
+        <li>Appears on the device like a normal app after installation.</li>
       </ul>
 
-      <InstallButton 
+      <InstallButton
         onInstallComplete={handleInstallComplete}
         className="install-button-large"
+        surface="install-page"
       />
     </div>
   );

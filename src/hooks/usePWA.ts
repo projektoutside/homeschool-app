@@ -35,6 +35,12 @@ interface UsePWAReturn {
   isInstallable: boolean;
   isInstalled: boolean;
   isStandalone: boolean;
+  isNativeApp: boolean;
+  nativePlatform: 'android' | 'ios' | null;
+  isAndroid: boolean;
+  isStandaloneShell: boolean;
+  requiresInstalledShell: boolean;
+  shouldUseNativeFullscreenFallback: boolean;
   installPrompt: () => Promise<boolean>;
   installContext: {
     platform: 'ios' | 'android' | 'chromium-desktop' | 'firefox' | 'safari-desktop' | 'console' | 'unknown';
@@ -85,6 +91,25 @@ export function usePWA(): UsePWAReturn {
   
   const checkForUpdatesFromSWRef = useRef<() => void>(() => {});
 
+  const nativePlatform = useMemo<'android' | 'ios' | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const capacitorBridge = (window as Window & {
+      Capacitor?: {
+        getPlatform?: () => string;
+      };
+    }).Capacitor;
+
+    const platform = capacitorBridge?.getPlatform?.();
+    if (platform === 'android' || platform === 'ios') {
+      return platform;
+    }
+
+    return null;
+  }, []);
+  const isNativeApp = nativePlatform !== null;
   const installContext = useMemo(() => {
     const ua = navigator.userAgent || '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -167,6 +192,11 @@ export function usePWA(): UsePWAReturn {
       canOneClickInstall: false,
     };
   }, [deferredPrompt]);
+
+  const isAndroid = installContext.platform === 'android' || nativePlatform === 'android';
+  const isStandaloneShell = isStandalone || isNativeApp;
+  const requiresInstalledShell = isAndroid && !isStandaloneShell;
+  const shouldUseNativeFullscreenFallback = !isStandaloneShell && !requiresInstalledShell;
 
   // Check for updates via service worker - defined early for use in effects
   const checkForUpdatesFromSW = useCallback(() => {
@@ -392,6 +422,9 @@ export function usePWA(): UsePWAReturn {
 
   // Fullscreen functions
   const enterFullscreen = useCallback(async () => {
+    if (!shouldUseNativeFullscreenFallback) {
+      return;
+    }
     const docEl = document.documentElement as FullscreenElement;
     try {
       if (docEl.requestFullscreen) {
@@ -406,9 +439,12 @@ export function usePWA(): UsePWAReturn {
     } catch {
       // Fullscreen not supported or permission denied - silently ignore
     }
-  }, []);
+  }, [shouldUseNativeFullscreenFallback]);
 
   const exitFullscreen = useCallback(async () => {
+    if (!shouldUseNativeFullscreenFallback) {
+      return;
+    }
     const doc = document as FullscreenDocument;
     try {
       if (document.exitFullscreen) {
@@ -423,7 +459,7 @@ export function usePWA(): UsePWAReturn {
     } catch (error) {
       console.error('[PWA] Failed to exit fullscreen:', error);
     }
-  }, []);
+  }, [shouldUseNativeFullscreenFallback]);
 
   const toggleFullscreen = useCallback(async () => {
     if (isFullscreen) {
@@ -462,6 +498,12 @@ export function usePWA(): UsePWAReturn {
     isInstallable: !!deferredPrompt,
     isInstalled,
     isStandalone,
+    isNativeApp,
+    nativePlatform,
+    isAndroid,
+    isStandaloneShell,
+    requiresInstalledShell,
+    shouldUseNativeFullscreenFallback,
     installPrompt,
     installContext,
     

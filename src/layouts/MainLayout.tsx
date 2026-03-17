@@ -4,6 +4,8 @@ import '../styles/variables.css';
 import './MainLayout.css';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
+import { HomeInstallLauncher } from '../components/HomeInstallLauncher';
+import { AppShellGuard } from '../components/AppShellGuard';
 import UserHomePage from '../pages/UserHomePage';
 import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
 import { useZoomLock } from '../hooks/useZoomLock';
@@ -37,9 +39,8 @@ const MainLayout: React.FC = () => {
     const hasDeveloperAccess = isManagerUser(user);
     const shouldShowCharacterCreatorLauncher =
         hasDeveloperAccess
-        && !isCharacterCreatorRoute
-        && !isGamePlayerRoute
-        && !isUserHomeRoute;
+        && isUserHomeRoute
+        && !isCharacterCreatorRoute;
     const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute;
 
     useZoomLock({ enabled: shouldDisableZoom });
@@ -125,6 +126,8 @@ const MainLayout: React.FC = () => {
                 </Link>
             ) : null}
 
+            {isUserHomeRoute ? <HomeInstallLauncher /> : null}
+
             {/* Persistent Bottom Navigation */}
             {/* Render always, or maybe hide on GamePlayer if strictly needed? User said "regardless of which page". */}
             <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
@@ -135,6 +138,7 @@ const MainLayout: React.FC = () => {
                 onClose={() => setIsSettingsOpen(false)}
                 externalCloseRequestId={settingsCloseRequestId}
             />
+            <AppShellGuard />
         </div>
     );
 };

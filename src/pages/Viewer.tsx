@@ -4,7 +4,7 @@ import { findBaseModuleById } from '../data/moduleRegistry';
 import { buildAssetPath } from '../utils/pathUtils';
 import { downloadFile } from '../utils/downloadUtils';
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
-import { usePWA } from '../hooks/usePWA';
+import { useInstallResolution } from '../hooks/useInstallResolution';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { PWAInstallModal } from '../components/PWAInstallModal';
 import { useSoundSettings } from '../context/SoundSettingsContext';
@@ -34,7 +34,11 @@ const ViewerPage: React.FC = () => {
     const isGameContent = item?.type === 'game';
     const isWorksheetContent = item?.type === 'worksheet';
 
-    const { isInstallable, isInstalled, installPrompt, installContext } = usePWA();
+    const {
+        installResolution,
+        runInstallAction,
+        shouldUseNativeFullscreenFallback,
+    } = useInstallResolution('inline');
     const { settings: soundSettings } = useSoundSettings();
 
     useEffect(() => {
@@ -42,13 +46,13 @@ const ViewerPage: React.FC = () => {
     }, [soundSettings]);
 
     const handleInstallClick = useCallback(async () => {
-        if (isInstalled) return;
-        if (isInstallable) {
-            await installPrompt();
-        } else {
+        if (installResolution.target === 'installed') return;
+
+        const result = await runInstallAction();
+        if (result.openedHelper) {
             setIsModalOpen(true);
         }
-    }, [isInstallable, isInstalled, installPrompt]);
+    }, [installResolution.target, runInstallAction]);
 
     const handleZoomIn = useCallback(() => {
         setZoomScale(prev => Math.min(prev * 1.2, 3));
@@ -69,6 +73,11 @@ const ViewerPage: React.FC = () => {
     }, []);
 
     const enterFullscreen = useCallback(async () => {
+        if (!shouldUseNativeFullscreenFallback) {
+            setIsFullscreen(true);
+            return;
+        }
+
         const element = document.documentElement as FullscreenHTMLElementType;
         try {
             if (element.requestFullscreen) await element.requestFullscreen();
@@ -78,9 +87,14 @@ const ViewerPage: React.FC = () => {
         } catch {
             // ignore
         }
-    }, []);
+    }, [shouldUseNativeFullscreenFallback]);
 
     const exitFullscreen = useCallback(async () => {
+        if (!shouldUseNativeFullscreenFallback) {
+            setIsFullscreen(false);
+            return;
+        }
+
         try {
             const doc = document as FullscreenDocumentType;
             if (doc.exitFullscreen) await doc.exitFullscreen();
@@ -91,7 +105,7 @@ const ViewerPage: React.FC = () => {
         } catch {
             // ignore
         }
-    }, []);
+    }, [shouldUseNativeFullscreenFallback]);
 
     // Auto-hide controls in fullscreen mode
     const resetControlsTimeout = useCallback(() => {
@@ -113,6 +127,10 @@ const ViewerPage: React.FC = () => {
     }, [isFullscreen, isWorksheetContent, resetControlsTimeout]);
 
     useEffect(() => {
+        if (!shouldUseNativeFullscreenFallback) {
+            return;
+        }
+
         const handleFullscreenChange = () => {
             const doc = document as FullscreenDocumentType;
             const fullscreenElement = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
@@ -128,7 +146,7 @@ const ViewerPage: React.FC = () => {
         const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
         events.forEach(e => document.addEventListener(e, handleFullscreenChange));
         return () => events.forEach(e => document.removeEventListener(e, handleFullscreenChange));
-    }, [resetControlsTimeout, isWorksheetContent]);
+    }, [resetControlsTimeout, isWorksheetContent, shouldUseNativeFullscreenFallback]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -367,10 +385,10 @@ const ViewerPage: React.FC = () => {
                                 {isGameContent ? (
                                     <button
                                         onClick={handleInstallClick}
-                                        className={`download-btn-main ${isInstalled ? 'installed' : ''}`}
-                                        disabled={isInstalled}
+                                        className={`download-btn-main ${installResolution.target === 'installed' ? 'installed' : ''}`}
+                                        disabled={installResolution.target === 'installed'}
                                     >
-                                        {isInstalled ? '✓ Installed' : installContext.platform === 'console' ? '🎮 Install Unsupported' : '📱 Install App'}
+                                        {installResolution.target === 'installed' ? '✓ Installed' : installResolution.buttonLabel}
                                     </button>
                                 ) : (
                                     <button
@@ -400,7 +418,6 @@ const ViewerPage: React.FC = () => {
                 <PWAInstallModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    platform={installContext.platform}
                 />
             )}
         </div>

@@ -1,0 +1,114 @@
+.android-install-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding:
+        max(1rem, env(safe-area-inset-top, 0px))
+        max(1rem, env(safe-area-inset-right, 0px))
+        max(1rem, env(safe-area-inset-bottom, 0px))
+        max(1rem, env(safe-area-inset-left, 0px));
+    background:
+        radial-gradient(circle at top, rgba(99, 102, 241, 0.18), transparent 38%),
+        linear-gradient(180deg, #0f172a 0%, #020617 100%);
+    overscroll-behavior: none;
+}
+
+.android-install-gate__card {
+    width: min(100%, 32rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    text-align: center;
+    color: #e2e8f0;
+}
+
+.android-install-gate__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.16);
+    color: #93c5fd;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.android-install-gate__icon {
+    width: 5rem;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
+    font-size: 2.4rem;
+}
+
+.android-install-gate__title {
+    margin: 0;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    line-height: 1.15;
+}
+
+.android-install-gate__body {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.android-install-gate__actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    align-items: center;
+}
+
+.android-install-gate__install-btn {
+    width: 100%;
+    min-width: 0;
+}
+
+.android-install-gate__help-link {
+    color: #93c5fd;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.android-install-gate__help-link:hover,
+.android-install-gate__help-link:focus-visible {
+    color: #dbeafe;
+    text-decoration: underline;
+}
+
+.android-install-gate__notes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+    width: 100%;
+    text-align: left;
+    color: #cbd5e1;
+}
+
+.android-install-gate__notes li {
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    background: rgba(30, 41, 59, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}

@@ -2,9 +2,11 @@ import React, { Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import MainLayout from './layouts/MainLayout';
+import AndroidInstallGate from './components/AndroidInstallGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { usePWA } from './hooks/usePWA';
 import { useAppAssetPrefetch } from './hooks/useAppAssetPrefetch';
+import { useNativeShell } from './hooks/useNativeShell';
 import { UpdateNotification } from './components/UpdateNotification';
 import { useAuth } from './context/AuthContext';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
@@ -52,34 +54,46 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
 
 type PWAState = ReturnType<typeof usePWA>;
 
-// Routes where auto-fullscreen should be skipped (content handles its own fullscreen)
-const CONTENT_ROUTES = ['/play/', '/open/', '/resource/', '/html-viewer'];
+const RequireInstalledShell: React.FC<{ pwa: PWAState; children: React.ReactNode }> = ({ pwa, children }) => {
+    if (pwa.requiresInstalledShell) {
+        return <AndroidInstallGate />;
+    }
 
-// Main app routes where auto-fullscreen should be active
-const MAIN_APP_ROUTES = ['/', '/apps', '/home-profile', '/manager', '/classroom', '/character-creator'];
+    return <>{children}</>;
+};
+
+const FULLSCREEN_EXEMPT_ROUTES = ['/install', '/auth'];
 
 const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
-    const { enterFullscreen, isFullscreen } = pwa;
+    const {
+        enterFullscreen,
+        isFullscreen,
+        isStandaloneShell,
+        requiresInstalledShell,
+        shouldUseNativeFullscreenFallback,
+    } = pwa;
     const location = useLocation();
-    const fullscreenAttempted = useRef(false);
     const retryCount = useRef(0);
     const maxRetries = 3;
 
     useEffect(() => {
         const attemptFullscreen = async () => {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            
-            // Check if current route is a content route (games/worksheets/tools)
-            const isContentRoute = CONTENT_ROUTES.some(route => location.pathname.startsWith(route));
-            
-            // Check if current route is a main app route
-            const isMainAppRoute = MAIN_APP_ROUTES.some(route => 
-                location.pathname === route || location.pathname.startsWith(route + '/')
+            const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
+                location.pathname === route || location.pathname.startsWith(`${route}/`)
             );
-            
-            // Auto-fullscreen for main app routes only (not content routes)
-            // Skip iOS as it doesn't support the Fullscreen API well
-            if (!isFullscreen && !isIOS && !isContentRoute && isMainAppRoute && retryCount.current < maxRetries) {
+            const shellAlreadyImmersive = isFullscreen || isStandaloneShell;
+
+            // Keep the installed app shell fullscreen on every authenticated route.
+            // Skip iOS because the browser Fullscreen API is not reliable there.
+            if (
+                !shellAlreadyImmersive
+                && !isIOS
+                && !isFullscreenExemptRoute
+                && !requiresInstalledShell
+                && shouldUseNativeFullscreenFallback
+                && retryCount.current < maxRetries
+            ) {
                 retryCount.current++;
                 
                 // Try multiple times with increasing delays
@@ -87,9 +101,7 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
                 const currentDelay = delays[retryCount.current - 1] || 1000;
                 
                 setTimeout(() => {
-                    enterFullscreen().then(() => {
-                        fullscreenAttempted.current = true;
-                    }).catch(() => {
+                    enterFullscreen().catch(() => {
                         // Fullscreen may be blocked (user gesture required), will retry
                         if (retryCount.current < maxRetries) {
                             attemptFullscreen();
@@ -99,14 +111,22 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
             }
         };
 
-        // Reset retry count when route changes to main app routes
-        const isContentRoute = CONTENT_ROUTES.some(route => location.pathname.startsWith(route));
-        if (!isContentRoute) {
+        const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
+            location.pathname === route || location.pathname.startsWith(`${route}/`)
+        );
+        if (!isFullscreenExemptRoute) {
             retryCount.current = 0;
         }
         
         attemptFullscreen();
-    }, [isFullscreen, enterFullscreen, location.pathname]);
+    }, [
+        enterFullscreen,
+        isFullscreen,
+        isStandaloneShell,
+        location.pathname,
+        requiresInstalledShell,
+        shouldUseNativeFullscreenFallback,
+    ]);
 
     return <>{children}</>;
 };
@@ -124,6 +144,7 @@ const CLASSROOM_APP_VERSION = '2026-03-10-1';
 const App: React.FC = () => {
     const { user, loading } = useAuth();
     const pwa = usePWA();
+    useNativeShell({ isNativeApp: pwa.isNativeApp, nativePlatform: pwa.nativePlatform });
     const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}`);
     const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_APP_VERSION}&intro=0`);
     const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_APP_VERSION}`);
@@ -151,6 +172,11 @@ const App: React.FC = () => {
     const baseUrl = import.meta.env.BASE_URL || '/';
     // Remove trailing slash for React Router basename
     const basename = baseUrl === '/' ? '' : baseUrl.replace(/\/$/, '');
+    const renderProtectedPage = (node: React.ReactNode) => (
+        <RequireAuth user={user} loading={loading}>
+            <RequireInstalledShell pwa={pwa}>{node}</RequireInstalledShell>
+        </RequireAuth>
+    );
 
     return (
         <ErrorBoundary>
@@ -166,17 +192,17 @@ const App: React.FC = () => {
                             />
                             
                             {/* Main app routes with layout */}
-                            <Route path="/" element={<MainLayout />}>
-                                <Route index element={<RequireAuth user={user} loading={loading}><Navigate to="/home-profile" replace /></RequireAuth>} />
-                                <Route path="apps" element={<RequireAuth user={user} loading={loading}><Home /></RequireAuth>} />
-                                <Route path="play/:id" element={<RequireAuth user={user} loading={loading}><GamePlayer /></RequireAuth>} />
-                                <Route path="open/:id" element={<RequireAuth user={user} loading={loading}><GamePlayer /></RequireAuth>} />
-                                <Route path="manager" element={<RequireAuth user={user} loading={loading}><ManagerPage /></RequireAuth>} />
-                                <Route path="character-creator" element={<RequireAuth user={user} loading={loading}><CharacterCreatorPage /></RequireAuth>} />
-                                <Route path="resource/:id" element={<RequireAuth user={user} loading={loading}><Viewer /></RequireAuth>} />
-                            <Route path="html-viewer" element={<RequireAuth user={user} loading={loading}><HTMLViewer /></RequireAuth>} />
-                                <Route path="home-profile" element={<RequireAuth user={user} loading={loading}><HomeProfileRouteShell /></RequireAuth>} />
-                                <Route path="classroom" element={<RequireAuth user={user} loading={loading}><ClassroomRouteShell /></RequireAuth>} />
+                            <Route path="/" element={renderProtectedPage(<MainLayout />)}>
+                                <Route index element={<Navigate to="/home-profile" replace />} />
+                                <Route path="apps" element={<Home />} />
+                                <Route path="play/:id" element={<GamePlayer />} />
+                                <Route path="open/:id" element={<GamePlayer />} />
+                                <Route path="manager" element={<ManagerPage />} />
+                                <Route path="character-creator" element={<CharacterCreatorPage />} />
+                                <Route path="resource/:id" element={<Viewer />} />
+                                <Route path="html-viewer" element={<HTMLViewer />} />
+                                <Route path="home-profile" element={<HomeProfileRouteShell />} />
+                                <Route path="classroom" element={<ClassroomRouteShell />} />
                                 <Route path="*" element={<Navigate to="/home-profile" replace />} />
                             </Route>
                         </Routes>

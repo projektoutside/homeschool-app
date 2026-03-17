@@ -39,6 +39,7 @@ html, body {
     background-color: var(--color-background);
     color: var(--color-text-main);
     overflow: hidden;
+    overscroll-behavior: none;
     position: relative;
 }
 
@@ -52,6 +53,7 @@ html, body {
     display: flex;
     flex-direction: column;
     overflow: hidden; /* Strict containment */
+    overscroll-behavior: none;
     position: relative;
 }
 

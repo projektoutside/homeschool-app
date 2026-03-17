@@ -48,12 +48,12 @@
 /* Header Control Panel */
 .html-viewer-header {
     background: linear-gradient(180deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
-    padding: 24px 28px;
+    padding: clamp(14px, 2vw, 24px) clamp(16px, 3vw, 28px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: clamp(10px, 1.8vw, 16px);
 }
 
 /* Open Worksheet Button - Teal to Green Gradient */
@@ -127,11 +127,11 @@
 /* Information Panel */
 .worksheet-info-panel {
     background: linear-gradient(180deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.3) 100%);
-    padding: 14px 24px;
+    padding: clamp(10px, 1.5vw, 14px) clamp(14px, 2vw, 24px);
     border-radius: 12px;
     text-align: center;
     width: 100%;
-    max-width: 500px;
+    max-width: min(500px, 100%);
     box-shadow:
         inset 0 2px 4px rgba(0, 0, 0, 0.2),
         0 1px 0 rgba(255, 255, 255, 0.05);
@@ -157,10 +157,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 28px;
+    padding: clamp(10px, 1.8vw, 16px) clamp(12px, 3vw, 28px);
     background: rgba(15, 23, 42, 0.5);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    gap: 16px;
+    gap: clamp(10px, 1.6vw, 16px);
+    flex-wrap: wrap;
 }
 
 /* Zoom Control */
@@ -213,14 +214,17 @@
 .toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .toolbar-action-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 8px 12px;
     background: linear-gradient(180deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.8) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 50px;
@@ -230,6 +234,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    min-height: 42px;
+    white-space: nowrap;
 }
 
 .toolbar-action-btn:hover:not(:disabled) {
@@ -274,7 +280,7 @@
 }
 
 /* Main Worksheet Viewer Panel */
-.worksheet-viewer-panel {
+.html-viewer-panel {
     flex: 1;
     background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
     margin: 12px;
@@ -285,42 +291,36 @@
         0 4px 20px rgba(0, 0, 0, 0.15);
     overflow-x: auto;
     overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
+    padding: clamp(8px, 1.4vw, 12px);
 }
 
-/* Worksheet Content Wrapper */
-.worksheet-content-wrapper {
-    /* Auto width/height to wrap the fixed-size iframe */
-    width: auto;
-    height: auto;
-    min-height: auto;
-    max-width: none;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease, height 0.3s ease;
-    transform-origin: top center;
-    /* Center it in the panel */
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+.html-viewer-stage {
+    position: relative;
+    box-sizing: border-box;
 }
 
-.worksheet-iframe {
-    /* Fixed base dimensions for US Letter / A4 worksheet (approx) */
-    width: 816px;
-    height: 1056px;
-    min-height: 1056px;
+.html-viewer-paper-shell {
+    position: absolute;
+    overflow: hidden;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: width 0.2s ease, height 0.2s ease, left 0.2s ease, top 0.2s ease;
+}
+
+.html-viewer-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
     border: none;
     background: white;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.2s ease;
 }
 
 /* Placeholder */
-.worksheet-placeholder {
+.html-viewer-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
@@ -329,7 +329,7 @@
     min-height: 500px;
 }
 
-.worksheet-placeholder p {
+.html-viewer-placeholder p {
     font-size: 2rem;
     color: #64748b;
     font-weight: 300;
@@ -627,52 +627,42 @@
         border-radius: 16px;
     }
 
-    .html-viewer-header {
-        padding: 16px 20px;
-    }
-
     .open-worksheet-btn {
-        padding: 12px 24px;
-        font-size: 1rem;
+        padding: 11px 20px;
+        font-size: 0.98rem;
     }
 
     .worksheet-info-panel {
-        padding: 12px 16px;
+        padding: 10px 14px;
     }
 
     .worksheet-title {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
     }
 
     .worksheet-description {
-        font-size: 0.8rem;
-    }
-
-    .html-viewer-toolbar {
-        padding: 12px 16px;
-        flex-wrap: wrap;
-        gap: 12px;
+        font-size: 0.76rem;
     }
 
     .toolbar-actions {
         width: 100%;
-        justify-content: center;
+        justify-content: space-between;
     }
 
     .toolbar-action-btn {
-        flex: 1;
+        flex: 1 1 calc(50% - 6px);
         justify-content: center;
-        padding: 10px 14px;
-        font-size: 0.85rem;
+        padding: 9px 12px;
+        font-size: 0.82rem;
     }
 
-    .worksheet-viewer-panel {
+    .html-viewer-panel {
         margin: 8px;
         margin-top: 0;
-        padding: 10px;
+        padding: 8px;
     }
 
-    .worksheet-placeholder p {
+    .html-viewer-placeholder p {
         font-size: 1.4rem;
     }
 
@@ -685,6 +675,7 @@
 @media (max-width: 480px) {
     .open-worksheet-btn {
         width: 100%;
+        justify-content: center;
     }
 
     .zoom-control {
@@ -692,39 +683,53 @@
         justify-content: center;
     }
 
+    .worksheet-description {
+        display: none;
+    }
+
+    .toolbar-actions {
+        gap: 6px;
+    }
+
+    .toolbar-action-btn {
+        flex: 1 1 calc(25% - 6px);
+        padding: 10px;
+        min-width: 44px;
+    }
+
     .toolbar-action-btn span {
         display: none;
     }
 
-    .toolbar-action-btn {
-        padding: 10px;
+    .worksheet-info-panel {
+        padding: 10px 12px;
     }
 
-    .worksheet-placeholder p {
+    .html-viewer-placeholder p {
         font-size: 1.2rem;
     }
 }
 
 /* Scrollbar Styling */
 .file-browser-content::-webkit-scrollbar,
-.worksheet-viewer-panel::-webkit-scrollbar {
+.html-viewer-panel::-webkit-scrollbar {
     width: 8px;
 }
 
 .file-browser-content::-webkit-scrollbar-track,
-.worksheet-viewer-panel::-webkit-scrollbar-track {
+.html-viewer-panel::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
 }
 
 .file-browser-content::-webkit-scrollbar-thumb,
-.worksheet-viewer-panel::-webkit-scrollbar-thumb {
+.html-viewer-panel::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
 }
 
 .file-browser-content::-webkit-scrollbar-thumb:hover,
-.worksheet-viewer-panel::-webkit-scrollbar-thumb:hover {
+.html-viewer-panel::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -770,7 +775,7 @@
 }
 
 /* Viewer panel takes up all space */
-.html-viewer-page.is-fullscreen .worksheet-viewer-panel {
+.html-viewer-page.is-fullscreen .html-viewer-panel {
     width: 100% !important;
     height: 100% !important;
     min-height: 100dvh !important;
@@ -778,36 +783,19 @@
     padding: 0 !important;
     background: transparent !important;
     border-radius: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     box-shadow: none !important;
 }
 
-/* Wrapper centers the content */
-.html-viewer-page.is-fullscreen .worksheet-content-wrapper {
-    width: auto !important;
-    height: auto !important;
-    max-width: none !important;
-    max-height: none !important;
-    min-height: auto !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transform-origin: center center !important;
+.html-viewer-page.is-fullscreen .html-viewer-stage {
+    position: relative !important;
 }
 
-/* Fixed size iframe for scaling */
-.html-viewer-page.is-fullscreen .worksheet-iframe {
-    width: 816px !important;
-    height: 1056px !important;
-    min-height: 1056px !important;
-    max-width: none !important;
-    max-height: none !important;
-    background: white !important;
+.html-viewer-page.is-fullscreen .html-viewer-paper-shell {
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5) !important;
-    border-radius: 4px !important;
-    transform: none !important;
+}
+
+.html-viewer-page.is-fullscreen .html-viewer-iframe {
+    background: white !important;
 }
 
 /* Exit button */

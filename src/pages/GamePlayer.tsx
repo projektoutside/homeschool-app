@@ -4,11 +4,11 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { findBaseModuleById, resolveAreaFromRequest, resolveAreaRoute } from '../data/moduleRegistry';
 import { buildAssetPath } from '../utils/pathUtils';
 import type { ContentItem } from '../types/content';
-import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { useAuth } from '../context/AuthContext';
 import { usePoints } from '../context/PointsContext';
 import { useStamina } from '../context/StaminaContext';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { usePWA } from '../hooks/usePWA';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
@@ -142,6 +142,7 @@ const GamePlayer: React.FC = () => {
     const { totalPoints, stars, awardPoints } = usePoints();
     const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
     const { settings: soundSettings } = useSoundSettings();
+    const { shouldUseNativeFullscreenFallback } = usePWA();
 
     useZoomLock({ enabled: true, iframeRefs: zoomLockIframes });
     const processedPointEventsRef = useRef<Set<string>>(new Set());
@@ -346,23 +347,6 @@ const GamePlayer: React.FC = () => {
         return () => window.clearInterval(intervalId);
     }, [staminaGateState.status]);
 
-    const exitFullscreen = useCallback(async () => {
-        const doc = document as FullscreenDocumentType;
-        try {
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-            } else if (doc.webkitExitFullscreen) {
-                await doc.webkitExitFullscreen();
-            } else if (doc.mozCancelFullScreen) {
-                await doc.mozCancelFullScreen();
-            } else if (doc.msExitFullscreen) {
-                await doc.msExitFullscreen();
-            }
-        } catch {
-            // Route navigation should still continue even if fullscreen exit fails.
-        }
-    }, []);
-
     useEffect(() => {
         const handleGameMessage = (event: MessageEvent) => {
             if (!iframeRef.current?.contentWindow || event.source !== iframeRef.current.contentWindow) {
@@ -545,17 +529,24 @@ const GamePlayer: React.FC = () => {
             const requestedArea = resolveAreaFromRequest(message.tab);
             const targetPath = resolveAreaRoute(requestedArea ?? 'home');
 
-            void exitFullscreen().finally(() => {
-                navigate(targetPath);
-            });
+            navigate(targetPath);
         };
 
         window.addEventListener('message', handleGameMessage);
         return () => window.removeEventListener('message', handleGameMessage);
-    }, [awardPoints, currentGameId, exitFullscreen, isCarKingGame, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
+    }, [awardPoints, currentGameId, isCarKingGame, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
 
     const enterFullscreen = useCallback(async () => {
-        const element = document.documentElement as FullscreenHTMLElementType;
+        if (!shouldUseNativeFullscreenFallback) {
+            return;
+        }
+
+        const element = document.documentElement as HTMLElement & {
+            requestFullscreen?: () => Promise<void>;
+            webkitRequestFullscreen?: () => Promise<void>;
+            mozRequestFullScreen?: () => Promise<void>;
+            msRequestFullscreen?: () => Promise<void>;
+        };
         try {
             if (element.requestFullscreen) {
                 await element.requestFullscreen();
@@ -569,7 +560,7 @@ const GamePlayer: React.FC = () => {
         } catch {
             // Browser may block auto fullscreen without user gesture.
         }
-    }, []);
+    }, [shouldUseNativeFullscreenFallback]);
 
     useEffect(() => {
         if (!item || !isImmersiveType || !launchPath) {

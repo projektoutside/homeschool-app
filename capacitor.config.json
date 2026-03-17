@@ -1,0 +1,18 @@
+{
+  "appId": "com.lashomeschool.hub",
+  "appName": "La's Homeschool Hub",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "showSpinner": false,
+      "backgroundColor": "#6366f1"
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "backgroundColor": "#6366f1",
+      "style": "LIGHT"
+    }
+  }
+}
