@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lava Cage Escape - Continuous Rescue</title>
+    <link rel="icon" href="assets/images/goldlockpick.png" type="image/png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+        (() => {
+            const searchParams = new URLSearchParams(window.location.search);
+            const assetVersion = searchParams.get('ts') || `${Date.now()}`;
+            window.__appAssetVersion = assetVersion;
+
+            [
+                'styles/base.css',
+                'styles/components.css',
+                'styles/layout.css',
+                'styles/overlays.css'
+            ].forEach((href) => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = `${href}?v=${encodeURIComponent(assetVersion)}`;
+                document.head.appendChild(link);
+            });
+        })();
+    </script>
+    <noscript>
+        <link rel="stylesheet" href="styles/base.css">
+        <link rel="stylesheet" href="styles/components.css">
+        <link rel="stylesheet" href="styles/layout.css">
+        <link rel="stylesheet" href="styles/overlays.css">
+    </noscript>
+</head>
+
+<body class="app-shell" data-secondary-panel="ep">
+    <div id="protocol-warning" class="protocol-warning is-hidden" role="alert" aria-live="assertive">
+        <div class="protocol-warning-card">
+            <h1>Open Through A Local Server</h1>
+            <p>This refactored build uses JavaScript modules, so browsers block it when you open <code>index.html</code> with <code>file://</code>.</p>
+            <p>Start any local server in this folder and open the served URL, for example <code>http://127.0.0.1:8123/</code>.</p>
+        </div>
+    </div>
+
+    <!-- BLACK SCREEN OVERLAY - Prevents any visual glitches during intro -->
+    <div id="black-screen-overlay" class="black-screen-overlay"></div>
+    
+    <div id="start-overlay" class="start-overlay">
+        <!-- GIF background with slowed animation, texture and blending effects -->
+        <div id="gif-container" class="start-gif-container">
+            <!-- Background texture overlay for better blending -->
+            <div class="texture-overlay"></div>
+            <!-- Animated glow effects for better blending -->
+            <div class="glow-effect left-glow"></div>
+            <div class="glow-effect right-glow"></div>
+            <!-- Decorative corner elements -->
+            <div class="corner-decoration top-left-corner"></div>
+            <div class="corner-decoration top-right-corner"></div>
+            <div class="corner-decoration bottom-left-corner"></div>
+            <div class="corner-decoration bottom-right-corner"></div>
+
+            <!-- This wrapper div allows us to precisely control GIF animation speed -->
+            <div class="slow-gif-wrapper start-gif-frame">
+                <!-- Vignette effect to soften edges -->
+                <div class="vignette-effect"></div>
+                <img src="assets/images/math_rescue_animated.gif" alt="Math Rescue" class="start-gif-image" id="animated-gif">
+            </div>
+        </div>
+
+        <!-- Start Button - positioned lower on the screen -->
+        <button id="start-button" class="start-screen-button">Start</button>
+    </div>
+
+    <button id="settings-button" aria-label="Open Settings">⚙️</button>
+    <div id="settings-panel">
+        <h2>Settings</h2>
+        <div class="settings-group">
+            <label for="timer-setting-mm">Game Timer (MM:SS):</label>
+            <div class="time-input-container">
+                <input type="text" id="timer-setting-mm" maxlength="2" placeholder="00" pattern="[0-9]*">
+                <span class="time-separator">:</span>
+                <input type="text" id="timer-setting-ss" maxlength="2" placeholder="00" pattern="[0-9]*">
+            </div>
+            <!-- Keep the original input as hidden for compatibility -->
+            <input type="hidden" id="timer-setting" min="60" max="600" step="10">
+        </div>
+        <div class="settings-group">
+            <label for="difficulty-setting">Stat Decay Difficulty:</label>
+            <select id="difficulty-setting">
+                <option value="easy">Easy</option>
+                <option value="normal">Normal</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <div class="settings-group">
+            <label for="lockpick-duration-setting">Lock Pick Duration (seconds):</label>
+            <input type="number" id="lockpick-duration-setting" min="5" max="60" step="1" value="15">
+        </div>
+        <div class="settings-group">
+            <h3>Pet Rarity Rates</h3>
+            <label for="common-rate">Common Pet Rate: <span id="common-rate-value">60</span>%</label>
+            <input type="range" id="common-rate" min="10" max="80" step="1" value="60">
+
+            <label for="rare-rate">Rare Pet Rate: <span id="rare-rate-value">30</span>%</label>
+            <input type="range" id="rare-rate" min="10" max="50" step="1" value="30">
+
+            <label for="legendary-rate">Legendary Pet Rate: <span id="legendary-rate-value">10</span>%</label>
+            <input type="range" id="legendary-rate" min="5" max="40" step="1" value="10">
+
+            <p id="rarity-rate-warning" class="settings-warning-text is-hidden">Warning: Total must equal 100%. Adjusting values...</p>
+        </div>
+
+        <button id="sound-uploads-button" class="settings-action-button settings-action-button--green settings-action-button--full">Sound Uploads</button>
+        <button id="visual-edits-button" class="settings-action-button settings-action-button--green settings-action-button--full">Visual Edits</button>
+
+        <div id="sound-uploads-section" class="settings-section is-hidden">
+            <h3>Custom Sound Uploads</h3>
+            <div class="settings-group">
+                <label for="bgm-upload">Background Music:</label>
+                <input type="file" id="bgm-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="animal-upload">Animal Sound:</label>
+                <input type="file" id="animal-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="thunder-upload">Thunder Sound:</label>
+                <input type="file" id="thunder-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="feed-upload">Feed Sound:</label>
+                <input type="file" id="feed-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="water-upload">Water Sound:</label>
+                <input type="file" id="water-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="play-upload">Play Sound:</label>
+                <input type="file" id="play-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="sing-upload">Sing Sound:</label>
+                <input type="file" id="sing-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="chain-snap-upload">Chain Snap Sound:</label>
+                <input type="file" id="chain-snap-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="cage-hit-upload">Cage Hit Lava Sound:</label>
+                <input type="file" id="cage-hit-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="victory-upload">Victory Song (Pet Rescue):</label>
+                <input type="file" id="victory-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="lock-open-upload">Lock Opening Sound:</label>
+                <input type="file" id="lock-open-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="lock-pick-click-upload">Lock Pick Click Sound:</label>
+                <input type="file" id="lock-pick-click-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="lock-pick-success-upload">Lock Pick Success Sound:</label>
+                <input type="file" id="lock-pick-success-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="jolt-upload">Cage Jolt Sound:</label>
+                <input type="file" id="jolt-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="error-upload">Error Sound (UI):</label>
+                <input type="file" id="error-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="correct-answer-upload">Correct Answer Sound:</label>
+                <input type="file" id="correct-answer-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="fairy-upload">Stress Fairy Sound:</label>
+                <input type="file" id="fairy-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="heartbeat-upload">Fast Heartbeat Sound:</label>
+                <input type="file" id="heartbeat-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="new-random-question-upload">New Random Question Sound:</label>
+                <input type="file" id="new-random-question-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="new-pet-reveal-upload">New Pet Reveal Sound:</label>
+                <input type="file" id="new-pet-reveal-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="buy-upgrade-upload">Buy Upgrade Sound:</label>
+                <input type="file" id="buy-upgrade-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="math-wizard-upload">Math Wizard Sound:</label>
+                <input type="file" id="math-wizard-upload" accept="audio/mp3">
+            </div>
+            <div class="settings-group">
+                <label for="legendary-pet-upload">Legendary Pet Sound:</label>
+                <input type="file" id="legendary-pet-upload" accept="audio/mp3">
+            </div>
+            <button id="save-custom-sounds-button" class="settings-action-button settings-action-button--blue settings-action-button--full">Save Custom Sounds</button>
+        </div>
+
+        <div id="visual-edits-section" class="settings-section is-hidden">
+            <h3>Visual Customization</h3>
+            <div class="settings-group">
+                <h4>Lighting</h4>
+                <label for="ambient-light-intensity">Ambient Light Intensity:</label>
+                <input type="range" id="ambient-light-intensity" min="0" max="2" step="0.1" value="0.5">
+
+                <label for="directional-light-intensity">Directional Light Intensity:</label>
+                <input type="range" id="directional-light-intensity" min="0" max="2" step="0.1" value="0.6">
+
+                <label for="spot-light-intensity">Spot Light Intensity:</label>
+                <input type="range" id="spot-light-intensity" min="0" max="2" step="0.1" value="0.4">
+
+                <label for="lava-glow-intensity">Lava Glow Intensity:</label>
+                <input type="range" id="lava-glow-intensity" min="0" max="3" step="0.1" value="1.8">
+            </div>
+
+            <div class="settings-group">
+                <h4>Colors</h4>
+                <label for="ambient-light-color">Ambient Light Color:</label>
+                <input type="color" id="ambient-light-color" value="#304055">
+
+                <label for="directional-light-color">Directional Light Color:</label>
+                <input type="color" id="directional-light-color" value="#9ab8f0">
+
+                <label for="spot-light-color">Spot Light Color:</label>
+                <input type="color" id="spot-light-color" value="#ffccaa">
+
+                <label for="lava-glow-color">Lava Glow Color:</label>
+                <input type="color" id="lava-glow-color" value="#ff4500">
+            </div>
+
+            <div class="settings-group">
+                <h4>Fog Settings</h4>
+                <label for="fog-near">Fog Near Distance:</label>
+                <input type="range" id="fog-near" min="5" max="30" step="1" value="18">
+
+                <label for="fog-far">Fog Far Distance:</label>
+                <input type="range" id="fog-far" min="40" max="100" step="1" value="65">
+
+                <label for="fog-color">Fog Color:</label>
+                <input type="color" id="fog-color" value="#06081a">
+            </div>
+
+            <div class="settings-group">
+                <h4>Render Settings</h4>
+                <label for="tone-mapping-exposure">Tone Mapping Exposure:</label>
+                <input type="range" id="tone-mapping-exposure" min="0.1" max="2" step="0.1" value="0.85">
+
+                <label for="shadow-quality">Shadow Quality:</label>
+                <select id="shadow-quality">
+                    <option value="low">Low (1024)</option>
+                    <option value="medium">Medium (2048)</option>
+                    <option value="high">High (4096)</option>
+                </select>
+            </div>
+
+            <div class="settings-group">
+                <h4>Lava Effects</h4>
+                <label for="lava-turbulence">Lava Turbulence:</label>
+                <input type="range" id="lava-turbulence" min="0" max="1" step="0.1" value="0.5">
+
+                <label for="lava-speed">Lava Animation Speed:</label>
+                <input type="range" id="lava-speed" min="0.1" max="2" step="0.1" value="1">
+
+                <label for="lava-brightness">Lava Brightness:</label>
+                <input type="range" id="lava-brightness" min="0.5" max="2" step="0.1" value="1">
+            </div>
+
+            <div class="settings-group">
+                <h4>Background Effects</h4>
+                <label for="star-density">Star Density:</label>
+                <input type="range" id="star-density" min="1000" max="20000" step="1000" value="10000">
+
+                <label for="star-brightness">Star Brightness:</label>
+                <input type="range" id="star-brightness" min="0.1" max="1" step="0.1" value="0.5">
+
+                <label for="cloud-density">Cloud Density:</label>
+                <input type="range" id="cloud-density" min="5" max="20" step="1" value="12">
+
+                <label for="cloud-opacity">Cloud Opacity:</label>
+                <input type="range" id="cloud-opacity" min="0.1" max="1" step="0.1" value="0.35">
+            </div>
+
+            <div class="settings-group">
+                <h4>Camera Settings</h4>
+                <label for="camera-min-distance">Min Camera Distance:</label>
+                <input type="range" id="camera-min-distance" min="2" max="10" step="0.5" value="3">
+
+                <label for="camera-max-distance">Max Camera Distance:</label>
+                <input type="range" id="camera-max-distance" min="10" max="30" step="1" value="15">
+
+                <label for="camera-damping">Camera Smoothing:</label>
+                <input type="range" id="camera-damping" min="0.01" max="0.2" step="0.01" value="0.05">
+            </div>
+        </div>
+
+        <div class="settings-button-row">
+            <button id="save-settings-button" class="settings-action-button settings-action-button--green">Save</button>
+            <button id="restart-settings-button" class="settings-action-button settings-action-button--red">Restart</button>
+            <button id="clear-all-button" class="settings-action-button settings-action-button--orange">Clear All</button>
+            <button id="close-settings-button" class="settings-action-button settings-action-button--gray">Close</button>
+        </div>
+    </div>
+
+    <!-- Top-Left Panel: Energy Points and Pet Status -->
+    <div id="top-left-panel">
+        <!-- Energy Points Display -->
+        <div id="energy-points-display">
+            <span id="energy-label">Energy Points:</span>
+            <span id="energy-value">25</span>
+        </div>
+
+        <div id="pet-status-flow-slot">
+            <!-- Pet Status Section -->
+            <div id="pet-status-section">
+                <div class="drag-handle" title="Lock picking controls">
+                    <div class="hud-header">
+                        <div class="pet-status-title-row">
+                            <h2>Pet Status</h2>
+                            <div class="pet-status-energy-badge" aria-label="Energy Points">
+                                <span class="energy-icon" aria-hidden="true">⚡</span>
+                                <span id="pet-status-energy-value">25</span>
+                            </div>
+                        </div>
+                        <div class="auto-toggle-container">
+                            <span class="auto-toggle-label">Auto:</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-toggle" title="Enable automatic pet care">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <span class="stat-label" aria-label="Hunger">Hunger:</span>
+                    <div class="stat-bar-bg">
+                        <div id="hunger-bar" class="stat-bar"></div>
+                    </div>
+                    <button id="feed-button" class="action-button" title="Feed Pet (F)" aria-label="Feed Pet">🍗<span class="button-status"><span class="action-cost">-2⚡</span><span class="cooldown-timer"></span></span></button>
+                </div>
+                <div class="stat">
+                    <span class="stat-label" aria-label="Hydration">Water:</span>
+                    <div class="stat-bar-bg">
+                        <div id="hydration-bar" class="stat-bar"></div>
+                    </div>
+                    <button id="water-button" class="action-button" title="Give Water (W)" aria-label="Give Water">💧<span class="button-status"><span class="action-cost">-2⚡</span><span class="cooldown-timer"></span></span></button>
+                </div>
+                <div class="stat">
+                    <span class="stat-label" aria-label="Joy">Joy:</span>
+                    <div class="stat-bar-bg">
+                        <div id="joy-bar" class="stat-bar"></div>
+                    </div>
+                    <button id="play-button" class="action-button" title="Play with Pet (P)" aria-label="Play with Pet">😊<span class="button-status"><span class="action-cost">-2⚡</span><span class="cooldown-timer"></span></span></button>
+                </div>
+                <div class="stat">
+                    <span class="stat-label" aria-label="Rest">Rest:</span>
+                    <div class="stat-bar-bg">
+                        <div id="rest-bar" class="stat-bar"></div>
+                    </div>
+                    <button id="sing-button" class="action-button" title="Sing to Pet (S)" aria-label="Sing to Pet">💤<span class="button-status"><span class="action-cost">-2⚡</span><span class="cooldown-timer"></span></span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrades Panel Button -->
+        <div id="upgrades-panel-button-container">
+            <button id="upgrades-panel-button" class="upgrades-panel-button" title="Open Power-Up Shop" aria-label="Open Power-Up Shop">
+                <span class="shop-button-content">
+                    <span class="shop-button-title">⚡ Power-Up Shop!</span>
+                    <span class="shop-button-power-row">
+                        <span class="shop-button-power-title" id="shop-button-power-title">🏆 Rookie</span>
+                        <span class="power-level-score">Power: 0</span>
+                    </span>
+                </span>
+            </button>
+        </div>
+
+        <div id="utility-buttons-flow-slot">
+            <!-- Utility Buttons -->
+            <div id="utility-buttons">
+                <button id="extend-time-button" class="large-action-button" title="Extend Timer (+60s)" aria-label="Extend Timer">Extend Time<span class="button-status"><span class="action-cost">(-15⚡)</span><span class="cooldown-timer"></span></span></button>
+                <button id="stress-fairy-button" class="large-action-button" title="Call Stress Fairy (-25% Stress)" aria-label="Call Stress Fairy">Stress Fairy<span class="button-status"><span class="action-cost">(-15⚡)</span><span class="cooldown-timer"></span></span></button>
+                <button id="math-wizard-button" class="large-action-button" title="Open Math Wizard (60s Cooldown)" aria-label="Math Wizard">Math Wizard<span class="button-status"><span class="cooldown-timer"></span></span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top-Center Stats (Timer and Stress) -->
+    <div id="top-center-stats">
+        <span id="timer-display">00:00</span>
+        <div id="top-summary-row">
+            <div id="top-left-energy">
+                <span class="energy-points-copy">
+                    <span class="energy-icon" aria-hidden="true">⚡</span>
+                    <span>Energy Points:</span>
+                </span>
+                <span id="energy-display-main">25</span>
+            </div>
+            <div id="current-pet-rarity-display" class="pet-rarity-display">Pet: <span id="pet-rarity-text">Common</span></div>
+        </div>
+        <div class="top-center-status-row">
+            <div class="stat-bar-bg" id="stress-bar-container">
+                <div id="stress-bar" class="stat-bar"></div>
+                <div id="stress-multiplier-container" class="multiplier-box">
+                    <span id="stress-multiplier">x1.0</span>
+        </div>
+        </div>
+            <!-- New Kid-Friendly Speed Display Panel -->
+            <div id="stress-speed-display" class="speed-display-panel">
+                <div class="speed-value" id="stress-speed-value">1.0x</div>
+                <div class="speed-label">Speed</div>
+    </div>
+        </div>
+    </div>
+
+    <!-- EP Challenge Credits Panel (moved to top-left area) -->
+    <div id="ep-challenge-panel" class="minimized">
+        <div class="panel-header-row">
+            <h3 class="panel-title">EP Challenge Credits</h3>
+            <button class="minimize-btn minimize-btn-inline" id="minimize-ep-challenge" title="Minimize">–</button>
+        </div>
+        <div id="ep-difficulty-buttons">
+            <div id="ep-difficulty-callout" class="ep-difficulty-callout" aria-live="polite">Select Math Difficulty</div>
+            <!-- Buttons added dynamically by JS -->
+        </div>
+    </div>
+
+    <div class="secondary-panel-tabs" role="tablist" aria-label="Secondary game panels">
+        <button type="button" class="secondary-panel-tab" data-secondary-target="ep" role="tab" aria-controls="ep-challenge-panel" aria-selected="true">Challenges</button>
+        <button type="button" class="secondary-panel-tab" data-secondary-target="score" role="tab" aria-controls="total-score-panel" aria-selected="false">Score</button>
+        <button type="button" class="secondary-panel-tab" data-secondary-target="level" role="tab" aria-controls="level-display-panel" aria-selected="false">Level</button>
+    </div>
+
+    <!-- Right Side Panels Container -->
+    <div id="right-side-panels">
+    <!-- Total Score Panel -->
+    <div id="total-score-panel">
+        <div class="panel-header-row">
+            <h3 class="panel-title">Total Score</h3>
+            <button class="minimize-btn minimize-btn-inline" id="minimize-total-score" title="Minimize">–</button>
+        </div>
+        <div id="total-score-panel-content">
+            <div class="score-category">
+                    <span class="score-category-label score-category-label--common">🐾 Common:</span>
+                    <span class="score-category-value" id="common-score">0 (0 pts)</span>
+            </div>
+            <div class="score-category">
+                    <span class="score-category-label score-category-label--rare">🌟 Rare:</span>
+                    <span class="score-category-value" id="rare-score">0 (0 pts)</span>
+            </div>
+            <div class="score-category">
+                    <span class="score-category-label score-category-label--legendary">🔥 Legendary:</span>
+                    <span class="score-category-value" id="legendary-score">0 (0 pts)</span>
+            </div>
+            <div class="score-separator"></div>
+            <div class="score-category">
+                <span id="lost-pets-display">Lost: <span class="lost-score-value">0 (0 pts)</span></span>
+            </div>
+            <div class="score-separator"></div>
+                <div class="overall-score-row">
+                <span id="overall-score-label">Overall Score:</span>
+                <span id="overall-score-value">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Display Panel -->
+    <div id="level-display-panel">
+        <div class="drag-handle panel-header-row">
+            <h3 class="panel-title">Level Progress</h3>
+            <button class="minimize-btn minimize-btn-inline" id="minimize-level-display" title="Minimize">–</button>
+        </div>
+        <div id="level-display-panel-content">
+            <div class="level-display-main">
+                <div class="level-badge" id="current-level-badge">Level 1</div>
+            </div>
+            <div class="level-progress-info">
+                <span class="pets-rescued-count" id="pets-rescued-count">0</span> pets rescued
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Original Upgrades Panel (for compatibility) -->
+    <div id="upgrades-panel" class="is-hidden">
+        <div class="drag-handle" title="Drag to move panel">
+            <h2>Upgrades Panel
+                <button class="minimize-btn compat-minimize-btn" id="minimize-upgrades" title="Minimize">–</button>
+            </h2>
+        </div>
+        <div class="upgrades-grid">
+            <div class="upgrade-box" id="upgrade-lockpick">
+                <h4>Lock Pick Training</h4>
+                <p>Level: <span id="level-lockpick">0</span></p>
+                <p>Effect: +<span id="effect-lockpick">0</span>% Speed</p>
+                <button class="upgrade-button" data-upgrade="lockPick">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-luckycharms">
+                <h4>Lucky Charms</h4>
+                <p>Level: <span id="level-luckycharms">0</span></p>
+                <p>Effect: +<span id="effect-luckycharms">0</span>% Rare/Legendary</p>
+                <button class="upgrade-button" data-upgrade="luckyCharms">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-chainstrength">
+                <h4>Chain Strength</h4>
+                <p>Level: <span id="level-chainstrength">0</span></p>
+                <p>Effect: -<span id="effect-chainstrength">0</span>% Stress Dmg</p>
+                <button class="upgrade-button" data-upgrade="chainStrength">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-cooldown">
+                <h4>Upgrade Wizard</h4>
+                <p>Level: <span id="level-cooldown">0</span></p>
+                <p>Effect: -<span id="effect-cooldown">0</span>s Math Cooldown</p>
+                <button id="cooldown-upgrade-btn" class="upgrade-button">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-food">
+                <h4>Upgrade Food</h4>
+                <p>Level: <span id="level-food">0</span></p>
+                <p>Effect: +<span id="effect-food">0</span>% Effectiveness</p>
+                <button class="upgrade-button" data-upgrade="food">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-water">
+                <h4>Upgrade Water</h4>
+                <p>Level: <span id="level-water">0</span></p>
+                <p>Effect: +<span id="effect-water">0</span>% Effectiveness</p>
+                <button class="upgrade-button" data-upgrade="water">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-play">
+                <h4>Upgrade Play</h4>
+                <p>Level: <span id="level-play">0</span></p>
+                <p>Effect: +<span id="effect-play">0</span>% Effectiveness</p>
+                <button class="upgrade-button" data-upgrade="play">Buy (-2 EP)</button>
+            </div>
+            <div class="upgrade-box" id="upgrade-sing">
+                <h4>Upgrade Sing</h4>
+                <p>Level: <span id="level-sing">0</span></p>
+                <p>Effect: +<span id="effect-sing">0</span>% Effectiveness</p>
+                <button class="upgrade-button" data-upgrade="sing">Buy (-2 EP)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upgrades Panel Modal -->
+    <div id="upgrades-modal-overlay" class="modal-overlay is-hidden">
+        <div id="upgrades-modal" class="upgrades-modal">
+            <div class="modal-header">
+                <h2>⚡ Power-Up Shop! ⚡</h2>
+                <div class="power-level-title-container">
+                    <div class="power-level-title" id="power-level-title">🏆 Rookie</div>
+                </div>
+                <div class="modal-header-stats">
+                    <div class="energy-display">
+                        <span>Energy Points: </span>
+                        <span id="modal-energy-value" class="energy-value">25</span>
+                    </div>
+                    <div class="power-level-display">
+                        <span>Power Level: </span>
+                        <span id="modal-power-level-score" class="power-level-value">0</span>
+                    </div>
+                </div>
+                <div class="power-level-breakdown-container">
+                    <h4>🌟 Your Power:</h4>
+                    <div id="modal-power-level-breakdown" class="power-level-breakdown">
+                        <div class="power-breakdown-item">
+                            <span class="upgrade-name">Get upgrades to grow stronger!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="upgrades-modal-grid">
+                <div class="upgrade-card" id="modal-upgrade-lockpick">
+                    <div class="upgrade-icon">🔓</div>
+                    <h3>Speed Boost</h3>
+                    <p class="upgrade-description">Make rescues faster!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-lockpick">0</span></span>
+                        <span>Effect: +<span id="modal-effect-lockpick">0</span>% Speed</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="lockpick">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-luckycharms">
+                    <div class="upgrade-icon">🍀</div>
+                    <h3>Lucky Charm</h3>
+                    <p class="upgrade-description">Find rare pets more often!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-luckycharms">0</span></span>
+                        <span>Effect: +<span id="modal-effect-luckycharms">0</span>% Rare Pets</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="luckycharms">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-chainstrength">
+                    <div class="upgrade-icon">⛓️</div>
+                    <h3>Strong Chains</h3>
+                    <p class="upgrade-description">Take less stress damage!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-chainstrength">0</span></span>
+                        <span>Effect: -<span id="modal-effect-chainstrength">0</span>% Stress</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="chainstrength">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-cooldown">
+                    <div class="upgrade-icon">🧙‍♂️</div>
+                    <h3>Math Wizard</h3>
+                    <p class="upgrade-description">Use math magic faster!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-cooldown">0</span></span>
+                        <span>Effect: -<span id="modal-effect-cooldown">0</span>s Cooldown</span>
+                    </div>
+                    <button class="modal-upgrade-button" id="modal-cooldown-upgrade-btn" data-upgrade="cooldown">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-food">
+                    <div class="upgrade-icon">🍗</div>
+                    <h3>Better Food</h3>
+                    <p class="upgrade-description">Feed pets more effectively!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-food">0</span></span>
+                        <span>Effect: +<span id="modal-effect-food">0</span>% Better</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="food">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-water">
+                    <div class="upgrade-icon">💧</div>
+                    <h3>Fresh Water</h3>
+                    <p class="upgrade-description">Give pets better water!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-water">0</span></span>
+                        <span>Effect: +<span id="modal-effect-water">0</span>% Better</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="water">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-play">
+                    <div class="upgrade-icon">😊</div>
+                    <h3>Fun Games</h3>
+                    <p class="upgrade-description">Make pets happier!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-play">0</span></span>
+                        <span>Effect: +<span id="modal-effect-play">0</span>% Better</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="play">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-card" id="modal-upgrade-sing">
+                    <div class="upgrade-icon">💤</div>
+                    <h3>Sweet Songs</h3>
+                    <p class="upgrade-description">Help pets rest better!</p>
+                    <div class="upgrade-stats">
+                        <span>Level: <span id="modal-level-sing">0</span></span>
+                        <span>Effect: +<span id="modal-effect-sing">0</span>% Better</span>
+                    </div>
+                    <button class="modal-upgrade-button" data-upgrade="sing">
+                        <span class="button-text">Buy for 2 EP</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button id="save-upgrades-btn" class="modal-action-button save-btn">
+                    ✅ Save Changes
+                </button>
+                <button id="cancel-upgrades-btn" class="modal-action-button cancel-btn">
+                    ❌ Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stage-shell">
+        <div id="game-container">
+            <div id="pet-status-stage-slot"></div>
+            <div id="game-over-overlay" class="game-message-overlay">
+                <h1 id="game-over-message">Game Over</h1>
+                <button id="restart-button-lose">Restart</button>
+            </div>
+            <!-- Win Overlay no longer used per rescue, kept for potential future "overall win" state -->
+            <div id="win-overlay" class="game-message-overlay game-message-overlay--passive">
+                <h1>You did it!</h1>
+                <p>The pet is safe!</p>
+                <button id="restart-button-win">Play Again</button>
+            </div>
+            <div id="lock-picking-panel">
+                <div class="drag-handle" title="Drag to move panel">
+                    <h3>Lock Picking</h3>
+                </div>
+                <div class="lock-progress-bar-bg">
+                    <div id="lock-progress-bar"></div>
+                </div>
+                <div id="lock-pick-boost-buttons">
+                    <button id="wooden-lockpick" class="lock-pick-tool" data-multiplier="1.5" data-cooldown="10" title="Wooden Pick · x1.5 speed · 10s" aria-label="Wooden Pick, x1.5 speed, 10 second cooldown">
+                        <span class="key-quantity empty" id="wooden-key-quantity">0</span>
+                        <img src="assets/images/woodenlockpick.png" alt="Wooden Lock Pick">
+                        <span class="tool-info">
+                            <span class="tool-name">Wooden Pick</span>
+                            <span class="tool-effect">x1.5 speed</span>
+                            <span class="cooldown-indicator">10s</span>
+                        </span>
+                    </button>
+                    <button id="silver-lockpick" class="lock-pick-tool" data-multiplier="2.0" data-cooldown="15" title="Steel Pick · x2.0 speed · 15s" aria-label="Steel Pick, x2 speed, 15 second cooldown">
+                        <span class="key-quantity empty" id="steel-key-quantity">0</span>
+                        <img src="assets/images/silverlockpick.png" alt="Steel Lock Pick">
+                        <span class="tool-info">
+                            <span class="tool-name">Steel Pick</span>
+                            <span class="tool-effect">x2.0 speed</span>
+                            <span class="cooldown-indicator">15s</span>
+                        </span>
+                    </button>
+                    <button id="golden-lockpick" class="lock-pick-tool" data-multiplier="2.5" data-cooldown="20" title="Golden Pick · x2.5 speed · 20s" aria-label="Golden Pick, x2.5 speed, 20 second cooldown">
+                        <span class="key-quantity empty" id="golden-key-quantity">0</span>
+                        <img src="assets/images/goldlockpick.png" alt="Golden Lock Pick">
+                        <span class="tool-info">
+                            <span class="tool-name">Golden Pick</span>
+                            <span class="tool-effect">x2.5 speed</span>
+                            <span class="cooldown-indicator">20s</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="math-challenge-grid">
+        <div class="math-cell" id="math-box-0">
+            <div class="math-header" id="math-header-0">Problem 1</div>
+            <div class="math-problem" id="problem-box-0">Select Difficulty</div>
+            <div class="math-mc-grid" id="mc-grid-0"></div>
+        </div>
+        <div class="math-cell" id="math-box-1">
+            <div class="math-header" id="math-header-1">Problem 2</div>
+            <div class="math-problem" id="problem-box-1">Select Difficulty</div>
+            <div class="math-mc-grid" id="mc-grid-1"></div>
+        </div>
+        <div class="math-cell" id="math-box-2">
+            <div class="math-header" id="math-header-2">Problem 3</div>
+            <div class="math-problem" id="problem-box-2">Select Difficulty</div>
+            <div class="math-mc-grid" id="mc-grid-2"></div>
+        </div>
+        <div class="math-cell" id="math-box-3">
+            <div class="math-header" id="math-header-3">Problem 4</div>
+            <div class="math-problem" id="problem-box-3">Select Difficulty</div>
+            <div class="math-mc-grid" id="mc-grid-3"></div>
+        </div>
+    </div>
+
+
+    <script type="importmap">
+        {
+        "imports": {
+            "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/",
+            "animejs": "https://unpkg.com/animejs@3.2.2/lib/anime.es.js"
+        }
+    }
+    </script>
+    <script>
+        (() => {
+            if (window.location.protocol === 'file:') {
+                document.getElementById('protocol-warning')?.classList.remove('is-hidden');
+                return;
+            }
+
+            const moduleScript = document.createElement('script');
+            moduleScript.type = 'module';
+            moduleScript.src = `./src/main.js?v=${encodeURIComponent(window.__appAssetVersion || `${Date.now()}`)}`;
+            document.body.appendChild(moduleScript);
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>States Champion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./assets/images/ui/main-menu-hero.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="page page--summary">
+    <div class="app-shell">
+      <div class="sky-orb sky-orb--one" aria-hidden="true"></div>
+      <div class="sky-orb sky-orb--two" aria-hidden="true"></div>
+
+      <main class="summary-page">
+        <article class="summary-card card">
+          <p class="summary-card__eyebrow">Done</p>
+          <h1 id="summaryTitle">You did it!</h1>
+          <p class="summary-card__message" id="summaryMessage">Good work.</p>
+
+          <div class="summary-grid summary-grid--compact">
+            <article class="summary-stat">
+              <span class="summary-stat__label">Score</span>
+              <strong class="summary-stat__value" id="summaryScore">0 / 10</strong>
+            </article>
+            <article class="summary-stat">
+              <span class="summary-stat__label">Accuracy</span>
+              <strong class="summary-stat__value" id="summaryAccuracy">0%</strong>
+            </article>
+            <article class="summary-stat">
+              <span class="summary-stat__label">Best</span>
+              <strong class="summary-stat__value" id="summaryBestScore">0 / 10</strong>
+            </article>
+            <article class="summary-stat">
+              <span class="summary-stat__label">Streak</span>
+              <strong class="summary-stat__value" id="summaryBestStreak">0</strong>
+            </article>
+          </div>
+
+          <div class="summary-actions">
+            <button class="primary-button" id="playAgainButton" type="button">Again</button>
+            <button class="secondary-button" id="tryPracticeButton" type="button">Practice</button>
+            <button class="ghost-button" id="summaryMenuButton" type="button">Menu</button>
+          </div>
+        </article>
+      </main>
+    </div>
+
+    <script defer src="./js/state-hint-data.js"></script>
+    <script defer src="./js/state-map-data.js"></script>
+    <script defer src="./js/state-data.js"></script>
+    <script defer src="./js/session-store.js"></script>
+    <script defer src="./js/summary.js"></script>
+  </body>
+</html>

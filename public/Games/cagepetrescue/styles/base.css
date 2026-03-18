@@ -1,0 +1,456 @@
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #111;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .hud {
+            position: absolute;
+            top: 85px;
+            /* Increased top margin */
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 4px;
+            border-radius: 4px;
+            z-index: 10;
+            min-width: 305px;
+            /* Increased min-width to accommodate buttons */
+        }
+
+        .hud h2,
+        .hud-header h2 {
+            font-size: 1.2em;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .hud h2 {
+            margin-top: 15px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hud-header h2 {
+            margin: 0;
+            flex: 1;
+        }
+
+        /* Pulse animation for timer */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .stat {
+            margin-bottom: 6px;
+            /* Increased spacing between rows */
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+            gap: 0px;
+            /* Add gap between elements in a stat row */
+        }
+
+        .stat-label {
+            width: 50px;
+            margin-right: 8px;
+            text-align: right;
+            /* Align label text right for neatness */
+        }
+
+        .stat-bar-bg {
+            width: 100px;
+            height: 15px;
+            background-color: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 8px;
+            position: relative;
+        }
+
+        .stat-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5), 0 0 10px rgba(76, 175, 80, 0.3) inset;
+        }
+
+        /* Normal (green) state */
+        .stat-bar.normal {
+            background-color: #4CAF50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6), 0 0 12px rgba(76, 175, 80, 0.4) inset;
+            animation: statBarNormalGlow 3s infinite ease-in-out;
+        }
+
+        /* Yellow warning state */
+        .stat-bar.warning {
+            background-color: #ffeb3b;
+            box-shadow: 0 0 15px #ffeb3b, 0 0 20px rgba(255, 235, 59, 0.7) inset;
+            animation: statBarWarningPulse 1.5s infinite ease-in-out;
+        }
+
+        /* Red critical state */
+        .stat-bar.critical {
+            background-color: #f44336;
+            box-shadow: 0 0 18px #f44336, 0 0 25px rgba(244, 67, 54, 0.8) inset;
+            animation: statBarCriticalPulse 0.8s infinite ease-in-out;
+        }
+
+        @keyframes statBarNormalGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 5px rgba(76, 175, 80, 0.5), 0 0 10px rgba(76, 175, 80, 0.3) inset;
+            }
+
+            50% {
+                box-shadow: 0 0 8px rgba(76, 175, 80, 0.7), 0 0 15px rgba(76, 175, 80, 0.5) inset;
+            }
+        }
+
+        @keyframes statBarWarningPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px #ffeb3b, 0 0 15px rgba(255, 235, 59, 0.6) inset;
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 18px #ffeb3b, 0 0 25px rgba(255, 235, 59, 0.9) inset;
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes statBarCriticalPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px #f44336, 0 0 20px rgba(244, 67, 54, 0.8) inset;
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 25px #ff5252, 0 0 35px rgba(255, 82, 82, 1) inset;
+                transform: scale(1.04);
+            }
+        }
+
+        .action-button {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+            flex-shrink: 0;
+            /* Prevent button from shrinking */
+        }
+
+        .action-button:hover:not(:disabled) {
+            background-color: #777;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-button:disabled {
+            background-color: #333;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        /* Ready state for buttons when they're off cooldown and have energy */
+        .action-button.ready {
+            background: linear-gradient(to bottom, #4e5dca, #303f9f);
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+            transform: scale(1.05);
+            animation: buttonReadyPulse 2s infinite ease-in-out;
+        }
+
+        .action-button.ready:hover {
+            background: linear-gradient(to bottom, #5c6bc0, #3f51b5);
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.9);
+            transform: scale(1.08) translateY(-2px);
+        }
+
+        @keyframes buttonReadyPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(33, 150, 243, 1);
+            }
+        }
+
+        .action-button .button-status {
+            position: absolute;
+            top: 50%;
+            left: 110%;
+            transform: translateY(-50%);
+            width: max-content;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            font-size: 0.7em;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+
+        /* Auto Toggle Button Styles */
+        .auto-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .auto-toggle-label {
+            font-size: 0.8em;
+            color: #ccc;
+            white-space: nowrap;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 36px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background-color: #4e5dca;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Glowing border for Pet Status panel when auto mode is active */
+        #pet-status-section.auto-mode-active {
+            border: 2px solid #ffeb3b;
+            /* Yellow border */
+            box-shadow: 0 0 10px #ffeb3b, 0 0 15px rgba(255, 235, 59, 0.7);
+            transition: all 0.3s ease;
+            animation: autoBorderPulse 2s infinite ease-in-out;
+        }
+
+        /* Add a subtle pulsing animation for better visibility */
+        @keyframes autoBorderPulse {
+            0% {
+                box-shadow: 0 0 10px #ffeb3b, 0 0 15px rgba(255, 235, 59, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 15px #ffeb3b, 0 0 20px rgba(255, 235, 59, 0.7);
+            }
+
+            100% {
+                box-shadow: 0 0 10px #ffeb3b, 0 0 15px rgba(255, 235, 59, 0.5);
+            }
+        }
+
+        input:focus+.toggle-slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        .cooldown-timer {
+            font-size: 0.9em;
+            color: #ffc107;
+        }
+
+        .action-cost {
+            font-size: 0.9em;
+            color: #ccc;
+            white-space: nowrap;
+        }
+
+        .is-hidden {
+            display: none;
+        }
+
+:root {
+    --shell-pad: clamp(0.75rem, 1vw + 0.5rem, 1.5rem);
+    --layout-gap: clamp(0.75rem, 1.4vw, 1.35rem);
+    --panel-gap: clamp(0.75rem, 1.4vw, 1.1rem);
+    --panel-radius: clamp(0.9rem, 1vw + 0.55rem, 1.35rem);
+    --panel-border: rgba(118, 140, 176, 0.34);
+    --panel-bg: linear-gradient(180deg, rgba(16, 21, 34, 0.82), rgba(8, 12, 22, 0.9));
+    --panel-shadow: 0 1.1rem 2.5rem rgba(0, 0, 0, 0.32);
+    --panel-shadow-strong: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.38);
+    --type-body: clamp(0.95rem, 0.28vw + 0.9rem, 1.05rem);
+    --type-title: clamp(1.1rem, 0.6vw + 1rem, 1.4rem);
+    --compact-stage-max-h: clamp(12rem, 34svh, 21rem);
+    --compact-challenge-block-size: clamp(2.4rem, 7svh, 3.8rem);
+    --math-deck-block-size: clamp(8.5rem, 26svh, 13rem);
+    --math-card-block-size: clamp(4rem, 12svh, 6.5rem);
+    --math-choice-min-h: clamp(1.35rem, 4.2svh, 2.35rem);
+    --math-deck-gap: clamp(0.5rem, 0.9vw, 0.9rem);
+    --math-card-pad-block: clamp(0.4rem, 0.75vw, 0.8rem);
+    --math-card-pad-inline: clamp(0.5rem, 0.9vw, 0.9rem);
+    --math-card-inner-gap: clamp(0.25rem, 0.55vw, 0.55rem);
+    --math-header-font-size: clamp(0.5rem, 0.2vw + 0.45rem, 0.72rem);
+    --math-problem-font-size: clamp(0.75rem, 0.55vw + 0.6rem, 1.2rem);
+    --math-choice-font-size: clamp(0.5rem, 0.28vw + 0.42rem, 0.85rem);
+    --math-choice-gap: clamp(0.12rem, 0.2vw, 0.24rem);
+    --math-choice-pad-block: clamp(0.12rem, 0.22vw, 0.28rem);
+    --math-choice-pad-inline: clamp(0.24rem, 0.4vw, 0.5rem);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+}
+
+body.app-shell {
+    margin: 0;
+    height: 100svh;
+    min-height: 100svh;
+    display: grid;
+    gap: var(--layout-gap);
+    align-content: stretch;
+    justify-content: stretch;
+    padding:
+        calc(env(safe-area-inset-top) + var(--shell-pad))
+        calc(env(safe-area-inset-right) + var(--shell-pad))
+        calc(env(safe-area-inset-bottom) + var(--shell-pad))
+        calc(env(safe-area-inset-left) + var(--shell-pad));
+    overflow: hidden;
+    overflow: clip;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(70, 106, 150, 0.22), transparent 35%),
+        radial-gradient(circle at 50% 100%, rgba(188, 94, 52, 0.18), transparent 28%),
+        linear-gradient(180deg, #05070d 0%, #0a1020 40%, #060a13 100%);
+    color: #fff;
+    font-size: var(--type-body);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body.app-shell.settings-open,
+body.app-shell.shop-open {
+    overflow: hidden;
+}
+
+body.app-shell,
+#top-left-panel,
+#right-side-panels,
+body.app-shell.pet-status-in-stage #pet-status-stage-slot #pet-status-section {
+    scrollbar-width: none;
+}
+
+body.app-shell::-webkit-scrollbar,
+#top-left-panel::-webkit-scrollbar,
+#right-side-panels::-webkit-scrollbar,
+body.app-shell.pet-status-in-stage #pet-status-stage-slot #pet-status-section::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 0.15rem solid #ffd54f;
+    outline-offset: 0.15rem;
+}
+
+canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#stage-shell,
+#game-container,
+#math-challenge-grid,
+#top-left-panel,
+#ep-challenge-panel,
+#right-side-panels,
+#lock-picking-panel,
+#top-center-stats,
+#top-left-energy {
+    min-width: 0;
+}
+

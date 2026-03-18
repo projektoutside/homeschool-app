@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>States Champion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./assets/images/ui/main-menu-hero.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="page page--menu">
+    <div class="app-shell">
+      <div class="sky-orb sky-orb--one" aria-hidden="true"></div>
+      <div class="sky-orb sky-orb--two" aria-hidden="true"></div>
+
+      <main class="page-grid page-grid--menu">
+        <section class="menu-panel card">
+          <div class="menu-topline">
+            <span class="pill pill--gold">States Champion</span>
+          </div>
+
+          <h1>Guess the State</h1>
+          <p class="lead">See the shape. Tap the name.</p>
+
+          <div class="menu-stats" aria-label="Saved progress">
+            <article class="stat-card">
+              <span class="stat-label">Best score</span>
+              <strong class="stat-value" id="menuBestScore">0 / 10</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Best streak</span>
+              <strong class="stat-value" id="menuBestStreak">0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Played</span>
+              <strong class="stat-value" id="menuSessionsPlayed">0</strong>
+            </article>
+          </div>
+
+          <div class="mode-grid" aria-label="Game modes">
+            <a class="mode-card mode-card--challenge" id="challengeModeButton" href="./play.html?mode=challenge">
+              <span class="mode-card__tag">10 rounds</span>
+              <strong class="mode-card__title">Challenge</strong>
+              <span class="mode-card__copy">Quick game.</span>
+              <span class="mode-card__action">Play</span>
+            </a>
+
+            <a class="mode-card mode-card--practice" id="practiceModeButton" href="./play.html?mode=practice">
+              <span class="mode-card__tag">No timer</span>
+              <strong class="mode-card__title">Practice</strong>
+              <span class="mode-card__copy">Go slow.</span>
+              <span class="mode-card__action">Play</span>
+            </a>
+
+            <a class="mode-card mode-card--mastery" id="knowItAllModeButton" href="./play.html?mode=know-it-all">
+              <span class="mode-card__tag">50 states</span>
+              <strong class="mode-card__title">Know it all!</strong>
+              <span class="mode-card__copy">No misses.</span>
+              <span class="mode-card__action">Play</span>
+            </a>
+          </div>
+        </section>
+
+        <aside class="hero-panel card hero-panel--minimal">
+          <div class="hero-art">
+            <img
+              src="./assets/images/ui/main-menu-hero.svg"
+              alt="Simple atlas-style hero art with a compass and map route"
+              decoding="async"
+            />
+          </div>
+          <div class="hero-copy hero-copy--minimal">
+            <h2>Simple. Bright. Fun.</h2>
+            <div class="hero-chips">
+              <span class="chip">4 choices</span>
+              <span class="chip">One shape at a time</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script defer src="./js/state-hint-data.js"></script>
+    <script defer src="./js/state-map-data.js"></script>
+    <script defer src="./js/state-data.js"></script>
+    <script defer src="./js/session-store.js"></script>
+    <script defer src="./js/menu.js"></script>
+  </body>
+</html>

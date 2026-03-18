@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>States Champion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./assets/images/ui/main-menu-hero.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="page page--play">
+    <div class="app-shell">
+      <div class="sky-orb sky-orb--one" aria-hidden="true"></div>
+      <div class="sky-orb sky-orb--two" aria-hidden="true"></div>
+
+      <main class="play-page" id="playPage" tabindex="-1">
+        <header class="hud card">
+          <div class="hud-chip">
+            <span class="hud-chip__label">Mode</span>
+            <strong class="hud-chip__value" id="hudMode">Practice</strong>
+          </div>
+          <div class="hud-chip">
+            <span class="hud-chip__label">Round</span>
+            <strong class="hud-chip__value" id="hudRound">1</strong>
+          </div>
+          <div class="hud-chip">
+            <span class="hud-chip__label">Score</span>
+            <strong class="hud-chip__value" id="hudScore">0</strong>
+          </div>
+          <div class="hud-chip">
+            <span class="hud-chip__label">Streak</span>
+            <strong class="hud-chip__value" id="hudStreak">0</strong>
+          </div>
+          <div class="hud-chip">
+            <span class="hud-chip__label">Timer</span>
+            <strong class="hud-chip__value" id="hudTimer">No timer</strong>
+          </div>
+          <button class="hud-chip hud-chip--button" id="mapButton" type="button" hidden aria-haspopup="dialog">
+            Map
+          </button>
+          <button class="ghost-button hud__menu-button" id="backToMenuButton" type="button">Menu</button>
+        </header>
+
+        <div class="question-layout">
+          <article class="state-card card">
+            <div class="state-card__header">
+              <span class="pill pill--sea" id="questionBadge">Round 1</span>
+              <h2>What state?</h2>
+              <p id="questionSubtitle">Tap the name.</p>
+            </div>
+
+            <div class="state-stage">
+              <div class="state-stage__controls">
+                <button class="ghost-button state-stage__hint-button" id="hintButton" type="button">Hint · 3</button>
+              </div>
+              <div class="state-hint-layer" id="stateHintLayer" hidden aria-hidden="true"></div>
+              <img id="stateImage" alt="State outline to identify" />
+              <p class="state-stage__fallback" id="stateImageFallback" hidden>Image not ready.</p>
+            </div>
+
+            <div class="state-card__footer">
+              <span class="mini-tip">Look closely.</span>
+            </div>
+          </article>
+
+          <aside class="answers-card card">
+            <div class="answers-card__header">
+              <p class="answers-card__eyebrow">Choices</p>
+              <h3>Pick one</h3>
+              <p id="answerHelperText">Tap a name.</p>
+            </div>
+
+            <div class="choices-grid" role="list" aria-label="Answer choices">
+              <button class="choice-button" data-choice-slot="0" type="button">
+                <span class="choice-button__number">1</span>
+                <span class="choice-button__text">Choice one</span>
+              </button>
+              <button class="choice-button" data-choice-slot="1" type="button">
+                <span class="choice-button__number">2</span>
+                <span class="choice-button__text">Choice two</span>
+              </button>
+              <button class="choice-button" data-choice-slot="2" type="button">
+                <span class="choice-button__number">3</span>
+                <span class="choice-button__text">Choice three</span>
+              </button>
+              <button class="choice-button" data-choice-slot="3" type="button">
+                <span class="choice-button__number">4</span>
+                <span class="choice-button__text">Choice four</span>
+              </button>
+            </div>
+
+            <p class="answers-card__status" id="roundFeedback" aria-live="polite">Tap a name.</p>
+          </aside>
+        </div>
+
+        <div class="countdown-layer" id="countdownLayer">
+          <article class="countdown-card card">
+            <p class="countdown-card__eyebrow" id="countdownModeLabel">Ready</p>
+            <div class="countdown-number" id="countdownValue">3</div>
+          </article>
+        </div>
+
+        <div class="reveal-layer" id="revealLayer" hidden>
+          <article class="reveal-card card">
+            <p class="reveal-card__tag" id="revealBanner">Correct!</p>
+            <h2 id="revealTitle">This is Maine.</h2>
+            <p class="reveal-card__region">
+              <strong id="revealRegion">Northeast</strong>
+            </p>
+            <p class="reveal-card__message" id="revealMessage">Yes!</p>
+            <p class="reveal-card__fact" id="revealFact">Maine is the easternmost state.</p>
+            <div class="reveal-card__actions">
+              <button class="primary-button" id="nextStateButton" type="button">Next</button>
+              <button class="ghost-button" id="revealMenuButton" type="button">Menu</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="success-toast" id="successToast" hidden aria-live="polite">Correct!</div>
+
+        <div class="map-layer" id="mapLayer" hidden>
+          <article class="map-card card" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+            <div class="map-card__top">
+              <div class="map-card__heading">
+                <p class="map-card__eyebrow">Know it all!</p>
+                <h2 id="mapTitle">Map</h2>
+              </div>
+              <button class="ghost-button map-card__close" id="closeMapButton" type="button">Close</button>
+            </div>
+
+            <div class="map-card__stats">
+              <article class="map-stat">
+                <span class="map-stat__label">Solved</span>
+                <strong class="map-stat__value" id="mapSolvedCount">0</strong>
+              </article>
+              <article class="map-stat">
+                <span class="map-stat__label">Left</span>
+                <strong class="map-stat__value" id="mapRemainingCount">50</strong>
+              </article>
+            </div>
+
+            <div class="map-stage" id="mapStage">
+              <div class="map-stage__canvas" id="progressMap"></div>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <script defer src="./js/state-hint-data.js"></script>
+    <script defer src="./js/state-map-data.js"></script>
+    <script defer src="./js/state-data.js"></script>
+    <script defer src="./js/session-store.js"></script>
+    <script defer src="./js/play.js"></script>
+  </body>
+</html>

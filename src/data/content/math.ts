@@ -1105,5 +1105,29 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Games/Farmersmarket/index.html",
         "thumbnail": "/Games/Farmersmarket/thumb.png",
         "dateAdded": "2026-02-19"
+    },
+    {
+        "id": "states-champion",
+        "title": "States Champion",
+        "description": "Study U.S. state shapes and build map recognition through quick challenge rounds.",
+        "type": "game",
+        "category": "geography",
+        "subjects": ["Geography", "U.S. States"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/States Champion/index.html",
+        "thumbnail": "/Games/States Champion/assets/images/ui/main-menu-hero.svg",
+        "dateAdded": "2026-03-18"
+    },
+    {
+        "id": "cage-pet-rescue",
+        "title": "Cage Pet Rescue",
+        "description": "Rescue trapped pets by solving math problems and managing your energy carefully.",
+        "type": "game",
+        "category": "math",
+        "subjects": ["Addition", "Subtraction", "Multiplication", "Problem Solving"],
+        "gradeLevels": ["All"],
+        "customHtmlPath": "/Games/cagepetrescue/index.html",
+        "thumbnail": "/Games/cagepetrescue/assets/images/math_rescue_animated.gif",
+        "dateAdded": "2026-03-18"
     }
 ];

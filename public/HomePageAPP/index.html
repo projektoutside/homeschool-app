@@ -7,6 +7,8 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#5e9f33">
     <title>Aetheria: The Pet (Sunny Garden)</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="../icons/icon-32x32.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../icons/icon-192x192.png">
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preload" as="script" href="https://unpkg.com/three@0.160.0/build/three.module.js" crossorigin>
     <style>
@@ -114,13 +116,24 @@
             z-index: 88;
             opacity: 0;
             visibility: hidden;
-            background: #000;
+            background: transparent;
             transition: opacity 260ms ease, visibility 0s linear 260ms;
             will-change: opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
         }
 
         #legendary-cutscene-video.active {
             visibility: visible;
+        }
+
+        body.legendary-cutscene-playing #legendary-cutscene-video {
+            z-index: 92;
+        }
+
+        body.legendary-cutscene-playing #legendary-storm-overlay {
+            z-index: 89;
         }
 
         body.bg-use-fallback #gif-background {
@@ -159,6 +172,7 @@
             --legendary-storm-veil-start: rgba(3, 7, 16, 0.14);
             --legendary-storm-veil-end: rgba(3, 8, 20, 0.9);
             --legendary-storm-whiteout: 0;
+            --legendary-storm-nightfall-progress: 0;
             will-change: opacity;
         }
 
@@ -179,6 +193,20 @@
                 radial-gradient(126% 92% at 50% 58%, rgba(8, 15, 28, 0) 0%, rgba(8, 14, 24, calc(0.18 + var(--legendary-storm-darkness) * 0.14)) 46%, rgba(4, 8, 18, calc(0.48 + var(--legendary-storm-darkness) * 0.44)) 100%),
                 linear-gradient(180deg, var(--legendary-storm-veil-start) 0%, var(--legendary-storm-veil-end) 100%);
             opacity: calc(0.12 + var(--legendary-storm-darkness) * 0.88);
+        }
+
+        #legendary-storm-overlay .legendary-storm-nightfall {
+            background:
+                linear-gradient(180deg,
+                    rgba(1, 3, 10, 0.96) 0%,
+                    rgba(3, 7, 16, 0.94) 22%,
+                    rgba(6, 11, 22, 0.84) 52%,
+                    rgba(8, 14, 26, 0.44) 78%,
+                    rgba(8, 14, 26, 0.06) 100%);
+            mix-blend-mode: multiply;
+            opacity: calc(var(--legendary-storm-nightfall-progress) * 0.92 + var(--legendary-storm-darkness) * 0.16);
+            transform: translate3d(0, calc((var(--legendary-storm-nightfall-progress) - 1) * 112%), 0);
+            filter: blur(18px) saturate(0.82);
         }
 
         #legendary-storm-overlay .legendary-storm-clouds {
@@ -209,6 +237,18 @@
             filter: blur(38px) saturate(0.66) brightness(0.56);
         }
 
+        #legendary-storm-overlay .legendary-storm-clouds-mid {
+            background:
+                radial-gradient(32% 16% at 14% 20%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(36% 18% at 48% 18%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(30% 14% at 82% 18%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(108% 36% at 50% 6%, rgba(5, 8, 16, 0.92) 0%, rgba(8, 12, 22, 0.78) 46%, rgba(8, 12, 22, 0.16) 82%, rgba(8, 12, 22, 0) 100%),
+                linear-gradient(180deg, rgba(4, 6, 12, 0.86) 0%, rgba(5, 8, 14, 0.48) 30%, rgba(5, 8, 14, 0.08) 56%, rgba(5, 8, 14, 0) 84%);
+            opacity: calc(0.08 + var(--legendary-storm-darkness) * 0.64 + var(--legendary-storm-flash) * 0.03);
+            transform: translate3d(calc(var(--legendary-storm-cloud-shift) * 0.28), calc((1 - var(--legendary-storm-environment-mix)) * -10vh - var(--legendary-storm-mist) * 18px), 0) scale(1.16);
+            filter: blur(24px) saturate(0.7) brightness(0.62);
+        }
+
         #legendary-storm-overlay .legendary-storm-mist {
             mix-blend-mode: screen;
             opacity: calc(var(--legendary-storm-mist) * 0.9);
@@ -232,6 +272,16 @@
             filter: blur(30px);
         }
 
+        #legendary-storm-overlay .legendary-storm-mist-c {
+            background:
+                radial-gradient(84% 26% at 50% 62%, rgba(216, 229, 244, 0.24) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(28% 16% at 18% 58%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 76%),
+                radial-gradient(26% 18% at 82% 54%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 76%);
+            opacity: calc(var(--legendary-storm-mist) * 0.68);
+            transform: translate3d(calc(var(--legendary-storm-cloud-shift) * 0.12), calc(var(--legendary-storm-mist) * -26px), 0) scale(1.12);
+            filter: blur(18px);
+        }
+
         #legendary-storm-overlay .legendary-storm-bolt {
             top: -18%;
             bottom: 8%;
@@ -239,14 +289,12 @@
             width: clamp(42px, 3.1vw, 66px);
             opacity: calc(var(--legendary-storm-bolt-opacity) * 0.94 + var(--legendary-storm-flash) * 0.22);
             background:
-                radial-gradient(circle at 50% calc(var(--legendary-storm-strike-y) - 6%), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.98) 6%, rgba(255, 255, 255, 0.18) 16%, rgba(255, 255, 255, 0) 34%),
-                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.96) 8%, rgba(255, 255, 255, 0.16) 14%, rgba(255, 255, 255, 0.9) 24%, rgba(255, 255, 255, 0.1) 30%, rgba(255, 255, 255, 0.86) 40%, rgba(255, 255, 255, 0.1) 47%, rgba(255, 255, 255, 0.82) 58%, rgba(255, 255, 255, 0.08) 64%, rgba(255, 255, 255, 0.78) 76%, rgba(255, 255, 255, 0.05) 84%, rgba(255, 255, 255, 0) 100%);
+                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.92) 9%, rgba(255, 255, 255, 0.18) 16%, rgba(255, 255, 255, 0.86) 25%, rgba(255, 255, 255, 0.12) 33%, rgba(255, 255, 255, 0.82) 44%, rgba(255, 255, 255, 0.1) 52%, rgba(255, 255, 255, 0.8) 64%, rgba(255, 255, 255, 0.08) 72%, rgba(255, 255, 255, 0.74) 84%, rgba(255, 255, 255, 0.03) 92%, rgba(255, 255, 255, 0) 100%);
             clip-path: polygon(48% 0, 62% 10%, 52% 18%, 66% 26%, 50% 35%, 62% 46%, 44% 58%, 56% 70%, 40% 82%, 52% 100%, 34% 100%, 42% 84%, 30% 70%, 40% 58%, 28% 44%, 40% 34%, 32% 22%, 44% 10%, 38% 0);
             filter:
-                blur(0.6px)
-                drop-shadow(0 0 22px rgba(255, 255, 255, 0.94))
-                drop-shadow(0 0 48px var(--legendary-storm-accent-b))
-                drop-shadow(0 0 78px rgba(255, 255, 255, 0.42));
+                blur(0.45px)
+                drop-shadow(0 0 10px rgba(255, 255, 255, 0.82))
+                drop-shadow(0 0 24px rgba(214, 235, 255, 0.36));
             mix-blend-mode: screen;
             transform: translate3d(0, calc(var(--legendary-storm-mist) * -14px), 0);
         }
@@ -268,8 +316,8 @@
                 linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 8%, rgba(255, 255, 255, 0.26) 16%, rgba(255, 255, 255, 0.96) 30%, rgba(255, 255, 255, 0.18) 40%, rgba(255, 255, 255, 0.88) 56%, rgba(255, 255, 255, 0.12) 68%, rgba(255, 255, 255, 0.78) 86%, rgba(255, 255, 255, 0) 100%);
             clip-path: polygon(52% 0, 72% 14%, 58% 26%, 70% 40%, 46% 56%, 60% 72%, 40% 88%, 52% 100%, 30% 100%, 42% 84%, 34% 68%, 48% 54%, 36% 38%, 50% 24%, 42% 0);
             filter:
-                blur(0.3px)
-                drop-shadow(0 0 14px rgba(255, 255, 255, 1));
+                blur(0.25px)
+                drop-shadow(0 0 8px rgba(255, 255, 255, 0.86));
             opacity: calc(var(--legendary-storm-bolt-opacity) * 1.2 + var(--legendary-storm-flash) * 0.18);
         }
 
@@ -283,19 +331,18 @@
             clip-path: polygon(58% 0, 76% 14%, 54% 18%, 70% 30%, 40% 40%, 66% 54%, 34% 62%, 58% 76%, 26% 88%, 46% 100%, 20% 100%, 34% 84%, 16% 70%, 40% 58%, 20% 42%, 46% 28%, 34% 12%, 54% 0);
             transform: translate3d(-10%, 0, 0) rotate(-8deg) scale(1.02);
             filter:
-                blur(1.4px)
-                drop-shadow(0 0 28px var(--legendary-storm-accent-b));
+                blur(1.1px)
+                drop-shadow(0 0 14px rgba(214, 235, 255, 0.28));
             opacity: calc(var(--legendary-storm-bolt-opacity) * 0.44 + var(--legendary-storm-flash) * 0.1);
         }
 
         #legendary-storm-overlay .legendary-storm-flash {
             background:
                 linear-gradient(180deg, rgba(255, 255, 255, calc(var(--legendary-storm-whiteout) * 0.98)) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-whiteout) * 0.92)) 100%),
-                radial-gradient(circle at var(--legendary-storm-strike-x) var(--legendary-storm-strike-y), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.98) 4%, var(--legendary-storm-accent-b) 11%, rgba(255, 255, 255, 0.22) 22%, rgba(255, 255, 255, 0) 42%),
-                radial-gradient(58% 24% at var(--legendary-storm-strike-x) calc(var(--legendary-storm-strike-y) + 8%), rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.82)) 0%, rgba(255, 255, 255, 0.08) 44%, rgba(255, 255, 255, 0) 76%),
-                linear-gradient(180deg, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 1.08)) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.58)) 22%, var(--legendary-storm-accent-a) 52%, rgba(255, 255, 255, 0) 100%);
+                linear-gradient(180deg, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.96)) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.54)) 16%, rgba(214, 235, 255, calc(var(--legendary-storm-flash) * 0.18)) 34%, rgba(255, 255, 255, 0) 62%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.12)) 46%, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.28)) 68%, rgba(255, 255, 255, 0) 100%);
             mix-blend-mode: screen;
-            filter: blur(6px) saturate(1.18);
+            filter: blur(4px) saturate(1.05);
         }
 
         body.legendary-storm-active #gif-background,
@@ -309,7 +356,7 @@
         body.legendary-storm-active #gif-tint {
             opacity: calc(0.3 + var(--legendary-storm-darkness) * 0.68);
             background:
-                radial-gradient(130% 92% at 50% 62%, rgba(126, 225, 255, calc(0.02 + var(--legendary-storm-flash) * 0.2)) 0%, rgba(0, 0, 0, 0) 56%),
+                linear-gradient(180deg, rgba(210, 232, 255, calc(var(--legendary-storm-flash) * 0.12)) 0%, rgba(126, 225, 255, calc(var(--legendary-storm-flash) * 0.06)) 18%, rgba(0, 0, 0, 0) 42%),
                 linear-gradient(180deg, rgba(2, 12, 26, calc(0.08 + var(--legendary-storm-darkness) * 0.24)) 0%, rgba(5, 14, 20, calc(0.04 + var(--legendary-storm-darkness) * 0.18)) 40%, rgba(3, 12, 16, calc(0.14 + var(--legendary-storm-darkness) * 0.44)) 100%);
         }
 
@@ -327,8 +374,10 @@
 
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-back,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-front,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-mid,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-a,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-b,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-c,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-flash,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt,
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt::before,
@@ -340,9 +389,20 @@
             opacity: calc(0.08 + var(--legendary-storm-darkness) * 0.48 + var(--legendary-storm-flash) * 0.03);
         }
 
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-mid,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-c {
+            display: none;
+        }
+
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist {
             mix-blend-mode: normal;
             opacity: calc(var(--legendary-storm-mist) * 0.52);
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-nightfall {
+            mix-blend-mode: normal;
+            filter: none;
+            opacity: calc(var(--legendary-storm-nightfall-progress) * 0.68 + var(--legendary-storm-darkness) * 0.1);
         }
 
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt {
@@ -3716,10 +3776,13 @@
     <div id="gif-tint"></div>
     <div id="legendary-storm-overlay" aria-hidden="true">
         <div class="legendary-storm-veil"></div>
+        <div class="legendary-storm-nightfall"></div>
         <div class="legendary-storm-clouds legendary-storm-clouds-back"></div>
+        <div class="legendary-storm-clouds legendary-storm-clouds-mid"></div>
         <div class="legendary-storm-clouds legendary-storm-clouds-front"></div>
         <div class="legendary-storm-mist legendary-storm-mist-a"></div>
         <div class="legendary-storm-mist legendary-storm-mist-b"></div>
+        <div class="legendary-storm-mist legendary-storm-mist-c"></div>
         <div class="legendary-storm-bolt"></div>
         <div class="legendary-storm-flash"></div>
     </div>
@@ -9776,6 +9839,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         const HOME_PAGE_MYSTERY_BOX_SHAKE_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/MysteryBoxShaking.mp3');
         const HOME_PAGE_MYSTERY_BOX_OPEN_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/openingboxsound.mp3');
         const HOME_PAGE_MYSTERY_EQUIP_PROP_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/equipingprop.mp3');
+        const LEGENDARY_SUMMON_MUSIC_SOURCE = encodeURI('./HomePageMusic/LegendarySummonMusic/LegendaryAnimationSummonSound.mp3');
+        const LEGENDARY_SUMMON_MUSIC_FADE_OUT_MS = 720;
         const MYSTERY_BOX_SHAKE_SFX_MIN_INTERVAL_MS = 120;
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
         const HOME_PAGE_MUSIC_STORAGE_KEY = 'homepage_music_track_v1';
@@ -9829,6 +9894,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             gain: 0,
             fadeToken: 0,
             fadeRafId: null
+        };
+        const legendarySummonMusicState = {
+            activeAudio: null,
+            gain: 0,
+            fadeToken: 0,
+            fadeRafId: null,
+            leadInTriggered: false,
+            restorePendingAfterPreview: false,
+            restoreInProgress: false,
+            savedRouteGain: 1
         };
         const mysteryRewardOrderState = {
             loaded: false,
@@ -10138,6 +10213,200 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
         }
 
+        function buildLegendarySummonMusicSource() {
+            return LEGENDARY_SUMMON_MUSIC_SOURCE;
+        }
+
+        function createLegendarySummonMusicAudio() {
+            const source = buildLegendarySummonMusicSource();
+            if (!source) return null;
+            const audio = new Audio(source);
+            audio.loop = false;
+            audio.preload = 'auto';
+            audio.autoplay = false;
+            audio.playsInline = true;
+            return audio;
+        }
+
+        function clearLegendarySummonMusicFadeAnimation() {
+            if (legendarySummonMusicState.fadeRafId !== null) {
+                window.cancelAnimationFrame(legendarySummonMusicState.fadeRafId);
+                legendarySummonMusicState.fadeRafId = null;
+            }
+        }
+
+        function applyLegendarySummonMusicGain() {
+            const audio = legendarySummonMusicState.activeAudio;
+            if (!audio) return;
+            const baseVolume = clampUnitVolume(homePageMusicState.musicVolume, 0.2);
+            const gain = homePageMusicState.muted
+                ? 0
+                : clampUnitVolume(legendarySummonMusicState.gain, 1);
+            audio.muted = homePageMusicState.muted;
+            audio.volume = homePageMusicState.muted
+                ? 0
+                : clampUnitVolume(baseVolume * gain, baseVolume);
+        }
+
+        function animateLegendarySummonMusicGain(targetGain, durationMs, options = {}) {
+            const target = clampUnitVolume(targetGain, targetGain > 0 ? 1 : 0);
+            const startGain = clampUnitVolume(legendarySummonMusicState.gain, 1);
+            const delta = target - startGain;
+            const onComplete = typeof options.onComplete === 'function' ? options.onComplete : null;
+            clearLegendarySummonMusicFadeAnimation();
+
+            if (Math.abs(delta) <= 0.0005 || durationMs <= 0) {
+                legendarySummonMusicState.gain = target;
+                applyLegendarySummonMusicGain();
+                if (onComplete) {
+                    onComplete();
+                }
+                return;
+            }
+
+            const token = legendarySummonMusicState.fadeToken + 1;
+            legendarySummonMusicState.fadeToken = token;
+            const startedAt = performance.now();
+            const fadeDuration = Math.max(80, Number(durationMs) || 0);
+
+            const step = () => {
+                if (token !== legendarySummonMusicState.fadeToken) return;
+                const elapsed = performance.now() - startedAt;
+                const progress = Math.max(0, Math.min(1, elapsed / fadeDuration));
+                const eased = progress * progress * (3 - (2 * progress));
+                legendarySummonMusicState.gain = startGain + (delta * eased);
+                applyLegendarySummonMusicGain();
+
+                if (progress < 1) {
+                    legendarySummonMusicState.fadeRafId = window.requestAnimationFrame(step);
+                    return;
+                }
+
+                legendarySummonMusicState.gain = target;
+                legendarySummonMusicState.fadeRafId = null;
+                applyLegendarySummonMusicGain();
+                if (onComplete) {
+                    onComplete();
+                }
+            };
+
+            legendarySummonMusicState.fadeRafId = window.requestAnimationFrame(step);
+        }
+
+        function resetLegendarySummonMusicSession({ releaseAudio = true } = {}) {
+            clearLegendarySummonMusicFadeAnimation();
+            legendarySummonMusicState.fadeToken += 1;
+            legendarySummonMusicState.gain = 0;
+            const audio = legendarySummonMusicState.activeAudio;
+            if (audio) {
+                try {
+                    audio.pause();
+                } catch (_) {}
+                try {
+                    audio.currentTime = 0;
+                } catch (_) {}
+                if (releaseAudio) {
+                    releaseHomePageMusicAudio(audio);
+                }
+            }
+            legendarySummonMusicState.activeAudio = null;
+            legendarySummonMusicState.leadInTriggered = false;
+            legendarySummonMusicState.restorePendingAfterPreview = false;
+            legendarySummonMusicState.restoreInProgress = false;
+        }
+
+        function prepareLegendarySummonMusicForCurrentCinematic() {
+            resetLegendarySummonMusicSession({ releaseAudio: true });
+            const audio = createLegendarySummonMusicAudio();
+            if (!audio) {
+                return null;
+            }
+            legendarySummonMusicState.activeAudio = audio;
+            legendarySummonMusicState.gain = 0;
+            applyLegendarySummonMusicGain();
+            try {
+                audio.load();
+            } catch (_) {}
+            return audio;
+        }
+
+        function startLegendarySummonMusicSyncPlayback() {
+            const audio = legendarySummonMusicState.activeAudio;
+            if (!audio || legendarySummonMusicState.leadInTriggered) {
+                return false;
+            }
+            legendarySummonMusicState.leadInTriggered = true;
+            legendarySummonMusicState.restorePendingAfterPreview = true;
+            legendarySummonMusicState.restoreInProgress = false;
+            legendarySummonMusicState.gain = 1;
+            applyLegendarySummonMusicGain();
+            try {
+                audio.currentTime = 0;
+            } catch (_) {}
+
+            const playAttempt = audio.play();
+            if (playAttempt && typeof playAttempt.then === 'function') {
+                playAttempt
+                    .then(() => true)
+                    .catch(() => {
+                        try {
+                            audio.pause();
+                        } catch (_) {}
+                        try {
+                            audio.currentTime = 0;
+                        } catch (_) {}
+                        legendarySummonMusicState.leadInTriggered = false;
+                        legendarySummonMusicState.restorePendingAfterPreview = false;
+                        legendarySummonMusicState.gain = 0;
+                        applyLegendarySummonMusicGain();
+                    });
+                return true;
+            }
+
+            return true;
+        }
+
+        function restoreHomePageAudioAfterLegendarySummonPreview({ immediate = false } = {}) {
+            if (legendarySummonMusicState.restoreInProgress) {
+                return true;
+            }
+            const hasPendingTrack =
+                legendarySummonMusicState.restorePendingAfterPreview ||
+                legendarySummonMusicState.leadInTriggered ||
+                Boolean(legendarySummonMusicState.activeAudio);
+            if (!hasPendingTrack) {
+                return false;
+            }
+
+            const finalizeRestore = () => {
+                resetLegendarySummonMusicSession({ releaseAudio: true });
+                restoreHomePageAudioAfterLegendaryCutscene({ immediate, force: true });
+                resumeBackgroundPlaybackIfActive();
+            };
+
+            legendarySummonMusicState.restorePendingAfterPreview = false;
+            legendarySummonMusicState.restoreInProgress = true;
+            const activeAudio = legendarySummonMusicState.activeAudio;
+            const canFadeActiveTrack = Boolean(
+                activeAudio &&
+                !activeAudio.paused &&
+                !activeAudio.ended &&
+                legendarySummonMusicState.gain > 0.001
+            );
+
+            if (immediate || !canFadeActiveTrack) {
+                finalizeRestore();
+                return true;
+            }
+
+            animateLegendarySummonMusicGain(0, LEGENDARY_SUMMON_MUSIC_FADE_OUT_MS, {
+                onComplete: () => {
+                    finalizeRestore();
+                }
+            });
+            return true;
+        }
+
         function applyGainToHomePageAudio(audio, gainFactor = 1) {
             if (!audio) return;
             const baseVolume = clampUnitVolume(homePageMusicState.musicVolume, 0.2);
@@ -10210,13 +10479,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         }
 
         function startLegendaryCutsceneAudioFadeIn() {
+            clearLegendaryCutsceneAudioFadeAnimation();
+            legendaryCutsceneAudioState.fadeToken += 1;
             legendaryCutsceneAudioState.active = true;
-            legendaryCutsceneAudioState.gain = 0;
+            legendaryCutsceneAudioState.gain = 1;
             applyLegendaryCutsceneAudioGain();
-            const fadeDuration = legendaryStormState.lightweightMode
-                ? LEGENDARY_STORM_CONFIG.lightweightCutsceneAudioFadeInMs
-                : LEGENDARY_STORM_CONFIG.cutsceneAudioFadeInMs;
-            animateLegendaryCutsceneAudioGain(1, fadeDuration);
         }
 
         function stopLegendaryCutsceneAudioImmediately() {
@@ -10233,9 +10500,21 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             animateHomePageRouteGain(0, LEGENDARY_STORM_CONFIG.backgroundAudioFadeOutMs, { pauseAfter: true });
         }
 
-        function restoreHomePageAudioAfterLegendaryCutscene({ immediate = false } = {}) {
+        function restoreHomePageAudioAfterLegendaryCutscene({ immediate = false, force = false } = {}) {
+            if (
+                !force &&
+                !immediate &&
+                (
+                    legendarySummonMusicState.restorePendingAfterPreview ||
+                    legendarySummonMusicState.restoreInProgress
+                )
+            ) {
+                return;
+            }
             const targetGain = clampUnitVolume(
-                Number.isFinite(legendaryStormState.savedRouteGain) ? legendaryStormState.savedRouteGain : 1,
+                Number.isFinite(legendarySummonMusicState.savedRouteGain)
+                    ? legendarySummonMusicState.savedRouteGain
+                    : (Number.isFinite(legendaryStormState.savedRouteGain) ? legendaryStormState.savedRouteGain : 1),
                 1
             );
             if (!homePageRouteAudioState.isActive || document.visibilityState !== 'visible') {
@@ -10655,6 +10934,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyNatureSoundsGain();
             applyMysterySfxGain();
             applyLegendaryCutsceneAudioGain();
+            applyLegendarySummonMusicGain();
             if (homePageMusicState.muted) {
                 pauseHomePageAudioImmediately();
                 return;
@@ -10677,6 +10957,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             homePageMusicState.musicVolume = clampUnitVolume(volume, homePageMusicState.musicVolume);
             applyHomePageMusicGain();
             applyLegendaryCutsceneAudioGain();
+            applyLegendarySummonMusicGain();
         }
 
         function setSfxVolume(volume) {
@@ -10721,6 +11002,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
             homePageRouteAudioState.isActive = nextActive;
             applyMysterySfxGain();
+            applyLegendarySummonMusicGain();
             if (nextActive) {
                 startHomePageActivationAudioSequence();
                 resumeBackgroundPlaybackIfActive();
@@ -10728,6 +11010,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
 
             finishLegendaryStormCinematicImmediately();
+            resetLegendarySummonMusicSession({ releaseAudio: true });
             stopMysterySfxImmediately();
             clearEquipPropRevealDelay();
             clearEquipPropRevealRamp();
@@ -10955,6 +11238,21 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 legendaryCutsceneVideo.volume = 0;
                 legendaryCutsceneVideo.playsInline = true;
                 legendaryCutsceneVideo.loop = false;
+                const markLegendaryCutsceneFrameReady = () => {
+                    if (
+                        !legendaryStormState.active ||
+                        (
+                            legendaryStormState.phase !== 'introStrikeWhiteout' &&
+                            legendaryStormState.phase !== 'videoPlayback' &&
+                            legendaryStormState.phase !== 'landingStrikeWhiteout'
+                        )
+                    ) {
+                        return;
+                    }
+                    legendaryStormState.videoFrameReady = true;
+                    syncLegendaryCutsceneVideoVisuals();
+                    syncLegendaryStormOverlayVisuals(getLegendaryStormTheme(legendaryStormState.rarityKey));
+                };
                 legendaryCutsceneVideo.addEventListener('ended', () => {
                     if (
                         !legendaryStormState.active ||
@@ -10967,6 +11265,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     }
                     legendaryStormState.videoEnded = true;
                 });
+                legendaryCutsceneVideo.addEventListener('loadeddata', markLegendaryCutsceneFrameReady);
+                legendaryCutsceneVideo.addEventListener('canplay', markLegendaryCutsceneFrameReady);
+                legendaryCutsceneVideo.addEventListener('playing', markLegendaryCutsceneFrameReady);
                 const handleLegendaryCutsceneError = () => {
                     if (
                         !legendaryStormState.active ||
@@ -10977,6 +11278,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     ) {
                         return;
                     }
+                    legendaryStormState.videoFrameReady = false;
                     legendaryStormState.videoFailed = true;
                 };
                 legendaryCutsceneVideo.addEventListener('error', handleLegendaryCutsceneError);
@@ -11127,6 +11429,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             })
         );
         previewRevealFloorGlow.rotation.x = -Math.PI / 2;
+        previewRevealFloorGlow.visible = false;
         const previewRevealFloorRing = new THREE.Mesh(
             new THREE.RingGeometry(0.82, 0.98, 64),
             new THREE.MeshBasicMaterial({
@@ -11138,6 +11441,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             })
         );
         previewRevealFloorRing.rotation.x = -Math.PI / 2;
+        previewRevealFloorRing.visible = false;
         const previewRevealSparkleGeometry = new THREE.BufferGeometry();
         const previewRevealSparkleCount = 28;
         const previewRevealSparklePositions = new Float32Array(previewRevealSparkleCount * 3);
@@ -12392,23 +12696,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             })
         });
         const LEGENDARY_STORM_CONFIG = Object.freeze({
-            audioLeadInDuration: 0.78,
-            reducedMotionAudioLeadInDuration: 0.42,
-            lightweightAudioLeadInDuration: 0.52,
-            preStrikeHoldDuration: 1.2,
-            reducedMotionPreStrikeHoldDuration: 0.55,
-            lightweightPreStrikeHoldDuration: 0.82,
-            introStrikeWhiteoutDuration: 0.74,
-            reducedMotionIntroStrikeWhiteoutDuration: 0.42,
-            lightweightIntroStrikeWhiteoutDuration: 0.5,
+            audioLeadInDuration: 2,
+            reducedMotionAudioLeadInDuration: 2,
+            lightweightAudioLeadInDuration: 2,
+            preStrikeHoldDuration: 3.82,
+            reducedMotionPreStrikeHoldDuration: 2.72,
+            lightweightPreStrikeHoldDuration: 3.18,
+            introStrikeWhiteoutDuration: 0.88,
+            reducedMotionIntroStrikeWhiteoutDuration: 0.5,
+            lightweightIntroStrikeWhiteoutDuration: 0.62,
             cutsceneFallbackDuration: 11.6,
-            landingStrikeAfterglowDuration: 0.9,
-            reducedMotionLandingStrikeAfterglowDuration: 0.48,
-            lightweightLandingStrikeAfterglowDuration: 0.58,
-            restoreRevealDuration: 0.96,
-            reducedMotionRestoreRevealDuration: 0.46,
-            lightweightRestoreRevealDuration: 0.62,
-            backgroundAudioFadeOutMs: 760,
+            landingStrikeAfterglowDuration: 1.02,
+            reducedMotionLandingStrikeAfterglowDuration: 0.54,
+            lightweightLandingStrikeAfterglowDuration: 0.68,
+            restoreRevealDuration: 1.08,
+            reducedMotionRestoreRevealDuration: 0.52,
+            lightweightRestoreRevealDuration: 0.72,
+            backgroundAudioFadeOutMs: 920,
             backgroundAudioFadeInMs: 1480,
             cutsceneAudioFadeInMs: 560,
             lightweightCutsceneAudioFadeInMs: 320,
@@ -12846,11 +13150,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             whiteout: 0,
             cloudShiftPx: 0,
             cloudShiftAltPx: 0,
+            nightfallProgress: 0,
             lightningMix: 0,
             boltOpacity: 0,
             seed: 0,
             videoVisible: false,
             videoOpacity: 0,
+            videoFrameReady: false,
             videoEnded: false,
             videoFailed: false,
             savedWorldVisible: false,
@@ -12980,11 +13286,21 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     legendaryStormState.flash > 0.001 ||
                     legendaryStormState.whiteout > 0.001 ||
                     legendaryStormState.darkness > 0.001 ||
-                    legendaryStormState.mist > 0.001
+                    legendaryStormState.mist > 0.001 ||
+                    legendaryStormState.nightfallProgress > 0.001
                 )
             );
             document.body.classList.toggle('legendary-storm-active', isActive);
             document.body.classList.toggle('legendary-storm-lite', Boolean(isActive && legendaryStormState.lightweightMode));
+            document.body.classList.toggle(
+                'legendary-cutscene-playing',
+                Boolean(
+                    legendaryStormState.active &&
+                    legendaryStormState.phase === 'videoPlayback' &&
+                    legendaryStormState.videoFrameReady &&
+                    !legendaryStormState.videoFailed
+                )
+            );
             if (legendaryStormOverlay) {
                 legendaryStormOverlay.classList.toggle('active', isActive);
             }
@@ -13014,6 +13330,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             rootStyle.setProperty('--legendary-storm-whiteout', (legendaryStormState.whiteout || 0).toFixed(3));
             rootStyle.setProperty('--legendary-storm-cloud-shift', `${(legendaryStormState.cloudShiftPx || 0).toFixed(1)}px`);
             rootStyle.setProperty('--legendary-storm-cloud-shift-alt', `${(legendaryStormState.cloudShiftAltPx || 0).toFixed(1)}px`);
+            rootStyle.setProperty('--legendary-storm-nightfall-progress', (legendaryStormState.nightfallProgress || 0).toFixed(3));
             rootStyle.setProperty('--legendary-storm-bolt-opacity', (legendaryStormState.boltOpacity || 0).toFixed(3));
             if (legendaryStormOverlay) {
                 legendaryStormOverlay.style.setProperty('--legendary-storm-strike-x', `${strikeX.toFixed(2)}%`);
@@ -13034,10 +13351,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 return;
             }
             const presented = Boolean(legendaryStormState.videoVisible || legendaryStormState.videoOpacity > 0.001);
+            const effectiveOpacity = presented && legendaryStormState.videoFrameReady
+                ? THREE.MathUtils.clamp(legendaryStormState.videoOpacity || 0, 0, 1)
+                : 0;
             legendaryCutsceneVideo.classList.toggle('active', presented);
-            legendaryCutsceneVideo.style.opacity = presented
-                ? THREE.MathUtils.clamp(legendaryStormState.videoOpacity || 0, 0, 1).toFixed(3)
-                : '0';
+            legendaryCutsceneVideo.style.opacity = effectiveOpacity.toFixed(3);
         }
 
         function stopLegendaryCutsceneVideoPlayback({ resetTime = true } = {}) {
@@ -13045,6 +13363,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             if (!legendaryCutsceneVideo) {
                 legendaryStormState.videoVisible = false;
                 legendaryStormState.videoOpacity = 0;
+                legendaryStormState.videoFrameReady = false;
                 return;
             }
             try {
@@ -13057,6 +13376,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
             legendaryStormState.videoVisible = false;
             legendaryStormState.videoOpacity = 0;
+            legendaryStormState.videoFrameReady = false;
             syncLegendaryCutsceneVideoVisuals();
         }
 
@@ -13069,6 +13389,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormState.videoFailed = false;
             legendaryStormState.videoVisible = true;
             legendaryStormState.videoOpacity = THREE.MathUtils.clamp(initialOpacity, 0, 1);
+            legendaryStormState.videoFrameReady = false;
             syncLegendaryCutsceneVideoVisuals();
             try {
                 legendaryCutsceneVideo.pause();
@@ -13082,28 +13403,25 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryCutsceneVideo.muted = true;
             legendaryCutsceneVideo.defaultMuted = true;
             legendaryCutsceneVideo.volume = 0;
-            const beginAudioFadeIn = () => {
-                if (!legendaryStormState.active || legendaryStormState.videoFailed) {
-                    return;
-                }
-                startLegendaryCutsceneAudioFadeIn();
-            };
+            legendaryStormState.videoFrameReady =
+                legendaryCutsceneVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+            syncLegendaryCutsceneVideoVisuals();
+            startLegendaryCutsceneAudioFadeIn();
             const playAttempt = legendaryCutsceneVideo.play();
+            startLegendarySummonMusicSyncPlayback();
             if (playAttempt && typeof playAttempt.then === 'function') {
                 playAttempt
-                    .then(() => {
-                        beginAudioFadeIn();
-                    })
                     .catch(() => {
                         legendaryStormState.videoFailed = true;
                         legendaryStormState.videoVisible = false;
                         legendaryStormState.videoOpacity = 0;
+                        legendaryStormState.videoFrameReady = false;
                         stopLegendaryCutsceneAudioImmediately();
+                        resetLegendarySummonMusicSession({ releaseAudio: true });
                         syncLegendaryCutsceneVideoVisuals();
                     });
                 return;
             }
-            beginAudioFadeIn();
         }
 
         function setLegendaryGrassRevealVisible(visible) {
@@ -13164,8 +13482,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormSkyLight.color.setHex(theme.skyLightColor);
             legendaryStormSkyLight.intensity = stormMix * (theme.skyLightIntensity + flashMix * 2.1);
             legendaryStormStrikeLight.color.setHex(theme.strikeColor);
-            legendaryStormStrikeLight.intensity = stormMix > 0.001 ? (stormMix * 0.16 + flashMix * theme.strikeIntensity * 1.24) : 0;
-            legendaryStormStrikeLight.distance = 12 + stormMix * 12 + flashMix * 18;
+            legendaryStormStrikeLight.intensity = 0;
+            legendaryStormStrikeLight.distance = 0;
             legendaryStormStrikeLight.position.copy(legendaryStormState.target);
             legendaryStormStrikeLight.position.y += 7.4 + stormMix * 4.4;
             legendaryStormStrikeLight.position.z += 1.8;
@@ -13215,14 +13533,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormState.whiteout = 0;
             legendaryStormState.cloudShiftPx = 0;
             legendaryStormState.cloudShiftAltPx = 0;
+            legendaryStormState.nightfallProgress = 0;
             legendaryStormState.lightningMix = 0;
             legendaryStormState.boltOpacity = 0;
             legendaryStormState.seed = 0;
+            legendaryStormState.videoFrameReady = false;
             legendaryStormState.videoEnded = false;
             legendaryStormState.videoFailed = false;
             legendaryStormState.savedRouteGain = 1;
             restoreHomePageDayLighting();
             stopLegendaryCutsceneVideoPlayback();
+            if (
+                !legendarySummonMusicState.restorePendingAfterPreview &&
+                !legendarySummonMusicState.restoreInProgress &&
+                !legendarySummonMusicState.leadInTriggered
+            ) {
+                resetLegendarySummonMusicSession({ releaseAudio: true });
+            }
             legendaryStormState.target.set(0, 0, 0);
             syncLegendaryStormOverlayVisuals();
         }
@@ -13247,7 +13574,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
             requestMysteryFlightReturn();
             unlockMysteryInteractionsNow();
-            restoreHomePageAudioAfterLegendaryCutscene({ immediate: true });
+            resetLegendarySummonMusicSession({ releaseAudio: true });
+            restoreHomePageAudioAfterLegendaryCutscene({ immediate: true, force: true });
             resumeBackgroundPlaybackIfActive();
             resetLegendaryStormCinematic();
         }
@@ -13278,11 +13606,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormState.whiteout = 0;
             legendaryStormState.cloudShiftPx = 0;
             legendaryStormState.cloudShiftAltPx = 0;
+            legendaryStormState.nightfallProgress = 0;
             legendaryStormState.lightningMix = 0;
             legendaryStormState.boltOpacity = 0;
             legendaryStormState.seed = Math.random() * Math.PI * 2;
             legendaryStormState.videoVisible = false;
             legendaryStormState.videoOpacity = 0;
+            legendaryStormState.videoFrameReady = false;
             legendaryStormState.videoEnded = false;
             legendaryStormState.videoFailed = false;
             legendaryStormState.savedWorldVisible = Boolean(worldGroup.visible);
@@ -13290,6 +13620,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
             setLegendaryGrassRevealVisible(false);
             stopLegendaryCutsceneVideoPlayback();
+            prepareLegendarySummonMusicForCurrentCinematic();
+            legendarySummonMusicState.savedRouteGain = legendaryStormState.savedRouteGain;
             legendaryStormState.target.copy(spawnContext.landingTarget);
             fadeOutHomePageAudioForLegendaryCutscene();
             lockMysteryInteractions((legendaryStormState.timings.totalDuration * 1000) + LEGENDARY_STORM_CONFIG.interactionBufferMs);
@@ -13329,17 +13661,15 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
             if (storm.phase === 'audioLeadIn') {
                 const duration = timings.audioLeadIn;
-                const progress = clamp01(storm.phaseTime / duration);
-                const eased = smooth01(progress);
-                const simmer = clusteredPulse(storm.totalTime * 0.42 + duration, storm.seed, true) * (storm.reducedMotion ? 0.02 : 0.05);
-                storm.environmentMix = THREE.MathUtils.clamp(0.14 + eased * 0.7, 0, 1);
-                storm.darkness = THREE.MathUtils.lerp(0.16, 0.78, eased);
-                storm.mist = THREE.MathUtils.lerp(0.03, 0.18, eased);
-                storm.flash = simmer;
+                storm.environmentMix = 0;
+                storm.darkness = 0;
+                storm.mist = 0;
+                storm.flash = 0;
                 storm.whiteout = 0;
-                storm.lightningMix = simmer * 0.28;
-                storm.cloudShiftPx = storm.totalTime * (fastDrift * 0.82);
-                storm.cloudShiftAltPx = storm.totalTime * (slowDrift * 0.62);
+                storm.nightfallProgress = 0;
+                storm.lightningMix = 0;
+                storm.cloudShiftPx = 0;
+                storm.cloudShiftAltPx = 0;
                 storm.boltOpacity = 0;
                 if (storm.phaseTime >= duration) {
                     storm.phase = 'preStrikeHold';
@@ -13349,15 +13679,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 const duration = timings.preStrikeHold;
                 const progress = clamp01(storm.phaseTime / duration);
                 const eased = smooth01(progress);
-                const simmer = clusteredPulse(storm.totalTime * 0.56 + duration * 0.4, storm.seed, storm.reducedMotion) * (storm.reducedMotion ? 0.016 : 0.038);
-                storm.environmentMix = THREE.MathUtils.lerp(0.8, 0.96, eased);
-                storm.darkness = THREE.MathUtils.lerp(0.8, 0.94, eased);
-                storm.mist = THREE.MathUtils.lerp(0.16, 0.26, eased);
-                storm.flash = simmer;
+                const sweepProgress = THREE.MathUtils.lerp(0, 0.58, eased);
+                storm.environmentMix = THREE.MathUtils.lerp(0.04, 0.72, eased);
+                storm.darkness = THREE.MathUtils.lerp(0.08, 0.82, eased);
+                storm.mist = THREE.MathUtils.lerp(0.01, 0.18, eased);
+                storm.flash = 0;
                 storm.whiteout = 0;
-                storm.lightningMix = simmer * 0.36;
-                storm.cloudShiftPx = storm.totalTime * fastDrift + Math.sin(storm.totalTime * 1.8 + storm.seed) * 6;
-                storm.cloudShiftAltPx = storm.totalTime * slowDrift + Math.cos(storm.totalTime * 1.2 + storm.seed * 0.8) * 8;
+                storm.nightfallProgress = sweepProgress;
+                storm.lightningMix = 0;
+                storm.cloudShiftPx = storm.totalTime * fastDrift * (0.34 + eased * 0.18) + Math.sin(storm.totalTime * 0.7 + storm.seed) * (1.8 + eased * 1.4);
+                storm.cloudShiftAltPx = storm.totalTime * slowDrift * (0.26 + eased * 0.12) + Math.cos(storm.totalTime * 0.62 + storm.seed * 0.8) * (2.6 + eased * 1.6);
                 storm.boltOpacity = 0;
                 if (storm.phaseTime >= duration) {
                     storm.phase = 'introStrikeWhiteout';
@@ -13376,13 +13707,14 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 const whiteout = progress < 0.16
                     ? smooth01(progress / 0.16)
                     : 1 - smooth01((progress - 0.16) / 0.84);
-                const videoCrossfadeStart = storm.reducedMotion ? 0.3 : 0.26;
+                const videoCrossfadeStart = storm.reducedMotion ? 0.3 : storm.lightweightMode ? 0.34 : 0.38;
                 const videoCrossfade = clamp01((progress - videoCrossfadeStart) / (1 - videoCrossfadeStart));
                 storm.environmentMix = THREE.MathUtils.lerp(0.96, 0.08, eased);
                 storm.darkness = THREE.MathUtils.lerp(0.94, 0.06, eased);
                 storm.mist = THREE.MathUtils.lerp(0.24, 0.02, eased);
                 storm.flash = clamp01(strikePulse * 1.18 + (1 - progress) * 0.12);
                 storm.whiteout = clamp01(whiteout);
+                storm.nightfallProgress = THREE.MathUtils.lerp(0.58, 1, eased);
                 storm.lightningMix = clamp01(strikePulse * 1.08 + whiteout * 0.36);
                 storm.cloudShiftPx = storm.totalTime * fastDrift * 1.08;
                 storm.cloudShiftAltPx = storm.totalTime * slowDrift * 0.84;
@@ -13394,6 +13726,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     storm.mist = 0;
                     storm.flash = 0;
                     storm.whiteout = 0;
+                    storm.nightfallProgress = 1;
                     storm.lightningMix = 0;
                     storm.boltOpacity = 0;
                     if (storm.videoFailed) {
@@ -13405,13 +13738,19 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     storm.phaseTime = 0;
                 }
             } else if (storm.phase === 'videoPlayback') {
+                const overlayFadeProgress = storm.videoFrameReady
+                    ? smooth01(clamp01(storm.phaseTime / (storm.lightweightMode ? 0.12 : 0.18)))
+                    : 0;
                 storm.environmentMix = 0;
-                storm.darkness = 0;
+                storm.darkness = THREE.MathUtils.lerp(0.08, 0, overlayFadeProgress);
                 storm.mist = 0;
                 storm.flash = 0;
                 storm.whiteout = 0;
+                storm.nightfallProgress = THREE.MathUtils.lerp(1, 0, overlayFadeProgress);
                 storm.lightningMix = 0;
                 storm.boltOpacity = 0;
+                storm.cloudShiftPx = 0;
+                storm.cloudShiftAltPx = 0;
                 storm.videoOpacity = storm.videoFailed ? 0 : 1;
                 if (storm.videoEnded || storm.videoFailed || storm.phaseTime >= timings.videoPlayback) {
                     if (legendaryCutsceneVideo) {
@@ -13439,6 +13778,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 storm.mist = THREE.MathUtils.lerp(0.12, 0.04, eased);
                 storm.flash = clamp01(strikePulse * 1.12 + whiteout * 0.18);
                 storm.whiteout = clamp01(whiteout);
+                storm.nightfallProgress = THREE.MathUtils.lerp(1, 0.34, eased);
                 storm.lightningMix = clamp01(strikePulse * 1.06 + whiteout * 0.28);
                 storm.boltOpacity = clamp01(strikePulse * 1.18 + (1 - progress) * 0.14);
                 storm.cloudShiftPx = storm.totalTime * fastDrift * 0.4;
@@ -13447,7 +13787,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 if (storm.phaseTime >= duration) {
                     spawnLegendaryStormLandingBoxIfNeeded({ playLandingSfx: !storm.videoFailed });
                     stopLegendaryCutsceneVideoPlayback();
-                    restoreHomePageAudioAfterLegendaryCutscene();
+                    restoreHomePageAudioAfterLegendaryCutscene({ force: false });
                     resumeBackgroundPlaybackIfActive();
                     storm.phase = 'restoreReveal';
                     storm.phaseTime = 0;
@@ -13461,6 +13801,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 storm.mist = THREE.MathUtils.lerp(0.04, 0, eased);
                 storm.flash = 0;
                 storm.whiteout = 0;
+                storm.nightfallProgress = THREE.MathUtils.lerp(0.34, 0, eased);
                 storm.lightningMix = THREE.MathUtils.lerp(0.04, 0, eased);
                 storm.boltOpacity = THREE.MathUtils.lerp(0.03, 0, eased);
                 storm.cloudShiftPx = THREE.MathUtils.lerp(storm.cloudShiftPx, 0, eased);
@@ -21636,6 +21977,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 propPreviewTitle.textContent = 'Prop Viewer';
             }
             updateMysteryPreviewActionLabels();
+            if (wasPanelOpen) {
+                restoreHomePageAudioAfterLegendarySummonPreview({ immediate: false });
+            }
 
             if (wasPanelOpen && mysterySignNeedsReturn) {
                 mysterySignReturnPendingAfterPanelClose = true;

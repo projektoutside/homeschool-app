@@ -35,6 +35,8 @@ const SINGLE_PLAYER_GAME_IDS = new Set<string>([
     'math-car-king',
     'math-analog-clock-game-v2',
     'math-farmers-market-frenzy',
+    'states-champion',
+    'cage-pet-rescue',
 ]);
 
 const MULTIPLAYER_GAME_IDS = new Set<string>([
