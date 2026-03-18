@@ -39,7 +39,7 @@ const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT
 const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
 const HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX = 'homepage-daily-lunchbox';
-const HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION = 1;
+const HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION = 2;
 const HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS = 10 * 1000;
 const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
@@ -79,6 +79,27 @@ const buildDailyLunchboxClaimStorageKey = (userId: string): string => {
   return `lahs.homepage-daily-lunchbox.v${HOME_PAGE_DAILY_LUNCHBOX_STORAGE_VERSION}:${userId}`;
 };
 
+const normalizeDailyLunchboxClaimExpiresAt = (
+  expiresAt: number | null | undefined,
+  nowMs = Date.now(),
+): number | null => {
+  if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt) || expiresAt <= 0) {
+    return null;
+  }
+
+  if (expiresAt <= nowMs) {
+    return null;
+  }
+
+  const remainingMs = expiresAt - nowMs;
+  const maxAllowedRemainingMs = HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS * 2;
+  if (remainingMs > maxAllowedRemainingMs) {
+    return null;
+  }
+
+  return expiresAt;
+};
+
 const readDailyLunchboxClaimExpiresAt = (userId: string | null | undefined): number | null => {
   if (typeof window === 'undefined' || !userId) {
     return null;
@@ -90,7 +111,7 @@ const readDailyLunchboxClaimExpiresAt = (userId: string | null | undefined): num
       return null;
     }
     const parsedValue = Number(storedValue);
-    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+    return normalizeDailyLunchboxClaimExpiresAt(parsedValue);
   } catch {
     return null;
   }
@@ -184,10 +205,13 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       return null;
     }
     if (Object.prototype.hasOwnProperty.call(dailyLunchboxClaimExpiresAtByUser, currentUserId)) {
-      return dailyLunchboxClaimExpiresAtByUser[currentUserId] ?? null;
+      return normalizeDailyLunchboxClaimExpiresAt(
+        dailyLunchboxClaimExpiresAtByUser[currentUserId] ?? null,
+        dailyLunchboxClockTick,
+      );
     }
     return readDailyLunchboxClaimExpiresAt(currentUserId);
-  }, [currentUserId, dailyLunchboxClaimExpiresAtByUser]);
+  }, [currentUserId, dailyLunchboxClaimExpiresAtByUser, dailyLunchboxClockTick]);
   const dailyLunchboxClaimed = useMemo(() => {
     if (!dailyLunchboxClaimExpiresAt) {
       return false;
