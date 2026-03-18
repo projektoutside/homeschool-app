@@ -47,6 +47,13 @@
             --btn-border: rgba(203, 213, 225, 0.35);
             --accent: var(--app-accent);
             --panel-shadow: var(--app-shadow);
+            --legendary-storm-environment-mix: 0;
+            --legendary-storm-darkness: 0;
+            --legendary-storm-mist: 0;
+            --legendary-storm-flash: 0;
+            --legendary-storm-cloud-shift: 0px;
+            --legendary-storm-cloud-shift-alt: 0px;
+            --legendary-storm-bolt-opacity: 0;
         }
 
         body,
@@ -97,6 +104,24 @@
             filter: saturate(1.1) contrast(1.06) brightness(0.92);
         }
 
+        #legendary-cutscene-video {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            z-index: 88;
+            opacity: 0;
+            visibility: hidden;
+            background: #000;
+            transition: opacity 260ms ease, visibility 0s linear 260ms;
+        }
+
+        #legendary-cutscene-video.active {
+            visibility: visible;
+        }
+
         body.bg-use-fallback #gif-background {
             opacity: 0;
         }
@@ -113,6 +138,176 @@
             background:
                 radial-gradient(120% 78% at 50% 62%, rgba(126, 225, 255, 0.08) 0%, rgba(0, 0, 0, 0) 58%),
                 linear-gradient(180deg, rgba(2, 21, 42, 0.06) 0%, rgba(8, 19, 16, 0.03) 40%, rgba(5, 24, 15, 0.1) 100%);
+        }
+
+        #legendary-storm-overlay {
+            position: fixed;
+            inset: -10vmax;
+            z-index: 90;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            overflow: hidden;
+            transition: opacity 140ms linear, visibility 0s linear 140ms;
+            --legendary-storm-strike-x: 50%;
+            --legendary-storm-strike-y: 64%;
+            --legendary-storm-accent-a: rgba(240, 248, 255, 0.92);
+            --legendary-storm-accent-b: rgba(148, 223, 255, 0.84);
+            --legendary-storm-cloud-color: rgba(18, 31, 52, 0.92);
+            --legendary-storm-mist-color: rgba(210, 228, 248, 0.66);
+            --legendary-storm-veil-start: rgba(3, 7, 16, 0.14);
+            --legendary-storm-veil-end: rgba(3, 8, 20, 0.9);
+            --legendary-storm-whiteout: 0;
+        }
+
+        #legendary-storm-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 80ms linear;
+        }
+
+        #legendary-storm-overlay>div {
+            position: absolute;
+            inset: 0;
+        }
+
+        #legendary-storm-overlay .legendary-storm-veil {
+            background:
+                radial-gradient(126% 92% at 50% 58%, rgba(8, 15, 28, 0) 0%, rgba(8, 14, 24, calc(0.18 + var(--legendary-storm-darkness) * 0.14)) 46%, rgba(4, 8, 18, calc(0.48 + var(--legendary-storm-darkness) * 0.44)) 100%),
+                linear-gradient(180deg, var(--legendary-storm-veil-start) 0%, var(--legendary-storm-veil-end) 100%);
+            opacity: calc(0.12 + var(--legendary-storm-darkness) * 0.88);
+        }
+
+        #legendary-storm-overlay .legendary-storm-clouds {
+            opacity: calc(0.1 + var(--legendary-storm-darkness) * 0.8 + var(--legendary-storm-flash) * 0.04);
+        }
+
+        #legendary-storm-overlay .legendary-storm-clouds-back {
+            background:
+                radial-gradient(42% 16% at 10% 8%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(48% 18% at 34% 6%, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(44% 18% at 70% 10%, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(40% 16% at 94% 8%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(112% 54% at 50% -14%, rgba(6, 10, 17, 0.98) 8%, var(--legendary-storm-cloud-color) 34%, rgba(7, 12, 20, 0.9) 56%, rgba(7, 12, 20, 0.2) 82%, rgba(7, 12, 20, 0) 100%),
+                linear-gradient(180deg, rgba(2, 4, 10, 0.96) 0%, rgba(4, 7, 14, 0.72) 20%, rgba(5, 8, 16, 0.24) 48%, rgba(0, 0, 0, 0) 76%);
+            transform: translate3d(calc(var(--legendary-storm-cloud-shift) * -1), calc((1 - var(--legendary-storm-environment-mix)) * -18vh - var(--legendary-storm-flash) * 2vh), 0) scale(1.14);
+            filter: blur(30px) saturate(0.62) brightness(0.6);
+        }
+
+        #legendary-storm-overlay .legendary-storm-clouds-front {
+            background:
+                radial-gradient(40% 18% at 18% 18%, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(44% 18% at 50% 14%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(42% 18% at 84% 22%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(86% 42% at 50% 2%, rgba(6, 8, 14, 0.98) 0%, rgba(8, 12, 20, 0.92) 44%, rgba(8, 12, 20, 0.12) 86%, rgba(8, 12, 20, 0) 100%),
+                linear-gradient(180deg, rgba(3, 5, 10, 0.88) 0%, rgba(4, 7, 14, 0.58) 28%, rgba(4, 7, 14, 0.16) 56%, rgba(4, 7, 14, 0) 82%);
+            opacity: calc(0.12 + var(--legendary-storm-darkness) * 0.88 + var(--legendary-storm-flash) * 0.05);
+            transform: translate3d(var(--legendary-storm-cloud-shift-alt), calc((1 - var(--legendary-storm-environment-mix)) * -12vh - var(--legendary-storm-flash) * 1.4vh), 0) scale(1.2);
+            filter: blur(38px) saturate(0.66) brightness(0.56);
+        }
+
+        #legendary-storm-overlay .legendary-storm-mist {
+            mix-blend-mode: screen;
+            opacity: calc(var(--legendary-storm-mist) * 0.9);
+        }
+
+        #legendary-storm-overlay .legendary-storm-mist-a {
+            background:
+                radial-gradient(88% 44% at 50% 96%, var(--legendary-storm-mist-color) 0%, rgba(255, 255, 255, 0) 70%),
+                radial-gradient(42% 24% at 18% 86%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(38% 22% at 84% 82%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 74%);
+            transform: translate3d(calc(var(--legendary-storm-cloud-shift) * -0.18), calc(var(--legendary-storm-mist) * -12px), 0) scale(1.08);
+            filter: blur(20px);
+        }
+
+        #legendary-storm-overlay .legendary-storm-mist-b {
+            background:
+                radial-gradient(92% 32% at 50% 72%, rgba(228, 239, 255, 0.36) 0%, rgba(255, 255, 255, 0) 70%),
+                radial-gradient(34% 22% at 22% 66%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(30% 20% at 82% 62%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 72%);
+            transform: translate3d(calc(var(--legendary-storm-cloud-shift-alt) * 0.18), calc(var(--legendary-storm-mist) * -20px), 0) scale(1.16);
+            filter: blur(30px);
+        }
+
+        #legendary-storm-overlay .legendary-storm-bolt {
+            top: -18%;
+            bottom: 8%;
+            left: calc(var(--legendary-storm-strike-x) - clamp(22px, 1.9vw, 34px));
+            width: clamp(42px, 3.1vw, 66px);
+            opacity: calc(var(--legendary-storm-bolt-opacity) * 0.94 + var(--legendary-storm-flash) * 0.22);
+            background:
+                radial-gradient(circle at 50% calc(var(--legendary-storm-strike-y) - 6%), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.98) 6%, rgba(255, 255, 255, 0.18) 16%, rgba(255, 255, 255, 0) 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.96) 8%, rgba(255, 255, 255, 0.16) 14%, rgba(255, 255, 255, 0.9) 24%, rgba(255, 255, 255, 0.1) 30%, rgba(255, 255, 255, 0.86) 40%, rgba(255, 255, 255, 0.1) 47%, rgba(255, 255, 255, 0.82) 58%, rgba(255, 255, 255, 0.08) 64%, rgba(255, 255, 255, 0.78) 76%, rgba(255, 255, 255, 0.05) 84%, rgba(255, 255, 255, 0) 100%);
+            clip-path: polygon(48% 0, 62% 10%, 52% 18%, 66% 26%, 50% 35%, 62% 46%, 44% 58%, 56% 70%, 40% 82%, 52% 100%, 34% 100%, 42% 84%, 30% 70%, 40% 58%, 28% 44%, 40% 34%, 32% 22%, 44% 10%, 38% 0);
+            filter:
+                blur(0.6px)
+                drop-shadow(0 0 22px rgba(255, 255, 255, 0.94))
+                drop-shadow(0 0 48px var(--legendary-storm-accent-b))
+                drop-shadow(0 0 78px rgba(255, 255, 255, 0.42));
+            mix-blend-mode: screen;
+            transform: translate3d(0, calc(var(--legendary-storm-mist) * -14px), 0);
+        }
+
+        #legendary-storm-overlay .legendary-storm-bolt::before,
+        #legendary-storm-overlay .legendary-storm-bolt::after {
+            content: "";
+            position: absolute;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        #legendary-storm-overlay .legendary-storm-bolt::before {
+            top: -3%;
+            bottom: 0;
+            left: 38%;
+            width: 24%;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 8%, rgba(255, 255, 255, 0.26) 16%, rgba(255, 255, 255, 0.96) 30%, rgba(255, 255, 255, 0.18) 40%, rgba(255, 255, 255, 0.88) 56%, rgba(255, 255, 255, 0.12) 68%, rgba(255, 255, 255, 0.78) 86%, rgba(255, 255, 255, 0) 100%);
+            clip-path: polygon(52% 0, 72% 14%, 58% 26%, 70% 40%, 46% 56%, 60% 72%, 40% 88%, 52% 100%, 30% 100%, 42% 84%, 34% 68%, 48% 54%, 36% 38%, 50% 24%, 42% 0);
+            filter:
+                blur(0.3px)
+                drop-shadow(0 0 14px rgba(255, 255, 255, 1));
+            opacity: calc(var(--legendary-storm-bolt-opacity) * 1.2 + var(--legendary-storm-flash) * 0.18);
+        }
+
+        #legendary-storm-overlay .legendary-storm-bolt::after {
+            top: 18%;
+            bottom: 8%;
+            left: 10%;
+            width: 82%;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 18%, rgba(255, 255, 255, 0.12) 28%, rgba(255, 255, 255, 0.74) 46%, rgba(255, 255, 255, 0.08) 56%, rgba(255, 255, 255, 0.62) 72%, rgba(255, 255, 255, 0) 100%);
+            clip-path: polygon(58% 0, 76% 14%, 54% 18%, 70% 30%, 40% 40%, 66% 54%, 34% 62%, 58% 76%, 26% 88%, 46% 100%, 20% 100%, 34% 84%, 16% 70%, 40% 58%, 20% 42%, 46% 28%, 34% 12%, 54% 0);
+            transform: translate3d(-10%, 0, 0) rotate(-8deg) scale(1.02);
+            filter:
+                blur(1.4px)
+                drop-shadow(0 0 28px var(--legendary-storm-accent-b));
+            opacity: calc(var(--legendary-storm-bolt-opacity) * 0.44 + var(--legendary-storm-flash) * 0.1);
+        }
+
+        #legendary-storm-overlay .legendary-storm-flash {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, calc(var(--legendary-storm-whiteout) * 0.98)) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-whiteout) * 0.92)) 100%),
+                radial-gradient(circle at var(--legendary-storm-strike-x) var(--legendary-storm-strike-y), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.98) 4%, var(--legendary-storm-accent-b) 11%, rgba(255, 255, 255, 0.22) 22%, rgba(255, 255, 255, 0) 42%),
+                radial-gradient(58% 24% at var(--legendary-storm-strike-x) calc(var(--legendary-storm-strike-y) + 8%), rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.82)) 0%, rgba(255, 255, 255, 0.08) 44%, rgba(255, 255, 255, 0) 76%),
+                linear-gradient(180deg, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 1.08)) 0%, rgba(255, 255, 255, calc(var(--legendary-storm-flash) * 0.58)) 22%, var(--legendary-storm-accent-a) 52%, rgba(255, 255, 255, 0) 100%);
+            mix-blend-mode: screen;
+            filter: blur(6px) saturate(1.18);
+        }
+
+        body.legendary-storm-active #gif-background,
+        body.legendary-storm-active #gif-background-fallback {
+            filter:
+                saturate(calc(1.05 - var(--legendary-storm-environment-mix) * 0.26))
+                contrast(calc(1.06 + var(--legendary-storm-environment-mix) * 0.12))
+                brightness(calc(0.92 - var(--legendary-storm-environment-mix) * 0.48));
+        }
+
+        body.legendary-storm-active #gif-tint {
+            opacity: calc(0.3 + var(--legendary-storm-darkness) * 0.68);
+            background:
+                radial-gradient(130% 92% at 50% 62%, rgba(126, 225, 255, calc(0.02 + var(--legendary-storm-flash) * 0.2)) 0%, rgba(0, 0, 0, 0) 56%),
+                linear-gradient(180deg, rgba(2, 12, 26, calc(0.08 + var(--legendary-storm-darkness) * 0.24)) 0%, rgba(5, 14, 20, calc(0.04 + var(--legendary-storm-darkness) * 0.18)) 40%, rgba(3, 12, 16, calc(0.14 + var(--legendary-storm-darkness) * 0.44)) 100%);
         }
 
         #startup-fade-overlay {
@@ -715,6 +910,15 @@
             #mystery-points-popup {
                 transition: none;
             }
+
+            #legendary-storm-overlay {
+                transition: opacity 80ms linear, visibility 0s linear 80ms;
+            }
+
+            #legendary-cutscene-video {
+                transition: opacity 140ms linear, visibility 0s linear 140ms;
+            }
+
         }
 
         #mystery-hanging-sign-svg {
@@ -3459,8 +3663,20 @@
         <source src="./windy_scene_loop_school_still_hyperreal_clouds.webm" type="video/webm">
         <source src="./windy_scene_loop_school_still_hyperreal_clouds.mp4" type="video/mp4">
     </video>
+    <video id="legendary-cutscene-video" muted playsinline preload="auto" aria-hidden="true">
+        <source src="./LegendaryAnimationScene.mp4" type="video/mp4">
+    </video>
     <img id="gif-background-fallback" src="./windy_scene_loop_school_still_hyperreal_clouds_animated.webp" alt="" aria-hidden="true" decoding="async">
     <div id="gif-tint"></div>
+    <div id="legendary-storm-overlay" aria-hidden="true">
+        <div class="legendary-storm-veil"></div>
+        <div class="legendary-storm-clouds legendary-storm-clouds-back"></div>
+        <div class="legendary-storm-clouds legendary-storm-clouds-front"></div>
+        <div class="legendary-storm-mist legendary-storm-mist-a"></div>
+        <div class="legendary-storm-mist legendary-storm-mist-b"></div>
+        <div class="legendary-storm-bolt"></div>
+        <div class="legendary-storm-flash"></div>
+    </div>
     <div id="game-container"></div>
     <div id="mystery-test-status" aria-live="polite"></div>
     <section id="mystery-points-popup" aria-label="Mystery Box points notice" aria-hidden="true">
@@ -3685,6 +3901,10 @@
         let clearHomepageMysteryTestSession = () => {};
         let readHomepageMysteryTestOverride = () => null;
         let clearHomepageMysteryTestOverride = () => {};
+        let buildHomepagePendingSummonRecovery = (payload) => payload || null;
+        let readHomepagePendingSummonRecovery = () => null;
+        let persistHomepagePendingSummonRecovery = () => {};
+        let clearHomepagePendingSummonRecovery = () => {};
         let normalizeHomepagePropKey = (value) => (typeof value === 'string' ? value.trim() : '');
         let mysteryTestOverrideMatchesPropKey = () => false;
         let normalizeHomepageAttachment = (value) => value;
@@ -3707,6 +3927,10 @@
                 clearHomepageMysteryTestSession = liveCatalogModule.clearHomepageMysteryTestSession || (() => {});
                 readHomepageMysteryTestOverride = liveCatalogModule.readHomepageMysteryTestOverride || (() => null);
                 clearHomepageMysteryTestOverride = liveCatalogModule.clearHomepageMysteryTestOverride || (() => {});
+                buildHomepagePendingSummonRecovery = liveCatalogModule.buildHomepagePendingSummonRecovery || ((payload) => payload || null);
+                readHomepagePendingSummonRecovery = liveCatalogModule.readHomepagePendingSummonRecovery || (() => null);
+                persistHomepagePendingSummonRecovery = liveCatalogModule.persistHomepagePendingSummonRecovery || (() => {});
+                clearHomepagePendingSummonRecovery = liveCatalogModule.clearHomepagePendingSummonRecovery || (() => {});
                 normalizeHomepagePropKey = liveCatalogModule.normalizeHomepagePropKey || ((value) => (typeof value === 'string' ? value.trim() : ''));
                 mysteryTestOverrideMatchesPropKey = liveCatalogModule.mysteryTestOverrideMatchesPropKey || (() => false);
                 normalizeHomepageAttachment = liveCatalogModule.normalizeHomepageAttachment || ((value) => value);
@@ -3772,6 +3996,19 @@
         petRim.position.set(0, 2, -8);
         scene.add(petRim);
 
+        const legendaryStormSkyLight = new THREE.DirectionalLight(0xdbe7ff, 0);
+        legendaryStormSkyLight.position.set(-9, 19, -12);
+        scene.add(legendaryStormSkyLight);
+
+        const legendaryStormStrikeLight = new THREE.PointLight(0xffffff, 0, 0, 1.6);
+        legendaryStormStrikeLight.position.set(0, 6, -8);
+        scene.add(legendaryStormStrikeLight);
+
+        const legendaryStormFog = new THREE.FogExp2(0x101722, 0);
+        const legendaryStormColorScratchA = new THREE.Color();
+        const legendaryStormColorScratchB = new THREE.Color();
+        const legendaryStormScreenTarget = new THREE.Vector3();
+
         // --- BACKGROUND WORLD ---
         const worldGroup = new THREE.Group();
         scene.add(worldGroup);
@@ -3811,7 +4048,8 @@
             dome.position.y = 4;
             return dome;
         }
-        worldGroup.add(createSkyDome());
+        const skyDome = createSkyDome();
+        worldGroup.add(skyDome);
 
         function createSunSprite() {
             const canvas = document.createElement('canvas');
@@ -4070,6 +4308,25 @@
         });
         const pollen = new THREE.Points(pollenGeometry, pollenMaterial);
         scene.add(pollen);
+        const homePageDayLightingDefaults = Object.freeze({
+            ambientColor: ambientLight.color.clone(),
+            ambientIntensity: ambientLight.intensity,
+            hemiSkyColor: hemiLight.color.clone(),
+            hemiGroundColor: hemiLight.groundColor.clone(),
+            hemiIntensity: hemiLight.intensity,
+            sunColor: sunLight.color.clone(),
+            sunIntensity: sunLight.intensity,
+            fillColor: fillLight.color.clone(),
+            fillIntensity: fillLight.intensity,
+            petRimColor: petRim.color.clone(),
+            petRimIntensity: petRim.intensity,
+            toneMappingExposure: renderer.toneMappingExposure,
+            skyTopColor: skyDome.material.uniforms.topColor.value.clone(),
+            skyMidColor: skyDome.material.uniforms.midColor.value.clone(),
+            skyBottomColor: skyDome.material.uniforms.bottomColor.value.clone(),
+            cloudOpacities: cloudPlanes.map(({ mesh }) => mesh.material.opacity),
+            pollenOpacity: pollenMaterial.opacity
+        });
 
         function createSoftHaloSprite({ size = 10, inner = 'rgba(75, 225, 255, 0.42)', mid = 'rgba(65, 180, 255, 0.2)', outer = 'rgba(20, 90, 180, 0)' } = {}) {
             const glowCanvas = document.createElement('canvas');
@@ -8815,6 +9072,7 @@
         const characterCreatorQuickOpen = document.getElementById('character-creator-quick-open');
         const startupFadeOverlay = document.getElementById('startup-fade-overlay');
         const gifBackgroundVideo = document.getElementById('gif-background');
+        const legendaryCutsceneVideo = document.getElementById('legendary-cutscene-video');
         const gifBackgroundFallback = document.getElementById('gif-background-fallback');
         const backgroundMediaState = {
             retries: 0,
@@ -8836,6 +9094,7 @@
         const propPreviewOverlay = document.getElementById('prop-preview-overlay');
         const mysteryRevealStage = document.getElementById('mystery-reveal-stage');
         const mysteryRevealStill = document.getElementById('mystery-reveal-still');
+        const legendaryStormOverlay = document.getElementById('legendary-storm-overlay');
         const mysteryTestStatus = document.getElementById('mystery-test-status');
         const mysteryPointsPopup = document.getElementById('mystery-points-popup');
         const mysteryPointsPopupTitle = document.getElementById('mystery-points-popup-title');
@@ -8849,6 +9108,8 @@
         const HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT';
         const HOMEPAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUEST';
         const HOMEPAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
+        const HOMEPAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
+        const HOMEPAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
         const DAILY_LUNCHBOX_DEFAULT_POINTS = 100;
         const MYSTERY_PULL_COST_POINTS = 100;
         const MYSTERY_PULL_REQUEST_TIMEOUT_MS = 8000;
@@ -8872,6 +9133,15 @@
             requestId: null,
             timeoutId: null,
             resolve: null
+        };
+        const mysterySummonRecoveryState = {
+            record: null,
+            decisionRequired: false,
+            closePolicy: 'standard',
+            resumeQueued: false,
+            resumeInFlight: false,
+            lastResumeRequestId: null,
+            liveRequestId: null
         };
         const DAILY_LUNCHBOX_MIN_BOTTOM_OFFSET_PX = 96;
         const DAILY_LUNCHBOX_EXTRA_GAP_PX = 12;
@@ -8997,6 +9267,18 @@
             }
             updateHomepageHudMetrics();
 
+            if (Boolean(data.accepted)) {
+                mysterySummonRecoveryState.liveRequestId = requestId;
+                applyMysterySummonRecoveryRecord({
+                    requestId,
+                    costPoints: Math.max(1, normalizeHudMetricValue(data.costPoints) || MYSTERY_PULL_COST_POINTS),
+                    createdAt: new Date().toISOString(),
+                    status: 'pointsAccepted'
+                }, {
+                    notifyHost: false
+                });
+            }
+
             resolvePendingMysteryPullSpend({
                 accepted: Boolean(data.accepted),
                 reason: typeof data.reason === 'string' && data.reason.trim() ? data.reason.trim() : null,
@@ -9005,6 +9287,26 @@
                 costPoints: Math.max(1, normalizeHudMetricValue(data.costPoints) || MYSTERY_PULL_COST_POINTS),
                 requestId
             });
+        }
+
+        function handleMysterySummonRecoverySyncMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+
+            const data = event?.data;
+            if (!data || typeof data !== 'object' || data.type !== HOMEPAGE_SUMMON_RECOVERY_SYNC_MESSAGE) {
+                return;
+            }
+
+            const nextRecord = normalizeMysterySummonRecoveryRecord(data.payload || null);
+            applyMysterySummonRecoveryRecord(nextRecord, {
+                persistLocal: true,
+                notifyHost: false
+            });
+            if (shouldResumePendingMysterySummonRecovery(nextRecord)) {
+                queueMysterySummonRecoveryResume(nextRecord);
+            }
         }
 
         function updateDailyLunchboxUi() {
@@ -9110,7 +9412,14 @@
         window.addEventListener('message', handleHomepagePointsBridgeMessage);
         window.addEventListener('message', handleDailyLunchboxClaimResultMessage);
         window.addEventListener('message', handleMysteryPullResultMessage);
+        window.addEventListener('message', handleMysterySummonRecoverySyncMessage);
         requestHomepageHudMetricsSync();
+        window.setTimeout(() => {
+            const initialPendingSummonRecovery = readHomepagePendingSummonRecovery();
+            if (window.parent === window && shouldResumePendingMysterySummonRecovery(initialPendingSummonRecovery)) {
+                queueMysterySummonRecoveryResume(initialPendingSummonRecovery);
+            }
+        }, 0);
 
         function setDailyLunchboxPopupOpen(isOpen) {
             if (!dailyLunchboxPopup || !dailyLunchboxBtn) {
@@ -9150,13 +9459,15 @@
 
         function requestMysteryPullSpend(costPoints = MYSTERY_PULL_COST_POINTS) {
             const normalizedCostPoints = Math.max(1, normalizeHudMetricValue(costPoints) || MYSTERY_PULL_COST_POINTS);
+            const requestId = buildMysteryPullRequestId();
             if (mysteryPullSpendState.pending) {
                 return Promise.resolve({
                     accepted: false,
                     reason: 'pending',
                     totalPoints: homepageHudMetricState.totalPoints,
                     stars: homepageHudMetricState.stars,
-                    costPoints: normalizedCostPoints
+                    costPoints: normalizedCostPoints,
+                    requestId
                 });
             }
 
@@ -9167,23 +9478,33 @@
                         reason: 'insufficient_points',
                         totalPoints: homepageHudMetricState.totalPoints,
                         stars: homepageHudMetricState.stars,
-                        costPoints: normalizedCostPoints
+                        costPoints: normalizedCostPoints,
+                        requestId
                     });
                 }
 
                 homepageHudMetricState.totalPoints = Math.max(0, homepageHudMetricState.totalPoints - normalizedCostPoints);
                 updateHomepageHudMetrics();
+                mysterySummonRecoveryState.liveRequestId = requestId;
+                applyMysterySummonRecoveryRecord({
+                    requestId,
+                    costPoints: normalizedCostPoints,
+                    createdAt: new Date().toISOString(),
+                    status: 'pointsAccepted'
+                }, {
+                    notifyHost: false
+                });
                 return Promise.resolve({
                     accepted: true,
                     reason: null,
                     totalPoints: homepageHudMetricState.totalPoints,
                     stars: homepageHudMetricState.stars,
-                    costPoints: normalizedCostPoints
+                    costPoints: normalizedCostPoints,
+                    requestId
                 });
             }
 
             return new Promise((resolve) => {
-                const requestId = buildMysteryPullRequestId();
                 mysteryPullSpendState.pending = true;
                 mysteryPullSpendState.requestId = requestId;
                 mysteryPullSpendState.resolve = resolve;
@@ -9456,6 +9777,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             equipPropAudio: null,
             pullActive: false,
             lastBoxShakeAtMs: -Infinity
+        };
+        const legendaryCutsceneAudioState = {
+            active: false,
+            gain: 0,
+            fadeToken: 0,
+            fadeRafId: null
         };
         const mysteryRewardOrderState = {
             loaded: false,
@@ -9758,6 +10085,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
         }
 
+        function clearLegendaryCutsceneAudioFadeAnimation() {
+            if (legendaryCutsceneAudioState.fadeRafId !== null) {
+                window.cancelAnimationFrame(legendaryCutsceneAudioState.fadeRafId);
+                legendaryCutsceneAudioState.fadeRafId = null;
+            }
+        }
+
         function applyGainToHomePageAudio(audio, gainFactor = 1) {
             if (!audio) return;
             const baseVolume = clampUnitVolume(homePageMusicState.musicVolume, 0.2);
@@ -9770,6 +10104,108 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         function applyHomePageMusicGain() {
             applyGainToHomePageAudio(homePageMusicState.activeAudio, homePageMusicState.activeGain);
             applyGainToHomePageAudio(homePageMusicState.queuedAudio, homePageMusicState.queuedGain);
+        }
+
+        function getLegendaryCutsceneAudioBaseVolume() {
+            const musicBase = clampUnitVolume(homePageMusicState.musicVolume, 0.2);
+            const sfxBase = clampUnitVolume(homePageMusicState.sfxVolume, 0.75);
+            return clampUnitVolume(Math.max(musicBase, sfxBase * 0.92), 1);
+        }
+
+        function applyLegendaryCutsceneAudioGain() {
+            if (!legendaryCutsceneVideo) return;
+            const shouldMute = !legendaryCutsceneAudioState.active || homePageMusicState.muted;
+            const gain = shouldMute ? 0 : clampUnitVolume(legendaryCutsceneAudioState.gain, 1);
+            legendaryCutsceneVideo.muted = shouldMute;
+            legendaryCutsceneVideo.defaultMuted = shouldMute;
+            legendaryCutsceneVideo.volume = shouldMute
+                ? 0
+                : clampUnitVolume(getLegendaryCutsceneAudioBaseVolume() * gain, 1);
+        }
+
+        function animateLegendaryCutsceneAudioGain(targetGain, durationMs) {
+            const target = clampUnitVolume(targetGain, targetGain > 0 ? 1 : 0);
+            const startGain = clampUnitVolume(legendaryCutsceneAudioState.gain, 1);
+            const delta = target - startGain;
+            clearLegendaryCutsceneAudioFadeAnimation();
+
+            if (Math.abs(delta) <= 0.0005 || durationMs <= 0) {
+                legendaryCutsceneAudioState.gain = target;
+                legendaryCutsceneAudioState.active = target > 0.001;
+                applyLegendaryCutsceneAudioGain();
+                return;
+            }
+
+            const token = legendaryCutsceneAudioState.fadeToken + 1;
+            legendaryCutsceneAudioState.fadeToken = token;
+            const startedAt = performance.now();
+            const fadeDuration = Math.max(80, Number(durationMs) || 0);
+
+            const step = () => {
+                if (token !== legendaryCutsceneAudioState.fadeToken) return;
+                const elapsed = performance.now() - startedAt;
+                const progress = Math.max(0, Math.min(1, elapsed / fadeDuration));
+                const eased = progress * progress * (3 - (2 * progress));
+                legendaryCutsceneAudioState.gain = startGain + (delta * eased);
+                applyLegendaryCutsceneAudioGain();
+
+                if (progress < 1) {
+                    legendaryCutsceneAudioState.fadeRafId = window.requestAnimationFrame(step);
+                    return;
+                }
+
+                legendaryCutsceneAudioState.gain = target;
+                legendaryCutsceneAudioState.active = target > 0.001;
+                legendaryCutsceneAudioState.fadeRafId = null;
+                applyLegendaryCutsceneAudioGain();
+            };
+
+            legendaryCutsceneAudioState.fadeRafId = window.requestAnimationFrame(step);
+        }
+
+        function startLegendaryCutsceneAudioFadeIn() {
+            legendaryCutsceneAudioState.active = true;
+            legendaryCutsceneAudioState.gain = 0;
+            applyLegendaryCutsceneAudioGain();
+            animateLegendaryCutsceneAudioGain(1, LEGENDARY_STORM_CONFIG.cutsceneAudioFadeInMs);
+        }
+
+        function stopLegendaryCutsceneAudioImmediately() {
+            clearLegendaryCutsceneAudioFadeAnimation();
+            legendaryCutsceneAudioState.fadeToken += 1;
+            legendaryCutsceneAudioState.active = false;
+            legendaryCutsceneAudioState.gain = 0;
+            applyLegendaryCutsceneAudioGain();
+        }
+
+        function fadeOutHomePageAudioForLegendaryCutscene() {
+            legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
+            clearScheduledHomePageMusicStart();
+            animateHomePageRouteGain(0, LEGENDARY_STORM_CONFIG.backgroundAudioFadeOutMs, { pauseAfter: true });
+        }
+
+        function restoreHomePageAudioAfterLegendaryCutscene({ immediate = false } = {}) {
+            const targetGain = clampUnitVolume(
+                Number.isFinite(legendaryStormState.savedRouteGain) ? legendaryStormState.savedRouteGain : 1,
+                1
+            );
+            if (!homePageRouteAudioState.isActive || document.visibilityState !== 'visible') {
+                homePageRouteAudioState.gain = targetGain;
+                applyHomePageMusicGain();
+                applyNatureSoundsGain();
+                return;
+            }
+            if (homePageMusicState.shouldPlay && !homePageMusicState.muted) {
+                attemptHomePageMusicPlayback({ fadeInMs: 0 });
+            }
+            if (natureSoundState.shouldPlay && !homePageMusicState.muted && !natureSoundState.muted) {
+                attemptNatureSoundsPlayback();
+            }
+            animateHomePageRouteGain(
+                targetGain,
+                immediate ? 0 : LEGENDARY_STORM_CONFIG.backgroundAudioFadeInMs,
+                { pauseAfter: false }
+            );
         }
 
         function ensureNatureSoundsAudio() {
@@ -10169,6 +10605,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyHomePageMusicGain();
             applyNatureSoundsGain();
             applyMysterySfxGain();
+            applyLegendaryCutsceneAudioGain();
             if (homePageMusicState.muted) {
                 pauseHomePageAudioImmediately();
                 return;
@@ -10190,11 +10627,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         function setMusicVolume(volume) {
             homePageMusicState.musicVolume = clampUnitVolume(volume, homePageMusicState.musicVolume);
             applyHomePageMusicGain();
+            applyLegendaryCutsceneAudioGain();
         }
 
         function setSfxVolume(volume) {
             homePageMusicState.sfxVolume = clampUnitVolume(volume, homePageMusicState.sfxVolume);
             applyMysterySfxGain();
+            applyLegendaryCutsceneAudioGain();
         }
 
         function setNatureSoundsMuted(muted) {
@@ -10239,6 +10678,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 return;
             }
 
+            finishLegendaryStormCinematicImmediately();
             stopMysterySfxImmediately();
             clearEquipPropRevealDelay();
             clearEquipPropRevealRamp();
@@ -10320,6 +10760,15 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
         }
 
+        function isLegendaryCutsceneVideoHoldingBackground() {
+            return Boolean(
+                legendaryStormState.active && (
+                    legendaryStormState.phase === 'introStrikeWhiteout' ||
+                    legendaryStormState.phase === 'videoPlayback'
+                )
+            );
+        }
+
         function pauseBackgroundPlaybackImmediately() {
             if (!gifBackgroundVideo) return;
             clearBackgroundRecoveryTimer();
@@ -10332,6 +10781,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             if (!homePageRouteAudioState.isActive) {
                 return;
             }
+            if (isLegendaryCutsceneVideoHoldingBackground()) {
+                return;
+            }
             attemptBackgroundPlayback().then((played) => {
                 if (!played) {
                     scheduleBackgroundPlaybackRecovery();
@@ -10341,6 +10793,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
         function attemptBackgroundPlayback({ reload = false } = {}) {
             if (!gifBackgroundVideo) return Promise.resolve(false);
+            if (isLegendaryCutsceneVideoHoldingBackground()) {
+                return Promise.resolve(false);
+            }
             if (reload) {
                 try {
                     gifBackgroundVideo.load();
@@ -10377,6 +10832,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         function scheduleBackgroundPlaybackRecovery() {
             if (!gifBackgroundVideo) return;
             if (!homePageRouteAudioState.isActive) return;
+            if (isLegendaryCutsceneVideoHoldingBackground()) return;
             if (backgroundMediaState.recoveryTimer !== null) return;
             if (backgroundMediaState.retries >= backgroundMediaState.maxRetries) {
                 setBackgroundFallbackEnabled(Boolean(gifBackgroundFallback));
@@ -10403,6 +10859,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         function monitorBackgroundPlaybackProgress() {
             if (!homePageRouteAudioState.isActive) return;
             if (!gifBackgroundVideo || document.visibilityState === 'hidden') return;
+            if (isLegendaryCutsceneVideoHoldingBackground()) return;
             const readyToTrack = gifBackgroundVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
             const activelyPlaying = !gifBackgroundVideo.paused && !gifBackgroundVideo.ended;
 
@@ -10442,6 +10899,40 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 return;
             }
             if (backgroundMediaState.monitorTimer !== null) return;
+
+            if (legendaryCutsceneVideo) {
+                legendaryCutsceneVideo.muted = true;
+                legendaryCutsceneVideo.defaultMuted = true;
+                legendaryCutsceneVideo.volume = 0;
+                legendaryCutsceneVideo.playsInline = true;
+                legendaryCutsceneVideo.loop = false;
+                legendaryCutsceneVideo.addEventListener('ended', () => {
+                    if (
+                        !legendaryStormState.active ||
+                        (
+                            legendaryStormState.phase !== 'introStrikeWhiteout' &&
+                            legendaryStormState.phase !== 'videoPlayback'
+                        )
+                    ) {
+                        return;
+                    }
+                    legendaryStormState.videoEnded = true;
+                });
+                const handleLegendaryCutsceneError = () => {
+                    if (
+                        !legendaryStormState.active ||
+                        (
+                            legendaryStormState.phase !== 'introStrikeWhiteout' &&
+                            legendaryStormState.phase !== 'videoPlayback'
+                        )
+                    ) {
+                        return;
+                    }
+                    legendaryStormState.videoFailed = true;
+                };
+                legendaryCutsceneVideo.addEventListener('error', handleLegendaryCutsceneError);
+                legendaryCutsceneVideo.addEventListener('abort', handleLegendaryCutsceneError);
+            }
 
             gifBackgroundVideo.addEventListener('playing', () => {
                 backgroundMediaState.retries = 0;
@@ -10712,6 +11203,298 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             stageRadius: 1.1
         };
         let mysteryRevealStillDbPromise = null;
+
+        function getMysterySummonRecoveryUserId() {
+            return typeof homepageHudMetricState.userId === 'string' && homepageHudMetricState.userId.trim()
+                ? homepageHudMetricState.userId.trim()
+                : null;
+        }
+
+        function isMysterySummonDecisionRequired() {
+            return Boolean(
+                mysterySummonRecoveryState.decisionRequired &&
+                mysterySummonRecoveryState.record &&
+                mysterySummonRecoveryState.record.status === 'decisionRequired'
+            );
+        }
+
+        function updateMysteryPreviewActionLabels() {
+            const forceDecision = isMysterySummonDecisionRequired() && previewState.presentation === 'mystery';
+            if (propPreviewInventoryBtn) {
+                propPreviewInventoryBtn.textContent = forceDecision ? 'Keep in Inventory' : 'Inventory';
+            }
+            if (propPreviewEquipBtn) {
+                propPreviewEquipBtn.textContent = 'Equip Now';
+            }
+            if (propPreviewCloseBtn) {
+                propPreviewCloseBtn.disabled = forceDecision;
+                propPreviewCloseBtn.setAttribute('aria-disabled', String(forceDecision));
+                propPreviewCloseBtn.title = forceDecision ? 'Choose Equip Now or Keep in Inventory to continue.' : '';
+            }
+        }
+
+        function syncMysterySummonDecisionUiState() {
+            updateMysteryPreviewActionLabels();
+            if (
+                isMysterySummonDecisionRequired() &&
+                mysteryRewardRevealState.active &&
+                mysteryRewardRevealState.actionsUnlocked
+            ) {
+                setPreviewFallbackMessage('Choose Equip Now or Keep in Inventory to continue.');
+            }
+        }
+
+        function normalizeMysterySummonRecoveryRecord(record) {
+            if (!record || typeof record !== 'object') {
+                return null;
+            }
+            return buildHomepagePendingSummonRecovery({
+                userId: record.userId ?? getMysterySummonRecoveryUserId(),
+                requestId: record.requestId,
+                costPoints: record.costPoints,
+                rewardKey: record.rewardKey ?? null,
+                rewardLabel: record.rewardLabel ?? null,
+                rewardRarity: record.rewardRarity ?? null,
+                createdAt: record.createdAt,
+                resolvedAt: record.resolvedAt ?? null,
+                status: record.status
+            });
+        }
+
+        function notifyHostMysterySummonRecovery(action, payload = null) {
+            if (window.parent === window) {
+                return false;
+            }
+            try {
+                window.parent.postMessage({
+                    type: HOMEPAGE_SUMMON_RECOVERY_UPDATE_MESSAGE,
+                    action,
+                    payload
+                }, window.location.origin);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function applyMysterySummonRecoveryRecord(record, { persistLocal = true, notifyHost = true, hostAction = 'upsert' } = {}) {
+            const normalizedRecord = normalizeMysterySummonRecoveryRecord(record);
+            mysterySummonRecoveryState.record = normalizedRecord;
+            mysterySummonRecoveryState.decisionRequired = Boolean(normalizedRecord && normalizedRecord.status === 'decisionRequired');
+            mysterySummonRecoveryState.closePolicy = mysterySummonRecoveryState.decisionRequired
+                ? 'explicitActionOnly'
+                : 'standard';
+            if (persistLocal) {
+                if (normalizedRecord) {
+                    persistHomepagePendingSummonRecovery(normalizedRecord);
+                } else {
+                    clearHomepagePendingSummonRecovery(getMysterySummonRecoveryUserId());
+                }
+            }
+            if (notifyHost) {
+                if (normalizedRecord) {
+                    notifyHostMysterySummonRecovery(hostAction, normalizedRecord);
+                } else {
+                    notifyHostMysterySummonRecovery('clear', null);
+                }
+            }
+            syncMysterySummonDecisionUiState();
+            return normalizedRecord;
+        }
+
+        function clearMysterySummonRecoveryRecord(options = {}) {
+            mysterySummonRecoveryState.lastResumeRequestId = null;
+            mysterySummonRecoveryState.resumeQueued = false;
+            mysterySummonRecoveryState.resumeInFlight = false;
+            return applyMysterySummonRecoveryRecord(null, options);
+        }
+
+        function showMysterySummonDecisionRequiredMessage() {
+            if (!isMysterySummonDecisionRequired()) {
+                return;
+            }
+            setPreviewFallbackMessage('Choose Equip Now or Keep in Inventory to continue.');
+            focusPropPreviewViewport();
+        }
+
+        function isMysterySummonDecisionLockActive() {
+            return Boolean(
+                isMysterySummonDecisionRequired() &&
+                previewState.presentation === 'mystery' &&
+                (
+                    previewState.open ||
+                    propPreviewPanel?.classList?.contains('open') ||
+                    propPreviewOverlay?.classList?.contains('open')
+                )
+            );
+        }
+
+        function consumeMysterySummonPreviewOutsideInteraction(event) {
+            if (!isMysterySummonDecisionLockActive()) {
+                return false;
+            }
+            const target = event?.target;
+            if (target instanceof Node && propPreviewPanel?.contains(target)) {
+                return false;
+            }
+            if (typeof event?.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            if (typeof event?.stopPropagation === 'function') {
+                event.stopPropagation();
+            }
+            if (typeof event?.stopImmediatePropagation === 'function') {
+                event.stopImmediatePropagation();
+            }
+            showMysterySummonDecisionRequiredMessage();
+            return true;
+        }
+
+        function requestMysterySummonRefundFallback(record) {
+            const normalizedRecord = normalizeMysterySummonRecoveryRecord(record || mysterySummonRecoveryState.record);
+            if (!normalizedRecord) {
+                clearMysterySummonRecoveryRecord();
+                return false;
+            }
+            if (window.parent === window) {
+                homepageHudMetricState.totalPoints += Math.max(1, normalizeHudMetricValue(normalizedRecord.costPoints) || MYSTERY_PULL_COST_POINTS);
+                updateHomepageHudMetrics();
+                clearMysterySummonRecoveryRecord({ notifyHost: false });
+                showMysteryTestStatus('Mystery pull restored as points. Your points were returned.', { persistent: true });
+                return true;
+            }
+            showMysteryTestStatus('Mystery pull restored as points. Your points are being returned.', { persistent: true });
+            const notified = notifyHostMysterySummonRecovery('refundFallback', normalizedRecord);
+            if (notified) {
+                clearMysterySummonRecoveryRecord({ notifyHost: false });
+            }
+            return notified;
+        }
+
+        function shouldResumePendingMysterySummonRecovery(record = null) {
+            const normalizedRecord = normalizeMysterySummonRecoveryRecord(record || mysterySummonRecoveryState.record);
+            if (!normalizedRecord) {
+                return false;
+            }
+
+            const hasActivePreview = Boolean(previewState.open);
+            const matchesLivePullRequest =
+                normalizedRecord.requestId === mysteryPullSpendState.requestId ||
+                normalizedRecord.requestId === mysteryState.requestId ||
+                normalizedRecord.requestId === mysterySummonRecoveryState.liveRequestId;
+
+            return !mysterySummonRecoveryState.resumeInFlight &&
+                !mysterySummonRecoveryState.resumeQueued &&
+                !mysteryPullSpendState.pending &&
+                !mysteryFlightCinematic.active &&
+                !legendaryStormState.active &&
+                mysteryState.phase === 'idle' &&
+                !hasActivePreview &&
+                !matchesLivePullRequest;
+        }
+
+        async function resumePendingMysterySummonRecoveryIfNeeded() {
+            const currentRecord = normalizeMysterySummonRecoveryRecord(
+                mysterySummonRecoveryState.record || readHomepagePendingSummonRecovery(getMysterySummonRecoveryUserId())
+            );
+            if (!currentRecord || mysterySummonRecoveryState.resumeInFlight) {
+                return false;
+            }
+            if (!shouldResumePendingMysterySummonRecovery(currentRecord)) {
+                return false;
+            }
+            if (
+                mysterySummonRecoveryState.lastResumeRequestId === currentRecord.requestId &&
+                isMysterySummonDecisionRequired() &&
+                previewState.open &&
+                previewState.presentation === 'mystery'
+            ) {
+                syncMysterySummonDecisionUiState();
+                return true;
+            }
+
+            mysterySummonRecoveryState.resumeInFlight = true;
+            mysterySummonRecoveryState.resumeQueued = false;
+            try {
+                let record = currentRecord;
+
+                if (record.status === 'pointsAccepted') {
+                    const selection = resolveMysteryRewardLaunchGate().selection || pickMysteryRewardSelection();
+                    if (!selection?.rewardKey) {
+                        requestMysterySummonRefundFallback(record);
+                        return false;
+                    }
+                    record = applyMysterySummonRecoveryRecord({
+                        ...record,
+                        rewardKey: selection.rewardKey,
+                        rewardLabel: getPropLabelByKey(selection.rewardKey),
+                        rewardRarity: selection.rarityKey || getMysteryRewardBoxRarity(selection.rewardKey),
+                        resolvedAt: new Date().toISOString(),
+                        status: 'rewardResolved'
+                    });
+                }
+
+                if (!record?.rewardKey) {
+                    requestMysterySummonRefundFallback(record);
+                    return false;
+                }
+
+                if (record.status === 'rewardResolved') {
+                    const nextSelection = pickMysteryRewardSelection();
+                    if (nextSelection?.rewardKey === record.rewardKey) {
+                        markMysteryRewardKeySummoned(record.rewardKey);
+                    }
+                    stashPropInInventory(record.rewardKey, { deferRender: true });
+                    record = applyMysterySummonRecoveryRecord({
+                        ...record,
+                        rewardLabel: record.rewardLabel || getPropLabelByKey(record.rewardKey),
+                        rewardRarity: record.rewardRarity || getMysteryRewardBoxRarity(record.rewardKey),
+                        resolvedAt: record.resolvedAt || new Date().toISOString(),
+                        status: 'decisionRequired'
+                    });
+                } else if (record.status === 'decisionRequired') {
+                    stashPropInInventory(record.rewardKey, { deferRender: true });
+                    applyMysterySummonRecoveryRecord(record, { notifyHost: false });
+                }
+
+                if (!record || record.status !== 'decisionRequired') {
+                    requestMysterySummonRefundFallback(record);
+                    return false;
+                }
+
+                if (mysteryState.phase !== 'idle') {
+                    clearMysteryBox();
+                }
+
+                mysterySummonRecoveryState.lastResumeRequestId = record.requestId;
+                await openMysteryRewardRevealPreview(
+                    record.rewardKey,
+                    record.rewardLabel || getPropLabelByKey(record.rewardKey),
+                    null,
+                    {
+                        forceDecision: true,
+                        previewMetadata: {
+                            rarity: record.rewardRarity || getMysteryRewardBoxRarity(record.rewardKey)
+                        }
+                    }
+                );
+                syncMysterySummonDecisionUiState();
+                return true;
+            } finally {
+                mysterySummonRecoveryState.resumeInFlight = false;
+            }
+        }
+
+        function queueMysterySummonRecoveryResume(record = null) {
+            const normalizedRecord = normalizeMysterySummonRecoveryRecord(record || mysterySummonRecoveryState.record);
+            if (!shouldResumePendingMysterySummonRecovery(normalizedRecord)) {
+                return;
+            }
+            mysterySummonRecoveryState.resumeQueued = true;
+            window.setTimeout(() => {
+                void resumePendingMysterySummonRecoveryIfNeeded();
+            }, 60);
+        }
 
         function releasePreviewPointerCapture(pointerId) {
             if (!propPreviewViewport || pointerId === null || pointerId === undefined) {
@@ -11559,6 +12342,90 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 })
             })
         });
+        const LEGENDARY_STORM_CONFIG = Object.freeze({
+            audioLeadInDuration: 0.78,
+            reducedMotionAudioLeadInDuration: 0.42,
+            preStrikeHoldDuration: 1.2,
+            reducedMotionPreStrikeHoldDuration: 0.55,
+            introStrikeWhiteoutDuration: 0.74,
+            reducedMotionIntroStrikeWhiteoutDuration: 0.42,
+            cutsceneFallbackDuration: 11.6,
+            landingStrikeAfterglowDuration: 0.9,
+            reducedMotionLandingStrikeAfterglowDuration: 0.48,
+            restoreRevealDuration: 0.96,
+            reducedMotionRestoreRevealDuration: 0.46,
+            backgroundAudioFadeOutMs: 760,
+            backgroundAudioFadeInMs: 1480,
+            cutsceneAudioFadeInMs: 560,
+            interactionBufferMs: 520,
+            splitSpreadPx: 70,
+            reducedMotionSplitSpreadPx: 22,
+            fogDensity: 0.032,
+            reducedMotionFogDensity: 0.022,
+            grassWindBoost: 1.95,
+            treeWindBoost: 1.55,
+            cloudSpeedBoost: 2.7,
+            cloudOpacityBoost: 0.22,
+            pollenOpacityFloor: 0.12
+        });
+        const LEGENDARY_STORM_THEMES = Object.freeze({
+            [MYSTERY_BOX_RARITY.LEGENDARY_LIGHT]: Object.freeze({
+                overlayAccentA: 'rgba(244, 252, 255, 0.96)',
+                overlayAccentB: 'rgba(137, 228, 255, 0.84)',
+                overlayCloudColor: 'rgba(19, 36, 60, 0.92)',
+                overlayMistColor: 'rgba(214, 231, 250, 0.68)',
+                overlayVeilStart: 'rgba(4, 10, 22, 0.14)',
+                overlayVeilEnd: 'rgba(6, 16, 30, 0.9)',
+                ambientColor: 0xd7e8ff,
+                ambientIntensity: 0.42,
+                hemiSkyColor: 0xb7d9ff,
+                hemiGroundColor: 0x25323b,
+                hemiIntensity: 0.45,
+                sunColor: 0xc9dcff,
+                sunIntensity: 0.18,
+                fillColor: 0x84b4cb,
+                fillIntensity: 0.36,
+                petRimColor: 0xdaf6ff,
+                petRimIntensity: 4.9,
+                skyTopColor: 0x182949,
+                skyMidColor: 0x273f63,
+                skyBottomColor: 0x34485f,
+                skyLightColor: 0xe4f3ff,
+                skyLightIntensity: 0.28,
+                strikeColor: 0xfdfeff,
+                strikeIntensity: 6.8,
+                fogColor: 0x182332,
+                exposure: 0.88
+            }),
+            [MYSTERY_BOX_RARITY.LEGENDARY_DARK]: Object.freeze({
+                overlayAccentA: 'rgba(255, 235, 225, 0.94)',
+                overlayAccentB: 'rgba(255, 148, 108, 0.82)',
+                overlayCloudColor: 'rgba(31, 11, 16, 0.94)',
+                overlayMistColor: 'rgba(210, 168, 154, 0.44)',
+                overlayVeilStart: 'rgba(13, 3, 7, 0.18)',
+                overlayVeilEnd: 'rgba(18, 5, 8, 0.92)',
+                ambientColor: 0x7b4a44,
+                ambientIntensity: 0.36,
+                hemiSkyColor: 0x8d5552,
+                hemiGroundColor: 0x180c10,
+                hemiIntensity: 0.42,
+                sunColor: 0xb56d57,
+                sunIntensity: 0.15,
+                fillColor: 0x893825,
+                fillIntensity: 0.34,
+                petRimColor: 0xff9d73,
+                petRimIntensity: 5.2,
+                skyTopColor: 0x16070b,
+                skyMidColor: 0x2a0d14,
+                skyBottomColor: 0x3c1b20,
+                skyLightColor: 0xffc7a4,
+                skyLightIntensity: 0.25,
+                strikeColor: 0xfff1e6,
+                strikeIntensity: 6.2,
+                fogColor: 0x1c0d12,
+                exposure: 0.8
+            })
+        });
         const MYSTERY_CHARACTER_FLIGHT_CONFIG = {
             interruptionBlendDuration: 0.47,
             mysteryStuntSmoothing: 3.5,
@@ -11823,6 +12690,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             rewardKey: null,
             rewardLabel: null,
             boxRarity: MYSTERY_BOX_RARITY.RARE,
+            requestId: null,
+            costPoints: MYSTERY_PULL_COST_POINTS,
             target: null,
             fallVelocity: 0,
             spinVelX: 0,
@@ -11904,6 +12773,36 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             sampleWingAmpMul: 1,
             sampleInitialized: false
         };
+        const legendaryStormState = {
+            active: false,
+            phase: 'idle',
+            phaseTime: 0,
+            totalTime: 0,
+            rarityKey: null,
+            reducedMotion: false,
+            timings: null,
+            spawnContext: null,
+            boxPrepared: false,
+            environmentMix: 0,
+            darkness: 0,
+            mist: 0,
+            flash: 0,
+            whiteout: 0,
+            cloudShiftPx: 0,
+            cloudShiftAltPx: 0,
+            lightningMix: 0,
+            boltOpacity: 0,
+            seed: 0,
+            videoVisible: false,
+            videoOpacity: 0,
+            videoEnded: false,
+            videoFailed: false,
+            savedWorldVisible: false,
+            savedGrassVisible: false,
+            savedRouteGain: 1,
+            grassRevealVisible: false,
+            target: new THREE.Vector3()
+        };
         const mysteryFlightRenderState = {
             initialized: false,
             active: false,
@@ -11938,6 +12837,546 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             const normalizedRarity = normalizeMysteryBoxRarity(rarityKey);
             return MYSTERY_BOX_RARITY_THEMES[normalizedRarity] || MYSTERY_BOX_RARITY_THEMES[MYSTERY_BOX_RARITY.RARE];
         }
+        function prefersReducedMotionHomePage() {
+            return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        }
+
+        function isLegendaryStormRarity(rarityKey) {
+            return rarityKey === MYSTERY_BOX_RARITY.LEGENDARY_LIGHT || rarityKey === MYSTERY_BOX_RARITY.LEGENDARY_DARK;
+        }
+
+        function getLegendaryStormTheme(rarityKey) {
+            return LEGENDARY_STORM_THEMES[rarityKey] || LEGENDARY_STORM_THEMES[MYSTERY_BOX_RARITY.LEGENDARY_LIGHT];
+        }
+
+        function getLegendaryCutscenePlaybackDuration() {
+            if (
+                legendaryCutsceneVideo &&
+                Number.isFinite(legendaryCutsceneVideo.duration) &&
+                legendaryCutsceneVideo.duration > 0.1
+            ) {
+                return legendaryCutsceneVideo.duration;
+            }
+            return LEGENDARY_STORM_CONFIG.cutsceneFallbackDuration;
+        }
+
+        function createLegendaryStormTimings(reducedMotion = false) {
+            const timings = reducedMotion
+                ? {
+                    audioLeadIn: LEGENDARY_STORM_CONFIG.reducedMotionAudioLeadInDuration,
+                    preStrikeHold: LEGENDARY_STORM_CONFIG.reducedMotionPreStrikeHoldDuration,
+                    introStrikeWhiteout: LEGENDARY_STORM_CONFIG.reducedMotionIntroStrikeWhiteoutDuration,
+                    landingStrikeWhiteout: LEGENDARY_STORM_CONFIG.reducedMotionLandingStrikeAfterglowDuration,
+                    restoreReveal: LEGENDARY_STORM_CONFIG.reducedMotionRestoreRevealDuration
+                }
+                : {
+                    audioLeadIn: LEGENDARY_STORM_CONFIG.audioLeadInDuration,
+                    preStrikeHold: LEGENDARY_STORM_CONFIG.preStrikeHoldDuration,
+                    introStrikeWhiteout: LEGENDARY_STORM_CONFIG.introStrikeWhiteoutDuration,
+                    landingStrikeWhiteout: LEGENDARY_STORM_CONFIG.landingStrikeAfterglowDuration,
+                    restoreReveal: LEGENDARY_STORM_CONFIG.restoreRevealDuration
+                };
+            timings.videoPlayback = getLegendaryCutscenePlaybackDuration();
+            timings.totalDuration =
+                timings.audioLeadIn +
+                timings.preStrikeHold +
+                timings.introStrikeWhiteout +
+                timings.videoPlayback +
+                timings.landingStrikeWhiteout +
+                timings.restoreReveal;
+            return timings;
+        }
+
+        function syncLegendaryStormOverlayVisuals(theme = null) {
+            const rootStyle = document.documentElement?.style;
+            if (!rootStyle || !document.body) {
+                return;
+            }
+            const isActive = Boolean(
+                legendaryStormState.active && (
+                    legendaryStormState.phase !== 'videoPlayback' ||
+                    legendaryStormState.flash > 0.001 ||
+                    legendaryStormState.whiteout > 0.001 ||
+                    legendaryStormState.darkness > 0.001 ||
+                    legendaryStormState.mist > 0.001
+                )
+            );
+            document.body.classList.toggle('legendary-storm-active', isActive);
+            if (legendaryStormOverlay) {
+                legendaryStormOverlay.classList.toggle('active', isActive);
+            }
+
+            let strikeX = 50;
+            let strikeY = 48;
+            if (isActive) {
+                const usesLandingTarget =
+                    legendaryStormState.phase === 'landingStrikeWhiteout' ||
+                    legendaryStormState.phase === 'restoreReveal';
+                if (usesLandingTarget) {
+                    legendaryStormScreenTarget.copy(legendaryStormState.target).project(camera);
+                    if (
+                        Number.isFinite(legendaryStormScreenTarget.x) &&
+                        Number.isFinite(legendaryStormScreenTarget.y)
+                    ) {
+                        strikeX = THREE.MathUtils.clamp(((legendaryStormScreenTarget.x + 1) * 0.5) * 100, 10, 90);
+                        strikeY = THREE.MathUtils.clamp(((1 - legendaryStormScreenTarget.y) * 0.5) * 100, 18, 88);
+                    }
+                }
+            }
+
+            rootStyle.setProperty('--legendary-storm-environment-mix', (legendaryStormState.environmentMix || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-darkness', (legendaryStormState.darkness || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-mist', (legendaryStormState.mist || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-flash', (legendaryStormState.flash || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-whiteout', (legendaryStormState.whiteout || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-cloud-shift', `${(legendaryStormState.cloudShiftPx || 0).toFixed(1)}px`);
+            rootStyle.setProperty('--legendary-storm-cloud-shift-alt', `${(legendaryStormState.cloudShiftAltPx || 0).toFixed(1)}px`);
+            rootStyle.setProperty('--legendary-storm-bolt-opacity', (legendaryStormState.boltOpacity || 0).toFixed(3));
+            if (legendaryStormOverlay) {
+                legendaryStormOverlay.style.setProperty('--legendary-storm-strike-x', `${strikeX.toFixed(2)}%`);
+                legendaryStormOverlay.style.setProperty('--legendary-storm-strike-y', `${strikeY.toFixed(2)}%`);
+                if (theme) {
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-accent-a', theme.overlayAccentA);
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-accent-b', theme.overlayAccentB);
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-cloud-color', theme.overlayCloudColor);
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-mist-color', theme.overlayMistColor);
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-veil-start', theme.overlayVeilStart);
+                    legendaryStormOverlay.style.setProperty('--legendary-storm-veil-end', theme.overlayVeilEnd);
+                }
+            }
+        }
+
+        function syncLegendaryCutsceneVideoVisuals() {
+            if (!legendaryCutsceneVideo) {
+                return;
+            }
+            const presented = Boolean(legendaryStormState.videoVisible || legendaryStormState.videoOpacity > 0.001);
+            legendaryCutsceneVideo.classList.toggle('active', presented);
+            legendaryCutsceneVideo.style.opacity = presented
+                ? THREE.MathUtils.clamp(legendaryStormState.videoOpacity || 0, 0, 1).toFixed(3)
+                : '0';
+        }
+
+        function stopLegendaryCutsceneVideoPlayback({ resetTime = true } = {}) {
+            stopLegendaryCutsceneAudioImmediately();
+            if (!legendaryCutsceneVideo) {
+                legendaryStormState.videoVisible = false;
+                legendaryStormState.videoOpacity = 0;
+                return;
+            }
+            try {
+                legendaryCutsceneVideo.pause();
+            } catch (_) {}
+            if (resetTime) {
+                try {
+                    legendaryCutsceneVideo.currentTime = 0;
+                } catch (_) {}
+            }
+            legendaryStormState.videoVisible = false;
+            legendaryStormState.videoOpacity = 0;
+            syncLegendaryCutsceneVideoVisuals();
+        }
+
+        function startLegendaryCutsceneVideoPlayback({ initialOpacity = 1 } = {}) {
+            if (!legendaryCutsceneVideo) {
+                legendaryStormState.videoFailed = true;
+                return;
+            }
+            legendaryStormState.videoEnded = false;
+            legendaryStormState.videoFailed = false;
+            legendaryStormState.videoVisible = true;
+            legendaryStormState.videoOpacity = THREE.MathUtils.clamp(initialOpacity, 0, 1);
+            syncLegendaryCutsceneVideoVisuals();
+            try {
+                legendaryCutsceneVideo.pause();
+            } catch (_) {}
+            try {
+                legendaryCutsceneVideo.currentTime = 0;
+            } catch (_) {}
+            legendaryCutsceneVideo.loop = false;
+            legendaryCutsceneVideo.playsInline = true;
+            startLegendaryCutsceneAudioFadeIn();
+            const playAttempt = legendaryCutsceneVideo.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {
+                    legendaryStormState.videoFailed = true;
+                    legendaryStormState.videoVisible = false;
+                    legendaryStormState.videoOpacity = 0;
+                    stopLegendaryCutsceneAudioImmediately();
+                    syncLegendaryCutsceneVideoVisuals();
+                });
+            }
+        }
+
+        function setLegendaryGrassRevealVisible(visible) {
+            const showLegendaryReveal = Boolean(visible);
+            legendaryStormState.grassRevealVisible = false;
+            if (showLegendaryReveal) {
+                worldGroup.visible = false;
+                grassGroup.visible = false;
+                return;
+            }
+            worldGroup.visible = Boolean(legendaryStormState.savedWorldVisible);
+            grassGroup.visible = Boolean(legendaryStormState.savedGrassVisible);
+        }
+
+        function clearLegendaryGrassRevealState() {
+            setLegendaryGrassRevealVisible(false);
+            legendaryStormState.savedWorldVisible = false;
+            legendaryStormState.savedGrassVisible = false;
+        }
+
+        function applyLegendaryStormLighting(theme, environmentMix = 0, lightningMix = 0) {
+            const stormMix = THREE.MathUtils.clamp(environmentMix, 0, 1);
+            const flashMix = THREE.MathUtils.clamp(lightningMix, 0, 1);
+            ambientLight.color.copy(homePageDayLightingDefaults.ambientColor).lerp(
+                legendaryStormColorScratchA.setHex(theme.ambientColor),
+                stormMix
+            );
+            ambientLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.ambientIntensity, theme.ambientIntensity, stormMix) + flashMix * 0.12;
+
+            hemiLight.color.copy(homePageDayLightingDefaults.hemiSkyColor).lerp(
+                legendaryStormColorScratchA.setHex(theme.hemiSkyColor),
+                stormMix
+            );
+            hemiLight.groundColor.copy(homePageDayLightingDefaults.hemiGroundColor).lerp(
+                legendaryStormColorScratchB.setHex(theme.hemiGroundColor),
+                stormMix
+            );
+            hemiLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.hemiIntensity, theme.hemiIntensity, stormMix) + flashMix * 0.16;
+
+            sunLight.color.copy(homePageDayLightingDefaults.sunColor).lerp(
+                legendaryStormColorScratchA.setHex(theme.sunColor),
+                stormMix
+            );
+            sunLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.sunIntensity, theme.sunIntensity, stormMix) + flashMix * 0.34;
+
+            fillLight.color.copy(homePageDayLightingDefaults.fillColor).lerp(
+                legendaryStormColorScratchA.setHex(theme.fillColor),
+                stormMix
+            );
+            fillLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.fillIntensity, theme.fillIntensity, stormMix) + flashMix * 0.3;
+
+            petRim.color.copy(homePageDayLightingDefaults.petRimColor).lerp(
+                legendaryStormColorScratchA.setHex(theme.petRimColor),
+                stormMix
+            );
+            petRim.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.petRimIntensity, theme.petRimIntensity, stormMix) + flashMix * 0.78;
+
+            legendaryStormSkyLight.color.setHex(theme.skyLightColor);
+            legendaryStormSkyLight.intensity = stormMix * (theme.skyLightIntensity + flashMix * 2.1);
+            legendaryStormStrikeLight.color.setHex(theme.strikeColor);
+            legendaryStormStrikeLight.intensity = stormMix > 0.001 ? (stormMix * 0.16 + flashMix * theme.strikeIntensity * 1.24) : 0;
+            legendaryStormStrikeLight.distance = 12 + stormMix * 12 + flashMix * 18;
+            legendaryStormStrikeLight.position.copy(legendaryStormState.target);
+            legendaryStormStrikeLight.position.y += 7.4 + stormMix * 4.4;
+            legendaryStormStrikeLight.position.z += 1.8;
+            renderer.toneMappingExposure = THREE.MathUtils.lerp(homePageDayLightingDefaults.toneMappingExposure, theme.exposure, stormMix) + flashMix * 0.24;
+        }
+
+        function restoreHomePageDayLighting() {
+            ambientLight.color.copy(homePageDayLightingDefaults.ambientColor);
+            ambientLight.intensity = homePageDayLightingDefaults.ambientIntensity;
+            hemiLight.color.copy(homePageDayLightingDefaults.hemiSkyColor);
+            hemiLight.groundColor.copy(homePageDayLightingDefaults.hemiGroundColor);
+            hemiLight.intensity = homePageDayLightingDefaults.hemiIntensity;
+            sunLight.color.copy(homePageDayLightingDefaults.sunColor);
+            sunLight.intensity = homePageDayLightingDefaults.sunIntensity;
+            fillLight.color.copy(homePageDayLightingDefaults.fillColor);
+            fillLight.intensity = homePageDayLightingDefaults.fillIntensity;
+            petRim.color.copy(homePageDayLightingDefaults.petRimColor);
+            petRim.intensity = homePageDayLightingDefaults.petRimIntensity;
+            legendaryStormSkyLight.intensity = 0;
+            legendaryStormStrikeLight.intensity = 0;
+            legendaryStormStrikeLight.distance = 0;
+            skyDome.material.uniforms.topColor.value.copy(homePageDayLightingDefaults.skyTopColor);
+            skyDome.material.uniforms.midColor.value.copy(homePageDayLightingDefaults.skyMidColor);
+            skyDome.material.uniforms.bottomColor.value.copy(homePageDayLightingDefaults.skyBottomColor);
+            cloudPlanes.forEach((entry, index) => {
+                entry.mesh.material.opacity = homePageDayLightingDefaults.cloudOpacities[index] ?? entry.mesh.material.opacity;
+            });
+            pollenMaterial.opacity = homePageDayLightingDefaults.pollenOpacity;
+            renderer.toneMappingExposure = homePageDayLightingDefaults.toneMappingExposure;
+        }
+
+        function resetLegendaryStormCinematic() {
+            legendaryStormState.active = false;
+            legendaryStormState.phase = 'idle';
+            legendaryStormState.phaseTime = 0;
+            legendaryStormState.totalTime = 0;
+            legendaryStormState.rarityKey = null;
+            legendaryStormState.reducedMotion = false;
+            legendaryStormState.timings = null;
+            legendaryStormState.spawnContext = null;
+            legendaryStormState.boxPrepared = false;
+            legendaryStormState.environmentMix = 0;
+            legendaryStormState.darkness = 0;
+            legendaryStormState.mist = 0;
+            legendaryStormState.flash = 0;
+            legendaryStormState.whiteout = 0;
+            legendaryStormState.cloudShiftPx = 0;
+            legendaryStormState.cloudShiftAltPx = 0;
+            legendaryStormState.lightningMix = 0;
+            legendaryStormState.boltOpacity = 0;
+            legendaryStormState.seed = 0;
+            legendaryStormState.videoEnded = false;
+            legendaryStormState.videoFailed = false;
+            legendaryStormState.savedRouteGain = 1;
+            restoreHomePageDayLighting();
+            stopLegendaryCutsceneVideoPlayback();
+            legendaryStormState.target.set(0, 0, 0);
+            syncLegendaryStormOverlayVisuals();
+        }
+
+        function spawnLegendaryStormLandingBoxIfNeeded({ playLandingSfx = true } = {}) {
+            if (!legendaryStormState.active || legendaryStormState.boxPrepared || !legendaryStormState.spawnContext) {
+                return false;
+            }
+            spawnMysteryBoxWithContext(legendaryStormState.spawnContext, { phase: 'landed', playLandingSfx });
+            legendaryStormState.boxPrepared = true;
+            requestMysteryFlightReturn();
+            return true;
+        }
+
+        function finishLegendaryStormCinematicImmediately() {
+            if (!legendaryStormState.active) {
+                return;
+            }
+            if (!legendaryStormState.boxPrepared && legendaryStormState.spawnContext) {
+                spawnMysteryBoxWithContext(legendaryStormState.spawnContext, { phase: 'landed', playLandingSfx: false });
+                legendaryStormState.boxPrepared = true;
+            }
+            requestMysteryFlightReturn();
+            unlockMysteryInteractionsNow();
+            restoreHomePageAudioAfterLegendaryCutscene({ immediate: true });
+            resumeBackgroundPlaybackIfActive();
+            resetLegendaryStormCinematic();
+        }
+
+        function startLegendaryStormCinematic(spawnContext) {
+            if (!spawnContext || !isLegendaryStormRarity(spawnContext.boxRarity)) {
+                return false;
+            }
+            if (legendaryStormState.active) {
+                finishLegendaryStormCinematicImmediately();
+            }
+            const reducedMotion = prefersReducedMotionHomePage();
+            legendaryStormState.active = true;
+            legendaryStormState.phase = 'audioLeadIn';
+            legendaryStormState.phaseTime = 0;
+            legendaryStormState.totalTime = 0;
+            legendaryStormState.rarityKey = spawnContext.boxRarity;
+            legendaryStormState.reducedMotion = reducedMotion;
+            legendaryStormState.timings = createLegendaryStormTimings(reducedMotion);
+            legendaryStormState.spawnContext = spawnContext;
+            legendaryStormState.boxPrepared = false;
+            legendaryStormState.environmentMix = 0;
+            legendaryStormState.darkness = 0;
+            legendaryStormState.mist = 0;
+            legendaryStormState.flash = 0;
+            legendaryStormState.whiteout = 0;
+            legendaryStormState.cloudShiftPx = 0;
+            legendaryStormState.cloudShiftAltPx = 0;
+            legendaryStormState.lightningMix = 0;
+            legendaryStormState.boltOpacity = 0;
+            legendaryStormState.seed = Math.random() * Math.PI * 2;
+            legendaryStormState.videoVisible = false;
+            legendaryStormState.videoOpacity = 0;
+            legendaryStormState.videoEnded = false;
+            legendaryStormState.videoFailed = false;
+            legendaryStormState.savedWorldVisible = Boolean(worldGroup.visible);
+            legendaryStormState.savedGrassVisible = Boolean(grassGroup.visible);
+            legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
+            setLegendaryGrassRevealVisible(false);
+            stopLegendaryCutsceneVideoPlayback();
+            legendaryStormState.target.copy(spawnContext.landingTarget);
+            fadeOutHomePageAudioForLegendaryCutscene();
+            lockMysteryInteractions((legendaryStormState.timings.totalDuration * 1000) + LEGENDARY_STORM_CONFIG.interactionBufferMs);
+            const theme = getLegendaryStormTheme(legendaryStormState.rarityKey);
+            syncLegendaryStormOverlayVisuals(theme);
+            applyLegendaryStormLighting(theme, 0, 0);
+            syncLegendaryCutsceneVideoVisuals();
+            return true;
+        }
+
+        function updateLegendaryStormCinematic(dt, t) {
+            if (!legendaryStormState.active) {
+                return;
+            }
+            const storm = legendaryStormState;
+            const theme = getLegendaryStormTheme(storm.rarityKey);
+            const timings = storm.timings || createLegendaryStormTimings(storm.reducedMotion);
+            const clamp01 = (value) => THREE.MathUtils.clamp(value, 0, 1);
+            const smooth01 = (value) => {
+                const clamped = clamp01(value);
+                return clamped * clamped * (3 - 2 * clamped);
+            };
+            const pulse = (center, width, amplitude = 1) => {
+                const delta = (storm.phaseTime - center) / Math.max(0.0001, width);
+                return amplitude * Math.exp(-(delta * delta) * 2.2);
+            };
+            const clusteredPulse = (time, seed, reduced = false) => clamp01(
+                Math.pow(Math.max(0, Math.sin(time * 41 + seed * 0.7)), reduced ? 18 : 26) * 0.56 +
+                Math.pow(Math.max(0, Math.sin(time * 67 + seed * 1.31 + 0.35)), reduced ? 16 : 24) * 0.34 +
+                Math.pow(Math.max(0, Math.sin(time * 93 + seed * 0.47 + 1.1)), reduced ? 15 : 22) * 0.22
+            );
+            const fastDrift = storm.reducedMotion ? 22 : 34;
+            const slowDrift = storm.reducedMotion ? -10 : -18;
+
+            storm.phaseTime += dt;
+            storm.totalTime += dt;
+
+            if (storm.phase === 'audioLeadIn') {
+                const duration = timings.audioLeadIn;
+                const progress = clamp01(storm.phaseTime / duration);
+                const eased = smooth01(progress);
+                const simmer = clusteredPulse(storm.totalTime * 0.42 + duration, storm.seed, true) * (storm.reducedMotion ? 0.02 : 0.05);
+                storm.environmentMix = THREE.MathUtils.clamp(0.14 + eased * 0.7, 0, 1);
+                storm.darkness = THREE.MathUtils.lerp(0.16, 0.78, eased);
+                storm.mist = THREE.MathUtils.lerp(0.03, 0.18, eased);
+                storm.flash = simmer;
+                storm.whiteout = 0;
+                storm.lightningMix = simmer * 0.28;
+                storm.cloudShiftPx = storm.totalTime * (fastDrift * 0.82);
+                storm.cloudShiftAltPx = storm.totalTime * (slowDrift * 0.62);
+                storm.boltOpacity = 0;
+                if (storm.phaseTime >= duration) {
+                    storm.phase = 'preStrikeHold';
+                    storm.phaseTime = 0;
+                }
+            } else if (storm.phase === 'preStrikeHold') {
+                const duration = timings.preStrikeHold;
+                const progress = clamp01(storm.phaseTime / duration);
+                const eased = smooth01(progress);
+                const simmer = clusteredPulse(storm.totalTime * 0.56 + duration * 0.4, storm.seed, storm.reducedMotion) * (storm.reducedMotion ? 0.016 : 0.038);
+                storm.environmentMix = THREE.MathUtils.lerp(0.8, 0.96, eased);
+                storm.darkness = THREE.MathUtils.lerp(0.8, 0.94, eased);
+                storm.mist = THREE.MathUtils.lerp(0.16, 0.26, eased);
+                storm.flash = simmer;
+                storm.whiteout = 0;
+                storm.lightningMix = simmer * 0.36;
+                storm.cloudShiftPx = storm.totalTime * fastDrift + Math.sin(storm.totalTime * 1.8 + storm.seed) * 6;
+                storm.cloudShiftAltPx = storm.totalTime * slowDrift + Math.cos(storm.totalTime * 1.2 + storm.seed * 0.8) * 8;
+                storm.boltOpacity = 0;
+                if (storm.phaseTime >= duration) {
+                    storm.phase = 'introStrikeWhiteout';
+                    storm.phaseTime = 0;
+                    pauseBackgroundPlaybackImmediately();
+                    startLegendaryCutsceneVideoPlayback({ initialOpacity: 0 });
+                }
+            } else if (storm.phase === 'introStrikeWhiteout') {
+                const duration = timings.introStrikeWhiteout;
+                const progress = clamp01(storm.phaseTime / duration);
+                const eased = smooth01(progress);
+                const strikePulse = clamp01(
+                    pulse(duration * 0.12, duration * 0.08, storm.reducedMotion ? 1.02 : 1.24) +
+                    pulse(duration * 0.18, duration * 0.05, storm.reducedMotion ? 0.3 : 0.62)
+                );
+                const whiteout = progress < 0.16
+                    ? smooth01(progress / 0.16)
+                    : 1 - smooth01((progress - 0.16) / 0.84);
+                const videoCrossfadeStart = storm.reducedMotion ? 0.3 : 0.26;
+                const videoCrossfade = clamp01((progress - videoCrossfadeStart) / (1 - videoCrossfadeStart));
+                storm.environmentMix = THREE.MathUtils.lerp(0.96, 0.08, eased);
+                storm.darkness = THREE.MathUtils.lerp(0.94, 0.06, eased);
+                storm.mist = THREE.MathUtils.lerp(0.24, 0.02, eased);
+                storm.flash = clamp01(strikePulse * 1.18 + (1 - progress) * 0.12);
+                storm.whiteout = clamp01(whiteout);
+                storm.lightningMix = clamp01(strikePulse * 1.08 + whiteout * 0.36);
+                storm.cloudShiftPx = storm.totalTime * fastDrift * 1.08;
+                storm.cloudShiftAltPx = storm.totalTime * slowDrift * 0.84;
+                storm.boltOpacity = clamp01(strikePulse * 1.2 + (1 - progress) * 0.2);
+                storm.videoOpacity = storm.videoFailed ? 0 : smooth01(videoCrossfade);
+                if (storm.phaseTime >= duration) {
+                    storm.environmentMix = 0;
+                    storm.darkness = 0;
+                    storm.mist = 0;
+                    storm.flash = 0;
+                    storm.whiteout = 0;
+                    storm.lightningMix = 0;
+                    storm.boltOpacity = 0;
+                    if (storm.videoFailed) {
+                        storm.phase = 'landingStrikeWhiteout';
+                    } else {
+                        storm.phase = 'videoPlayback';
+                        storm.videoOpacity = 1;
+                    }
+                    storm.phaseTime = 0;
+                }
+            } else if (storm.phase === 'videoPlayback') {
+                storm.environmentMix = 0;
+                storm.darkness = 0;
+                storm.mist = 0;
+                storm.flash = 0;
+                storm.whiteout = 0;
+                storm.lightningMix = 0;
+                storm.boltOpacity = 0;
+                storm.videoOpacity = storm.videoFailed ? 0 : 1;
+                if (storm.videoEnded || storm.videoFailed || storm.phaseTime >= timings.videoPlayback) {
+                    if (legendaryCutsceneVideo) {
+                        try {
+                            legendaryCutsceneVideo.pause();
+                        } catch (_) {}
+                    }
+                    stopLegendaryCutsceneAudioImmediately();
+                    storm.phase = 'landingStrikeWhiteout';
+                    storm.phaseTime = 0;
+                }
+            } else if (storm.phase === 'landingStrikeWhiteout') {
+                const duration = timings.landingStrikeWhiteout;
+                const progress = clamp01(storm.phaseTime / duration);
+                const eased = smooth01(progress);
+                const strikePulse = clamp01(
+                    pulse(duration * 0.1, duration * 0.08, storm.reducedMotion ? 0.96 : 1.2) +
+                    pulse(duration * 0.18, duration * 0.05, storm.reducedMotion ? 0.26 : 0.48)
+                );
+                const whiteout = progress < 0.12
+                    ? smooth01(progress / 0.12)
+                    : 1 - smooth01((progress - 0.12) / 0.88);
+                storm.environmentMix = THREE.MathUtils.lerp(0.34, 0.08, eased);
+                storm.darkness = THREE.MathUtils.lerp(0.26, 0.08, eased);
+                storm.mist = THREE.MathUtils.lerp(0.12, 0.04, eased);
+                storm.flash = clamp01(strikePulse * 1.12 + whiteout * 0.18);
+                storm.whiteout = clamp01(whiteout);
+                storm.lightningMix = clamp01(strikePulse * 1.06 + whiteout * 0.28);
+                storm.boltOpacity = clamp01(strikePulse * 1.18 + (1 - progress) * 0.14);
+                storm.cloudShiftPx = storm.totalTime * fastDrift * 0.4;
+                storm.cloudShiftAltPx = storm.totalTime * slowDrift * 0.28;
+                storm.videoOpacity = legendaryStormState.videoVisible ? (1 - eased) : 0;
+                if (storm.phaseTime >= duration) {
+                    spawnLegendaryStormLandingBoxIfNeeded({ playLandingSfx: !storm.videoFailed });
+                    stopLegendaryCutsceneVideoPlayback();
+                    restoreHomePageAudioAfterLegendaryCutscene();
+                    resumeBackgroundPlaybackIfActive();
+                    storm.phase = 'restoreReveal';
+                    storm.phaseTime = 0;
+                }
+            } else if (storm.phase === 'restoreReveal') {
+                const duration = timings.restoreReveal;
+                const progress = clamp01(storm.phaseTime / duration);
+                const eased = smooth01(progress);
+                storm.environmentMix = THREE.MathUtils.lerp(0.08, 0, eased);
+                storm.darkness = THREE.MathUtils.lerp(0.08, 0, eased);
+                storm.mist = THREE.MathUtils.lerp(0.04, 0, eased);
+                storm.flash = 0;
+                storm.whiteout = 0;
+                storm.lightningMix = THREE.MathUtils.lerp(0.04, 0, eased);
+                storm.boltOpacity = THREE.MathUtils.lerp(0.03, 0, eased);
+                storm.cloudShiftPx = THREE.MathUtils.lerp(storm.cloudShiftPx, 0, eased);
+                storm.cloudShiftAltPx = THREE.MathUtils.lerp(storm.cloudShiftAltPx, 0, eased);
+                storm.videoOpacity = 0;
+                if (storm.phaseTime >= duration) {
+                    unlockMysteryInteractionsNow();
+                    resetLegendaryStormCinematic();
+                    return;
+                }
+            }
+
+            syncLegendaryStormOverlayVisuals(theme);
+            applyLegendaryStormLighting(theme, storm.environmentMix, storm.lightningMix);
+            syncLegendaryCutsceneVideoVisuals();
+        }
+
         function getMysteryFlightVisualClearanceState(config = MYSTERY_CHARACTER_FLIGHT_CONFIG) {
             const { width, height } = getViewportDimensions();
             const bounds = computeProjectedObjectScreenBounds(creatureGroup, camera, width, height);
@@ -12385,6 +13824,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             clearMysteryRevealStillImage();
             resetPreviewRevealLights();
             setPreviewPanelRevealSettled(false);
+            syncMysterySummonDecisionUiState();
         }
 
         function getMysteryRevealStillCacheKey(propKey, previewMetadata = null) {
@@ -15561,6 +17001,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
             clearMysteryRevealStillImage();
             focusPropPreviewViewport();
+            syncMysterySummonDecisionUiState();
         }
 
         function unlockMysteryRewardRevealActions() {
@@ -15571,7 +17012,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             mysteryRewardRevealState.revealSettled = true;
             setPreviewActionButtonsDisabled(false);
             setPreviewPanelRevealSettled(true);
-            setPreviewFallbackMessage('');
+            if (isMysterySummonDecisionRequired()) {
+                setPreviewFallbackMessage('Choose Equip Now or Keep in Inventory to continue.');
+            } else {
+                setPreviewFallbackMessage('');
+            }
+            syncMysterySummonDecisionUiState();
         }
 
         async function openMysteryRewardRevealPreview(propKey, label = 'Unknown item', prebuiltPreview = null, options = {}) {
@@ -17535,24 +18981,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
         }
 
-        function launchMysteryBox() {
-            if (mysteryState.phase !== 'idle' && mysteryState.phase !== 'cooldown') {
-                return;
-            }
-            const mysteryTestGate = resolveMysteryRewardLaunchGate();
-            if (mysteryTestGate.blocked) {
-                showMysteryTestStatus(mysteryTestGate.reason, { persistent: true });
-                return;
-            }
-            clearMysteryBox();
-            mysterySfxState.lastBoxShakeAtMs = -Infinity;
-
-            const preselectedReward = mysteryTestGate.selection || pickMysteryRewardSelection();
-            const preselectedRewardKey = preselectedReward?.rewardKey || null;
-            const preselectedBoxRarity = preselectedReward?.rarityKey || MYSTERY_BOX_RARITY.RARE;
-            hideMysteryTestStatus();
-            const model = createMysteryBoxModel(preselectedBoxRarity);
-            const boxTheme = model.userData?.rarityTheme || getMysteryBoxTheme(preselectedBoxRarity);
+        function createMysteryBoxSpawnContext(preselectedReward) {
+            const rewardKey = preselectedReward?.rewardKey || null;
+            const boxRarity = preselectedReward?.rarityKey || MYSTERY_BOX_RARITY.RARE;
             const creaturePosition = new THREE.Vector3();
             creatureGroup.getWorldPosition(creaturePosition);
             const creatureQuaternion = new THREE.Quaternion();
@@ -17578,7 +19009,6 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             let forward = rawForward.clone();
             if (towardCamera.lengthSq() > 1e-6) {
                 towardCamera.normalize();
-                // Keep the drop aligned with the pet in screen space.
                 forward.copy(towardCamera);
             } else if (!Number.isFinite(forward.x) || !Number.isFinite(forward.z) || forward.lengthSq() < 1e-6) {
                 forward.copy(stableMysteryForward);
@@ -17604,16 +19034,47 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             if (mysteryFlightCinematic.active) {
                 startY = ground.position.y + (MYSTERY_CHARACTER_FLIGHT_CONFIG.boxDropStartHeight ?? 20.2);
             }
+            const gravity = MYSTERY_BOX_CONFIG.fallGravity || 16.8;
+            const fallDistance = Math.max(0.35, Math.abs(startY - landingTarget.y));
+            return {
+                rewardKey,
+                rewardLabel: rewardKey ? getPropLabelByKey(rewardKey) : null,
+                boxRarity,
+                requestId: mysteryState.requestId || null,
+                costPoints: Math.max(1, normalizeHudMetricValue(mysteryState.costPoints) || MYSTERY_PULL_COST_POINTS),
+                landingTarget,
+                startY,
+                baseScale: MYSTERY_BOX_CONFIG.modelScale || 1,
+                spawnRotation: new THREE.Euler(
+                    THREE.MathUtils.degToRad(Math.random() * 20 - 10),
+                    Math.random() * Math.PI * 2,
+                    THREE.MathUtils.degToRad(Math.random() * 16 - 8)
+                ),
+                landingYaw: Math.random() * Math.PI * 2,
+                fallVelocity: -Math.sqrt(gravity * fallDistance * 2) * 0.85,
+                spinVelX: (Math.random() * 0.58 + 0.08) * (Math.random() < 0.5 ? -1 : 1),
+                spinVelY: (Math.random() * 1.45 + 0.35) * (Math.random() < 0.5 ? -1 : 1),
+                spinVelZ: (Math.random() * 0.34 + 0.04) * (Math.random() < 0.5 ? -1 : 1),
+                seed: Math.random() * Math.PI * 2,
+                rattleSeed: Math.random() * Math.PI * 2
+            };
+        }
 
-            model.position.copy(landingTarget);
-            model.position.y = startY;
-            const baseMysteryScale = MYSTERY_BOX_CONFIG.modelScale || 1;
-            model.scale.setScalar(baseMysteryScale);
-            model.rotation.set(
-                THREE.MathUtils.degToRad(Math.random() * 20 - 10),
-                Math.random() * Math.PI * 2,
-                THREE.MathUtils.degToRad(Math.random() * 16 - 8)
-            );
+        function spawnMysteryBoxWithContext(spawnContext, { phase = 'falling', playLandingSfx = false } = {}) {
+            if (!spawnContext) {
+                return null;
+            }
+            const boxPhase = phase === 'landed' ? 'landed' : 'falling';
+            const model = createMysteryBoxModel(spawnContext.boxRarity);
+            const boxTheme = model.userData?.rarityTheme || getMysteryBoxTheme(spawnContext.boxRarity);
+            model.position.copy(spawnContext.landingTarget);
+            model.position.y = boxPhase === 'falling' ? spawnContext.startY : spawnContext.landingTarget.y;
+            model.scale.setScalar(spawnContext.baseScale);
+            if (boxPhase === 'falling') {
+                model.rotation.copy(spawnContext.spawnRotation);
+            } else {
+                model.rotation.set(0, spawnContext.landingYaw, 0);
+            }
             model.userData.lidPivot?.rotation?.set(0, 0, 0);
             if (model.userData.burstPieces && model.userData.burstStartPos && model.userData.burstStartRot) {
                 model.userData.burstPieces.forEach((piece, index) => {
@@ -17685,29 +19146,29 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             mysteryState.shadowTail = mysteryShadowTail;
             mysteryState.shadowContact = mysteryShadowContact;
             scene.add(model);
-            mysteryState.phase = 'falling';
+            mysteryState.phase = boxPhase;
             mysteryState.root = model;
             mysteryState.timer = 0;
-            mysteryState.startY = startY;
-            mysteryState.landingY = landingTarget.y;
-            mysteryState.startPoint.copy(landingTarget).setY(startY);
-            mysteryState.landingPoint = landingTarget.clone();
-            mysteryState.seed = Math.random() * Math.PI * 2;
-            const fallDistance = Math.max(0.35, Math.abs(startY - landingTarget.y));
-            const gravity = MYSTERY_BOX_CONFIG.fallGravity || 16.8;
-            mysteryState.fallVelocity = -Math.sqrt(gravity * fallDistance * 2) * 0.85;
-            mysteryState.spinVelX = (Math.random() * 0.58 + 0.08) * (Math.random() < 0.5 ? -1 : 1);
-            mysteryState.spinVelY = (Math.random() * 1.45 + 0.35) * (Math.random() < 0.5 ? -1 : 1);
-            mysteryState.spinVelZ = (Math.random() * 0.34 + 0.04) * (Math.random() < 0.5 ? -1 : 1);
-            mysteryState.settled = false;
-            mysteryState.rewardKey = preselectedRewardKey;
-            mysteryState.rewardLabel = preselectedRewardKey ? getPropLabelByKey(preselectedRewardKey) : null;
-            mysteryState.boxRarity = preselectedBoxRarity;
+            mysteryState.startY = spawnContext.startY;
+            mysteryState.landingY = spawnContext.landingTarget.y;
+            mysteryState.startPoint.copy(spawnContext.landingTarget).setY(spawnContext.startY);
+            mysteryState.landingPoint = spawnContext.landingTarget.clone();
+            mysteryState.seed = spawnContext.seed;
+            mysteryState.fallVelocity = boxPhase === 'falling' ? spawnContext.fallVelocity : 0;
+            mysteryState.spinVelX = boxPhase === 'falling' ? spawnContext.spinVelX : 0;
+            mysteryState.spinVelY = boxPhase === 'falling' ? spawnContext.spinVelY : 0;
+            mysteryState.spinVelZ = boxPhase === 'falling' ? spawnContext.spinVelZ : 0;
+            mysteryState.settled = boxPhase === 'landed';
+            mysteryState.rewardKey = spawnContext.rewardKey;
+            mysteryState.rewardLabel = spawnContext.rewardLabel;
+            mysteryState.boxRarity = spawnContext.boxRarity;
+            mysteryState.requestId = spawnContext.requestId || mysteryState.requestId || null;
+            mysteryState.costPoints = Math.max(1, normalizeHudMetricValue(spawnContext.costPoints) || MYSTERY_PULL_COST_POINTS);
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
             mysteryState.previewPreloadQueued = false;
             mysteryState.preloadedPreview = null;
-            mysteryState.landedYaw = model.rotation.y;
+            mysteryState.landedYaw = boxPhase === 'landed' ? spawnContext.landingYaw : model.rotation.y;
             mysteryState.pressActive = false;
             mysteryState.pressPointerId = null;
             mysteryState.pressQueuedOpen = false;
@@ -17715,20 +19176,71 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             mysteryState.openStartPressDepth = 0;
             mysteryState.rattleCooldown = 0;
             mysteryState.rattleTimer = 0;
-            mysteryState.rattleSeed = Math.random() * Math.PI * 2;
-            mysteryState.baseScale = baseMysteryScale;
+            mysteryState.rattleSeed = spawnContext.rattleSeed;
+            mysteryState.baseScale = spawnContext.baseScale;
             mysteryState.shadowFade = 1;
             updateMysteryGroundShadows(model);
             setContactShadowFade(1);
-            if (preselectedRewardKey) {
-                scheduleMysteryRewardPreviewPreload(preselectedRewardKey);
+            if (spawnContext.rewardKey) {
+                scheduleMysteryRewardPreviewPreload(spawnContext.rewardKey);
             }
+            if (boxPhase === 'landed' && playLandingSfx) {
+                playMysteryBoxLandingSfx();
+            }
+            return model;
+        }
+
+        function launchMysteryBox() {
+            if (mysteryState.phase !== 'idle' && mysteryState.phase !== 'cooldown') {
+                return;
+            }
+            const mysteryTestGate = resolveMysteryRewardLaunchGate();
+            if (mysteryTestGate.blocked) {
+                showMysteryTestStatus(mysteryTestGate.reason, { persistent: true });
+                return;
+            }
+            clearMysteryBox();
+            mysterySfxState.lastBoxShakeAtMs = -Infinity;
+            const preselectedReward = mysteryTestGate.selection || pickMysteryRewardSelection();
+            hideMysteryTestStatus();
+            const spawnContext = createMysteryBoxSpawnContext(preselectedReward);
+            if (!spawnContext) {
+                return;
+            }
+            if (spawnContext.requestId && spawnContext.rewardKey) {
+                applyMysterySummonRecoveryRecord({
+                    requestId: spawnContext.requestId,
+                    costPoints: spawnContext.costPoints,
+                    rewardKey: spawnContext.rewardKey,
+                    rewardLabel: spawnContext.rewardLabel || getPropLabelByKey(spawnContext.rewardKey),
+                    rewardRarity: spawnContext.boxRarity || getMysteryRewardBoxRarity(spawnContext.rewardKey),
+                    createdAt: mysterySummonRecoveryState.record?.createdAt || new Date().toISOString(),
+                    resolvedAt: new Date().toISOString(),
+                    status: 'rewardResolved'
+                }, {
+                    notifyHost: true
+                });
+            }
+            if (isLegendaryStormRarity(spawnContext.boxRarity) && startLegendaryStormCinematic(spawnContext)) {
+                return;
+            }
+            spawnMysteryBoxWithContext(spawnContext, { phase: 'falling' });
         }
         function clearMysteryBox() {
             clearMysteryGroundShadows();
             stopMysteryScrollPullSfx(true);
             if (mysteryState.root) {
                 scene.remove(mysteryState.root);
+            }
+            if (
+                !legendaryStormState.active &&
+                (
+                    legendaryStormState.grassRevealVisible ||
+                    legendaryStormState.savedWorldVisible ||
+                    legendaryStormState.savedGrassVisible
+                )
+            ) {
+                clearLegendaryGrassRevealState();
             }
             mysteryState.phase = 'idle';
             mysteryState.root = null;
@@ -17744,6 +19256,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             mysteryState.rewardKey = null;
             mysteryState.rewardLabel = null;
             mysteryState.boxRarity = MYSTERY_BOX_RARITY.RARE;
+            mysteryState.requestId = null;
+            mysteryState.costPoints = MYSTERY_PULL_COST_POINTS;
             mysteryState.rewardShown = false;
             mysteryState.previewPrimed = false;
             mysteryState.previewPreloadQueued = false;
@@ -17801,7 +19315,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         }
 
         function startMysteryFlightCinematic(waitForSelectionReturn = false, launchProfile = null) {
-            const canStart = mysteryState.phase === 'idle' && !isMysteryInteractionLocked();
+            const canStart = mysteryState.phase === 'idle' && !isMysteryInteractionLocked() && !legendaryStormState.active;
             if (!canStart) {
                 return false;
             }
@@ -18120,7 +19634,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     fx.dropTriggered = true;
                     fx.spinYaw = fx.bodyYaw;
                     launchMysteryBox();
-                    requestMysteryFlightReturn();
+                    if (!legendaryStormState.active) {
+                        requestMysteryFlightReturn();
+                    }
                     fx.phase = 'hold';
                     fx.timer = 0;
                     fx.returnStartOffset.copy(fx.rigOffset);
@@ -18402,7 +19918,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     fx.dropTriggered = true;
                     fx.spinYaw = fx.bodyYaw;
                     launchMysteryBox();
-                    requestMysteryFlightReturn();
+                    if (!legendaryStormState.active) {
+                        requestMysteryFlightReturn();
+                    }
                     fx.phase = 'hold';
                     fx.timer = 0;
                     fx.returnStartOffset.copy(fx.rigOffset);
@@ -18711,7 +20229,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     fx.ascentBoostVel = 0;
                     fx.ascentBoostY = 0;
                     launchMysteryBox();
-                    requestMysteryFlightReturn();
+                    if (!legendaryStormState.active) {
+                        requestMysteryFlightReturn();
+                    }
                     fx.phase = 'hold';
                     fx.timer = 0;
                     fx.returnStartOffset.copy(fx.rigOffset);
@@ -18973,6 +20493,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             cacheMysteryRewardPreviewBuild(rewardKey);
             schedulePropWarmForMainRenderer(rewardKey);
             const stashResult = stashPropInInventory(rewardKey, { deferRender: true });
+            if (mysteryState.requestId) {
+                applyMysterySummonRecoveryRecord({
+                    requestId: mysteryState.requestId,
+                    costPoints: Math.max(1, normalizeHudMetricValue(mysteryState.costPoints) || MYSTERY_PULL_COST_POINTS),
+                    rewardKey,
+                    rewardLabel,
+                    rewardRarity: mysteryState.boxRarity || getMysteryRewardBoxRarity(rewardKey),
+                    createdAt: mysterySummonRecoveryState.record?.createdAt || new Date().toISOString(),
+                    resolvedAt: new Date().toISOString(),
+                    status: 'decisionRequired'
+                });
+            }
             mysteryState.openStartPressDepth = THREE.MathUtils.clamp(mysteryState.pressDepth || 0, 0, 1);
             mysteryState.pressActive = false;
             mysteryState.pressPointerId = null;
@@ -19107,6 +20639,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             );
         }
 
+        function unlockMysteryInteractionsNow() {
+            mysteryInteractionSafetyState.blockedUntilMs = 0;
+        }
+
         function isMysteryInteractionLocked() {
             return getMysteryInteractionNowMs() < (mysteryInteractionSafetyState.blockedUntilMs || 0);
         }
@@ -19134,6 +20670,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             return (
                 !mysteryPullSpendState.pending &&
                 !mysteryFlightCinematic.active &&
+                !legendaryStormState.active &&
                 mysteryScrollSign &&
                 mysteryState.phase === 'idle' &&
                 !mysteryPointsPopup?.classList?.contains('open') &&
@@ -19265,6 +20802,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             mysterySignSlingshotState.launchOffset = pulledOffset;
             mysterySignSlingshotState.launchStartOffset = pulledOffset;
             const spendResult = await requestMysteryPullSpend(MYSTERY_PULL_COST_POINTS);
+            if (spendResult?.accepted) {
+                mysteryState.requestId = spendResult.requestId || mysteryState.requestId || null;
+                mysteryState.costPoints = Math.max(1, normalizeHudMetricValue(spendResult.costPoints) || MYSTERY_PULL_COST_POINTS);
+            } else {
+                mysteryState.requestId = null;
+                mysteryState.costPoints = MYSTERY_PULL_COST_POINTS;
+            }
             const launched = Boolean(spendResult?.accepted) && launchMysterySignByPull(pulledOffset);
             if (launched) {
                 setMysteryPointsPopupOpen(false);
@@ -19865,7 +21409,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     void openMysteryRewardRevealPreview(
                         mysteryState.rewardKey,
                         mysteryState.rewardLabel,
-                        preloadedRewardPreview
+                        preloadedRewardPreview,
+                        {
+                            forceDecision: isMysterySummonDecisionRequired(),
+                            previewMetadata: {
+                                rarity: mysteryState.boxRarity || getMysteryRewardBoxRarity(mysteryState.rewardKey)
+                            }
+                        }
                     ).then(() => {
                         if (
                             propPreviewName &&
@@ -19910,9 +21460,17 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
         }
 
-        function closePropPreview() {
+        function closePropPreview(reason = 'user') {
             if (!propPreviewPanel) {
-                return;
+                return false;
+            }
+            const allowForcedClose =
+                reason === 'system' ||
+                reason === 'explicitDecision' ||
+                reason === 'recovery';
+            if (isMysterySummonDecisionRequired() && !allowForcedClose) {
+                showMysterySummonDecisionRequiredMessage();
+                return false;
             }
             const wasPanelOpen = Boolean(
                 previewState.open ||
@@ -19976,6 +21534,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             if (propPreviewTitle) {
                 propPreviewTitle.textContent = 'Prop Viewer';
             }
+            updateMysteryPreviewActionLabels();
 
             if (wasPanelOpen && mysterySignNeedsReturn) {
                 mysterySignReturnPendingAfterPanelClose = true;
@@ -19992,6 +21551,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     returnMysterySignAfterSelection();
                 }, MYSTERY_SIGN_RETURN_AFTER_PANEL_CLOSE_MS);
             }
+            return true;
         }
 
         function queueMysterySignReturnAfterPanelClose() {
@@ -20222,29 +21782,30 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 if (!previewState.propKey) {
                     return;
                 }
+                const forceDecision = isMysterySummonDecisionRequired();
                 const stashResult = stashPropInInventory(previewState.propKey);
-                if (!stashResult.added) {
-                    if (propPreviewName) {
+                if (propPreviewName) {
+                    if (forceDecision) {
+                        if (stashResult.dropped?.length) {
+                            const droppedLabel = getPropLabelByKey(stashResult.dropped[0]);
+                            propPreviewName.textContent = `${previewState.label || 'Item'} kept in Inventory. ${droppedLabel} was rotated out (category limit).`;
+                        } else {
+                            propPreviewName.textContent = `${previewState.label || 'Item'} kept in Inventory`;
+                        }
+                    } else if (!stashResult.added) {
                         propPreviewName.textContent = `${previewState.label || 'Item'} is already in Inventory`;
-                    }
-                    queueMysterySignReturnAfterPanelClose();
-                    closePropPreview();
-                    return;
-                }
-                if (stashResult.dropped?.length) {
-                    if (propPreviewName) {
+                    } else if (stashResult.dropped?.length) {
                         const droppedLabel = getPropLabelByKey(stashResult.dropped[0]);
                         propPreviewName.textContent = `${previewState.label || 'Item'} stashed. ${droppedLabel} was removed (max 5 per category).`;
+                    } else {
+                        propPreviewName.textContent = `${previewState.label || 'Item'} stashed in Inventory`;
                     }
-                    queueMysterySignReturnAfterPanelClose();
-                    closePropPreview();
-                    return;
                 }
-                if (propPreviewName) {
-                    propPreviewName.textContent = `${previewState.label || 'Item'} stashed in Inventory`;
+                if (forceDecision) {
+                    clearMysterySummonRecoveryRecord();
                 }
                 queueMysterySignReturnAfterPanelClose();
-                closePropPreview();
+                closePropPreview(forceDecision ? 'explicitDecision' : 'user');
             });
         }
 
@@ -20253,12 +21814,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 if (!previewState.propKey) {
                     return;
                 }
+                const forceDecision = isMysterySummonDecisionRequired();
                 const equipped = equipPropNow(previewState.propKey);
                 if (equipped && propPreviewName) {
                     propPreviewName.textContent = `${previewState.label || 'Item'} equipped`;
                 }
+                if (forceDecision) {
+                    clearMysterySummonRecoveryRecord();
+                }
                 queueMysterySignReturnAfterPanelClose();
-                closePropPreview();
+                closePropPreview(forceDecision ? 'explicitDecision' : 'user');
             });
         }
 
@@ -20404,16 +21969,34 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         }
 
         if (propPreviewCloseBtn) {
-            propPreviewCloseBtn.addEventListener('click', () => {
-                closePropPreview();
+            propPreviewCloseBtn.addEventListener('click', (event) => {
+                if (isMysterySummonDecisionLockActive()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                closePropPreview('user');
             });
         }
 
         if (propPreviewOverlay) {
-            propPreviewOverlay.addEventListener('click', () => {
-                closePropPreview();
+            propPreviewOverlay.addEventListener('pointerdown', (event) => {
+                consumeMysterySummonPreviewOutsideInteraction(event);
+            }, { capture: true });
+            propPreviewOverlay.addEventListener('click', (event) => {
+                if (consumeMysterySummonPreviewOutsideInteraction(event)) {
+                    return;
+                }
+                closePropPreview('user');
             });
         }
+
+        document.addEventListener('pointerdown', (event) => {
+            consumeMysterySummonPreviewOutsideInteraction(event);
+        }, true);
+
+        document.addEventListener('click', (event) => {
+            consumeMysterySummonPreviewOutsideInteraction(event);
+        }, true);
 
         document.addEventListener('keydown', (event) => {
             const target = event.target;
@@ -20429,7 +22012,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 return;
             }
             if (event.key === 'Escape') {
-                closePropPreview();
+                if (isMysterySummonDecisionLockActive()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showMysterySummonDecisionRequiredMessage();
+                    return;
+                }
+                closePropPreview('user');
                 return;
             }
             if (!previewState.open || !previewState.object) {
@@ -22529,6 +24118,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             holdInput.triggered = false;
         });
         window.addEventListener('blur', () => {
+            finishLegendaryStormCinematicImmediately();
             cancelMysterySignSlingshot(mysterySignSlingshotState.pointerId);
             handleMysteryBoxPointerCancel(mysteryState.pressPointerId ?? null);
             holdInput.active = false;
@@ -22538,6 +24128,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         });
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') return;
+            finishLegendaryStormCinematicImmediately();
             cancelMysterySignSlingshot(mysterySignSlingshotState.pointerId);
             handleMysteryBoxPointerCancel(mysteryState.pressPointerId ?? null);
             holdInput.active = false;
@@ -22937,6 +24528,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
             const emotion = sampleEmotion(dt);
             const mysteryFlightFxRaw = updateMysteryFlightCinematic(dt, t);
+            updateLegendaryStormCinematic(dt, t);
             const mysteryFlightFx = sampleMysteryFlightRender(dt, mysteryFlightFxRaw);
             const stuntTarget = sampleStunt(dt);
 
@@ -23317,7 +24909,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             updateMysteryHangingSign(dt, t);
             for (let i = 0; i < grassBlades.length; i++) {
                 const g = grassBlades[i];
-                g.blade.rotation.z = Math.sin(t * g.speed + g.phase) * g.sway + wind * 0.08;
+                g.blade.rotation.z =
+                    Math.sin(t * g.speed + g.phase) * g.sway +
+                    wind * 0.08;
             }
 
             for (let i = 0; i < treeInstances.length; i++) {
@@ -23328,6 +24922,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             for (let i = 0; i < cloudPlanes.length; i++) {
                 const c = cloudPlanes[i];
                 c.mesh.position.x += c.speed * dt;
+                c.mesh.material.opacity = homePageDayLightingDefaults.cloudOpacities[i] ?? c.mesh.material.opacity;
                 if (c.mesh.position.x > 30) c.mesh.position.x = -28;
             }
 
@@ -23335,6 +24930,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
             pollen.rotation.y = t * 0.04;
             pollen.position.x = Math.sin(t * 0.25) * 0.6;
+            pollenMaterial.opacity = homePageDayLightingDefaults.pollenOpacity;
 
             updateMysteryBox(dt);
             applyContactShadowOpacity(hoverHeight, mysteryFlightFx);

@@ -7,9 +7,13 @@ import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { buildAssetPath } from '../utils/pathUtils';
 import {
+  buildHomepagePendingSummonRecovery,
+  clearHomepagePendingSummonRecovery,
   consumeHomepageMysteryTestLaunchToken,
   createCreatorCatalogSyncPayload,
+  persistHomepagePendingSummonRecovery,
   persistHomepageCatalogSnapshot,
+  readHomepagePendingSummonRecovery,
   readHomepageMysteryTestSession,
 } from '../utils/homepageCatalogBridge';
 import { isManagerUser } from '../utils/managerAccess';
@@ -22,6 +26,7 @@ import {
   snapshotContainsPropKey,
   type PendingMysteryLaunchState,
 } from './userHomePage/homepageLaunchState';
+import type { HomepagePendingSummonRecoveryPayload } from '../utils/homepageCatalogBridge';
 import './Home.css';
 import './UserHomePage.css';
 
@@ -36,6 +41,8 @@ const HOME_PAGE_DAILY_LUNCHBOX_CLAIM_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLA
 const HOME_PAGE_DAILY_LUNCHBOX_CLAIM_RESULT_MESSAGE = 'LAHS_HOMEPAGE_DAILY_LUNCHBOX_CLAIM_RESULT';
 const HOME_PAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUEST';
 const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
+const HOME_PAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
+const HOME_PAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
 const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
 const HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX = 'homepage-daily-lunchbox';
@@ -141,6 +148,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [launchRefreshToken, setLaunchRefreshToken] = useState(() => initialPendingMysteryLaunch?.launchId || initialPendingMysteryLaunch?.createdAt || '');
   const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
+  const [pendingSummonRecovery, setPendingSummonRecovery] = useState<HomepagePendingSummonRecoveryPayload | null>(null);
   const [storedSnapshot, setStoredSnapshot] = useState<HomepageCatalogSnapshot | null>(
     () => initialLaunchState.storedSnapshot,
   );
@@ -248,6 +256,23 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     }
   }, []);
 
+  const persistPendingSummonRecoveryState = useCallback((payload: HomepagePendingSummonRecoveryPayload | null) => {
+    if (payload) {
+      persistHomepagePendingSummonRecovery(payload);
+      setPendingSummonRecovery(payload);
+      return;
+    }
+    clearHomepagePendingSummonRecovery(user?.id ?? null);
+    setPendingSummonRecovery(null);
+  }, [user?.id]);
+
+  const syncPendingSummonRecoveryToIframe = useCallback(() => {
+    postTiltBridgeMessage({
+      type: HOME_PAGE_SUMMON_RECOVERY_SYNC_MESSAGE,
+      payload: pendingSummonRecovery,
+    });
+  }, [pendingSummonRecovery, postTiltBridgeMessage]);
+
   const syncHomepagePointsToIframe = useCallback(() => {
     postTiltBridgeMessage({
       type: HOME_PAGE_POINTS_SYNC_MESSAGE,
@@ -282,6 +307,17 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       listening: bridgeState.listening,
     });
   }, [postTiltBridgeMessage]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setPendingSummonRecovery(user?.id ? readHomepagePendingSummonRecovery(user.id) : null);
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [user?.id]);
+
+  useEffect(() => {
+    syncPendingSummonRecoveryToIframe();
+  }, [syncPendingSummonRecoveryToIframe]);
 
   useEffect(() => {
     if (!isActive) {
@@ -530,6 +566,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
 
         const sessionId = `${HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX}:${user.id}:${requestId}`;
         const eventId = `pull-${requestId}`;
+        const userId = user.id;
 
         void spendPoints({
           gameId: HOME_PAGE_MYSTERY_PULL_GAME_ID,
@@ -545,6 +582,16 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
             trigger: 'mystery-scroll-pull',
           },
         }).then((result) => {
+          if (result.accepted) {
+            const pendingRecovery = buildHomepagePendingSummonRecovery({
+              userId,
+              requestId,
+              costPoints,
+              createdAt: occurredAt,
+              status: 'pointsAccepted',
+            });
+            persistPendingSummonRecoveryState(pendingRecovery);
+          }
           postTiltBridgeMessage({
             type: HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE,
             requestId,
@@ -565,6 +612,62 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
             stars,
           });
         });
+        return;
+      }
+      if (type === HOME_PAGE_SUMMON_RECOVERY_UPDATE_MESSAGE) {
+        const action = typeof (event.data as { action?: unknown }).action === 'string'
+          ? (event.data as { action: string }).action.trim()
+          : 'upsert';
+        if (action === 'clear') {
+          persistPendingSummonRecoveryState(null);
+          return;
+        }
+
+        const rawPayload = (event.data as { payload?: unknown }).payload;
+        const payload = buildHomepagePendingSummonRecovery({
+          userId: user?.id ?? null,
+          requestId: typeof rawPayload === 'object' && rawPayload ? (rawPayload as { requestId?: unknown }).requestId as string : null,
+          costPoints: typeof rawPayload === 'object' && rawPayload ? Number((rawPayload as { costPoints?: unknown }).costPoints) : 0,
+          rewardKey: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { rewardKey?: unknown }).rewardKey as string | null | undefined) ?? null : null,
+          rewardLabel: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { rewardLabel?: unknown }).rewardLabel as string | null | undefined) ?? null : null,
+          rewardRarity: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { rewardRarity?: unknown }).rewardRarity as HomepagePendingSummonRecoveryPayload['rewardRarity']) ?? null : null,
+          createdAt: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { createdAt?: unknown }).createdAt as string | undefined) : undefined,
+          resolvedAt: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { resolvedAt?: unknown }).resolvedAt as string | null | undefined) ?? null : null,
+          status: typeof rawPayload === 'object' && rawPayload ? ((rawPayload as { status?: unknown }).status as HomepagePendingSummonRecoveryPayload['status']) : undefined,
+        });
+
+        if (!payload) {
+          persistPendingSummonRecoveryState(null);
+          return;
+        }
+
+        if (action === 'refundFallback') {
+          if (!user?.id) {
+            persistPendingSummonRecoveryState(null);
+            return;
+          }
+          const refundSessionId = `${HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX}:${user.id}:${payload.requestId}:recovery-refund`;
+          const refundEventId = `refund-${payload.requestId}`;
+          void awardPoints({
+            gameId: HOME_PAGE_MYSTERY_PULL_GAME_ID,
+            sessionId: refundSessionId,
+            eventId: refundEventId,
+            points: payload.costPoints,
+            occurredAt: payload.resolvedAt ?? payload.createdAt,
+            label: 'Mystery Box Pull Recovery Refund',
+            meta: {
+              source: 'homepage-mystery-box-recovery',
+              requestId: payload.requestId,
+              costPoints: payload.costPoints,
+              rewardKey: payload.rewardKey,
+            },
+          }).finally(() => {
+            persistPendingSummonRecoveryState(null);
+          });
+          return;
+        }
+
+        persistPendingSummonRecoveryState(payload);
         return;
       }
       if (type === HOME_PAGE_TILT_PERMISSION_REQUEST_MESSAGE) {
@@ -598,8 +701,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     dailyLunchboxClaimPending,
     dailyLunchboxClaimed,
     dailyLunchboxRewardReady,
+    persistPendingSummonRecoveryState,
     postTiltBridgeMessage,
     stars,
+    syncPendingSummonRecoveryToIframe,
     syncHomepagePointsToIframe,
     syncTiltBridgeStateToIframe,
     totalPoints,
@@ -684,6 +789,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     );
     syncHomepagePointsToIframe();
     syncTiltBridgeStateToIframe();
+    syncPendingSummonRecoveryToIframe();
     if (isCatalogLoading) {
       return;
     }

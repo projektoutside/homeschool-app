@@ -12,6 +12,7 @@ export const HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY = 'LAHS_HOMEPAGE_MYSTERY_T
 export const HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY = 'LAHS_HOMEPAGE_MYSTERY_TEST_REWARD_OVERRIDE';
 export const HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY = 'LAHS_HOMEPAGE_MYSTERY_TEST_LAUNCH';
 export const HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY = 'LAHS_HOMEPAGE_MYSTERY_TEST_SESSION';
+export const HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY = 'LAHS_HOMEPAGE_PENDING_SUMMON_RECOVERY';
 export const HOMEPAGE_CREATOR_READY = 'LAHS_HOMEPAGE_CREATOR_READY';
 export const HOMEPAGE_CATALOG_SYNC = 'LAHS_HOMEPAGE_CATALOG_SYNC';
 export const HOMEPAGE_PROP_UPLOAD_REQUEST = 'LAHS_HOMEPAGE_PROP_UPLOAD_REQUEST';
@@ -43,6 +44,23 @@ export type HomepageMysteryTestSessionPayload = {
   createdAt: string;
   mode: 'nextPullOnly';
   failureMode: 'blockPull';
+};
+
+export type HomepagePendingSummonRecoveryStatus =
+  | 'pointsAccepted'
+  | 'rewardResolved'
+  | 'decisionRequired';
+
+export type HomepagePendingSummonRecoveryPayload = {
+  userId: string | null;
+  requestId: string;
+  costPoints: number;
+  rewardKey: string | null;
+  rewardLabel: string | null;
+  rewardRarity: HomepagePropRarity | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  status: HomepagePendingSummonRecoveryStatus;
 };
 
 const HOMEPAGE_RARITIES: HomepagePropRarity[] = [
@@ -192,6 +210,68 @@ export const buildHomepageMysteryTestSession = ({
   };
 };
 
+export const buildHomepagePendingSummonRecovery = ({
+  userId = null,
+  requestId,
+  costPoints,
+  rewardKey = null,
+  rewardLabel = null,
+  rewardRarity = null,
+  createdAt = new Date().toISOString(),
+  resolvedAt = null,
+  status = 'pointsAccepted',
+}: {
+  userId?: string | null;
+  requestId: string | null | undefined;
+  costPoints: number;
+  rewardKey?: string | null;
+  rewardLabel?: string | null;
+  rewardRarity?: HomepagePropRarity | null;
+  createdAt?: string;
+  resolvedAt?: string | null;
+  status?: HomepagePendingSummonRecoveryStatus;
+}): HomepagePendingSummonRecoveryPayload | null => {
+  const normalizedRequestId = typeof requestId === 'string' ? requestId.trim() : '';
+  const normalizedCostPoints = clampNumber(Number(costPoints), 1, 1000000);
+  const normalizedStatus: HomepagePendingSummonRecoveryStatus =
+    status === 'rewardResolved' || status === 'decisionRequired'
+      ? status
+      : 'pointsAccepted';
+  if (!normalizedRequestId || !normalizedCostPoints) {
+    return null;
+  }
+
+  const normalizedRewardKey = typeof rewardKey === 'string' && rewardKey.trim().length > 0
+    ? rewardKey.trim()
+    : null;
+  const normalizedRewardLabel = typeof rewardLabel === 'string' && rewardLabel.trim().length > 0
+    ? rewardLabel.trim()
+    : null;
+  const normalizedUserId = typeof userId === 'string' && userId.trim().length > 0
+    ? userId.trim()
+    : null;
+  const normalizedCreatedAt = typeof createdAt === 'string' && createdAt.trim().length > 0
+    ? createdAt
+    : new Date().toISOString();
+  const normalizedResolvedAt = typeof resolvedAt === 'string' && resolvedAt.trim().length > 0
+    ? resolvedAt
+    : null;
+
+  return {
+    userId: normalizedUserId,
+    requestId: normalizedRequestId,
+    costPoints: normalizedCostPoints,
+    rewardKey: normalizedRewardKey,
+    rewardLabel: normalizedRewardLabel,
+    rewardRarity: normalizedRewardKey || rewardRarity
+      ? normalizeHomepageRarity(rewardRarity)
+      : null,
+    createdAt: normalizedCreatedAt,
+    resolvedAt: normalizedResolvedAt,
+    status: normalizedStatus,
+  };
+};
+
 export const mysteryTestOverrideMatchesPropKey = (
   overridePayload: HomepageMysteryTestOverridePayload | null | undefined,
   candidateKey: string | null | undefined,
@@ -316,6 +396,71 @@ export const persistHomepageMysteryTestSession = (payload: HomepageMysteryTestSe
 export const clearHomepageMysteryTestSession = (): void => {
   try {
     localStorage.removeItem(HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures in standalone/local preview sessions.
+  }
+};
+
+export const readHomepagePendingSummonRecovery = (
+  userId: string | null | undefined = null,
+): HomepagePendingSummonRecoveryPayload | null => {
+  try {
+    const raw = localStorage.getItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<HomepagePendingSummonRecoveryPayload> | null;
+    const payload = buildHomepagePendingSummonRecovery({
+      userId: parsed?.userId ?? null,
+      requestId: parsed?.requestId,
+      costPoints: Number(parsed?.costPoints),
+      rewardKey: parsed?.rewardKey ?? null,
+      rewardLabel: parsed?.rewardLabel ?? null,
+      rewardRarity: parsed?.rewardRarity ?? null,
+      createdAt: typeof parsed?.createdAt === 'string' && parsed.createdAt.trim().length > 0
+        ? parsed.createdAt
+        : new Date().toISOString(),
+      resolvedAt: parsed?.resolvedAt ?? null,
+      status: parsed?.status,
+    });
+    if (!payload) {
+      return null;
+    }
+    const normalizedUserId = typeof userId === 'string' && userId.trim().length > 0
+      ? userId.trim()
+      : null;
+    if (normalizedUserId && payload.userId !== normalizedUserId) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
+export const persistHomepagePendingSummonRecovery = (
+  payload: HomepagePendingSummonRecoveryPayload | null,
+): void => {
+  try {
+    if (!payload) {
+      localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage failures in standalone/local preview sessions.
+  }
+};
+
+export const clearHomepagePendingSummonRecovery = (userId: string | null | undefined = null): void => {
+  try {
+    if (!userId) {
+      localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+      return;
+    }
+    const payload = readHomepagePendingSummonRecovery(userId);
+    if (!payload) {
+      return;
+    }
+    localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
   } catch {
     // Ignore storage failures in standalone/local preview sessions.
   }

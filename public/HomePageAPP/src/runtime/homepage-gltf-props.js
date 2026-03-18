@@ -136,7 +136,7 @@ export const DEFAULT_WING_AUTHORING_PREVIEW = Object.freeze({
 });
 
 export const DEFAULT_WING_MOTION_CHANNEL = Object.freeze({
-  flapHz: 1.45,
+  flapHz: 0.85,
   direction: 'normal',
   amplitude: 1,
   sweep: 1,
