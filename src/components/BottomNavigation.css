@@ -34,7 +34,7 @@
     background: #000;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 260ms ease-in-out;
+    transition: opacity 180ms ease-out;
     will-change: opacity;
 }
 

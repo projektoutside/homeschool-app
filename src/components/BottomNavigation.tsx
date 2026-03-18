@@ -11,8 +11,8 @@ interface BottomNavigationProps {
     isSettingsOpen: boolean;
 }
 
-const HOME_TRANSITION_FADE_IN_MS = 220;
-const HOME_TRANSITION_FADE_OUT_MS = 280;
+const HOME_TRANSITION_NAV_DELAY_MS = 16;
+const HOME_TRANSITION_FADE_OUT_MS = 180;
 const STATS_PULSE_CYCLE_MS = 950;
 const AUTO_GAME_DOCK_PULSE_COUNT = 2;
 const STATS_WAKE_GLOW_MS = 2000;
@@ -103,7 +103,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                 return;
             }
             navigate('/home-profile');
-        }, HOME_TRANSITION_FADE_IN_MS);
+        }, HOME_TRANSITION_NAV_DELAY_MS);
     }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
 
     const handleSliderHomeClick = useCallback(() => {

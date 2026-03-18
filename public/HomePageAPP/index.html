@@ -17331,34 +17331,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         }
 
         function pickMysteryRewardRarity(availableKeysByRarity) {
-            const weightedRarities = [];
-            let totalWeight = 0;
+            const availableRarities = MYSTERY_RARITY_SELECTION_ORDER.filter((rarityKey) => (
+                Array.isArray(availableKeysByRarity?.[rarityKey]) && availableKeysByRarity[rarityKey].length > 0
+            ));
 
-            MYSTERY_RARITY_SELECTION_ORDER.forEach((rarityKey) => {
-                const availableKeys = availableKeysByRarity?.[rarityKey];
-                if (!Array.isArray(availableKeys) || availableKeys.length === 0) {
-                    return;
-                }
-                const weight = Number(MYSTERY_BOX_SUMMON_WEIGHTS[rarityKey]);
-                if (!Number.isFinite(weight) || weight <= 0) {
-                    return;
-                }
-                totalWeight += weight;
-                weightedRarities.push({
-                    rarityKey,
-                    threshold: totalWeight
-                });
-            });
-
-            if (!weightedRarities.length) {
+            if (!availableRarities.length) {
                 return MYSTERY_RARITY_SELECTION_ORDER.find((rarityKey) =>
                     Array.isArray(availableKeysByRarity?.[rarityKey]) && availableKeysByRarity[rarityKey].length > 0
                 ) || MYSTERY_BOX_RARITY.RARE;
             }
 
-            const roll = Math.random() * totalWeight;
-            return weightedRarities.find((entry) => roll < entry.threshold)?.rarityKey
-                || weightedRarities[weightedRarities.length - 1].rarityKey;
+            const rollIndex = Math.floor(Math.random() * availableRarities.length);
+            return availableRarities[rollIndex] || availableRarities[availableRarities.length - 1];
         }
 
         function pickNormalMysteryRewardSelection() {

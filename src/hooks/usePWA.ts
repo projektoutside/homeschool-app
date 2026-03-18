@@ -110,6 +110,42 @@ export function usePWA(): UsePWAReturn {
     return null;
   }, []);
   const isNativeApp = nativePlatform !== null;
+  const isLocalTestingOrigin = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const hostname = window.location.hostname.trim().toLowerCase();
+    if (!hostname) {
+      return false;
+    }
+
+    if (
+      hostname === 'localhost'
+      || hostname === '127.0.0.1'
+      || hostname === '::1'
+      || hostname.endsWith('.local')
+    ) {
+      return true;
+    }
+
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    const private172Match = hostname.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+    if (private172Match) {
+      const secondOctet = Number(private172Match[1]);
+      return secondOctet >= 16 && secondOctet <= 31;
+    }
+
+    return false;
+  }, []);
+  const bypassInstalledShellGate = import.meta.env.DEV || isLocalTestingOrigin;
   const installContext = useMemo(() => {
     const ua = navigator.userAgent || '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -195,7 +231,7 @@ export function usePWA(): UsePWAReturn {
 
   const isAndroid = installContext.platform === 'android' || nativePlatform === 'android';
   const isStandaloneShell = isStandalone || isNativeApp;
-  const requiresInstalledShell = isAndroid && !isStandaloneShell;
+  const requiresInstalledShell = isAndroid && !isStandaloneShell && !bypassInstalledShellGate;
   const shouldUseNativeFullscreenFallback = !isStandaloneShell && !requiresInstalledShell;
 
   // Check for updates via service worker - defined early for use in effects

@@ -13,6 +13,10 @@ import { useAuth } from '../context/AuthContext';
 import { isManagerUser } from '../utils/managerAccess';
 
 const LazyClassroomPage = React.lazy(() => import('../pages/ClassroomPage'));
+type IdleCapableWindow = Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (handle: number) => void;
+};
 
 const MainLayout: React.FC = () => {
     useGlobalUiClickSound();
@@ -46,14 +50,37 @@ const MainLayout: React.FC = () => {
     useZoomLock({ enabled: shouldDisableZoom });
 
     useEffect(() => {
-        if (!isUserHomeRoute) {
+        if (hasHomePageMounted || isGamePlayerRoute) {
             return;
         }
-        const timerId = window.setTimeout(() => {
+
+        const idleWindow = window as IdleCapableWindow;
+        let timeoutId: number | null = null;
+        let idleId: number | null = null;
+
+        const mountHomepage = () => {
             setHasHomePageMounted(true);
-        }, 0);
-        return () => window.clearTimeout(timerId);
-    }, [isUserHomeRoute]);
+        };
+
+        if (isUserHomeRoute) {
+            timeoutId = window.setTimeout(mountHomepage, 0);
+        } else if (typeof idleWindow.requestIdleCallback === 'function') {
+            idleId = idleWindow.requestIdleCallback(() => {
+                mountHomepage();
+            }, { timeout: 1200 });
+        } else {
+            timeoutId = window.setTimeout(mountHomepage, 600);
+        }
+
+        return () => {
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+            }
+            if (idleId !== null && typeof idleWindow.cancelIdleCallback === 'function') {
+                idleWindow.cancelIdleCallback(idleId);
+            }
+        };
+    }, [hasHomePageMounted, isGamePlayerRoute, isUserHomeRoute]);
 
     // Dev-only shortcut: Ctrl+Shift+M to toggle manager
     useEffect(() => {
