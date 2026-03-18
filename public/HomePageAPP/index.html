@@ -116,6 +116,7 @@
             visibility: hidden;
             background: #000;
             transition: opacity 260ms ease, visibility 0s linear 260ms;
+            will-change: opacity;
         }
 
         #legendary-cutscene-video.active {
@@ -158,6 +159,7 @@
             --legendary-storm-veil-start: rgba(3, 7, 16, 0.14);
             --legendary-storm-veil-end: rgba(3, 8, 20, 0.9);
             --legendary-storm-whiteout: 0;
+            will-change: opacity;
         }
 
         #legendary-storm-overlay.active {
@@ -169,6 +171,7 @@
         #legendary-storm-overlay>div {
             position: absolute;
             inset: 0;
+            will-change: opacity, transform;
         }
 
         #legendary-storm-overlay .legendary-storm-veil {
@@ -308,6 +311,49 @@
             background:
                 radial-gradient(130% 92% at 50% 62%, rgba(126, 225, 255, calc(0.02 + var(--legendary-storm-flash) * 0.2)) 0%, rgba(0, 0, 0, 0) 56%),
                 linear-gradient(180deg, rgba(2, 12, 26, calc(0.08 + var(--legendary-storm-darkness) * 0.24)) 0%, rgba(5, 14, 20, calc(0.04 + var(--legendary-storm-darkness) * 0.18)) 40%, rgba(3, 12, 16, calc(0.14 + var(--legendary-storm-darkness) * 0.44)) 100%);
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay {
+            inset: 0;
+        }
+
+        body.legendary-storm-active.legendary-storm-lite #gif-background,
+        body.legendary-storm-active.legendary-storm-lite #gif-background-fallback {
+            filter:
+                saturate(1)
+                contrast(1)
+                brightness(calc(0.9 - var(--legendary-storm-environment-mix) * 0.18));
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-back,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-front,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-a,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist-b,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-flash,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt::before,
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt::after {
+            filter: none;
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-front {
+            opacity: calc(0.08 + var(--legendary-storm-darkness) * 0.48 + var(--legendary-storm-flash) * 0.03);
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-mist {
+            mix-blend-mode: normal;
+            opacity: calc(var(--legendary-storm-mist) * 0.52);
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-bolt {
+            width: clamp(26px, 2.4vw, 42px);
+            left: calc(var(--legendary-storm-strike-x) - clamp(14px, 1.2vw, 21px));
+            mix-blend-mode: normal;
+            opacity: calc(var(--legendary-storm-bolt-opacity) * 0.82 + var(--legendary-storm-flash) * 0.14);
+        }
+
+        body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-flash {
+            mix-blend-mode: normal;
         }
 
         #startup-fade-overlay {
@@ -10167,7 +10213,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryCutsceneAudioState.active = true;
             legendaryCutsceneAudioState.gain = 0;
             applyLegendaryCutsceneAudioGain();
-            animateLegendaryCutsceneAudioGain(1, LEGENDARY_STORM_CONFIG.cutsceneAudioFadeInMs);
+            const fadeDuration = legendaryStormState.lightweightMode
+                ? LEGENDARY_STORM_CONFIG.lightweightCutsceneAudioFadeInMs
+                : LEGENDARY_STORM_CONFIG.cutsceneAudioFadeInMs;
+            animateLegendaryCutsceneAudioGain(1, fadeDuration);
         }
 
         function stopLegendaryCutsceneAudioImmediately() {
@@ -12345,18 +12394,24 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         const LEGENDARY_STORM_CONFIG = Object.freeze({
             audioLeadInDuration: 0.78,
             reducedMotionAudioLeadInDuration: 0.42,
+            lightweightAudioLeadInDuration: 0.52,
             preStrikeHoldDuration: 1.2,
             reducedMotionPreStrikeHoldDuration: 0.55,
+            lightweightPreStrikeHoldDuration: 0.82,
             introStrikeWhiteoutDuration: 0.74,
             reducedMotionIntroStrikeWhiteoutDuration: 0.42,
+            lightweightIntroStrikeWhiteoutDuration: 0.5,
             cutsceneFallbackDuration: 11.6,
             landingStrikeAfterglowDuration: 0.9,
             reducedMotionLandingStrikeAfterglowDuration: 0.48,
+            lightweightLandingStrikeAfterglowDuration: 0.58,
             restoreRevealDuration: 0.96,
             reducedMotionRestoreRevealDuration: 0.46,
+            lightweightRestoreRevealDuration: 0.62,
             backgroundAudioFadeOutMs: 760,
             backgroundAudioFadeInMs: 1480,
             cutsceneAudioFadeInMs: 560,
+            lightweightCutsceneAudioFadeInMs: 320,
             interactionBufferMs: 520,
             splitSpreadPx: 70,
             reducedMotionSplitSpreadPx: 22,
@@ -12780,6 +12835,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             totalTime: 0,
             rarityKey: null,
             reducedMotion: false,
+            lightweightMode: false,
             timings: null,
             spawnContext: null,
             boxPrepared: false,
@@ -12841,6 +12897,24 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         }
 
+        function isAppleTouchDeviceHomePage() {
+            const platform = navigator.platform || '';
+            const userAgent = navigator.userAgent || '';
+            const maxTouchPoints = Number.isFinite(navigator.maxTouchPoints) ? navigator.maxTouchPoints : 0;
+            return /iPad|iPhone|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
+        }
+
+        function shouldUseLightweightLegendaryStormMode() {
+            if (prefersReducedMotionHomePage()) {
+                return true;
+            }
+            if (isAppleTouchDeviceHomePage()) {
+                return true;
+            }
+            const shortEdge = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+            return Boolean(isMobileLike && shortEdge > 0 && shortEdge <= 900);
+        }
+
         function isLegendaryStormRarity(rarityKey) {
             return rarityKey === MYSTERY_BOX_RARITY.LEGENDARY_LIGHT || rarityKey === MYSTERY_BOX_RARITY.LEGENDARY_DARK;
         }
@@ -12860,7 +12934,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             return LEGENDARY_STORM_CONFIG.cutsceneFallbackDuration;
         }
 
-        function createLegendaryStormTimings(reducedMotion = false) {
+        function createLegendaryStormTimings(reducedMotion = false, lightweightMode = false) {
             const timings = reducedMotion
                 ? {
                     audioLeadIn: LEGENDARY_STORM_CONFIG.reducedMotionAudioLeadInDuration,
@@ -12869,6 +12943,14 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     landingStrikeWhiteout: LEGENDARY_STORM_CONFIG.reducedMotionLandingStrikeAfterglowDuration,
                     restoreReveal: LEGENDARY_STORM_CONFIG.reducedMotionRestoreRevealDuration
                 }
+                : lightweightMode
+                    ? {
+                        audioLeadIn: LEGENDARY_STORM_CONFIG.lightweightAudioLeadInDuration,
+                        preStrikeHold: LEGENDARY_STORM_CONFIG.lightweightPreStrikeHoldDuration,
+                        introStrikeWhiteout: LEGENDARY_STORM_CONFIG.lightweightIntroStrikeWhiteoutDuration,
+                        landingStrikeWhiteout: LEGENDARY_STORM_CONFIG.lightweightLandingStrikeAfterglowDuration,
+                        restoreReveal: LEGENDARY_STORM_CONFIG.lightweightRestoreRevealDuration
+                    }
                 : {
                     audioLeadIn: LEGENDARY_STORM_CONFIG.audioLeadInDuration,
                     preStrikeHold: LEGENDARY_STORM_CONFIG.preStrikeHoldDuration,
@@ -12902,6 +12984,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 )
             );
             document.body.classList.toggle('legendary-storm-active', isActive);
+            document.body.classList.toggle('legendary-storm-lite', Boolean(isActive && legendaryStormState.lightweightMode));
             if (legendaryStormOverlay) {
                 legendaryStormOverlay.classList.toggle('active', isActive);
             }
@@ -12995,17 +13078,32 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             } catch (_) {}
             legendaryCutsceneVideo.loop = false;
             legendaryCutsceneVideo.playsInline = true;
-            startLegendaryCutsceneAudioFadeIn();
+            stopLegendaryCutsceneAudioImmediately();
+            legendaryCutsceneVideo.muted = true;
+            legendaryCutsceneVideo.defaultMuted = true;
+            legendaryCutsceneVideo.volume = 0;
+            const beginAudioFadeIn = () => {
+                if (!legendaryStormState.active || legendaryStormState.videoFailed) {
+                    return;
+                }
+                startLegendaryCutsceneAudioFadeIn();
+            };
             const playAttempt = legendaryCutsceneVideo.play();
-            if (playAttempt && typeof playAttempt.catch === 'function') {
-                playAttempt.catch(() => {
-                    legendaryStormState.videoFailed = true;
-                    legendaryStormState.videoVisible = false;
-                    legendaryStormState.videoOpacity = 0;
-                    stopLegendaryCutsceneAudioImmediately();
-                    syncLegendaryCutsceneVideoVisuals();
-                });
+            if (playAttempt && typeof playAttempt.then === 'function') {
+                playAttempt
+                    .then(() => {
+                        beginAudioFadeIn();
+                    })
+                    .catch(() => {
+                        legendaryStormState.videoFailed = true;
+                        legendaryStormState.videoVisible = false;
+                        legendaryStormState.videoOpacity = 0;
+                        stopLegendaryCutsceneAudioImmediately();
+                        syncLegendaryCutsceneVideoVisuals();
+                    });
+                return;
             }
+            beginAudioFadeIn();
         }
 
         function setLegendaryGrassRevealVisible(visible) {
@@ -13106,6 +13204,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             legendaryStormState.totalTime = 0;
             legendaryStormState.rarityKey = null;
             legendaryStormState.reducedMotion = false;
+            legendaryStormState.lightweightMode = false;
             legendaryStormState.timings = null;
             legendaryStormState.spawnContext = null;
             legendaryStormState.boxPrepared = false;
@@ -13161,13 +13260,15 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 finishLegendaryStormCinematicImmediately();
             }
             const reducedMotion = prefersReducedMotionHomePage();
+            const lightweightMode = shouldUseLightweightLegendaryStormMode();
             legendaryStormState.active = true;
             legendaryStormState.phase = 'audioLeadIn';
             legendaryStormState.phaseTime = 0;
             legendaryStormState.totalTime = 0;
             legendaryStormState.rarityKey = spawnContext.boxRarity;
             legendaryStormState.reducedMotion = reducedMotion;
-            legendaryStormState.timings = createLegendaryStormTimings(reducedMotion);
+            legendaryStormState.lightweightMode = lightweightMode;
+            legendaryStormState.timings = createLegendaryStormTimings(reducedMotion, lightweightMode);
             legendaryStormState.spawnContext = spawnContext;
             legendaryStormState.boxPrepared = false;
             legendaryStormState.environmentMix = 0;
@@ -13205,7 +13306,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             }
             const storm = legendaryStormState;
             const theme = getLegendaryStormTheme(storm.rarityKey);
-            const timings = storm.timings || createLegendaryStormTimings(storm.reducedMotion);
+            const timings = storm.timings || createLegendaryStormTimings(storm.reducedMotion, storm.lightweightMode);
             const clamp01 = (value) => THREE.MathUtils.clamp(value, 0, 1);
             const smooth01 = (value) => {
                 const clamped = clamp01(value);
@@ -13220,8 +13321,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 Math.pow(Math.max(0, Math.sin(time * 67 + seed * 1.31 + 0.35)), reduced ? 16 : 24) * 0.34 +
                 Math.pow(Math.max(0, Math.sin(time * 93 + seed * 0.47 + 1.1)), reduced ? 15 : 22) * 0.22
             );
-            const fastDrift = storm.reducedMotion ? 22 : 34;
-            const slowDrift = storm.reducedMotion ? -10 : -18;
+            const fastDrift = storm.reducedMotion ? 22 : storm.lightweightMode ? 20 : 34;
+            const slowDrift = storm.reducedMotion ? -10 : storm.lightweightMode ? -9 : -18;
 
             storm.phaseTime += dt;
             storm.totalTime += dt;
