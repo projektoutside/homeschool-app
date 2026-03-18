@@ -10547,6 +10547,14 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 : clampUnitVolume(baseVolume * gain, baseVolume);
         }
 
+        function isLegendarySummonHoldingRouteAudio() {
+            return Boolean(
+                legendaryStormState.active ||
+                legendarySummonMusicState.restorePendingAfterPreview ||
+                legendarySummonMusicState.restoreInProgress
+            );
+        }
+
         function animateLegendarySummonMusicGain(targetGain, durationMs, options = {}) {
             const target = clampUnitVolume(targetGain, targetGain > 0 ? 1 : 0);
             const startGain = clampUnitVolume(legendarySummonMusicState.gain, 1);
@@ -10802,7 +10810,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         function fadeOutHomePageAudioForLegendaryCutscene() {
             legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
             clearScheduledHomePageMusicStart();
-            animateHomePageRouteGain(0, LEGENDARY_STORM_CONFIG.backgroundAudioFadeOutMs, { pauseAfter: true });
+            clearHomePageRouteFadeAnimation();
+            homePageRouteAudioState.fadeToken += 1;
+            homePageRouteAudioState.gain = 0;
+            applyHomePageMusicGain();
+            applyNatureSoundsGain();
+            pauseHomePageRouteMusicAndNatureImmediately();
         }
 
         function restoreHomePageAudioAfterLegendaryCutscene({ immediate = false, force = false } = {}) {
@@ -10871,6 +10884,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             clearHomePageMusicTransitionAnimation();
             homePageMusicState.transitionToken += 1;
             stopMysterySfxImmediately();
+            if (homePageMusicState.queuedAudio) {
+                releaseHomePageMusicAudio(homePageMusicState.queuedAudio);
+                homePageMusicState.queuedAudio = null;
+                homePageMusicState.queuedGain = 0;
+            }
+            if (homePageMusicState.activeAudio) {
+                homePageMusicState.activeAudio.pause();
+            }
+            if (natureSoundState.audio) {
+                natureSoundState.audio.pause();
+            }
+        }
+
+        function pauseHomePageRouteMusicAndNatureImmediately() {
+            clearScheduledHomePageMusicStart();
+            clearHomePageMusicTransitionAnimation();
+            homePageMusicState.transitionToken += 1;
             if (homePageMusicState.queuedAudio) {
                 releaseHomePageMusicAudio(homePageMusicState.queuedAudio);
                 homePageMusicState.queuedAudio = null;
@@ -11111,6 +11141,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             const fadeInMs = Math.max(0, Number(options.fadeInMs) || 0);
             homePageMusicState.shouldPlay = true;
             if (!ignoreDelay && homePageMusicState.isDelayedStartPending) return Promise.resolve(false);
+            if (isLegendarySummonHoldingRouteAudio()) return Promise.resolve(false);
             if (!homePageRouteAudioState.isActive || homePageMusicState.muted) return Promise.resolve(false);
             const audio = ensureHomePageMusicAudio();
             if (!audio) return Promise.resolve(false);
@@ -11141,7 +11172,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
         function scheduleHomePageMusicStart(delayMs = HOME_PAGE_MUSIC_ENTRY_DELAY_MS) {
             clearScheduledHomePageMusicStart();
-            if (!homePageRouteAudioState.isActive || homePageMusicState.muted || !homePageMusicState.shouldPlay) return;
+            if (
+                !homePageRouteAudioState.isActive ||
+                homePageMusicState.muted ||
+                !homePageMusicState.shouldPlay ||
+                isLegendarySummonHoldingRouteAudio()
+            ) return;
             const delay = Math.max(0, Number(delayMs) || 0);
             if (delay <= 0) {
                 attemptHomePageMusicPlayback({ ignoreDelay: true, fadeInMs: HOME_PAGE_MUSIC_FADE_IN_MS });
@@ -11177,6 +11213,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
         function attemptNatureSoundsPlayback() {
             natureSoundState.shouldPlay = true;
+            if (isLegendarySummonHoldingRouteAudio()) {
+                return Promise.resolve(false);
+            }
             if (!homePageRouteAudioState.isActive || homePageMusicState.muted || natureSoundState.muted) {
                 return Promise.resolve(false);
             }
@@ -11521,6 +11560,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         }
 
         function handleBackgroundInteractionUnlock() {
+            if (isLegendarySummonHoldingRouteAudio()) {
+                window.removeEventListener('pointerdown', handleBackgroundInteractionUnlock, true);
+                window.removeEventListener('touchstart', handleBackgroundInteractionUnlock, true);
+                window.removeEventListener('keydown', handleBackgroundInteractionUnlock, true);
+                return;
+            }
             if (homePageRouteAudioState.isActive) {
                 resumeBackgroundPlaybackIfActive();
             }
@@ -11599,18 +11644,21 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
 
             document.addEventListener('visibilitychange', () => {
                 if (!homePageRouteAudioState.isActive || document.visibilityState !== 'visible') return;
+                if (isLegendarySummonHoldingRouteAudio()) return;
                 resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
             });
             window.addEventListener('pageshow', () => {
                 if (!homePageRouteAudioState.isActive) return;
+                if (isLegendarySummonHoldingRouteAudio()) return;
                 resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
             });
             window.addEventListener('focus', () => {
                 if (!homePageRouteAudioState.isActive) return;
+                if (isLegendarySummonHoldingRouteAudio()) return;
                 resumeBackgroundPlaybackIfActive();
                 attemptHomePageMusicPlayback();
                 attemptNatureSoundsPlayback();
@@ -24374,6 +24422,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyMysteryDeviceTiltSample(event?.beta, event?.gamma);
         }
 
+        function handleMysteryDeviceOrientationAbsolute(event) {
+            applyMysteryDeviceTiltSample(event?.beta, event?.gamma);
+        }
+
         function handleMysteryDeviceTiltBridgeMessage(event) {
             if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
                 return;
@@ -24441,6 +24493,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 return;
             }
             window.addEventListener('deviceorientation', handleMysteryDeviceOrientation, { passive: true });
+            window.addEventListener('deviceorientationabsolute', handleMysteryDeviceOrientationAbsolute, { passive: true });
             applyMysteryDeviceTiltPermissionStatus('granted', {
                 listening: true,
                 resetCalibration: true
@@ -24987,20 +25040,27 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         window.addEventListener('pointerdown', async (e) => {
             if (e.target && e.target.closest && e.target.closest('#ui-overlay')) return;
             if (e.target && e.target.closest && (e.target.closest('#prop-preview-panel') || e.target.closest('#prop-preview-overlay'))) return;
+            const canRequestTiltPermission =
+                (e.button === undefined || e.button === 0) &&
+                shouldRequestMysteryDeviceTiltPermissionOnTap();
+            const isMysteryScrollTap = canRequestTiltPermission &&
+                isPointOnMysteryScrollSign(e.clientX, e.clientY) &&
+                Number.isFinite(e.pointerId);
+            if (canRequestTiltPermission) {
+                const permissionGranted = await ensureMysteryDeviceTiltPermission({ userGesture: true });
+                if (isMysteryScrollTap) {
+                    if (!permissionGranted) {
+                        return;
+                    }
+                    // Reserve the first direct scroll tap for the iOS sensor permission flow.
+                    return;
+                }
+            }
             if (
                 (e.button === undefined || e.button === 0) &&
                 isPointOnMysteryScrollSign(e.clientX, e.clientY) &&
                 Number.isFinite(e.pointerId)
             ) {
-                const needsPermissionTap = shouldRequestMysteryDeviceTiltPermissionOnTap();
-                if (needsPermissionTap) {
-                    const permissionGranted = await ensureMysteryDeviceTiltPermission({ userGesture: true });
-                    if (!permissionGranted) {
-                        return;
-                    }
-                    // Reserve the first scroll tap for the sensor permission flow on platforms like iOS.
-                    return;
-                }
                 e.preventDefault();
                 if (beginMysterySignSlingshot(e.pointerId, e.clientY)) {
                     return;

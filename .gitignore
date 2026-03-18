@@ -51,7 +51,11 @@ coverage
 Thumbs.db
 
 # Local development artifacts
-.codex/
+.codex/*
+!.codex/skills/
+.codex/skills/*
+!.codex/skills/cross-device-quality-gate/
+!.codex/skills/cross-device-quality-gate/**
 .playwright-cli/
 output/
 tmp/
