@@ -6,6 +6,7 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { buildAssetPath } from '../utils/pathUtils';
+import CinematicLoadingScreen from '../components/CinematicLoadingScreen';
 import {
   buildHomepagePendingSummonRecovery,
   clearHomepagePendingSummonRecovery,
@@ -43,6 +44,7 @@ const HOME_PAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUE
 const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
 const HOME_PAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
 const HOME_PAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
+const HOME_PAGE_BOOT_READY_MESSAGE = 'LAHS_HOMEPAGE_BOOT_READY';
 const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
 const HOME_PAGE_DAILY_LUNCHBOX_SESSION_PREFIX = 'homepage-daily-lunchbox';
@@ -51,6 +53,15 @@ const HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS = 10 * 1000;
 const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
+const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 1200;
+const HOME_PAGE_HOST_LOAD_TIMEOUT_MS = 10 * 1000;
+const HOME_PAGE_HOST_INITIAL_PROGRESS = 0.06;
+
+const clampNumber = (value: number, min: number, max: number): number => {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+};
 
 type HomePageTiltPermissionState =
   | 'unknown'
@@ -146,6 +157,12 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [bootReadyReceived, setBootReadyReceived] = useState(false);
+  const [bootFallbackReady, setBootFallbackReady] = useState(false);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  const [bootProgress, setBootProgress] = useState(HOME_PAGE_HOST_INITIAL_PROGRESS);
+  const [activeBootLaunchPath, setActiveBootLaunchPath] = useState(() => '');
   const [launchRefreshToken, setLaunchRefreshToken] = useState(() => initialPendingMysteryLaunch?.launchId || initialPendingMysteryLaunch?.createdAt || '');
   const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
   const [pendingSummonRecovery, setPendingSummonRecovery] = useState<HomepagePendingSummonRecoveryPayload | null>(null);
@@ -195,9 +212,17 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     || 'runtime'
   ), [effectiveSnapshot?.updatedAt, isCatalogLoading, launchRefreshToken, snapshot.updatedAt]);
   const launchPath = useMemo(
-    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&runtime=${encodeURIComponent(homePageRuntimeToken)}${hasDeveloperAccess ? '&developer=1' : ''}`),
+    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&runtime=${encodeURIComponent(homePageRuntimeToken)}&hostLoader=1${hasDeveloperAccess ? '&developer=1' : ''}`),
     [hasDeveloperAccess, homePageRuntimeToken],
   );
+  const hasPendingBootReset = activeBootLaunchPath !== launchPath;
+  const loaderVisible = hasPendingBootReset || isLoading;
+  const iframeLoadedState = hasPendingBootReset ? false : iframeLoaded;
+  const bootReadyReceivedState = hasPendingBootReset ? false : bootReadyReceived;
+  const bootFallbackReadyState = hasPendingBootReset ? false : bootFallbackReady;
+  const loadTimedOutState = hasPendingBootReset ? false : loadTimedOut;
+  const bootProgressValue = hasPendingBootReset ? HOME_PAGE_HOST_INITIAL_PROGRESS : bootProgress;
+  const bootCompletionRequested = bootReadyReceivedState || bootFallbackReadyState || loadTimedOutState;
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
     listening: boolean;
@@ -318,6 +343,55 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   useEffect(() => {
     syncPendingSummonRecoveryToIframe();
   }, [syncPendingSummonRecoveryToIframe]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveBootLaunchPath(launchPath);
+      setIsLoading(true);
+      setIframeLoaded(false);
+      setBootReadyReceived(false);
+      setBootFallbackReady(false);
+      setLoadTimedOut(false);
+      setBootProgress(HOME_PAGE_HOST_INITIAL_PROGRESS);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [launchPath]);
+
+  useEffect(() => {
+    if (!loaderVisible) {
+      return;
+    }
+
+    let animationFrameId = 0;
+
+    const animateProgress = () => {
+      setBootProgress((current) => {
+        const target = bootCompletionRequested ? 1 : 0.9;
+        const easing = bootCompletionRequested ? 0.19 : 0.03;
+        const drift = bootCompletionRequested ? 0 : 0.0022;
+        const next = current + ((target - current) * easing);
+        return clampNumber(Math.max(next, Math.min(target, current + drift)), HOME_PAGE_HOST_INITIAL_PROGRESS, 1);
+      });
+
+      animationFrameId = window.requestAnimationFrame(animateProgress);
+    };
+
+    animationFrameId = window.requestAnimationFrame(animateProgress);
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [bootCompletionRequested, loaderVisible]);
+
+  useEffect(() => {
+    if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState || loadTimedOutState) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setBootFallbackReady(true);
+    }, HOME_PAGE_BOOT_SIGNAL_GRACE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [bootReadyReceivedState, iframeLoadedState, loaderVisible, loadTimedOutState]);
 
   useEffect(() => {
     if (!isActive) {
@@ -442,6 +516,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
       if (!event.data || typeof event.data !== 'object') return;
 
       const type = (event.data as { type?: string }).type;
+      if (type === HOME_PAGE_BOOT_READY_MESSAGE) {
+        setBootReadyReceived(true);
+        return;
+      }
       if (type === HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE) {
         syncHomepagePointsToIframe();
         return;
@@ -781,7 +859,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   }, [effectiveSnapshot, isCatalogLoading]);
 
   const handleLoad = () => {
-    setIsLoading(false);
+    setIframeLoaded(true);
     applySoundSettingsToWindow(
       iframeRef.current?.contentWindow,
       soundSettings,
@@ -808,33 +886,60 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   };
 
   useEffect(() => {
+    if (!loaderVisible) {
+      return undefined;
+    }
+
     const timeoutId = window.setTimeout(() => {
-      setIsLoading(false);
-    }, 10000);
+      setLoadTimedOut(true);
+    }, HOME_PAGE_HOST_LOAD_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [launchPath]);
+  }, [launchPath, loaderVisible]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const shouldHideBottomDock = isActive && loaderVisible;
+    document.body.classList.toggle('homepage-host-loading', shouldHideBottomDock);
+
+    return () => {
+      document.body.classList.remove('homepage-host-loading');
+    };
+  }, [isActive, loaderVisible]);
+
+  const handleLoaderFinish = useCallback(() => {
+    setIsLoading(false);
+  }, []);
 
   return (
     <div className="os-desktop-shell">
       <section className="os-icon-area user-home-os-area" aria-label="Homepage app">
         <div className="user-home-app-shell">
-        {isLoading && (
-          <div className="user-home-app-loading" aria-live="polite">
-            Loading homepage...
-          </div>
-        )}
-        <iframe
-          key={launchPath}
-          ref={iframeRef}
-          src={launchPath}
-          title="Homepage App"
-          className={`user-home-app-frame ${isLoading ? 'is-loading' : ''}`}
-          allow="fullscreen; autoplay; microphone; camera; accelerometer; gyroscope"
-          allowFullScreen
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
-          onLoad={handleLoad}
-        />
+          {loaderVisible && (
+            <div className="user-home-app-loading">
+              <CinematicLoadingScreen
+                mode="boot"
+                ready={bootCompletionRequested}
+                onFinish={handleLoaderFinish}
+                progressOverride={bootProgressValue}
+                surface="panel"
+              />
+            </div>
+          )}
+          <iframe
+            key={launchPath}
+            ref={iframeRef}
+            src={launchPath}
+            title="Homepage App"
+            className={`user-home-app-frame ${loaderVisible ? 'is-loading' : ''}`}
+            allow="fullscreen; autoplay; microphone; camera; accelerometer; gyroscope"
+            allowFullScreen
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
+            onLoad={handleLoad}
+          />
         </div>
       </section>
     </div>

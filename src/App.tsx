@@ -8,6 +8,7 @@ import { usePWA } from './hooks/usePWA';
 import { useAppAssetPrefetch } from './hooks/useAppAssetPrefetch';
 import { useNativeShell } from './hooks/useNativeShell';
 import { UpdateNotification } from './components/UpdateNotification';
+import CinematicLoadingScreen from './components/CinematicLoadingScreen';
 import { useAuth } from './context/AuthContext';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { buildAssetPath } from './utils/pathUtils';
@@ -36,10 +37,7 @@ const CharacterCreatorPage = React.lazy(loadCharacterCreatorRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
-    <div className="loading" role="status" aria-live="polite">
-        <div className="loading-spinner" aria-hidden="true"></div>
-        <span className="sr-only">Loading...</span>
-    </div>
+    <CinematicLoadingScreen mode="indeterminate" ready={false} surface="page" />
 );
 
 const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: React.ReactNode }> = ({

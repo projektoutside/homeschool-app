@@ -47,6 +47,14 @@
     opacity: 0;
 }
 
+body.homepage-host-loading .bottom-navigation-dock,
+body.homepage-host-loading .bottom-stats-dock,
+body.homepage-host-loading .stats-wake-zone {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 /* View Stack */
 .dock-view-stack {
     display: grid;

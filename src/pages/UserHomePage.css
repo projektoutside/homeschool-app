@@ -58,12 +58,19 @@
 
 .user-home-app-frame.is-loading {
   opacity: 0;
+  visibility: hidden;
 }
 
 .user-home-app-loading,
 .user-home-app-error {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.user-home-app-error {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,7 +83,7 @@
 }
 
 .user-home-app-loading {
-  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.24), rgba(2, 6, 23, 0.92));
+  background: transparent;
 }
 
 .user-home-app-error {

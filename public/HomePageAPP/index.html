@@ -1906,6 +1906,101 @@
             --inventory-slot-gap: clamp(4px, 0.95vw, 6px);
             --inventory-slot-list-padding: clamp(3px, 0.8vw, 4px);
             --inventory-slot-inner-radius: calc(var(--inventory-slot-radius) - 2px);
+            --inventory-cord: linear-gradient(180deg, rgba(245, 250, 255, 0.96), rgba(161, 189, 255, 0.9) 42%, rgba(46, 63, 128, 0.98));
+            --inventory-cord-highlight: rgba(240, 247, 255, 0.48);
+            --inventory-cord-shadow: rgba(5, 11, 28, 0.42);
+            --inventory-clasp-border: rgba(182, 226, 255, 0.88);
+            --inventory-clasp-fill: radial-gradient(circle at 36% 34%, rgba(246, 251, 255, 0.98), rgba(140, 205, 255, 0.9) 52%, rgba(104, 124, 255, 0.96) 100%);
+            --inventory-clasp-glow: rgba(118, 216, 255, 0.46);
+            --inventory-shell-border: rgba(139, 187, 255, 0.82);
+            --inventory-shell-rail: rgba(92, 109, 207, 0.96);
+            --inventory-shell-top: rgba(136, 147, 255, 0.76);
+            --inventory-shell-bottom: rgba(28, 37, 82, 0.98);
+            --inventory-shell-core-top: rgba(18, 26, 56, 0.92);
+            --inventory-shell-core-bottom: rgba(9, 14, 33, 0.98);
+            --inventory-shell-edge-highlight: rgba(218, 235, 255, 0.24);
+            --inventory-shell-inner-stroke: rgba(99, 122, 214, 0.58);
+            --inventory-shell-bottom-glow: rgba(130, 224, 255, 0.36);
+            --inventory-shell-bottom-bar: rgba(59, 80, 176, 0.96);
+            --inventory-shell-bottom-bar-deep: rgba(23, 33, 78, 0.98);
+            --inventory-header-border: rgba(170, 214, 255, 0.82);
+            --inventory-header-top: rgba(98, 110, 230, 0.96);
+            --inventory-header-bottom: rgba(43, 56, 148, 0.98);
+            --inventory-header-sheen: rgba(228, 238, 255, 0.16);
+            --inventory-header-shadow: rgba(6, 10, 27, 0.44);
+            --inventory-header-pill-border: rgba(182, 226, 255, 0.78);
+            --inventory-header-pill-top: rgba(150, 165, 255, 0.92);
+            --inventory-header-pill-bottom: rgba(75, 94, 202, 0.96);
+            --inventory-title-text: #f6f7ff;
+            --inventory-title-highlight: rgba(255, 255, 255, 0.82);
+            --inventory-title-mid-shadow: rgba(138, 165, 255, 0.68);
+            --inventory-title-deep-shadow: rgba(8, 14, 36, 0.64);
+            --inventory-subtitle-text: rgba(221, 236, 255, 0.76);
+            --inventory-close-border: rgba(191, 228, 255, 0.88);
+            --inventory-close-top: rgba(170, 192, 255, 0.96);
+            --inventory-close-bottom: rgba(83, 124, 239, 0.96);
+            --inventory-close-shadow: rgba(96, 222, 255, 0.48);
+            --inventory-close-text: #f7fbff;
+            --inventory-close-text-shadow: rgba(27, 58, 129, 0.62);
+            --inventory-close-hover-border: rgba(228, 244, 255, 0.98);
+            --inventory-showcase-border: rgba(184, 228, 255, 0.9);
+            --inventory-showcase-inner-border: rgba(233, 244, 255, 0.28);
+            --inventory-showcase-bg: transparent;
+            --inventory-showcase-sheen: linear-gradient(180deg, rgba(241, 248, 255, 0.13), rgba(241, 248, 255, 0.04) 10%, rgba(255, 255, 255, 0) 24%, rgba(112, 226, 255, 0.02) 100%);
+            --inventory-showcase-shadow: rgba(180, 224, 255, 0.12);
+            --inventory-slots-border: rgba(130, 182, 255, 0.78);
+            --inventory-slots-top-glow: rgba(134, 212, 255, 0.16);
+            --inventory-slots-top: rgba(41, 55, 112, 0.94);
+            --inventory-slots-bottom: rgba(10, 16, 36, 0.98);
+            --inventory-slots-inner-stroke: rgba(221, 236, 255, 0.22);
+            --inventory-slots-deep-shadow: rgba(4, 8, 20, 0.84);
+            --inventory-slots-footer-shadow: rgba(6, 10, 28, 0.36);
+            --inventory-pill-border: rgba(164, 208, 255, 0.64);
+            --inventory-pill-top: rgba(96, 122, 214, 0.84);
+            --inventory-pill-bottom: rgba(30, 42, 85, 0.9);
+            --inventory-pill-text: rgba(237, 244, 255, 0.94);
+            --inventory-pill-muted: rgba(221, 233, 255, 0.82);
+            --inventory-footer-border: rgba(154, 201, 255, 0.68);
+            --inventory-footer-top: rgba(72, 92, 186, 0.88);
+            --inventory-footer-bottom: rgba(24, 34, 73, 0.94);
+            --inventory-footer-glow: rgba(219, 236, 255, 0.18);
+            --inventory-footer-btn-border: rgba(176, 216, 255, 0.58);
+            --inventory-footer-btn-top: rgba(87, 115, 211, 0.78);
+            --inventory-footer-btn-bottom: rgba(25, 37, 82, 0.88);
+            --inventory-footer-btn-text: rgba(240, 246, 255, 0.9);
+            --inventory-scrollbar-thumb-start: rgba(162, 215, 255, 0.8);
+            --inventory-scrollbar-thumb-end: rgba(101, 125, 255, 0.86);
+            --inventory-scrollbar-track: rgba(9, 16, 40, 0.4);
+            --inventory-slot-empty-border: rgba(123, 176, 255, 0.46);
+            --inventory-slot-empty-glow: rgba(110, 220, 255, 0.1);
+            --inventory-slot-empty-mid: rgba(70, 91, 167, 0.18);
+            --inventory-slot-empty-top: rgba(28, 40, 80, 0.9);
+            --inventory-slot-empty-bottom: rgba(11, 16, 35, 0.98);
+            --inventory-slot-empty-inner: rgba(14, 22, 45, 0.82);
+            --inventory-slot-empty-highlight: rgba(223, 236, 255, 0.14);
+            --inventory-slot-border: rgba(150, 201, 255, 0.7);
+            --inventory-slot-glow: rgba(120, 224, 255, 0.14);
+            --inventory-slot-mid: rgba(85, 107, 188, 0.16);
+            --inventory-slot-top: rgba(31, 44, 90, 0.94);
+            --inventory-slot-bottom: rgba(10, 15, 34, 0.99);
+            --inventory-slot-inner: rgba(14, 21, 45, 0.8);
+            --inventory-slot-highlight: rgba(224, 238, 255, 0.14);
+            --inventory-slot-hover-border: rgba(225, 240, 255, 0.98);
+            --inventory-slot-active-border: rgba(217, 238, 255, 0.98);
+            --inventory-slot-active-ring: rgba(176, 207, 255, 0.46);
+            --inventory-slot-active-glow: rgba(113, 224, 255, 0.38);
+            --inventory-slot-active-mid: rgba(95, 124, 226, 0.22);
+            --inventory-slot-active-top: rgba(42, 58, 115, 0.98);
+            --inventory-slot-active-bottom: rgba(13, 19, 41, 1);
+            --inventory-slot-thumb-border: rgba(167, 214, 255, 0.42);
+            --inventory-slot-thumb-top: rgba(134, 187, 255, 0.2);
+            --inventory-slot-thumb-bottom: rgba(24, 36, 73, 0.3);
+            --inventory-slot-dot-border: rgba(199, 245, 255, 0.72);
+            --inventory-slot-dot-glow: rgba(111, 222, 255, 0.62);
+            --inventory-empty-border: rgba(157, 208, 255, 0.48);
+            --inventory-empty-text: rgba(229, 240, 255, 0.84);
+            --inventory-empty-top: rgba(30, 44, 86, 0.72);
+            --inventory-empty-bottom: rgba(11, 18, 40, 0.88);
             position: fixed;
             left: var(--inventory-anchor-x);
             top: var(--inventory-anchor-y);
@@ -1950,10 +2045,9 @@
             height: calc(var(--inventory-panel-top) + clamp(78px, 12.5vh, 122px));
             transform: translateX(-50%);
             border-radius: 999px;
-            background:
-                linear-gradient(180deg, rgba(255, 239, 201, 0.98), rgba(206, 146, 74, 0.95) 42%, rgba(107, 68, 30, 0.98));
+            background: var(--inventory-cord);
             box-shadow:
-                0 2px 0 rgba(255, 243, 214, 0.6),
+                0 2px 0 var(--inventory-cord-highlight),
                 0 8px 14px rgba(0, 0, 0, 0.34);
             pointer-events: none;
             z-index: 1;
@@ -1968,12 +2062,11 @@
             height: clamp(14px, 4.4vw, 18px);
             transform: translateX(-50%) rotate(45deg);
             border-radius: 4px;
-            border: 1px solid rgba(229, 177, 88, 0.95);
-            background:
-                radial-gradient(circle at 36% 34%, rgba(214, 241, 255, 0.98), rgba(109, 177, 255, 0.92) 56%, rgba(61, 106, 205, 0.98) 100%);
+            border: 1px solid var(--inventory-clasp-border);
+            background: var(--inventory-clasp-fill);
             box-shadow:
                 0 3px 8px rgba(0, 0, 0, 0.28),
-                0 0 12px rgba(98, 190, 255, 0.5);
+                0 0 12px var(--inventory-clasp-glow);
         }
 
         .inventory-frame-shell {
@@ -1981,20 +2074,20 @@
             position: absolute;
             inset: var(--inventory-shell-inset-top) var(--inventory-shell-inset-side) var(--inventory-shell-inset-bottom);
             border-radius: clamp(20px, 5vw, 26px);
-            border: clamp(3px, 0.9vw, 5px) solid rgba(189, 140, 60, 0.96);
+            border: clamp(3px, 0.9vw, 5px) solid var(--inventory-shell-border);
             background:
                 linear-gradient(90deg,
-                    rgba(143, 98, 48, 0.98) 0 var(--inventory-shell-rail-width),
+                    var(--inventory-shell-rail) 0 var(--inventory-shell-rail-width),
                     rgba(0, 0, 0, 0) var(--inventory-shell-rail-width) calc(100% - var(--inventory-shell-rail-width)),
-                    rgba(143, 98, 48, 0.98) calc(100% - var(--inventory-shell-rail-width)) 100%),
+                    var(--inventory-shell-rail) calc(100% - var(--inventory-shell-rail-width)) 100%),
                 linear-gradient(180deg,
-                    rgba(157, 111, 57, 0.98) 0 clamp(12px, 3vw, 14px),
+                    var(--inventory-shell-top) 0 clamp(12px, 3vw, 14px),
                     rgba(0, 0, 0, 0) clamp(12px, 3vw, 14px) calc(100% - clamp(12px, 3vw, 14px)),
-                    rgba(98, 62, 29, 0.98) calc(100% - clamp(12px, 3vw, 14px)) 100%);
+                    var(--inventory-shell-bottom) calc(100% - clamp(12px, 3vw, 14px)) 100%);
             box-shadow:
                 0 18px 34px rgba(0, 0, 0, 0.48),
-                inset 0 1px 0 rgba(255, 232, 166, 0.45),
-                inset 0 0 0 1px rgba(83, 52, 21, 0.72);
+                inset 0 1px 0 var(--inventory-shell-edge-highlight),
+                inset 0 0 0 1px var(--inventory-shell-inner-stroke);
             display: grid;
             grid-template-rows: auto minmax(var(--inventory-showcase-min-height), 1fr) auto;
             grid-template-areas:
@@ -2040,7 +2133,7 @@
             position: absolute;
             inset: clamp(3px, 0.8vw, 5px);
             border-radius: clamp(16px, 4vw, 20px);
-            border: 1px solid rgba(239, 195, 103, 0.62);
+            border: 1px solid var(--inventory-shell-edge-highlight);
             pointer-events: none;
             z-index: 0;
         }
@@ -2054,12 +2147,12 @@
             height: clamp(16px, 3.8vh, 24px);
             border-radius: 0 0 14px 14px;
             background:
-                radial-gradient(30% 110% at 14% 50%, rgba(255, 221, 145, 0.58), rgba(255, 221, 145, 0) 100%),
-                radial-gradient(30% 110% at 86% 50%, rgba(255, 221, 145, 0.58), rgba(255, 221, 145, 0) 100%),
-                linear-gradient(180deg, rgba(201, 145, 67, 0.92), rgba(110, 71, 30, 0.96));
+                radial-gradient(30% 110% at 14% 50%, var(--inventory-shell-bottom-glow), rgba(130, 224, 255, 0) 100%),
+                radial-gradient(30% 110% at 86% 50%, var(--inventory-shell-bottom-glow), rgba(130, 224, 255, 0) 100%),
+                linear-gradient(180deg, var(--inventory-shell-bottom-bar), var(--inventory-shell-bottom-bar-deep));
             box-shadow:
-                inset 0 1px 0 rgba(255, 236, 188, 0.35),
-                0 1px 0 rgba(61, 37, 14, 0.72);
+                inset 0 1px 0 var(--inventory-shell-edge-highlight),
+                0 1px 0 rgba(10, 15, 39, 0.78);
             pointer-events: none;
             z-index: 1;
         }
@@ -2074,13 +2167,13 @@
             min-height: clamp(28px, 4.6vh, 36px);
             padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.6vw, 14px);
             border-radius: clamp(10px, 2.6vw, 13px);
-            border: 1px solid rgba(238, 197, 112, 0.68);
+            border: 1px solid var(--inventory-pill-border);
             background:
-                linear-gradient(180deg, rgba(121, 81, 39, 0.85), rgba(74, 47, 22, 0.88)),
-                radial-gradient(120% 160% at 50% -32%, rgba(255, 233, 173, 0.2), rgba(255, 233, 173, 0) 56%);
+                linear-gradient(180deg, rgba(70, 88, 172, 0.84), rgba(24, 34, 71, 0.9)),
+                radial-gradient(120% 160% at 50% -32%, rgba(224, 236, 255, 0.18), rgba(224, 236, 255, 0) 56%);
             box-shadow:
-                inset 0 1px 0 rgba(255, 230, 176, 0.38),
-                inset 0 -1px 0 rgba(47, 29, 12, 0.72);
+                inset 0 1px 0 rgba(235, 243, 255, 0.24),
+                inset 0 -1px 0 rgba(10, 16, 38, 0.68);
             box-sizing: border-box;
             z-index: 3;
         }
@@ -2092,19 +2185,20 @@
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: rgba(255, 238, 205, 0.92);
+            color: var(--inventory-pill-text);
             white-space: nowrap;
         }
 
         .inventory-utility-pill {
             padding: clamp(3px, 0.8vw, 4px) clamp(8px, 2.1vw, 12px);
             border-radius: 999px;
-            border: 1px solid rgba(243, 211, 143, 0.74);
-            background: linear-gradient(180deg, rgba(160, 109, 52, 0.84), rgba(102, 63, 29, 0.9));
+            border: 1px solid var(--inventory-pill-border);
+            background: linear-gradient(180deg, var(--inventory-pill-top), var(--inventory-pill-bottom));
         }
 
         .inventory-utility-stat {
-            opacity: 0.9;
+            color: var(--inventory-pill-muted);
+            opacity: 0.95;
         }
 
         .inventory-panel .inventory-header {
@@ -2116,14 +2210,14 @@
             margin: 0;
             padding: clamp(10px, 2.5vw, 14px) clamp(34px, 9vw, 46px) clamp(10px, 2.5vw, 13px);
             border-radius: 0;
-            border: 1px solid rgba(239, 196, 106, 0.9);
+            border: 1px solid var(--inventory-header-border);
             background:
-                linear-gradient(180deg, rgba(153, 104, 53, 0.98), rgba(101, 64, 30, 0.97)),
-                linear-gradient(100deg, rgba(255, 235, 184, 0.2), rgba(255, 235, 184, 0));
+                linear-gradient(180deg, var(--inventory-header-top), var(--inventory-header-bottom)),
+                linear-gradient(100deg, var(--inventory-header-sheen), rgba(228, 238, 255, 0));
             box-shadow:
-                0 8px 18px rgba(0, 0, 0, 0.34),
-                inset 0 1px 0 rgba(255, 230, 176, 0.46),
-                inset 0 -1px 0 rgba(45, 27, 11, 0.82);
+                0 8px 18px var(--inventory-header-shadow),
+                inset 0 1px 0 rgba(237, 243, 255, 0.26),
+                inset 0 -1px 0 rgba(9, 13, 31, 0.82);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2139,9 +2233,9 @@
             height: clamp(14px, 2.8vw, 18px);
             transform: translateX(-50%);
             border-radius: 999px;
-            border: 1px solid rgba(232, 183, 93, 0.8);
-            background: linear-gradient(180deg, rgba(219, 169, 79, 0.9), rgba(143, 95, 40, 0.98));
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+            border: 1px solid var(--inventory-header-pill-border);
+            background: linear-gradient(180deg, var(--inventory-header-pill-top), var(--inventory-header-pill-bottom));
+            box-shadow: 0 4px 10px rgba(3, 8, 24, 0.26);
             pointer-events: none;
         }
 
@@ -2165,11 +2259,11 @@
             line-height: 0.9;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: #fae3a4;
+            color: var(--inventory-title-text);
             text-shadow:
-                0 1px 0 rgba(255, 240, 199, 0.8),
-                0 2px 0 rgba(90, 55, 20, 0.92),
-                0 4px 10px rgba(0, 0, 0, 0.34);
+                0 1px 0 var(--inventory-title-highlight),
+                0 0 16px var(--inventory-title-mid-shadow),
+                0 4px 10px var(--inventory-title-deep-shadow);
         }
 
         .inventory-panel .inventory-title::before {
@@ -2181,7 +2275,7 @@
             margin: 0;
             font-size: clamp(10px, 2vw, 12px);
             letter-spacing: 0.08em;
-            color: rgba(255, 239, 199, 0.84);
+            color: var(--inventory-subtitle-text);
             text-transform: uppercase;
             font-weight: 700;
         }
@@ -2197,9 +2291,8 @@
             min-width: 0;
             min-height: 0;
             border-radius: 4px;
-            border: 1px solid rgba(238, 194, 116, 0.86);
-            background:
-                radial-gradient(circle at 35% 35%, rgba(205, 239, 255, 0.96), rgba(97, 154, 255, 0.94) 58%, rgba(48, 94, 198, 0.98));
+            border: 1px solid var(--inventory-close-border);
+            background: radial-gradient(circle at 35% 35%, var(--inventory-close-top), var(--inventory-close-bottom) 68%);
             color: transparent;
             font-size: 0;
             line-height: 1;
@@ -2210,31 +2303,39 @@
             cursor: pointer;
             box-shadow:
                 0 4px 8px rgba(0, 0, 0, 0.32),
-                0 0 10px rgba(113, 201, 255, 0.48);
+                0 0 10px var(--inventory-close-shadow);
             transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
             z-index: 4;
         }
 
         .inventory-panel .inventory-close-btn::before {
             content: "X";
-            color: #f2f8ff;
+            color: var(--inventory-close-text);
             font-family: var(--btn-font);
             font-size: clamp(12px, 3.1vw, 16px);
             font-weight: 800;
             line-height: 1;
             transform: rotate(-45deg);
-            text-shadow: 0 1px 1px rgba(16, 44, 92, 0.6);
+            text-shadow: 0 1px 1px var(--inventory-close-text-shadow);
         }
 
         .inventory-panel .inventory-close-btn:hover,
         .inventory-panel .inventory-close-btn:focus-visible {
             transform: translate(-50%, -50%) rotate(45deg) scale(1.08);
-            border-color: rgba(255, 222, 159, 0.98);
+            border-color: var(--inventory-close-hover-border);
             filter: brightness(1.06);
             outline: none;
             box-shadow:
                 0 5px 10px rgba(0, 0, 0, 0.34),
                 0 0 12px rgba(143, 216, 255, 0.62);
+        }
+
+        .inventory-panel .inventory-close-btn:focus-visible {
+            box-shadow:
+                0 5px 10px rgba(0, 0, 0, 0.34),
+                0 0 12px rgba(143, 216, 255, 0.62),
+                0 0 0 2px rgba(228, 244, 255, 0.72),
+                0 0 0 4px rgba(116, 226, 255, 0.18);
         }
 
         .inventory-viewport-window {
@@ -2246,13 +2347,13 @@
             width: 100%;
             min-height: var(--inventory-showcase-min-height);
             margin: 0;
-            border: 2px solid rgba(202, 156, 78, 0.94);
+            border: 2px solid var(--inventory-showcase-border);
             border-radius: 0;
-            background:
-                radial-gradient(120% 105% at 50% 62%, rgba(150, 209, 255, 0.13), rgba(150, 209, 255, 0.02) 58%, rgba(150, 209, 255, 0) 100%);
+            background: var(--inventory-showcase-bg);
             box-shadow:
-                inset 0 0 0 1px rgba(241, 203, 125, 0.56),
-                inset 0 1px 0 rgba(255, 231, 178, 0.24);
+                inset 0 0 0 1px var(--inventory-showcase-shadow),
+                inset 0 1px 0 rgba(241, 248, 255, 0.12),
+                0 0 16px rgba(112, 226, 255, 0.06);
             pointer-events: none;
             overflow: hidden;
             box-sizing: border-box;
@@ -2263,7 +2364,7 @@
             position: absolute;
             inset: clamp(4px, 1vw, 7px);
             border-radius: 0;
-            border: 1px solid rgba(223, 187, 112, 0.64);
+            border: 1px solid var(--inventory-showcase-inner-border);
             pointer-events: none;
         }
 
@@ -2272,8 +2373,8 @@
             position: absolute;
             inset: 0;
             border-radius: 0;
-            background:
-                linear-gradient(180deg, rgba(173, 224, 255, 0.08), rgba(255, 255, 255, 0) 36%, rgba(18, 32, 48, 0.08) 100%);
+            background: var(--inventory-showcase-sheen);
+            opacity: 0.82;
             pointer-events: none;
         }
 
@@ -2282,13 +2383,13 @@
             z-index: 3;
             position: relative;
             border-radius: 0;
-            border: 2px solid rgba(180, 133, 61, 0.96);
+            border: 2px solid var(--inventory-slots-border);
             background:
-                radial-gradient(120% 90% at 50% -18%, rgba(189, 230, 255, 0.18), rgba(189, 230, 255, 0) 56%),
-                linear-gradient(180deg, rgba(93, 73, 50, 0.96), rgba(58, 43, 27, 0.98));
+                radial-gradient(120% 90% at 50% -18%, var(--inventory-slots-top-glow), rgba(134, 212, 255, 0) 56%),
+                linear-gradient(180deg, var(--inventory-slots-top), var(--inventory-slots-bottom));
             box-shadow:
-                inset 0 0 0 1px rgba(240, 206, 129, 0.55),
-                inset 0 -1px 0 rgba(40, 29, 16, 0.84),
+                inset 0 0 0 1px var(--inventory-slots-inner-stroke),
+                inset 0 -1px 0 var(--inventory-slots-deep-shadow),
                 0 5px 12px rgba(0, 0, 0, 0.28);
             padding: clamp(5px, 1.3vw, 8px);
             pointer-events: auto;
@@ -2307,13 +2408,36 @@
             right: 0;
             bottom: 0;
             height: 10px;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(20, 12, 5, 0.24));
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0), var(--inventory-slots-footer-shadow));
             pointer-events: none;
         }
 
         .inventory-panel .inventory-category-tabs {
             display: none;
             z-index: 2;
+        }
+
+        .inventory-panel .inventory-category-btn {
+            border-color: var(--inventory-footer-btn-border);
+            background: linear-gradient(180deg, var(--inventory-footer-btn-top), var(--inventory-footer-btn-bottom));
+            color: var(--inventory-footer-btn-text);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .inventory-panel .inventory-category-btn:hover,
+        .inventory-panel .inventory-category-btn:focus-visible {
+            border-color: var(--inventory-close-hover-border);
+            background: linear-gradient(180deg, rgba(145, 194, 255, 0.9), rgba(84, 108, 233, 0.94));
+            box-shadow: 0 0 0 2px rgba(116, 226, 255, 0.2);
+        }
+
+        .inventory-panel .inventory-category-btn.active {
+            border-color: rgba(222, 241, 255, 0.96);
+            background: linear-gradient(180deg, rgba(159, 209, 255, 0.92), rgba(91, 121, 244, 0.96));
+            color: #fbfdff;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.28),
+                0 0 0 1px rgba(122, 224, 255, 0.24);
         }
 
         .inventory-footer-nav {
@@ -2324,13 +2448,13 @@
             gap: clamp(5px, 1.3vw, 8px);
             padding: clamp(4px, 1vw, 6px);
             border-radius: clamp(10px, 2.6vw, 13px);
-            border: 1px solid rgba(219, 170, 86, 0.78);
+            border: 1px solid var(--inventory-footer-border);
             background:
-                linear-gradient(180deg, rgba(108, 73, 35, 0.92), rgba(70, 44, 21, 0.94)),
-                radial-gradient(130% 170% at 50% -40%, rgba(255, 232, 170, 0.18), rgba(255, 232, 170, 0) 60%);
+                linear-gradient(180deg, var(--inventory-footer-top), var(--inventory-footer-bottom)),
+                radial-gradient(130% 170% at 50% -40%, var(--inventory-footer-glow), rgba(219, 236, 255, 0) 60%);
             box-shadow:
-                inset 0 1px 0 rgba(255, 234, 191, 0.34),
-                inset 0 -1px 0 rgba(46, 27, 10, 0.66);
+                inset 0 1px 0 rgba(239, 245, 255, 0.2),
+                inset 0 -1px 0 rgba(10, 16, 38, 0.66);
             box-sizing: border-box;
             z-index: 3;
         }
@@ -2338,10 +2462,9 @@
         .inventory-footer-btn {
             min-height: clamp(28px, 5.1vh, 38px);
             border-radius: clamp(8px, 2.2vw, 10px);
-            border: 1px solid rgba(233, 196, 126, 0.72);
-            background:
-                linear-gradient(180deg, rgba(149, 102, 51, 0.86), rgba(91, 56, 26, 0.9));
-            color: rgba(255, 237, 204, 0.9);
+            border: 1px solid var(--inventory-footer-btn-border);
+            background: linear-gradient(180deg, var(--inventory-footer-btn-top), var(--inventory-footer-btn-bottom));
+            color: var(--inventory-footer-btn-text);
             font-family: var(--btn-font);
             font-size: clamp(10px, 2.2vw, 12px);
             font-weight: 700;
@@ -2368,7 +2491,7 @@
             padding: var(--inventory-slot-list-padding);
             margin: 0;
             scrollbar-width: thin;
-            scrollbar-color: rgba(248, 214, 141, 0.66) rgba(36, 21, 7, 0.18);
+            scrollbar-color: var(--inventory-scrollbar-thumb-start) var(--inventory-scrollbar-track);
             scrollbar-gutter: stable both-edges;
             align-content: center;
             justify-items: stretch;
@@ -2382,12 +2505,12 @@
         }
 
         .inventory-panel .inventory-list::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, rgba(247, 213, 136, 0.78), rgba(174, 118, 52, 0.82));
+            background: linear-gradient(180deg, var(--inventory-scrollbar-thumb-start), var(--inventory-scrollbar-thumb-end));
             border-radius: 999px;
         }
 
         .inventory-panel .inventory-list::-webkit-scrollbar-track {
-            background: rgba(44, 28, 11, 0.3);
+            background: var(--inventory-scrollbar-track);
             border-radius: 999px;
         }
 
@@ -2411,13 +2534,13 @@
             border-radius: var(--inventory-slot-radius);
             box-sizing: border-box;
             aspect-ratio: 1 / 1;
-            border: var(--inventory-slot-border-width) solid rgba(204, 161, 91, 0.74);
+            border: var(--inventory-slot-border-width) solid var(--inventory-slot-empty-border);
             background:
-                radial-gradient(130% 130% at 36% 20%, rgba(150, 193, 224, 0.12), rgba(96, 74, 50, 0.18) 35%, rgba(47, 36, 24, 0.95)),
-                linear-gradient(180deg, rgba(75, 57, 39, 0.92), rgba(45, 34, 22, 0.98));
+                radial-gradient(130% 130% at 36% 20%, var(--inventory-slot-empty-glow), var(--inventory-slot-empty-mid) 35%, var(--inventory-slot-empty-bottom)),
+                linear-gradient(180deg, var(--inventory-slot-empty-top), var(--inventory-slot-empty-bottom));
             box-shadow:
-                inset 0 0 0 1px rgba(68, 50, 31, 0.82),
-                inset 0 1px 0 rgba(234, 205, 140, 0.2);
+                inset 0 0 0 1px var(--inventory-slot-empty-inner),
+                inset 0 1px 0 var(--inventory-slot-empty-highlight);
         }
 
         .inventory-panel .inventory-item {
@@ -2427,11 +2550,11 @@
             aspect-ratio: 1 / 1;
             height: auto;
             box-sizing: border-box;
-            border: var(--inventory-slot-border-width) solid rgba(210, 168, 92, 0.92);
+            border: var(--inventory-slot-border-width) solid var(--inventory-slot-border);
             border-radius: var(--inventory-slot-radius);
             background:
-                radial-gradient(128% 128% at 36% 18%, rgba(164, 210, 236, 0.16), rgba(99, 75, 48, 0.2) 42%, rgba(43, 32, 22, 0.96)),
-                linear-gradient(180deg, rgba(79, 60, 41, 0.95), rgba(49, 37, 24, 0.99));
+                radial-gradient(128% 128% at 36% 18%, var(--inventory-slot-glow), var(--inventory-slot-mid) 42%, var(--inventory-slot-bottom)),
+                linear-gradient(180deg, var(--inventory-slot-top), var(--inventory-slot-bottom));
             padding: clamp(3px, 0.6vw, 4px);
             margin: 0;
             cursor: pointer;
@@ -2440,27 +2563,35 @@
             justify-content: center;
             position: relative;
             box-shadow:
-                inset 0 0 0 1px rgba(73, 54, 32, 0.8),
-                inset 0 1px 0 rgba(234, 205, 141, 0.22);
+                inset 0 0 0 1px var(--inventory-slot-inner),
+                inset 0 1px 0 var(--inventory-slot-highlight);
             transition: transform 120ms ease, border-color 120ms ease, box-shadow 140ms ease, filter 120ms ease;
         }
 
         .inventory-panel .inventory-item:hover,
         .inventory-panel .inventory-item:focus-visible {
-            border-color: rgba(253, 224, 162, 0.96);
+            border-color: var(--inventory-slot-hover-border);
             transform: translateY(-1px);
             filter: brightness(1.06);
             outline: none;
         }
 
-        .inventory-panel .inventory-item.active {
-            border-color: rgba(255, 236, 188, 0.98);
+        .inventory-panel .inventory-item:focus-visible {
             box-shadow:
-                inset 0 0 0 1px rgba(255, 226, 158, 0.64),
-                inset 0 0 0 2px rgba(112, 208, 255, 0.28);
+                inset 0 0 0 1px var(--inventory-slot-inner),
+                inset 0 1px 0 var(--inventory-slot-highlight),
+                0 0 0 2px rgba(225, 240, 255, 0.42),
+                0 0 0 4px rgba(113, 224, 255, 0.16);
+        }
+
+        .inventory-panel .inventory-item.active {
+            border-color: var(--inventory-slot-active-border);
+            box-shadow:
+                inset 0 0 0 1px var(--inventory-slot-active-ring),
+                inset 0 0 0 2px var(--inventory-slot-active-glow);
             background:
-                radial-gradient(128% 130% at 35% 18%, rgba(147, 228, 255, 0.22), rgba(96, 73, 46, 0.3) 44%, rgba(49, 37, 24, 0.98)),
-                linear-gradient(180deg, rgba(86, 66, 45, 0.98), rgba(53, 40, 27, 1));
+                radial-gradient(128% 130% at 35% 18%, var(--inventory-slot-active-glow), var(--inventory-slot-active-mid) 44%, var(--inventory-slot-active-bottom)),
+                linear-gradient(180deg, var(--inventory-slot-active-top), var(--inventory-slot-active-bottom));
         }
 
         .inventory-panel .inventory-item.active::after {
@@ -2471,16 +2602,16 @@
             width: clamp(8px, 1.7vw, 10px);
             height: clamp(8px, 1.7vw, 10px);
             border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, rgba(219, 247, 255, 0.98), rgba(118, 224, 255, 0.9));
-            box-shadow: 0 0 0 1px rgba(188, 242, 255, 0.64), 0 0 10px rgba(113, 218, 255, 0.58);
+            background: radial-gradient(circle at 35% 35%, rgba(232, 248, 255, 0.98), rgba(128, 233, 255, 0.9));
+            box-shadow: 0 0 0 1px var(--inventory-slot-dot-border), 0 0 10px var(--inventory-slot-dot-glow);
         }
 
         .inventory-panel .inventory-item-thumb {
             width: 100%;
             height: 100%;
             border-radius: var(--inventory-slot-inner-radius);
-            border: 1px solid rgba(211, 172, 96, 0.64);
-            background: linear-gradient(180deg, rgba(126, 172, 204, 0.14), rgba(67, 52, 35, 0.26));
+            border: 1px solid var(--inventory-slot-thumb-border);
+            background: linear-gradient(180deg, var(--inventory-slot-thumb-top), var(--inventory-slot-thumb-bottom));
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -2518,12 +2649,12 @@
             margin: 0;
             padding: clamp(8px, 2.3vw, 11px);
             border-radius: 12px;
-            border: 1px dashed rgba(226, 186, 112, 0.62);
-            color: rgba(255, 236, 194, 0.82);
+            border: 1px dashed var(--inventory-empty-border);
+            color: var(--inventory-empty-text);
             font-size: clamp(11px, 2.3vw, 13px);
             line-height: 1.35;
             text-align: center;
-            background: linear-gradient(180deg, rgba(86, 57, 26, 0.72), rgba(57, 35, 14, 0.86));
+            background: linear-gradient(180deg, var(--inventory-empty-top), var(--inventory-empty-bottom));
         }
 
         .inventory-focus-overlay {
@@ -9963,12 +10094,37 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         const HOME_PAGE_MYSTERY_BOX_SHAKE_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/MysteryBoxShaking.mp3');
         const HOME_PAGE_MYSTERY_BOX_OPEN_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/openingboxsound.mp3');
         const HOME_PAGE_MYSTERY_EQUIP_PROP_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/equipingprop.mp3');
+        const HOME_PAGE_STANDARD_CLICK_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/standardclick.mp3');
         const LEGENDARY_SUMMON_MUSIC_SOURCE = encodeURI('./HomePageMusic/LegendarySummonMusic/LegendaryAnimationSummonSound.mp3');
         const LEGENDARY_SUMMON_MUSIC_FADE_OUT_MS = 720;
         const LEGENDARY_CUTSCENE_STARTUP_RETRY_WINDOW_MS = 2500;
         const LEGENDARY_CUTSCENE_STARTUP_RETRY_CADENCE_MS = 250;
         const LEGENDARY_CUTSCENE_STARTUP_MAX_RETRIES = 4;
         const MYSTERY_BOX_SHAKE_SFX_MIN_INTERVAL_MS = 120;
+        const HOME_PAGE_UI_CLICK_AUDIO_POOL_SIZE = 4;
+        const HOME_PAGE_UI_CLICK_INTERACTIVE_SELECTOR = [
+            'button',
+            'a[href]',
+            'summary',
+            'select',
+            'label[for]',
+            'input[type="button"]',
+            'input[type="submit"]',
+            'input[type="reset"]',
+            'input[type="checkbox"]',
+            'input[type="radio"]',
+            '[role="button"]',
+            '[role="tab"]',
+            '[role="menuitem"]',
+            '[role="option"]',
+            '[data-play-standard-click="true"]'
+        ].join(',');
+        const HOME_PAGE_UI_CLICK_TEXT_ENTRY_SELECTOR = [
+            'textarea',
+            '[contenteditable=""]',
+            '[contenteditable="true"]',
+            'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"])'
+        ].join(',');
         const HOME_PAGE_MUSIC_TRACKS_BY_ID = new Map(HOME_PAGE_MUSIC_TRACKS.map((track) => [track.id, track]));
         const HOME_PAGE_MUSIC_STORAGE_KEY = 'homepage_music_track_v1';
         const MYSTERY_WING_ORDER_STORAGE_KEY = 'homepage_mystery_wing_order_v1';
@@ -10015,6 +10171,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             equipPropAudio: null,
             pullActive: false,
             lastBoxShakeAtMs: -Infinity
+        };
+        const homePageUiSfxState = {
+            clickAudios: [],
+            nextClickAudioIndex: 0
         };
         const legendaryCutsceneAudioState = {
             active: false,
@@ -10161,6 +10321,77 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             return audio;
         }
 
+        function createHomePageUiClickAudio() {
+            const audio = createMysterySfxAudio(HOME_PAGE_STANDARD_CLICK_SOUND_SOURCE, { loop: false });
+            if (!audio) return null;
+            try {
+                audio.load();
+            } catch (_) {}
+            return audio;
+        }
+
+        function ensureHomePageUiClickAudioPool() {
+            if (!homePageUiSfxState.clickAudios.length) {
+                homePageUiSfxState.clickAudios = Array.from(
+                    { length: HOME_PAGE_UI_CLICK_AUDIO_POOL_SIZE },
+                    () => createHomePageUiClickAudio()
+                ).filter(Boolean);
+                homePageUiSfxState.nextClickAudioIndex = 0;
+            }
+            return homePageUiSfxState.clickAudios;
+        }
+
+        function isHomePageUiClickTarget(target) {
+            if (!(target instanceof Element)) {
+                return false;
+            }
+            if (target.closest('[data-no-click-sound="true"]')) {
+                return false;
+            }
+            if (target.closest(HOME_PAGE_UI_CLICK_TEXT_ENTRY_SELECTOR)) {
+                return false;
+            }
+
+            const interactiveElement = target.closest(HOME_PAGE_UI_CLICK_INTERACTIVE_SELECTOR);
+            if (interactiveElement) {
+                if (interactiveElement.matches(':disabled') || interactiveElement.getAttribute('aria-disabled') === 'true') {
+                    return false;
+                }
+                return true;
+            }
+
+            const focusableElement = target.closest('[tabindex]:not([tabindex="-1"])');
+            if (focusableElement && focusableElement.getAttribute('aria-disabled') !== 'true') {
+                return true;
+            }
+            if (target.closest('[aria-disabled="true"]')) {
+                return false;
+            }
+
+            let current = target;
+            for (let depth = 0; depth < 4 && current; depth += 1) {
+                if (current instanceof HTMLElement) {
+                    const cursor = window.getComputedStyle(current).cursor;
+                    if (cursor === 'pointer') {
+                        return true;
+                    }
+                }
+                current = current.parentElement;
+            }
+
+            return false;
+        }
+
+        function applyHomePageUiClickAudioGain() {
+            const pool = ensureHomePageUiClickAudioPool();
+            const shouldMute = !canPlayMysterySfx();
+            const clickVolume = clampUnitVolume(homePageMusicState.sfxVolume * 0.58, 0.44);
+            pool.forEach((audio) => {
+                audio.muted = shouldMute;
+                audio.volume = shouldMute ? 0 : clickVolume;
+            });
+        }
+
         function ensureMysteryPullAudio() {
             if (!mysterySfxState.pullAudio) {
                 mysterySfxState.pullAudio = createMysterySfxAudio(HOME_PAGE_MYSTERY_PULL_SOUND_SOURCE, { loop: true });
@@ -10223,6 +10454,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyGain(mysterySfxState.boxShakeAudio, 0.88);
             applyGain(mysterySfxState.boxOpenAudio, 0.92);
             applyGain(mysterySfxState.equipPropAudio, 0.9);
+            applyHomePageUiClickAudioGain();
         }
 
         function playMysterySfxNow(audio, restart = true) {
@@ -10306,6 +10538,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             ];
             oneShots.forEach((audio) => {
                 if (!audio) return;
+                try {
+                    audio.pause();
+                } catch (_) {}
+            });
+            homePageUiSfxState.clickAudios.forEach((audio) => {
                 try {
                     audio.pause();
                 } catch (_) {}
@@ -11400,6 +11637,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             ensureMysteryBoxShakeAudio();
             ensureMysteryBoxOpenAudio();
             ensureMysteryEquipPropAudio();
+            ensureHomePageUiClickAudioPool();
             applyMysterySfxGain();
             homePageRouteAudioState.gain = 0;
             startHomePageActivationAudioSequence();
@@ -12696,6 +12934,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         let mysterySignLayerRevealFallbackTimer = null;
         let startupFadeDismissed = false;
         let startupFadeFallbackTimer = null;
+        const HOMEPAGE_HOST_BOOT_READY_MESSAGE = 'LAHS_HOMEPAGE_BOOT_READY';
+        const homepageHostLoaderEnabled = new URLSearchParams(window.location.search).get('hostLoader') === '1';
+        let homepageHostBootReadyPosted = false;
 
         function revealMysterySignLayer() {
             if (mysterySignLayerRevealDone) return;
@@ -12736,6 +12977,38 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     dismissStartupFade();
                 }, 1800);
             }
+        }
+
+        function suppressStartupFadeForHostLoader() {
+            startupFadeDismissed = true;
+            if (startupFadeFallbackTimer !== null) {
+                window.clearTimeout(startupFadeFallbackTimer);
+                startupFadeFallbackTimer = null;
+            }
+            if (!startupFadeOverlay) return;
+            startupFadeOverlay.classList.add('fade-out');
+            startupFadeOverlay.style.display = 'none';
+        }
+
+        function postHostBootReadySignal() {
+            if (homepageHostBootReadyPosted || !homepageHostLoaderEnabled || window.parent === window) {
+                return;
+            }
+            homepageHostBootReadyPosted = true;
+            try {
+                window.parent.postMessage({ type: HOMEPAGE_HOST_BOOT_READY_MESSAGE }, window.location.origin);
+            } catch (_) {}
+        }
+
+        function scheduleHostBootReadySignal() {
+            if (homepageHostBootReadyPosted || !homepageHostLoaderEnabled) {
+                return;
+            }
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    postHostBootReadySignal();
+                });
+            });
         }
         const MYSTERY_BOX_CONFIG = {
             frontOffset: 6.9,
@@ -13631,6 +13904,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                 legendaryStormState.timings.restoreReveal;
             if (legendaryStormState.active) {
                 lockMysteryInteractions((legendaryStormState.timings.totalDuration * 1000) + LEGENDARY_STORM_CONFIG.interactionBufferMs);
+            }
+            return true;
+        }
+
+        function playHomePageStandardClickSfx() {
+            if (!canPlayMysterySfx()) return false;
+            const pool = ensureHomePageUiClickAudioPool();
+            if (!pool.length) return false;
+            applyHomePageUiClickAudioGain();
+            const audio = pool[homePageUiSfxState.nextClickAudioIndex];
+            homePageUiSfxState.nextClickAudioIndex = (homePageUiSfxState.nextClickAudioIndex + 1) % pool.length;
+            try {
+                audio.currentTime = 0;
+            } catch (_) {}
+            const playAttempt = audio.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {});
             }
             return true;
         }
@@ -22667,6 +22957,34 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             });
         }
 
+        document.addEventListener('click', (event) => {
+            if (!event.isTrusted || event.button !== 0 || event.defaultPrevented) {
+                return;
+            }
+            if (!isHomePageUiClickTarget(event.target)) {
+                return;
+            }
+            playHomePageStandardClickSfx();
+        }, true);
+
+        document.addEventListener('keydown', (event) => {
+            if (!event.isTrusted || event.defaultPrevented) {
+                return;
+            }
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+            const target = event.target;
+            if (!(target instanceof Element)) {
+                return;
+            }
+            const roleButton = target.closest('[role="button"]');
+            if (!roleButton || roleButton.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
+            playHomePageStandardClickSfx();
+        }, true);
+
         document.addEventListener('pointerdown', (event) => {
             if (!dailyLunchboxPopup?.classList.contains('open') || !bottomLeftUtilityStack) {
                 return;
@@ -25981,7 +26299,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         void ensureMysteryDeviceTiltPermission();
         initHomePageMusicController();
         initBackgroundMediaController();
-        scheduleStartupFadeDismiss();
+        if (homepageHostLoaderEnabled) {
+            suppressStartupFadeForHostLoader();
+        } else {
+            scheduleStartupFadeDismiss();
+        }
         if (mysteryHangingSign.enabled && mysteryHangingSignLayer) {
             mysterySignLayerRevealFallbackTimer = window.setTimeout(() => {
                 revealMysterySignLayer();
@@ -26049,6 +26371,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             setTimeout(runPropPrewarm, 8);
         }
         animate();
+        scheduleHostBootReadySignal();
     </script>
 </body>
 
