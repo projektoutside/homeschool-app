@@ -205,7 +205,7 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
         // F. Math Challenge State (as before)
         let currentChallengeLevel = 0; 
         let activeChallengeProblems = []; 
-        let mathProblemTimers = [null, null, null, null];
+        let mathProblemTimers = Array(CONFIG.NUM_CHALLENGE_PROBLEMS).fill(null);
         const mathChallengeGrid = document.getElementById('math-challenge-grid');
         const mathBoxElements = [];
         const mathHeaderElements = [];
@@ -222,6 +222,7 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
         const epDifficultyCallout = document.getElementById('ep-difficulty-callout');
         let responsiveLayoutController = null;
         let compactMathDeckFitFrame = 0;
+        let mathProblemInlineSafetyFrame = 0;
         let heroFramingRefreshFrame = 0;
         let responsiveLayoutState = {
             layout: 'desktop',
@@ -239,6 +240,9 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
         function readFileAsDataURL(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
         function isDesktopInteractionLayout() { return Boolean(responsiveLayoutState?.isDesktopLike); }
         function clampValue(value, min, max) { return Math.min(Math.max(value, min), max); }
+        function getMathChallengeHeaderText(epValue = 0) {
+            return epValue > 0 ? `Math Challenge (+${epValue}⚡ EP)` : 'Math Challenge';
+        }
 
         const CHAIN_SWING_AXIS = new THREE.Vector3(0, 0, 1);
         const chainLastLinkWorld = new THREE.Vector3();
@@ -493,6 +497,7 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
             root.style.setProperty('--math-choice-min-h', `${metrics.choiceMinHeight.toFixed(2)}px`);
             root.style.setProperty('--math-choice-pad-block', `${metrics.choicePadBlock.toFixed(2)}px`);
             root.style.setProperty('--math-choice-pad-inline', `${metrics.choicePadInline.toFixed(2)}px`);
+            scheduleMathProblemInlineSafety();
         }
 
         function getVisibleMathCells() {
@@ -552,20 +557,17 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
             const isCompactLandscape = mathDeckMode === 'compact-landscape';
             const isCompactMathDeck = isCompactPortrait || isCompactLandscape;
 
-            let columns = isCompactPortrait ? 2 : 4;
-            let rows = isCompactPortrait ? 2 : 1;
+            const visibleBoxes = mathBoxElements.filter((box) => box && box.offsetParent !== null);
+            let columns = visibleBoxes.length <= 1 ? 1 : (isCompactPortrait ? 2 : 4);
+            let rows = visibleBoxes.length <= 1 ? 1 : (isCompactPortrait ? 2 : 1);
 
-            if (!isCompactMathDeck) {
-                const visibleBoxes = mathBoxElements.filter((box) => box && box.offsetParent !== null);
-
-                if (visibleBoxes.length > 1) {
+            if (!isCompactMathDeck && visibleBoxes.length > 1) {
                     const firstRowTop = Math.round(visibleBoxes[0].getBoundingClientRect().top);
                     columns = Math.max(
                         1,
                         visibleBoxes.filter((box) => Math.abs(Math.round(box.getBoundingClientRect().top) - firstRowTop) <= 2).length
                     );
                     rows = Math.max(1, Math.ceil(visibleBoxes.length / columns));
-                }
             }
 
             const initialCompactness = Math.min(
@@ -630,32 +632,48 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
                 headerSize: clampValue(
                     usableCompactness * (
                         isCompactPortrait
-                            ? 0.05
+                            ? 0.06
                             : isCompactLandscape
-                                ? 0.055
+                                ? 0.058
                                 : 0.075
                     ),
-                    isCompactMathDeck ? 7 : 8,
-                    isCompactMathDeck ? 9 : 12
+                    isCompactPortrait ? 8 : isCompactLandscape ? 7.5 : isCompactMathDeck ? 7 : 8,
+                    isCompactPortrait ? 10.5 : isCompactLandscape ? 9.5 : isCompactMathDeck ? 9 : 12
                 ),
                 problemSize: clampValue(
                     Math.min(
-                        usableCellWidth * (isCompactMathDeck ? 0.105 : 0.12),
-                        usableCellHeight * (isCompactMathDeck ? 0.16 : 0.18)
+                        usableCellWidth * (
+                            isCompactPortrait
+                                ? 0.135
+                                : isCompactLandscape
+                                    ? 0.118
+                                    : isCompactMathDeck
+                                        ? 0.105
+                                        : 0.12
+                        ),
+                        usableCellHeight * (
+                            isCompactPortrait
+                                ? 0.235
+                                : isCompactLandscape
+                                    ? 0.19
+                                    : isCompactMathDeck
+                                        ? 0.16
+                                        : 0.18
+                        )
                     ),
-                    isCompactMathDeck ? 10 : 12,
-                    isCompactMathDeck ? 15 : 22
+                    isCompactPortrait ? 12 : isCompactLandscape ? 11 : isCompactMathDeck ? 10 : 12,
+                    isCompactPortrait ? 24 : isCompactLandscape ? 21 : isCompactMathDeck ? 15 : 22
                 ),
                 choiceFontSize: clampValue(
                     usableCompactness * (
                         isCompactPortrait
-                            ? 0.068
+                            ? 0.082
                             : isCompactLandscape
-                                ? 0.074
+                                ? 0.078
                                 : 0.11
                     ),
-                    isCompactMathDeck ? 9 : 9,
-                    isCompactMathDeck ? 11 : 15
+                    isCompactPortrait ? 10.5 : isCompactLandscape ? 10 : isCompactMathDeck ? 9 : 9,
+                    isCompactPortrait ? 14 : isCompactLandscape ? 12.8 : isCompactMathDeck ? 11 : 15
                 ),
                 choiceGap: clampValue(
                     usableCompactness * (
@@ -671,35 +689,35 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
                 choiceMinHeight: clampValue(
                     usableCellHeight * (
                         isCompactPortrait
-                            ? 0.17
+                            ? 0.22
                             : isCompactLandscape
-                                ? 0.2
+                                ? 0.23
                                 : 0.24
                     ),
-                    isCompactMathDeck ? 16 : 18,
-                    isCompactMathDeck ? 24 : 30
+                    isCompactPortrait ? 22 : isCompactLandscape ? 19 : isCompactMathDeck ? 16 : 18,
+                    isCompactPortrait ? 38 : isCompactLandscape ? 30 : isCompactMathDeck ? 24 : 30
                 ),
                 choicePadBlock: clampValue(
                     usableCellHeight * (
                         isCompactPortrait
-                            ? 0.018
+                            ? 0.024
                             : isCompactLandscape
-                                ? 0.024
+                                ? 0.028
                                 : 0.032
                     ),
-                    isCompactMathDeck ? 2 : 3,
-                    isCompactMathDeck ? 4 : 6
+                    isCompactPortrait ? 2.5 : isCompactLandscape ? 2.25 : isCompactMathDeck ? 2 : 3,
+                    isCompactPortrait ? 5 : isCompactLandscape ? 4.5 : isCompactMathDeck ? 4 : 6
                 ),
                 choicePadInline: clampValue(
                     usableCellWidth * (
                         isCompactPortrait
-                            ? 0.024
+                            ? 0.03
                             : isCompactLandscape
-                                ? 0.028
+                                ? 0.032
                                 : 0.04
                     ),
-                    isCompactMathDeck ? 4 : 5,
-                    isCompactMathDeck ? 8 : 10
+                    isCompactPortrait ? 5 : isCompactLandscape ? 4.5 : isCompactMathDeck ? 4 : 5,
+                    isCompactPortrait ? 10 : isCompactLandscape ? 9 : isCompactMathDeck ? 8 : 10
                 ),
             };
 
@@ -714,13 +732,37 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
                     metrics.blockPad = clampValue(metrics.blockPad * 0.9, 4, metrics.blockPad);
                     metrics.inlinePad = clampValue(metrics.inlinePad * 0.92, 6, metrics.inlinePad);
                     metrics.innerGap = clampValue(metrics.innerGap * 0.88, 4, metrics.innerGap);
-                    metrics.headerSize = clampValue(metrics.headerSize * 0.94, 6.5, metrics.headerSize);
-                    metrics.problemSize = clampValue(metrics.problemSize * 0.92, 9, metrics.problemSize);
-                    metrics.choiceFontSize = clampValue(metrics.choiceFontSize * 0.9, 8, metrics.choiceFontSize);
+                    metrics.headerSize = clampValue(
+                        metrics.headerSize * 0.95,
+                        isCompactPortrait ? 7.4 : isCompactLandscape ? 7 : 6.5,
+                        metrics.headerSize
+                    );
+                    metrics.problemSize = clampValue(
+                        metrics.problemSize * 0.94,
+                        isCompactPortrait ? 11 : isCompactLandscape ? 10.5 : 9,
+                        metrics.problemSize
+                    );
+                    metrics.choiceFontSize = clampValue(
+                        metrics.choiceFontSize * 0.93,
+                        isCompactPortrait ? 9.5 : isCompactLandscape ? 9 : 8,
+                        metrics.choiceFontSize
+                    );
                     metrics.choiceGap = clampValue(metrics.choiceGap * 0.85, 2, metrics.choiceGap);
-                    metrics.choiceMinHeight = clampValue(metrics.choiceMinHeight * 0.88, 14, metrics.choiceMinHeight);
-                    metrics.choicePadBlock = clampValue(metrics.choicePadBlock * 0.82, 1.5, metrics.choicePadBlock);
-                    metrics.choicePadInline = clampValue(metrics.choicePadInline * 0.88, 3, metrics.choicePadInline);
+                    metrics.choiceMinHeight = clampValue(
+                        metrics.choiceMinHeight * 0.9,
+                        isCompactPortrait ? 18 : isCompactLandscape ? 16 : 14,
+                        metrics.choiceMinHeight
+                    );
+                    metrics.choicePadBlock = clampValue(
+                        metrics.choicePadBlock * 0.86,
+                        isCompactPortrait ? 2 : isCompactLandscape ? 1.8 : 1.5,
+                        metrics.choicePadBlock
+                    );
+                    metrics.choicePadInline = clampValue(
+                        metrics.choicePadInline * 0.9,
+                        isCompactPortrait ? 4 : isCompactLandscape ? 3.5 : 3,
+                        metrics.choicePadInline
+                    );
                     setMathDeckVisualBalance(root, metrics);
                     overflow = measureMathDeckOverflow(visibleCells);
                     attempts += 1;
@@ -754,9 +796,9 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
             const statsHeight = Math.ceil(topCenterStats.getBoundingClientRect().height || 0);
             const mathDeckIsPortrait = layoutState.mathDeck === 'compact-portrait';
             const challengeHeight = Math.round(clampValue(
-                mathDeckIsPortrait ? viewportHeight * 0.052 : viewportHeight * 0.048,
-                mathDeckIsPortrait ? 36 : 20,
-                mathDeckIsPortrait ? 46 : 28
+                mathDeckIsPortrait ? viewportHeight * 0.068 : viewportHeight * 0.064,
+                mathDeckIsPortrait ? 44 : 30,
+                mathDeckIsPortrait ? 62 : 40
             ));
             const safeStageHeight = mathDeckIsPortrait ? 146 : 96;
 
@@ -766,19 +808,20 @@ import { bindUpgradesPanelButton } from '../ui/upgrades-panel-button.js';
             );
 
             const preferredDeckHeight = mathDeckIsPortrait
-                ? viewportHeight * 0.29
-                : viewportHeight * 0.17;
-            const deckMinHeight = mathDeckIsPortrait ? 146 : 60;
+                ? viewportHeight * 0.36
+                : viewportHeight * 0.22;
+            const deckMinHeight = mathDeckIsPortrait ? 184 : 112;
             const deckMaxHeight = Math.max(deckMinHeight, coreHeight - safeStageHeight);
             const mathDeckHeight = clampValue(preferredDeckHeight, deckMinHeight, deckMaxHeight);
             const compactStageHeight = Math.max(safeStageHeight, coreHeight - mathDeckHeight);
-            const mathCardHeight = mathDeckIsPortrait
-                ? Math.max(68, Math.floor((mathDeckHeight - rootGap) / 2))
-                : Math.max(60, Math.floor(mathDeckHeight));
+            const mathCardHeight = Math.max(
+                mathDeckIsPortrait ? 108 : 92,
+                Math.floor(mathDeckHeight)
+            );
             const mathChoiceMinHeight = clampValue(
-                mathDeckIsPortrait ? mathCardHeight * 0.24 : mathCardHeight * 0.21,
-                14,
-                28
+                mathDeckIsPortrait ? mathCardHeight * 0.31 : mathCardHeight * 0.25,
+                mathDeckIsPortrait ? 24 : 20,
+                mathDeckIsPortrait ? 46 : 40
             );
 
             root.style.setProperty('--compact-stage-max-h', `${Math.round(compactStageHeight)}px`);
@@ -5542,6 +5585,214 @@ function generateProblemForCurrentLevel(boxIndex) {
             return result.toString();
         }
         
+        const STACKED_PLACE_VALUE_PROBLEM_TYPES = new Set([
+            PROBLEM_TYPES.ADDITION_SINGLE_DIGIT,
+            PROBLEM_TYPES.SUBTRACTION_SINGLE_DIGIT,
+            PROBLEM_TYPES.ADDITION_DOUBLE_DIGIT,
+            PROBLEM_TYPES.SUBTRACTION_DOUBLE_DIGIT,
+            PROBLEM_TYPES.MULTIPLICATION_DOUBLE_BY_SINGLE,
+            PROBLEM_TYPES.MULTIPLICATION_DOUBLE_DIGIT,
+            PROBLEM_TYPES.MONEY_OPERATIONS,
+            PROBLEM_TYPES.INTEGER_ADDITION,
+            PROBLEM_TYPES.INTEGER_SUBTRACTION,
+        ]);
+
+        function escapeMathProblemHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function setPlainMathProblemText(problemElement, text, ariaLabel = text) {
+            if (!problemElement) {
+                return;
+            }
+
+            problemElement.classList.remove('math-problem--stacked');
+            problemElement.dataset.problemLayout = 'inline';
+            problemElement.innerHTML = `<span class="math-problem-inline" aria-hidden="true">${escapeMathProblemHtml(text)}</span>`;
+
+            if (ariaLabel) {
+                problemElement.setAttribute('aria-label', ariaLabel);
+            } else {
+                problemElement.removeAttribute('aria-label');
+            }
+
+            scheduleMathProblemInlineSafety();
+        }
+
+        function getMathProblemInlineFitMinFontSize(problemElement) {
+            const baseFontSize = parseFloat(window.getComputedStyle(problemElement).fontSize) || 16;
+            const mathDeck = document.body?.dataset.mathDeck;
+
+            if (mathDeck === 'compact-landscape') {
+                return Math.min(baseFontSize, Math.max(9.5, baseFontSize * 0.58));
+            }
+
+            if (mathDeck === 'compact-portrait') {
+                return Math.min(baseFontSize, Math.max(11, baseFontSize * 0.62));
+            }
+
+            return Math.min(baseFontSize, Math.max(13, baseFontSize * 0.68));
+        }
+
+        function getMathProblemInlineFitMargin(problemElement) {
+            const baseFontSize = parseFloat(window.getComputedStyle(problemElement).fontSize) || 16;
+            const mathDeck = document.body?.dataset.mathDeck;
+
+            if (mathDeck === 'compact-landscape') {
+                return Math.max(12, baseFontSize * 0.75);
+            }
+
+            if (mathDeck === 'compact-portrait') {
+                return Math.max(14, baseFontSize * 0.9);
+            }
+
+            return Math.max(18, baseFontSize);
+        }
+
+        function applyMathProblemInlineSafety(problemElement) {
+            if (!problemElement || problemElement.classList.contains('math-problem--stacked')) {
+                return;
+            }
+
+            const inlineProblem = problemElement.querySelector('.math-problem-inline');
+
+            if (!inlineProblem) {
+                return;
+            }
+
+            inlineProblem.style.removeProperty('font-size');
+            inlineProblem.style.removeProperty('letter-spacing');
+
+            const baseFontSize = parseFloat(window.getComputedStyle(problemElement).fontSize) || 16;
+            const minFontSize = getMathProblemInlineFitMinFontSize(problemElement);
+            const safetyMargin = getMathProblemInlineFitMargin(problemElement);
+            const availableWidth = Math.max(problemElement.clientWidth - safetyMargin, 1);
+
+            if (inlineProblem.scrollWidth <= availableWidth) {
+                return;
+            }
+
+            let targetFontSize = Math.max(
+                minFontSize,
+                Math.floor((baseFontSize * (availableWidth / inlineProblem.scrollWidth) * 0.985) * 100) / 100
+            );
+
+            inlineProblem.style.fontSize = `${targetFontSize}px`;
+
+            let attempts = 0;
+
+            while (inlineProblem.scrollWidth > availableWidth && targetFontSize > minFontSize && attempts < 14) {
+                targetFontSize = Math.max(minFontSize, targetFontSize - 0.25);
+                inlineProblem.style.fontSize = `${targetFontSize}px`;
+                attempts += 1;
+            }
+
+            if (inlineProblem.scrollWidth <= availableWidth) {
+                return;
+            }
+
+            let letterSpacing = parseFloat(window.getComputedStyle(problemElement).letterSpacing);
+            if (!Number.isFinite(letterSpacing)) {
+                letterSpacing = 0;
+            }
+
+            const minLetterSpacing = -(targetFontSize * 0.05);
+
+            while (inlineProblem.scrollWidth > availableWidth && letterSpacing > minLetterSpacing && attempts < 24) {
+                letterSpacing -= 0.12;
+                inlineProblem.style.letterSpacing = `${letterSpacing.toFixed(2)}px`;
+                attempts += 1;
+            }
+        }
+
+        function applyVisibleMathProblemInlineSafety() {
+            mathProblemElements
+                .filter((problemElement) => problemElement && problemElement.offsetParent !== null)
+                .forEach((problemElement) => applyMathProblemInlineSafety(problemElement));
+        }
+
+        function scheduleMathProblemInlineSafety() {
+            if (mathProblemInlineSafetyFrame) {
+                cancelAnimationFrame(mathProblemInlineSafetyFrame);
+            }
+
+            mathProblemInlineSafetyFrame = requestAnimationFrame(() => {
+                mathProblemInlineSafetyFrame = 0;
+                applyVisibleMathProblemInlineSafety();
+            });
+        }
+
+        function getStackedMathProblemParts(problemData) {
+            if (!problemData?.problemString || !STACKED_PLACE_VALUE_PROBLEM_TYPES.has(problemData.type)) {
+                return null;
+            }
+
+            const simpleBinaryMatch = problemData.problemString.match(
+                /^\s*(\$?-?\d+(?:\.\d+)?)\s*([+\-×])\s*(\$?-?\d+(?:\.\d+)?)\s*=\s*\?\s*$/
+            );
+
+            if (!simpleBinaryMatch) {
+                return null;
+            }
+
+            const [, topValue, operator, bottomValue] = simpleBinaryMatch;
+            const normalizedTopValue = topValue.replace(/[$,]/g, '');
+            const normalizedBottomValue = bottomValue.replace(/[$,]/g, '');
+            const hasNegativeOperand = normalizedTopValue.startsWith('-') || normalizedBottomValue.startsWith('-');
+            const needsPlaceValueAlignment = (
+                topValue.includes('.') ||
+                bottomValue.includes('.') ||
+                normalizedTopValue.length > 1 ||
+                normalizedBottomValue.length > 1
+            );
+
+            if (hasNegativeOperand || !needsPlaceValueAlignment) {
+                return null;
+            }
+
+            return {
+                topValue,
+                operator,
+                bottomValue,
+            };
+        }
+
+        function setRenderedMathProblem(problemElement, problemData) {
+            const rawProblemString = problemData?.problemString || '';
+            const stackedProblem = getStackedMathProblemParts(problemData);
+
+            if (!stackedProblem) {
+                setPlainMathProblemText(problemElement, rawProblemString);
+                return;
+            }
+
+            problemElement.classList.add('math-problem--stacked');
+            problemElement.dataset.problemLayout = 'stacked';
+            problemElement.setAttribute('aria-label', rawProblemString);
+            problemElement.innerHTML = `
+                <span class="math-problem-stack" aria-hidden="true">
+                    <span class="math-problem-stack-row">
+                        <span class="math-problem-stack-operator"></span>
+                        <span class="math-problem-stack-value">${escapeMathProblemHtml(stackedProblem.topValue)}</span>
+                    </span>
+                    <span class="math-problem-stack-row">
+                        <span class="math-problem-stack-operator">${escapeMathProblemHtml(stackedProblem.operator)}</span>
+                        <span class="math-problem-stack-value">${escapeMathProblemHtml(stackedProblem.bottomValue)}</span>
+                    </span>
+                    <span class="math-problem-stack-rule"></span>
+                    <span class="math-problem-stack-row math-problem-stack-row--answer">
+                        <span class="math-problem-stack-operator"></span>
+                        <span class="math-problem-stack-value math-problem-stack-value--answer">?</span>
+                    </span>
+                </span>`;
+            scheduleMathProblemInlineSafety();
+        }
+
         function displayProblemInBox(boxIndex, problemData) { 
             if (mathProblemTimers[boxIndex]) { 
                 clearTimeout(mathProblemTimers[boxIndex]); 
@@ -5577,8 +5828,8 @@ function generateProblemForCurrentLevel(boxIndex) {
             const config = levelProblemConfig[currentChallengeLevel]; 
             const epValue = config ? config.ep : 0; 
             
-            mathHeaderElements[boxIndex].textContent = `Problem ${boxIndex + 1} (+${epValue}⚡ EP)`; 
-            mathProblemElements[boxIndex].textContent = currentProblemData.problemString; 
+            mathHeaderElements[boxIndex].textContent = getMathChallengeHeaderText(epValue);
+            setRenderedMathProblem(mathProblemElements[boxIndex], currentProblemData);
             
             const grid = mathMCGridElements[boxIndex]; 
             grid.innerHTML = ''; 
@@ -5586,7 +5837,7 @@ function generateProblemForCurrentLevel(boxIndex) {
             if (!currentProblemData.answer || currentChallengeLevel === 0) { 
                 grid.innerHTML = ''; 
                 if (currentChallengeLevel === 0 || retries > CONFIG.MAX_PROBLEM_GENERATION_RETRIES) { 
-                    mathProblemElements[boxIndex].textContent = "Select Difficulty"; 
+                    setPlainMathProblemText(mathProblemElements[boxIndex], 'Select Difficulty');
                 } 
                 scheduleCompactMathDeckFit();
                 return; 
@@ -5754,7 +6005,7 @@ function generateProblemForCurrentLevel(boxIndex) {
             
             // Fast path for levels 7 and 8 - use pre-generated templates
             if (currentChallengeLevel === 7 || currentChallengeLevel === 8) {
-                // Get 4 random problems from the templates without repetition
+                // Get a random set of template problems without repetition
                 const templates = [...problemTemplates[currentChallengeLevel]];
                 for (let i = 0; i < CONFIG.NUM_CHALLENGE_PROBLEMS; i++) {
                     if (templates.length > 0) {
@@ -5842,7 +6093,20 @@ function generateProblemForCurrentLevel(boxIndex) {
                 }
             }
         }
-        function clearAllMathProblemsDisplay() { for (let i = 0; i < CONFIG.NUM_CHALLENGE_PROBLEMS; i++) { if (mathProblemTimers[i]) { clearTimeout(mathProblemTimers[i]); mathProblemTimers[i] = null; } mathHeaderElements[i].textContent = `Problem ${i + 1}`; mathProblemElements[i].textContent = "Select Difficulty"; mathMCGridElements[i].innerHTML = ''; } updateChallengeUI(); }
+        function clearAllMathProblemsDisplay() {
+            for (let i = 0; i < CONFIG.NUM_CHALLENGE_PROBLEMS; i++) {
+                if (mathProblemTimers[i]) {
+                    clearTimeout(mathProblemTimers[i]);
+                    mathProblemTimers[i] = null;
+                }
+
+                mathHeaderElements[i].textContent = getMathChallengeHeaderText();
+                setPlainMathProblemText(mathProblemElements[i], 'Select Difficulty');
+                mathMCGridElements[i].innerHTML = '';
+            }
+
+            updateChallengeUI();
+        }
         function selectChallengeLevel(level, skipCost = false) { 
             // Prevent multiple rapid clicks from causing issues
             if (window.isSelectingChallengeLevel) {
@@ -5894,7 +6158,7 @@ function generateProblemForCurrentLevel(boxIndex) {
             if (level >= 7) {
                 for (let i = 0; i < CONFIG.NUM_CHALLENGE_PROBLEMS; i++) {
                     if (mathProblemElements[i]) {
-                        mathProblemElements[i].textContent = "Loading...";
+                        setPlainMathProblemText(mathProblemElements[i], 'Loading...');
                     }
                 }
             }
@@ -8752,7 +9016,7 @@ function generateProblemForCurrentLevel(boxIndex) {
                 
                 // Calculate the total energy points to award based on difficulty level
                 // We'll use this later after selecting the difficulty level
-                // For each difficulty level, award points for all 4 math problems
+                // Award points for every visible math problem card.
                 let totalEnergyToAward = 0;
                 
                 if (wizardIQLevel > 0) {
@@ -8785,9 +9049,10 @@ function generateProblemForCurrentLevel(boxIndex) {
                     r -= adjustedWeights[i];
                 }
                 
-                // Calculate the total energy points to award for all 4 math problems at this difficulty level
+                // Calculate the total energy points to award for the current visible problem count.
                 const pointsPerProblem = chosen; // Each level awards its level number in EP (1-8)
-                totalEnergyToAward = pointsPerProblem * 4; // For all 4 math problems
+                const activeProblemCount = Math.max(1, mathBoxElements.filter(Boolean).length);
+                totalEnergyToAward = pointsPerProblem * activeProblemCount;
                 
                 debugLog(`Math Wizard selected difficulty level ${chosen}, will award ${totalEnergyToAward} energy points total`);
                 
@@ -8822,7 +9087,7 @@ function generateProblemForCurrentLevel(boxIndex) {
                 
                 // Track when all orbs are done
                 let orbsCompleted = 0;
-                const totalOrbs = 4;
+                const totalOrbs = Math.max(1, mathBoxElements.filter(Boolean).length);
                 
                 for (let i = 0; i < totalOrbs; i++) {
                     await new Promise(resolve => setTimeout(resolve, 180));

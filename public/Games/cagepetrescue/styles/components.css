@@ -2187,7 +2187,11 @@ body.app-shell.utility-buttons-in-stage #pet-status-stage-slot #math-wizard-butt
 }
 
 #ep-challenge-panel {
-    padding: 0.75rem 0.9rem 1rem;
+    padding: 0.95rem 1.05rem 1.15rem;
+    border: 1px solid rgba(124, 145, 188, 0.42);
+    border-radius: clamp(1rem, 0.9vw + 0.65rem, 1.45rem);
+    background: linear-gradient(180deg, rgba(15, 22, 36, 0.9), rgba(8, 12, 24, 0.94));
+    box-shadow: 0 0.95rem 2.15rem rgba(0, 0, 0, 0.3);
 }
 
 #ep-difficulty-buttons {
@@ -2195,13 +2199,15 @@ body.app-shell.utility-buttons-in-stage #pet-status-stage-slot #math-wizard-butt
     grid-template-columns: repeat(8, minmax(0, 1fr));
     justify-items: stretch;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.45rem 0.5rem 0.35rem;
-    border-radius: 0.8rem;
-    border: 1px solid rgba(103, 125, 170, 0.38);
+    gap: 0.55rem;
+    padding: 0.62rem 0.65rem 0.5rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(123, 145, 192, 0.44);
     background:
         linear-gradient(180deg, rgba(16, 23, 38, 0.84), rgba(11, 16, 29, 0.92));
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 0.35rem 0.8rem rgba(0, 0, 0, 0.18);
 }
 
 .ep-difficulty-callout {
@@ -2211,14 +2217,14 @@ body.app-shell.utility-buttons-in-stage #pet-status-stage-slot #math-wizard-butt
     justify-content: center;
     justify-self: stretch;
     width: 100%;
-    min-height: 1.5rem;
-    margin: 0 0 0.08rem;
-    padding: 0.16rem 0.55rem;
+    min-height: 1.8rem;
+    margin: 0 0 0.18rem;
+    padding: 0.24rem 0.72rem;
     border-radius: 999px;
     border: 1px solid rgba(255, 204, 84, 0.44);
     background: linear-gradient(180deg, rgba(60, 47, 15, 0.95), rgba(34, 28, 9, 0.94));
     color: #ffe08a;
-    font-size: clamp(0.62rem, 0.18vw + 0.58rem, 0.78rem);
+    font-size: clamp(0.72rem, 0.2vw + 0.66rem, 0.9rem);
     font-weight: 800;
     letter-spacing: 0.045em;
     line-height: 1.1;
@@ -2230,7 +2236,11 @@ body.app-shell.utility-buttons-in-stage #pet-status-stage-slot #math-wizard-butt
 
 .difficulty-level-button {
     width: 100%;
-    min-width: 2.8rem;
+    min-width: 3.15rem;
+    min-height: clamp(2.15rem, 1.1vw + 1.85rem, 2.8rem);
+    padding: 0.36rem 0.18rem;
+    font-size: clamp(0.82rem, 0.18vw + 0.78rem, 0.96rem);
+    border-width: 1.5px;
 }
 
 #ep-challenge-panel.is-awaiting-selection #ep-difficulty-buttons {
@@ -2282,7 +2292,7 @@ body.app-shell[data-math-deck="compact-landscape"] #ep-challenge-panel {
     min-height: 0;
     height: var(--compact-challenge-block-size);
     max-height: var(--compact-challenge-block-size) !important;
-    padding: clamp(0.22rem, 0.55vw, 0.32rem) clamp(0.32rem, 0.8vw, 0.45rem);
+    padding: clamp(0.26rem, 0.65vw, 0.4rem) clamp(0.36rem, 0.9vw, 0.52rem);
     display: grid;
     align-items: center;
     overflow: hidden;
@@ -2306,19 +2316,19 @@ body.app-shell[data-math-deck="compact-portrait"] #ep-difficulty-buttons,
 body.app-shell[data-math-deck="compact-landscape"] #ep-difficulty-buttons {
     width: 100%;
     display: grid;
-    gap: clamp(0.08rem, 0.18vw, 0.14rem);
-    padding: clamp(0.12rem, 0.22vw, 0.18rem) clamp(0.16rem, 0.3vw, 0.24rem);
+    gap: clamp(0.12rem, 0.24vw, 0.2rem);
+    padding: clamp(0.16rem, 0.28vw, 0.24rem) clamp(0.2rem, 0.34vw, 0.3rem);
     border-radius: 0.65rem;
 }
 
 body.app-shell[data-math-deck="compact-portrait"] .ep-difficulty-callout,
 body.app-shell[data-math-deck="compact-landscape"] .ep-difficulty-callout {
     grid-column: 1 / -1;
-    min-height: 0.68rem;
+    min-height: 0.86rem;
     margin: 0;
-    padding: 0.04rem 0.18rem;
+    padding: 0.08rem 0.2rem;
     border-radius: 999px;
-    font-size: clamp(0.28rem, 0.08vw + 0.28rem, 0.4rem);
+    font-size: clamp(0.34rem, 0.12vw + 0.32rem, 0.48rem);
     letter-spacing: 0.03em;
     text-shadow: 0 0 0.3rem rgba(255, 196, 42, 0.2);
 }
@@ -2334,29 +2344,29 @@ body.app-shell[data-math-deck="compact-landscape"] #ep-difficulty-buttons {
 body.app-shell[data-math-deck="compact-portrait"] .difficulty-level-button,
 body.app-shell[data-math-deck="compact-landscape"] .difficulty-level-button {
     min-width: 0;
-    min-height: clamp(0.9rem, 2vh, 1.18rem);
-    padding: 0.08rem 0.03rem;
-    font-size: clamp(0.38rem, 0.12vw + 0.36rem, 0.5rem);
+    min-height: clamp(1.08rem, 2.4vh, 1.45rem);
+    padding: 0.1rem 0.05rem;
+    font-size: clamp(0.44rem, 0.14vw + 0.42rem, 0.58rem);
     border-width: 1px;
     border-radius: 0.34rem;
     line-height: 1;
 }
 
 body.app-shell[data-math-deck="compact-landscape"] #ep-challenge-panel {
-    padding: 0.12rem 0.22rem;
+    padding: 0.16rem 0.24rem;
 }
 
 body.app-shell[data-math-deck="compact-landscape"] .difficulty-level-button {
-    min-height: 0.84rem;
-    padding: 0.06rem 0.02rem;
-    font-size: clamp(0.34rem, 0.1vw + 0.32rem, 0.44rem);
+    min-height: 0.98rem;
+    padding: 0.08rem 0.03rem;
+    font-size: clamp(0.4rem, 0.12vw + 0.38rem, 0.52rem);
     border-radius: 0.28rem;
 }
 
 body.app-shell[data-math-deck="compact-landscape"] .ep-difficulty-callout {
-    min-height: 0.58rem;
-    padding: 0.02rem 0.16rem;
-    font-size: clamp(0.24rem, 0.08vw + 0.24rem, 0.34rem);
+    min-height: 0.7rem;
+    padding: 0.04rem 0.16rem;
+    font-size: clamp(0.3rem, 0.08vw + 0.28rem, 0.4rem);
 }
 
 body.app-shell[data-math-deck="compact-portrait"] #upgrades-panel-button-container .upgrades-panel-button,
@@ -2593,47 +2603,145 @@ body.app-shell:is([data-layout="desktop"], [data-layout="large"]) #right-side-pa
 }
 
 .math-cell {
+    position: relative;
+    container-type: inline-size;
     width: 100%;
     height: auto;
-    min-height: clamp(9rem, 18svh, 12rem);
+    min-height: clamp(13rem, 24svh, 17rem);
     margin: 0;
-    padding: var(--math-card-pad-block) var(--math-card-pad-inline);
-    box-shadow: 0 0.42rem 0.95rem rgba(0, 0, 0, 0.2);
+    padding: calc(var(--math-card-pad-block) * 1.15) calc(var(--math-card-pad-inline) * 1.15);
+    border: 1px solid rgba(124, 148, 196, 0.42);
+    border-radius: clamp(1rem, 0.9vw + 0.65rem, 1.4rem);
+    background: linear-gradient(180deg, rgba(16, 19, 33, 0.94), rgba(10, 12, 24, 0.96));
+    box-shadow: 0 0.65rem 1.4rem rgba(0, 0, 0, 0.28);
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
+    align-items: stretch;
+    justify-items: stretch;
     gap: var(--math-card-inner-gap);
     overflow: hidden;
 }
 
+.math-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
 .math-header {
     margin: 0;
-    color: #c8d1eb;
+    color: #d9e5ff;
     font-size: var(--math-header-font-size);
+    font-weight: 800;
     line-height: 1.05;
-    letter-spacing: 0.045em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
+    text-align: center;
+    justify-self: stretch;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 0 0.85rem rgba(100, 150, 255, 0.14);
 }
 
 .math-problem {
     margin: 0;
     min-height: 0;
     font-size: var(--math-problem-font-size);
-    line-height: 1.1;
+    font-size: min(var(--math-problem-font-size), clamp(1.2rem, 12cqw, 2.6rem));
+    font-weight: 800;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: 0.02em;
+    line-height: 1.08;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
+    min-height: clamp(5.4rem, 11svh, 8rem);
+    padding: 0.5rem 0.8rem;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    justify-self: stretch;
     overflow: hidden;
-    text-wrap: balance;
+    color: #f5f8ff;
+    text-shadow: 0 0 1.2rem rgba(77, 120, 255, 0.12);
+}
+
+.math-problem-inline {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    overflow: visible;
+}
+
+.math-problem--stacked {
+    max-width: min(100%, 16ch);
+    letter-spacing: 0;
+    line-height: 1;
+}
+
+.math-problem-stack {
+    display: grid;
+    gap: 0.08em;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+
+.math-problem-stack-row {
+    display: grid;
+    grid-template-columns: 0.92em auto;
+    column-gap: 0.18em;
+    align-items: end;
+    justify-content: end;
+    width: max-content;
+    margin-inline: auto;
+}
+
+.math-problem-stack-row--answer {
+    padding-top: 0.04em;
+}
+
+.math-problem-stack-operator {
+    width: 0.92em;
+    text-align: center;
+    justify-self: center;
+}
+
+.math-problem-stack-value {
+    min-width: 3ch;
+    text-align: right;
+}
+
+.math-problem-stack-value--answer {
+    padding-right: 0.04em;
+}
+
+.math-problem-stack-rule {
+    display: block;
+    width: 100%;
+    min-width: 4ch;
+    border-top: 0.11em solid rgba(245, 248, 255, 0.96);
+    margin-top: 0.04em;
 }
 
 .math-mc-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(var(--math-choice-min-h), 1fr);
     gap: var(--math-card-inner-gap);
     width: 100%;
     align-content: stretch;
+    justify-self: stretch;
+    margin: 0;
 }
 
 .mc-choice-btn {
@@ -2646,6 +2754,10 @@ body.app-shell:is([data-layout="desktop"], [data-layout="large"]) #right-side-pa
     gap: var(--math-choice-gap);
     overflow: hidden;
     font-size: var(--math-choice-font-size);
+    font-size: min(var(--math-choice-font-size), clamp(0.84rem, 5.4cqw, 1.2rem));
+    font-weight: 800;
+    border-width: 1.5px;
+    border-radius: clamp(0.68rem, 0.55vw + 0.4rem, 1rem);
 }
 
 .mc-choice-btn-label {
@@ -2665,7 +2777,7 @@ body.app-shell[data-math-deck="compact-landscape"] .math-cell {
     min-height: 0;
     height: var(--math-card-block-size);
     max-height: var(--math-card-block-size);
-    border-radius: clamp(0.55rem, 0.8vw, 0.78rem);
+    border-radius: clamp(0.72rem, 0.8vw, 0.92rem);
     box-shadow: 0 0.28rem 0.65rem rgba(0, 0, 0, 0.18);
     align-items: stretch;
     justify-items: stretch;
@@ -2674,6 +2786,7 @@ body.app-shell[data-math-deck="compact-landscape"] .math-cell {
 
 body.app-shell[data-math-deck="compact-portrait"] .math-header,
 body.app-shell[data-math-deck="compact-landscape"] .math-header {
+    font-size: min(var(--math-header-font-size), clamp(0.74rem, 4.2cqw, 1rem));
     letter-spacing: 0.02em;
     width: 100%;
     text-align: center;
@@ -2682,15 +2795,67 @@ body.app-shell[data-math-deck="compact-landscape"] .math-header {
 
 body.app-shell[data-math-deck="compact-portrait"] .math-problem,
 body.app-shell[data-math-deck="compact-landscape"] .math-problem {
+    font-size: min(var(--math-problem-font-size), clamp(1.45rem, 14cqw, 2.2rem));
     line-height: 1.02;
     justify-self: center;
     width: 100%;
+    min-height: 0;
     padding-inline: clamp(0.08rem, 0.35vw, 0.24rem);
+}
+
+body.app-shell[data-math-deck="compact-portrait"] .math-problem {
+    min-height: clamp(3.8rem, 8.8svh, 5.6rem);
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem {
+    font-size: min(var(--math-problem-font-size), clamp(1.08rem, 6.5cqw, 1.55rem));
+    padding-block: 0.12rem;
+}
+
+body.app-shell[data-math-deck="compact-portrait"] .math-problem--stacked {
+    max-width: min(100%, 12ch);
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked {
+    max-width: min(100%, 20ch);
+}
+
+body.app-shell[data-math-deck="compact-portrait"] .math-problem--stacked,
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked {
+    line-height: 1;
+}
+
+body.app-shell[data-math-deck="compact-portrait"] .math-problem-stack,
+body.app-shell[data-math-deck="compact-landscape"] .math-problem-stack {
+    gap: 0.06em;
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked {
+    font-size: min(var(--math-problem-font-size), clamp(0.84rem, 4.5cqw, 1.12rem));
+    padding-block: 0;
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked .math-problem-stack {
+    gap: 0.02em;
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked .math-problem-stack-row {
+    grid-template-columns: 0.78em auto;
+    column-gap: 0.12em;
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked .math-problem-stack-operator {
+    width: 0.78em;
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-problem--stacked .math-problem-stack-rule {
+    margin-top: 0.01em;
+    border-top-width: 0.09em;
 }
 
 body.app-shell[data-math-deck="compact-portrait"] .math-mc-grid,
 body.app-shell[data-math-deck="compact-landscape"] .math-mc-grid {
-    gap: max(0.12rem, calc(var(--math-card-inner-gap) * 0.82));
+    gap: max(0.18rem, calc(var(--math-card-inner-gap) * 0.88));
     max-width: 100%;
     align-self: end;
     justify-self: stretch;
@@ -2698,12 +2863,22 @@ body.app-shell[data-math-deck="compact-landscape"] .math-mc-grid {
     margin: 0;
 }
 
+body.app-shell[data-math-deck="compact-portrait"] .math-mc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .math-mc-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 body.app-shell[data-math-deck="compact-portrait"] .mc-choice-btn,
 body.app-shell[data-math-deck="compact-landscape"] .mc-choice-btn {
     line-height: 1;
     border-width: 1px;
-    border-radius: 0.42rem;
+    border-radius: 0.56rem;
     min-width: 0;
+    padding-block: max(0.2rem, calc(var(--math-choice-pad-block) * 1.08));
+    padding-inline: max(0.34rem, calc(var(--math-choice-pad-inline) * 1.05));
     grid-template-columns: auto auto;
     justify-content: center;
     justify-items: center;
@@ -2714,16 +2889,24 @@ body.app-shell[data-math-deck="compact-landscape"] .mc-choice-btn {
 
 body.app-shell[data-math-deck="compact-portrait"] .mc-choice-btn-label,
 body.app-shell[data-math-deck="compact-landscape"] .mc-choice-btn-label {
-    font-size: 0.9em;
+    font-size: 1em;
     justify-self: center;
     text-align: center;
 }
 
 body.app-shell[data-math-deck="compact-portrait"] .mc-choice-btn-answer,
 body.app-shell[data-math-deck="compact-landscape"] .mc-choice-btn-answer {
-    font-size: 0.88em;
+    font-size: 0.98em;
     justify-self: center;
     text-align: center;
+}
+
+body.app-shell[data-math-deck="compact-portrait"] .mc-choice-btn {
+    min-height: max(var(--math-choice-min-h), 2.5rem);
+}
+
+body.app-shell[data-math-deck="compact-landscape"] .mc-choice-btn {
+    min-height: max(var(--math-choice-min-h), 2.2rem);
 }
 
 body.app-shell[data-math-deck="compact-portrait"] #game-container #lock-picking-panel {

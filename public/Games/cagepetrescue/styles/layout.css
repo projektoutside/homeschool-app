@@ -142,12 +142,11 @@
 
         .math-mc-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 8px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: none;
+            gap: var(--math-card-inner-gap, 8px);
             width: 100%;
-            margin-top: 8px;
-            margin-bottom: 4px;
+            margin: 0;
         }
 
         .mc-choice-btn {
@@ -1135,7 +1134,7 @@ body.app-shell[data-math-deck="compact-landscape"] #game-container {
 #math-challenge-grid {
     grid-area: math;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--math-deck-gap);
     align-items: stretch;
 }
@@ -1151,19 +1150,16 @@ body.app-shell[data-math-deck="compact-landscape"] #math-challenge-grid {
 }
 
 body.app-shell[data-math-deck="compact-portrait"] #math-challenge-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-}
-
-body.app-shell[data-math-deck="compact-landscape"] #math-challenge-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
 }
 
-#math-box-0,
-#math-box-1,
-#math-box-2,
-#math-box-3 {
+body.app-shell[data-math-deck="compact-landscape"] #math-challenge-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+}
+
+#math-box-0 {
     position: relative;
     inset: auto;
     top: auto;
@@ -1251,7 +1247,7 @@ body.app-shell.is-desktop-layout .secondary-panel-tabs {
 
 body.app-shell[data-layout="desktop"] #math-challenge-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
 }
 
 body.app-shell:is([data-layout="desktop"], [data-layout="large"]) #game-container {
@@ -1301,32 +1297,17 @@ body.app-shell[data-layout="large"] {
     grid-template-rows: auto auto minmax(18rem, 1fr) auto;
     grid-template-areas:
         "stats stats stats stats secondary"
-        "primary math0 stage math1 secondary"
         "primary . stage . secondary"
-        "challenge math2 stage math3 secondary";
+        "challenge . stage . secondary"
+        "math math math math math";
     align-items: start;
 }
 
 body.app-shell[data-layout="large"] #math-challenge-grid {
-    display: contents;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 body.app-shell[data-layout="large"] #game-container {
     min-height: clamp(25rem, 56vh, 46rem);
-}
-
-body.app-shell[data-layout="large"] #math-box-0 {
-    grid-area: math0;
-}
-
-body.app-shell[data-layout="large"] #math-box-1 {
-    grid-area: math1;
-}
-
-body.app-shell[data-layout="large"] #math-box-2 {
-    grid-area: math2;
-}
-
-body.app-shell[data-layout="large"] #math-box-3 {
-    grid-area: math3;
 }
