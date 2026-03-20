@@ -13,10 +13,10 @@ import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { buildAssetPath } from './utils/pathUtils';
+import Home from './pages/Home';
 import './App.css';
 import './components/ErrorBoundary.css';
 
-const loadHomeRoute = () => import('./pages/Home');
 const loadGamePlayerRoute = () => import('./pages/GamePlayer');
 const loadManagerRoute = () => import('./pages/ManagerPage');
 const loadViewerRoute = () => import('./pages/Viewer');
@@ -27,7 +27,6 @@ const loadClassroomRoute = () => import('./pages/ClassroomPage');
 const loadCharacterCreatorRoute = () => import('./pages/CharacterCreatorPage');
 
 // Lazy load pages for performance
-const Home = React.lazy(loadHomeRoute);
 const GamePlayer = React.lazy(loadGamePlayerRoute);
 const ManagerPage = React.lazy(loadManagerRoute);
 const Viewer = React.lazy(loadViewerRoute);
