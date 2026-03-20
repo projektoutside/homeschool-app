@@ -4,6 +4,7 @@ import { buildAssetPath } from '../utils/pathUtils';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { usePWA } from '../hooks/usePWA';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
+import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import './HTMLViewer.css';
 
 interface WorksheetFile {
@@ -348,6 +349,16 @@ const HTMLViewer: React.FC = () => {
     useEffect(() => {
         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
     }, [soundSettings]);
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        return () => {
+            teardownIframeElementWhenDisconnected(iframe, { reason: 'html-viewer-unmount' });
+            if (iframeRef.current === iframe) {
+                iframeRef.current = null;
+            }
+        };
+    }, [selectedFile?.path]);
 
     const formatFolderName = (name: string): string => {
         return name
@@ -825,6 +836,7 @@ const HTMLViewer: React.FC = () => {
                                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
                                     style={iframeStyle}
                                     onLoad={() => {
+                                        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'html-viewer-load' });
                                         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                                         void initializeWorksheetMeasurement();
                                     }}

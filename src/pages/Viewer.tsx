@@ -9,6 +9,7 @@ import { useManagerConfig } from '../hooks/useManagerConfig';
 import { PWAInstallModal } from '../components/PWAInstallModal';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
+import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -44,6 +45,16 @@ const ViewerPage: React.FC = () => {
     useEffect(() => {
         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
     }, [soundSettings]);
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        return () => {
+            teardownIframeElementWhenDisconnected(iframe, { reason: 'viewer-unmount' });
+            if (iframeRef.current === iframe) {
+                iframeRef.current = null;
+            }
+        };
+    }, [item?.id]);
 
     const handleInstallClick = useCallback(async () => {
         if (installResolution.target === 'installed') return;
@@ -220,6 +231,7 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
                             setIsLoading(false);
+                            postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'viewer-game-load' });
                             applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                         }}
                     />
@@ -251,6 +263,7 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts"
                         onLoad={() => {
                             setIsLoading(false);
+                            postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'viewer-worksheet-load' });
                             applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                         }}
                     />

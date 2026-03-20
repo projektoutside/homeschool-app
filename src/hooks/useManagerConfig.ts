@@ -275,11 +275,15 @@ const parseConfig = (saved: string | null): ManagerConfig => {
   }
 };
 
-export const useManagerConfig = () => {
+type UseManagerConfigOptions = {
+  hydrateRemote?: boolean;
+};
+
+export const useManagerConfig = ({ hydrateRemote = true }: UseManagerConfigOptions = {}) => {
   const { user } = useAuth();
   const [config, setConfig] = useState<ManagerConfig>(buildDefaultConfig);
   const [isHydratedFromStorage, setIsHydratedFromStorage] = useState(false);
-  const [isHydratedFromRemote, setIsHydratedFromRemote] = useState(false);
+  const [isHydratedFromRemote, setIsHydratedFromRemote] = useState(!hydrateRemote);
 
   const userScopedStorageKey = buildScopedStorageKey(STORAGE_KEY, user?.id);
   const legacyScopedStorageKey = buildScopedStorageKey(LEGACY_STORAGE_KEY, user?.id);
@@ -321,6 +325,11 @@ export const useManagerConfig = () => {
     let cancelled = false;
 
     const loadRemoteConfig = async () => {
+      if (!hydrateRemote) {
+        setIsHydratedFromRemote(true);
+        return;
+      }
+
       setIsHydratedFromRemote(false);
 
       if (!isHydratedFromStorage) return;
@@ -356,9 +365,10 @@ export const useManagerConfig = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHydratedFromStorage, user]);
+  }, [hydrateRemote, isHydratedFromStorage, user]);
 
   useEffect(() => {
+    if (!hydrateRemote) return;
     if (!isHydratedFromStorage || !isHydratedFromRemote) return;
     if (!supabase || !user) return;
     const supabaseClient = supabase;
@@ -383,7 +393,7 @@ export const useManagerConfig = () => {
     }, 600);
 
     return () => window.clearTimeout(timeout);
-  }, [config, isHydratedFromStorage, isHydratedFromRemote, user]);
+  }, [config, hydrateRemote, isHydratedFromStorage, isHydratedFromRemote, user]);
 
   const areaAssignments = useMemo(() => {
     const assignments = new Map<string, AppAreaId>();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/variables.css';
 import './MainLayout.css';
@@ -6,17 +6,12 @@ import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
 import { HomeInstallLauncher } from '../components/HomeInstallLauncher';
 import { AppShellGuard } from '../components/AppShellGuard';
-import UserHomePage from '../pages/UserHomePage';
 import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
 import { useZoomLock } from '../hooks/useZoomLock';
+import { HomepageSessionProvider } from '../context/homepageSessionContext';
 import { useAuth } from '../context/AuthContext';
 import { isManagerUser } from '../utils/managerAccess';
-
-const LazyClassroomPage = React.lazy(() => import('../pages/ClassroomPage'));
-type IdleCapableWindow = Window & {
-    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-    cancelIdleCallback?: (handle: number) => void;
-};
+import UserHomePage from '../pages/UserHomePage';
 
 const MainLayout: React.FC = () => {
     useGlobalUiClickSound();
@@ -26,9 +21,14 @@ const MainLayout: React.FC = () => {
     const { user } = useAuth();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [settingsCloseRequestId, setSettingsCloseRequestId] = useState(0);
-    const [hasHomePageMounted, setHasHomePageMounted] = useState<boolean>(
-        location.pathname === '/home-profile' || location.pathname === '/',
-    );
+    const currentUserId = user?.id ?? null;
+    const [homepageSessionState, setHomepageSessionState] = useState(() => ({
+        ownerId: currentUserId,
+        ready: false,
+    }));
+    const isHomepageSessionReady =
+        homepageSessionState.ownerId === currentUserId
+        && homepageSessionState.ready;
 
     const isUserHomeRoute = location.pathname === '/home-profile' || location.pathname === '/';
     const isHomeRoute = location.pathname === '/';
@@ -37,50 +37,26 @@ const MainLayout: React.FC = () => {
     const isCharacterCreatorRoute = location.pathname === '/character-creator';
     const isGamePlayerRoute = location.pathname.startsWith('/play/') || location.pathname.startsWith('/open/');
     const isManagerRoute = location.pathname === '/manager';
-    const isImmersiveRoute = isHomeRoute || isAppsRoute || isUserHomeRoute || isGamePlayerRoute || isManagerRoute || isClassroomRoute || isCharacterCreatorRoute;
-    const shouldRenderUserHomePage = (hasHomePageMounted || isUserHomeRoute) && !isGamePlayerRoute;
-    const shouldRenderClassroomPage = isClassroomRoute;
+    const isPrimingHomepageSession = !isHomepageSessionReady;
+    const isHomepageSessionVisible = isUserHomeRoute || isPrimingHomepageSession;
+    const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionReady;
+    const isImmersiveRoute =
+        isHomeRoute
+        || isAppsRoute
+        || isUserHomeRoute
+        || isGamePlayerRoute
+        || isManagerRoute
+        || isClassroomRoute
+        || isCharacterCreatorRoute
+        || isPrimingHomepageSession;
     const hasDeveloperAccess = isManagerUser(user);
     const shouldShowCharacterCreatorLauncher =
         hasDeveloperAccess
         && isUserHomeRoute
         && !isCharacterCreatorRoute;
-    const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute;
+    const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isPrimingHomepageSession;
 
     useZoomLock({ enabled: shouldDisableZoom });
-
-    useEffect(() => {
-        if (hasHomePageMounted || isGamePlayerRoute) {
-            return;
-        }
-
-        const idleWindow = window as IdleCapableWindow;
-        let timeoutId: number | null = null;
-        let idleId: number | null = null;
-
-        const mountHomepage = () => {
-            setHasHomePageMounted(true);
-        };
-
-        if (isUserHomeRoute) {
-            timeoutId = window.setTimeout(mountHomepage, 0);
-        } else if (typeof idleWindow.requestIdleCallback === 'function') {
-            idleId = idleWindow.requestIdleCallback(() => {
-                mountHomepage();
-            }, { timeout: 1200 });
-        } else {
-            timeoutId = window.setTimeout(mountHomepage, 600);
-        }
-
-        return () => {
-            if (timeoutId !== null) {
-                window.clearTimeout(timeoutId);
-            }
-            if (idleId !== null && typeof idleWindow.cancelIdleCallback === 'function') {
-                idleWindow.cancelIdleCallback(idleId);
-            }
-        };
-    }, [hasHomePageMounted, isGamePlayerRoute, isUserHomeRoute]);
 
     // Dev-only shortcut: Ctrl+Shift+M to toggle manager
     useEffect(() => {
@@ -112,61 +88,72 @@ const MainLayout: React.FC = () => {
         setSettingsCloseRequestId(prev => prev + 1);
     };
 
+    const handleHomepageBootStable = useCallback(() => {
+        setHomepageSessionState((current) => {
+            if (current.ownerId === currentUserId && current.ready) {
+                return current;
+            }
+
+            return {
+                ownerId: currentUserId,
+                ready: true,
+            };
+        });
+    }, [currentUserId]);
+
     return (
-        <div
-            className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''}`}
-        >
-            {/* Skip to main content link for keyboard users */}
-            <a href="#main-content" className="skip-to-main">
-                Skip to main content
-            </a>
+        <HomepageSessionProvider value={{ isReady: isHomepageSessionReady }}>
+            <div
+                className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''}`}
+            >
+                {/* Skip to main content link for keyboard users */}
+                <a href="#main-content" className="skip-to-main">
+                    Skip to main content
+                </a>
 
-            {/* Main Content Area */}
-            <main id="main-content" className="main-content">
-                <Outlet />
-                {shouldRenderUserHomePage ? (
-                    <section
-                        className={`persistent-home-page ${isUserHomeRoute ? 'is-visible' : 'is-hidden'}`}
-                        aria-hidden={!isUserHomeRoute}
+                {/* Main Content Area */}
+                <main id="main-content" className="main-content">
+                    <div
+                        className={`main-content__home-session ${isHomepageSessionVisible ? 'is-visible' : 'is-hidden'}`}
+                        aria-hidden={!isHomepageSessionVisible}
                     >
-                        <UserHomePage isActive={isUserHomeRoute} />
-                    </section>
-                ) : null}
-                {shouldRenderClassroomPage ? (
-                    <section
-                        className={`persistent-home-page ${isClassroomRoute ? 'is-visible' : 'is-hidden'}`}
-                        aria-hidden={!isClassroomRoute}
+                        <UserHomePage
+                            key={currentUserId ?? 'homepage-session'}
+                            isActive={isHomepageSessionVisible}
+                            onBootStable={handleHomepageBootStable}
+                        />
+                    </div>
+                    <div
+                        className={`main-content__route-layer ${shouldShowRouteLayer ? 'is-visible' : 'is-hidden'}`}
+                        aria-hidden={!shouldShowRouteLayer}
                     >
-                        <LazyClassroomPage isActive={isClassroomRoute} />
-                    </section>
+                        <Outlet />
+                    </div>
+                </main>
+
+                {shouldShowCharacterCreatorLauncher ? (
+                    <Link
+                        to="/character-creator"
+                        className="character-creator-launcher"
+                        aria-label="Open XiO Studio"
+                    >
+                        <span className="character-creator-launcher__eyebrow">Studio Access</span>
+                        <span className="character-creator-launcher__title">XiO Studio</span>
+                    </Link>
                 ) : null}
-            </main>
 
-            {shouldShowCharacterCreatorLauncher ? (
-                <Link
-                    to="/character-creator"
-                    className="character-creator-launcher"
-                    aria-label="Open XiO Studio"
-                >
-                    <span className="character-creator-launcher__eyebrow">Studio Access</span>
-                    <span className="character-creator-launcher__title">XiO Studio</span>
-                </Link>
-            ) : null}
+                {isUserHomeRoute ? <HomeInstallLauncher /> : null}
 
-            {isUserHomeRoute ? <HomeInstallLauncher /> : null}
+                <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
 
-            {/* Persistent Bottom Navigation */}
-            {/* Render always, or maybe hide on GamePlayer if strictly needed? User said "regardless of which page". */}
-            <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
-
-            {/* Global Settings Panel */}
-            <GlobalSettings
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                externalCloseRequestId={settingsCloseRequestId}
-            />
-            <AppShellGuard />
-        </div>
+                <GlobalSettings
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    externalCloseRequestId={settingsCloseRequestId}
+                />
+                <AppShellGuard />
+            </div>
+        </HomepageSessionProvider>
     );
 };
 

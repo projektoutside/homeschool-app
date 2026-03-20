@@ -8704,6 +8704,284 @@
             : legacyCatalogRuntime;
         const { INVENTORY_CONFIG, PROP_DEFINITIONS } = runtimeCatalog;
         let lastAppliedLiveCatalogRevision = liveCatalogSnapshot?.updatedAt || null;
+
+        function buildLiveCatalogRuntimeState(rawSnapshot, {
+            savedPropKeys = liveSavedPropKeys
+        } = {}) {
+            const mergedSnapshot = mergeHomepageCatalogWithFallback?.({
+                snapshot: rawSnapshot,
+                fallbackInventoryConfig: legacyCatalogRuntime.INVENTORY_CONFIG,
+                fallbackPropCatalog: legacyCatalogRuntime.PROP_CATALOG
+            }) || null;
+            const inventoryConfig = buildRuntimeInventoryConfigFromCatalogSnapshot(mergedSnapshot);
+            const propCatalog = inventoryConfig?.categories?.length && Array.isArray(mergedSnapshot?.props)
+                ? mergedSnapshot.props
+                    .map((entry) => buildLiveRuntimePropCatalogEntry(entry, {
+                        inventoryConfig,
+                        savedPropKeys
+                    }))
+                    .filter((entry) => Boolean(entry))
+                : null;
+            const propDefinitions = inventoryConfig && propCatalog && typeof buildRuntimePropDefinitions === 'function'
+                ? buildRuntimePropDefinitions({
+                    inventoryConfig,
+                    propCatalog,
+                    factoryById: propFactoryById,
+                    warn: console.warn
+                })
+                : legacyCatalogRuntime.PROP_DEFINITIONS;
+
+            return {
+                rawSnapshot,
+                mergedSnapshot,
+                inventoryConfig: inventoryConfig || legacyCatalogRuntime.INVENTORY_CONFIG,
+                propCatalog: propCatalog || legacyCatalogRuntime.PROP_CATALOG,
+                propDefinitions
+            };
+        }
+
+        function buildLiveCatalogStructureSignature(catalogState) {
+            const inventoryConfig = catalogState?.inventoryConfig || legacyCatalogRuntime.INVENTORY_CONFIG;
+            const propCatalog = Array.isArray(catalogState?.propCatalog)
+                ? catalogState.propCatalog
+                : legacyCatalogRuntime.PROP_CATALOG;
+            return JSON.stringify({
+                defaultCategory: inventoryConfig?.defaultCategory || '',
+                categories: Array.isArray(inventoryConfig?.categories)
+                    ? inventoryConfig.categories.map((category) => ({
+                        key: category?.key || '',
+                        slotKey: category?.slotKey || category?.key || '',
+                        equipLimit: Number.isFinite(category?.equipLimit) ? Number(category.equipLimit) : 1,
+                        sortOrder: Number.isFinite(category?.sortOrder) ? Number(category.sortOrder) : 0
+                    }))
+                    : [],
+                props: propCatalog.map((entry, index) => ({
+                    key: entry?.key || '',
+                    category: entry?.category || '',
+                    order: index,
+                    factoryId: entry?.factoryId || '',
+                    assetUrl: entry?.assetUrl || '',
+                    creatorOnly: entry?.creatorOnly === true,
+                    active: entry?.active !== false,
+                    archived: entry?.archived === true,
+                    mysteryBoxEnabled: entry?.mysteryBoxEnabled !== false,
+                    attachment: entry?.attachment || null
+                }))
+            });
+        }
+
+        let lastAppliedLiveCatalogStructureSignature = buildLiveCatalogStructureSignature({
+            inventoryConfig: INVENTORY_CONFIG,
+            propCatalog: livePropCatalog
+        });
+        let pendingLiveCatalogReloadRevision = null;
+        let pendingLiveCatalogReloadReason = null;
+
+        function syncLiveSavedPropKeys(snapshot) {
+            liveSavedPropKeys.clear();
+            if (!Array.isArray(snapshot?.props)) {
+                return;
+            }
+            snapshot.props.forEach((entry) => {
+                const normalizedKey = normalizeHomepagePropKey(typeof entry?.key === 'string' ? entry.key.trim() : '');
+                if (normalizedKey) {
+                    liveSavedPropKeys.add(normalizedKey);
+                }
+            });
+        }
+
+        function performLiveCatalogReload(reason, revision) {
+            const reloadReason = typeof reason === 'string' && reason.trim()
+                ? reason.trim()
+                : 'catalog-sync';
+            const reloadRevision = typeof revision === 'string' && revision.trim()
+                ? revision.trim()
+                : lastAppliedLiveCatalogRevision || 'unknown';
+            pendingLiveCatalogReloadReason = null;
+            pendingLiveCatalogReloadRevision = null;
+            console.info('[HomepageCatalog] Reloading homepage runtime to apply structural live-catalog changes.', {
+                reason: reloadReason,
+                revision: reloadRevision
+            });
+            window.setTimeout(() => {
+                window.location.reload();
+            }, 0);
+        }
+
+        function flushPendingLiveCatalogReload(reason = 'deferred') {
+            if (!pendingLiveCatalogReloadRevision) {
+                return;
+            }
+            performLiveCatalogReload(
+                pendingLiveCatalogReloadReason || reason,
+                pendingLiveCatalogReloadRevision
+            );
+        }
+
+        function syncLiveCatalogMetadataIntoRuntime(catalogState) {
+            const nextInventoryConfig = catalogState?.inventoryConfig || null;
+            const nextPropDefinitions = Array.isArray(catalogState?.propDefinitions)
+                ? catalogState.propDefinitions
+                : [];
+            if (!nextInventoryConfig?.categories?.length || !nextPropDefinitions.length) {
+                return;
+            }
+
+            INVENTORY_CONFIG.defaultCategory = nextInventoryConfig.defaultCategory || INVENTORY_CONFIG.defaultCategory;
+            if (Array.isArray(INVENTORY_CONFIG.categories)) {
+                INVENTORY_CONFIG.categories.splice(0, INVENTORY_CONFIG.categories.length, ...nextInventoryConfig.categories);
+            }
+
+            INVENTORY_CATEGORY_MAP.clear();
+            INVENTORY_CATEGORIES.splice(0, INVENTORY_CATEGORIES.length, ...nextInventoryConfig.categories.map((category) => category.key));
+            Object.keys(CATEGORY_LABELS).forEach((key) => {
+                delete CATEGORY_LABELS[key];
+            });
+            Object.keys(CATEGORY_EQUIP_LIMITS).forEach((key) => {
+                delete CATEGORY_EQUIP_LIMITS[key];
+            });
+            SINGLE_EQUIP_CATEGORIES.clear();
+
+            nextInventoryConfig.categories.forEach((category) => {
+                INVENTORY_CATEGORY_MAP.set(category.key, category);
+                CATEGORY_LABELS[category.key] = category.label || category.key;
+                CATEGORY_EQUIP_LIMITS[category.key] = category.equipLimit ?? 1;
+                if ((category.equipLimit ?? 1) === 1) {
+                    SINGLE_EQUIP_CATEGORIES.add(category.key);
+                }
+            });
+
+            PROP_DEFINITIONS.splice(0, PROP_DEFINITIONS.length, ...nextPropDefinitions);
+            PROP_CATALOG_ORDER.clear();
+            nextPropDefinitions.forEach((definition, index) => {
+                PROP_CATALOG_ORDER.set(definition.key, index);
+            });
+
+            const nextDefinitionsByKey = new Map(
+                nextPropDefinitions.map((definition) => [definition.key, definition])
+            );
+            nextDefinitionsByKey.forEach((definition, propKey) => {
+                const metadata = propRegistry.get(propKey);
+                if (!metadata) {
+                    return;
+                }
+                metadata.label = definition.label || definition.key;
+                metadata.category = definition.category;
+                metadata.priority = definition.prewarmPriority ?? 0;
+                metadata.rarity = definition.rarity || 'rare';
+                metadata.eyePreset = definition.eyePreset || null;
+                metadata.materialPreset = definition.materialPreset || null;
+                metadata.mysteryBoxEnabled = definition.mysteryBoxEnabled !== false;
+                metadata.active = definition.active !== false;
+                metadata.archived = definition.archived === true;
+                metadata.assetUrl = definition.assetUrl || null;
+                metadata.attachment = definition.attachment || null;
+                metadata.preview = definition.preview || null;
+                metadata.updatedAt = definition.updatedAt || null;
+                metadata.tags = Array.isArray(definition.tags) ? definition.tags : [];
+                metadata.description = definition.description || '';
+                if (metadata.object) {
+                    metadata.object.userData = metadata.object.userData || {};
+                    metadata.object.userData.propKey = definition.key;
+                    metadata.object.userData.propCategory = definition.category;
+                    metadata.object.userData.propLabel = definition.label || definition.key;
+                }
+            });
+
+            categoryButtons.forEach((button) => {
+                const categoryKey = button?.dataset?.category;
+                if (!categoryKey || !isInventoryCategory(categoryKey)) {
+                    return;
+                }
+                button.textContent = getInventoryCategoryLabel(categoryKey);
+            });
+
+            inventoryCategoryButtons.forEach((button) => {
+                const categoryKey = button?.dataset?.category;
+                if (!categoryKey || !isInventoryCategory(categoryKey)) {
+                    return;
+                }
+                button.textContent = getInventoryDisplayNameWithCount(categoryKey);
+            });
+
+            propButtons.forEach((button) => {
+                const propKey = button?.dataset?.prop;
+                if (!propKey) {
+                    return;
+                }
+                const definition = nextDefinitionsByKey.get(propKey);
+                if (!definition) {
+                    return;
+                }
+                button.dataset.category = definition.category;
+                button.dataset.propLabel = definition.label || definition.key;
+                const labelNode = button.querySelector('.item-btn-label');
+                if (labelNode) {
+                    labelNode.textContent = definition.label || definition.key;
+                }
+                const previewTrigger = button.querySelector('[data-preview-for]');
+                if (previewTrigger) {
+                    previewTrigger.setAttribute('aria-label', `Preview ${definition.label || definition.key}`);
+                    if (previewTrigger instanceof HTMLElement) {
+                        previewTrigger.dataset.previewFor = definition.key;
+                    }
+                }
+            });
+
+            if (previewState?.propKey) {
+                const activeDefinition = nextDefinitionsByKey.get(previewState.propKey);
+                if (activeDefinition) {
+                    previewState.label = activeDefinition.label || activeDefinition.key;
+                    if (
+                        propPreviewName &&
+                        previewState.presentation !== 'mystery' &&
+                        propPreviewPanel?.classList?.contains('open')
+                    ) {
+                        propPreviewName.textContent = `${previewState.label} Preview`;
+                    }
+                }
+            }
+
+            updatePropButtonStates();
+            setActiveCategory(activeCategory);
+            setActiveInventoryCategory(activeInventoryCategory);
+            renderInventoryList();
+        }
+
+        function applyIncomingLiveCatalogSnapshot(snapshot, source = 'message') {
+            if (!snapshot) {
+                return;
+            }
+
+            const nextRevision = typeof snapshot.updatedAt === 'string'
+                ? snapshot.updatedAt
+                : `${Date.now()}`;
+            if (nextRevision === lastAppliedLiveCatalogRevision) {
+                return;
+            }
+
+            lastAppliedLiveCatalogRevision = nextRevision;
+            syncLiveSavedPropKeys(snapshot);
+
+            const nextCatalogState = buildLiveCatalogRuntimeState(snapshot);
+            const nextStructureSignature = buildLiveCatalogStructureSignature(nextCatalogState);
+            if (nextStructureSignature !== lastAppliedLiveCatalogStructureSignature) {
+                pendingLiveCatalogReloadRevision = nextRevision;
+                pendingLiveCatalogReloadReason = `${source}-structural-sync`;
+                if (!homePageRouteAudioState?.isActive || document.visibilityState === 'hidden') {
+                    flushPendingLiveCatalogReload(source);
+                }
+                return;
+            }
+
+            pendingLiveCatalogReloadReason = null;
+            pendingLiveCatalogReloadRevision = null;
+            syncLiveCatalogMetadataIntoRuntime(nextCatalogState);
+            lastAppliedLiveCatalogStructureSignature = nextStructureSignature;
+        }
+
+        syncLiveSavedPropKeys(rawLiveCatalogSnapshot);
+
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin) return;
             if (!event.data || typeof event.data !== 'object') return;
@@ -8712,26 +8990,14 @@
             const snapshot = event.data.payload?.snapshot || null;
             if (!snapshot) return;
             persistHomepageCatalogSnapshot(snapshot);
-
-            const nextRevision = typeof snapshot.updatedAt === 'string' ? snapshot.updatedAt : `${Date.now()}`;
-            if (nextRevision !== lastAppliedLiveCatalogRevision) {
-                lastAppliedLiveCatalogRevision = nextRevision;
-                window.location.reload();
-            }
+            applyIncomingLiveCatalogSnapshot(snapshot, 'message');
         });
         window.addEventListener('storage', (event) => {
             if (!event || event.key !== HOMEPAGE_CATALOG_STORAGE_KEY) {
                 return;
             }
             const nextSnapshot = readHomepageCatalogSnapshot?.() || null;
-            const nextRevision = typeof nextSnapshot?.updatedAt === 'string'
-                ? nextSnapshot.updatedAt
-                : null;
-            if (!nextRevision || nextRevision === lastAppliedLiveCatalogRevision) {
-                return;
-            }
-            lastAppliedLiveCatalogRevision = nextRevision;
-            window.location.reload();
+            applyIncomingLiveCatalogSnapshot(nextSnapshot, 'storage');
         });
         const INVENTORY_CATEGORY_MAP = new Map(
             INVENTORY_CONFIG.categories.map((category) => [category.key, category])
@@ -9474,6 +9740,7 @@
         const HOMEPAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
         const HOMEPAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
         const HOMEPAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
+        const HOMEPAGE_HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
         const DAILY_LUNCHBOX_DEFAULT_POINTS = 100;
         const MYSTERY_PULL_COST_POINTS = 100;
         const MYSTERY_PULL_REQUEST_TIMEOUT_MS = 8000;
@@ -11566,10 +11833,36 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyNatureSoundsGain();
         }
 
+        const homePageAnimationLoopState = {
+            frameId: null,
+            preparedForUnload: false
+        };
+
+        function stopHomePageAnimationLoop() {
+            if (homePageAnimationLoopState.frameId !== null) {
+                window.cancelAnimationFrame(homePageAnimationLoopState.frameId);
+                homePageAnimationLoopState.frameId = null;
+            }
+        }
+
+        function requestNextHomePageAnimationFrame() {
+            if (
+                homePageAnimationLoopState.frameId !== null ||
+                homePageAnimationLoopState.preparedForUnload ||
+                !homePageRouteAudioState.isActive
+            ) {
+                return;
+            }
+            homePageAnimationLoopState.frameId = window.requestAnimationFrame(runHomePageAnimationFrame);
+        }
+
         function setHomePageActive(isActive) {
             const nextActive = Boolean(isActive);
             if (homePageRouteAudioState.isActive === nextActive) {
                 if (nextActive) {
+                    homePageAnimationLoopState.preparedForUnload = false;
+                    requestNextHomePageAnimationFrame();
+                    scheduleResponsiveLayout({ afterPaint: true });
                     resumeBackgroundPlaybackIfActive();
                     if (!homePageMusicState.muted && homePageMusicState.shouldPlay) {
                         attemptHomePageMusicPlayback();
@@ -11577,6 +11870,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
                     if (!homePageMusicState.muted && !natureSoundState.muted && natureSoundState.shouldPlay) {
                         attemptNatureSoundsPlayback();
                     }
+                } else {
+                    stopHomePageAnimationLoop();
                 }
                 return;
             }
@@ -11585,6 +11880,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             applyMysterySfxGain();
             applyLegendarySummonMusicGain();
             if (nextActive) {
+                homePageAnimationLoopState.preparedForUnload = false;
+                requestNextHomePageAnimationFrame();
+                scheduleResponsiveLayout({ afterPaint: true });
                 startHomePageActivationAudioSequence();
                 resumeBackgroundPlaybackIfActive();
                 return;
@@ -11600,6 +11898,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             clearScheduledHomePageMusicStart();
             animateHomePageRouteGain(0, HOME_PAGE_ROUTE_FADE_OUT_MS, { pauseAfter: true });
             pauseBackgroundPlaybackImmediately();
+            stopHomePageAnimationLoop();
+            flushPendingLiveCatalogReload('pause');
         }
 
         function handleIncomingSoundSettings(payload) {
@@ -11658,9 +11958,37 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         window.setHomePageActive = (isActive) => {
             setHomePageActive(isActive);
         };
+        function handleHostLifecycleMessage(data) {
+            const phase = typeof data?.phase === 'string' ? data.phase : '';
+            if (phase === 'prepare-unload') {
+                homePageAnimationLoopState.preparedForUnload = true;
+                setHomePageActive(false);
+                stopHomePageAnimationLoop();
+                return;
+            }
+            if (phase === 'pause') {
+                setHomePageActive(false);
+                stopHomePageAnimationLoop();
+                return;
+            }
+            if (phase === 'resume') {
+                homePageAnimationLoopState.preparedForUnload = false;
+                setHomePageActive(true);
+            }
+        }
+
         window.addEventListener('message', (event) => {
             const data = event?.data;
-            if (!data || data.type !== 'APP_SOUND_SETTINGS_UPDATE') return;
+            if (!data || typeof data !== 'object') return;
+            if (
+                data.type === HOMEPAGE_HOST_LIFECYCLE_MESSAGE &&
+                event.origin === window.location.origin &&
+                (window.parent === window || event.source === window.parent)
+            ) {
+                handleHostLifecycleMessage(data);
+                return;
+            }
+            if (data.type !== 'APP_SOUND_SETTINGS_UPDATE') return;
             handleIncomingSoundSettings(data.payload);
         });
 
@@ -11881,6 +12209,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             });
 
             document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    flushPendingLiveCatalogReload('hidden');
+                    return;
+                }
                 if (!homePageRouteAudioState.isActive || document.visibilityState !== 'visible') return;
                 if (isLegendarySummonHoldingRouteAudio()) return;
                 resumeBackgroundPlaybackIfActive();
@@ -25814,17 +26146,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
             scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const rawDelta = clock.getDelta();
-            if (!homePageRouteAudioState.isActive) {
-                const now = performance.now();
-                if ((now - homePageAnimationState.lastInactiveRenderAtMs) >= HOME_PAGE_INACTIVE_RENDER_INTERVAL_MS) {
-                    homePageAnimationState.lastInactiveRenderAtMs = now;
-                    renderer.render(scene, camera);
-                }
+        function runHomePageAnimationFrame() {
+            homePageAnimationLoopState.frameId = null;
+            if (homePageAnimationLoopState.preparedForUnload || !homePageRouteAudioState.isActive) {
                 return;
             }
+            requestNextHomePageAnimationFrame();
+            const rawDelta = clock.getDelta();
             const dt = Math.min(rawDelta, 1 / 30);
             if (!Number.isFinite(dt) || dt <= 0) {
                 renderer.render(scene, camera);
@@ -26370,7 +26698,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-16-40';
         } else {
             setTimeout(runPropPrewarm, 8);
         }
-        animate();
+        requestNextHomePageAnimationFrame();
         scheduleHostBootReadySignal();
     </script>
 </body>

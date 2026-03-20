@@ -57,6 +57,37 @@ html, body {
     position: relative;
 }
 
+.main-content__home-session,
+.main-content__route-layer {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content__home-session {
+    z-index: 1;
+}
+
+.main-content__route-layer {
+    z-index: 2;
+}
+
+.main-content__home-session.is-hidden,
+.main-content__route-layer.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.main-content__home-session.is-visible,
+.main-content__route-layer.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
 /* Immersive mode settings */
 .layout-container.home-immersive .main-content {
     padding: 0;
@@ -64,25 +95,6 @@ html, body {
 
 .layout-container.game-immersive .main-content {
     padding: 0;
-}
-
-.persistent-home-page {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    transition: opacity 120ms ease;
-}
-
-.persistent-home-page.is-hidden {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-}
-
-.persistent-home-page.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-    visibility: visible;
 }
 
 .character-creator-launcher {

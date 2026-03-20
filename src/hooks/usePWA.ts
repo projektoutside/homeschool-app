@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
 
 // Type definitions
 interface BeforeInstallPromptEvent extends Event {
@@ -88,6 +89,7 @@ export function usePWA(): UsePWAReturn {
   const [isOfflineReady, setIsOfflineReady] = useState(false);
   const hasReloadedForUpdateRef = useRef(false);
   const hasAutoAppliedUpdateRef = useRef(false);
+  const hasScheduledInitialUpdateCheckRef = useRef(false);
   
   const checkForUpdatesFromSWRef = useRef<() => void>(() => {});
 
@@ -364,11 +366,6 @@ export function usePWA(): UsePWAReturn {
           setSwRegistration(registration);
           setIsOfflineReady(true);
 
-          // Ask browser to re-check for updated SW on app start
-          registration.update().catch(() => {
-            // Ignore update polling failures
-          });
-
           if (registration.waiting) {
             setUpdateInfo({
               hasUpdate: true,
@@ -400,10 +397,75 @@ export function usePWA(): UsePWAReturn {
             });
           });
 
-          // Check for updates on load
-          setTimeout(() => {
+          let idleTimeoutId: number | null = null;
+          let idleCallbackId: number | null = null;
+          const idleWindow = window as Window & {
+            requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+            cancelIdleCallback?: (handle: number) => void;
+          };
+
+          const cleanupDeferredUpdateListeners = () => {
+            window.removeEventListener(HOMEPAGE_BOOT_STABLE_EVENT, scheduleInitialUpdateCheck);
+            window.removeEventListener('pointerdown', scheduleInitialUpdateCheck);
+            window.removeEventListener('keydown', scheduleInitialUpdateCheck);
+            window.removeEventListener('touchstart', scheduleInitialUpdateCheck);
+            document.removeEventListener('visibilitychange', handleVisibilityRecovery);
+
+            if (idleTimeoutId !== null) {
+              window.clearTimeout(idleTimeoutId);
+              idleTimeoutId = null;
+            }
+
+            if (idleCallbackId !== null && typeof idleWindow.cancelIdleCallback === 'function') {
+              idleWindow.cancelIdleCallback(idleCallbackId);
+              idleCallbackId = null;
+            }
+          };
+
+          const runInitialUpdateCheck = () => {
+            cleanupDeferredUpdateListeners();
+
+            registration.update().catch(() => {
+              // Ignore update polling failures
+            });
             checkForUpdatesFromSWRef.current();
-          }, 3000);
+          };
+
+          const scheduleIdleCheck = () => {
+            if (typeof idleWindow.requestIdleCallback === 'function') {
+              idleCallbackId = idleWindow.requestIdleCallback(() => {
+                idleCallbackId = null;
+                runInitialUpdateCheck();
+              }, { timeout: 2000 });
+              return;
+            }
+
+            idleTimeoutId = window.setTimeout(() => {
+              idleTimeoutId = null;
+              runInitialUpdateCheck();
+            }, 250);
+          };
+
+          const scheduleInitialUpdateCheck = () => {
+            if (hasScheduledInitialUpdateCheckRef.current) {
+              return;
+            }
+
+            hasScheduledInitialUpdateCheckRef.current = true;
+            scheduleIdleCheck();
+          };
+
+          const handleVisibilityRecovery = () => {
+            if (document.visibilityState === 'visible') {
+              scheduleInitialUpdateCheck();
+            }
+          };
+
+          window.addEventListener(HOMEPAGE_BOOT_STABLE_EVENT, scheduleInitialUpdateCheck);
+          window.addEventListener('pointerdown', scheduleInitialUpdateCheck);
+          window.addEventListener('keydown', scheduleInitialUpdateCheck);
+          window.addEventListener('touchstart', scheduleInitialUpdateCheck);
+          document.addEventListener('visibilitychange', handleVisibilityRecovery);
         })
         .catch((error) => {
           console.error('[PWA] Service Worker registration failed:', error);

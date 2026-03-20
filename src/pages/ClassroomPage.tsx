@@ -5,6 +5,7 @@ import { useZoomLock } from '../hooks/useZoomLock';
 import { supabase } from '../lib/supabase';
 import { buildAssetPath } from '../utils/pathUtils';
 import { getUsername, isManagerUser } from '../utils/managerAccess';
+import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import './Home.css';
 import './ClassroomPage.css';
 
@@ -453,9 +454,16 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
 
     const handleFrameLoad = useCallback(() => {
         setLoadedLaunchPath(launchPath);
+        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'classroom-load' });
         syncAuthToClassroom();
         void syncLatestStateToClassroom('frame-load');
     }, [launchPath, syncAuthToClassroom, syncLatestStateToClassroom]);
+
+    useEffect(() => {
+        postIframeLifecyclePhase(iframeRef.current, isActive ? 'resume' : 'pause', {
+            reason: isActive ? 'classroom-active' : 'classroom-inactive',
+        });
+    }, [isActive, isFrameLoaded, launchPath]);
 
     useEffect(() => {
         if (introFallbackTimerRef.current !== null) {
@@ -487,6 +495,10 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         if (introFallbackTimerRef.current !== null) {
             window.clearTimeout(introFallbackTimerRef.current);
         }
+        teardownIframeElementWhenDisconnected(iframeRef.current, { reason: 'classroom-host-unmount' });
+        teardownIframeElementWhenDisconnected(introFrameRef.current, { reason: 'classroom-intro-unmount' });
+        iframeRef.current = null;
+        introFrameRef.current = null;
     }, []);
 
     return (

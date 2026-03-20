@@ -13,6 +13,7 @@ import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
+import { postIframeLifecyclePhase, teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
 import {
     type GamePointsAckMessage,
@@ -231,6 +232,16 @@ const GamePlayer: React.FC = () => {
     useEffect(() => {
         processedPointEventsRef.current.clear();
     }, [pointsSessionId]);
+
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        return () => {
+            teardownIframeElementWhenDisconnected(iframe, { reason: 'game-player-unmount' });
+            if (iframeRef.current === iframe) {
+                iframeRef.current = null;
+            }
+        };
+    }, [launchPath]);
 
     const syncCarKingMicPreference = useCallback(() => {
         if (!isCarKingGame) return;
@@ -529,6 +540,7 @@ const GamePlayer: React.FC = () => {
             const requestedArea = resolveAreaFromRequest(message.tab);
             const targetPath = resolveAreaRoute(requestedArea ?? 'home');
 
+            teardownIframeElement(iframeRef.current, { reason: 'game-exit-message' });
             navigate(targetPath);
         };
 
@@ -636,6 +648,7 @@ const GamePlayer: React.FC = () => {
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                     onLoad={() => {
                         setLoadedLaunchPath(launchPath);
+                        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'game-load' });
                         applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
                         syncCarKingMicPreference();
                         syncWordPuzzleUserContext();

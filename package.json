@@ -12,6 +12,7 @@
     "build": "npm run sync:install-metadata && npm run build:quiz-it-polygon && tsc -b && vite build",
     "check": "npm run lint && npm run build",
     "audit:games": "node ./scripts/audit-games.mjs",
+    "audit:assets": "node ./scripts/audit-nonhome-assets.mjs",
     "assets:glb:audit": "node ./scripts/optimize-glb-assets.mjs --check",
     "assets:glb:optimize": "node ./scripts/optimize-glb-assets.mjs",
     "lint": "eslint .",

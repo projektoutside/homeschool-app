@@ -14,12 +14,14 @@ import {
   createCreatorCatalogSyncPayload,
   persistHomepagePendingSummonRecovery,
   persistHomepageCatalogSnapshot,
+  readHomepageCatalogSnapshot,
   readHomepagePendingSummonRecovery,
   readHomepageMysteryTestSession,
 } from '../utils/homepageCatalogBridge';
 import { isManagerUser } from '../utils/managerAccess';
 import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from '../constants/homepageAppVersion';
+import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
 import type { HomepageCatalogSnapshot } from '../types/homepageCatalog';
 import {
   buildPendingMysteryLaunchState,
@@ -28,6 +30,7 @@ import {
   type PendingMysteryLaunchState,
 } from './userHomePage/homepageLaunchState';
 import type { HomepagePendingSummonRecoveryPayload } from '../utils/homepageCatalogBridge';
+import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import './Home.css';
 import './UserHomePage.css';
 
@@ -90,7 +93,8 @@ declare global {
 }
 
 interface UserHomePageProps {
-  isActive: boolean;
+  isActive?: boolean;
+  onBootStable?: () => void;
 }
 
 const buildDailyLunchboxClaimStorageKey = (userId: string): string => {
@@ -152,18 +156,17 @@ const writeDailyLunchboxClaimExpiresAt = (userId: string | null | undefined, exp
   }
 };
 
-const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
+const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStable }) => {
   const [initialLaunchState] = useState(createInitialHomepageLaunchState);
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCompletedInitialBoot, setHasCompletedInitialBoot] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [bootReadyReceived, setBootReadyReceived] = useState(false);
   const [bootFallbackReady, setBootFallbackReady] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [bootProgress, setBootProgress] = useState(HOME_PAGE_HOST_INITIAL_PROGRESS);
-  const [activeBootLaunchPath, setActiveBootLaunchPath] = useState(() => '');
-  const [launchRefreshToken, setLaunchRefreshToken] = useState(() => initialPendingMysteryLaunch?.launchId || initialPendingMysteryLaunch?.createdAt || '');
   const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
   const [pendingSummonRecovery, setPendingSummonRecovery] = useState<HomepagePendingSummonRecoveryPayload | null>(null);
   const [storedSnapshot, setStoredSnapshot] = useState<HomepageCatalogSnapshot | null>(
@@ -205,23 +208,16 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     },
     [isCatalogLoading, shouldHoldStoredSnapshot, snapshot, storedSnapshot],
   );
-  const homePageRuntimeToken = useMemo(() => (
-    launchRefreshToken
-    || (!isCatalogLoading ? snapshot.updatedAt : '')
-    || effectiveSnapshot?.updatedAt
-    || 'runtime'
-  ), [effectiveSnapshot?.updatedAt, isCatalogLoading, launchRefreshToken, snapshot.updatedAt]);
   const launchPath = useMemo(
-    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&runtime=${encodeURIComponent(homePageRuntimeToken)}&hostLoader=1${hasDeveloperAccess ? '&developer=1' : ''}`),
-    [hasDeveloperAccess, homePageRuntimeToken],
+    () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&hostLoader=1${hasDeveloperAccess ? '&developer=1' : ''}`),
+    [hasDeveloperAccess],
   );
-  const hasPendingBootReset = activeBootLaunchPath !== launchPath;
-  const loaderVisible = hasPendingBootReset || isLoading;
-  const iframeLoadedState = hasPendingBootReset ? false : iframeLoaded;
-  const bootReadyReceivedState = hasPendingBootReset ? false : bootReadyReceived;
-  const bootFallbackReadyState = hasPendingBootReset ? false : bootFallbackReady;
-  const loadTimedOutState = hasPendingBootReset ? false : loadTimedOut;
-  const bootProgressValue = hasPendingBootReset ? HOME_PAGE_HOST_INITIAL_PROGRESS : bootProgress;
+  const loaderVisible = !hasCompletedInitialBoot && isLoading;
+  const iframeLoadedState = iframeLoaded;
+  const bootReadyReceivedState = bootReadyReceived;
+  const bootFallbackReadyState = bootFallbackReady;
+  const loadTimedOutState = loadTimedOut;
+  const bootProgressValue = bootProgress;
   const bootCompletionRequested = bootReadyReceivedState || bootFallbackReadyState || loadTimedOutState;
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
@@ -345,20 +341,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
   }, [syncPendingSummonRecoveryToIframe]);
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      setActiveBootLaunchPath(launchPath);
-      setIsLoading(true);
-      setIframeLoaded(false);
-      setBootReadyReceived(false);
-      setBootFallbackReady(false);
-      setLoadTimedOut(false);
-      setBootProgress(HOME_PAGE_HOST_INITIAL_PROGRESS);
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [launchPath]);
-
-  useEffect(() => {
     if (!loaderVisible) {
       return;
     }
@@ -406,14 +388,13 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     if (!nextPendingMysteryLaunch) {
       return;
     }
-    const latestStoredSnapshot = initialLaunchState.storedSnapshot ?? storedSnapshot;
+
+    const latestStoredSnapshot = readHomepageCatalogSnapshot() ?? initialLaunchState.storedSnapshot ?? storedSnapshot;
     const frameId = window.requestAnimationFrame(() => {
       if (latestStoredSnapshot) {
         setStoredSnapshot(latestStoredSnapshot);
       }
-      setIsLoading(true);
       setPendingMysteryLaunch(nextPendingMysteryLaunch);
-      setLaunchRefreshToken(nextPendingMysteryLaunch.launchId || nextPendingMysteryLaunch.createdAt || `${Date.now()}`);
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [initialLaunchState.storedSnapshot, isActive, storedSnapshot]);
@@ -858,8 +839,20 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     }
   }, [effectiveSnapshot, isCatalogLoading]);
 
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) {
+      return;
+    }
+
+    postIframeLifecyclePhase(iframe, isActive ? 'resume' : 'pause', {
+      reason: isActive ? 'homepage-active' : 'homepage-inactive',
+    });
+  }, [iframeLoadedState, isActive]);
+
   const handleLoad = () => {
     setIframeLoaded(true);
+    postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'homepage-load' });
     applySoundSettingsToWindow(
       iframeRef.current?.contentWindow,
       soundSettings,
@@ -895,7 +888,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
     }, HOME_PAGE_HOST_LOAD_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [launchPath, loaderVisible]);
+  }, [loaderVisible]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -912,6 +905,19 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
 
   const handleLoaderFinish = useCallback(() => {
     setIsLoading(false);
+    setHasCompletedInitialBoot(true);
+    onBootStable?.();
+    window.dispatchEvent(new CustomEvent(HOMEPAGE_BOOT_STABLE_EVENT));
+  }, [onBootStable]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    return () => {
+      teardownIframeElementWhenDisconnected(iframe, { reason: 'homepage-host-unmount' });
+      if (iframeRef.current === iframe) {
+        iframeRef.current = null;
+      }
+    };
   }, []);
 
   return (
@@ -930,7 +936,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive }) => {
             </div>
           )}
           <iframe
-            key={launchPath}
             ref={iframeRef}
             src={launchPath}
             title="Homepage App"

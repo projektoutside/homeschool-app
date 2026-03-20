@@ -9,6 +9,7 @@ import { useAppAssetPrefetch } from './hooks/useAppAssetPrefetch';
 import { useNativeShell } from './hooks/useNativeShell';
 import { UpdateNotification } from './components/UpdateNotification';
 import CinematicLoadingScreen from './components/CinematicLoadingScreen';
+import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { buildAssetPath } from './utils/pathUtils';
@@ -33,12 +34,19 @@ const Viewer = React.lazy(loadViewerRoute);
 const HTMLViewer = React.lazy(loadHTMLViewerRoute);
 const InstallPage = React.lazy(loadInstallRoute);
 const AuthPage = React.lazy(loadAuthRoute);
+const ClassroomPage = React.lazy(loadClassroomRoute);
 const CharacterCreatorPage = React.lazy(loadCharacterCreatorRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
     <CinematicLoadingScreen mode="indeterminate" ready={false} surface="page" />
 );
+
+const RouteBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
+);
+
+const HomeRoutePlaceholder: React.FC = () => null;
 
 const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: React.ReactNode }> = ({
     user,
@@ -129,39 +137,19 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
     return <>{children}</>;
 };
 
-const HomeProfileRouteShell = () => <div />;
-const ClassroomRouteShell = () => <div />;
-
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
-const CLASSROOM_APP_PATH = '3dClass/index.html';
-const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
-const CLASSROOM_DOOR_AUDIO_PATH = '3dClass/audio/dooropening.mp3';
-const CLASSROOM_APP_VERSION = '2026-03-10-1';
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();
     const pwa = usePWA();
     useNativeShell({ isNativeApp: pwa.isNativeApp, nativePlatform: pwa.nativePlatform });
     const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}`);
-    const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_APP_VERSION}&intro=0`);
-    const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_APP_VERSION}`);
-    const classroomDoorAudioUrl = buildAssetPath(CLASSROOM_DOOR_AUDIO_PATH);
 
     useAppAssetPrefetch({
         loading,
         homePageAppUrl,
-        classroomAppUrl,
-        classroomDoorIntroUrl,
-        classroomDoorAudioUrl,
         homePageThreeModuleUrl: HOME_PAGE_APP_THREE_MODULE_URL,
-        loadHomeRoute,
-        loadClassroomRoute,
-        loadHTMLViewerRoute,
-        loadGamePlayerRoute,
-        loadViewerRoute,
-        loadCharacterCreatorRoute,
-        loadManagerRoute,
     });
 
 
@@ -180,31 +168,91 @@ const App: React.FC = () => {
         <ErrorBoundary>
             <BrowserRouter basename={basename}>
                 <PWAWrapperWithState pwa={pwa}>
-                    <Suspense fallback={<LoadingFallback />}>
-                        <Routes>
-                            {/* Install page - accessible without layout */}
-                            <Route path="/install" element={<InstallPage />} />
+                    <Routes>
+                        {/* Install page - accessible without layout */}
+                        <Route path="/install" element={<RouteBoundary><InstallPage /></RouteBoundary>} />
+                        <Route
+                            path="/auth"
+                            element={
+                                loading
+                                    ? <LoadingFallback />
+                                    : user
+                                        ? <Navigate to="/home-profile" replace />
+                                        : <RouteBoundary><AuthPage /></RouteBoundary>
+                            }
+                        />
+                        
+                        {/* Main app routes with layout */}
+                        <Route path="/" element={renderProtectedPage(<MainLayout />)}>
+                            <Route index element={<Navigate to="/home-profile" replace />} />
                             <Route
-                                path="/auth"
-                                element={loading ? <LoadingFallback /> : user ? <Navigate to="/home-profile" replace /> : <AuthPage />}
+                                path="apps"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><Home /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
                             />
-                            
-                            {/* Main app routes with layout */}
-                            <Route path="/" element={renderProtectedPage(<MainLayout />)}>
-                                <Route index element={<Navigate to="/home-profile" replace />} />
-                                <Route path="apps" element={<Home />} />
-                                <Route path="play/:id" element={<GamePlayer />} />
-                                <Route path="open/:id" element={<GamePlayer />} />
-                                <Route path="manager" element={<ManagerPage />} />
-                                <Route path="character-creator" element={<CharacterCreatorPage />} />
-                                <Route path="resource/:id" element={<Viewer />} />
-                                <Route path="html-viewer" element={<HTMLViewer />} />
-                                <Route path="home-profile" element={<HomeProfileRouteShell />} />
-                                <Route path="classroom" element={<ClassroomRouteShell />} />
-                                <Route path="*" element={<Navigate to="/home-profile" replace />} />
-                            </Route>
-                        </Routes>
-                    </Suspense>
+                            <Route
+                                path="play/:id"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><GamePlayer /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route
+                                path="open/:id"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><GamePlayer /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route
+                                path="manager"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><ManagerPage /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route
+                                path="character-creator"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><CharacterCreatorPage /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route
+                                path="resource/:id"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><Viewer /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route
+                                path="html-viewer"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><HTMLViewer /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route path="home-profile" element={<HomeRoutePlaceholder />} />
+                            <Route
+                                path="classroom"
+                                element={(
+                                    <HomepageSessionGate>
+                                        <RouteBoundary><ClassroomPage /></RouteBoundary>
+                                    </HomepageSessionGate>
+                                )}
+                            />
+                            <Route path="*" element={<Navigate to="/home-profile" replace />} />
+                        </Route>
+                    </Routes>
                     <UpdateNotification
                         updateInfo={pwa.updateInfo}
                         isCheckingForUpdates={pwa.isCheckingForUpdates}

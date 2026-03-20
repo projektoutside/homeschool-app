@@ -26,7 +26,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     const navigate = useNavigate();
     const location = useLocation();
     const { totalPoints, stars } = usePoints();
-    const { allItems } = useManagerConfig();
+    const { allItems } = useManagerConfig({ hydrateRemote: false });
     const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
     const isOpenRoute = location.pathname.startsWith('/open/');
