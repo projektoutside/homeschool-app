@@ -42,6 +42,8 @@ class CarGuessingGame {
         this.recognitionRestartAttempts = 0;
         this.maxRecognitionRestarts = 4;
         this.recognitionRestartCooldownMs = 650;
+        this.pendingRecognitionRestartTimer = null;
+        this.pendingRecognitionRestartReason = null;
         this.recognitionStartInFlight = false;
         this.recognitionStartTimeout = null;
         this.micBtnClickHandler = null;
@@ -701,18 +703,25 @@ class CarGuessingGame {
         this.recognitionStartInFlight = false;
     }
 
+    clearPendingRecognitionRestart() {
+        if (this.pendingRecognitionRestartTimer) {
+            clearTimeout(this.pendingRecognitionRestartTimer);
+            this.pendingRecognitionRestartTimer = null;
+        }
+        this.pendingRecognitionRestartReason = null;
+    }
+
     startMicHealthMonitor() {
         this.stopMicHealthMonitor();
         this.micHealthMonitorTimer = setInterval(() => {
             if (!this.isListeningForAnswer || !this.isGameRunning) return;
+            if (document.visibilityState === 'hidden') return;
+            if (this.isRecognitionActive) return;
+            if (this.recognitionStartInFlight) return;
+            if (this.pendingRecognitionRestartTimer) return;
 
-            const now = Date.now();
-            const idleFor = now - (this.lastSpeechResultAt || 0);
-            if (idleFor >= this.micNoSpeechTimeoutMs) {
-                console.warn('🎤 No speech detected for prolonged period. Restarting recognition engine.');
-                this.lastSpeechResultAt = now;
-                this.restartRecognitionEngine('health-check-no-speech');
-            }
+            console.warn('🎤 Recognition became inactive while listening was expected. Restarting recognition engine.');
+            this.restartRecognitionEngine('health-check-inactive');
         }, 1500);
     }
 
@@ -732,6 +741,10 @@ class CarGuessingGame {
         if (!this.isGameRunning && !this.isMicWarm) return;
         if (document.visibilityState === 'hidden') return;
         if (this.recognitionStartInFlight) return;
+        if (this.isRecognitionActive) return;
+        if (this.pendingRecognitionRestartTimer) {
+            return;
+        }
         if (!this.canRestartRecognition()) {
             console.warn('🛑 Mic restart limit reached. Falling back to text/choice mode messaging.');
             this.updateMicStatusMessage('Microphone unstable. Tap mic button to retry.');
@@ -739,10 +752,14 @@ class CarGuessingGame {
         }
 
         this.recognitionRestartAttempts += 1;
+        this.pendingRecognitionRestartReason = reason;
         console.log(`🔄 Restarting recognition (${this.recognitionRestartAttempts}/${this.maxRecognitionRestarts}) due to: ${reason}`);
 
-        setTimeout(() => {
-            this.activateMicrophoneEngine(`restart-${reason}`);
+        this.pendingRecognitionRestartTimer = setTimeout(() => {
+            const scheduledReason = this.pendingRecognitionRestartReason || reason;
+            this.pendingRecognitionRestartTimer = null;
+            this.pendingRecognitionRestartReason = null;
+            this.activateMicrophoneEngine(`restart-${scheduledReason}`);
         }, this.recognitionRestartCooldownMs);
     }
 
@@ -1173,6 +1190,7 @@ class CarGuessingGame {
         this.recognition.onstart = () => {
             console.log("🎤 Mic started");
             this.isRecognitionActive = true;
+            this.clearPendingRecognitionRestart();
             this.releaseRecognitionStartLock();
             this.setMicState('listening');
             this.recognitionRestartAttempts = 0;
@@ -1886,6 +1904,7 @@ class CarGuessingGame {
         this.isListeningForAnswer = true;
         this.lastSpeechResultAt = Date.now();
         this.setMicState('listening');
+        this.clearPendingRecognitionRestart();
         this.toggleMicVisuals(true);
 
         const guessInput = document.getElementById('guessInput');
@@ -1916,6 +1935,7 @@ class CarGuessingGame {
     // "Close Gate" - Hide Visuals
     stopListening() {
         this.isListeningForAnswer = false;
+        this.clearPendingRecognitionRestart();
         this.setMicState('ready');
         this.toggleMicVisuals(false);
         this.stopMicHealthMonitor();
