@@ -37,9 +37,13 @@ const MainLayout: React.FC = () => {
     const isCharacterCreatorRoute = location.pathname === '/character-creator';
     const isGamePlayerRoute = location.pathname.startsWith('/play/') || location.pathname.startsWith('/open/');
     const isManagerRoute = location.pathname === '/manager';
-    const isPrimingHomepageSession = !isHomepageSessionReady;
-    const isHomepageSessionVisible = isUserHomeRoute || isPrimingHomepageSession;
-    const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionReady;
+    // Developer tooling should not be blocked by the hidden homepage bootstrap.
+    const shouldBypassHomepageSessionBootstrap = isManagerRoute || isCharacterCreatorRoute;
+    const isHomepageSessionGateReady = isHomepageSessionReady || shouldBypassHomepageSessionBootstrap;
+    const isPrimingHomepageSession = !isHomepageSessionGateReady;
+    const shouldRenderHomepageSession = !shouldBypassHomepageSessionBootstrap;
+    const isHomepageSessionVisible = shouldRenderHomepageSession && (isUserHomeRoute || isPrimingHomepageSession);
+    const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionGateReady;
     const isImmersiveRoute =
         isHomeRoute
         || isAppsRoute
@@ -102,7 +106,7 @@ const MainLayout: React.FC = () => {
     }, [currentUserId]);
 
     return (
-        <HomepageSessionProvider value={{ isReady: isHomepageSessionReady }}>
+        <HomepageSessionProvider value={{ isReady: isHomepageSessionGateReady }}>
             <div
                 className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''}`}
             >
@@ -113,16 +117,18 @@ const MainLayout: React.FC = () => {
 
                 {/* Main Content Area */}
                 <main id="main-content" className="main-content">
-                    <div
-                        className={`main-content__home-session ${isHomepageSessionVisible ? 'is-visible' : 'is-hidden'}`}
-                        aria-hidden={!isHomepageSessionVisible}
-                    >
-                        <UserHomePage
-                            key={currentUserId ?? 'homepage-session'}
-                            isActive={isHomepageSessionVisible}
-                            onBootStable={handleHomepageBootStable}
-                        />
-                    </div>
+                    {shouldRenderHomepageSession ? (
+                        <div
+                            className={`main-content__home-session ${isHomepageSessionVisible ? 'is-visible' : 'is-hidden'}`}
+                            aria-hidden={!isHomepageSessionVisible}
+                        >
+                            <UserHomePage
+                                key={currentUserId ?? 'homepage-session'}
+                                isActive={isHomepageSessionVisible}
+                                onBootStable={handleHomepageBootStable}
+                            />
+                        </div>
+                    ) : null}
                     <div
                         className={`main-content__route-layer ${shouldShowRouteLayer ? 'is-visible' : 'is-hidden'}`}
                         aria-hidden={!shouldShowRouteLayer}
