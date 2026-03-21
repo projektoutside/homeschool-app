@@ -17,7 +17,7 @@
   };
 
   function render() {
-    elements.menuBestScore.textContent = `${progress.bestScore} / 10`;
+    elements.menuBestScore.textContent = String(progress.bestOverallScore);
     elements.menuBestStreak.textContent = String(progress.bestStreak);
     elements.menuSessionsPlayed.textContent = String(progress.sessionsPlayed);
   }

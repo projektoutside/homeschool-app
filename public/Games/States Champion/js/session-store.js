@@ -15,10 +15,14 @@
     STATE_HINT_DATA,
   } = data;
 
-  const PROGRESS_KEY = "states-champion-progress-v2";
-  const RUN_KEY = "states-champion-run-v2";
-  const SUMMARY_KEY = "states-champion-summary-v2";
+  const PROGRESS_KEY = "states-champion-progress-v3";
+  const RUN_KEY = "states-champion-run-v3";
+  const SUMMARY_KEY = "states-champion-summary-v3";
   const CORRECT_TOAST_MS = 1400;
+  const CHALLENGE_HEARTS = 3;
+  const CHALLENGE_CORRECT_POINTS = 10;
+  const KNOW_IT_ALL_CORRECT_POINTS = 10;
+  const KNOW_IT_ALL_PERFECT_POINTS = 1500;
   const memoryStore = new Map();
   const CHALLENGE_MODE = "challenge";
   const PRACTICE_MODE = "practice";
@@ -37,12 +41,21 @@
 
   function createEmptyProgress() {
     return {
-      bestScore: 0,
-      bestKnowItAllSolved: 0,
+      bestChallengeScore: 0,
+      bestKnowItAllScore: 0,
+      bestOverallScore: 0,
       bestStreak: 0,
       lastMode: "challenge",
       sessionsPlayed: 0,
     };
+  }
+
+  function createRunId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   function readStorage(areaName, key) {
@@ -180,20 +193,28 @@
 
   function normalizeRun(run) {
     const defaults = {
+      runId: createRunId(),
       runtimeMs: 0,
       hintsRemaining: HINTS_PER_SESSION,
       hintActiveUntilMs: 0,
       hintUsedForCurrentState: false,
       solvedStateIds: [],
+      heartsRemaining: CHALLENGE_HEARTS,
+      awardSequence: 0,
     };
 
     return {
       ...defaults,
       ...run,
+      runId: typeof run?.runId === "string" && run.runId ? run.runId : defaults.runId,
       hintsRemaining: Number.isFinite(run?.hintsRemaining) ? run.hintsRemaining : defaults.hintsRemaining,
       hintActiveUntilMs: Number.isFinite(run?.hintActiveUntilMs) ? run.hintActiveUntilMs : 0,
       hintUsedForCurrentState: Boolean(run?.hintUsedForCurrentState),
       runtimeMs: Number.isFinite(run?.runtimeMs) ? run.runtimeMs : 0,
+      heartsRemaining: Number.isFinite(run?.heartsRemaining)
+        ? Math.max(0, Math.min(CHALLENGE_HEARTS, Math.round(run.heartsRemaining)))
+        : defaults.heartsRemaining,
+      awardSequence: Number.isFinite(run?.awardSequence) ? Math.max(0, Math.round(run.awardSequence)) : 0,
       solvedStateIds: Array.isArray(run?.solvedStateIds)
         ? [...new Set(run.solvedStateIds.filter((stateId) => typeof stateId === "string"))]
         : [],
@@ -204,6 +225,7 @@
     const progress = loadProgress();
     const modeConfig = getModeConfig(mode);
     const run = {
+      runId: createRunId(),
       mode,
       phase: "countdown",
       deck: buildDeck(null),
@@ -227,6 +249,8 @@
       hintActiveUntilMs: 0,
       hintUsedForCurrentState: false,
       solvedStateIds: [],
+      heartsRemaining: mode === CHALLENGE_MODE ? CHALLENGE_HEARTS : 0,
+      awardSequence: 0,
     };
 
     progress.lastMode = mode;
@@ -297,6 +321,49 @@
     return nextRun;
   }
 
+  function pushAward(run, awards, category, points, label, meta = {}) {
+    const normalizedPoints = Math.max(0, Math.round(Number(points) || 0));
+    if (!normalizedPoints) {
+      return;
+    }
+
+    const eventId = `${run.runId}:${category}:${run.awardSequence}`;
+    run.awardSequence += 1;
+    awards.push({
+      eventId,
+      points: normalizedPoints,
+      label,
+      meta: {
+        mode: run.mode,
+        ...meta,
+      },
+    });
+  }
+
+  function updateBestStreak(progress, run) {
+    progress.bestStreak = Math.max(progress.bestStreak, run.bestStreakInRun);
+  }
+
+  function updateOverallBestScores(progress) {
+    progress.bestOverallScore = Math.max(progress.bestChallengeScore, progress.bestKnowItAllScore);
+  }
+
+  function cashOutChallengeStreak(run, awards, reason) {
+    if (run.mode !== CHALLENGE_MODE || run.streak <= 0) {
+      return 0;
+    }
+
+    const comboStreak = run.streak;
+    const comboPoints = comboStreak * CHALLENGE_CORRECT_POINTS;
+    run.score += comboPoints;
+    pushAward(run, awards, "challenge-combo", comboPoints, "Combo Cashout", {
+      comboStreak,
+      reason,
+    });
+    run.streak = 0;
+    return comboPoints;
+  }
+
   function answerRun(run, choiceId, options = {}) {
     const { timedOut = false } = options;
     const nextRun = cloneRun(run);
@@ -305,20 +372,39 @@
     const selectedState = choiceId ? getStateById(choiceId) : null;
     const isCorrect = Boolean(selectedState && selectedState.id === correctState.id);
     const progress = loadProgress();
+    const awards = [];
 
     if (isCorrect) {
-      if (nextRun.mode === KNOW_IT_ALL_MODE && nextRun.currentStateId && !nextRun.solvedStateIds.includes(nextRun.currentStateId)) {
-        nextRun.solvedStateIds = [...nextRun.solvedStateIds, nextRun.currentStateId];
-        nextRun.score = nextRun.solvedStateIds.length;
+      if (nextRun.mode === KNOW_IT_ALL_MODE) {
+        if (nextRun.currentStateId && !nextRun.solvedStateIds.includes(nextRun.currentStateId)) {
+          nextRun.solvedStateIds = [...nextRun.solvedStateIds, nextRun.currentStateId];
+        }
+        nextRun.score += KNOW_IT_ALL_CORRECT_POINTS;
+        pushAward(nextRun, awards, "know-it-all-correct", KNOW_IT_ALL_CORRECT_POINTS, "Correct Answer", {
+          stateId: nextRun.currentStateId,
+          round: nextRun.activeRoundNumber,
+        });
+      } else if (nextRun.mode === CHALLENGE_MODE) {
+        nextRun.score += CHALLENGE_CORRECT_POINTS;
+        pushAward(nextRun, awards, "challenge-correct", CHALLENGE_CORRECT_POINTS, "Correct Answer", {
+          stateId: nextRun.currentStateId,
+          round: nextRun.activeRoundNumber,
+        });
       } else {
         nextRun.score += 1;
       }
       nextRun.streak += 1;
       nextRun.correctCount += 1;
       nextRun.bestStreakInRun = Math.max(nextRun.bestStreakInRun, nextRun.streak);
-      progress.bestStreak = Math.max(progress.bestStreak, nextRun.bestStreakInRun);
+      updateBestStreak(progress, nextRun);
       saveProgress(progress);
     } else {
+      if (nextRun.mode === CHALLENGE_MODE) {
+        cashOutChallengeStreak(nextRun, awards, timedOut ? "timeout" : "wrong-answer");
+        nextRun.heartsRemaining = Math.max(0, nextRun.heartsRemaining - 1);
+      } else {
+        nextRun.streak = 0;
+      }
       nextRun.streak = 0;
       nextRun.incorrectCount += 1;
     }
@@ -341,107 +427,112 @@
     };
 
     saveRun(nextRun);
-    return nextRun;
+    return { run: nextRun, awards };
   }
 
-  function getKnowItAllSummaryTitle(score) {
-    if (score >= getModeConfig(KNOW_IT_ALL_MODE).rounds) {
+  function getKnowItAllSummaryTitle(correctCount) {
+    if (correctCount >= getModeConfig(KNOW_IT_ALL_MODE).rounds) {
       return "You know it all!";
     }
 
-    if (score >= 40) {
+    if (correctCount >= 40) {
       return "So close!";
     }
 
-    if (score >= 25) {
+    if (correctCount >= 25) {
       return "Nice run!";
     }
 
     return "Keep going!";
   }
 
-  function getKnowItAllSummaryNote(score) {
-    if (score >= getModeConfig(KNOW_IT_ALL_MODE).rounds) {
+  function getKnowItAllSummaryNote(correctCount) {
+    if (correctCount >= getModeConfig(KNOW_IT_ALL_MODE).rounds) {
       return "All 50 solved.";
     }
 
-    return `Solved ${score}.`;
+    return `Solved ${correctCount}.`;
   }
 
   function buildChallengeSummary(run, progress) {
-    const modeConfig = getModeConfig(CHALLENGE_MODE);
+    const totalAnswers = Math.max(1, run.correctCount + run.incorrectCount);
 
     return {
       mode: CHALLENGE_MODE,
       againMode: CHALLENGE_MODE,
       secondaryMode: PRACTICE_MODE,
-      title: getSummaryTitle(run.score),
-      note: getSummaryNote(run.score),
+      title: getChallengeSummaryTitle(run.score),
+      note: getChallengeSummaryNote(run),
       score: run.score,
-      total: modeConfig.rounds,
-      accuracy: Math.round((run.correctCount / modeConfig.rounds) * 100),
-      bestScore: progress.bestScore,
+      total: totalAnswers,
+      accuracy: Math.round((run.correctCount / totalAnswers) * 100),
+      bestScore: progress.bestChallengeScore,
       bestStreak: progress.bestStreak,
     };
   }
 
   function buildKnowItAllSummary(run, progress, outcome = "miss") {
     const modeConfig = getModeConfig(KNOW_IT_ALL_MODE);
+    const solvedCount = run.correctCount;
 
     return {
       mode: KNOW_IT_ALL_MODE,
       againMode: KNOW_IT_ALL_MODE,
       secondaryMode: PRACTICE_MODE,
-      title: outcome === "perfect" ? "You know it all!" : getKnowItAllSummaryTitle(run.score),
-      note: outcome === "perfect" ? "All 50 solved." : getKnowItAllSummaryNote(run.score),
+      title: outcome === "perfect" ? "You know it all!" : getKnowItAllSummaryTitle(solvedCount),
+      note: outcome === "perfect" ? "All 50 solved." : getKnowItAllSummaryNote(solvedCount),
       score: run.score,
       total: modeConfig.rounds,
-      accuracy: Math.round((run.score / modeConfig.rounds) * 100),
-      bestScore: progress.bestKnowItAllSolved,
+      accuracy: Math.round((solvedCount / modeConfig.rounds) * 100),
+      bestScore: progress.bestKnowItAllScore,
       bestStreak: progress.bestStreak,
     };
   }
 
   function finalizeKnowItAllSummary(run, outcome = "miss") {
+    const nextRun = cloneRun(run);
     const progress = loadProgress();
-    progress.bestKnowItAllSolved = Math.max(progress.bestKnowItAllSolved, run.score);
-    progress.bestStreak = Math.max(progress.bestStreak, run.bestStreakInRun);
+    const awards = [];
+
+    if (outcome === "perfect" && nextRun.score < KNOW_IT_ALL_PERFECT_POINTS) {
+      const perfectBonus = KNOW_IT_ALL_PERFECT_POINTS - nextRun.score;
+      nextRun.score = KNOW_IT_ALL_PERFECT_POINTS;
+      pushAward(nextRun, awards, "know-it-all-perfect", perfectBonus, "Perfect Map Bonus", {
+        solvedCount: nextRun.correctCount,
+      });
+    }
+
+    progress.bestKnowItAllScore = Math.max(progress.bestKnowItAllScore, nextRun.score);
+    updateBestStreak(progress, nextRun);
+    updateOverallBestScores(progress);
     saveProgress(progress);
 
-    const summary = buildKnowItAllSummary(run, progress, outcome);
+    const summary = buildKnowItAllSummary(nextRun, progress, outcome);
 
     saveSummary(summary);
     clearRun();
-    return { kind: "summary", summary };
+    return { kind: "summary", summary, awards };
   }
 
-  function getSummaryTitle(score) {
-    if (score === 10) {
+  function getChallengeSummaryTitle(score) {
+    if (score >= 150) {
       return "Great job!";
     }
 
-    if (score >= 8) {
+    if (score >= 90) {
       return "Nice work!";
     }
 
-    if (score >= 5) {
+    if (score >= 40) {
       return "Good try!";
     }
 
     return "Keep going!";
   }
 
-  function getSummaryNote(score) {
-    if (score === 10) {
-      return "All 10 right.";
-    }
-
-    if (score >= 8) {
-      return "Almost perfect.";
-    }
-
-    if (score >= 5) {
-      return "Good work.";
+  function getChallengeSummaryNote(run) {
+    if (run.correctCount >= 1) {
+      return `You got ${run.correctCount} right before the hearts ran out.`;
     }
 
     return "Try practice mode.";
@@ -449,27 +540,30 @@
 
   function advanceRun(run) {
     const nextRun = cloneRun(run);
+    const awards = [];
 
     nextRun.completedRounds = nextRun.activeRoundNumber;
 
-    if (nextRun.mode === CHALLENGE_MODE && nextRun.completedRounds >= getModeConfig(CHALLENGE_MODE).rounds) {
+    if (nextRun.mode === CHALLENGE_MODE && nextRun.heartsRemaining <= 0) {
       const progress = loadProgress();
-      progress.bestScore = Math.max(progress.bestScore, nextRun.score);
-      progress.bestStreak = Math.max(progress.bestStreak, nextRun.bestStreakInRun);
+      cashOutChallengeStreak(nextRun, awards, "run-end");
+      progress.bestChallengeScore = Math.max(progress.bestChallengeScore, nextRun.score);
+      updateBestStreak(progress, nextRun);
+      updateOverallBestScores(progress);
       saveProgress(progress);
 
       const summary = buildChallengeSummary(nextRun, progress);
 
       saveSummary(summary);
       clearRun();
-      return { kind: "summary", summary };
+      return { kind: "summary", summary, awards };
     }
 
     if (nextRun.mode === KNOW_IT_ALL_MODE && nextRun.completedRounds >= getModeConfig(KNOW_IT_ALL_MODE).rounds) {
       return finalizeKnowItAllSummary(nextRun, "perfect");
     }
 
-    return { kind: "question", run: startQuestionRound(nextRun) };
+    return { kind: "question", run: startQuestionRound(nextRun), awards };
   }
 
   function getRenderableState(run) {

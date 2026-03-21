@@ -50,6 +50,15 @@ body {
   overflow: hidden;
 }
 
+body.page--menu {
+  overflow: auto;
+}
+
+.page--menu .app-shell {
+  height: auto;
+  min-height: 100svh;
+}
+
 body::before,
 body::after {
   content: "";
@@ -194,7 +203,14 @@ button {
 .menu-panel {
   padding: clamp(22px, 3vw, 34px);
   display: grid;
+  grid-template-rows: auto auto auto minmax(0, auto);
+  align-content: start;
   gap: clamp(14px, 1.8vw, 20px);
+}
+
+.menu-panel > *,
+.hero-panel > * {
+  min-width: 0;
 }
 
 .menu-topline,
@@ -276,12 +292,17 @@ p {
 .mode-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  grid-auto-rows: 1fr;
+  align-content: start;
   gap: clamp(0.7rem, 1.5vw, 0.95rem);
+  min-height: 0;
 }
 
 .mode-card {
   position: relative;
   display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   justify-items: start;
   gap: 0.4rem;
   border: 1px solid rgba(19, 74, 97, 0.18);
@@ -386,6 +407,7 @@ p {
 .hero-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -531,12 +553,50 @@ p {
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding: clamp(16px, 1.9vw, 24px);
   gap: 1rem;
+  overflow: hidden;
 }
 
-.state-card__header,
+.state-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.state-card__heading,
 .answers-card__header {
   display: grid;
   gap: 0.55rem;
+}
+
+.state-card__heading {
+  min-width: 0;
+}
+
+.state-hearts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.45rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(242, 123, 84, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 24px rgba(12, 35, 54, 0.08);
+}
+
+.state-hearts__heart {
+  line-height: 1;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  color: var(--orange-500);
+  text-shadow: 0 4px 10px rgba(242, 123, 84, 0.28);
+  transition: transform 160ms ease, opacity 160ms ease, color 160ms ease;
+}
+
+.state-hearts__heart--empty {
+  color: rgba(22, 49, 71, 0.2);
+  opacity: 0.6;
+  text-shadow: none;
+  transform: scale(0.92);
 }
 
 .state-stage {
@@ -635,7 +695,7 @@ p {
   position: relative;
   z-index: 3;
   width: min(88%, clamp(260px, 54vw, 580px));
-  max-height: min(100%, clamp(220px, 38svh, 440px));
+  max-height: 100%;
   object-fit: contain;
   filter:
     drop-shadow(0 18px 26px rgba(0, 0, 0, 0.44))
@@ -1335,15 +1395,22 @@ p {
     gap: 0.3rem;
   }
 
-  .answers-card h3 {
-    font-size: clamp(1.3rem, 6vw, 1.8rem);
+  .state-card__header {
+    gap: 0.7rem;
+  }
+
+  .state-hearts {
+    padding: 0.34rem 0.56rem;
+  }
+
+  .state-hearts__heart {
+    font-size: 1.05rem;
   }
 
   .state-card h2 {
     font-size: clamp(2rem, 9vw, 3rem);
   }
 
-  #questionSubtitle,
   .answers-card__status {
     font-size: 0.88rem;
   }
@@ -1439,9 +1506,14 @@ p {
   }
 
   .page-grid--menu {
-    grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+    grid-template-columns: minmax(0, 1fr) clamp(220px, 27vw, 250px);
     grid-template-rows: minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .menu-panel {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    overflow: auto;
   }
 
   .hero-panel {
@@ -1487,6 +1559,11 @@ p {
   .mode-card__copy,
   .mode-card__tag {
     font-size: 0.8rem;
+  }
+
+  .mode-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
   }
 
   .summary-page {
@@ -1569,8 +1646,12 @@ p {
     font-size: clamp(1.6rem, 4vw, 2.2rem);
   }
 
-  .answers-card h3 {
-    font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+  .state-hearts {
+    padding: 0.32rem 0.52rem;
+  }
+
+  .state-hearts__heart {
+    font-size: 1rem;
   }
 
   .state-stage {
@@ -1589,15 +1670,58 @@ p {
   }
 
   #questionBadge,
-  #questionSubtitle,
   #answerHelperText,
   .answers-card__status {
     font-size: 0.84rem;
   }
 
   #questionBadge,
-  #questionSubtitle,
   #answerHelperText {
     display: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .menu-panel {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .hero-copy {
+    padding: 10px;
+    gap: 0.45rem;
+  }
+
+  .hero-chips {
+    display: none;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 3rem);
+  }
+
+  .lead {
+    font-size: 0.9rem;
+    max-width: 26ch;
+  }
+
+  .menu-stats,
+  .mode-grid {
+    gap: 0.45rem;
+  }
+
+  .mode-card {
+    padding: 10px;
+    gap: 0.28rem;
+  }
+
+  .mode-card__title {
+    font-size: clamp(1rem, 1.9vw, 1.2rem);
+  }
+
+  .mode-card__tag,
+  .mode-card__copy,
+  .mode-card__action {
+    font-size: 0.72rem;
   }
 }

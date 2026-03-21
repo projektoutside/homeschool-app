@@ -74,9 +74,9 @@
   function render() {
     elements.summaryTitle.textContent = summary.title;
     elements.summaryMessage.textContent = summary.note;
-    elements.summaryScore.textContent = `${summary.score} / ${summary.total}`;
+    elements.summaryScore.textContent = String(summary.score);
     elements.summaryAccuracy.textContent = `${summary.accuracy}%`;
-    elements.summaryBestScore.textContent = `${summary.bestScore} / ${summary.total}`;
+    elements.summaryBestScore.textContent = String(summary.bestScore);
     elements.summaryBestStreak.textContent = String(summary.bestStreak);
   }
 
@@ -89,7 +89,7 @@
       console.warn(`States Champion could not pre-save ${mode} mode before navigation.`, error);
     }
 
-    window.location.href = `./play.html?mode=${mode}`;
+    window.location.href = `./play.html?mode=${mode}&fresh=1`;
   }
 
   if (summary) {

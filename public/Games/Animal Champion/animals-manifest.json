@@ -1,0 +1,493 @@
+[
+  {
+    "name": "Bat",
+    "folder": "Animals/Bat",
+    "images": [
+      "Animals/Bat/chatgpt-anime.webp",
+      "Animals/Bat/chatgpt-fourth.webp",
+      "Animals/Bat/chatgpt-generated.webp"
+    ]
+  },
+  {
+    "name": "Bear",
+    "folder": "Animals/Bear",
+    "images": [
+      "Animals/Bear/chatgpt-anime.webp",
+      "Animals/Bear/chatgpt-fourth.webp",
+      "Animals/Bear/chatgpt-generated.webp",
+      "Animals/Bear/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Camel",
+    "folder": "Animals/Camel",
+    "images": [
+      "Animals/Camel/chatgpt-anime.webp",
+      "Animals/Camel/chatgpt-fourth.webp",
+      "Animals/Camel/chatgpt-generated.webp",
+      "Animals/Camel/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Cat",
+    "folder": "Animals/Cat",
+    "images": [
+      "Animals/Cat/chatgpt-anime.webp",
+      "Animals/Cat/chatgpt-fourth.webp",
+      "Animals/Cat/chatgpt-generated.webp",
+      "Animals/Cat/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Cheetah",
+    "folder": "Animals/Cheetah",
+    "images": [
+      "Animals/Cheetah/93ff7ae1-90a0-428d-8db7-fd4b3a9f54b0.webp",
+      "Animals/Cheetah/chatgpt-anime.webp",
+      "Animals/Cheetah/chatgpt-fourth.webp",
+      "Animals/Cheetah/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Chicken",
+    "folder": "Animals/Chicken",
+    "images": [
+      "Animals/Chicken/chatgpt-anime.webp",
+      "Animals/Chicken/chatgpt-fourth.webp",
+      "Animals/Chicken/chatgpt-generated.webp",
+      "Animals/Chicken/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Chimpanzee",
+    "folder": "Animals/Chimpanzee",
+    "images": [
+      "Animals/Chimpanzee/chatgpt-anime.webp",
+      "Animals/Chimpanzee/chatgpt-fourth.webp",
+      "Animals/Chimpanzee/chatgpt-generated.webp",
+      "Animals/Chimpanzee/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Cow",
+    "folder": "Animals/Cow",
+    "images": [
+      "Animals/Cow/chatgpt-anime.webp",
+      "Animals/Cow/chatgpt-fourth.webp",
+      "Animals/Cow/chatgpt-generated.webp",
+      "Animals/Cow/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Crocodile",
+    "folder": "Animals/Crocodile",
+    "images": [
+      "Animals/Crocodile/chatgpt-fourth.webp",
+      "Animals/Crocodile/chatgpt-generated.webp",
+      "Animals/Crocodile/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Deer",
+    "folder": "Animals/Deer",
+    "images": [
+      "Animals/Deer/chatgpt-anime.webp",
+      "Animals/Deer/chatgpt-fourth.webp",
+      "Animals/Deer/chatgpt-generated.webp",
+      "Animals/Deer/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Dog",
+    "folder": "Animals/Dog",
+    "images": [
+      "Animals/Dog/chatgpt-anime.webp",
+      "Animals/Dog/chatgpt-fourth.webp",
+      "Animals/Dog/chatgpt-generated.webp",
+      "Animals/Dog/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Dolphin",
+    "folder": "Animals/Dolphin",
+    "images": [
+      "Animals/Dolphin/chatgpt-anime.webp",
+      "Animals/Dolphin/chatgpt-fourth.webp",
+      "Animals/Dolphin/chatgpt-generated.webp",
+      "Animals/Dolphin/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Donkey",
+    "folder": "Animals/Donkey",
+    "images": [
+      "Animals/Donkey/chatgpt-anime.webp",
+      "Animals/Donkey/chatgpt-fourth.webp",
+      "Animals/Donkey/chatgpt-generated.webp",
+      "Animals/Donkey/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Duck",
+    "folder": "Animals/Duck",
+    "images": [
+      "Animals/Duck/chatgpt-anime.webp",
+      "Animals/Duck/chatgpt-fourth.webp",
+      "Animals/Duck/chatgpt-generated.webp",
+      "Animals/Duck/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Eagle",
+    "folder": "Animals/Eagle",
+    "images": [
+      "Animals/Eagle/chatgpt-anime.webp",
+      "Animals/Eagle/chatgpt-fourth.webp",
+      "Animals/Eagle/chatgpt-generated.webp",
+      "Animals/Eagle/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Elephant",
+    "folder": "Animals/Elephant",
+    "images": [
+      "Animals/Elephant/chatgpt-anime.webp",
+      "Animals/Elephant/chatgpt-fourth.webp",
+      "Animals/Elephant/chatgpt-third.webp",
+      "Animals/Elephant/d3635c1a-c89c-4039-9af6-ebd44c927d6b.webp"
+    ]
+  },
+  {
+    "name": "Flamingo",
+    "folder": "Animals/Flamingo",
+    "images": [
+      "Animals/Flamingo/chatgpt-anime.webp",
+      "Animals/Flamingo/chatgpt-fourth.webp",
+      "Animals/Flamingo/chatgpt-generated.webp",
+      "Animals/Flamingo/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Fox",
+    "folder": "Animals/Fox",
+    "images": [
+      "Animals/Fox/chatgpt-anime.webp",
+      "Animals/Fox/chatgpt-fourth.webp",
+      "Animals/Fox/chatgpt-generated.webp",
+      "Animals/Fox/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Frog",
+    "folder": "Animals/Frog",
+    "images": [
+      "Animals/Frog/chatgpt-anime.webp",
+      "Animals/Frog/chatgpt-fourth.webp",
+      "Animals/Frog/chatgpt-generated.webp",
+      "Animals/Frog/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Giraffe",
+    "folder": "Animals/Giraffe",
+    "images": [
+      "Animals/Giraffe/chatgpt-anime.webp",
+      "Animals/Giraffe/chatgpt-fourth.webp",
+      "Animals/Giraffe/chatgpt-generated.webp",
+      "Animals/Giraffe/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Goat",
+    "folder": "Animals/Goat",
+    "images": [
+      "Animals/Goat/chatgpt-anime.webp",
+      "Animals/Goat/chatgpt-fourth.webp",
+      "Animals/Goat/chatgpt-generated.webp",
+      "Animals/Goat/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Gorilla",
+    "folder": "Animals/Gorilla",
+    "images": [
+      "Animals/Gorilla/chatgpt-anime.webp",
+      "Animals/Gorilla/chatgpt-fourth.webp",
+      "Animals/Gorilla/chatgpt-generated.webp"
+    ]
+  },
+  {
+    "name": "Hamster",
+    "folder": "Animals/Hamster",
+    "images": [
+      "Animals/Hamster/chatgpt-anime.webp",
+      "Animals/Hamster/chatgpt-fourth.webp",
+      "Animals/Hamster/chatgpt-generated.webp",
+      "Animals/Hamster/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Hippopotamus",
+    "folder": "Animals/Hippopotamus",
+    "images": [
+      "Animals/Hippopotamus/chatgpt-fourth.webp",
+      "Animals/Hippopotamus/chatgpt-generated.webp",
+      "Animals/Hippopotamus/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Horse",
+    "folder": "Animals/Horse",
+    "images": [
+      "Animals/Horse/chatgpt-anime.webp",
+      "Animals/Horse/chatgpt-fourth.webp",
+      "Animals/Horse/chatgpt-generated.webp",
+      "Animals/Horse/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Kangaroo",
+    "folder": "Animals/Kangaroo",
+    "images": [
+      "Animals/Kangaroo/chatgpt-anime.webp",
+      "Animals/Kangaroo/chatgpt-fourth.webp",
+      "Animals/Kangaroo/chatgpt-generated.webp",
+      "Animals/Kangaroo/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Koala",
+    "folder": "Animals/Koala",
+    "images": [
+      "Animals/Koala/chatgpt-anime.webp",
+      "Animals/Koala/chatgpt-fourth.webp",
+      "Animals/Koala/chatgpt-generated.webp",
+      "Animals/Koala/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Lion",
+    "folder": "Animals/Lion",
+    "images": [
+      "Animals/Lion/chatgpt-anime.webp",
+      "Animals/Lion/chatgpt-fourth.webp",
+      "Animals/Lion/chatgpt-generated.webp",
+      "Animals/Lion/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Monkey",
+    "folder": "Animals/Monkey",
+    "images": [
+      "Animals/Monkey/chatgpt-anime.webp",
+      "Animals/Monkey/chatgpt-fourth.webp",
+      "Animals/Monkey/chatgpt-generated.webp"
+    ]
+  },
+  {
+    "name": "Mouse",
+    "folder": "Animals/Mouse",
+    "images": [
+      "Animals/Mouse/chatgpt-anime.webp",
+      "Animals/Mouse/chatgpt-fourth.webp",
+      "Animals/Mouse/chatgpt-generated.webp",
+      "Animals/Mouse/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Octopus",
+    "folder": "Animals/Octopus",
+    "images": [
+      "Animals/Octopus/chatgpt-anime.webp",
+      "Animals/Octopus/chatgpt-fourth.webp",
+      "Animals/Octopus/chatgpt-generated.webp",
+      "Animals/Octopus/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Owl",
+    "folder": "Animals/Owl",
+    "images": [
+      "Animals/Owl/chatgpt-anime.webp",
+      "Animals/Owl/chatgpt-fourth.webp",
+      "Animals/Owl/chatgpt-generated.webp",
+      "Animals/Owl/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Panda",
+    "folder": "Animals/Panda",
+    "images": [
+      "Animals/Panda/chatgpt-anime.webp",
+      "Animals/Panda/chatgpt-fourth.webp",
+      "Animals/Panda/chatgpt-generated.webp",
+      "Animals/Panda/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Parrot",
+    "folder": "Animals/Parrot",
+    "images": [
+      "Animals/Parrot/chatgpt-anime.webp",
+      "Animals/Parrot/chatgpt-fourth.webp",
+      "Animals/Parrot/chatgpt-generated.webp",
+      "Animals/Parrot/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Peacock",
+    "folder": "Animals/Peacock",
+    "images": [
+      "Animals/Peacock/chatgpt-anime.webp",
+      "Animals/Peacock/chatgpt-fourth.webp",
+      "Animals/Peacock/chatgpt-generated.webp",
+      "Animals/Peacock/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Penguin",
+    "folder": "Animals/Penguin",
+    "images": [
+      "Animals/Penguin/chatgpt-anime.webp",
+      "Animals/Penguin/chatgpt-fourth.webp",
+      "Animals/Penguin/chatgpt-generated.webp",
+      "Animals/Penguin/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Pig",
+    "folder": "Animals/Pig",
+    "images": [
+      "Animals/Pig/chatgpt-anime.webp",
+      "Animals/Pig/chatgpt-fourth.webp",
+      "Animals/Pig/chatgpt-generated.webp",
+      "Animals/Pig/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Polar Bear",
+    "folder": "Animals/Polar Bear",
+    "images": [
+      "Animals/Polar Bear/chatgpt-anime.webp",
+      "Animals/Polar Bear/chatgpt-fourth.webp",
+      "Animals/Polar Bear/chatgpt-generated.webp",
+      "Animals/Polar Bear/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Rabbit",
+    "folder": "Animals/Rabbit",
+    "images": [
+      "Animals/Rabbit/chatgpt-anime.webp",
+      "Animals/Rabbit/chatgpt-fourth.webp",
+      "Animals/Rabbit/chatgpt-generated.webp",
+      "Animals/Rabbit/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Rhinoceros",
+    "folder": "Animals/Rhinoceros",
+    "images": [
+      "Animals/Rhinoceros/chatgpt-anime.webp",
+      "Animals/Rhinoceros/chatgpt-fourth.webp",
+      "Animals/Rhinoceros/chatgpt-generated.webp",
+      "Animals/Rhinoceros/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Seal",
+    "folder": "Animals/Seal",
+    "images": [
+      "Animals/Seal/chatgpt-anime.webp",
+      "Animals/Seal/chatgpt-fourth.webp",
+      "Animals/Seal/chatgpt-generated.webp",
+      "Animals/Seal/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Shark",
+    "folder": "Animals/Shark",
+    "images": [
+      "Animals/Shark/chatgpt-anime.webp",
+      "Animals/Shark/chatgpt-fourth.webp",
+      "Animals/Shark/chatgpt-generated.webp"
+    ]
+  },
+  {
+    "name": "Sheep",
+    "folder": "Animals/Sheep",
+    "images": [
+      "Animals/Sheep/chatgpt-anime.webp",
+      "Animals/Sheep/chatgpt-fourth.webp",
+      "Animals/Sheep/chatgpt-generated.webp",
+      "Animals/Sheep/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Snake",
+    "folder": "Animals/Snake",
+    "images": [
+      "Animals/Snake/chatgpt-anime.webp",
+      "Animals/Snake/chatgpt-fourth.webp",
+      "Animals/Snake/chatgpt-generated.webp"
+    ]
+  },
+  {
+    "name": "Squirrel",
+    "folder": "Animals/Squirrel",
+    "images": [
+      "Animals/Squirrel/chatgpt-anime.webp",
+      "Animals/Squirrel/chatgpt-fourth.webp",
+      "Animals/Squirrel/chatgpt-generated.webp",
+      "Animals/Squirrel/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Tiger",
+    "folder": "Animals/Tiger",
+    "images": [
+      "Animals/Tiger/chatgpt-fourth.webp",
+      "Animals/Tiger/chatgpt-generated.webp",
+      "Animals/Tiger/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Turtle",
+    "folder": "Animals/Turtle",
+    "images": [
+      "Animals/Turtle/chatgpt-anime.webp",
+      "Animals/Turtle/chatgpt-fourth.webp",
+      "Animals/Turtle/chatgpt-generated.webp",
+      "Animals/Turtle/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Whale",
+    "folder": "Animals/Whale",
+    "images": [
+      "Animals/Whale/chatgpt-anime.webp",
+      "Animals/Whale/chatgpt-fourth.webp",
+      "Animals/Whale/chatgpt-generated.webp",
+      "Animals/Whale/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Wolf",
+    "folder": "Animals/Wolf",
+    "images": [
+      "Animals/Wolf/chatgpt-anime.webp",
+      "Animals/Wolf/chatgpt-fourth.webp",
+      "Animals/Wolf/chatgpt-generated.webp",
+      "Animals/Wolf/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Zebra",
+    "folder": "Animals/Zebra",
+    "images": [
+      "Animals/Zebra/chatgpt-fourth.webp",
+      "Animals/Zebra/chatgpt-generated.webp",
+      "Animals/Zebra/chatgpt-third.webp"
+    ]
+  }
+]

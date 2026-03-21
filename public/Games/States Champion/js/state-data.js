@@ -255,7 +255,7 @@
     challenge: Object.freeze({
       id: "challenge",
       label: "Challenge",
-      rounds: 10,
+      rounds: null,
       questionMs: 15000,
       countdownMs: 3200,
       revealMs: 2400,
@@ -264,7 +264,7 @@
       allowHints: true,
       mapEnabled: false,
       endsOnMistake: false,
-      description: "Ten fast rounds with a timer, streaks, and a final score card.",
+      description: "A timed survival run with 3 hearts, streaks, and score combos.",
     }),
     practice: Object.freeze({
       id: "practice",
@@ -292,7 +292,7 @@
       allowHints: false,
       mapEnabled: true,
       endsOnMistake: true,
-      description: "Fill the map. No misses.",
+      description: "Fill the map. A perfect 50-state run earns 1500 points.",
     }),
   });
 

@@ -26,27 +26,40 @@
     saveRun,
     startQuestionRound,
   } = session;
+  const POINTS_GAME_ID = "states-champion";
   const SUPPORTED_MODES = new Set(Object.keys(MODE_CONFIG));
   const MODE_UI_COPY = Object.freeze({
     challenge: Object.freeze({
       badgePrefix: "Round",
-      subtitle: "Beat the timer.",
     }),
     practice: Object.freeze({
       badgeLabel: "Practice",
-      subtitle: "Tap the name.",
     }),
     "know-it-all": Object.freeze({
       badgePrefix: "State",
-      subtitle: "No misses.",
     }),
   });
+  const pointsBridge =
+    window.LAHSPointsBridge && typeof window.LAHSPointsBridge.init === "function"
+      ? window.LAHSPointsBridge
+      : null;
 
-  const requestedMode = new URLSearchParams(window.location.search).get("mode");
+  pointsBridge?.init({ gameId: POINTS_GAME_ID });
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const requestedMode = searchParams.get("mode");
+  const requestedFreshStart = searchParams.get("fresh") === "1";
   let run = loadRun();
 
-  if (isSupportedMode(requestedMode) && (!run || run.mode !== requestedMode)) {
+  if (isSupportedMode(requestedMode) && (requestedFreshStart || !run || run.mode !== requestedMode)) {
     run = createRun(requestedMode);
+
+    if (requestedFreshStart) {
+      searchParams.delete("fresh");
+      const nextSearch = searchParams.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
   }
 
   if (!run) {
@@ -68,7 +81,7 @@
     mapButton: document.getElementById("mapButton"),
     backToMenuButton: document.getElementById("backToMenuButton"),
     questionBadge: document.getElementById("questionBadge"),
-    questionSubtitle: document.getElementById("questionSubtitle"),
+    challengeHearts: document.getElementById("challengeHearts"),
     answerHelperText: document.getElementById("answerHelperText"),
     roundFeedback: document.getElementById("roundFeedback"),
     hintButton: document.getElementById("hintButton"),
@@ -90,6 +103,7 @@
     mapSolvedCount: document.getElementById("mapSolvedCount"),
     mapRemainingCount: document.getElementById("mapRemainingCount"),
     progressMap: document.getElementById("progressMap"),
+    heartSlots: [...document.querySelectorAll("[data-heart-slot]")],
     choiceButtons: [...document.querySelectorAll("[data-choice-slot]")].map((button) => ({
       button,
       label: button.querySelector(".choice-button__text"),
@@ -114,6 +128,10 @@
 
   function isKnowItAllMode() {
     return run.mode === "know-it-all";
+  }
+
+  function isChallengeMode() {
+    return run.mode === "challenge";
   }
 
   function backToMenu() {
@@ -150,6 +168,24 @@
     }
 
     return "Not this one.";
+  }
+
+  function awardGamePoints(awards) {
+    if (!pointsBridge || !Array.isArray(awards) || awards.length === 0) {
+      return;
+    }
+
+    awards.forEach((award) => {
+      if (!award || award.points <= 0 || !award.eventId) {
+        return;
+      }
+
+      pointsBridge.awardPoints(award.points, {
+        eventId: award.eventId,
+        label: award.label ?? null,
+        meta: award.meta ?? {},
+      });
+    });
   }
 
   function getHintData(stateId = run.currentStateId) {
@@ -419,6 +455,7 @@
 
   function advanceFromReveal() {
     const outcome = advanceRun(run);
+    awardGamePoints(outcome.awards);
 
     if (outcome.kind === "summary") {
       window.location.href = buildSummaryHref(outcome.summary);
@@ -436,10 +473,13 @@
     }
 
     closeMapOverlay();
-    run = answerRun(run, choiceId, options);
+    const answerOutcome = answerRun(run, choiceId, options);
+    run = answerOutcome.run;
+    awardGamePoints(answerOutcome.awards);
 
     if (isKnowItAllMode() && !run.reveal?.isCorrect) {
       const outcome = finalizeKnowItAllSummary(run, "miss");
+      awardGamePoints(outcome.awards);
       window.location.href = buildSummaryHref(outcome.summary);
       return;
     }
@@ -489,6 +529,25 @@
     elements.countdownValue.textContent = String(Math.max(1, Math.ceil(run.countdownMsLeft / 1000)));
   }
 
+  function renderChallengeHearts() {
+    const showHearts = isChallengeMode();
+    elements.challengeHearts.hidden = !showHearts;
+
+    if (!showHearts) {
+      return;
+    }
+
+    const remainingHearts = Math.max(0, Math.min(elements.heartSlots.length, run.heartsRemaining ?? 0));
+    elements.challengeHearts.setAttribute(
+      "aria-label",
+      `${remainingHearts} of ${elements.heartSlots.length} hearts remaining`
+    );
+
+    elements.heartSlots.forEach((heart, index) => {
+      heart.classList.toggle("state-hearts__heart--empty", index >= remainingHearts);
+    });
+  }
+
   function renderQuestion() {
     const modeConfig = getModeConfig();
     const copy = MODE_UI_COPY[run.mode];
@@ -507,10 +566,10 @@
     elements.hudStreak.textContent = String(run.streak);
     elements.hudTimer.textContent = formatTimer();
     elements.questionBadge.textContent = getQuestionBadge(copy);
-    elements.questionSubtitle.textContent = copy.subtitle;
     elements.answerHelperText.textContent = "Tap a name.";
     elements.roundFeedback.textContent = statusText;
     elements.roundFeedback.hidden = !statusText;
+    renderChallengeHearts();
     elements.stateImageFallback.hidden = !viewState.imageError;
     elements.stateImage.style.visibility = viewState.imageError ? "hidden" : "visible";
     elements.revealLayer.hidden = run.phase !== "reveal" || showingSuccessToast;
@@ -752,6 +811,7 @@
       completedRounds: run.completedRounds,
       score: run.score,
       streak: run.streak,
+      heartsRemaining: isChallengeMode() ? run.heartsRemaining ?? 0 : null,
       timerSeconds: modeConfig.timed ? Math.ceil(run.questionTimerMs / 1000) : null,
       currentStateAsset: currentState?.assetPath ?? null,
       choices: currentChoices.map((choice, index) => ({

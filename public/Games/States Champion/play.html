@@ -49,9 +49,15 @@
         <div class="question-layout">
           <article class="state-card card">
             <div class="state-card__header">
-              <span class="pill pill--sea" id="questionBadge">Round 1</span>
-              <h2>What state?</h2>
-              <p id="questionSubtitle">Tap the name.</p>
+              <div class="state-card__heading">
+                <span class="pill pill--sea" id="questionBadge">Round 1</span>
+                <h2>What state?</h2>
+              </div>
+              <div class="state-hearts" id="challengeHearts" hidden aria-label="Lives remaining">
+                <span class="state-hearts__heart" data-heart-slot="0" aria-hidden="true">♥</span>
+                <span class="state-hearts__heart" data-heart-slot="1" aria-hidden="true">♥</span>
+                <span class="state-hearts__heart" data-heart-slot="2" aria-hidden="true">♥</span>
+              </div>
             </div>
 
             <div class="state-stage">
@@ -70,8 +76,7 @@
 
           <aside class="answers-card card">
             <div class="answers-card__header">
-              <p class="answers-card__eyebrow">Choices</p>
-              <h3>Pick one</h3>
+              <p class="answers-card__eyebrow">Choices: Pick One</p>
               <p id="answerHelperText">Tap a name.</p>
             </div>
 
@@ -156,6 +161,7 @@
     <script defer src="./js/state-map-data.js"></script>
     <script defer src="./js/state-data.js"></script>
     <script defer src="./js/session-store.js"></script>
+    <script defer src="../shared/lahsPointsBridge.js"></script>
     <script defer src="./js/play.js"></script>
   </body>
 </html>
