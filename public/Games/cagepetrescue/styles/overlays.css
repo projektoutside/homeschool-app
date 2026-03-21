@@ -295,7 +295,7 @@
     z-index: 0;
     background:
         linear-gradient(180deg, rgba(4, 7, 14, 0.16), rgba(4, 7, 14, 0.46)),
-        url("../assets/images/math_rescue_animated.gif") center center / cover no-repeat;
+        url("../assets/images/math_rescue_animated.webp") center center / cover no-repeat;
     filter: blur(28px) saturate(0.92) brightness(0.58);
     transform: scale(1.08);
     opacity: 0.98;

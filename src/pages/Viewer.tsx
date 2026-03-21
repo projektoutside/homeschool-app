@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { findBaseModuleById } from '../data/moduleRegistry';
 import { buildAssetPath } from '../utils/pathUtils';
 import { downloadFile } from '../utils/downloadUtils';
-import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 import { useInstallResolution } from '../hooks/useInstallResolution';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { PWAInstallModal } from '../components/PWAInstallModal';
 import { useSoundSettings } from '../context/SoundSettingsContext';
-import { applySoundSettingsToWindow } from '../utils/soundSettings';
-import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
+import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -43,7 +43,7 @@ const ViewerPage: React.FC = () => {
     const { settings: soundSettings } = useSoundSettings();
 
     useEffect(() => {
-        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+        syncIframeSoundSettings(iframeRef.current, soundSettings);
     }, [soundSettings]);
 
     useEffect(() => {
@@ -89,15 +89,7 @@ const ViewerPage: React.FC = () => {
             return;
         }
 
-        const element = document.documentElement as FullscreenHTMLElementType;
-        try {
-            if (element.requestFullscreen) await element.requestFullscreen();
-            else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
-            else if (element.mozRequestFullScreen) await element.mozRequestFullScreen();
-            else if (element.msRequestFullscreen) await element.msRequestFullscreen();
-        } catch {
-            // ignore
-        }
+        await requestElementFullscreen(document.documentElement);
     }, [shouldUseNativeFullscreenFallback]);
 
     const exitFullscreen = useCallback(async () => {
@@ -106,16 +98,8 @@ const ViewerPage: React.FC = () => {
             return;
         }
 
-        try {
-            const doc = document as FullscreenDocumentType;
-            if (doc.exitFullscreen) await doc.exitFullscreen();
-            else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-            else if (doc.mozCancelFullScreen) await doc.mozCancelFullScreen();
-            else if (doc.msExitFullscreen) await doc.msExitFullscreen();
-            setIsFullscreen(false);
-        } catch {
-            // ignore
-        }
+        await exitDocumentFullscreen();
+        setIsFullscreen(false);
     }, [shouldUseNativeFullscreenFallback]);
 
     // Auto-hide controls in fullscreen mode
@@ -143,9 +127,7 @@ const ViewerPage: React.FC = () => {
         }
 
         const handleFullscreenChange = () => {
-            const doc = document as FullscreenDocumentType;
-            const fullscreenElement = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
-            const isNowFullscreen = !!fullscreenElement;
+            const isNowFullscreen = Boolean(getFullscreenElement(document));
             setIsFullscreen(isNowFullscreen);
 
             // Auto-show controls when entering fullscreen
@@ -231,8 +213,10 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
                             setIsLoading(false);
-                            postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'viewer-game-load' });
-                            applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                            resumeIframeRuntime(iframeRef.current, {
+                                reason: 'viewer-game-load',
+                                soundSettings,
+                            });
                         }}
                     />
                 </div>
@@ -263,8 +247,10 @@ const ViewerPage: React.FC = () => {
                         sandbox="allow-scripts"
                         onLoad={() => {
                             setIsLoading(false);
-                            postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'viewer-worksheet-load' });
-                            applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                            resumeIframeRuntime(iframeRef.current, {
+                                reason: 'viewer-worksheet-load',
+                                soundSettings,
+                            });
                         }}
                     />
                 </div>

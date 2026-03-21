@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { usePWA } from '../hooks/usePWA';
-import { applySoundSettingsToWindow } from '../utils/soundSettings';
-import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
+import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import './HTMLViewer.css';
 
 interface WorksheetFile {
@@ -347,7 +348,7 @@ const HTMLViewer: React.FC = () => {
     }, [cleanupWorksheetMeasurement, measureWorksheet, scheduleWorksheetMeasurement]);
 
     useEffect(() => {
-        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+        syncIframeSoundSettings(iframeRef.current, soundSettings);
     }, [soundSettings]);
 
     useEffect(() => {
@@ -617,27 +618,17 @@ const HTMLViewer: React.FC = () => {
             return;
         }
 
-        if (document.fullscreenElement && document.fullscreenElement !== rootElement) {
+        const fullscreenElement = getFullscreenElement();
+        if (fullscreenElement && fullscreenElement !== rootElement) {
             viewerOwnsNativeFullscreenRef.current = false;
             setIsFullscreen(true);
             return;
         }
 
-        if (rootElement.requestFullscreen) {
-            void rootElement.requestFullscreen()
-                .then(() => {
-                    viewerOwnsNativeFullscreenRef.current = true;
-                    setIsFullscreen(true);
-                })
-                .catch(() => {
-                    viewerOwnsNativeFullscreenRef.current = false;
-                    setIsFullscreen(true);
-                });
-            return;
-        }
-
-        viewerOwnsNativeFullscreenRef.current = false;
-        setIsFullscreen(true);
+        void requestElementFullscreen(rootElement).then((ownsFullscreen) => {
+            viewerOwnsNativeFullscreenRef.current = ownsFullscreen;
+            setIsFullscreen(true);
+        });
     }, [shouldUseNativeFullscreenFallback]);
 
     const exitFullscreen = useCallback(() => {
@@ -647,16 +638,11 @@ const HTMLViewer: React.FC = () => {
             return;
         }
 
-        if (document.fullscreenElement === viewerContainerRef.current && document.exitFullscreen) {
-            void document.exitFullscreen()
-                .then(() => {
-                    viewerOwnsNativeFullscreenRef.current = false;
-                    setIsFullscreen(false);
-                })
-                .catch(() => {
-                    viewerOwnsNativeFullscreenRef.current = false;
-                    setIsFullscreen(false);
-                });
+        if (getFullscreenElement() === viewerContainerRef.current) {
+            void exitDocumentFullscreen().finally(() => {
+                viewerOwnsNativeFullscreenRef.current = false;
+                setIsFullscreen(false);
+            });
             return;
         }
 
@@ -836,8 +822,10 @@ const HTMLViewer: React.FC = () => {
                                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
                                     style={iframeStyle}
                                     onLoad={() => {
-                                        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'html-viewer-load' });
-                                        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                                        resumeIframeRuntime(iframeRef.current, {
+                                            reason: 'html-viewer-load',
+                                            soundSettings,
+                                        });
                                         void initializeWorksheetMeasurement();
                                     }}
                                 />

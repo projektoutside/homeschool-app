@@ -36,7 +36,8 @@ import { isManagerUser } from '../utils/managerAccess';
 import { buildAssetPath } from '../utils/pathUtils';
 import { HOMEPAGE_CREATOR_APP_VERSION } from '../constants/homepageAppVersion';
 import type { HomepageCatalogSnapshot, HomepageCategoryRecord, HomepagePropRecord } from '../types/homepageCatalog';
-import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { resumeIframeRuntime } from '../utils/iframeRuntime';
 import './CharacterCreatorPage.css';
 
 const CHARACTER_CREATOR_APP_VERSION = HOMEPAGE_CREATOR_APP_VERSION;
@@ -449,7 +450,7 @@ const CharacterCreatorPage: React.FC = () => {
           sandbox="allow-same-origin allow-scripts allow-forms allow-downloads"
           onLoad={() => {
             setIsLoaded(true);
-            postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'character-creator-load' });
+            resumeIframeRuntime(iframeRef.current, { reason: 'character-creator-load' });
             syncCatalogToCreator(error ?? null);
           }}
         />

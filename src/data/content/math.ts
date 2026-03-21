@@ -1,4 +1,10 @@
 import type { ContentItem } from '../../types/content';
+import {
+    mathWorksheetCreatorClassicEntry,
+    mathWorksheetCreatorStudioEntry,
+    polygonGameEntry,
+    polygonToolEntry,
+} from './sharedEntries';
 
 export const mathContent: ContentItem[] = [
     // Example game entry removed - file '/example-game/index.html' does not exist
@@ -13,18 +19,7 @@ export const mathContent: ContentItem[] = [
     //     customHtmlPath: '/example-game/index.html',
     //     dateAdded: '2024-01-01'
     // },
-    {
-        id: 'math-worksheet-creator',
-        title: 'Math Worksheet Creator',
-        description: 'Create custom math worksheets for practice.',
-        type: 'tool',
-        category: 'math',
-        subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
-        gradeLevels: ['All'],
-        customHtmlPath: '/Games/Math-Worksheet-Creator/index.html',
-        thumbnail: '/assets/thumbnails/optimized/math-worksheet-creator-game-128.webp',
-        dateAdded: '2024-03-01'
-    },
+    mathWorksheetCreatorClassicEntry,
     {
         id: 'MathPuzzle',
         title: 'Math Puzzle',
@@ -62,18 +57,7 @@ export const mathContent: ContentItem[] = [
         thumbnail: '/assets/thumbnails/optimized/word-puzzle-128.webp',
         dateAdded: '2026-03-05'
     },
-    {
-        id: 'MathWorksheetCreator',
-        title: 'Math Worksheet Creator',
-        description: 'Create custom math worksheets for practice.',
-        type: 'tool',
-        category: 'math',
-        subjects: ['Addition', 'Subtraction', 'Multiplication', 'Division'],
-        gradeLevels: ['All'],
-        customHtmlPath: '/MathWorksheetCreator/index.html',
-        thumbnail: '/assets/thumbnails/optimized/math-worksheet-creator-128.webp',
-        dateAdded: '2026-01-26'
-    },
+    mathWorksheetCreatorStudioEntry,
     {
         "id": "math-1minuteadditiontest-1768357163983",
         "title": "1minuteAdditionTEST",
@@ -1004,34 +988,8 @@ export const mathContent: ContentItem[] = [
         "customHtmlPath": "/Worksheets/us-states-word-bank/index.html",
         "dateAdded": "2026-01-14"
     },
-    {
-        "id": "math-1768955732393",
-        "title": "PolygonAPP",
-        "description": "Learn Polygon!",
-        "type": "tool",
-        "category": "math",
-        "subjects": ["Geometry"],
-        "gradeLevels": [
-            "All"
-        ],
-        "customHtmlPath": "/PolygonAPP/index.html",
-        "thumbnail": "/assets/thumbnails/optimized/polygon-app-128.webp",
-        "dateAdded": "2026-01-21"
-    },
-    {
-        "id": "math-1768955732393-game",
-        "title": "PolygonAPP",
-        "description": "Learn Polygon!",
-        "type": "game",
-        "category": "math",
-        "subjects": ["Geometry"],
-        "gradeLevels": [
-            "All"
-        ],
-        "customHtmlPath": "/PolygonAPP/index.html",
-        "thumbnail": "/assets/thumbnails/optimized/polygon-app-128.webp",
-        "dateAdded": "2026-01-21"
-    },
+    polygonToolEntry,
+    polygonGameEntry,
     {
         "id": "math-quiz-it-polygon",
         "title": "Quiz it Polygon!",
@@ -1127,7 +1085,7 @@ export const mathContent: ContentItem[] = [
         "subjects": ["Addition", "Subtraction", "Multiplication", "Problem Solving"],
         "gradeLevels": ["All"],
         "customHtmlPath": "/Games/cagepetrescue/index.html",
-        "thumbnail": "/Games/cagepetrescue/assets/images/math_rescue_animated.gif",
+        "thumbnail": "/Games/cagepetrescue/assets/images/math_rescue_animated.webp",
         "dateAdded": "2026-03-18"
     }
 ];

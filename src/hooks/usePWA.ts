@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
+import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 
 // Type definitions
 interface BeforeInstallPromptEvent extends Event {
@@ -14,21 +15,6 @@ interface UpdateInfo {
   commitDate?: string;
   commitMessage?: string;
   repoUrl?: string;
-}
-
-interface FullscreenDocument extends Document {
-  webkitFullscreenElement?: Element | null;
-  mozFullScreenElement?: Element | null;
-  msFullscreenElement?: Element | null;
-  webkitExitFullscreen?: () => Promise<void>;
-  mozCancelFullScreen?: () => Promise<void>;
-  msExitFullscreen?: () => Promise<void>;
-}
-
-interface FullscreenElement extends HTMLElement {
-  webkitRequestFullscreen?: () => Promise<void>;
-  mozRequestFullScreen?: () => Promise<void>;
-  msRequestFullscreen?: () => Promise<void>;
 }
 
 interface UsePWAReturn {
@@ -480,15 +466,8 @@ export function usePWA(): UsePWAReturn {
 
   // Fullscreen change listener
   useEffect(() => {
-    const doc = document as FullscreenDocument;
-    
     const handleFullscreenChange = () => {
-      setIsFullscreen(
-        document.fullscreenElement !== null ||
-        doc.webkitFullscreenElement !== null ||
-        doc.mozFullScreenElement !== null ||
-        doc.msFullscreenElement !== null
-      );
+      setIsFullscreen(Boolean(getFullscreenElement(document)));
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -523,39 +502,16 @@ export function usePWA(): UsePWAReturn {
     if (!shouldUseNativeFullscreenFallback) {
       return;
     }
-    const docEl = document.documentElement as FullscreenElement;
-    try {
-      if (docEl.requestFullscreen) {
-        await docEl.requestFullscreen();
-      } else if (docEl.webkitRequestFullscreen) {
-        await docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        await docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        await docEl.msRequestFullscreen();
-      }
-    } catch {
-      // Fullscreen not supported or permission denied - silently ignore
-    }
+    await requestElementFullscreen(document.documentElement);
   }, [shouldUseNativeFullscreenFallback]);
 
   const exitFullscreen = useCallback(async () => {
     if (!shouldUseNativeFullscreenFallback) {
       return;
     }
-    const doc = document as FullscreenDocument;
-    try {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if (doc.webkitExitFullscreen) {
-        await doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        await doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        await doc.msExitFullscreen();
-      }
-    } catch (error) {
-      console.error('[PWA] Failed to exit fullscreen:', error);
+    const didExitFullscreen = await exitDocumentFullscreen();
+    if (!didExitFullscreen) {
+      console.error('[PWA] Failed to exit fullscreen');
     }
   }, [shouldUseNativeFullscreenFallback]);
 

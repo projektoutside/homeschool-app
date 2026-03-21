@@ -12,9 +12,10 @@ import { usePWA } from '../hooks/usePWA';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
-import { applySoundSettingsToWindow } from '../utils/soundSettings';
-import { postIframeLifecyclePhase, teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { requestElementFullscreen } from '../utils/fullscreen';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
+import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import {
     type GamePointsAckMessage,
     type GamePointsContextMessage,
@@ -149,7 +150,7 @@ const GamePlayer: React.FC = () => {
     const processedPointEventsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
-        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+        syncIframeSoundSettings(iframeRef.current, soundSettings);
     }, [soundSettings]);
 
     const launchStateItem = useMemo(() => {
@@ -553,25 +554,7 @@ const GamePlayer: React.FC = () => {
             return;
         }
 
-        const element = document.documentElement as HTMLElement & {
-            requestFullscreen?: () => Promise<void>;
-            webkitRequestFullscreen?: () => Promise<void>;
-            mozRequestFullScreen?: () => Promise<void>;
-            msRequestFullscreen?: () => Promise<void>;
-        };
-        try {
-            if (element.requestFullscreen) {
-                await element.requestFullscreen();
-            } else if (element.webkitRequestFullscreen) {
-                await element.webkitRequestFullscreen();
-            } else if (element.mozRequestFullScreen) {
-                await element.mozRequestFullScreen();
-            } else if (element.msRequestFullscreen) {
-                await element.msRequestFullscreen();
-            }
-        } catch {
-            // Browser may block auto fullscreen without user gesture.
-        }
+        await requestElementFullscreen(document.documentElement);
     }, [shouldUseNativeFullscreenFallback]);
 
     useEffect(() => {
@@ -648,8 +631,10 @@ const GamePlayer: React.FC = () => {
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                     onLoad={() => {
                         setLoadedLaunchPath(launchPath);
-                        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'game-load' });
-                        applySoundSettingsToWindow(iframeRef.current?.contentWindow, soundSettings);
+                        resumeIframeRuntime(iframeRef.current, {
+                            reason: 'game-load',
+                            soundSettings,
+                        });
                         syncCarKingMicPreference();
                         syncWordPuzzleUserContext();
                         syncGamePointsContext();

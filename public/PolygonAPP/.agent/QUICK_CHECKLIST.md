@@ -7,7 +7,7 @@
 File: index.html
 ✅ Size: 344,302 bytes (cleaned)
 ✅ Lines: 8,680 (reduced from ~9,153)
-✅ Backup: index.html.backup_20260206_145814 (365,265 bytes)
+✅ Archived backup: _archive/legacy-cleanup-2026-03-02/backups/index.html.backup_20260206_145814 (365,265 bytes)
 ✅ Status: PRODUCTION READY
 ```
 
@@ -57,7 +57,7 @@ File: index.html
 
 ✅ **480 lines removed** from index.html  
 ✅ **~21 KB file size reduction**  
-✅ **All backup files exist**  
+✅ **Archived backup files preserved**
 ✅ **All documentation files created**  
 ✅ **No files were lost or reverted**
 
@@ -93,7 +93,7 @@ Your Polygon Fun Game has been **successfully cleaned** of all legacy UI element
 - ✅ `index.html` (344 KB)
 
 **Backups:**
-- ✅ `index.html.backup_20260206_145814` (365 KB)
+- ✅ `_archive/legacy-cleanup-2026-03-02/backups/index.html.backup_20260206_145814` (365 KB)
 
 **Documentation:**
 - ✅ `.agent/README_LEGACY_CLEANUP.md`

@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { buildAssetPath } from '../utils/pathUtils';
 import { getUsername, isManagerUser } from '../utils/managerAccess';
 import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { resumeIframeRuntime } from '../utils/iframeRuntime';
 import './Home.css';
 import './ClassroomPage.css';
 
@@ -454,7 +455,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
 
     const handleFrameLoad = useCallback(() => {
         setLoadedLaunchPath(launchPath);
-        postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'classroom-load' });
+        resumeIframeRuntime(iframeRef.current, { reason: 'classroom-load' });
         syncAuthToClassroom();
         void syncLatestStateToClassroom('frame-load');
     }, [launchPath, syncAuthToClassroom, syncLatestStateToClassroom]);

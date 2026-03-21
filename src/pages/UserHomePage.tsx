@@ -19,7 +19,6 @@ import {
   readHomepageMysteryTestSession,
 } from '../utils/homepageCatalogBridge';
 import { isManagerUser } from '../utils/managerAccess';
-import { applySoundSettingsToWindow } from '../utils/soundSettings';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from '../constants/homepageAppVersion';
 import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
 import type { HomepageCatalogSnapshot } from '../types/homepageCatalog';
@@ -31,6 +30,7 @@ import {
 } from './userHomePage/homepageLaunchState';
 import type { HomepagePendingSummonRecoveryPayload } from '../utils/homepageCatalogBridge';
 import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
+import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import './Home.css';
 import './UserHomePage.css';
 
@@ -400,11 +400,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStab
   }, [initialLaunchState.storedSnapshot, isActive, storedSnapshot]);
 
   useEffect(() => {
-    applySoundSettingsToWindow(
-      iframeRef.current?.contentWindow,
-      soundSettings,
-      { homePageActive: isActive },
-    );
+    syncIframeSoundSettings(iframeRef.current, soundSettings, { homePageActive: isActive });
   }, [isActive, soundSettings]);
 
   useEffect(() => {
@@ -852,12 +848,11 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStab
 
   const handleLoad = () => {
     setIframeLoaded(true);
-    postIframeLifecyclePhase(iframeRef.current, 'resume', { reason: 'homepage-load' });
-    applySoundSettingsToWindow(
-      iframeRef.current?.contentWindow,
+    resumeIframeRuntime(iframeRef.current, {
+      reason: 'homepage-load',
       soundSettings,
-      { homePageActive: isActive },
-    );
+      soundOptions: { homePageActive: isActive },
+    });
     syncHomepagePointsToIframe();
     syncTiltBridgeStateToIframe();
     syncPendingSummonRecoveryToIframe();

@@ -24,11 +24,19 @@ const THRESHOLDS = {
 const IGNORED_DIRECTORIES = new Set([
   '.git',
   'node_modules',
+  '.agent',
+  '.mcp',
   '.vite',
+  '.vscode',
   '_workspace',
   '_archive',
   'output',
 ]);
+
+const IGNORED_PATH_PREFIXES = [
+  '3dClass/individual/',
+  '3dClass/vite-app/',
+];
 
 const formatBytes = (value) => {
   const mb = value / (1024 * 1024);
@@ -65,6 +73,9 @@ const collectAssetFiles = (dirPath, results = []) => {
     }
 
     const relativePath = path.relative(publicDir, absolutePath).split(path.sep).join('/');
+    if (IGNORED_PATH_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+      continue;
+    }
     results.push({
       absolutePath,
       relativePath,

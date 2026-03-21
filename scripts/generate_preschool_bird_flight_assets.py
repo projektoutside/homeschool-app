@@ -31,13 +31,13 @@ class BirdVideoConfig:
 CONFIGS = (
     BirdVideoConfig(
         source_video="Seamless_Looping_Animation_Generation.mp4",
-        atlas_name="bigbird-flight-atlas.png",
+        atlas_name="bigbird-flight-atlas.webp",
         meta_name="bigbird-flight-meta.json",
         target_frame_height=196,
     ),
     BirdVideoConfig(
         source_video="Seamless_Looping_Animation_Request.mp4",
-        atlas_name="smallbird-flight-atlas.png",
+        atlas_name="smallbird-flight-atlas.webp",
         meta_name="smallbird-flight-meta.json",
         target_frame_height=148,
     ),
@@ -150,7 +150,10 @@ def regenerate_assets(config: BirdVideoConfig) -> None:
 
     atlas_path = GENERATED_DIR / config.atlas_name
     meta_path = GENERATED_DIR / config.meta_name
-    atlas.save(atlas_path)
+    save_kwargs = {}
+    if atlas_path.suffix.lower() == ".webp":
+        save_kwargs = {"lossless": True, "method": 6}
+    atlas.save(atlas_path, **save_kwargs)
 
     metadata = {
         "frameCount": len(rgba_frames),

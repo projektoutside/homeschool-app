@@ -28,7 +28,7 @@
 | Metric | Value | Status |
 |--------|-------|--------|
 | **Current File Size** | 344,302 bytes | ✅ Correct (reduced) |
-| **Original File Size** | 365,265 bytes | ✅ Backup exists |
+| **Original File Size** | 365,265 bytes | ✅ Archived backup preserved |
 | **Lines Removed** | ~473 lines | ✅ Confirmed |
 | **Current Line Count** | 8,680 lines | ✅ Correct |
 | **Backup File** | index.html.backup_20260206_145814 | ✅ Exists |
@@ -121,7 +121,7 @@ All legacy UI cleanup changes from the "Cleaning Legacy UI Panels" session are:
 - ✅ **Still present** in index.html
 - ✅ **Properly documented** with comments
 - ✅ **Verified by file size** (344KB vs original 365KB)
-- ✅ **Backed up** (index.html.backup_20260206_145814 exists)
+- ✅ **Backed up** (`_archive/legacy-cleanup-2026-03-02/backups/index.html.backup_20260206_145814` preserved)
 - ✅ **Documented** in .agent/*.md files
 
 ---

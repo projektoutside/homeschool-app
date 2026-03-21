@@ -883,6 +883,9 @@
         if (state.started) return;
         state.started = true;
         state.sessionActive = true;
+        if (document.activeElement instanceof HTMLElement && dom.startOverlay.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
         document.body.classList.add('is-started');
         dom.startOverlay.classList.add('is-hidden');
         dom.startOverlay.setAttribute('aria-hidden', 'true');
@@ -900,9 +903,9 @@
                 easingDuration: 520,
                 catchImpactDuration: 920,
                 largeBirdX: 'center',
-                smallBirdAtlasSrc: 'generated/smallbird-flight-atlas.png',
+                smallBirdAtlasSrc: 'generated/smallbird-flight-atlas.webp',
                 smallBirdAtlasMetaSrc: 'generated/smallbird-flight-meta.json',
-                largeBirdAtlasSrc: 'generated/bigbird-flight-atlas.png',
+                largeBirdAtlasSrc: 'generated/bigbird-flight-atlas.webp',
                 largeBirdAtlasMetaSrc: 'generated/bigbird-flight-meta.json',
                 smallBirdSrc: 'smallbirdpng.png',
                 largeBirdSrc: 'bigbirdpng.png',
