@@ -447,10 +447,6 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
           </div>
         </div>
 
-        <div className="cinematic-loading-screen__status">
-          <p className="cinematic-loading-screen__status-title">{scene.statusTitle}</p>
-          <p className="cinematic-loading-screen__status-body">{scene.statusBody}</p>
-        </div>
         <span className="cinematic-loading-screen__sr-only">{scene.statusTitle}. {scene.statusBody}</span>
       </div>
     </div>

@@ -1,35 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { buildAssetPath } from '../utils/pathUtils';
+import { findInteractiveClickTarget } from '../utils/interactionFeedbackTargets';
 
 const STANDARD_CLICK_SOUND_PATH = buildAssetPath(
     'HomePageAPP/HomePageMusic/MysterySoundEffects/standardclick.mp3',
 );
 const AUDIO_POOL_SIZE = 4;
-const INTERACTIVE_CLICK_SELECTOR = [
-    'button',
-    'a[href]',
-    'summary',
-    'select',
-    'label[for]',
-    'input[type="button"]',
-    'input[type="submit"]',
-    'input[type="reset"]',
-    'input[type="checkbox"]',
-    'input[type="radio"]',
-    '[role="button"]',
-    '[role="tab"]',
-    '[role="menuitem"]',
-    '[role="option"]',
-    '[data-play-standard-click="true"]',
-].join(',');
-const TEXT_ENTRY_SELECTOR = [
-    'textarea',
-    '[contenteditable=""]',
-    '[contenteditable="true"]',
-    'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"])',
-].join(',');
-
 const toUnitVolume = (percent: number): number => {
     if (!Number.isFinite(percent)) {
         return 0;
@@ -38,45 +15,11 @@ const toUnitVolume = (percent: number): number => {
 };
 
 const isInteractiveClickTarget = (target: EventTarget | null): boolean => {
-    if (!(target instanceof Element)) {
-        return false;
-    }
-    if (target.closest('[data-no-click-sound="true"]')) {
+    if (target instanceof Element && target.closest('[data-no-click-sound="true"]')) {
         return false;
     }
 
-    if (target.closest(TEXT_ENTRY_SELECTOR)) {
-        return false;
-    }
-
-    const interactiveElement = target.closest(INTERACTIVE_CLICK_SELECTOR);
-    if (interactiveElement) {
-        if (interactiveElement.matches(':disabled') || interactiveElement.getAttribute('aria-disabled') === 'true') {
-            return false;
-        }
-        return true;
-    }
-
-    const focusableElement = target.closest('[tabindex]:not([tabindex="-1"])');
-    if (focusableElement && focusableElement.getAttribute('aria-disabled') !== 'true') {
-        return true;
-    }
-    if (target.closest('[aria-disabled="true"]')) {
-        return false;
-    }
-
-    let current: Element | null = target;
-    for (let depth = 0; depth < 4 && current; depth += 1) {
-        if (current instanceof HTMLElement) {
-            const cursor = window.getComputedStyle(current).cursor;
-            if (cursor === 'pointer') {
-                return true;
-            }
-        }
-        current = current.parentElement;
-    }
-
-    return false;
+    return Boolean(findInteractiveClickTarget(target));
 };
 
 export const useGlobalUiClickSound = (): void => {

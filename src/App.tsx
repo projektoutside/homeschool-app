@@ -12,6 +12,7 @@ import CinematicLoadingScreen from './components/CinematicLoadingScreen';
 import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
+import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
 import { buildAssetPath } from './utils/pathUtils';
 import Home from './pages/Home';
 import './App.css';
@@ -141,6 +142,7 @@ const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/th
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();
+    useCinematicInteractionFeedback();
     const pwa = usePWA();
     useNativeShell({ isNativeApp: pwa.isNativeApp, nativePlatform: pwa.nativePlatform });
     const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}`);

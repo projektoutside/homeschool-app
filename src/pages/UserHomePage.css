@@ -142,11 +142,6 @@
   border-color: rgba(103, 232, 249, 0.8);
 }
 
-.user-home-tab-btn:focus-visible {
-  outline: 2px solid #67e8f9;
-  outline-offset: 2px;
-}
-
 /* 3-Square Settings Button */
 .user-home-settings-btn {
   display: flex;

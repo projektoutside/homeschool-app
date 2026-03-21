@@ -53,6 +53,16 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 
+  /* Cinematic interaction feedback */
+  --cinematic-focus-outline: rgba(125, 211, 252, 0.95);
+  --cinematic-focus-glow: rgba(56, 189, 248, 0.24);
+  --cinematic-focus-glow-strong: rgba(14, 165, 233, 0.34);
+  --cinematic-press-shadow: rgba(15, 23, 42, 0.42);
+  --cinematic-press-scale: 0.992;
+  --cinematic-focus-scale: 1.004;
+  --cinematic-focus-offset: 3px;
+  --cinematic-feedback-duration: 180ms;
+
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,6 +88,10 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --cinematic-focus-outline: rgba(167, 243, 208, 0.94);
+  --cinematic-focus-glow: rgba(45, 212, 191, 0.22);
+  --cinematic-focus-glow-strong: rgba(34, 211, 238, 0.3);
+  --cinematic-press-shadow: rgba(8, 47, 73, 0.45);
 }
 
 * {

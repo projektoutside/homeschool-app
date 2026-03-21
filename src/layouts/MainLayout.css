@@ -16,8 +16,6 @@
 
 .skip-to-main:focus {
     top: var(--spacing-md);
-    outline: 2px solid var(--color-primary-dark);
-    outline-offset: 2px;
 }
 
 html, body {
@@ -123,11 +121,6 @@ html, body {
     transform: translateY(-1px);
     border-color: rgba(146, 217, 255, 0.48);
     box-shadow: 0 20px 38px rgba(0, 0, 0, 0.28);
-}
-
-.character-creator-launcher:focus-visible {
-    outline: 2px solid rgba(132, 208, 255, 0.9);
-    outline-offset: 2px;
 }
 
 .character-creator-launcher__eyebrow {

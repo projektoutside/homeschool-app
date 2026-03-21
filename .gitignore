@@ -64,3 +64,7 @@ tmp-*.png
 tmp-cors-static-server.cjs
 public/HomePageAPP/_workspace/
 public/HomePageAPP/debug-glb-viewer.html
+.codex-runtime/
+.codex-artifacts/
+scripts/__pycache__/
+public/Games/Animal Champion/profile-check.txt

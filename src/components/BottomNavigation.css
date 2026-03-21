@@ -297,11 +297,6 @@ body.homepage-host-loading .stats-wake-zone {
     background: linear-gradient(145deg, #818cf8, #6366f1);
 }
 
-.nav-tab-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.4);
-}
-
 .nav-tab-icon {
     font-size: 1.4rem; /* Larger emoji */
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
