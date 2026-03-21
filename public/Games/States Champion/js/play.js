@@ -46,12 +46,42 @@
 
   pointsBridge?.init({ gameId: POINTS_GAME_ID });
 
+  function getReferrerSurface() {
+    if (!document.referrer) {
+      return null;
+    }
+
+    try {
+      const referrerUrl = new URL(document.referrer);
+      const referrerPath = referrerUrl.pathname.toLowerCase();
+
+      if (referrerPath.endsWith("/games/states%20champion/index.html") || referrerPath.endsWith("/games/states champion/index.html")) {
+        return "menu";
+      }
+
+      if (referrerPath.endsWith("/games/states%20champion/summary.html") || referrerPath.endsWith("/games/states champion/summary.html")) {
+        return "summary";
+      }
+
+      if (referrerPath.endsWith("/games/states%20champion/play.html") || referrerPath.endsWith("/games/states champion/play.html")) {
+        return "play";
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
   const searchParams = new URLSearchParams(window.location.search);
   const requestedMode = searchParams.get("mode");
   const requestedFreshStart = searchParams.get("fresh") === "1";
+  const referrerSurface = getReferrerSurface();
+  const shouldForceFreshRun =
+    requestedFreshStart || referrerSurface === "menu" || referrerSurface === "summary";
   let run = loadRun();
 
-  if (isSupportedMode(requestedMode) && (requestedFreshStart || !run || run.mode !== requestedMode)) {
+  if (isSupportedMode(requestedMode) && (shouldForceFreshRun || !run || run.mode !== requestedMode)) {
     run = createRun(requestedMode);
 
     if (requestedFreshStart) {
