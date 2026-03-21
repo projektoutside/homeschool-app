@@ -18,6 +18,7 @@
   const PROGRESS_KEY = "states-champion-progress-v3";
   const RUN_KEY = "states-champion-run-v3";
   const SUMMARY_KEY = "states-champion-summary-v3";
+  const LAUNCH_KEY = "states-champion-launch-v1";
   const CORRECT_TOAST_MS = 1400;
   const CHALLENGE_HEARTS = 3;
   const CHALLENGE_CORRECT_POINTS = 10;
@@ -27,6 +28,7 @@
   const CHALLENGE_MODE = "challenge";
   const PRACTICE_MODE = "practice";
   const KNOW_IT_ALL_MODE = "know-it-all";
+  const RESUMABLE_PHASES = new Set(["countdown", "question", "reveal"]);
 
   function shuffle(items) {
     const clone = [...items];
@@ -69,6 +71,15 @@
   function getStorageJson(key, fallback) {
     try {
       const parsed = JSON.parse(readStorage("sessionStorage", key) ?? readStorage("localStorage", key) ?? "null");
+      return parsed ?? fallback;
+    } catch {
+      return memoryStore.has(key) ? structuredClone(memoryStore.get(key)) : fallback;
+    }
+  }
+
+  function getScopedStorageJson(areaName, key, fallback) {
+    try {
+      const parsed = JSON.parse(readStorage(areaName, key) ?? "null");
       return parsed ?? fallback;
     } catch {
       return memoryStore.has(key) ? structuredClone(memoryStore.get(key)) : fallback;
@@ -167,7 +178,7 @@
   }
 
   function loadRun() {
-    const run = getStorageJson(RUN_KEY, null);
+    const run = getScopedStorageJson("sessionStorage", RUN_KEY, null);
     return run ? normalizeRun(run) : null;
   }
 
@@ -180,7 +191,7 @@
   }
 
   function loadSummary() {
-    return getStorageJson(SUMMARY_KEY, null);
+    return getScopedStorageJson("sessionStorage", SUMMARY_KEY, null);
   }
 
   function saveSummary(summary) {
@@ -189,6 +200,38 @@
 
   function clearSummary() {
     removeStorageKey("sessionStorage", SUMMARY_KEY);
+  }
+
+  function normalizeLaunchIntent(intent) {
+    if (!intent || typeof intent !== "object") {
+      return null;
+    }
+
+    const mode = typeof intent.mode === "string" ? intent.mode : "";
+    const source = typeof intent.source === "string" && intent.source ? intent.source : null;
+
+    if (!Object.hasOwn(MODE_CONFIG, mode) || !source) {
+      return null;
+    }
+
+    return {
+      requestId: typeof intent.requestId === "string" && intent.requestId ? intent.requestId : createRunId(),
+      mode,
+      source,
+      createdAtMs: Number.isFinite(intent.createdAtMs) ? intent.createdAtMs : Date.now(),
+    };
+  }
+
+  function loadLaunch() {
+    return normalizeLaunchIntent(getScopedStorageJson("sessionStorage", LAUNCH_KEY, null));
+  }
+
+  function saveLaunch(intent) {
+    setStorageJson("sessionStorage", LAUNCH_KEY, intent);
+  }
+
+  function clearLaunch() {
+    removeStorageKey("sessionStorage", LAUNCH_KEY);
   }
 
   function normalizeRun(run) {
@@ -259,6 +302,80 @@
     clearSummary();
     saveRun(run);
     return run;
+  }
+
+  function queueLaunch(mode, source) {
+    getModeConfig(mode);
+
+    const launchIntent = {
+      requestId: createRunId(),
+      mode,
+      source,
+      createdAtMs: Date.now(),
+    };
+
+    clearLaunch();
+    clearSummary();
+    saveLaunch(launchIntent);
+    return launchIntent;
+  }
+
+  function consumeLaunch(mode) {
+    const launchIntent = loadLaunch();
+
+    if (!launchIntent || launchIntent.mode !== mode) {
+      return null;
+    }
+
+    clearLaunch();
+    return launchIntent;
+  }
+
+  function resolvePlayEntry(mode) {
+    if (!Object.hasOwn(MODE_CONFIG, mode)) {
+      return {
+        kind: "redirect",
+        href: "./index.html",
+      };
+    }
+
+    const queuedLaunch = consumeLaunch(mode);
+
+    if (queuedLaunch) {
+      return {
+        kind: "run",
+        run: createRun(mode),
+        launchState: {
+          requestId: queuedLaunch.requestId,
+          source: queuedLaunch.source,
+          strategy: "queued-launch",
+        },
+      };
+    }
+
+    const existingRun = loadRun();
+
+    if (existingRun && existingRun.mode === mode && RESUMABLE_PHASES.has(existingRun.phase)) {
+      return {
+        kind: "run",
+        run: existingRun,
+        launchState: {
+          requestId: null,
+          source: "resume",
+          strategy: "resume-run",
+        },
+      };
+    }
+
+    return {
+      kind: "run",
+      run: createRun(mode),
+      launchState: {
+        requestId: null,
+        source: "direct",
+        strategy: "direct-entry",
+      },
+    };
   }
 
   function startQuestionRound(run) {
@@ -575,11 +692,16 @@
 
   const namespace = Object.freeze({
     activateHint,
+    clearLaunch,
     clearRun,
     clearSummary,
+    consumeLaunch,
     createRun,
+    queueLaunch,
+    resolvePlayEntry,
     getRenderableState,
     getStateById,
+    loadLaunch,
     loadProgress,
     loadRun,
     loadSummary,

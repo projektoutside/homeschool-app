@@ -19,15 +19,13 @@
     answerRun,
     clearRun,
     clearSummary,
-    createRun,
     finalizeKnowItAllSummary,
     getRenderableState,
-    loadRun,
+    resolvePlayEntry,
     saveRun,
     startQuestionRound,
   } = session;
   const POINTS_GAME_ID = "states-champion";
-  const SUPPORTED_MODES = new Set(Object.keys(MODE_CONFIG));
   const MODE_UI_COPY = Object.freeze({
     challenge: Object.freeze({
       badgePrefix: "Round",
@@ -46,56 +44,16 @@
 
   pointsBridge?.init({ gameId: POINTS_GAME_ID });
 
-  function getReferrerSurface() {
-    if (!document.referrer) {
-      return null;
-    }
+  const requestedMode = new URLSearchParams(window.location.search).get("mode");
+  const playEntry = resolvePlayEntry(requestedMode);
 
-    try {
-      const referrerUrl = new URL(document.referrer);
-      const referrerPath = referrerUrl.pathname.toLowerCase();
-
-      if (referrerPath.endsWith("/games/states%20champion/index.html") || referrerPath.endsWith("/games/states champion/index.html")) {
-        return "menu";
-      }
-
-      if (referrerPath.endsWith("/games/states%20champion/summary.html") || referrerPath.endsWith("/games/states champion/summary.html")) {
-        return "summary";
-      }
-
-      if (referrerPath.endsWith("/games/states%20champion/play.html") || referrerPath.endsWith("/games/states champion/play.html")) {
-        return "play";
-      }
-    } catch {
-      return null;
-    }
-
-    return null;
-  }
-
-  const searchParams = new URLSearchParams(window.location.search);
-  const requestedMode = searchParams.get("mode");
-  const requestedFreshStart = searchParams.get("fresh") === "1";
-  const referrerSurface = getReferrerSurface();
-  const shouldForceFreshRun =
-    requestedFreshStart || referrerSurface === "menu" || referrerSurface === "summary";
-  let run = loadRun();
-
-  if (isSupportedMode(requestedMode) && (shouldForceFreshRun || !run || run.mode !== requestedMode)) {
-    run = createRun(requestedMode);
-
-    if (requestedFreshStart) {
-      searchParams.delete("fresh");
-      const nextSearch = searchParams.toString();
-      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
-      window.history.replaceState(null, "", nextUrl);
-    }
-  }
-
-  if (!run) {
-    window.location.replace("./index.html");
+  if (playEntry.kind !== "run") {
+    window.location.replace(playEntry.href);
     return;
   }
+
+  const initialLaunchState = playEntry.launchState;
+  let run = playEntry.run;
 
   const elements = {
     playPage: document.getElementById("playPage"),
@@ -150,10 +108,6 @@
 
   function getModeConfig() {
     return MODE_CONFIG[run.mode];
-  }
-
-  function isSupportedMode(mode) {
-    return SUPPORTED_MODES.has(mode);
   }
 
   function isKnowItAllMode() {
@@ -835,6 +789,7 @@
     const modeConfig = getModeConfig();
 
     return {
+      runId: run.runId,
       phase: run.phase,
       mode: run.mode,
       round: run.activeRoundNumber,
@@ -870,6 +825,7 @@
         solved: run.solvedStateIds?.length ?? 0,
         remaining: Math.max(0, (modeConfig.rounds ?? 0) - (run.solvedStateIds?.length ?? 0)),
       },
+      launchState: initialLaunchState,
       solvedStateIds: [...(run.solvedStateIds ?? [])],
       reveal: run.phase === "reveal" ? run.reveal : null,
     };

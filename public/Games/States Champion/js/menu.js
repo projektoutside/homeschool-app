@@ -5,7 +5,7 @@
     throw new Error("StatesChampionSession must load before menu.js.");
   }
 
-  const { clearRun, clearSummary, createRun, loadProgress } = session;
+  const { loadProgress, queueLaunch } = session;
   const progress = loadProgress();
   const elements = {
     menuBestScore: document.getElementById("menuBestScore"),
@@ -22,18 +22,9 @@
     elements.menuSessionsPlayed.textContent = String(progress.sessionsPlayed);
   }
 
-  function primeRun(mode) {
-    clearRun();
-    clearSummary();
-    createRun(mode);
-  }
-
-  function primeRunSafely(mode) {
-    try {
-      primeRun(mode);
-    } catch (error) {
-      console.warn(`States Champion could not pre-save ${mode} mode before navigation.`, error);
-    }
+  function startMode(mode, href) {
+    queueLaunch(mode, "menu");
+    window.location.href = href;
   }
 
   [
@@ -41,8 +32,9 @@
     [elements.practiceModeButton, "practice"],
     [elements.knowItAllModeButton, "know-it-all"],
   ].forEach(([button, mode]) => {
-    button.addEventListener("click", () => {
-      primeRunSafely(mode);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      startMode(mode, button.getAttribute("href") ?? `./play.html?mode=${mode}`);
     });
   });
 

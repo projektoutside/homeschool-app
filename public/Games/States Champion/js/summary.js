@@ -10,7 +10,7 @@
     throw new Error("StatesChampionSession must load before summary.js.");
   }
 
-  const { clearSummary, createRun, loadSummary } = session;
+  const { clearSummary, loadSummary, queueLaunch } = session;
 
   function sanitizeMode(mode, fallback = "challenge") {
     return Object.hasOwn(MODE_LABELS, mode) ? mode : fallback;
@@ -81,15 +81,8 @@
   }
 
   function start(mode) {
-    clearSummary();
-
-    try {
-      createRun(mode);
-    } catch (error) {
-      console.warn(`States Champion could not pre-save ${mode} mode before navigation.`, error);
-    }
-
-    window.location.href = `./play.html?mode=${mode}&fresh=1`;
+    queueLaunch(mode, "summary");
+    window.location.href = `./play.html?mode=${mode}`;
   }
 
   if (summary) {
