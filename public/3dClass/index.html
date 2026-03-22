@@ -3910,8 +3910,9 @@
       }
 
       function openWorksheetViewerFromHotspot() {
-        const targetPath = "/html-viewer?source=classroom";
-        const resolvedPath = resolveHtmlViewerPath() + "?source=classroom";
+        const worksheetViewerQuery = "?source=classroom&open=browser";
+        const targetPath = "/html-viewer" + worksheetViewerQuery;
+        const resolvedPath = resolveHtmlViewerPath() + worksheetViewerQuery;
         postMessageToParent(CLASSROOM_MESSAGE_NAVIGATE, {
           path: targetPath,
           source: "component-worksheets"

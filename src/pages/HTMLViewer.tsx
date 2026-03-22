@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { buildAssetPath } from '../utils/pathUtils';
 import { useSoundSettings } from '../context/SoundSettingsContext';
 import { usePWA } from '../hooks/usePWA';
@@ -57,6 +57,8 @@ const KNOWN_WORKSHEET_FOLDERS = [
     'uniquepatternworksheetmedium', 'us-states-word-bank'
 ] as const;
 
+const WORKSHEET_LAST_SELECTED_STORAGE_KEY = 'lhs.htmlViewer.lastWorksheetPath';
+
 const FALLBACK_WORKSHEET_SIZE: WorksheetSize = {
     width: 816,
     height: 1056,
@@ -83,6 +85,53 @@ const clampScale = (value: number): number => {
         return 1;
     }
     return clamp(value, MIN_EFFECTIVE_SCALE, MAX_EFFECTIVE_SCALE);
+};
+
+const normalizeWorksheetRouteValue = (value: string | null | undefined): string => {
+    if (!value) {
+        return '';
+    }
+
+    let normalized = value.trim().replace(/\\/g, '/');
+    if (!normalized) {
+        return '';
+    }
+
+    try {
+        if (/^https?:\/\//i.test(normalized)) {
+            normalized = new URL(normalized).pathname;
+        }
+    } catch {
+        // Ignore malformed launch values and fall through to string normalization.
+    }
+
+    normalized = normalized.split('?')[0]?.split('#')[0] ?? normalized;
+    normalized = normalized.replace(/^.*\/Worksheets\//i, '');
+    normalized = normalized.replace(/^\/?Worksheets\//i, '');
+    normalized = normalized.replace(/\/index\.html$/i, '');
+    normalized = normalized.replace(/^\/+|\/+$/g, '');
+    return normalized.toLowerCase();
+};
+
+const findWorksheetFile = (folders: WorksheetFolder[], candidate: string | null | undefined): WorksheetFile | null => {
+    const normalizedCandidate = normalizeWorksheetRouteValue(candidate);
+    if (!normalizedCandidate) {
+        return null;
+    }
+
+    for (const folder of folders) {
+        for (const file of folder.files) {
+            if (
+                normalizeWorksheetRouteValue(folder.name) === normalizedCandidate
+                || normalizeWorksheetRouteValue(file.folder) === normalizedCandidate
+                || normalizeWorksheetRouteValue(file.path) === normalizedCandidate
+            ) {
+                return file;
+            }
+        }
+    }
+
+    return null;
 };
 
 const clampZoomMultiplier = (value: number): number => {
@@ -216,6 +265,7 @@ const computeFitScale = (viewport: WorksheetSize, intrinsic: WorksheetSize): num
 };
 
 const HTMLViewer: React.FC = () => {
+    const location = useLocation();
     const navigate = useNavigate();
     const { shouldUseNativeFullscreenFallback } = usePWA();
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -235,6 +285,7 @@ const HTMLViewer: React.FC = () => {
     const scheduledMeasureRef = useRef<number | null>(null);
     const measurementTokenRef = useRef(0);
     const lastScrollResetKeyRef = useRef<string | null>(null);
+    const lastLaunchKeyRef = useRef<string | null>(null);
     const viewerOwnsNativeFullscreenRef = useRef(false);
     const { settings: soundSettings } = useSoundSettings();
 
@@ -592,6 +643,68 @@ const HTMLViewer: React.FC = () => {
         setZoomMultiplier(1);
         setIntrinsicSize(FALLBACK_WORKSHEET_SIZE);
     }, [cleanupWorksheetMeasurement]);
+
+    useEffect(() => {
+        if (!selectedFile) {
+            return;
+        }
+
+        try {
+            window.localStorage.setItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY, selectedFile.path);
+        } catch {
+            // Ignore storage write failures and keep the viewer usable.
+        }
+    }, [selectedFile]);
+
+    useEffect(() => {
+        if (isLoading || folders.length === 0) {
+            return;
+        }
+
+        const params = new URLSearchParams(location.search);
+        const source = (params.get('source') ?? '').trim().toLowerCase();
+        const openMode = (params.get('open') ?? '').trim().toLowerCase();
+        const requestedWorksheet = params.get('worksheet')
+            ?? params.get('folder')
+            ?? params.get('path')
+            ?? params.get('file');
+        const launchKey = location.search || '__default__';
+
+        if (lastLaunchKeyRef.current === launchKey) {
+            return;
+        }
+
+        lastLaunchKeyRef.current = launchKey;
+
+        const requestedFile = findWorksheetFile(folders, requestedWorksheet);
+        let fallbackFile: WorksheetFile | null = null;
+
+        if (!requestedFile && source === 'classroom') {
+            try {
+                fallbackFile = findWorksheetFile(
+                    folders,
+                    window.localStorage.getItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY),
+                );
+            } catch {
+                fallbackFile = null;
+            }
+        }
+
+        const nextFile = requestedFile ?? fallbackFile;
+        if (nextFile) {
+            setExpandedFolders(new Set([nextFile.folder]));
+            handleFileSelect(nextFile);
+            return;
+        }
+
+        if (source === 'classroom' || openMode === 'browser') {
+            const folderToExpand = requestedFile?.folder ?? fallbackFile?.folder ?? '';
+            if (folderToExpand) {
+                setExpandedFolders(new Set([folderToExpand]));
+            }
+            setShowFileBrowser(true);
+        }
+    }, [folders, handleFileSelect, isLoading, location.search]);
 
     const toggleFolder = useCallback((folderName: string) => {
         setExpandedFolders((currentFolders) => {
