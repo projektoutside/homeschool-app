@@ -209,6 +209,7 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     const holdStartRef = useRef<number | null>(null);
     const holdCompletedRef = useRef(false);
     const pendingLaunchGameRef = useRef<ContentItem | null>(null);
+    const holdFeedbackTimeoutRef = useRef<number | null>(null);
 
     const [position, setPosition] = useState(0);
     const [iconSize, setIconSize] = useState(84);
@@ -248,9 +249,14 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
     }, []);
 
     const triggerHoldFeedback = useCallback((gameId: string, kind: FeedbackKind) => {
+        if (holdFeedbackTimeoutRef.current !== null) {
+            window.clearTimeout(holdFeedbackTimeoutRef.current);
+            holdFeedbackTimeoutRef.current = null;
+        }
         const key = Date.now();
         setHoldFeedback({ gameId, kind, key });
-        window.setTimeout(() => {
+        holdFeedbackTimeoutRef.current = window.setTimeout(() => {
+            holdFeedbackTimeoutRef.current = null;
             setHoldFeedback(current => (current?.key === key ? null : current));
         }, 900);
     }, []);
@@ -581,6 +587,10 @@ const ArcadeGamePanel: React.FC<ArcadeGamePanelProps> = ({
             stopAnimation();
             flushPointerFrame();
             stopHoldProcess();
+            if (holdFeedbackTimeoutRef.current !== null) {
+                window.clearTimeout(holdFeedbackTimeoutRef.current);
+                holdFeedbackTimeoutRef.current = null;
+            }
         };
     }, [flushPointerFrame, stopAnimation, stopHoldProcess]);
 
@@ -782,6 +792,8 @@ const HomePage: React.FC = () => {
     const [mysteryShakeActive, setMysteryShakeActive] = useState(false);
     const [mysteryTargetGameId, setMysteryTargetGameId] = useState<string | null>(null);
     const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>(() => readFavoriteGameIds());
+    const mysteryShakeTimeoutRef = useRef<number | null>(null);
+    const mysteryLaunchTimeoutRef = useRef<number | null>(null);
 
     const foldersForArea = useMemo(
         () => config.folders.filter(folder => folder.areaId === GAMES_AREA_ID),
@@ -910,6 +922,19 @@ const HomePage: React.FC = () => {
         return () => window.cancelAnimationFrame(frameId);
     }, [allGameItems]);
 
+    useEffect(() => {
+        return () => {
+            if (mysteryShakeTimeoutRef.current !== null) {
+                window.clearTimeout(mysteryShakeTimeoutRef.current);
+                mysteryShakeTimeoutRef.current = null;
+            }
+            if (mysteryLaunchTimeoutRef.current !== null) {
+                window.clearTimeout(mysteryLaunchTimeoutRef.current);
+                mysteryLaunchTimeoutRef.current = null;
+            }
+        };
+    }, []);
+
     const handlePanelTitleChange = useCallback((panelIndex: number, nextTitle: string) => {
         setPanelTitles(prevTitles => prevTitles.map((value, index) => (
             index === panelIndex ? nextTitle : value
@@ -919,7 +944,20 @@ const HomePage: React.FC = () => {
     const openItem = useCallback((item: ContentItem) => {
         const launchTarget = resolveModuleLaunchTarget(item);
         if (launchTarget.kind === 'external') {
-            navigate(launchTarget.path);
+            if (typeof window !== 'undefined') {
+                try {
+                    const resolvedUrl = new URL(launchTarget.path, window.location.href);
+                    const sameOriginRoute = resolvedUrl.origin === window.location.origin && launchTarget.path.startsWith('/');
+                    if (!sameOriginRoute) {
+                        window.location.assign(resolvedUrl.toString());
+                        return;
+                    }
+                } catch {
+                    // Fall through to client-side navigation for malformed or route-like paths.
+                }
+            }
+
+            navigate(launchTarget.path, { state: { launchItem: item } });
             return;
         }
 
@@ -941,12 +979,21 @@ const HomePage: React.FC = () => {
         const randomGame = allGameItems[Math.floor(Math.random() * allGameItems.length)];
         setMysteryShakeActive(true);
 
-        window.setTimeout(() => {
+        if (mysteryShakeTimeoutRef.current !== null) {
+            window.clearTimeout(mysteryShakeTimeoutRef.current);
+        }
+        if (mysteryLaunchTimeoutRef.current !== null) {
+            window.clearTimeout(mysteryLaunchTimeoutRef.current);
+        }
+
+        mysteryShakeTimeoutRef.current = window.setTimeout(() => {
+            mysteryShakeTimeoutRef.current = null;
             setMysteryShakeActive(false);
             setMysteryTargetGameId(randomGame.id);
         }, MYSTERY_SHAKE_DURATION_MS);
 
-        window.setTimeout(() => {
+        mysteryLaunchTimeoutRef.current = window.setTimeout(() => {
+            mysteryLaunchTimeoutRef.current = null;
             navigate(`/play/${randomGame.id}`, { state: { launchItem: randomGame } });
         }, MYSTERY_REVEAL_DURATION_MS);
     }, [allGameItems, mysteryShakeActive, mysteryTargetGameId, navigate]);

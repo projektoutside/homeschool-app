@@ -19,6 +19,7 @@ const formWrapStyle: React.CSSProperties = {
 };
 
 const cardStyle: React.CSSProperties = {
+  boxSizing: 'border-box',
   width: '100%',
   maxWidth: 420,
   borderRadius: 20,
@@ -30,6 +31,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
+  boxSizing: 'border-box',
   width: '100%',
   padding: '0.72rem 0.8rem',
   borderRadius: 12,
@@ -40,6 +42,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const actionBtnStyle: React.CSSProperties = {
+  boxSizing: 'border-box',
   width: '100%',
   padding: '0.72rem 0.8rem',
   borderRadius: 12,
@@ -215,13 +218,13 @@ const AuthPage: React.FC = () => {
         />
 
         <div style={{ marginBottom: 12, marginTop: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 10 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: rememberDevice ? 8 : 0 }}>
+          <label style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', columnGap: 8, rowGap: 6, marginBottom: rememberDevice ? 8 : 0 }}>
             <input
               type="checkbox"
               checked={rememberDevice}
               onChange={(e) => setRememberDevice(e.target.checked)}
             />
-            Save this device with a quick passcode 🔐
+            <span>Save this device with a quick passcode 🔐</span>
           </label>
 
           {rememberDevice && (

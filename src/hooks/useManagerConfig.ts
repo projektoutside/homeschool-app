@@ -94,6 +94,7 @@ const sanitizeModule = (raw: unknown): ModuleDefinition | null => {
   }
 
   const type = normalizeContentType(item.type);
+  const gradeLevels = readStringArray(item.gradeLevels);
   return {
     id,
     title,
@@ -104,7 +105,7 @@ const sanitizeModule = (raw: unknown): ModuleDefinition | null => {
     adminOnly: item.adminOnly === true,
     category: typeof item.category === 'string' ? item.category : 'custom',
     subjects: readStringArray(item.subjects),
-    gradeLevels: readStringArray(item.gradeLevels).length > 0 ? readStringArray(item.gradeLevels) : ['All'],
+    gradeLevels: gradeLevels.length > 0 ? gradeLevels : ['All'],
     ...(typeof item.thumbnail === 'string' && item.thumbnail.trim() ? { thumbnail: item.thumbnail.trim() } : {}),
     ...(typeof item.downloadUrl === 'string' && item.downloadUrl.trim() ? { downloadUrl: item.downloadUrl.trim() } : {}),
     ...(typeof item.externalUrl === 'string' && item.externalUrl.trim() ? { externalUrl: item.externalUrl.trim() } : {}),

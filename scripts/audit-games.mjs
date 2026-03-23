@@ -223,12 +223,37 @@ function auditContentEntries(entries) {
   }
 }
 
-function auditGameFolders() {
+function getRegisteredGameFolders(entries) {
+  const folders = new Set();
+
+  for (const entry of entries) {
+    if (entry.type !== 'game' || !entry.customHtmlPath) {
+      continue;
+    }
+
+    const normalizedPath = entry.customHtmlPath
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '');
+    if (!normalizedPath.startsWith('Games/')) {
+      continue;
+    }
+
+    const [, folderName] = normalizedPath.split('/');
+    if (folderName) {
+      folders.add(folderName);
+    }
+  }
+
+  return folders;
+}
+
+function auditGameFolders(entries) {
   if (!fs.existsSync(gamesDir)) {
     warnings.push('public/Games directory not found');
     return;
   }
 
+  const registeredGameFolders = getRegisteredGameFolders(entries);
   const runtimeNoiseDirs = new Set([
     '_workspace',
     '_archive',
@@ -247,7 +272,9 @@ function auditGameFolders() {
     const folderPath = path.join(gamesDir, folderName);
     const indexPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
-      warnings.push(`Game folder missing index.html: public/Games/${folderName}`);
+      if (registeredGameFolders.has(folderName)) {
+        warnings.push(`Registered game folder missing index.html: public/Games/${folderName}`);
+      }
     } else {
       auditHtmlRefs(`public/Games/${folderName}/index.html`, indexPath);
     }
@@ -281,7 +308,7 @@ function main() {
   const contentFiles = listContentFiles();
   const contentEntries = contentFiles.flatMap((filePath) => collectContentEntriesFromFile(filePath));
   auditContentEntries(contentEntries);
-  auditGameFolders();
+  auditGameFolders(contentEntries);
 
   console.log(`Audited ${contentEntries.length} content entries from ${contentFiles.length} content files.`);
 
