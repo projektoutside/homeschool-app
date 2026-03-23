@@ -541,7 +541,7 @@
     readHomepageMysteryTestSession: () => readHomepageMysteryTestSession,
     readHomepagePendingSummonRecovery: () => readHomepagePendingSummonRecovery
   });
-  var HOMEPAGE_CATALOG_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY, HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY, HOMEPAGE_CREATOR_READY, HOMEPAGE_CATALOG_SYNC, HOMEPAGE_PROP_UPLOAD_REQUEST, HOMEPAGE_PROP_SAVE_REQUEST, HOMEPAGE_PROP_SAVE_RESULT, HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST, HOMEPAGE_RARITIES, CATEGORY_KEY_ALIASES, normalizeTuple, normalizeTags, normalizeCategoryKey, normalizeHomepagePropKey, buildHomepageMysteryTestOverride, createHomepageMysteryTestLaunchId, buildHomepageMysteryTestSession, buildHomepagePendingSummonRecovery, mysteryTestOverrideMatchesPropKey, readHomepageLegacyPinnedMysteryRewardKey, persistHomepageLegacyPinnedMysteryRewardKey, clearHomepageLegacyPinnedMysteryRewardKey, readHomepageMysteryTestOverride, persistHomepageMysteryTestOverride, clearHomepageMysteryTestOverride, readHomepageMysteryTestSession, persistHomepageMysteryTestSession, clearHomepageMysteryTestSession, readHomepagePendingSummonRecovery, persistHomepagePendingSummonRecovery, clearHomepagePendingSummonRecovery, buildHomepageMysteryTestLaunchToken, persistHomepageMysteryTestLaunchToken, consumeHomepageMysteryTestLaunchToken, normalizeHomepageCategory, normalizeHomepageAttachment, normalizeHomepageRarity, normalizeHomepageProp, buildHomepageCatalogSnapshot, persistHomepageCatalogSnapshot, readHomepageCatalogSnapshot, deriveHomepageCatalogFromLegacy, mergeHomepageCatalogWithFallback, getActiveHomepageCatalog;
+  var HOMEPAGE_CATALOG_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY, HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY, HOMEPAGE_CREATOR_READY, HOMEPAGE_CATALOG_SYNC, HOMEPAGE_PROP_UPLOAD_REQUEST, HOMEPAGE_PROP_SAVE_REQUEST, HOMEPAGE_PROP_SAVE_RESULT, HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST, HOMEPAGE_RARITIES, CATEGORY_KEY_ALIASES, normalizeTuple, normalizeTags, normalizeCategoryKey, normalizeHomepagePropKey, buildHomepageMysteryTestOverride, createHomepageMysteryTestLaunchId, buildHomepageMysteryTestSession, buildHomepagePendingSummonRecovery, mysteryTestOverrideMatchesPropKey, readHomepageLegacyPinnedMysteryRewardKey, persistHomepageLegacyPinnedMysteryRewardKey, clearHomepageLegacyPinnedMysteryRewardKey, readHomepageMysteryTestOverride, persistHomepageMysteryTestOverride, clearHomepageMysteryTestOverride, readHomepageMysteryTestSession, persistHomepageMysteryTestSession, clearHomepageMysteryTestSession, readHomepagePendingSummonRecovery, persistHomepagePendingSummonRecovery, clearHomepagePendingSummonRecovery, buildHomepageMysteryTestLaunchToken, persistHomepageMysteryTestLaunchToken, consumeHomepageMysteryTestLaunchToken, normalizeHomepageCategory, normalizeHomepageAttachment, normalizeHomepageRarity, HOMEPAGE_SYSTEM_PROP_OVERRIDES, normalizeHomepageProp, buildHomepageCatalogSnapshot, persistHomepageCatalogSnapshot, readHomepageCatalogSnapshot, deriveHomepageCatalogFromLegacy, mergeHomepageCatalogWithFallback, getActiveHomepageCatalog;
   var init_homepage_live_catalog = __esm({
     "public/HomePageAPP/src/runtime/homepage-live-catalog.js"() {
       HOMEPAGE_CATALOG_STORAGE_KEY = "LAHS_HOMEPAGE_LIVE_CATALOG_SNAPSHOT";
@@ -910,6 +910,19 @@
         };
       };
       normalizeHomepageRarity = (value) => typeof value === "string" && HOMEPAGE_RARITIES.has(value) ? value : "rare";
+      HOMEPAGE_SYSTEM_PROP_OVERRIDES = Object.freeze({
+        xiostandardcrown: Object.freeze({
+          rarity: "legendaryLight",
+          mysteryBoxEnabled: true,
+          active: true,
+          attachment: Object.freeze({
+            position: Object.freeze([0, 1.2, -0.8]),
+            rotation: Object.freeze([0, 0, 0]),
+            scale: Object.freeze([2.7, 2.7, 2.7]),
+            mirrorMode: "single"
+          })
+        })
+      });
       normalizeHomepageProp = (raw) => {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
           return null;
@@ -922,7 +935,7 @@
         }
         const preview = raw.preview && typeof raw.preview === "object" && !Array.isArray(raw.preview) ? raw.preview : {};
         const inferredFactoryId = typeof raw.factoryId === "string" && raw.factoryId.trim().length > 0 ? raw.factoryId.trim() : preview.generated && typeof preview.generated === "object" && !Array.isArray(preview.generated) && preview.generated.category === "wingSet" ? "makeGeneratedProceduralWingProp" : "";
-        return {
+        const normalizedProp = {
           key,
           label,
           categoryKey,
@@ -943,6 +956,8 @@
           ...Number.isFinite(Number(raw.prewarmPriority)) ? { prewarmPriority: Number(raw.prewarmPriority) } : {},
           updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : null
         };
+        const systemOverrides = HOMEPAGE_SYSTEM_PROP_OVERRIDES[normalizeHomepagePropKey(key)];
+        return systemOverrides ? { ...normalizedProp, ...systemOverrides } : normalizedProp;
       };
       buildHomepageCatalogSnapshot = ({ categories, props, updatedAt = null }) => ({
         version: 1,
@@ -2375,9 +2390,9 @@
       });
       SINGLE_ATTACHMENTS = Object.freeze({
         xioStandardCrown: createSingleAttachment({
-          position: [0, -0.08, -0.18],
+          position: [0, 1.2, -0.8],
           rotation: [0, 0, 0],
-          scale: [1, 1, 1]
+          scale: [2.7, 2.7, 2.7]
         })
       });
       PROP_CATALOG = Object.freeze([
@@ -2569,7 +2584,7 @@
           factoryId: "makeXioStandardCrownProp",
           assetUrl: "./Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb",
           attachment: SINGLE_ATTACHMENTS.xioStandardCrown,
-          rarity: "common",
+          rarity: "legendaryLight",
           mysteryBoxEnabled: true,
           active: true,
           tags: Object.freeze(["crown", "headwear", "xio", "starter"]),
@@ -8521,11 +8536,21 @@
       HOMEPAGE_PROP_SAVE_RESULT: HOMEPAGE_PROP_SAVE_RESULT2,
       HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST: HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST2,
       buildHomepageCatalogSnapshot: buildHomepageCatalogSnapshot2,
+      buildHomepageMysteryTestLaunchToken: buildHomepageMysteryTestLaunchToken2,
+      buildHomepageMysteryTestOverride: buildHomepageMysteryTestOverride2,
+      buildHomepageMysteryTestSession: buildHomepageMysteryTestSession2,
       deriveHomepageCatalogFromLegacy: deriveHomepageCatalogFromLegacy2,
       mergeHomepageCatalogWithFallback: mergeHomepageCatalogWithFallback2,
       normalizeHomepagePropKey: normalizeHomepagePropKey2,
       persistHomepageCatalogSnapshot: persistHomepageCatalogSnapshot2,
-      readHomepageCatalogSnapshot: readHomepageCatalogSnapshot2
+      persistHomepageLegacyPinnedMysteryRewardKey: persistHomepageLegacyPinnedMysteryRewardKey2,
+      persistHomepageMysteryTestLaunchToken: persistHomepageMysteryTestLaunchToken2,
+      persistHomepageMysteryTestOverride: persistHomepageMysteryTestOverride2,
+      persistHomepageMysteryTestSession: persistHomepageMysteryTestSession2,
+      readHomepageCatalogSnapshot: readHomepageCatalogSnapshot2,
+      readHomepageLegacyPinnedMysteryRewardKey: readHomepageLegacyPinnedMysteryRewardKey2,
+      readHomepageMysteryTestOverride: readHomepageMysteryTestOverride2,
+      readHomepageMysteryTestSession: readHomepageMysteryTestSession2
     } = catalogModule;
     const {
       cloneSceneGraph: cloneSceneGraph2,
@@ -9457,12 +9482,39 @@
       }
     }
     function launchMysteryBoxTest() {
+      var _a2, _b2, _c, _d, _e, _f;
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST2 }, BRIDGE_TARGET_ORIGIN);
         return;
       }
+      const existingSession = readHomepageMysteryTestSession2();
+      const existingOverride = readHomepageMysteryTestOverride2();
+      const launchToken = buildHomepageMysteryTestLaunchToken2({
+        propKey: (_b2 = (_a2 = existingSession == null ? void 0 : existingSession.propKey) != null ? _a2 : existingOverride == null ? void 0 : existingOverride.propKey) != null ? _b2 : readHomepageLegacyPinnedMysteryRewardKey2(),
+        snapshotUpdatedAt: (_f = (_e = (_c = existingSession == null ? void 0 : existingSession.snapshotUpdatedAt) != null ? _c : existingOverride == null ? void 0 : existingOverride.snapshotUpdatedAt) != null ? _e : (_d = state.snapshot) == null ? void 0 : _d.updatedAt) != null ? _f : null
+      });
+      persistHomepageMysteryTestLaunchToken2(launchToken);
       const homePagePath = "./index.html";
       window.location.assign(homePagePath);
+    }
+    function persistStandaloneMysteryTestReward(propKey, snapshotUpdatedAt = null) {
+      const nextSession = buildHomepageMysteryTestSession2({
+        propKey,
+        snapshotUpdatedAt,
+        requiredCatalogRevision: snapshotUpdatedAt
+      });
+      persistHomepageMysteryTestSession2(nextSession);
+      const nextOverride = buildHomepageMysteryTestOverride2({
+        propKey,
+        snapshotUpdatedAt,
+        createdAt: nextSession == null ? void 0 : nextSession.createdAt
+      });
+      persistHomepageMysteryTestOverride2(nextOverride);
+      persistHomepageLegacyPinnedMysteryRewardKey2(propKey);
+      return {
+        override: nextOverride,
+        session: nextSession
+      };
     }
     function openStandalonePropsDatabase() {
       if (!("indexedDB" in window)) {
@@ -9649,7 +9701,7 @@
       },
       eyePreset: null,
       materialPreset: null,
-      mysteryBoxEnabled: false,
+      mysteryBoxEnabled: true,
       active: true,
       archived: false,
       tags: [],
@@ -9785,30 +9837,20 @@
     });
     const SLOT_STAGE_TARGET_SPANS = Object.freeze({
       wingSet: 4.9,
-      headWear: 1.65,
+      headWear: 5.95,
       faceAccessory: 1.2,
       bodyAccessory: 1.85,
       heldProp: 1.75
     });
     const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
       Object.freeze([0, 0, 0]),
-      Object.freeze([0, Math.PI / 2, 0]),
-      Object.freeze([0, Math.PI, 0]),
-      Object.freeze([0, -Math.PI / 2, 0]),
-      Object.freeze([Math.PI / 2, 0, 0]),
-      Object.freeze([-Math.PI / 2, 0, 0]),
-      Object.freeze([Math.PI, 0, 0]),
-      Object.freeze([0, 0, Math.PI / 2]),
-      Object.freeze([0, 0, -Math.PI / 2]),
-      Object.freeze([Math.PI / 2, Math.PI / 2, 0]),
-      Object.freeze([-Math.PI / 2, Math.PI / 2, 0]),
-      Object.freeze([Math.PI / 2, 0, Math.PI / 2])
+      Object.freeze([0, Math.PI, 0])
     ]);
     const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
       headWear: Object.freeze({
-        horizontalSpan: 1.65,
-        ySinkRatio: 0.24,
-        zSinkRatio: 0.18,
+        horizontalSpan: 5.95,
+        yOffsetRatio: 0.45,
+        zOffsetRatio: -0.13,
         rotationCandidates: HEADWEAR_ROTATION_CANDIDATES
       }),
       faceAccessory: Object.freeze({
@@ -11530,8 +11572,8 @@
     function getSingleSlotAutoLockPreset(slotKey) {
       return SINGLE_SLOT_AUTO_LOCK_PRESETS[slotKey] || {
         horizontalSpan: SLOT_STAGE_TARGET_SPANS[slotKey] || 1.4,
-        ySinkRatio: 0.08,
-        zSinkRatio: 0.08,
+        yOffsetRatio: -0.08,
+        zOffsetRatio: -0.08,
         rotationCandidates: [[0, 0, 0]]
       };
     }
@@ -11616,8 +11658,14 @@
         ...draftProp.attachment,
         position: [
           roundTransformValue(-candidate.scaledCenter.x, 0),
-          roundTransformValue(-candidate.scaledCenter.y - candidate.scaledSize.y * ((_a2 = preset.ySinkRatio) != null ? _a2 : 0.08), 0),
-          roundTransformValue(-candidate.scaledCenter.z - candidate.scaledSize.z * ((_b2 = preset.zSinkRatio) != null ? _b2 : 0.08), 0)
+          roundTransformValue(
+            -candidate.scaledCenter.y + candidate.scaledSize.y * (Number.isFinite(preset.yOffsetRatio) ? preset.yOffsetRatio : -((_a2 = preset.ySinkRatio) != null ? _a2 : 0.08)),
+            0
+          ),
+          roundTransformValue(
+            -candidate.scaledCenter.z + candidate.scaledSize.z * (Number.isFinite(preset.zOffsetRatio) ? preset.zOffsetRatio : -((_b2 = preset.zSinkRatio) != null ? _b2 : 0.08)),
+            0
+          )
         ],
         rotation: [
           roundTransformValue(candidate.rotation[0], 0),
@@ -12916,7 +12964,7 @@
       return true;
     }
     async function publishDraftProp({ archive = false } = {}) {
-      var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+      var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
       applyDraftFromInputs();
       const draftProp = ensureDraftProp();
       if (draftProp.preview && Object.hasOwn(draftProp.preview, "singleWingSide")) {
@@ -12954,6 +13002,7 @@
         draftProp.active = draftProp.active !== false;
         draftProp.mysteryBoxEnabled = draftProp.mysteryBoxEnabled === true;
       }
+      const shouldPinMysteryTestReward = !archive && draftProp.active !== false && draftProp.mysteryBoxEnabled === true;
       draftProp.archived = archive;
       const baselineKey = ((_c = state.editSession.baselineProp) == null ? void 0 : _c.key) || null;
       const selectedLiveKey = state.selectedLivePropKey && state.selectedLivePropKey !== draftProp.key ? state.selectedLivePropKey : null;
@@ -12989,9 +13038,49 @@
       }
       log(`${archive ? "Archived" : state.publishEnabled ? "Published" : "Saved"} ${draftProp.label} ${state.publishEnabled ? "to the live game" : "to local draft storage"}.`);
       if (!archive && state.publishEnabled) {
-        const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+        if (shouldPinMysteryTestReward) {
+          const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+            title: `${draftProp.label} is live`,
+            message: "Saved into the live inventory and pinned as the next Mystery Box reward for testing. Would you like to go to the Homepage now and pull the Mystery scroll?"
+          });
+          if (shouldLaunchMysteryTest) {
+            log(`Opening Homepage so you can test ${draftProp.label} as the next Mystery Box reward.`);
+            launchMysteryBoxTest();
+            return;
+          }
+          showCreatorNotice({
+            tone: "success",
+            eyebrow: "Live Inventory Updated",
+            title: `${draftProp.label} is live`,
+            message: "Saved into the live inventory and pinned as the next Mystery Box reward for testing.",
+            timeoutMs: 5600
+          });
+          return;
+        }
+        showCreatorNotice({
+          tone: "success",
+          eyebrow: "Live Inventory Updated",
           title: `${draftProp.label} is live`,
-          message: "Saved into the live inventory and pinned as the next Mystery Box reward for testing. Would you like to go to the Homepage now and pull the Mystery scroll?"
+          message: "Saved into the live inventory. Mystery Box is off for this prop, so it will not be the next reward.",
+          timeoutMs: 5600
+        });
+        return;
+      }
+      if (!archive && shouldPinMysteryTestReward) {
+        const localMysteryTestState = persistStandaloneMysteryTestReward(
+          ensureDraftProp().key,
+          (_l = nextSnapshot == null ? void 0 : nextSnapshot.updatedAt) != null ? _l : null
+        );
+        console.info("[XiO Creator] Local prop save pinned for mystery-box testing.", {
+          draftPropKey: ensureDraftProp().key,
+          snapshotUpdatedAt: (_m = nextSnapshot == null ? void 0 : nextSnapshot.updatedAt) != null ? _m : null,
+          mysteryTestOverride: localMysteryTestState.override,
+          mysteryTestSession: localMysteryTestState.session
+        });
+        const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+          eyebrow: "Local Draft Saved",
+          title: `${draftProp.label} is staged for Mystery Box testing`,
+          message: "Saved in your local creator workspace and pinned as the next Mystery Box reward on this device. Would you like to go to the Homepage now and pull the Mystery scroll?"
         });
         if (shouldLaunchMysteryTest) {
           log(`Opening Homepage so you can test ${draftProp.label} as the next Mystery Box reward.`);
@@ -13000,9 +13089,9 @@
         }
         showCreatorNotice({
           tone: "success",
-          eyebrow: "Live Inventory Updated",
-          title: `${draftProp.label} is live`,
-          message: "Saved into the live inventory and pinned as the next Mystery Box reward for testing.",
+          eyebrow: "Local Draft Saved",
+          title: `${draftProp.label} is staged for testing`,
+          message: "Saved locally and pinned as the next Mystery Box reward on this device.",
           timeoutMs: 5600
         });
         return;

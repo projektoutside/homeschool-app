@@ -4417,6 +4417,7 @@
         let readHomepageCatalogSnapshot = () => null;
         let mergeHomepageCatalogWithFallback = ({ snapshot }) => snapshot;
         let persistHomepageCatalogSnapshot = () => {};
+        let persistHomepageLegacyPinnedMysteryRewardKey = () => {};
         let readHomepageLegacyPinnedMysteryRewardKey = () => null;
         let clearHomepageLegacyPinnedMysteryRewardKey = () => {};
         let readHomepageMysteryTestSession = () => null;
@@ -4443,6 +4444,7 @@
                 readHomepageCatalogSnapshot = liveCatalogModule.readHomepageCatalogSnapshot || (() => null);
                 mergeHomepageCatalogWithFallback = liveCatalogModule.mergeHomepageCatalogWithFallback || (({ snapshot }) => snapshot);
                 persistHomepageCatalogSnapshot = liveCatalogModule.persistHomepageCatalogSnapshot || (() => {});
+                persistHomepageLegacyPinnedMysteryRewardKey = liveCatalogModule.persistHomepageLegacyPinnedMysteryRewardKey || (() => {});
                 readHomepageLegacyPinnedMysteryRewardKey = liveCatalogModule.readHomepageLegacyPinnedMysteryRewardKey || (() => null);
                 clearHomepageLegacyPinnedMysteryRewardKey = liveCatalogModule.clearHomepageLegacyPinnedMysteryRewardKey || (() => {});
                 readHomepageMysteryTestSession = liveCatalogModule.readHomepageMysteryTestSession || (() => null);
@@ -8907,12 +8909,12 @@
                     factoryId: 'makeXioStandardCrownProp',
                     assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
                     attachment: {
-                        position: [0, -0.08, -0.18],
+                        position: [0, 1.2, -0.8],
                         rotation: [0, 0, 0],
-                        scale: [1, 1, 1],
+                        scale: [2.7, 2.7, 2.7],
                         mirrorMode: 'single'
                     },
-                    rarity: 'common',
+                    rarity: 'legendaryLight',
                     mysteryBoxEnabled: true,
                     active: true,
                     tags: ['crown', 'headwear', 'xio', 'starter'],
@@ -8983,9 +8985,9 @@
             assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
             slotKey: 'headWear',
             attachment: {
-                position: [0, -0.08, -0.18],
+                position: [0, 1.2, -0.8],
                 rotation: [0, 0, 0],
-                scale: [1, 1, 1],
+                scale: [2.7, 2.7, 2.7],
                 mirrorMode: 'single'
             }
         });
@@ -19007,6 +19009,35 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             applyCameraLayoutToPreviewState(layout);
         }
 
+        function tightenLivePreviewPanelLayout(layout, mode = 'item') {
+            if (!layout || mode === 'character') {
+                return layout;
+            }
+            const distanceScale = 0.94;
+            const orbitDistance = Number.isFinite(layout.orbitDistance) && layout.orbitDistance > 0
+                ? layout.orbitDistance * distanceScale
+                : layout.orbitDistance;
+            const forwardDistance = Number.isFinite(layout.forwardDistance) && layout.forwardDistance > 0
+                ? layout.forwardDistance * distanceScale
+                : layout.forwardDistance;
+            if (!Number.isFinite(orbitDistance) || orbitDistance <= 0 || !Number.isFinite(forwardDistance) || forwardDistance <= 0) {
+                return layout;
+            }
+            return {
+                ...layout,
+                orbitDistance,
+                forwardDistance,
+                minCameraDistance: Math.min(
+                    Number.isFinite(layout.minCameraDistance) ? layout.minCameraDistance : orbitDistance,
+                    orbitDistance * 0.92
+                ),
+                maxCameraDistance: Math.max(
+                    orbitDistance + 0.8,
+                    (Number.isFinite(layout.maxCameraDistance) ? layout.maxCameraDistance : orbitDistance) * distanceScale
+                )
+            };
+        }
+
         function solvePreviewFramingGuard(object, options = {}) {
             const mode = options?.mode === 'character' ? 'character' : 'item';
             const fitCategory = options?.fitCategory || null;
@@ -19301,7 +19332,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             previewState.placedScale = appliedScale;
 
             if (useLastValidFrame) {
-                applyCameraLayoutToPreviewState(lastValidFrame.layout);
+                applyCameraLayoutToPreviewState(tightenLivePreviewPanelLayout(lastValidFrame.layout, mode));
                 previewState.hasStablePlacement = true;
                 previewState.frameLocked = true;
                 previewState.framingMode = `${presentation}:${mode}`;
@@ -19318,9 +19349,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 previewState.clippedEdges = candidateClippedEdges;
                 previewState.framingFallbackReason = previewState.frameLocked ? '' : fallbackReason;
                 if (framingResult?.layout) {
-                    applyCameraLayoutToPreviewState(framingResult.layout);
+                    applyCameraLayoutToPreviewState(tightenLivePreviewPanelLayout(framingResult.layout, mode));
                 } else {
-                    setPreviewCameraForObjectMode(
+                    const fallbackLayout = computePreviewCameraLayout(
                         mode,
                         previewState.placedSize,
                         previewState.placedScale,
@@ -19328,6 +19359,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                         fitCategory,
                         presentation
                     );
+                    applyCameraLayoutToPreviewState(tightenLivePreviewPanelLayout(fallbackLayout, mode));
                 }
             }
 
@@ -21476,6 +21508,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         const PRIORITY_MYSTERY_REWARD_KEYS = Object.freeze([
+            'xioStandardCrown',
             'blossomissWings',
             'canvasOfNavelleWings',
             'goddessOfValleysWings',
@@ -21487,6 +21520,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             'emeraldCoenWings',
             'xatoriWings'
         ]);
+        const DEFAULT_FIRST_MYSTERY_REWARD_KEY = 'xioStandardCrown';
         const MYSTERY_RARITY_SELECTION_ORDER = Object.freeze([
             MYSTERY_BOX_RARITY.COMMON,
             MYSTERY_BOX_RARITY.RARE,
@@ -21593,6 +21627,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 mode: 'nextPullOnly',
                 failureMode: 'blockPull'
             };
+        }
+
+        function ensureDefaultPinnedMysteryRewardKey() {
+            if (!DEFAULT_FIRST_MYSTERY_REWARD_KEY) {
+                return;
+            }
+            if (readHomepageMysteryTestSession()?.propKey || readHomepageMysteryTestOverride()?.propKey) {
+                return;
+            }
+            const existingPinnedKey = readHomepageLegacyPinnedMysteryRewardKey();
+            if (normalizePinnedMysteryRewardKey(existingPinnedKey)) {
+                return;
+            }
+            if (!propRegistry.has(DEFAULT_FIRST_MYSTERY_REWARD_KEY)) {
+                return;
+            }
+            persistHomepageLegacyPinnedMysteryRewardKey(DEFAULT_FIRST_MYSTERY_REWARD_KEY);
         }
 
         function findPinnedMysteryRewardKeyMatch(overridePayload) {
@@ -25702,6 +25753,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 window.setTimeout(runWarmup, 420);
             }
         };
+        ensureDefaultPinnedMysteryRewardKey();
         schedulePriorityWingPreviewWarmup();
 
         // --- ANIMATION ---

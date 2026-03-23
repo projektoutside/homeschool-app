@@ -400,19 +400,27 @@ const CharacterCreatorPage: React.FC = () => {
                 }
               }
               if (!isArchiveSave) {
-                const mysteryTestState = persistNextMysteryTestReward(
-                  persistedPropKeyForResponse,
-                  latestSnapshot?.updatedAt ?? null,
-                );
-                mysteryTestOverrideForResponse = mysteryTestState.override;
-                mysteryTestSessionForResponse = mysteryTestState.session;
-                console.info('[HomepageCreator] Stored next mystery-box test reward.', {
-                  draftPropKey: nextPropRecord.key,
-                  persistedPropKey: persistedPropKeyForResponse,
-                  override: mysteryTestOverrideForResponse,
-                  session: mysteryTestSessionForResponse,
-                  snapshotUpdatedAt: latestSnapshot?.updatedAt ?? null,
-                });
+                if (nextPropRecord.active !== false && nextPropRecord.mysteryBoxEnabled === true) {
+                  const mysteryTestState = persistNextMysteryTestReward(
+                    persistedPropKeyForResponse,
+                    latestSnapshot?.updatedAt ?? null,
+                  );
+                  mysteryTestOverrideForResponse = mysteryTestState.override;
+                  mysteryTestSessionForResponse = mysteryTestState.session;
+                  console.info('[HomepageCreator] Stored next mystery-box test reward.', {
+                    draftPropKey: nextPropRecord.key,
+                    persistedPropKey: persistedPropKeyForResponse,
+                    override: mysteryTestOverrideForResponse,
+                    session: mysteryTestSessionForResponse,
+                    snapshotUpdatedAt: latestSnapshot?.updatedAt ?? null,
+                  });
+                } else {
+                  clearPinnedMysteryRewardKeyIfMatch([
+                    persistedPropKeyForResponse,
+                    nextPropRecord.key,
+                    previousKey,
+                  ]);
+                }
               }
             }
           }

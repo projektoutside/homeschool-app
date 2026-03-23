@@ -122,9 +122,9 @@ const WING_ATTACHMENTS = Object.freeze({
 
 const SINGLE_ATTACHMENTS = Object.freeze({
   xioStandardCrown: createSingleAttachment({
-    position: [0, -0.08, -0.18],
+    position: [0, 1.2, -0.8],
     rotation: [0, 0, 0],
-    scale: [1, 1, 1],
+    scale: [2.7, 2.7, 2.7],
   }),
 });
 
@@ -317,7 +317,7 @@ export const PROP_CATALOG = Object.freeze([
     factoryId: 'makeXioStandardCrownProp',
     assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
     attachment: SINGLE_ATTACHMENTS.xioStandardCrown,
-    rarity: 'common',
+    rarity: 'legendaryLight',
     mysteryBoxEnabled: true,
     active: true,
     tags: Object.freeze(['crown', 'headwear', 'xio', 'starter']),

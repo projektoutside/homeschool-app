@@ -475,6 +475,20 @@ export const normalizeHomepageRarity = (value) => (
     : 'rare'
 );
 
+const HOMEPAGE_SYSTEM_PROP_OVERRIDES = Object.freeze({
+  xiostandardcrown: Object.freeze({
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
+    attachment: Object.freeze({
+      position: Object.freeze([0, 1.2, -0.8]),
+      rotation: Object.freeze([0, 0, 0]),
+      scale: Object.freeze([2.7, 2.7, 2.7]),
+      mirrorMode: 'single',
+    }),
+  }),
+});
+
 export const normalizeHomepageProp = (raw) => {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return null;
@@ -496,7 +510,7 @@ export const normalizeHomepageProp = (raw) => {
       ? 'makeGeneratedProceduralWingProp'
       : '';
 
-  return {
+  const normalizedProp = {
     key,
     label,
     categoryKey,
@@ -521,6 +535,11 @@ export const normalizeHomepageProp = (raw) => {
       : {}),
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : null,
   };
+
+  const systemOverrides = HOMEPAGE_SYSTEM_PROP_OVERRIDES[normalizeHomepagePropKey(key)];
+  return systemOverrides
+    ? { ...normalizedProp, ...systemOverrides }
+    : normalizedProp;
 };
 
 export const buildHomepageCatalogSnapshot = ({ categories, props, updatedAt = null }) => ({

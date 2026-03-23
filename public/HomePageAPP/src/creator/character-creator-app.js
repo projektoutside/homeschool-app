@@ -46,11 +46,21 @@ const {
   HOMEPAGE_PROP_SAVE_RESULT,
   HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST,
   buildHomepageCatalogSnapshot,
+  buildHomepageMysteryTestLaunchToken,
+  buildHomepageMysteryTestOverride,
+  buildHomepageMysteryTestSession,
   deriveHomepageCatalogFromLegacy,
   mergeHomepageCatalogWithFallback,
   normalizeHomepagePropKey,
   persistHomepageCatalogSnapshot,
+  persistHomepageLegacyPinnedMysteryRewardKey,
+  persistHomepageMysteryTestLaunchToken,
+  persistHomepageMysteryTestOverride,
+  persistHomepageMysteryTestSession,
   readHomepageCatalogSnapshot,
+  readHomepageLegacyPinnedMysteryRewardKey,
+  readHomepageMysteryTestOverride,
+  readHomepageMysteryTestSession,
 } = catalogModule;
 const {
   cloneSceneGraph,
@@ -1106,8 +1116,35 @@ function launchMysteryBoxTest() {
     window.parent.postMessage({ type: HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST }, BRIDGE_TARGET_ORIGIN);
     return;
   }
+  const existingSession = readHomepageMysteryTestSession();
+  const existingOverride = readHomepageMysteryTestOverride();
+  const launchToken = buildHomepageMysteryTestLaunchToken({
+    propKey: existingSession?.propKey ?? existingOverride?.propKey ?? readHomepageLegacyPinnedMysteryRewardKey(),
+    snapshotUpdatedAt: existingSession?.snapshotUpdatedAt ?? existingOverride?.snapshotUpdatedAt ?? state.snapshot?.updatedAt ?? null,
+  });
+  persistHomepageMysteryTestLaunchToken(launchToken);
   const homePagePath = './index.html';
   window.location.assign(homePagePath);
+}
+
+function persistStandaloneMysteryTestReward(propKey, snapshotUpdatedAt = null) {
+  const nextSession = buildHomepageMysteryTestSession({
+    propKey,
+    snapshotUpdatedAt,
+    requiredCatalogRevision: snapshotUpdatedAt,
+  });
+  persistHomepageMysteryTestSession(nextSession);
+  const nextOverride = buildHomepageMysteryTestOverride({
+    propKey,
+    snapshotUpdatedAt,
+    createdAt: nextSession?.createdAt,
+  });
+  persistHomepageMysteryTestOverride(nextOverride);
+  persistHomepageLegacyPinnedMysteryRewardKey(propKey);
+  return {
+    override: nextOverride,
+    session: nextSession,
+  };
 }
 
 function openStandalonePropsDatabase() {
@@ -1317,7 +1354,7 @@ const createEmptyDraftProp = (categoryKey = 'wingSet') => ({
   },
   eyePreset: null,
   materialPreset: null,
-  mysteryBoxEnabled: false,
+  mysteryBoxEnabled: true,
   active: true,
   archived: false,
   tags: [],
@@ -1464,30 +1501,20 @@ const SLOT_DEPTH_MAGNITUDES = Object.freeze({
 });
 const SLOT_STAGE_TARGET_SPANS = Object.freeze({
   wingSet: 4.9,
-  headWear: 1.65,
+  headWear: 5.95,
   faceAccessory: 1.2,
   bodyAccessory: 1.85,
   heldProp: 1.75,
 });
 const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
   Object.freeze([0, 0, 0]),
-  Object.freeze([0, Math.PI / 2, 0]),
   Object.freeze([0, Math.PI, 0]),
-  Object.freeze([0, -Math.PI / 2, 0]),
-  Object.freeze([Math.PI / 2, 0, 0]),
-  Object.freeze([-Math.PI / 2, 0, 0]),
-  Object.freeze([Math.PI, 0, 0]),
-  Object.freeze([0, 0, Math.PI / 2]),
-  Object.freeze([0, 0, -Math.PI / 2]),
-  Object.freeze([Math.PI / 2, Math.PI / 2, 0]),
-  Object.freeze([-Math.PI / 2, Math.PI / 2, 0]),
-  Object.freeze([Math.PI / 2, 0, Math.PI / 2]),
 ]);
 const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
   headWear: Object.freeze({
-    horizontalSpan: 1.65,
-    ySinkRatio: 0.24,
-    zSinkRatio: 0.18,
+    horizontalSpan: 5.95,
+    yOffsetRatio: 0.45,
+    zOffsetRatio: -0.13,
     rotationCandidates: HEADWEAR_ROTATION_CANDIDATES,
   }),
   faceAccessory: Object.freeze({
@@ -3470,8 +3497,8 @@ function roundTransformValue(value, fallback = 0) {
 function getSingleSlotAutoLockPreset(slotKey) {
   return SINGLE_SLOT_AUTO_LOCK_PRESETS[slotKey] || {
     horizontalSpan: SLOT_STAGE_TARGET_SPANS[slotKey] || 1.4,
-    ySinkRatio: 0.08,
-    zSinkRatio: 0.08,
+    yOffsetRatio: -0.08,
+    zOffsetRatio: -0.08,
     rotationCandidates: [[0, 0, 0]],
   };
 }
@@ -3576,8 +3603,22 @@ function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false
     ...draftProp.attachment,
     position: [
       roundTransformValue(-candidate.scaledCenter.x, 0),
-      roundTransformValue(-candidate.scaledCenter.y - (candidate.scaledSize.y * (preset.ySinkRatio ?? 0.08)), 0),
-      roundTransformValue(-candidate.scaledCenter.z - (candidate.scaledSize.z * (preset.zSinkRatio ?? 0.08)), 0),
+      roundTransformValue(
+        -candidate.scaledCenter.y + (candidate.scaledSize.y * (
+          Number.isFinite(preset.yOffsetRatio)
+            ? preset.yOffsetRatio
+            : -(preset.ySinkRatio ?? 0.08)
+        )),
+        0,
+      ),
+      roundTransformValue(
+        -candidate.scaledCenter.z + (candidate.scaledSize.z * (
+          Number.isFinite(preset.zOffsetRatio)
+            ? preset.zOffsetRatio
+            : -(preset.zSinkRatio ?? 0.08)
+        )),
+        0,
+      ),
     ],
     rotation: [
       roundTransformValue(candidate.rotation[0], 0),
@@ -5056,6 +5097,7 @@ async function publishDraftProp({ archive = false } = {}) {
     draftProp.active = draftProp.active !== false;
     draftProp.mysteryBoxEnabled = draftProp.mysteryBoxEnabled === true;
   }
+  const shouldPinMysteryTestReward = !archive && draftProp.active !== false && draftProp.mysteryBoxEnabled === true;
   draftProp.archived = archive;
   const baselineKey = state.editSession.baselineProp?.key || null;
   const selectedLiveKey = state.selectedLivePropKey && state.selectedLivePropKey !== draftProp.key
@@ -5101,9 +5143,49 @@ async function publishDraftProp({ archive = false } = {}) {
   }
   log(`${archive ? 'Archived' : state.publishEnabled ? 'Published' : 'Saved'} ${draftProp.label} ${state.publishEnabled ? 'to the live game' : 'to local draft storage'}.`);
   if (!archive && state.publishEnabled) {
-    const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+    if (shouldPinMysteryTestReward) {
+      const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+        title: `${draftProp.label} is live`,
+        message: 'Saved into the live inventory and pinned as the next Mystery Box reward for testing. Would you like to go to the Homepage now and pull the Mystery scroll?',
+      });
+      if (shouldLaunchMysteryTest) {
+        log(`Opening Homepage so you can test ${draftProp.label} as the next Mystery Box reward.`);
+        launchMysteryBoxTest();
+        return;
+      }
+      showCreatorNotice({
+        tone: 'success',
+        eyebrow: 'Live Inventory Updated',
+        title: `${draftProp.label} is live`,
+        message: 'Saved into the live inventory and pinned as the next Mystery Box reward for testing.',
+        timeoutMs: 5600,
+      });
+      return;
+    }
+    showCreatorNotice({
+      tone: 'success',
+      eyebrow: 'Live Inventory Updated',
       title: `${draftProp.label} is live`,
-      message: 'Saved into the live inventory and pinned as the next Mystery Box reward for testing. Would you like to go to the Homepage now and pull the Mystery scroll?',
+      message: 'Saved into the live inventory. Mystery Box is off for this prop, so it will not be the next reward.',
+      timeoutMs: 5600,
+    });
+    return;
+  }
+  if (!archive && shouldPinMysteryTestReward) {
+    const localMysteryTestState = persistStandaloneMysteryTestReward(
+      ensureDraftProp().key,
+      nextSnapshot?.updatedAt ?? null,
+    );
+    console.info('[XiO Creator] Local prop save pinned for mystery-box testing.', {
+      draftPropKey: ensureDraftProp().key,
+      snapshotUpdatedAt: nextSnapshot?.updatedAt ?? null,
+      mysteryTestOverride: localMysteryTestState.override,
+      mysteryTestSession: localMysteryTestState.session,
+    });
+    const shouldLaunchMysteryTest = await requestMysteryLaunchConfirmation({
+      eyebrow: 'Local Draft Saved',
+      title: `${draftProp.label} is staged for Mystery Box testing`,
+      message: 'Saved in your local creator workspace and pinned as the next Mystery Box reward on this device. Would you like to go to the Homepage now and pull the Mystery scroll?',
     });
     if (shouldLaunchMysteryTest) {
       log(`Opening Homepage so you can test ${draftProp.label} as the next Mystery Box reward.`);
@@ -5112,9 +5194,9 @@ async function publishDraftProp({ archive = false } = {}) {
     }
     showCreatorNotice({
       tone: 'success',
-      eyebrow: 'Live Inventory Updated',
-      title: `${draftProp.label} is live`,
-      message: 'Saved into the live inventory and pinned as the next Mystery Box reward for testing.',
+      eyebrow: 'Local Draft Saved',
+      title: `${draftProp.label} is staged for testing`,
+      message: 'Saved locally and pinned as the next Mystery Box reward on this device.',
       timeoutMs: 5600,
     });
     return;
