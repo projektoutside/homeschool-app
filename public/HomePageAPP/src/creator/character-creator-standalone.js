@@ -471,18 +471,19 @@
           this.irisRig.add(shine2);
         }
         setAppearance(style = {}) {
-          this.scleraMat.color.setHex(style.scleraColor ?? 16777215);
-          this.irisMat.color.setHex(style.irisColor ?? 2771652);
-          this.irisMat.emissive.setHex(style.irisEmissive ?? 0);
-          this.irisMat.emissiveIntensity = style.irisEmissiveIntensity ?? 0;
-          this.irisMat.map = style.irisMap ?? null;
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+          this.scleraMat.color.setHex((_a = style.scleraColor) != null ? _a : 16777215);
+          this.irisMat.color.setHex((_b = style.irisColor) != null ? _b : 2771652);
+          this.irisMat.emissive.setHex((_c = style.irisEmissive) != null ? _c : 0);
+          this.irisMat.emissiveIntensity = (_d = style.irisEmissiveIntensity) != null ? _d : 0;
+          this.irisMat.map = (_e = style.irisMap) != null ? _e : null;
           this.irisMat.needsUpdate = true;
-          this.pupilMat.color.setHex(style.pupilColor ?? 0);
-          this.pupil.scale.set(style.pupilScaleX ?? 1, style.pupilScaleY ?? 1, 1);
-          this.pupil.position.set(style.pupilOffsetX ?? 0, style.pupilOffsetY ?? 0, 5e-3);
-          this.shineMat.opacity = style.shineOpacity ?? 1;
-          this.shine2Mat.color.setHex(style.secondaryShineColor ?? 11193599);
-          this.shine2Mat.opacity = style.secondaryShineOpacity ?? 0.6;
+          this.pupilMat.color.setHex((_f = style.pupilColor) != null ? _f : 0);
+          this.pupil.scale.set((_g = style.pupilScaleX) != null ? _g : 1, (_h = style.pupilScaleY) != null ? _h : 1, 1);
+          this.pupil.position.set((_i = style.pupilOffsetX) != null ? _i : 0, (_j = style.pupilOffsetY) != null ? _j : 0, 5e-3);
+          this.shineMat.opacity = (_k = style.shineOpacity) != null ? _k : 1;
+          this.shine2Mat.color.setHex((_l = style.secondaryShineColor) != null ? _l : 11193599);
+          this.shine2Mat.opacity = (_m = style.secondaryShineOpacity) != null ? _m : 0.6;
         }
         update(targetX, targetY, dt) {
           this.look.x += (targetX - this.look.x) * Math.min(1, dt * 10);
@@ -503,15 +504,21 @@
     HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY: () => HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY,
     HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY: () => HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY,
     HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY: () => HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY,
+    HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY: () => HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY,
     HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST: () => HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST,
+    HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY: () => HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY,
     HOMEPAGE_PROP_SAVE_REQUEST: () => HOMEPAGE_PROP_SAVE_REQUEST,
     HOMEPAGE_PROP_SAVE_RESULT: () => HOMEPAGE_PROP_SAVE_RESULT,
     HOMEPAGE_PROP_UPLOAD_REQUEST: () => HOMEPAGE_PROP_UPLOAD_REQUEST,
     buildHomepageCatalogSnapshot: () => buildHomepageCatalogSnapshot,
     buildHomepageMysteryTestLaunchToken: () => buildHomepageMysteryTestLaunchToken,
     buildHomepageMysteryTestOverride: () => buildHomepageMysteryTestOverride,
+    buildHomepageMysteryTestSession: () => buildHomepageMysteryTestSession,
+    buildHomepagePendingSummonRecovery: () => buildHomepagePendingSummonRecovery,
     clearHomepageLegacyPinnedMysteryRewardKey: () => clearHomepageLegacyPinnedMysteryRewardKey,
     clearHomepageMysteryTestOverride: () => clearHomepageMysteryTestOverride,
+    clearHomepageMysteryTestSession: () => clearHomepageMysteryTestSession,
+    clearHomepagePendingSummonRecovery: () => clearHomepagePendingSummonRecovery,
     consumeHomepageMysteryTestLaunchToken: () => consumeHomepageMysteryTestLaunchToken,
     deriveHomepageCatalogFromLegacy: () => deriveHomepageCatalogFromLegacy,
     getActiveHomepageCatalog: () => getActiveHomepageCatalog,
@@ -526,17 +533,23 @@
     persistHomepageLegacyPinnedMysteryRewardKey: () => persistHomepageLegacyPinnedMysteryRewardKey,
     persistHomepageMysteryTestLaunchToken: () => persistHomepageMysteryTestLaunchToken,
     persistHomepageMysteryTestOverride: () => persistHomepageMysteryTestOverride,
+    persistHomepageMysteryTestSession: () => persistHomepageMysteryTestSession,
+    persistHomepagePendingSummonRecovery: () => persistHomepagePendingSummonRecovery,
     readHomepageCatalogSnapshot: () => readHomepageCatalogSnapshot,
     readHomepageLegacyPinnedMysteryRewardKey: () => readHomepageLegacyPinnedMysteryRewardKey,
-    readHomepageMysteryTestOverride: () => readHomepageMysteryTestOverride
+    readHomepageMysteryTestOverride: () => readHomepageMysteryTestOverride,
+    readHomepageMysteryTestSession: () => readHomepageMysteryTestSession,
+    readHomepagePendingSummonRecovery: () => readHomepagePendingSummonRecovery
   });
-  var HOMEPAGE_CATALOG_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY, HOMEPAGE_CREATOR_READY, HOMEPAGE_CATALOG_SYNC, HOMEPAGE_PROP_UPLOAD_REQUEST, HOMEPAGE_PROP_SAVE_REQUEST, HOMEPAGE_PROP_SAVE_RESULT, HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST, HOMEPAGE_RARITIES, CATEGORY_KEY_ALIASES, normalizeTuple, normalizeTags, normalizeCategoryKey, normalizeHomepagePropKey, buildHomepageMysteryTestOverride, mysteryTestOverrideMatchesPropKey, readHomepageLegacyPinnedMysteryRewardKey, persistHomepageLegacyPinnedMysteryRewardKey, clearHomepageLegacyPinnedMysteryRewardKey, readHomepageMysteryTestOverride, persistHomepageMysteryTestOverride, clearHomepageMysteryTestOverride, buildHomepageMysteryTestLaunchToken, persistHomepageMysteryTestLaunchToken, consumeHomepageMysteryTestLaunchToken, normalizeHomepageCategory, normalizeHomepageAttachment, normalizeHomepageRarity, normalizeHomepageProp, buildHomepageCatalogSnapshot, persistHomepageCatalogSnapshot, readHomepageCatalogSnapshot, deriveHomepageCatalogFromLegacy, mergeHomepageCatalogWithFallback, getActiveHomepageCatalog;
+  var HOMEPAGE_CATALOG_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY, HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY, HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY, HOMEPAGE_CREATOR_READY, HOMEPAGE_CATALOG_SYNC, HOMEPAGE_PROP_UPLOAD_REQUEST, HOMEPAGE_PROP_SAVE_REQUEST, HOMEPAGE_PROP_SAVE_RESULT, HOMEPAGE_OPEN_MYSTERY_TEST_REQUEST, HOMEPAGE_RARITIES, CATEGORY_KEY_ALIASES, normalizeTuple, normalizeTags, normalizeCategoryKey, normalizeHomepagePropKey, buildHomepageMysteryTestOverride, createHomepageMysteryTestLaunchId, buildHomepageMysteryTestSession, buildHomepagePendingSummonRecovery, mysteryTestOverrideMatchesPropKey, readHomepageLegacyPinnedMysteryRewardKey, persistHomepageLegacyPinnedMysteryRewardKey, clearHomepageLegacyPinnedMysteryRewardKey, readHomepageMysteryTestOverride, persistHomepageMysteryTestOverride, clearHomepageMysteryTestOverride, readHomepageMysteryTestSession, persistHomepageMysteryTestSession, clearHomepageMysteryTestSession, readHomepagePendingSummonRecovery, persistHomepagePendingSummonRecovery, clearHomepagePendingSummonRecovery, buildHomepageMysteryTestLaunchToken, persistHomepageMysteryTestLaunchToken, consumeHomepageMysteryTestLaunchToken, normalizeHomepageCategory, normalizeHomepageAttachment, normalizeHomepageRarity, normalizeHomepageProp, buildHomepageCatalogSnapshot, persistHomepageCatalogSnapshot, readHomepageCatalogSnapshot, deriveHomepageCatalogFromLegacy, mergeHomepageCatalogWithFallback, getActiveHomepageCatalog;
   var init_homepage_live_catalog = __esm({
     "public/HomePageAPP/src/runtime/homepage-live-catalog.js"() {
       HOMEPAGE_CATALOG_STORAGE_KEY = "LAHS_HOMEPAGE_LIVE_CATALOG_SNAPSHOT";
       HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY = "LAHS_HOMEPAGE_MYSTERY_TEST_REWARD_KEY";
       HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY = "LAHS_HOMEPAGE_MYSTERY_TEST_REWARD_OVERRIDE";
       HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY = "LAHS_HOMEPAGE_MYSTERY_TEST_LAUNCH";
+      HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY = "LAHS_HOMEPAGE_MYSTERY_TEST_SESSION";
+      HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY = "LAHS_HOMEPAGE_PENDING_SUMMON_RECOVERY";
       HOMEPAGE_CREATOR_READY = "LAHS_HOMEPAGE_CREATOR_READY";
       HOMEPAGE_CATALOG_SYNC = "LAHS_HOMEPAGE_CATALOG_SYNC";
       HOMEPAGE_PROP_UPLOAD_REQUEST = "LAHS_HOMEPAGE_PROP_UPLOAD_REQUEST";
@@ -602,6 +615,72 @@
           mode: "nextPullOnly"
         };
       };
+      createHomepageMysteryTestLaunchId = ({ createdAt, normalizedPropKey }) => {
+        var _a;
+        const randomPart = typeof globalThis !== "undefined" && ((_a = globalThis.crypto) == null ? void 0 : _a.randomUUID) ? globalThis.crypto.randomUUID() : `${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+        return `${createdAt}:${normalizedPropKey}:${randomPart}`;
+      };
+      buildHomepageMysteryTestSession = ({
+        propKey,
+        snapshotUpdatedAt = null,
+        requiredCatalogRevision = snapshotUpdatedAt,
+        createdAt = (/* @__PURE__ */ new Date()).toISOString(),
+        launchId = null
+      }) => {
+        const rawPropKey = typeof propKey === "string" ? propKey.trim() : "";
+        const normalizedPropKey = normalizeHomepagePropKey(rawPropKey);
+        if (!rawPropKey || !normalizedPropKey) {
+          return null;
+        }
+        const resolvedCreatedAt = typeof createdAt === "string" && createdAt.trim().length > 0 ? createdAt : (/* @__PURE__ */ new Date()).toISOString();
+        return {
+          launchId: typeof launchId === "string" && launchId.trim().length > 0 ? launchId.trim() : createHomepageMysteryTestLaunchId({
+            createdAt: resolvedCreatedAt,
+            normalizedPropKey
+          }),
+          propKey: rawPropKey,
+          normalizedPropKey,
+          snapshotUpdatedAt: typeof snapshotUpdatedAt === "string" && snapshotUpdatedAt.trim().length > 0 ? snapshotUpdatedAt : null,
+          requiredCatalogRevision: typeof requiredCatalogRevision === "string" && requiredCatalogRevision.trim().length > 0 ? requiredCatalogRevision : null,
+          createdAt: resolvedCreatedAt,
+          mode: "nextPullOnly",
+          failureMode: "blockPull"
+        };
+      };
+      buildHomepagePendingSummonRecovery = ({
+        userId = null,
+        requestId,
+        costPoints,
+        rewardKey = null,
+        rewardLabel = null,
+        rewardRarity = null,
+        createdAt = (/* @__PURE__ */ new Date()).toISOString(),
+        resolvedAt = null,
+        status = "pointsAccepted"
+      }) => {
+        const normalizedRequestId = typeof requestId === "string" ? requestId.trim() : "";
+        const normalizedCostPoints = Math.max(1, Math.min(1e6, Number.isFinite(Number(costPoints)) ? Math.round(Number(costPoints)) : 0));
+        const normalizedStatus = status === "rewardResolved" || status === "decisionRequired" ? status : "pointsAccepted";
+        if (!normalizedRequestId || !normalizedCostPoints) {
+          return null;
+        }
+        const normalizedRewardKey = typeof rewardKey === "string" && rewardKey.trim().length > 0 ? rewardKey.trim() : null;
+        const normalizedRewardLabel = typeof rewardLabel === "string" && rewardLabel.trim().length > 0 ? rewardLabel.trim() : null;
+        const normalizedUserId = typeof userId === "string" && userId.trim().length > 0 ? userId.trim() : null;
+        const normalizedCreatedAt = typeof createdAt === "string" && createdAt.trim().length > 0 ? createdAt : (/* @__PURE__ */ new Date()).toISOString();
+        const normalizedResolvedAt = typeof resolvedAt === "string" && resolvedAt.trim().length > 0 ? resolvedAt : null;
+        return {
+          userId: normalizedUserId,
+          requestId: normalizedRequestId,
+          costPoints: normalizedCostPoints,
+          rewardKey: normalizedRewardKey,
+          rewardLabel: normalizedRewardLabel,
+          rewardRarity: normalizedRewardKey || rewardRarity ? normalizeHomepageRarity(rewardRarity) : null,
+          createdAt: normalizedCreatedAt,
+          resolvedAt: normalizedResolvedAt,
+          status: normalizedStatus
+        };
+      };
       mysteryTestOverrideMatchesPropKey = (overridePayload, candidateKey) => {
         if (!overridePayload) {
           return false;
@@ -642,14 +721,15 @@
         }
       };
       readHomepageMysteryTestOverride = () => {
+        var _a;
         try {
           const raw = localStorage.getItem(HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY);
           if (!raw) return null;
           const parsed = JSON.parse(raw);
           return buildHomepageMysteryTestOverride({
-            propKey: parsed?.propKey,
-            snapshotUpdatedAt: parsed?.snapshotUpdatedAt ?? null,
-            createdAt: typeof parsed?.createdAt === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString()
+            propKey: parsed == null ? void 0 : parsed.propKey,
+            snapshotUpdatedAt: (_a = parsed == null ? void 0 : parsed.snapshotUpdatedAt) != null ? _a : null,
+            createdAt: typeof (parsed == null ? void 0 : parsed.createdAt) === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString()
           });
         } catch {
           return null;
@@ -668,6 +748,92 @@
       clearHomepageMysteryTestOverride = () => {
         try {
           localStorage.removeItem(HOMEPAGE_MYSTERY_TEST_OVERRIDE_STORAGE_KEY);
+        } catch {
+        }
+      };
+      readHomepageMysteryTestSession = () => {
+        var _a, _b;
+        try {
+          const raw = localStorage.getItem(HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          return buildHomepageMysteryTestSession({
+            propKey: parsed == null ? void 0 : parsed.propKey,
+            snapshotUpdatedAt: (_a = parsed == null ? void 0 : parsed.snapshotUpdatedAt) != null ? _a : null,
+            requiredCatalogRevision: (_b = parsed == null ? void 0 : parsed.requiredCatalogRevision) != null ? _b : null,
+            createdAt: typeof (parsed == null ? void 0 : parsed.createdAt) === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString(),
+            launchId: typeof (parsed == null ? void 0 : parsed.launchId) === "string" && parsed.launchId.trim().length > 0 ? parsed.launchId : null
+          });
+        } catch {
+          return null;
+        }
+      };
+      persistHomepageMysteryTestSession = (payload) => {
+        try {
+          if (!payload) {
+            localStorage.removeItem(HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY);
+            return;
+          }
+          localStorage.setItem(HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY, JSON.stringify(payload));
+        } catch {
+        }
+      };
+      clearHomepageMysteryTestSession = () => {
+        try {
+          localStorage.removeItem(HOMEPAGE_MYSTERY_TEST_SESSION_STORAGE_KEY);
+        } catch {
+        }
+      };
+      readHomepagePendingSummonRecovery = (userId = null) => {
+        var _a, _b, _c, _d, _e;
+        try {
+          const raw = localStorage.getItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          const payload = buildHomepagePendingSummonRecovery({
+            userId: (_a = parsed == null ? void 0 : parsed.userId) != null ? _a : null,
+            requestId: parsed == null ? void 0 : parsed.requestId,
+            costPoints: Number(parsed == null ? void 0 : parsed.costPoints),
+            rewardKey: (_b = parsed == null ? void 0 : parsed.rewardKey) != null ? _b : null,
+            rewardLabel: (_c = parsed == null ? void 0 : parsed.rewardLabel) != null ? _c : null,
+            rewardRarity: (_d = parsed == null ? void 0 : parsed.rewardRarity) != null ? _d : null,
+            createdAt: typeof (parsed == null ? void 0 : parsed.createdAt) === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString(),
+            resolvedAt: (_e = parsed == null ? void 0 : parsed.resolvedAt) != null ? _e : null,
+            status: parsed == null ? void 0 : parsed.status
+          });
+          if (!payload) {
+            return null;
+          }
+          const normalizedUserId = typeof userId === "string" && userId.trim().length > 0 ? userId.trim() : null;
+          if (normalizedUserId && payload.userId !== normalizedUserId) {
+            return null;
+          }
+          return payload;
+        } catch {
+          return null;
+        }
+      };
+      persistHomepagePendingSummonRecovery = (payload) => {
+        try {
+          if (!payload) {
+            localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+            return;
+          }
+          localStorage.setItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY, JSON.stringify(payload));
+        } catch {
+        }
+      };
+      clearHomepagePendingSummonRecovery = (userId = null) => {
+        try {
+          if (!userId) {
+            localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
+            return;
+          }
+          const payload = readHomepagePendingSummonRecovery(userId);
+          if (!payload) {
+            return;
+          }
+          localStorage.removeItem(HOMEPAGE_PENDING_SUMMON_RECOVERY_STORAGE_KEY);
         } catch {
         }
       };
@@ -692,15 +858,16 @@
         }
       };
       consumeHomepageMysteryTestLaunchToken = () => {
+        var _a, _b;
         try {
           const raw = localStorage.getItem(HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY);
           if (!raw) return null;
           localStorage.removeItem(HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY);
           const parsed = JSON.parse(raw);
           return buildHomepageMysteryTestLaunchToken({
-            propKey: parsed?.propKey ?? null,
-            snapshotUpdatedAt: parsed?.snapshotUpdatedAt ?? null,
-            createdAt: typeof parsed?.createdAt === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString()
+            propKey: (_a = parsed == null ? void 0 : parsed.propKey) != null ? _a : null,
+            snapshotUpdatedAt: (_b = parsed == null ? void 0 : parsed.snapshotUpdatedAt) != null ? _b : null,
+            createdAt: typeof (parsed == null ? void 0 : parsed.createdAt) === "string" && parsed.createdAt.trim().length > 0 ? parsed.createdAt : (/* @__PURE__ */ new Date()).toISOString()
           });
         } catch {
           return null;
@@ -754,6 +921,7 @@
           return null;
         }
         const preview = raw.preview && typeof raw.preview === "object" && !Array.isArray(raw.preview) ? raw.preview : {};
+        const inferredFactoryId = typeof raw.factoryId === "string" && raw.factoryId.trim().length > 0 ? raw.factoryId.trim() : preview.generated && typeof preview.generated === "object" && !Array.isArray(preview.generated) && preview.generated.category === "wingSet" ? "makeGeneratedProceduralWingProp" : "";
         return {
           key,
           label,
@@ -770,7 +938,7 @@
           tags: normalizeTags(raw.tags),
           description: typeof raw.description === "string" ? raw.description : "",
           preview,
-          ...typeof raw.factoryId === "string" && raw.factoryId.trim().length > 0 ? { factoryId: raw.factoryId.trim() } : {},
+          ...inferredFactoryId ? { factoryId: inferredFactoryId } : {},
           ...raw.creatorOnly === true ? { creatorOnly: true } : {},
           ...Number.isFinite(Number(raw.prewarmPriority)) ? { prewarmPriority: Number(raw.prewarmPriority) } : {},
           updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : null
@@ -800,12 +968,12 @@
           const raw = localStorage.getItem(HOMEPAGE_CATALOG_STORAGE_KEY);
           if (!raw) return null;
           const parsed = JSON.parse(raw);
-          const categories = Array.isArray(parsed?.categories) ? parsed.categories.map((entry) => normalizeHomepageCategory(entry)).filter(Boolean) : [];
-          const props = Array.isArray(parsed?.props) ? parsed.props.map((entry) => normalizeHomepageProp(entry)).filter(Boolean) : [];
+          const categories = Array.isArray(parsed == null ? void 0 : parsed.categories) ? parsed.categories.map((entry) => normalizeHomepageCategory(entry)).filter(Boolean) : [];
+          const props = Array.isArray(parsed == null ? void 0 : parsed.props) ? parsed.props.map((entry) => normalizeHomepageProp(entry)).filter(Boolean) : [];
           const snapshot = buildHomepageCatalogSnapshot({
             categories,
             props,
-            updatedAt: typeof parsed?.updatedAt === "string" ? parsed.updatedAt : null
+            updatedAt: typeof (parsed == null ? void 0 : parsed.updatedAt) === "string" ? parsed.updatedAt : null
           });
           return snapshot.categories.length === 0 && snapshot.props.length === 0 ? null : snapshot;
         } catch {
@@ -813,14 +981,17 @@
         }
       };
       deriveHomepageCatalogFromLegacy = ({ inventoryConfig, propCatalog }) => {
-        const categories = Array.isArray(inventoryConfig?.categories) ? inventoryConfig.categories.map((entry, index) => normalizeHomepageCategory({
-          key: entry.key,
-          label: entry.label || entry.key,
-          slotKey: entry.slotKey || entry.key,
-          equipLimit: entry.equipLimit ?? 1,
-          sortOrder: entry.sortOrder ?? index,
-          enabled: entry.enabled !== false
-        })).filter(Boolean) : [];
+        const categories = Array.isArray(inventoryConfig == null ? void 0 : inventoryConfig.categories) ? inventoryConfig.categories.map((entry, index) => {
+          var _a, _b;
+          return normalizeHomepageCategory({
+            key: entry.key,
+            label: entry.label || entry.key,
+            slotKey: entry.slotKey || entry.key,
+            equipLimit: (_a = entry.equipLimit) != null ? _a : 1,
+            sortOrder: (_b = entry.sortOrder) != null ? _b : index,
+            enabled: entry.enabled !== false
+          });
+        }).filter(Boolean) : [];
         const props = Array.isArray(propCatalog) ? propCatalog.map((entry) => normalizeHomepageProp({
           key: entry.key,
           label: entry.label || entry.key,
@@ -934,15 +1105,19 @@
   function cloneSceneGraph(root) {
     const clone = root.clone(true);
     clone.traverse((node) => {
+      var _a;
       if (!node.isMesh) return;
       node.castShadow = true;
       node.receiveShadow = true;
       node.frustumCulled = false;
       if (Array.isArray(node.material)) {
-        node.material = node.material.map((material) => material?.clone?.() || material);
+        node.material = node.material.map((material) => {
+          var _a2;
+          return ((_a2 = material == null ? void 0 : material.clone) == null ? void 0 : _a2.call(material)) || material;
+        });
         return;
       }
-      if (node.material?.clone) {
+      if ((_a = node.material) == null ? void 0 : _a.clone) {
         node.material = node.material.clone();
       }
     });
@@ -967,7 +1142,8 @@
       loader.load(
         assetUrl,
         (gltf) => {
-          const sourceRoot = gltf?.scene || gltf?.scenes?.[0] || null;
+          var _a;
+          const sourceRoot = (gltf == null ? void 0 : gltf.scene) || ((_a = gltf == null ? void 0 : gltf.scenes) == null ? void 0 : _a[0]) || null;
           if (!sourceRoot) {
             if (useCache) {
               glbSceneSourceCache.delete(assetUrl);
@@ -1136,7 +1312,8 @@
     root.updateMatrixWorld(true);
     const entries = [];
     root.traverse((node) => {
-      if (!node?.isMesh || node.visible === false || !node.geometry?.attributes?.position) {
+      var _a, _b;
+      if (!(node == null ? void 0 : node.isMesh) || node.visible === false || !((_b = (_a = node.geometry) == null ? void 0 : _a.attributes) == null ? void 0 : _b.position)) {
         return;
       }
       const box = new THREE.Box3().setFromObject(node);
@@ -1204,10 +1381,14 @@
     return sourceRoot ? cloneSceneGraph(sourceRoot) : null;
   }
   function cloneMaterialTemplate(material) {
+    var _a;
     if (Array.isArray(material)) {
-      return material.map((entry) => entry?.clone?.() || entry);
+      return material.map((entry) => {
+        var _a2;
+        return ((_a2 = entry == null ? void 0 : entry.clone) == null ? void 0 : _a2.call(entry)) || entry;
+      });
     }
-    return material?.clone?.() || material || null;
+    return ((_a = material == null ? void 0 : material.clone) == null ? void 0 : _a.call(material)) || material || null;
   }
   function getLargestMeshEntryFromObject(root) {
     if (!root) return null;
@@ -1215,7 +1396,8 @@
     let bestMaterial = null;
     let bestVertexCount = -1;
     root.traverse((node) => {
-      if (!node?.isMesh || !node.geometry?.attributes?.position) {
+      var _a, _b;
+      if (!(node == null ? void 0 : node.isMesh) || !((_b = (_a = node.geometry) == null ? void 0 : _a.attributes) == null ? void 0 : _b.position)) {
         return;
       }
       const vertexCount = node.geometry.attributes.position.count || 0;
@@ -1232,7 +1414,7 @@
     const geometry = new THREE.BufferGeometry();
     Object.entries(attributeArrays).forEach(([name, values]) => {
       const source = sourceAttributes[name];
-      if (!source?.array || !values?.length) {
+      if (!(source == null ? void 0 : source.array) || !(values == null ? void 0 : values.length)) {
         return;
       }
       const TypedArray = source.array.constructor || Float32Array;
@@ -1247,18 +1429,22 @@
     splitOffset = 0,
     trimMargin = 0
   } = {}) {
-    if (!sourceGeometry?.attributes?.position) {
+    var _a, _b, _c, _d, _e;
+    if (!((_a = sourceGeometry == null ? void 0 : sourceGeometry.attributes) == null ? void 0 : _a.position)) {
       return null;
     }
     const nonIndexed = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
     const position = nonIndexed.attributes.position;
-    const array = position?.array;
+    const array = position == null ? void 0 : position.array;
     if (!array || array.length < 9) {
-      if (nonIndexed?.dispose) nonIndexed.dispose();
+      if (nonIndexed == null ? void 0 : nonIndexed.dispose) nonIndexed.dispose();
       return null;
     }
     const sourceAttributes = Object.fromEntries(
-      Object.entries(nonIndexed.attributes).filter(([, attribute]) => attribute?.array?.length)
+      Object.entries(nonIndexed.attributes).filter(([, attribute]) => {
+        var _a2;
+        return (_a2 = attribute == null ? void 0 : attribute.array) == null ? void 0 : _a2.length;
+      })
     );
     const createBuckets = () => Object.fromEntries(
       Object.keys(sourceAttributes).map((name) => [name, []])
@@ -1282,24 +1468,24 @@
         }
       });
     }
-    if (nonIndexed?.dispose) nonIndexed.dispose();
-    if (!leftAttributes.position?.length && !rightAttributes.position?.length) {
+    if (nonIndexed == null ? void 0 : nonIndexed.dispose) nonIndexed.dispose();
+    if (!((_b = leftAttributes.position) == null ? void 0 : _b.length) && !((_c = rightAttributes.position) == null ? void 0 : _c.length)) {
       return null;
     }
     let leftGeometry = null;
     let rightGeometry = null;
-    if (leftAttributes.position?.length) {
+    if ((_d = leftAttributes.position) == null ? void 0 : _d.length) {
       leftGeometry = buildGeometryFromAttributeArrays(THREE, sourceAttributes, leftAttributes);
     }
-    if (rightAttributes.position?.length) {
+    if ((_e = rightAttributes.position) == null ? void 0 : _e.length) {
       rightGeometry = buildGeometryFromAttributeArrays(THREE, sourceAttributes, rightAttributes);
     }
     return { left: leftGeometry, right: rightGeometry };
   }
   function splitPairWingGeometry(THREE, sourceGeometry) {
     const split = splitGeometryByPlane(THREE, sourceGeometry);
-    let leftGeometry = split?.left || null;
-    let rightGeometry = split?.right || null;
+    let leftGeometry = (split == null ? void 0 : split.left) || null;
+    let rightGeometry = (split == null ? void 0 : split.right) || null;
     if (!leftGeometry && rightGeometry) {
       leftGeometry = rightGeometry.clone();
       leftGeometry.scale(-1, 1, 1);
@@ -1310,7 +1496,8 @@
     return leftGeometry && rightGeometry ? { left: leftGeometry, right: rightGeometry } : null;
   }
   function measureGeometrySideMetrics(THREE, geometry) {
-    if (!geometry?.attributes?.position) {
+    var _a;
+    if (!((_a = geometry == null ? void 0 : geometry.attributes) == null ? void 0 : _a.position)) {
       return null;
     }
     const box = new THREE.Box3();
@@ -1331,8 +1518,8 @@
     };
   }
   function shouldTreatSplitAsWingPair(THREE, split) {
-    const leftMetrics = measureGeometrySideMetrics(THREE, split?.left);
-    const rightMetrics = measureGeometrySideMetrics(THREE, split?.right);
+    const leftMetrics = measureGeometrySideMetrics(THREE, split == null ? void 0 : split.left);
+    const rightMetrics = measureGeometrySideMetrics(THREE, split == null ? void 0 : split.right);
     if (!leftMetrics || !rightMetrics) {
       return false;
     }
@@ -1343,7 +1530,8 @@
     return vertexRatio >= 0.68 && diagonalRatio >= 0.8 && heightRatio >= 0.82 && depthRatio >= 0.55;
   }
   function normalizeWingPivotFromSeam(THREE, geometry) {
-    if (!geometry?.attributes?.position) {
+    var _a;
+    if (!((_a = geometry == null ? void 0 : geometry.attributes) == null ? void 0 : _a.position)) {
       return;
     }
     geometry.computeBoundingBox();
@@ -1388,7 +1576,8 @@
     geometry.computeBoundingBox();
   }
   function prepareWingGeometryForSocketAttachment(THREE, sourceGeometry) {
-    if (!sourceGeometry?.attributes?.position) {
+    var _a;
+    if (!((_a = sourceGeometry == null ? void 0 : sourceGeometry.attributes) == null ? void 0 : _a.position)) {
       return null;
     }
     const geometry = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
@@ -1401,7 +1590,8 @@
     return geometry;
   }
   function createRootLocalBakedGeometry(sourceRoot, node) {
-    if (!node?.geometry?.attributes?.position) {
+    var _a, _b;
+    if (!((_b = (_a = node == null ? void 0 : node.geometry) == null ? void 0 : _a.attributes) == null ? void 0 : _b.position)) {
       return null;
     }
     sourceRoot.updateMatrixWorld(true);
@@ -1418,8 +1608,9 @@
     return bakedGeometry;
   }
   function cloneMaterialForMesh(THREE, materialTemplate) {
+    var _a;
     const sourceMaterial = Array.isArray(materialTemplate) ? materialTemplate[0] || null : materialTemplate;
-    const cloned = sourceMaterial?.clone?.() || sourceMaterial || null;
+    const cloned = ((_a = sourceMaterial == null ? void 0 : sourceMaterial.clone) == null ? void 0 : _a.call(sourceMaterial)) || sourceMaterial || null;
     if (!cloned) {
       return null;
     }
@@ -1430,6 +1621,117 @@
     cloned.needsUpdate = true;
     return cloned;
   }
+  function createSafePreviewDisplayMaterial(THREE, material) {
+    var _a, _b, _c, _d;
+    if (!material) {
+      return material;
+    }
+    if (material.isPointsMaterial || material.isLineBasicMaterial || material.isLineDashedMaterial) {
+      const cloned = ((_a = material.clone) == null ? void 0 : _a.call(material)) || material;
+      if ((_b = cloned.color) == null ? void 0 : _b.isColor) {
+        cloned.color = cloned.color.clone();
+      }
+      cloned.transparent = material.transparent === true || Number.isFinite(material.opacity) && material.opacity < 1;
+      if (Number.isFinite(material.opacity)) {
+        cloned.opacity = material.opacity;
+      }
+      cloned.depthWrite = material.depthWrite !== false;
+      cloned.depthTest = material.depthTest !== false;
+      return cloned;
+    }
+    const previewColor = ((_c = material.color) == null ? void 0 : _c.isColor) ? material.color.clone() : new THREE.Color(16777215);
+    const sourceEmissive = ((_d = material.emissive) == null ? void 0 : _d.isColor) ? material.emissive.clone() : new THREE.Color(0);
+    const emissiveStrength = sourceEmissive.r * sourceEmissive.r + sourceEmissive.g * sourceEmissive.g + sourceEmissive.b * sourceEmissive.b;
+    const previewEmissive = emissiveStrength > 2e-4 ? sourceEmissive : new THREE.Color(0);
+    const previewOpacity = Number.isFinite(material.opacity) ? material.opacity : 1;
+    const previewTransparent = material.transparent === true || previewOpacity < 1 || (material.alphaTest || 0) > 0;
+    const previewMaterial = new THREE.MeshStandardMaterial({
+      name: material.name ? `${material.name}__preview` : "preview-material",
+      color: previewColor,
+      map: material.map || null,
+      alphaMap: material.alphaMap || null,
+      aoMap: material.aoMap || null,
+      emissiveMap: material.emissiveMap || null,
+      lightMap: material.lightMap || null,
+      metalnessMap: material.metalnessMap || null,
+      roughnessMap: material.roughnessMap || null,
+      opacity: previewOpacity,
+      transparent: previewTransparent,
+      alphaTest: material.alphaTest || 0,
+      side: THREE.DoubleSide,
+      depthWrite: material.depthWrite !== false,
+      depthTest: material.depthTest !== false,
+      colorWrite: true,
+      metalness: Number.isFinite(material.metalness) ? Math.min(material.metalness, 0.16) : 0.08,
+      roughness: Number.isFinite(material.roughness) ? Math.min(Math.max(material.roughness, 0.32), 0.72) : 0.56,
+      emissive: previewEmissive,
+      emissiveIntensity: Number.isFinite(material.emissiveIntensity) ? material.emissiveIntensity : 0,
+      fog: material.fog !== false,
+      vertexColors: material.vertexColors === true,
+      wireframe: material.wireframe === true
+    });
+    if (previewMaterial.map) {
+      previewMaterial.map.needsUpdate = true;
+    }
+    if (previewMaterial.emissiveMap) {
+      previewMaterial.emissiveMap.needsUpdate = true;
+    }
+    if (previewMaterial.lightMap) {
+      previewMaterial.lightMap.needsUpdate = true;
+    }
+    if (previewMaterial.aoMap) {
+      previewMaterial.aoMapIntensity = Number.isFinite(material.aoMapIntensity) ? material.aoMapIntensity : 1;
+    }
+    if ("envMapIntensity" in previewMaterial) {
+      previewMaterial.envMapIntensity = 0.32;
+    }
+    return previewMaterial;
+  }
+  function ensurePreviewDisplayGeometryRenderable(root) {
+    if (!root) {
+      return root;
+    }
+    root.traverse((node) => {
+      var _a, _b, _c, _d, _e, _f, _g;
+      if (!(node == null ? void 0 : node.isMesh) || !node.geometry) {
+        return;
+      }
+      const positionCount = Number.isFinite((_c = (_b = (_a = node.geometry) == null ? void 0 : _a.attributes) == null ? void 0 : _b.position) == null ? void 0 : _c.count) ? node.geometry.attributes.position.count : 0;
+      const indexCount = Number.isFinite((_e = (_d = node.geometry) == null ? void 0 : _d.index) == null ? void 0 : _e.count) ? node.geometry.index.count : 0;
+      const currentDrawRangeCount = Number.isFinite((_g = (_f = node.geometry) == null ? void 0 : _f.drawRange) == null ? void 0 : _g.count) ? node.geometry.drawRange.count : 0;
+      if (currentDrawRangeCount > 0) {
+        return;
+      }
+      const fallbackCount = indexCount > 0 ? indexCount : positionCount;
+      if (fallbackCount > 0 && typeof node.geometry.setDrawRange === "function") {
+        node.geometry.setDrawRange(0, fallbackCount);
+      }
+    });
+    return root;
+  }
+  function enhancePreviewDisplayMaterials(THREE, root) {
+    if (!root) {
+      return root;
+    }
+    ensurePreviewDisplayGeometryRenderable(root);
+    root.traverse((node) => {
+      if (!(node == null ? void 0 : node.isMesh) && !(node == null ? void 0 : node.isPoints) && !(node == null ? void 0 : node.isLine) && !(node == null ? void 0 : node.isLineSegments) && !(node == null ? void 0 : node.isInstancedMesh)) {
+        return;
+      }
+      const sourceMaterials = Array.isArray(node.material) ? node.material : [node.material];
+      const previewMaterials = sourceMaterials.map((material) => createSafePreviewDisplayMaterial(THREE, material));
+      node.material = Array.isArray(node.material) ? previewMaterials : previewMaterials[0];
+      node.renderOrder = Math.max(Number.isFinite(node.renderOrder) ? node.renderOrder : 0, 4);
+      if ("castShadow" in node) {
+        node.castShadow = false;
+      }
+      if ("receiveShadow" in node) {
+        node.receiveShadow = false;
+      }
+      node.frustumCulled = false;
+    });
+    return root;
+  }
   function translateWingRootChildren(root, offset) {
     if (!root || !offset) {
       return;
@@ -1439,7 +1741,8 @@
     });
   }
   function normalizeWingRootPivotFromSeam(THREE, root, sourceSide = "left") {
-    if (!root?.children?.length) {
+    var _a;
+    if (!((_a = root == null ? void 0 : root.children) == null ? void 0 : _a.length)) {
       return root;
     }
     root.updateMatrixWorld(true);
@@ -1453,8 +1756,9 @@
     const pivot = new THREE.Vector3();
     let sampleCount = 0;
     root.traverse((node) => {
-      const position = node?.geometry?.attributes?.position;
-      if (!node?.isMesh || !position) {
+      var _a2, _b;
+      const position = (_b = (_a2 = node == null ? void 0 : node.geometry) == null ? void 0 : _a2.attributes) == null ? void 0 : _b.position;
+      if (!(node == null ? void 0 : node.isMesh) || !position) {
         return;
       }
       for (let index = 0; index < position.count; index += 1) {
@@ -1486,6 +1790,7 @@
     splitOffset = 0,
     trimMargin = 0.02
   }) {
+    var _a;
     if (!root) {
       return null;
     }
@@ -1494,11 +1799,12 @@
     let contributedMeshCount = 0;
     root.updateMatrixWorld(true);
     root.traverse((node) => {
-      if (!node?.isMesh || node.visible === false || !node.geometry?.attributes?.position) {
+      var _a2, _b, _c, _d, _e, _f, _g, _h;
+      if (!(node == null ? void 0 : node.isMesh) || node.visible === false || !((_b = (_a2 = node.geometry) == null ? void 0 : _a2.attributes) == null ? void 0 : _b.position)) {
         return;
       }
       const bakedGeometry = createRootLocalBakedGeometry(root, node);
-      if (!bakedGeometry?.attributes?.position) {
+      if (!((_c = bakedGeometry == null ? void 0 : bakedGeometry.attributes) == null ? void 0 : _c.position)) {
         return;
       }
       bakedGeometry.computeBoundingBox();
@@ -1511,18 +1817,18 @@
       } else if (wantedSide === "right" && isWholeRight) {
         geometryForSide = bakedGeometry;
       } else if (wantedSide === "left" && isWholeRight) {
-        bakedGeometry.dispose?.();
+        (_d = bakedGeometry.dispose) == null ? void 0 : _d.call(bakedGeometry);
         return;
       } else if (wantedSide === "right" && isWholeLeft) {
-        bakedGeometry.dispose?.();
+        (_e = bakedGeometry.dispose) == null ? void 0 : _e.call(bakedGeometry);
         return;
       } else {
         const split = splitGeometryByPlane(THREE, bakedGeometry, { splitOffset, trimMargin });
-        bakedGeometry.dispose?.();
-        geometryForSide = wantedSide === "right" ? split?.right : split?.left;
+        (_f = bakedGeometry.dispose) == null ? void 0 : _f.call(bakedGeometry);
+        geometryForSide = wantedSide === "right" ? split == null ? void 0 : split.right : split == null ? void 0 : split.left;
       }
-      if (!geometryForSide?.attributes?.position || geometryForSide.attributes.position.count < 3) {
-        geometryForSide?.dispose?.();
+      if (!((_g = geometryForSide == null ? void 0 : geometryForSide.attributes) == null ? void 0 : _g.position) || geometryForSide.attributes.position.count < 3) {
+        (_h = geometryForSide == null ? void 0 : geometryForSide.dispose) == null ? void 0 : _h.call(geometryForSide);
         return;
       }
       if (!geometryForSide.attributes.normal) {
@@ -1539,7 +1845,7 @@
     });
     if (!contributedMeshCount) {
       const sourceEntry = getLargestMeshEntryFromObject(root);
-      const fallbackGeometry = sourceEntry?.geometry ? splitGeometryByPlane(THREE, sourceEntry.geometry, { splitOffset, trimMargin })?.[wantedSide] : null;
+      const fallbackGeometry = (sourceEntry == null ? void 0 : sourceEntry.geometry) ? (_a = splitGeometryByPlane(THREE, sourceEntry.geometry, { splitOffset, trimMargin })) == null ? void 0 : _a[wantedSide] : null;
       const preparedGeometry = fallbackGeometry ? prepareWingGeometryForSocketAttachment(THREE, fallbackGeometry) : null;
       if (!preparedGeometry) {
         return null;
@@ -1561,7 +1867,7 @@
     authoring = null
   }) {
     const normalizedAuthoring = normalizeWingAuthoringPreview(authoring);
-    const hasSourcePair = Boolean(sourcePair?.left && sourcePair?.right);
+    const hasSourcePair = Boolean((sourcePair == null ? void 0 : sourcePair.left) && (sourcePair == null ? void 0 : sourcePair.right));
     if (normalizedAuthoring.mode !== "isolatedHalf") {
       return {
         draftTemplateRoot: sourceRoot || null,
@@ -1620,7 +1926,7 @@
     if (!geometry || !materialTemplate) {
       return null;
     }
-    const mesh = new THREE.Mesh(geometry, cloneMaterialTemplate(materialTemplate));
+    const mesh = new THREE.Mesh(geometry, cloneMaterialForMesh(THREE, materialTemplate));
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.frustumCulled = false;
@@ -1636,7 +1942,7 @@
       };
     }
     const sourceEntry = getLargestMeshEntryFromObject(sceneRoot);
-    if (!sourceEntry?.geometry) {
+    if (!(sourceEntry == null ? void 0 : sourceEntry.geometry)) {
       return {
         sourceTemplateRoot: cloneSceneGraph(sceneRoot),
         sourceTemplatePair: null
@@ -1651,8 +1957,8 @@
         sourceTemplatePair: null
       };
     }
-    const leftGeometry = hasBalancedPair && split?.left ? prepareWingGeometryForSocketAttachment(THREE, split.left) : prepareWingGeometryForSocketAttachment(THREE, sourceEntry.geometry);
-    const rightGeometry = hasBalancedPair && split?.right ? prepareWingGeometryForSocketAttachment(THREE, split.right) : null;
+    const leftGeometry = hasBalancedPair && (split == null ? void 0 : split.left) ? prepareWingGeometryForSocketAttachment(THREE, split.left) : prepareWingGeometryForSocketAttachment(THREE, sourceEntry.geometry);
+    const rightGeometry = hasBalancedPair && (split == null ? void 0 : split.right) ? prepareWingGeometryForSocketAttachment(THREE, split.right) : null;
     const leftRoot = createWingTemplateRootFromGeometry(THREE, leftGeometry, materialTemplate);
     const rightRoot = createWingTemplateRootFromGeometry(THREE, rightGeometry, materialTemplate);
     if (leftRoot && rightRoot) {
@@ -1674,18 +1980,22 @@
     return buildWingTemplateStateFromScene(THREE, sceneRoot);
   }
   async function loadWingTemplateRoot({ GLTFLoader, THREE, assetUrl }) {
+    var _a;
     const templateState = await loadWingTemplateState({ GLTFLoader, THREE, assetUrl });
-    return templateState.sourceTemplateRoot || templateState.sourceTemplatePair?.left || null;
+    return templateState.sourceTemplateRoot || ((_a = templateState.sourceTemplatePair) == null ? void 0 : _a.left) || null;
   }
   function buildPreviewGroup({ THREE, templateRoot, templatePair = null, attachment, mirrorMode }) {
     const previewRoot = new THREE.Group();
+    const previewContent = new THREE.Group();
+    previewRoot.add(previewContent);
+    previewRoot.userData.previewContent = previewContent;
     if (mirrorMode === "paired") {
       const left = new THREE.Group();
       const right = new THREE.Group();
       applyAttachmentTransform(left, buildMirroredAttachmentTransform(attachment, -1));
       applyAttachmentTransform(right, buildMirroredAttachmentTransform(attachment, 1));
-      const leftModel = templatePair?.left ? cloneSceneGraph(templatePair.left) : templateRoot ? cloneSceneGraph(templateRoot) : null;
-      const rightModel = templatePair?.right ? cloneSceneGraph(templatePair.right) : templateRoot ? cloneSceneGraph(templateRoot) : null;
+      const leftModel = (templatePair == null ? void 0 : templatePair.left) ? cloneSceneGraph(templatePair.left) : templateRoot ? cloneSceneGraph(templateRoot) : null;
+      const rightModel = (templatePair == null ? void 0 : templatePair.right) ? cloneSceneGraph(templatePair.right) : templateRoot ? cloneSceneGraph(templateRoot) : null;
       if (!leftModel || !rightModel) {
         return previewRoot;
       }
@@ -1694,17 +2004,18 @@
       }
       left.add(leftModel);
       right.add(rightModel);
-      previewRoot.add(left);
-      previewRoot.add(right);
+      previewContent.add(left);
+      previewContent.add(right);
       previewRoot.userData.left = left;
       previewRoot.userData.right = right;
     } else {
       const pivot = new THREE.Group();
       applyAttachmentTransform(pivot, attachment);
       pivot.add(cloneSceneGraph(templateRoot));
-      previewRoot.add(pivot);
+      previewContent.add(pivot);
       previewRoot.userData.anchor = pivot;
     }
+    enhancePreviewDisplayMaterials(THREE, previewContent);
     return previewRoot;
   }
   function createRuntimeGlbPropFactory({
@@ -1717,8 +2028,8 @@
     attachment,
     preview = null
   }) {
-    const mirrorMode = attachment?.mirrorMode === "paired" ? "paired" : "single";
-    const wingAuthoringPreview = slotKey === "wingSet" ? normalizeWingAuthoringPreview(preview?.wingAuthoring, { defaultMirrorToBoth: mirrorMode === "paired" }) : DEFAULT_WING_AUTHORING_PREVIEW;
+    const mirrorMode = (attachment == null ? void 0 : attachment.mirrorMode) === "paired" ? "paired" : "single";
+    const wingAuthoringPreview = slotKey === "wingSet" ? normalizeWingAuthoringPreview(preview == null ? void 0 : preview.wingAuthoring, { defaultMirrorToBoth: mirrorMode === "paired" }) : DEFAULT_WING_AUTHORING_PREVIEW;
     const effectiveMirrorMode = slotKey === "wingSet" && wingAuthoringPreview.mode === "isolatedHalf" ? wingAuthoringPreview.mirrorToBoth ? "paired" : "single" : mirrorMode;
     const singleWingSide = wingAuthoringPreview.sourceSide === "right" ? "right" : "left";
     const shouldUseWingTemplate = effectiveMirrorMode === "paired" && slotKey === "wingSet" && wingAuthoringPreview.mode !== "isolatedHalf";
@@ -1727,7 +2038,8 @@
       sourceTemplateRoot: null,
       sourceTemplatePair: null,
       presentedTemplateRoot: null,
-      presentedTemplatePair: null
+      presentedTemplatePair: null,
+      previewSceneRoot: null
     };
     const ensureSourceTemplateState = async () => {
       if (loadState.sourceTemplateRoot || loadState.sourceTemplatePair) {
@@ -1748,7 +2060,7 @@
             sourceTemplatePair: null
           };
         })).then((templateState) => {
-          if (!templateState?.sourceTemplateRoot && !templateState?.sourceTemplatePair) {
+          if (!(templateState == null ? void 0 : templateState.sourceTemplateRoot) && !(templateState == null ? void 0 : templateState.sourceTemplatePair)) {
             throw new Error(`${label} could not prepare a runtime template.`);
           }
           loadState.sourceTemplateRoot = templateState.sourceTemplateRoot || null;
@@ -1763,8 +2075,8 @@
     };
     const ensurePresentedTemplateState = async () => {
       const sourceTemplateState = await ensureSourceTemplateState();
-      const sourceTemplateRoot = sourceTemplateState?.sourceTemplateRoot || null;
-      const sourceTemplatePair = sourceTemplateState?.sourceTemplatePair || null;
+      const sourceTemplateRoot = (sourceTemplateState == null ? void 0 : sourceTemplateState.sourceTemplateRoot) || null;
+      const sourceTemplatePair = (sourceTemplateState == null ? void 0 : sourceTemplateState.sourceTemplatePair) || null;
       if (slotKey !== "wingSet") {
         loadState.presentedTemplateRoot = sourceTemplateRoot;
         loadState.presentedTemplatePair = null;
@@ -1779,17 +2091,33 @@
         sourcePair: sourceTemplatePair,
         authoring: wingAuthoringPreview
       });
-      loadState.presentedTemplateRoot = authoredTemplateState?.draftTemplateRoot || sourceTemplateRoot;
-      loadState.presentedTemplatePair = authoredTemplateState?.draftTemplatePair || sourceTemplatePair || null;
+      loadState.presentedTemplateRoot = (authoredTemplateState == null ? void 0 : authoredTemplateState.draftTemplateRoot) || sourceTemplateRoot;
+      loadState.presentedTemplatePair = (authoredTemplateState == null ? void 0 : authoredTemplateState.draftTemplatePair) || sourceTemplatePair || null;
       return {
         draftTemplateRoot: loadState.presentedTemplateRoot,
         draftTemplatePair: loadState.presentedTemplatePair
       };
     };
+    const shouldUseRawPreviewScene = slotKey !== "wingSet" || slotKey === "wingSet" && wingAuthoringPreview.mode !== "isolatedHalf" && effectiveMirrorMode === "paired";
+    const ensurePreviewSceneRoot = async () => {
+      if (loadState.previewSceneRoot) {
+        return loadState.previewSceneRoot;
+      }
+      const sceneRoot = await loadGlbScene({ GLTFLoader, assetUrl });
+      if (!sceneRoot) {
+        throw new Error(`${label} did not contain a previewable scene root.`);
+      }
+      const previewSceneRoot = cloneSceneGraph(sceneRoot);
+      centerObjectAtOrigin(THREE, previewSceneRoot);
+      enhancePreviewDisplayMaterials(THREE, previewSceneRoot);
+      previewSceneRoot.updateMatrixWorld(true);
+      loadState.previewSceneRoot = previewSceneRoot;
+      return loadState.previewSceneRoot;
+    };
     return function makeRuntimeGlbProp() {
       const group = new THREE.Group();
       const slotAnchor = slotAnchors[slotKey];
-      if (effectiveMirrorMode === "paired" && slotAnchor?.left && slotAnchor?.right) {
+      if (effectiveMirrorMode === "paired" && (slotAnchor == null ? void 0 : slotAnchor.left) && (slotAnchor == null ? void 0 : slotAnchor.right)) {
         const leftPivot = new THREE.Group();
         const rightPivot = new THREE.Group();
         applyAttachmentTransform(leftPivot, buildMirroredAttachmentTransform(attachment, -1));
@@ -1800,13 +2128,13 @@
         group.userData.right = rightPivot;
         group.userData.ensureEquippedReady = async () => {
           const templateState = await ensurePresentedTemplateState();
-          const templatePair = templateState?.draftTemplatePair;
-          const templateRoot = templateState?.draftTemplateRoot;
+          const templatePair = templateState == null ? void 0 : templateState.draftTemplatePair;
+          const templateRoot = templateState == null ? void 0 : templateState.draftTemplateRoot;
           if (leftPivot.userData.loaded && rightPivot.userData.loaded) return;
           leftPivot.clear();
           rightPivot.clear();
-          const leftModel = templatePair?.left ? cloneSceneGraph(templatePair.left) : templateRoot ? cloneSceneGraph(templateRoot) : null;
-          const rightModel = templatePair?.right ? cloneSceneGraph(templatePair.right) : templateRoot ? cloneSceneGraph(templateRoot) : null;
+          const leftModel = (templatePair == null ? void 0 : templatePair.left) ? cloneSceneGraph(templatePair.left) : templateRoot ? cloneSceneGraph(templateRoot) : null;
+          const rightModel = (templatePair == null ? void 0 : templatePair.right) ? cloneSceneGraph(templatePair.right) : templateRoot ? cloneSceneGraph(templateRoot) : null;
           if (!leftModel || !rightModel) return;
           if (!templatePair) {
             rightModel.scale.x *= -1;
@@ -1816,7 +2144,7 @@
           leftPivot.userData.loaded = true;
           rightPivot.userData.loaded = true;
         };
-      } else if (slotKey === "wingSet" && slotAnchor?.left && slotAnchor?.right) {
+      } else if (slotKey === "wingSet" && (slotAnchor == null ? void 0 : slotAnchor.left) && (slotAnchor == null ? void 0 : slotAnchor.right)) {
         const pivot = new THREE.Group();
         applyAttachmentTransform(pivot, buildSingleWingAttachmentTransform(attachment, singleWingSide));
         const activeAnchor = singleWingSide === "right" ? slotAnchor.right : slotAnchor.left;
@@ -1825,20 +2153,20 @@
         group.userData.side = singleWingSide;
         group.userData.ensureEquippedReady = async () => {
           const templateState = await ensurePresentedTemplateState();
-          const templateRoot = templateState?.draftTemplateRoot;
+          const templateRoot = templateState == null ? void 0 : templateState.draftTemplateRoot;
           if (pivot.userData.loaded || !templateRoot) return;
           pivot.clear();
           pivot.add(cloneSceneGraph(templateRoot));
           pivot.userData.loaded = true;
         };
-      } else if (slotAnchor?.anchor) {
+      } else if (slotAnchor == null ? void 0 : slotAnchor.anchor) {
         const pivot = new THREE.Group();
         applyAttachmentTransform(pivot, attachment);
         slotAnchor.anchor.add(pivot);
         group.userData.anchor = pivot;
         group.userData.ensureEquippedReady = async () => {
           const templateState = await ensurePresentedTemplateState();
-          const templateRoot = templateState?.draftTemplateRoot;
+          const templateRoot = templateState == null ? void 0 : templateState.draftTemplateRoot;
           if (pivot.userData.loaded) return;
           pivot.clear();
           pivot.add(cloneSceneGraph(templateRoot));
@@ -1847,14 +2175,30 @@
       } else {
         group.userData.ensureEquippedReady = async () => null;
       }
-      group.userData.ensurePreviewReady = () => ensurePresentedTemplateState();
-      group.userData.createPreviewObject = () => loadState.presentedTemplateRoot || loadState.presentedTemplatePair ? buildPreviewGroup({
-        THREE,
-        templateRoot: loadState.presentedTemplateRoot,
-        templatePair: loadState.presentedTemplatePair,
-        attachment,
-        mirrorMode: effectiveMirrorMode
-      }) : null;
+      group.userData.ensurePreviewReady = async () => {
+        const previewTasks = [ensurePresentedTemplateState()];
+        if (shouldUseRawPreviewScene) {
+          previewTasks.push(ensurePreviewSceneRoot());
+        }
+        const [presentedTemplateState] = await Promise.all(previewTasks);
+        return presentedTemplateState;
+      };
+      group.userData.createPreviewObject = () => {
+        if (shouldUseRawPreviewScene && loadState.previewSceneRoot) {
+          const previewWrapper = new THREE.Group();
+          const previewContent = cloneSceneGraph(loadState.previewSceneRoot);
+          previewWrapper.add(previewContent);
+          previewWrapper.userData.previewContent = previewContent;
+          return previewWrapper;
+        }
+        return loadState.presentedTemplateRoot || loadState.presentedTemplatePair ? buildPreviewGroup({
+          THREE,
+          templateRoot: loadState.presentedTemplateRoot,
+          templatePair: loadState.presentedTemplatePair,
+          attachment,
+          mirrorMode: effectiveMirrorMode
+        }) : null;
+      };
       return group;
     };
   }
@@ -1870,7 +2214,7 @@
         trimMargin: 0.02
       });
       DEFAULT_WING_MOTION_CHANNEL = Object.freeze({
-        flapHz: 1.45,
+        flapHz: 0.85,
         direction: "normal",
         amplitude: 1,
         sweep: 1,
@@ -1900,7 +2244,8 @@
         defaultCategory: "wingSet",
         perCategoryLimit: 5,
         categories: Object.freeze([
-          Object.freeze({ key: "wingSet", label: "Wing Set", slotKey: "wingSet", equipLimit: 1, sortOrder: 0, enabled: true })
+          Object.freeze({ key: "wingSet", label: "Wing Set", slotKey: "wingSet", equipLimit: 1, sortOrder: 0, enabled: true }),
+          Object.freeze({ key: "headWear", label: "Headwear", slotKey: "headWear", equipLimit: 1, sortOrder: 1, enabled: true })
         ])
       });
     }
@@ -1911,7 +2256,7 @@
   __export(prop_catalog_exports, {
     PROP_CATALOG: () => PROP_CATALOG
   });
-  var freezeTuple, createAttachmentFit, createWingAttachment, previewKind, WING_ATTACHMENTS, PROP_CATALOG;
+  var freezeTuple, createAttachmentFit, createWingAttachment, createSingleAttachment, previewKind, WING_ATTACHMENTS, SINGLE_ATTACHMENTS, PROP_CATALOG;
   var init_prop_catalog = __esm({
     "public/HomePageAPP/src/inventory/catalog/prop-catalog.js"() {
       freezeTuple = (values) => Object.freeze([...values]);
@@ -1926,6 +2271,13 @@
         rotation: freezeTuple(rotation),
         scale: freezeTuple(scale),
         mirrorMode: "paired",
+        fit: fit ? createAttachmentFit(fit) : null
+      });
+      createSingleAttachment = ({ position, rotation, scale, fit = null }) => Object.freeze({
+        position: freezeTuple(position),
+        rotation: freezeTuple(rotation),
+        scale: freezeTuple(scale),
+        mirrorMode: "single",
         fit: fit ? createAttachmentFit(fit) : null
       });
       previewKind = (kind) => Object.freeze({ kind });
@@ -2019,6 +2371,13 @@
           rotation: [0.02, 0.045, -0.015],
           scale: [6.3, 6.3, 6.3],
           fit: { yOffsetRatio: 1.18, zOffsetRatio: 0.028, distanceMultiplier: 1.36 }
+        })
+      });
+      SINGLE_ATTACHMENTS = Object.freeze({
+        xioStandardCrown: createSingleAttachment({
+          position: [0, -0.08, -0.18],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1]
         })
       });
       PROP_CATALOG = Object.freeze([
@@ -2201,6 +2560,20 @@
           rarity: "common",
           mysteryBoxEnabled: true,
           active: true
+        }),
+        Object.freeze({
+          key: "xioStandardCrown",
+          label: "XiO Standard Crown",
+          category: "headWear",
+          prewarmPriority: 4,
+          factoryId: "makeXioStandardCrownProp",
+          assetUrl: "./Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb",
+          attachment: SINGLE_ATTACHMENTS.xioStandardCrown,
+          rarity: "common",
+          mysteryBoxEnabled: true,
+          active: true,
+          tags: Object.freeze(["crown", "headwear", "xio", "starter"]),
+          description: "A clean reference crown sized for XiO so new headwear GLBs can be matched against a proven fit baseline."
         })
       ]);
     }
@@ -2217,13 +2590,14 @@
     return LIVE_GAME_WING_PREVIEW_KEYS.includes(propKey);
   }
   function buildMirroredAttachmentFromWing(wing) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     return {
-      position: [Math.abs(Number(wing?.position?.x) || 0), Number(wing?.position?.y) || 0, Number(wing?.position?.z) || 0],
-      rotation: [Number(wing?.rotation?.x) || 0, Math.abs(Number(wing?.rotation?.y) || 0), Math.abs(Number(wing?.rotation?.z) || 0)],
+      position: [Math.abs(Number((_a = wing == null ? void 0 : wing.position) == null ? void 0 : _a.x) || 0), Number((_b = wing == null ? void 0 : wing.position) == null ? void 0 : _b.y) || 0, Number((_c = wing == null ? void 0 : wing.position) == null ? void 0 : _c.z) || 0],
+      rotation: [Number((_d = wing == null ? void 0 : wing.rotation) == null ? void 0 : _d.x) || 0, Math.abs(Number((_e = wing == null ? void 0 : wing.rotation) == null ? void 0 : _e.y) || 0), Math.abs(Number((_f = wing == null ? void 0 : wing.rotation) == null ? void 0 : _f.z) || 0)],
       scale: [
-        Math.abs(Number(wing?.scale?.x) || 1),
-        Math.abs(Number(wing?.scale?.y) || 1),
-        Math.abs(Number(wing?.scale?.z) || 1)
+        Math.abs(Number((_g = wing == null ? void 0 : wing.scale) == null ? void 0 : _g.x) || 1),
+        Math.abs(Number((_h = wing == null ? void 0 : wing.scale) == null ? void 0 : _h.y) || 1),
+        Math.abs(Number((_i = wing == null ? void 0 : wing.scale) == null ? void 0 : _i.z) || 1)
       ],
       mirrorMode: "paired"
     };
@@ -2237,8 +2611,9 @@
     return wing;
   }
   function extractWingPairFromProp(propGroup) {
-    const left = propGroup?.userData?.left || null;
-    const right = propGroup?.userData?.right || null;
+    var _a, _b;
+    const left = ((_a = propGroup == null ? void 0 : propGroup.userData) == null ? void 0 : _a.left) || null;
+    const right = ((_b = propGroup == null ? void 0 : propGroup.userData) == null ? void 0 : _b.right) || null;
     if (!left || !right) {
       return null;
     }
@@ -2827,7 +3202,7 @@
       if (Array.isArray(material)) {
         return cloneWingMeshMaterial(material[0] || null);
       }
-      if (!material?.clone) {
+      if (!(material == null ? void 0 : material.clone)) {
         return null;
       }
       const cloned = material.clone();
@@ -2844,7 +3219,8 @@
       let bestMaterial = null;
       let bestVertexCount = -1;
       root.traverse((node) => {
-        if (!node?.isMesh || !node.geometry?.attributes?.position) {
+        var _a, _b;
+        if (!(node == null ? void 0 : node.isMesh) || !((_b = (_a = node.geometry) == null ? void 0 : _a.attributes) == null ? void 0 : _b.position)) {
           return;
         }
         const vertexCount = node.geometry.attributes.position.count || 0;
@@ -2861,13 +3237,14 @@
       } : null;
     }
     function getLargestMeshGeometryFromObject(root) {
-      return getLargestMeshEntryFromObject2(root)?.geometry || null;
+      var _a;
+      return ((_a = getLargestMeshEntryFromObject2(root)) == null ? void 0 : _a.geometry) || null;
     }
     function buildGeometryFromAttributeArrays2(sourceAttributes, attributeArrays) {
       const geometry = new THREE.BufferGeometry();
       Object.entries(attributeArrays).forEach(([name, values]) => {
         const source = sourceAttributes[name];
-        if (!source?.array || !values?.length) {
+        if (!(source == null ? void 0 : source.array) || !(values == null ? void 0 : values.length)) {
           return;
         }
         const TypedArray = source.array.constructor || Float32Array;
@@ -2882,18 +3259,22 @@
       return geometry;
     }
     function splitPairWingGeometry2(sourceGeometry) {
-      if (!sourceGeometry?.attributes?.position) {
+      var _a, _b, _c, _d, _e;
+      if (!((_a = sourceGeometry == null ? void 0 : sourceGeometry.attributes) == null ? void 0 : _a.position)) {
         return null;
       }
       const nonIndexed = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
       const position = nonIndexed.attributes.position;
-      const arr = position?.array;
+      const arr = position == null ? void 0 : position.array;
       if (!arr || arr.length < 9) {
-        if (nonIndexed?.dispose) nonIndexed.dispose();
+        if (nonIndexed == null ? void 0 : nonIndexed.dispose) nonIndexed.dispose();
         return null;
       }
       const sourceAttributes = Object.fromEntries(
-        Object.entries(nonIndexed.attributes).filter(([, attribute]) => attribute?.array?.length)
+        Object.entries(nonIndexed.attributes).filter(([, attribute]) => {
+          var _a2;
+          return (_a2 = attribute == null ? void 0 : attribute.array) == null ? void 0 : _a2.length;
+        })
       );
       const createAttributeBuckets = () => Object.fromEntries(
         Object.keys(sourceAttributes).map((name) => [name, []])
@@ -2914,16 +3295,16 @@
           }
         });
       }
-      if (nonIndexed?.dispose) nonIndexed.dispose();
-      if (!leftAttributes.position?.length && !rightAttributes.position?.length) {
+      if (nonIndexed == null ? void 0 : nonIndexed.dispose) nonIndexed.dispose();
+      if (!((_b = leftAttributes.position) == null ? void 0 : _b.length) && !((_c = rightAttributes.position) == null ? void 0 : _c.length)) {
         return null;
       }
       let leftGeometry = null;
       let rightGeometry = null;
-      if (leftAttributes.position?.length) {
+      if ((_d = leftAttributes.position) == null ? void 0 : _d.length) {
         leftGeometry = buildGeometryFromAttributeArrays2(sourceAttributes, leftAttributes);
       }
-      if (rightAttributes.position?.length) {
+      if ((_e = rightAttributes.position) == null ? void 0 : _e.length) {
         rightGeometry = buildGeometryFromAttributeArrays2(sourceAttributes, rightAttributes);
       }
       if (!leftGeometry && rightGeometry) {
@@ -2936,7 +3317,8 @@
       return leftGeometry && rightGeometry ? { left: leftGeometry, right: rightGeometry } : null;
     }
     function normalizeWingPivotFromSeam2(geometry) {
-      if (!geometry?.attributes?.position) {
+      var _a;
+      if (!((_a = geometry == null ? void 0 : geometry.attributes) == null ? void 0 : _a.position)) {
         return;
       }
       geometry.computeBoundingBox();
@@ -2984,7 +3366,8 @@
       geometry.computeBoundingBox();
     }
     function applyWingUvAndDepthFromGeometry(geometry) {
-      if (!geometry?.attributes?.position) {
+      var _a;
+      if (!((_a = geometry == null ? void 0 : geometry.attributes) == null ? void 0 : _a.position)) {
         return;
       }
       geometry.computeBoundingBox();
@@ -3014,7 +3397,8 @@
       geometry.computeBoundingSphere();
     }
     function prepareWingGeometryForEferno(sourceGeometry) {
-      if (!sourceGeometry?.attributes?.position) {
+      var _a;
+      if (!((_a = sourceGeometry == null ? void 0 : sourceGeometry.attributes) == null ? void 0 : _a.position)) {
         return null;
       }
       const geometry = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
@@ -3023,7 +3407,8 @@
       return geometry;
     }
     function prepareWingGeometryForSocketAttachment2(sourceGeometry) {
-      if (!sourceGeometry?.attributes?.position) {
+      var _a;
+      if (!((_a = sourceGeometry == null ? void 0 : sourceGeometry.attributes) == null ? void 0 : _a.position)) {
         return null;
       }
       const geometry = sourceGeometry.index ? sourceGeometry.toNonIndexed() : sourceGeometry.clone();
@@ -3045,20 +3430,21 @@
       return endlessWingAssetController.createMaterialInstance();
     }
     function applyPreviewTransformOverrides(target, sourcePart) {
-      const previewTransform = sourcePart?.userData?.previewTransform || null;
+      var _a;
+      const previewTransform = ((_a = sourcePart == null ? void 0 : sourcePart.userData) == null ? void 0 : _a.previewTransform) || null;
       if (!target || !previewTransform) {
         return;
       }
       const position = Array.isArray(previewTransform.position) ? previewTransform.position : null;
       const rotation = Array.isArray(previewTransform.rotation) ? previewTransform.rotation : null;
       const scale = Array.isArray(previewTransform.scale) ? previewTransform.scale : null;
-      if (position?.length === 3) {
+      if ((position == null ? void 0 : position.length) === 3) {
         target.position.set(position[0], position[1], position[2]);
       }
-      if (rotation?.length === 3) {
+      if ((rotation == null ? void 0 : rotation.length) === 3) {
         target.rotation.set(rotation[0], rotation[1], rotation[2]);
       }
-      if (scale?.length === 3) {
+      if ((scale == null ? void 0 : scale.length) === 3) {
         target.scale.set(scale[0], scale[1], scale[2]);
       }
     }
@@ -3097,11 +3483,15 @@
     }
     function createGlbWingAssetController(assetState, label) {
       const createMaterialInstance = () => cloneWingMeshMaterial(assetState.materialTemplate);
-      const clonePreparedEquipped = () => ({
-        left: assetState.leftGeometry?.clone() || null,
-        right: assetState.rightGeometry?.clone() || null
-      });
+      const clonePreparedEquipped = () => {
+        var _a, _b;
+        return {
+          left: ((_a = assetState.leftGeometry) == null ? void 0 : _a.clone()) || null,
+          right: ((_b = assetState.rightGeometry) == null ? void 0 : _b.clone()) || null
+        };
+      };
       const ensurePreparedWingPair = () => {
+        var _a, _b;
         if (assetState.leftGeometry && assetState.rightGeometry) {
           return clonePreparedEquipped();
         }
@@ -3113,16 +3503,16 @@
         }
         const sourceGeometry = assetState.previewGeometry.clone();
         const split = splitPairWingGeometry2(sourceGeometry);
-        if (sourceGeometry?.dispose) {
+        if (sourceGeometry == null ? void 0 : sourceGeometry.dispose) {
           sourceGeometry.dispose();
         }
-        if (!split?.left || !split?.right) {
+        if (!(split == null ? void 0 : split.left) || !(split == null ? void 0 : split.right)) {
           throw new Error(`${label} GLB could not be split into left/right wings.`);
         }
         const preparedLeft = prepareWingGeometryForSocketAttachment2(split.left);
         const preparedRight = prepareWingGeometryForSocketAttachment2(split.right);
-        if (split.left?.dispose) split.left.dispose();
-        if (split.right?.dispose) split.right.dispose();
+        if ((_a = split.left) == null ? void 0 : _a.dispose) split.left.dispose();
+        if ((_b = split.right) == null ? void 0 : _b.dispose) split.right.dispose();
         if (!preparedLeft || !preparedRight) {
           throw new Error(`${label} wing geometry preparation failed.`);
         }
@@ -3139,22 +3529,23 @@
             assetState.loader.load(
               assetState.modelUrl,
               (gltf) => {
-                const root = gltf?.scene || gltf?.scenes?.[0] || null;
+                var _a;
+                const root = (gltf == null ? void 0 : gltf.scene) || ((_a = gltf == null ? void 0 : gltf.scenes) == null ? void 0 : _a[0]) || null;
                 const sourceEntry = getLargestMeshEntryFromObject2(root);
-                const sourceGeometry = sourceEntry?.geometry || null;
-                const materialTemplate = cloneWingMeshMaterial(sourceEntry?.material || null);
+                const sourceGeometry = (sourceEntry == null ? void 0 : sourceEntry.geometry) || null;
+                const materialTemplate = cloneWingMeshMaterial((sourceEntry == null ? void 0 : sourceEntry.material) || null);
                 if (!sourceGeometry) {
                   reject(new Error(`${label} GLB did not contain a mesh with geometry.`));
                   return;
                 }
                 if (!materialTemplate) {
-                  if (sourceGeometry?.dispose) sourceGeometry.dispose();
+                  if (sourceGeometry == null ? void 0 : sourceGeometry.dispose) sourceGeometry.dispose();
                   reject(new Error(`${label} GLB did not contain a cloneable material.`));
                   return;
                 }
                 assetState.previewGeometry = sourceGeometry.clone();
                 assetState.materialTemplate = materialTemplate;
-                if (sourceGeometry?.dispose) {
+                if (sourceGeometry == null ? void 0 : sourceGeometry.dispose) {
                   sourceGeometry.dispose();
                 }
                 resolve(true);
@@ -3227,9 +3618,9 @@
       };
     }
     function buildMirroredWingTransform(transform, dir) {
-      const position = Array.isArray(transform?.position) ? transform.position : [0.8, -0.78, 0.22];
-      const rotation = Array.isArray(transform?.rotation) ? transform.rotation : [0.024, 0.076, -0.032];
-      const scaleValue = Array.isArray(transform?.scale) ? transform.scale : [transform?.scale || 19.2, transform?.scale || 19.2, transform?.scale || 19.2];
+      const position = Array.isArray(transform == null ? void 0 : transform.position) ? transform.position : [0.8, -0.78, 0.22];
+      const rotation = Array.isArray(transform == null ? void 0 : transform.rotation) ? transform.rotation : [0.024, 0.076, -0.032];
+      const scaleValue = Array.isArray(transform == null ? void 0 : transform.scale) ? transform.scale : [(transform == null ? void 0 : transform.scale) || 19.2, (transform == null ? void 0 : transform.scale) || 19.2, (transform == null ? void 0 : transform.scale) || 19.2];
       return {
         position: [dir * position[0], position[1], position[2]],
         rotation: [rotation[0], dir * rotation[1], dir * rotation[2]],
@@ -3243,13 +3634,13 @@
       const position = Array.isArray(transform.position) ? transform.position : null;
       const rotation = Array.isArray(transform.rotation) ? transform.rotation : null;
       const scaleValue = Array.isArray(transform.scale) ? transform.scale : null;
-      if (position?.length === 3) {
+      if ((position == null ? void 0 : position.length) === 3) {
         target.position.set(position[0], position[1], position[2]);
       }
-      if (rotation?.length === 3) {
+      if ((rotation == null ? void 0 : rotation.length) === 3) {
         target.rotation.set(rotation[0], rotation[1], rotation[2]);
       }
-      if (scaleValue?.length === 3) {
+      if ((scaleValue == null ? void 0 : scaleValue.length) === 3) {
         target.scale.set(scaleValue[0], scaleValue[1], scaleValue[2]);
       }
     }
@@ -3446,12 +3837,13 @@
         };
         g.userData.equippedReadyPromise = null;
         g.userData.ensureEquippedReady = () => {
+          var _a, _b, _c, _d;
           if (g.userData.equippedReadyPromise) {
             return g.userData.equippedReadyPromise;
           }
           g.userData.equippedReadyPromise = Promise.allSettled([
-            left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
-            right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+            ((_b = (_a = left.userData).ensureEquippedReady) == null ? void 0 : _b.call(_a)) || left.userData.equippedReadyPromise,
+            ((_d = (_c = right.userData).ensureEquippedReady) == null ? void 0 : _d.call(_c)) || right.userData.equippedReadyPromise
           ]);
           return g.userData.equippedReadyPromise;
         };
@@ -3534,12 +3926,13 @@
       };
       g.userData.equippedReadyPromise = null;
       g.userData.ensureEquippedReady = () => {
+        var _a, _b, _c, _d;
         if (g.userData.equippedReadyPromise) {
           return g.userData.equippedReadyPromise;
         }
         g.userData.equippedReadyPromise = Promise.allSettled([
-          left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
-          right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+          ((_b = (_a = left.userData).ensureEquippedReady) == null ? void 0 : _b.call(_a)) || left.userData.equippedReadyPromise,
+          ((_d = (_c = right.userData).ensureEquippedReady) == null ? void 0 : _d.call(_c)) || right.userData.equippedReadyPromise
         ]);
         return g.userData.equippedReadyPromise;
       };
@@ -3606,12 +3999,13 @@
       };
       g.userData.equippedReadyPromise = null;
       g.userData.ensureEquippedReady = () => {
+        var _a, _b, _c, _d;
         if (g.userData.equippedReadyPromise) {
           return g.userData.equippedReadyPromise;
         }
         g.userData.equippedReadyPromise = Promise.allSettled([
-          left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
-          right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+          ((_b = (_a = left.userData).ensureEquippedReady) == null ? void 0 : _b.call(_a)) || left.userData.equippedReadyPromise,
+          ((_d = (_c = right.userData).ensureEquippedReady) == null ? void 0 : _d.call(_c)) || right.userData.equippedReadyPromise
         ]);
         return g.userData.equippedReadyPromise;
       };
@@ -3678,12 +4072,13 @@
       };
       g.userData.equippedReadyPromise = null;
       g.userData.ensureEquippedReady = () => {
+        var _a, _b, _c, _d;
         if (g.userData.equippedReadyPromise) {
           return g.userData.equippedReadyPromise;
         }
         g.userData.equippedReadyPromise = Promise.allSettled([
-          left.userData.ensureEquippedReady?.() || left.userData.equippedReadyPromise,
-          right.userData.ensureEquippedReady?.() || right.userData.equippedReadyPromise
+          ((_b = (_a = left.userData).ensureEquippedReady) == null ? void 0 : _b.call(_a)) || left.userData.equippedReadyPromise,
+          ((_d = (_c = right.userData).ensureEquippedReady) == null ? void 0 : _d.call(_c)) || right.userData.equippedReadyPromise
         ]);
         return g.userData.equippedReadyPromise;
       };
@@ -3713,10 +4108,13 @@
       return prepareWingGeometryForEferno(new THREE.ShapeGeometry(shape, 92));
     }
     function loadEfernoWingGeometries() {
-      const clonePrepared = () => ({
-        left: efernoWingAssetState.leftGeometry?.clone() || null,
-        right: efernoWingAssetState.rightGeometry?.clone() || null
-      });
+      const clonePrepared = () => {
+        var _a, _b;
+        return {
+          left: ((_a = efernoWingAssetState.leftGeometry) == null ? void 0 : _a.clone()) || null,
+          right: ((_b = efernoWingAssetState.rightGeometry) == null ? void 0 : _b.clone()) || null
+        };
+      };
       if (efernoWingAssetState.leftGeometry && efernoWingAssetState.rightGeometry) {
         return Promise.resolve(clonePrepared());
       }
@@ -3725,24 +4123,25 @@
           efernoWingAssetState.loader.load(
             efernoWingAssetState.modelUrl,
             (gltf) => {
-              const root = gltf?.scene || gltf?.scenes?.[0] || null;
+              var _a, _b, _c;
+              const root = (gltf == null ? void 0 : gltf.scene) || ((_a = gltf == null ? void 0 : gltf.scenes) == null ? void 0 : _a[0]) || null;
               const sourceGeometry = getLargestMeshGeometryFromObject(root);
               if (!sourceGeometry) {
                 reject(new Error("Eferno GLB did not contain a mesh with geometry."));
                 return;
               }
               const split = splitPairWingGeometry2(sourceGeometry);
-              if (sourceGeometry?.dispose) {
+              if (sourceGeometry == null ? void 0 : sourceGeometry.dispose) {
                 sourceGeometry.dispose();
               }
-              if (!split?.left || !split?.right) {
+              if (!(split == null ? void 0 : split.left) || !(split == null ? void 0 : split.right)) {
                 reject(new Error("Eferno GLB could not be split into left/right wings."));
                 return;
               }
               const preparedLeft = prepareWingGeometryForEferno(split.left);
               const preparedRight = prepareWingGeometryForEferno(split.right);
-              if (split.left?.dispose) split.left.dispose();
-              if (split.right?.dispose) split.right.dispose();
+              if ((_b = split.left) == null ? void 0 : _b.dispose) split.left.dispose();
+              if ((_c = split.right) == null ? void 0 : _c.dispose) split.right.dispose();
               if (!preparedLeft || !preparedRight) {
                 reject(new Error("Eferno wing geometry preparation failed."));
                 return;
@@ -5224,8 +5623,2858 @@
     }
   });
 
+  // public/HomePageAPP/src/generator/random-prop-generator-config.js
+  var random_prop_generator_config_exports = {};
+  __export(random_prop_generator_config_exports, {
+    CATEGORY_GENERATOR_CONFIGS: () => CATEGORY_GENERATOR_CONFIGS,
+    FIT_TEMPLATE_PROFILES: () => FIT_TEMPLATE_PROFILES,
+    GENERATED_PROCEDURAL_WING_FACTORY_ID: () => GENERATED_PROCEDURAL_WING_FACTORY_ID,
+    GENERATOR_CATEGORY_OPTIONS: () => GENERATOR_CATEGORY_OPTIONS,
+    GENERATOR_COLOR_HARMONY_OPTIONS: () => GENERATOR_COLOR_HARMONY_OPTIONS,
+    GENERATOR_DETAIL_DENSITY_OPTIONS: () => GENERATOR_DETAIL_DENSITY_OPTIONS,
+    GENERATOR_FIT_MODE_OPTIONS: () => GENERATOR_FIT_MODE_OPTIONS,
+    GENERATOR_RARITY_OPTIONS: () => GENERATOR_RARITY_OPTIONS,
+    GENERATOR_RARITY_PROFILES: () => GENERATOR_RARITY_PROFILES,
+    GENERATOR_THEME_MODE_OPTIONS: () => GENERATOR_THEME_MODE_OPTIONS,
+    GENERATOR_THEME_OPTIONS: () => GENERATOR_THEME_OPTIONS,
+    MATERIAL_FAMILY_CONFIGS: () => MATERIAL_FAMILY_CONFIGS,
+    PALETTE_LIBRARY: () => PALETTE_LIBRARY,
+    RANDOM_PROP_GENERATOR_VERSION: () => RANDOM_PROP_GENERATOR_VERSION,
+    STRUCTURE_FAMILY_CONFIGS: () => STRUCTURE_FAMILY_CONFIGS,
+    THEME_CONFIGS: () => THEME_CONFIGS,
+    WING_BASE_REFERENCE_SIGNATURES: () => WING_BASE_REFERENCE_SIGNATURES,
+    cloneGeneratorAttachment: () => cloneGeneratorAttachment,
+    getGeneratorOptionLabel: () => getGeneratorOptionLabel,
+    getWingBaseReferenceOptions: () => getWingBaseReferenceOptions,
+    inferWingReferenceSignature: () => inferWingReferenceSignature
+  });
+  function getGeneratorOptionLabel(options, value, fallback = "Unknown") {
+    var _a;
+    return ((_a = options.find((entry) => entry.value === value)) == null ? void 0 : _a.label) || fallback;
+  }
+  function getWingBaseReferenceOptions(propCatalog = PROP_CATALOG) {
+    const references = /* @__PURE__ */ new Map();
+    (Array.isArray(propCatalog) ? propCatalog : []).forEach((entry) => {
+      var _a, _b;
+      const categoryKey = typeof (entry == null ? void 0 : entry.categoryKey) === "string" ? entry.categoryKey : typeof (entry == null ? void 0 : entry.category) === "string" ? entry.category : "";
+      if (categoryKey !== "wingSet") {
+        return;
+      }
+      const key = typeof (entry == null ? void 0 : entry.key) === "string" ? entry.key.trim() : "";
+      const label = typeof (entry == null ? void 0 : entry.label) === "string" ? entry.label.trim() : key;
+      if (!key || !label || references.has(key)) {
+        return;
+      }
+      const attachment = cloneAttachment(entry == null ? void 0 : entry.attachment);
+      const signature = inferWingReferenceSignature(entry);
+      references.set(key, Object.freeze({
+        key,
+        label,
+        rarity: typeof (entry == null ? void 0 : entry.rarity) === "string" ? entry.rarity : "rare",
+        attachment,
+        assetUrl: typeof (entry == null ? void 0 : entry.assetUrl) === "string" ? entry.assetUrl : null,
+        factoryId: typeof (entry == null ? void 0 : entry.factoryId) === "string" ? entry.factoryId : null,
+        generatedRecipe: ((_a = entry == null ? void 0 : entry.preview) == null ? void 0 : _a.generated) && typeof entry.preview.generated === "object" ? entry.preview.generated : null,
+        sourceKind: ((_b = entry == null ? void 0 : entry.preview) == null ? void 0 : _b.generated) && typeof entry.preview.generated === "object" ? "generated" : typeof (entry == null ? void 0 : entry.assetUrl) === "string" ? "glb" : "metadata",
+        theme: signature.theme,
+        materialFamily: signature.materialFamily,
+        paletteFamily: signature.paletteFamily,
+        fitTemplateId: signature.fitTemplateId,
+        structureFamily: typeof signature.structureFamily === "string" ? signature.structureFamily : null
+      }));
+    });
+    return [...references.values()].sort((left, right) => left.label.localeCompare(right.label));
+  }
+  var RANDOM_PROP_GENERATOR_VERSION, GENERATED_PROCEDURAL_WING_FACTORY_ID, cloneTuple, cloneAttachment, cloneGeneratorAttachment, GENERATOR_CATEGORY_OPTIONS, GENERATOR_RARITY_OPTIONS, GENERATOR_THEME_MODE_OPTIONS, GENERATOR_DETAIL_DENSITY_OPTIONS, GENERATOR_COLOR_HARMONY_OPTIONS, GENERATOR_FIT_MODE_OPTIONS, GENERATOR_THEME_OPTIONS, FIT_TEMPLATE_PROFILES, MATERIAL_FAMILY_CONFIGS, PALETTE_LIBRARY, STRUCTURE_FAMILY_CONFIGS, GENERATOR_RARITY_PROFILES, THEME_CONFIGS, CATEGORY_GENERATOR_CONFIGS, WING_BASE_REFERENCE_SIGNATURES, fallbackReferenceSignature, inferWingReferenceSignature;
+  var init_random_prop_generator_config = __esm({
+    "public/HomePageAPP/src/generator/random-prop-generator-config.js"() {
+      init_prop_catalog();
+      RANDOM_PROP_GENERATOR_VERSION = 1;
+      GENERATED_PROCEDURAL_WING_FACTORY_ID = "makeGeneratedProceduralWingProp";
+      cloneTuple = (values, fallback = []) => Array.isArray(values) ? values.map((value, index) => {
+        var _a;
+        return Number.isFinite(Number(value)) ? Number(value) : (_a = fallback[index]) != null ? _a : 0;
+      }) : [...fallback];
+      cloneAttachment = (attachment) => ({
+        position: cloneTuple(attachment == null ? void 0 : attachment.position, [0.74, -0.24, 0.08]),
+        rotation: cloneTuple(attachment == null ? void 0 : attachment.rotation, [0.02, 0.06, -0.02]),
+        scale: cloneTuple(attachment == null ? void 0 : attachment.scale, [1.9, 1.9, 1.9]),
+        mirrorMode: (attachment == null ? void 0 : attachment.mirrorMode) === "paired" ? "paired" : "single",
+        fit: (attachment == null ? void 0 : attachment.fit) && typeof attachment.fit === "object" ? {
+          yOffsetRatio: Number.isFinite(Number(attachment.fit.yOffsetRatio)) ? Number(attachment.fit.yOffsetRatio) : 0.55,
+          zOffsetRatio: Number.isFinite(Number(attachment.fit.zOffsetRatio)) ? Number(attachment.fit.zOffsetRatio) : 0.02,
+          distanceMultiplier: Number.isFinite(Number(attachment.fit.distanceMultiplier)) ? Number(attachment.fit.distanceMultiplier) : 1.28,
+          ...Number.isFinite(Number(attachment.fit.initialRotationY)) ? { initialRotationY: Number(attachment.fit.initialRotationY) } : {}
+        } : null
+      });
+      cloneGeneratorAttachment = (attachment) => cloneAttachment(attachment);
+      GENERATOR_CATEGORY_OPTIONS = Object.freeze([
+        Object.freeze({
+          value: "wingSet",
+          label: "Wings",
+          enabled: true,
+          description: "Back-mounted paired wings tailored for XiO."
+        }),
+        Object.freeze({
+          value: "crowns",
+          label: "Crowns",
+          enabled: false,
+          description: "Coming Soon"
+        }),
+        Object.freeze({
+          value: "halos",
+          label: "Halos",
+          enabled: false,
+          description: "Coming Soon"
+        }),
+        Object.freeze({
+          value: "headgear",
+          label: "Headgear",
+          enabled: false,
+          description: "Coming Soon"
+        }),
+        Object.freeze({
+          value: "shoulderProps",
+          label: "Shoulder Props",
+          enabled: false,
+          description: "Coming Soon"
+        }),
+        Object.freeze({
+          value: "backProps",
+          label: "Back Props",
+          enabled: false,
+          description: "Coming Soon"
+        }),
+        Object.freeze({
+          value: "accessories",
+          label: "Accessories",
+          enabled: false,
+          description: "Coming Soon"
+        })
+      ]);
+      GENERATOR_RARITY_OPTIONS = Object.freeze([
+        Object.freeze({ value: "common", label: "Common" }),
+        Object.freeze({ value: "rare", label: "Rare" }),
+        Object.freeze({ value: "legendary", label: "Legendary" }),
+        Object.freeze({ value: "legendaryLight", label: "Legendary Light" }),
+        Object.freeze({ value: "legendaryDark", label: "Legendary Dark" })
+      ]);
+      GENERATOR_THEME_MODE_OPTIONS = Object.freeze([
+        Object.freeze({ value: "fullyRandom", label: "Fully Random" }),
+        Object.freeze({ value: "guidedTheme", label: "Guided Theme" }),
+        Object.freeze({ value: "matchExistingStyle", label: "Match Existing Style" })
+      ]);
+      GENERATOR_DETAIL_DENSITY_OPTIONS = Object.freeze([
+        Object.freeze({ value: "low", label: "Low" }),
+        Object.freeze({ value: "medium", label: "Medium" }),
+        Object.freeze({ value: "high", label: "High" }),
+        Object.freeze({ value: "autoByRarity", label: "Auto By Rarity" })
+      ]);
+      GENERATOR_COLOR_HARMONY_OPTIONS = Object.freeze([
+        Object.freeze({ value: "auto", label: "Auto" }),
+        Object.freeze({ value: "soft", label: "Soft" }),
+        Object.freeze({ value: "bold", label: "Bold" }),
+        Object.freeze({ value: "royal", label: "Royal" }),
+        Object.freeze({ value: "dark", label: "Dark" }),
+        Object.freeze({ value: "light", label: "Light" }),
+        Object.freeze({ value: "nature", label: "Nature" }),
+        Object.freeze({ value: "energy", label: "Energy" })
+      ]);
+      GENERATOR_FIT_MODE_OPTIONS = Object.freeze([
+        Object.freeze({ value: "useMasterTemplate", label: "Use Master Template" }),
+        Object.freeze({ value: "matchExistingProp", label: "Match Existing Prop" }),
+        Object.freeze({ value: "copyWingTemplate", label: "Copy Wing Template" }),
+        Object.freeze({ value: "useCategoryDefault", label: "Use Category Default" })
+      ]);
+      GENERATOR_THEME_OPTIONS = Object.freeze([
+        Object.freeze({ value: "royal", label: "Royal" }),
+        Object.freeze({ value: "celestial", label: "Celestial" }),
+        Object.freeze({ value: "light", label: "Light" }),
+        Object.freeze({ value: "shadow", label: "Shadow" }),
+        Object.freeze({ value: "nature", label: "Nature" }),
+        Object.freeze({ value: "mechanical", label: "Mechanical" }),
+        Object.freeze({ value: "crystal", label: "Crystal" }),
+        Object.freeze({ value: "arcane", label: "Arcane" }),
+        Object.freeze({ value: "ember", label: "Ember" }),
+        Object.freeze({ value: "frost", label: "Frost" }),
+        Object.freeze({ value: "moonlight", label: "Moonlight" }),
+        Object.freeze({ value: "sunflare", label: "Sunflare" }),
+        Object.freeze({ value: "galaxy", label: "Galaxy" }),
+        Object.freeze({ value: "butterfly", label: "Butterfly" }),
+        Object.freeze({ value: "dragon", label: "Dragon" }),
+        Object.freeze({ value: "rune", label: "Rune" }),
+        Object.freeze({ value: "storm", label: "Storm" }),
+        Object.freeze({ value: "aether", label: "Aether" })
+      ]);
+      FIT_TEMPLATE_PROFILES = Object.freeze({
+        "xio-wing-master": Object.freeze({
+          id: "xio-wing-master",
+          label: "XiO Wing Master Template",
+          attachment: cloneAttachment({
+            position: [0.72, -0.24, 0.08],
+            rotation: [0.016, 0.052, -0.018],
+            scale: [1.92, 1.92, 1.92],
+            mirrorMode: "paired",
+            fit: { yOffsetRatio: 0.56, zOffsetRatio: 0.02, distanceMultiplier: 1.28, initialRotationY: 0 }
+          }),
+          scaleEnvelope: Object.freeze({ min: 1.52, max: 2.46 }),
+          safeBodyClearance: Object.freeze({ x: 0.58, y: 0.18, z: 0.18 }),
+          visualBounds: Object.freeze({ maxSpan: 4.75, maxHeight: 3.35 })
+        }),
+        "xio-wing-heroic": Object.freeze({
+          id: "xio-wing-heroic",
+          label: "XiO Heroic Spread Template",
+          attachment: cloneAttachment({
+            position: [0.8, -0.3, 0.06],
+            rotation: [0.014, 0.06, -0.024],
+            scale: [2.08, 2.08, 2.08],
+            mirrorMode: "paired",
+            fit: { yOffsetRatio: 0.72, zOffsetRatio: 0.028, distanceMultiplier: 1.36, initialRotationY: 0 }
+          }),
+          scaleEnvelope: Object.freeze({ min: 1.76, max: 2.7 }),
+          safeBodyClearance: Object.freeze({ x: 0.62, y: 0.22, z: 0.22 }),
+          visualBounds: Object.freeze({ maxSpan: 5.35, maxHeight: 3.85 })
+        }),
+        "xio-wing-aerial": Object.freeze({
+          id: "xio-wing-aerial",
+          label: "XiO Aerial Bloom Template",
+          attachment: cloneAttachment({
+            position: [0.68, -0.18, 0.12],
+            rotation: [0.018, 0.044, -0.014],
+            scale: [1.74, 1.74, 1.74],
+            mirrorMode: "paired",
+            fit: { yOffsetRatio: 0.42, zOffsetRatio: 0.022, distanceMultiplier: 1.22, initialRotationY: 0 }
+          }),
+          scaleEnvelope: Object.freeze({ min: 1.4, max: 2.18 }),
+          safeBodyClearance: Object.freeze({ x: 0.52, y: 0.16, z: 0.18 }),
+          visualBounds: Object.freeze({ maxSpan: 4.25, maxHeight: 3.15 })
+        })
+      });
+      MATERIAL_FAMILY_CONFIGS = Object.freeze({
+        starlitSilk: Object.freeze({
+          id: "starlitSilk",
+          label: "Starlit Silk",
+          surface: "silk",
+          roughness: 0.34,
+          metalness: 0.08,
+          clearcoat: 0.34,
+          transmission: 0.14,
+          sheen: 0.48
+        }),
+        royalEnamel: Object.freeze({
+          id: "royalEnamel",
+          label: "Royal Enamel",
+          surface: "polished-enamel",
+          roughness: 0.18,
+          metalness: 0.56,
+          clearcoat: 0.88,
+          transmission: 0.04,
+          sheen: 0.18
+        }),
+        crystalLattice: Object.freeze({
+          id: "crystalLattice",
+          label: "Crystal Lattice",
+          surface: "crystal",
+          roughness: 0.12,
+          metalness: 0.1,
+          clearcoat: 0.92,
+          transmission: 0.48,
+          sheen: 0.06
+        }),
+        emberForged: Object.freeze({
+          id: "emberForged",
+          label: "Ember Forged",
+          surface: "forged-metal",
+          roughness: 0.42,
+          metalness: 0.74,
+          clearcoat: 0.22,
+          transmission: 0,
+          sheen: 0.02
+        }),
+        stormglass: Object.freeze({
+          id: "stormglass",
+          label: "Stormglass Alloy",
+          surface: "charged-glass",
+          roughness: 0.2,
+          metalness: 0.32,
+          clearcoat: 0.74,
+          transmission: 0.22,
+          sheen: 0.2
+        }),
+        shadowObsidian: Object.freeze({
+          id: "shadowObsidian",
+          label: "Shadow Obsidian",
+          surface: "obsidian",
+          roughness: 0.24,
+          metalness: 0.42,
+          clearcoat: 0.62,
+          transmission: 0.08,
+          sheen: 0.1
+        }),
+        verdantFiligree: Object.freeze({
+          id: "verdantFiligree",
+          label: "Verdant Filigree",
+          surface: "leaf-metal",
+          roughness: 0.3,
+          metalness: 0.18,
+          clearcoat: 0.52,
+          transmission: 0.06,
+          sheen: 0.24
+        }),
+        runeAether: Object.freeze({
+          id: "runeAether",
+          label: "Rune Aether",
+          surface: "arcane-metal",
+          roughness: 0.28,
+          metalness: 0.46,
+          clearcoat: 0.66,
+          transmission: 0.12,
+          sheen: 0.14
+        })
+      });
+      PALETTE_LIBRARY = Object.freeze({
+        royal: Object.freeze([
+          Object.freeze({ key: "royal-gold", label: "Royal Gold", primary: "#f7d889", secondary: "#e87ad8", accent: "#fff0c2", glow: "#ffd76f", shadow: "#3a2456", metal: "#f5c74b" }),
+          Object.freeze({ key: "royal-azure", label: "Royal Azure", primary: "#9fe4ff", secondary: "#5f7dff", accent: "#f7f1ff", glow: "#82d7ff", shadow: "#1d2a60", metal: "#d9d2ff" })
+        ]),
+        light: Object.freeze([
+          Object.freeze({ key: "light-aether", label: "Aether Light", primary: "#dff9ff", secondary: "#9cdcff", accent: "#ffffff", glow: "#b8ffff", shadow: "#38548f", metal: "#e6f1ff" }),
+          Object.freeze({ key: "light-halo", label: "Halo Bloom", primary: "#ffffff", secondary: "#f2d9ff", accent: "#ffdca0", glow: "#fff1c4", shadow: "#47639b", metal: "#fbe5b2" })
+        ]),
+        dark: Object.freeze([
+          Object.freeze({ key: "dark-crimson", label: "Crimson Night", primary: "#241624", secondary: "#9d2636", accent: "#ff7c58", glow: "#ff8a3a", shadow: "#08060f", metal: "#8f5b46" }),
+          Object.freeze({ key: "dark-obsidian", label: "Obsidian Ember", primary: "#16171e", secondary: "#4a5267", accent: "#ff6f4a", glow: "#ff5630", shadow: "#090a12", metal: "#6d7284" })
+        ]),
+        nature: Object.freeze([
+          Object.freeze({ key: "nature-verdant", label: "Verdant Bloom", primary: "#86d39c", secondary: "#e2f3b7", accent: "#fef7df", glow: "#a7f7b8", shadow: "#22403f", metal: "#d7d29b" }),
+          Object.freeze({ key: "nature-petal", label: "Petal Nectar", primary: "#f6a7d8", secondary: "#ffe9a3", accent: "#fff9f2", glow: "#ffd688", shadow: "#62415e", metal: "#f2d483" })
+        ]),
+        energy: Object.freeze([
+          Object.freeze({ key: "energy-voltage", label: "Voltage Arc", primary: "#7af4ff", secondary: "#5167ff", accent: "#f5fdff", glow: "#57e7ff", shadow: "#1a2856", metal: "#c2e3ff" }),
+          Object.freeze({ key: "energy-solar", label: "Solar Burst", primary: "#ffda74", secondary: "#ff7d3a", accent: "#fff4c7", glow: "#ffb34a", shadow: "#56311d", metal: "#ffdf96" })
+        ]),
+        crystal: Object.freeze([
+          Object.freeze({ key: "crystal-frost", label: "Frost Crystal", primary: "#d8f5ff", secondary: "#8be2ff", accent: "#ffffff", glow: "#b8fdff", shadow: "#335b83", metal: "#d7ecff" }),
+          Object.freeze({ key: "crystal-amethyst", label: "Amethyst Prism", primary: "#c4a1ff", secondary: "#79d9ff", accent: "#f8e7ff", glow: "#b59cff", shadow: "#342a65", metal: "#d8cbff" })
+        ]),
+        ember: Object.freeze([
+          Object.freeze({ key: "ember-cinder", label: "Cinder Bloom", primary: "#ff8d54", secondary: "#ffce6e", accent: "#fff3d6", glow: "#ff7a31", shadow: "#51231c", metal: "#c68f54" }),
+          Object.freeze({ key: "ember-ash", label: "Ashfire", primary: "#ff7d4f", secondary: "#5f6772", accent: "#ffd7b5", glow: "#ff6425", shadow: "#201a1f", metal: "#8e7567" })
+        ]),
+        moonlight: Object.freeze([
+          Object.freeze({ key: "moonlight-veil", label: "Moonlight Veil", primary: "#cfd8ff", secondary: "#88b4ff", accent: "#f2efff", glow: "#b4c6ff", shadow: "#27335d", metal: "#d6dcff" }),
+          Object.freeze({ key: "moonlight-tide", label: "Lunar Tide", primary: "#d9d2ff", secondary: "#79d4ff", accent: "#ffffff", glow: "#9fe9ff", shadow: "#283056", metal: "#ece6ff" })
+        ]),
+        mechanical: Object.freeze([
+          Object.freeze({ key: "mech-alloy", label: "Alloy Frame", primary: "#b9c7da", secondary: "#4e6ea5", accent: "#eaf4ff", glow: "#7be9ff", shadow: "#25324b", metal: "#cdd9eb" }),
+          Object.freeze({ key: "mech-carbon", label: "Carbon Forge", primary: "#5a6578", secondary: "#ff62ca", accent: "#e7eef8", glow: "#83fbff", shadow: "#171e29", metal: "#90a0b5" })
+        ]),
+        shadow: Object.freeze([
+          Object.freeze({ key: "shadow-rune", label: "Shadow Rune", primary: "#272338", secondary: "#7a53d6", accent: "#ff9b70", glow: "#bd7cff", shadow: "#09090f", metal: "#6b5aa0" }),
+          Object.freeze({ key: "shadow-night", label: "Night Majesty", primary: "#151a28", secondary: "#9f3344", accent: "#f2d0ca", glow: "#e46f51", shadow: "#07080c", metal: "#77606c" })
+        ])
+      });
+      STRUCTURE_FAMILY_CONFIGS = Object.freeze({
+        aetherPlume: Object.freeze({
+          id: "aetherPlume",
+          label: "Aether Plume",
+          silhouette: "swept-feather",
+          membrane: false,
+          primaryRange: Object.freeze([5, 10]),
+          secondaryRange: Object.freeze([2, 6]),
+          spanRange: Object.freeze([3.2, 4.55]),
+          heightRange: Object.freeze([1.85, 2.95]),
+          curveBias: 0.58,
+          tipLift: 0.76,
+          ornamentBias: Object.freeze({ haloBands: 1, crystalClusters: 1, ribbonTrails: 1, runeSigils: 0, crownSpurs: 1, emberNodes: 0 })
+        }),
+        royalFiligree: Object.freeze({
+          id: "royalFiligree",
+          label: "Royal Filigree",
+          silhouette: "crown-feather",
+          membrane: false,
+          primaryRange: Object.freeze([4, 8]),
+          secondaryRange: Object.freeze([2, 5]),
+          spanRange: Object.freeze([3, 4.15]),
+          heightRange: Object.freeze([1.9, 2.7]),
+          curveBias: 0.44,
+          tipLift: 0.58,
+          ornamentBias: Object.freeze({ haloBands: 1, crystalClusters: 1, ribbonTrails: 0, runeSigils: 1, crownSpurs: 2, emberNodes: 0 })
+        }),
+        crystalFan: Object.freeze({
+          id: "crystalFan",
+          label: "Crystal Fan",
+          silhouette: "faceted-fan",
+          membrane: false,
+          primaryRange: Object.freeze([4, 7]),
+          secondaryRange: Object.freeze([1, 3]),
+          spanRange: Object.freeze([2.9, 4]),
+          heightRange: Object.freeze([1.7, 2.65]),
+          curveBias: 0.36,
+          tipLift: 0.42,
+          ornamentBias: Object.freeze({ haloBands: 0, crystalClusters: 3, ribbonTrails: 0, runeSigils: 1, crownSpurs: 1, emberNodes: 0 })
+        }),
+        emberBlade: Object.freeze({
+          id: "emberBlade",
+          label: "Ember Blade",
+          silhouette: "blade-ridge",
+          membrane: true,
+          primaryRange: Object.freeze([4, 7]),
+          secondaryRange: Object.freeze([1, 3]),
+          spanRange: Object.freeze([3.1, 4.4]),
+          heightRange: Object.freeze([1.8, 2.8]),
+          curveBias: 0.48,
+          tipLift: 0.54,
+          ornamentBias: Object.freeze({ haloBands: 0, crystalClusters: 1, ribbonTrails: 0, runeSigils: 1, crownSpurs: 1, emberNodes: 2 })
+        }),
+        stormRibbon: Object.freeze({
+          id: "stormRibbon",
+          label: "Storm Ribbon",
+          silhouette: "ribbon-crest",
+          membrane: true,
+          primaryRange: Object.freeze([5, 8]),
+          secondaryRange: Object.freeze([1, 4]),
+          spanRange: Object.freeze([3.15, 4.5]),
+          heightRange: Object.freeze([1.75, 2.65]),
+          curveBias: 0.62,
+          tipLift: 0.64,
+          ornamentBias: Object.freeze({ haloBands: 1, crystalClusters: 0, ribbonTrails: 2, runeSigils: 2, crownSpurs: 0, emberNodes: 0 })
+        }),
+        mechanicalAegis: Object.freeze({
+          id: "mechanicalAegis",
+          label: "Mechanical Aegis",
+          silhouette: "segment-aegis",
+          membrane: false,
+          primaryRange: Object.freeze([4, 8]),
+          secondaryRange: Object.freeze([1, 4]),
+          spanRange: Object.freeze([3.05, 4.25]),
+          heightRange: Object.freeze([1.8, 2.7]),
+          curveBias: 0.28,
+          tipLift: 0.38,
+          ornamentBias: Object.freeze({ haloBands: 0, crystalClusters: 1, ribbonTrails: 0, runeSigils: 1, crownSpurs: 2, emberNodes: 0 })
+        })
+      });
+      GENERATOR_RARITY_PROFILES = Object.freeze({
+        common: Object.freeze({
+          value: "common",
+          label: "Common",
+          defaultDetailDensity: "low",
+          complexityScale: 0.78,
+          ornamentBudget: 1,
+          layerBoost: 0,
+          glowIntensity: 0.14,
+          preferredPalettes: ["nature", "soft", "light"],
+          allowedStructures: ["aetherPlume", "royalFiligree", "stormRibbon"],
+          allowedMaterials: ["starlitSilk", "verdantFiligree", "stormglass"]
+        }),
+        rare: Object.freeze({
+          value: "rare",
+          label: "Rare",
+          defaultDetailDensity: "medium",
+          complexityScale: 0.92,
+          ornamentBudget: 2,
+          layerBoost: 1,
+          glowIntensity: 0.24,
+          preferredPalettes: ["energy", "royal", "moonlight"],
+          allowedStructures: ["aetherPlume", "royalFiligree", "stormRibbon", "mechanicalAegis"],
+          allowedMaterials: ["starlitSilk", "royalEnamel", "stormglass", "runeAether"]
+        }),
+        legendary: Object.freeze({
+          value: "legendary",
+          label: "Legendary",
+          defaultDetailDensity: "medium",
+          complexityScale: 1.04,
+          ornamentBudget: 3,
+          layerBoost: 2,
+          glowIntensity: 0.36,
+          preferredPalettes: ["royal", "energy", "crystal"],
+          allowedStructures: ["aetherPlume", "royalFiligree", "crystalFan", "stormRibbon", "mechanicalAegis"],
+          allowedMaterials: ["starlitSilk", "royalEnamel", "crystalLattice", "stormglass", "runeAether"]
+        }),
+        legendaryLight: Object.freeze({
+          value: "legendaryLight",
+          label: "Legendary Light",
+          defaultDetailDensity: "high",
+          complexityScale: 1.18,
+          ornamentBudget: 4,
+          layerBoost: 3,
+          glowIntensity: 0.58,
+          preferredPalettes: ["light", "royal", "crystal", "moonlight"],
+          allowedStructures: ["aetherPlume", "royalFiligree", "crystalFan", "stormRibbon"],
+          allowedMaterials: ["starlitSilk", "royalEnamel", "crystalLattice", "stormglass", "runeAether"]
+        }),
+        legendaryDark: Object.freeze({
+          value: "legendaryDark",
+          label: "Legendary Dark",
+          defaultDetailDensity: "high",
+          complexityScale: 1.24,
+          ornamentBudget: 4,
+          layerBoost: 3,
+          glowIntensity: 0.64,
+          preferredPalettes: ["dark", "shadow", "ember", "mechanical"],
+          allowedStructures: ["royalFiligree", "crystalFan", "emberBlade", "stormRibbon", "mechanicalAegis"],
+          allowedMaterials: ["royalEnamel", "crystalLattice", "emberForged", "shadowObsidian", "stormglass", "runeAether"]
+        })
+      });
+      THEME_CONFIGS = Object.freeze({
+        royal: Object.freeze({
+          value: "royal",
+          label: "Royal",
+          preferredStructures: ["royalFiligree", "aetherPlume"],
+          preferredMaterials: ["royalEnamel", "starlitSilk"],
+          paletteFamilies: ["royal", "light"],
+          fitTemplateId: "xio-wing-heroic"
+        }),
+        celestial: Object.freeze({
+          value: "celestial",
+          label: "Celestial",
+          preferredStructures: ["aetherPlume", "stormRibbon"],
+          preferredMaterials: ["starlitSilk", "runeAether"],
+          paletteFamilies: ["light", "moonlight"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        light: Object.freeze({
+          value: "light",
+          label: "Light",
+          preferredStructures: ["aetherPlume", "crystalFan"],
+          preferredMaterials: ["starlitSilk", "crystalLattice"],
+          paletteFamilies: ["light", "crystal"],
+          fitTemplateId: "xio-wing-aerial"
+        }),
+        shadow: Object.freeze({
+          value: "shadow",
+          label: "Shadow",
+          preferredStructures: ["royalFiligree", "mechanicalAegis"],
+          preferredMaterials: ["shadowObsidian", "runeAether"],
+          paletteFamilies: ["shadow", "dark"],
+          fitTemplateId: "xio-wing-heroic"
+        }),
+        nature: Object.freeze({
+          value: "nature",
+          label: "Nature",
+          preferredStructures: ["aetherPlume", "stormRibbon"],
+          preferredMaterials: ["verdantFiligree", "starlitSilk"],
+          paletteFamilies: ["nature", "light"],
+          fitTemplateId: "xio-wing-aerial"
+        }),
+        mechanical: Object.freeze({
+          value: "mechanical",
+          label: "Mechanical",
+          preferredStructures: ["mechanicalAegis", "stormRibbon"],
+          preferredMaterials: ["stormglass", "royalEnamel"],
+          paletteFamilies: ["mechanical", "energy"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        crystal: Object.freeze({
+          value: "crystal",
+          label: "Crystal",
+          preferredStructures: ["crystalFan", "aetherPlume"],
+          preferredMaterials: ["crystalLattice", "starlitSilk"],
+          paletteFamilies: ["crystal", "light"],
+          fitTemplateId: "xio-wing-aerial"
+        }),
+        arcane: Object.freeze({
+          value: "arcane",
+          label: "Arcane",
+          preferredStructures: ["stormRibbon", "royalFiligree"],
+          preferredMaterials: ["runeAether", "royalEnamel"],
+          paletteFamilies: ["shadow", "energy"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        ember: Object.freeze({
+          value: "ember",
+          label: "Ember",
+          preferredStructures: ["emberBlade", "royalFiligree"],
+          preferredMaterials: ["emberForged", "shadowObsidian"],
+          paletteFamilies: ["ember", "dark"],
+          fitTemplateId: "xio-wing-heroic"
+        }),
+        frost: Object.freeze({
+          value: "frost",
+          label: "Frost",
+          preferredStructures: ["crystalFan", "aetherPlume"],
+          preferredMaterials: ["crystalLattice", "stormglass"],
+          paletteFamilies: ["crystal", "light"],
+          fitTemplateId: "xio-wing-aerial"
+        }),
+        moonlight: Object.freeze({
+          value: "moonlight",
+          label: "Moonlight",
+          preferredStructures: ["aetherPlume", "stormRibbon"],
+          preferredMaterials: ["starlitSilk", "runeAether"],
+          paletteFamilies: ["moonlight", "light"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        sunflare: Object.freeze({
+          value: "sunflare",
+          label: "Sunflare",
+          preferredStructures: ["emberBlade", "aetherPlume"],
+          preferredMaterials: ["royalEnamel", "emberForged"],
+          paletteFamilies: ["energy", "light"],
+          fitTemplateId: "xio-wing-heroic"
+        }),
+        galaxy: Object.freeze({
+          value: "galaxy",
+          label: "Galaxy",
+          preferredStructures: ["stormRibbon", "aetherPlume"],
+          preferredMaterials: ["runeAether", "starlitSilk"],
+          paletteFamilies: ["moonlight", "shadow"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        butterfly: Object.freeze({
+          value: "butterfly",
+          label: "Butterfly",
+          preferredStructures: ["aetherPlume", "crystalFan"],
+          preferredMaterials: ["starlitSilk", "verdantFiligree"],
+          paletteFamilies: ["nature", "royal"],
+          fitTemplateId: "xio-wing-aerial"
+        }),
+        dragon: Object.freeze({
+          value: "dragon",
+          label: "Dragon",
+          preferredStructures: ["emberBlade", "mechanicalAegis"],
+          preferredMaterials: ["emberForged", "shadowObsidian"],
+          paletteFamilies: ["ember", "dark"],
+          fitTemplateId: "xio-wing-heroic"
+        }),
+        rune: Object.freeze({
+          value: "rune",
+          label: "Rune",
+          preferredStructures: ["stormRibbon", "royalFiligree"],
+          preferredMaterials: ["runeAether", "stormglass"],
+          paletteFamilies: ["energy", "shadow"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        storm: Object.freeze({
+          value: "storm",
+          label: "Storm",
+          preferredStructures: ["stormRibbon", "mechanicalAegis"],
+          preferredMaterials: ["stormglass", "runeAether"],
+          paletteFamilies: ["energy", "moonlight"],
+          fitTemplateId: "xio-wing-master"
+        }),
+        aether: Object.freeze({
+          value: "aether",
+          label: "Aether",
+          preferredStructures: ["aetherPlume", "stormRibbon"],
+          preferredMaterials: ["starlitSilk", "runeAether"],
+          paletteFamilies: ["light", "energy"],
+          fitTemplateId: "xio-wing-master"
+        })
+      });
+      CATEGORY_GENERATOR_CONFIGS = Object.freeze({
+        wingSet: Object.freeze({
+          key: "wingSet",
+          label: "Wings",
+          enabled: true,
+          slotKey: "wingSet",
+          defaultFitTemplateId: "xio-wing-master",
+          allowedThemes: GENERATOR_THEME_OPTIONS.map((entry) => entry.value)
+        })
+      });
+      WING_BASE_REFERENCE_SIGNATURES = Object.freeze({
+        blossomissWings: Object.freeze({ theme: "butterfly", materialFamily: "starlitSilk", paletteFamily: "nature", fitTemplateId: "xio-wing-aerial", structureFamily: "aetherPlume" }),
+        canvasOfNavelleWings: Object.freeze({ theme: "shadow", materialFamily: "shadowObsidian", paletteFamily: "shadow", fitTemplateId: "xio-wing-heroic", structureFamily: "royalFiligree" }),
+        goddessOfValleysWings: Object.freeze({ theme: "nature", materialFamily: "verdantFiligree", paletteFamily: "nature", fitTemplateId: "xio-wing-aerial", structureFamily: "aetherPlume" }),
+        honeycombBloomsWings: Object.freeze({ theme: "royal", materialFamily: "royalEnamel", paletteFamily: "royal", fitTemplateId: "xio-wing-aerial", structureFamily: "royalFiligree" }),
+        lavalcanoWings: Object.freeze({ theme: "ember", materialFamily: "emberForged", paletteFamily: "ember", fitTemplateId: "xio-wing-heroic", structureFamily: "emberBlade" }),
+        lightOfSmilesWings: Object.freeze({ theme: "light", materialFamily: "starlitSilk", paletteFamily: "light", fitTemplateId: "xio-wing-aerial", structureFamily: "aetherPlume" }),
+        moonlightAmayaWings: Object.freeze({ theme: "moonlight", materialFamily: "runeAether", paletteFamily: "moonlight", fitTemplateId: "xio-wing-master", structureFamily: "stormRibbon" }),
+        endlessWings: Object.freeze({ theme: "galaxy", materialFamily: "runeAether", paletteFamily: "shadow", fitTemplateId: "xio-wing-master", structureFamily: "stormRibbon" }),
+        emeraldCoenWings: Object.freeze({ theme: "nature", materialFamily: "verdantFiligree", paletteFamily: "nature", fitTemplateId: "xio-wing-master", structureFamily: "aetherPlume" }),
+        xatoriWings: Object.freeze({ theme: "royal", materialFamily: "royalEnamel", paletteFamily: "royal", fitTemplateId: "xio-wing-heroic", structureFamily: "royalFiligree" }),
+        alphaWings: Object.freeze({ theme: "mechanical", materialFamily: "stormglass", paletteFamily: "mechanical", fitTemplateId: "xio-wing-master", structureFamily: "mechanicalAegis" }),
+        rainbowWings: Object.freeze({ theme: "celestial", materialFamily: "starlitSilk", paletteFamily: "energy", fitTemplateId: "xio-wing-master", structureFamily: "aetherPlume" }),
+        roboticWings: Object.freeze({ theme: "mechanical", materialFamily: "stormglass", paletteFamily: "mechanical", fitTemplateId: "xio-wing-master", structureFamily: "mechanicalAegis" }),
+        omegaWings: Object.freeze({ theme: "shadow", materialFamily: "shadowObsidian", paletteFamily: "dark", fitTemplateId: "xio-wing-heroic", structureFamily: "crystalFan" }),
+        efernoWings: Object.freeze({ theme: "ember", materialFamily: "emberForged", paletteFamily: "ember", fitTemplateId: "xio-wing-heroic", structureFamily: "emberBlade" })
+      });
+      fallbackReferenceSignature = (entry) => {
+        const rarity = typeof (entry == null ? void 0 : entry.rarity) === "string" ? entry.rarity : "rare";
+        if (rarity === "legendaryLight") {
+          return {
+            theme: "light",
+            materialFamily: "starlitSilk",
+            paletteFamily: "light",
+            fitTemplateId: "xio-wing-aerial",
+            structureFamily: "aetherPlume"
+          };
+        }
+        if (rarity === "legendaryDark") {
+          return {
+            theme: "shadow",
+            materialFamily: "shadowObsidian",
+            paletteFamily: "dark",
+            fitTemplateId: "xio-wing-heroic",
+            structureFamily: "royalFiligree"
+          };
+        }
+        return {
+          theme: "royal",
+          materialFamily: "royalEnamel",
+          paletteFamily: "royal",
+          fitTemplateId: "xio-wing-master",
+          structureFamily: "aetherPlume"
+        };
+      };
+      inferWingReferenceSignature = (entry) => WING_BASE_REFERENCE_SIGNATURES[entry == null ? void 0 : entry.key] || fallbackReferenceSignature(entry);
+    }
+  });
+
+  // public/HomePageAPP/src/generator/random-prop-generator-core.js
+  var random_prop_generator_core_exports = {};
+  __export(random_prop_generator_core_exports, {
+    buildGeneratorPreviewSummary: () => buildGeneratorPreviewSummary,
+    generateRandomWingDraft: () => generateRandomWingDraft,
+    isGeneratedPropPreview: () => isGeneratedPropPreview,
+    normalizeGeneratedWingRecipe: () => normalizeGeneratedWingRecipe,
+    validateGeneratedWingRecipe: () => validateGeneratedWingRecipe
+  });
+  function isGeneratedPropPreview(preview) {
+    return Boolean(
+      isPlainObject(preview) && isPlainObject(preview.generated) && normalizeValue(preview.generated.category) === DEFAULT_CATEGORY_VALUE
+    );
+  }
+  function normalizeGeneratedWingRecipe(value) {
+    if (!isPlainObject(value) || normalizeValue(value.category) !== DEFAULT_CATEGORY_VALUE) {
+      return null;
+    }
+    const rarityProfile = resolveRarityProfile(value.rarityProfile);
+    const themeConfig = resolveThemeConfig(value.theme);
+    const fitTemplate = resolveFitTemplateProfile(value.fitTemplateId);
+    const materialFamily = resolveMaterialFamily(value.materialFamily);
+    const palette = normalizeGeneratedPalette(value.palette);
+    const structureRecipe = normalizeStructureRecipe(value.structureRecipe);
+    const ornamentRecipe = normalizeOrnamentRecipe(value.ornamentRecipe);
+    if (!rarityProfile || !themeConfig || !fitTemplate || !materialFamily || !palette || !structureRecipe || !ornamentRecipe) {
+      return null;
+    }
+    const fitAttachment = deriveSafeFitAttachment({
+      fitTemplate,
+      attachment: value.fitAttachment || fitTemplate.attachment,
+      fitMode: value.fitMode
+    });
+    return {
+      version: Number.isFinite(Number(value.version)) ? Number(value.version) : RANDOM_PROP_GENERATOR_VERSION,
+      seed: Number.isFinite(Number(value.seed)) ? Number(value.seed) : null,
+      category: DEFAULT_CATEGORY_VALUE,
+      theme: themeConfig.value,
+      themeLabel: themeConfig.label,
+      themeMode: GENERATOR_THEME_MODE_OPTIONS.some((entry) => entry.value === value.themeMode) ? value.themeMode : DEFAULT_THEME_MODE,
+      rarityProfile: rarityProfile.value,
+      fitTemplateId: fitTemplate.id,
+      fitMode: GENERATOR_FIT_MODE_OPTIONS.some((entry) => entry.value === value.fitMode) ? value.fitMode : DEFAULT_FIT_MODE,
+      templateStrategy: normalizeValue(value.templateStrategy) || null,
+      baseReferenceKey: typeof value.baseReferenceKey === "string" && value.baseReferenceKey.trim().length > 0 ? value.baseReferenceKey.trim() : null,
+      templateReferenceKey: typeof value.templateReferenceKey === "string" && value.templateReferenceKey.trim().length > 0 ? value.templateReferenceKey.trim() : null,
+      templateSourceKind: typeof value.templateSourceKind === "string" && value.templateSourceKind.trim().length > 0 ? value.templateSourceKind.trim() : null,
+      materialFamily: materialFamily.id,
+      colorHarmonyMode: GENERATOR_COLOR_HARMONY_OPTIONS.some((entry) => entry.value === value.colorHarmonyMode) ? value.colorHarmonyMode : DEFAULT_COLOR_HARMONY,
+      detailDensity: GENERATOR_DETAIL_DENSITY_OPTIONS.some((entry) => entry.value === value.detailDensity) ? value.detailDensity : rarityProfile.defaultDetailDensity,
+      palette,
+      structureRecipe,
+      ornamentRecipe,
+      fitAttachment,
+      displaySummary: normalizeDisplaySummary(value.displaySummary)
+    };
+  }
+  function validateGeneratedWingRecipe(recipe, {
+    categoryConfig = CATEGORY_GENERATOR_CONFIGS[DEFAULT_CATEGORY_VALUE]
+  } = {}) {
+    var _a;
+    const issues = [];
+    const normalized = normalizeGeneratedWingRecipe(recipe);
+    if (!normalized) {
+      issues.push("The generated recipe payload is incomplete or malformed.");
+      return {
+        valid: false,
+        issues,
+        checks: {
+          category: false,
+          rarity: false,
+          theme: false,
+          material: false,
+          palette: false,
+          silhouette: false,
+          fit: false
+        }
+      };
+    }
+    const rarityProfile = resolveRarityProfile(normalized.rarityProfile);
+    const themeConfig = resolveThemeConfig(normalized.theme);
+    const materialFamily = resolveMaterialFamily(normalized.materialFamily);
+    const fitTemplate = resolveFitTemplateProfile(normalized.fitTemplateId);
+    const structureFamily = resolveStructureFamily(normalized.structureRecipe.family);
+    const fitAttachment = cloneGeneratorAttachment(normalized.fitAttachment);
+    const scaleEnvelope = (fitTemplate == null ? void 0 : fitTemplate.scaleEnvelope) || { min: 1.4, max: 2.6 };
+    const withinScaleEnvelope = fitAttachment.scale.every((value) => value >= scaleEnvelope.min && value <= scaleEnvelope.max);
+    const paletteValid = validateHexPalette(normalized.palette);
+    const silhouetteValid = normalized.structureRecipe.primaryLayerCount >= 3 && normalized.structureRecipe.span >= 2.4 && normalized.structureRecipe.height >= 1.4;
+    if (!(categoryConfig == null ? void 0 : categoryConfig.enabled) || normalized.category !== categoryConfig.key) {
+      issues.push("The generated prop category is not enabled in the v1 generator.");
+    }
+    if (!rarityProfile) {
+      issues.push("The selected rarity profile could not be resolved.");
+    }
+    if (!themeConfig) {
+      issues.push("The theme direction is not supported by the generator.");
+    }
+    if (!materialFamily) {
+      issues.push("The material family is missing or invalid.");
+    }
+    if (!paletteValid) {
+      issues.push("The generated palette is incomplete or contains invalid colors.");
+    }
+    if (!structureFamily) {
+      issues.push("The structure family is invalid.");
+    }
+    if (!silhouetteValid) {
+      issues.push("The wing silhouette did not meet the minimum quality threshold.");
+    }
+    if (!fitTemplate || !withinScaleEnvelope || fitAttachment.mirrorMode !== "paired") {
+      issues.push("The XiO fit template is invalid or falls outside the safe wing scale envelope.");
+    }
+    if (themeConfig && materialFamily && !themeConfig.preferredMaterials.includes(materialFamily.id) && !((_a = resolveRarityProfile(normalized.rarityProfile)) == null ? void 0 : _a.allowedMaterials.includes(materialFamily.id))) {
+      issues.push("The material family does not align with the selected theme or rarity.");
+    }
+    if (structureFamily && rarityProfile && !rarityProfile.allowedStructures.includes(structureFamily.id)) {
+      issues.push("The structure family does not align with the selected rarity.");
+    }
+    return {
+      valid: issues.length === 0,
+      issues,
+      checks: {
+        category: Boolean((categoryConfig == null ? void 0 : categoryConfig.enabled) && normalized.category === categoryConfig.key),
+        rarity: Boolean(rarityProfile),
+        theme: Boolean(themeConfig),
+        material: Boolean(materialFamily),
+        palette: paletteValid,
+        silhouette: silhouetteValid,
+        fit: Boolean(fitTemplate && withinScaleEnvelope && fitAttachment.mirrorMode === "paired")
+      }
+    };
+  }
+  function buildGeneratorPreviewSummary(formInput, { baseReferenceOptions = [] } = {}) {
+    const input = {
+      category: normalizeValue(formInput == null ? void 0 : formInput.category) || DEFAULT_CATEGORY_VALUE,
+      rarity: normalizeValue(formInput == null ? void 0 : formInput.rarity) || DEFAULT_RARITY_VALUE,
+      themeMode: normalizeValue(formInput == null ? void 0 : formInput.themeMode) || DEFAULT_THEME_MODE,
+      themeInput: normalizeValue(formInput == null ? void 0 : formInput.themeInput),
+      detailDensity: normalizeValue(formInput == null ? void 0 : formInput.detailDensity) || DEFAULT_DETAIL_DENSITY,
+      colorHarmonyMode: normalizeValue(formInput == null ? void 0 : formInput.colorHarmonyMode) || DEFAULT_COLOR_HARMONY,
+      fitMode: normalizeValue(formInput == null ? void 0 : formInput.fitMode) || DEFAULT_FIT_MODE,
+      baseReferenceKey: normalizeValue(formInput == null ? void 0 : formInput.baseReferenceKey)
+    };
+    const categoryOption = resolveCategoryOption(input.category) || resolveCategoryOption(DEFAULT_CATEGORY_VALUE);
+    const rarityOption = GENERATOR_RARITY_OPTIONS.find((entry) => entry.value === input.rarity) || GENERATOR_RARITY_OPTIONS.find((entry) => entry.value === DEFAULT_RARITY_VALUE);
+    const rarityProfile = resolveRarityProfile(rarityOption.value);
+    const references = baseReferenceOptions.length ? baseReferenceOptions : getWingBaseReferenceOptions();
+    const baseReference = references.find((entry) => entry.key === input.baseReferenceKey) || (input.fitMode === "copyWingTemplate" || input.themeMode === "matchExistingStyle" ? references[0] || null : null);
+    const themeConfig = input.themeMode === "guidedTheme" ? resolveThemeConfig(input.themeInput || DEFAULT_THEME_VALUE) || THEME_CONFIGS[DEFAULT_THEME_VALUE] : input.themeMode === "matchExistingStyle" || input.fitMode === "copyWingTemplate" && (baseReference == null ? void 0 : baseReference.theme) ? resolveThemeConfig((baseReference == null ? void 0 : baseReference.theme) || DEFAULT_THEME_VALUE) || THEME_CONFIGS[DEFAULT_THEME_VALUE] : THEME_CONFIGS[DEFAULT_THEME_VALUE];
+    const detailDensity = resolveDetailDensity(input, rarityProfile);
+    const materialFamily = (input.themeMode === "matchExistingStyle" || input.fitMode === "copyWingTemplate") && (baseReference == null ? void 0 : baseReference.materialFamily) ? resolveMaterialFamily(baseReference.materialFamily) || MATERIAL_FAMILY_CONFIGS.royalEnamel : resolveMaterialFamily(themeConfig.preferredMaterials[0]) || MATERIAL_FAMILY_CONFIGS.royalEnamel;
+    const fitTemplate = resolveFitTemplateProfile(
+      input.fitMode === "matchExistingProp" || input.fitMode === "copyWingTemplate" ? (baseReference == null ? void 0 : baseReference.fitTemplateId) || themeConfig.fitTemplateId : input.fitMode === "useCategoryDefault" ? CATEGORY_GENERATOR_CONFIGS[DEFAULT_CATEGORY_VALUE].defaultFitTemplateId : themeConfig.fitTemplateId || CATEGORY_GENERATOR_CONFIGS[DEFAULT_CATEGORY_VALUE].defaultFitTemplateId
+    ) || FIT_TEMPLATE_PROFILES[CATEGORY_GENERATOR_CONFIGS[DEFAULT_CATEGORY_VALUE].defaultFitTemplateId];
+    return buildSummaryObject({
+      categoryOption,
+      rarityOption,
+      themeConfig,
+      detailDensity,
+      materialFamily,
+      fitTemplate,
+      baseReference,
+      fitMode: input.fitMode
+    });
+  }
+  function generateRandomWingDraft(formInput, {
+    existingProps = [],
+    baseReferenceOptions = [],
+    defaultWingMotionPreview = null,
+    templateReference = null
+  } = {}) {
+    const input = {
+      category: normalizeValue(formInput == null ? void 0 : formInput.category) || DEFAULT_CATEGORY_VALUE,
+      rarity: normalizeValue(formInput == null ? void 0 : formInput.rarity) || DEFAULT_RARITY_VALUE,
+      themeMode: normalizeValue(formInput == null ? void 0 : formInput.themeMode) || DEFAULT_THEME_MODE,
+      themeInput: normalizeValue(formInput == null ? void 0 : formInput.themeInput),
+      detailDensity: normalizeValue(formInput == null ? void 0 : formInput.detailDensity) || DEFAULT_DETAIL_DENSITY,
+      colorHarmonyMode: normalizeValue(formInput == null ? void 0 : formInput.colorHarmonyMode) || DEFAULT_COLOR_HARMONY,
+      fitMode: normalizeValue(formInput == null ? void 0 : formInput.fitMode) || DEFAULT_FIT_MODE,
+      baseReferenceKey: normalizeValue(formInput == null ? void 0 : formInput.baseReferenceKey)
+    };
+    const validationIssues = [];
+    const categoryConfig = CATEGORY_GENERATOR_CONFIGS[input.category];
+    if (!(categoryConfig == null ? void 0 : categoryConfig.enabled)) {
+      validationIssues.push("Only wing generation is enabled in Random Prop Generator v1.");
+    }
+    const rarityProfile = resolveRarityProfile(input.rarity);
+    if (!rarityProfile) {
+      validationIssues.push("Choose a supported rarity before generating.");
+    }
+    const references = baseReferenceOptions.length ? baseReferenceOptions : getWingBaseReferenceOptions(existingProps);
+    const seed = createSeed([
+      input.category,
+      input.rarity,
+      input.themeMode,
+      input.themeInput,
+      input.detailDensity,
+      input.colorHarmonyMode,
+      input.fitMode,
+      input.baseReferenceKey
+    ]);
+    const rng = mulberry32(seed);
+    const baseReference = resolveBaseReference({
+      input,
+      baseReferenceOptions: references,
+      themeMode: input.themeMode,
+      rng
+    });
+    if ((input.fitMode === "matchExistingProp" || input.fitMode === "copyWingTemplate") && !baseReference) {
+      validationIssues.push(
+        input.fitMode === "copyWingTemplate" ? "Choose a wing template reference before generating a derivative wing." : "Choose a base reference when Match Existing Prop is selected."
+      );
+    }
+    if (input.themeMode === "guidedTheme" && !resolveThemeConfig(input.themeInput)) {
+      validationIssues.push("Choose a supported guided theme for this generator.");
+    }
+    if (validationIssues.length > 0) {
+      return {
+        ok: false,
+        error: validationIssues[0],
+        coherenceReport: {
+          valid: false,
+          issues: validationIssues
+        }
+      };
+    }
+    const categoryOption = resolveCategoryOption(input.category) || resolveCategoryOption(DEFAULT_CATEGORY_VALUE);
+    const rarityOption = GENERATOR_RARITY_OPTIONS.find((entry) => entry.value === input.rarity) || GENERATOR_RARITY_OPTIONS[1];
+    const themeConfig = resolveGeneratedTheme({
+      input,
+      baseReference,
+      categoryConfig,
+      rng
+    }) || THEME_CONFIGS[DEFAULT_THEME_VALUE];
+    const detailDensity = resolveDetailDensity(input, rarityProfile);
+    const materialFamily = resolveMaterialFamilyForRecipe({
+      themeConfig,
+      rarityProfile,
+      baseReference,
+      input,
+      templateReference,
+      rng
+    }) || MATERIAL_FAMILY_CONFIGS.royalEnamel;
+    const paletteFamily = resolvePaletteFamily({
+      themeConfig,
+      colorHarmonyMode: input.colorHarmonyMode,
+      rarityProfile,
+      baseReference
+    });
+    const palette = cloneJson(pickRandom(rng, PALETTE_LIBRARY[paletteFamily], PALETTE_LIBRARY.royal[0]), PALETTE_LIBRARY.royal[0]);
+    const structureFamily = resolveStructureFamilyForRecipe({
+      themeConfig,
+      rarityProfile,
+      baseReference,
+      input,
+      templateReference,
+      rng
+    }) || STRUCTURE_FAMILY_CONFIGS.aetherPlume;
+    const fitTemplateId = input.fitMode === "matchExistingProp" || input.fitMode === "copyWingTemplate" ? (baseReference == null ? void 0 : baseReference.fitTemplateId) || themeConfig.fitTemplateId || categoryConfig.defaultFitTemplateId : input.fitMode === "useCategoryDefault" ? categoryConfig.defaultFitTemplateId : themeConfig.fitTemplateId || categoryConfig.defaultFitTemplateId;
+    const fitTemplate = resolveFitTemplateProfile(fitTemplateId) || FIT_TEMPLATE_PROFILES[categoryConfig.defaultFitTemplateId];
+    const draftAttachment = deriveSafeFitAttachment({
+      fitTemplate,
+      attachment: hasReferenceGuidedFitMode(input.fitMode) && ((templateReference == null ? void 0 : templateReference.attachment) || (baseReference == null ? void 0 : baseReference.attachment)) ? (templateReference == null ? void 0 : templateReference.attachment) || (baseReference == null ? void 0 : baseReference.attachment) : fitTemplate.attachment,
+      fitMode: input.fitMode
+    });
+    const structureRecipe = buildStructureRecipe({
+      rng,
+      structureFamily,
+      rarityProfile,
+      detailDensity,
+      templateReference,
+      fitTemplate
+    });
+    const ornamentRecipe = buildOrnamentRecipe({
+      rng,
+      structureFamily,
+      rarityProfile,
+      detailDensity
+    });
+    const themeDescriptor = buildThemeDescriptor(rng, themeConfig.value);
+    const structureDescriptor = buildStructureDescriptor(rng, structureFamily.id);
+    const label = `${themeDescriptor} ${structureDescriptor} Wings`;
+    const existingKeys = createExistingKeySet(existingProps);
+    const key = buildUniqueKey(label, existingKeys);
+    const summary = buildSummaryObject({
+      categoryOption,
+      rarityOption,
+      themeConfig,
+      detailDensity,
+      materialFamily,
+      fitTemplate,
+      baseReference,
+      fitMode: input.fitMode
+    });
+    const recipe = {
+      version: RANDOM_PROP_GENERATOR_VERSION,
+      seed,
+      category: DEFAULT_CATEGORY_VALUE,
+      theme: themeConfig.value,
+      themeLabel: themeConfig.label,
+      themeMode: input.themeMode,
+      rarityProfile: rarityProfile.value,
+      fitTemplateId: fitTemplate.id,
+      fitMode: input.fitMode,
+      templateStrategy: input.fitMode === "copyWingTemplate" ? "derivative-copy" : null,
+      baseReferenceKey: (baseReference == null ? void 0 : baseReference.key) || null,
+      templateReferenceKey: input.fitMode === "copyWingTemplate" ? (templateReference == null ? void 0 : templateReference.key) || (baseReference == null ? void 0 : baseReference.key) || null : null,
+      templateSourceKind: input.fitMode === "copyWingTemplate" ? (templateReference == null ? void 0 : templateReference.sourceKind) || (baseReference == null ? void 0 : baseReference.sourceKind) || null : null,
+      materialFamily: materialFamily.id,
+      colorHarmonyMode: input.colorHarmonyMode,
+      detailDensity,
+      palette,
+      structureRecipe,
+      ornamentRecipe,
+      fitAttachment: cloneGeneratorAttachment(draftAttachment),
+      displaySummary: summary
+    };
+    const coherenceReport = validateGeneratedWingRecipe(recipe, {
+      categoryConfig
+    });
+    if (!coherenceReport.valid) {
+      return {
+        ok: false,
+        error: coherenceReport.issues[0] || "The generated wing did not pass coherence validation.",
+        coherenceReport
+      };
+    }
+    const tags = [
+      "generated",
+      "procedural",
+      themeConfig.value,
+      rarityProfile.value,
+      materialFamily.id,
+      structureFamily.id
+    ].filter(Boolean);
+    const description = [
+      `${themeConfig.label} wing set generated for XiO.`,
+      `${rarityOption.label} rarity with ${materialFamily.label.toLowerCase()} materials.`,
+      `Built with ${structureFamily.label.toLowerCase()} structure and ${detailDensity} detail density.`,
+      input.fitMode === "copyWingTemplate" && baseReference ? `Uses ${baseReference.label} as a derivative template guide without cloning it exactly.` : null
+    ].filter(Boolean).join(" ");
+    const draftRecord = {
+      key,
+      label,
+      categoryKey: DEFAULT_CATEGORY_VALUE,
+      rarity: rarityProfile.value,
+      factoryId: GENERATED_PROCEDURAL_WING_FACTORY_ID,
+      assetUrl: null,
+      storagePath: null,
+      attachment: draftAttachment,
+      eyePreset: null,
+      materialPreset: null,
+      mysteryBoxEnabled: false,
+      active: true,
+      archived: false,
+      tags,
+      description,
+      preview: {
+        wingMotion: buildWingMotionPreview(defaultWingMotionPreview, recipe),
+        generated: recipe
+      }
+    };
+    return {
+      ok: true,
+      draftRecord,
+      recipe,
+      summary,
+      coherenceReport
+    };
+  }
+  var DEFAULT_THEME_VALUE, DEFAULT_RARITY_VALUE, DEFAULT_CATEGORY_VALUE, DEFAULT_THEME_MODE, DEFAULT_DETAIL_DENSITY, DEFAULT_COLOR_HARMONY, DEFAULT_FIT_MODE, DETAIL_DENSITY_SCALE, COLOR_HARMONY_TO_PALETTE_FAMILY, STRUCTURE_NAME_LIBRARY, THEME_NAME_LIBRARY, isPlainObject, cloneJson, clamp, lerp, normalizeValue, normalizeSlug, hashString, createSeed, mulberry32, pickRandom, resolveThemeOption, resolveThemeConfig, resolveCategoryOption, resolveRarityProfile, resolveFitTemplateProfile, resolveMaterialFamily, resolveStructureFamily, hasReferenceGuidedFitMode, averageAttachmentScale, resolveTemplateReferenceGeneratedRecipe, resolveTemplateReferenceMetrics, resolveTemplateReferenceStructureFamily, clampToRange, getReferenceTemplateLabel, clampScaleToEnvelope, deriveSafeFitAttachment, normalizeGeneratedPalette, normalizeStructureRecipe, normalizeOrnamentRecipe, normalizeDisplaySummary, normalizeRequestedTheme, createExistingKeySet, buildUniqueKey, buildThemeDescriptor, buildStructureDescriptor, resolvePaletteFamily, resolveGeneratedTheme, resolveBaseReference, resolveMaterialFamilyForRecipe, resolveStructureFamilyForRecipe, resolveDetailDensity, computeCountFromRange, buildStructureRecipe, buildOrnamentRecipe, buildWingMotionPreview, buildSummaryObject, validateHexPalette;
+  var init_random_prop_generator_core = __esm({
+    "public/HomePageAPP/src/generator/random-prop-generator-core.js"() {
+      init_random_prop_generator_config();
+      DEFAULT_THEME_VALUE = "royal";
+      DEFAULT_RARITY_VALUE = "rare";
+      DEFAULT_CATEGORY_VALUE = "wingSet";
+      DEFAULT_THEME_MODE = "fullyRandom";
+      DEFAULT_DETAIL_DENSITY = "autoByRarity";
+      DEFAULT_COLOR_HARMONY = "auto";
+      DEFAULT_FIT_MODE = "useMasterTemplate";
+      DETAIL_DENSITY_SCALE = Object.freeze({
+        low: 0.86,
+        medium: 1,
+        high: 1.16
+      });
+      COLOR_HARMONY_TO_PALETTE_FAMILY = Object.freeze({
+        auto: null,
+        soft: "light",
+        bold: "energy",
+        royal: "royal",
+        dark: "dark",
+        light: "light",
+        nature: "nature",
+        energy: "energy"
+      });
+      STRUCTURE_NAME_LIBRARY = Object.freeze({
+        aetherPlume: Object.freeze(["Aether Plume", "Skycrest", "Lumen Feather"]),
+        royalFiligree: Object.freeze(["Regalia Crest", "Sovereign Filigree", "Majesty Veil"]),
+        crystalFan: Object.freeze(["Prism Bloom", "Crystal Veil", "Facet Halo"]),
+        emberBlade: Object.freeze(["Cinder Blade", "Inferno Crest", "Ember Talon"]),
+        stormRibbon: Object.freeze(["Storm Ribbon", "Tempest Veil", "Aether Gale"]),
+        mechanicalAegis: Object.freeze(["Aegis Frame", "Flux Guard", "Arc Alloy"])
+      });
+      THEME_NAME_LIBRARY = Object.freeze({
+        royal: Object.freeze(["Royal", "Sovereign", "Regal"]),
+        celestial: Object.freeze(["Celestial", "Astral", "Starwoven"]),
+        light: Object.freeze(["Radiant", "Dawnlit", "Haloed"]),
+        shadow: Object.freeze(["Shadow", "Nightbound", "Twilight"]),
+        nature: Object.freeze(["Verdant", "Blooming", "Wildheart"]),
+        mechanical: Object.freeze(["Mechanical", "Alloy", "Gearbound"]),
+        crystal: Object.freeze(["Crystal", "Prismatic", "Lattice"]),
+        arcane: Object.freeze(["Arcane", "Spellwoven", "Sigilborn"]),
+        ember: Object.freeze(["Ember", "Cinder", "Infernal"]),
+        frost: Object.freeze(["Frost", "Glacial", "Snowglass"]),
+        moonlight: Object.freeze(["Moonlight", "Lunar", "Silverveil"]),
+        sunflare: Object.freeze(["Sunflare", "Solstice", "Daybreak"]),
+        galaxy: Object.freeze(["Galaxy", "Nebula", "Voidlight"]),
+        butterfly: Object.freeze(["Butterfly", "Petalwing", "Bloomveil"]),
+        dragon: Object.freeze(["Dragon", "Drakeshard", "Wyrmcrest"]),
+        rune: Object.freeze(["Rune", "Glyphbound", "Inscribed"]),
+        storm: Object.freeze(["Storm", "Tempest", "Thunderveil"]),
+        aether: Object.freeze(["Aether", "Skyborne", "Liftrune"])
+      });
+      isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+      cloneJson = (value, fallback = null) => {
+        if (value === void 0) {
+          return fallback;
+        }
+        if (typeof structuredClone === "function") {
+          try {
+            return structuredClone(value);
+          } catch {
+          }
+        }
+        try {
+          return JSON.parse(JSON.stringify(value));
+        } catch {
+          return fallback;
+        }
+      };
+      clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      lerp = (start, end, alpha) => start + (end - start) * alpha;
+      normalizeValue = (value) => typeof value === "string" ? value.trim() : "";
+      normalizeSlug = (value) => normalizeValue(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      hashString = (value) => {
+        let hash = 2166136261;
+        const text = String(value || "");
+        for (let index = 0; index < text.length; index += 1) {
+          hash ^= text.charCodeAt(index);
+          hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+      };
+      createSeed = (parts) => {
+        const seedInput = parts.filter(Boolean).join("|");
+        const randomPart = `${Date.now()}|${Math.random()}`;
+        return hashString(`${seedInput}|${randomPart}`) || 1;
+      };
+      mulberry32 = (seed) => {
+        let current = seed >>> 0;
+        return () => {
+          current = current + 1831565813 >>> 0;
+          let next = Math.imul(current ^ current >>> 15, 1 | current);
+          next ^= next + Math.imul(next ^ next >>> 7, 61 | next);
+          return ((next ^ next >>> 14) >>> 0) / 4294967296;
+        };
+      };
+      pickRandom = (rng, values, fallback = null) => {
+        var _a;
+        if (!Array.isArray(values) || values.length === 0) {
+          return fallback;
+        }
+        const index = Math.floor(clamp(rng(), 0, 0.999999) * values.length);
+        return (_a = values[index]) != null ? _a : fallback;
+      };
+      resolveThemeOption = (value) => {
+        const normalized = normalizeSlug(value);
+        if (!normalized) {
+          return null;
+        }
+        return GENERATOR_THEME_OPTIONS.find((entry) => normalizeSlug(entry.value) === normalized || normalizeSlug(entry.label) === normalized) || null;
+      };
+      resolveThemeConfig = (value) => {
+        const option = resolveThemeOption(value);
+        return option ? THEME_CONFIGS[option.value] || null : null;
+      };
+      resolveCategoryOption = (value) => GENERATOR_CATEGORY_OPTIONS.find((entry) => entry.value === value) || null;
+      resolveRarityProfile = (value) => GENERATOR_RARITY_PROFILES[value] || null;
+      resolveFitTemplateProfile = (fitTemplateId) => FIT_TEMPLATE_PROFILES[fitTemplateId] || null;
+      resolveMaterialFamily = (materialFamilyId) => MATERIAL_FAMILY_CONFIGS[materialFamilyId] || null;
+      resolveStructureFamily = (structureFamilyId) => STRUCTURE_FAMILY_CONFIGS[structureFamilyId] || null;
+      hasReferenceGuidedFitMode = (fitMode) => fitMode === "matchExistingProp" || fitMode === "copyWingTemplate";
+      averageAttachmentScale = (attachment, fallback = 1.9) => {
+        const scale = Array.isArray(attachment == null ? void 0 : attachment.scale) ? attachment.scale : null;
+        if (!(scale == null ? void 0 : scale.length)) {
+          return fallback;
+        }
+        const values = scale.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
+        if (!values.length) {
+          return fallback;
+        }
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      };
+      resolveTemplateReferenceGeneratedRecipe = (templateReference) => isPlainObject(templateReference == null ? void 0 : templateReference.generatedRecipe) ? templateReference.generatedRecipe : null;
+      resolveTemplateReferenceMetrics = (templateReference) => isPlainObject(templateReference == null ? void 0 : templateReference.metrics) ? templateReference.metrics : null;
+      resolveTemplateReferenceStructureFamily = (templateReference, baseReference = null) => {
+        var _a;
+        const generatedRecipe = resolveTemplateReferenceGeneratedRecipe(templateReference);
+        const generatedFamily = normalizeValue((_a = generatedRecipe == null ? void 0 : generatedRecipe.structureRecipe) == null ? void 0 : _a.family);
+        if (generatedFamily) {
+          return generatedFamily;
+        }
+        const directFamily = normalizeValue(templateReference == null ? void 0 : templateReference.structureFamily);
+        if (directFamily) {
+          return directFamily;
+        }
+        const baseFamily = normalizeValue(baseReference == null ? void 0 : baseReference.structureFamily);
+        if (baseFamily) {
+          return baseFamily;
+        }
+        const referenceSignature = baseReference ? inferWingReferenceSignature(baseReference) : null;
+        return normalizeValue(referenceSignature == null ? void 0 : referenceSignature.structureFamily);
+      };
+      clampToRange = (value, range, fallback, extraMax = 0) => {
+        const [min, max] = Array.isArray(range) ? range : [fallback, fallback];
+        return clamp(Number.isFinite(Number(value)) ? Number(value) : fallback, min, max + extraMax);
+      };
+      getReferenceTemplateLabel = (baseReference, fitMode) => (baseReference == null ? void 0 : baseReference.label) ? fitMode === "copyWingTemplate" ? `${baseReference.label} (guide only)` : baseReference.label : "Auto Select";
+      clampScaleToEnvelope = (scaleValues, scaleEnvelope, fallbackScale = [1.9, 1.9, 1.9]) => {
+        const min = Number(scaleEnvelope == null ? void 0 : scaleEnvelope.min) || 1.4;
+        const max = Number(scaleEnvelope == null ? void 0 : scaleEnvelope.max) || 2.6;
+        const source = Array.isArray(scaleValues) ? scaleValues : fallbackScale;
+        return [0, 1, 2].map((index) => clamp(Number(source[index]) || Number(fallbackScale[index]) || min, min, max));
+      };
+      deriveSafeFitAttachment = ({
+        fitTemplate,
+        attachment,
+        fitMode = DEFAULT_FIT_MODE
+      }) => {
+        const templateAttachment = cloneGeneratorAttachment(fitTemplate == null ? void 0 : fitTemplate.attachment);
+        const templateScale = Array.isArray(templateAttachment.scale) ? templateAttachment.scale : [1.9, 1.9, 1.9];
+        const templatePosition = Array.isArray(templateAttachment.position) ? templateAttachment.position : [0.72, -0.24, 0.08];
+        const templateRotation = Array.isArray(templateAttachment.rotation) ? templateAttachment.rotation : [0.02, 0.06, -0.02];
+        const envelope = (fitTemplate == null ? void 0 : fitTemplate.scaleEnvelope) || { min: 1.4, max: 2.6 };
+        const sourceAttachment = cloneGeneratorAttachment(attachment || templateAttachment);
+        const safeAttachment = cloneGeneratorAttachment(templateAttachment);
+        const sourceScale = Array.isArray(sourceAttachment.scale) ? sourceAttachment.scale : templateScale;
+        const useReferenceOffsets = hasReferenceGuidedFitMode(fitMode);
+        const referenceBlend = fitMode === "copyWingTemplate" ? 0.44 : 0.28;
+        const positionClamp = fitMode === "copyWingTemplate" ? 0.24 : 0.18;
+        const rotationClamp = fitMode === "copyWingTemplate" ? 0.28 : 0.22;
+        const sourceScaleLooksSafe = sourceScale.every((value) => value >= envelope.min * 0.85 && value <= envelope.max * 1.15);
+        safeAttachment.position = templatePosition.map((value, index) => {
+          if (!useReferenceOffsets) return value;
+          return clamp(
+            lerp(value, Number(sourceAttachment.position[index]) || value, referenceBlend),
+            value - positionClamp,
+            value + positionClamp
+          );
+        });
+        safeAttachment.rotation = templateRotation.map((value, index) => {
+          if (!useReferenceOffsets) return value;
+          return clamp(
+            lerp(value, Number(sourceAttachment.rotation[index]) || value, fitMode === "copyWingTemplate" ? 0.42 : 0.35),
+            value - rotationClamp,
+            value + rotationClamp
+          );
+        });
+        safeAttachment.scale = sourceScaleLooksSafe ? clampScaleToEnvelope(sourceScale, envelope, templateScale) : clampScaleToEnvelope(templateScale, envelope, templateScale);
+        safeAttachment.fit = cloneJson(templateAttachment.fit, templateAttachment.fit);
+        if (useReferenceOffsets && safeAttachment.fit && isPlainObject(sourceAttachment.fit)) {
+          safeAttachment.fit.yOffsetRatio = clamp(
+            lerp(safeAttachment.fit.yOffsetRatio, Number(sourceAttachment.fit.yOffsetRatio) || safeAttachment.fit.yOffsetRatio, fitMode === "copyWingTemplate" ? 0.4 : 0.24),
+            safeAttachment.fit.yOffsetRatio - 0.18,
+            safeAttachment.fit.yOffsetRatio + 0.18
+          );
+          safeAttachment.fit.zOffsetRatio = clamp(
+            lerp(safeAttachment.fit.zOffsetRatio, Number(sourceAttachment.fit.zOffsetRatio) || safeAttachment.fit.zOffsetRatio, fitMode === "copyWingTemplate" ? 0.38 : 0.22),
+            safeAttachment.fit.zOffsetRatio - 0.1,
+            safeAttachment.fit.zOffsetRatio + 0.1
+          );
+          safeAttachment.fit.distanceMultiplier = clamp(
+            lerp(safeAttachment.fit.distanceMultiplier, Number(sourceAttachment.fit.distanceMultiplier) || safeAttachment.fit.distanceMultiplier, fitMode === "copyWingTemplate" ? 0.36 : 0.22),
+            safeAttachment.fit.distanceMultiplier - 0.22,
+            safeAttachment.fit.distanceMultiplier + 0.22
+          );
+        }
+        safeAttachment.mirrorMode = "paired";
+        return safeAttachment;
+      };
+      normalizeGeneratedPalette = (palette) => {
+        if (!isPlainObject(palette)) {
+          return null;
+        }
+        const requiredKeys = ["primary", "secondary", "accent", "glow", "shadow", "metal"];
+        if (requiredKeys.some((key) => typeof palette[key] !== "string" || palette[key].trim().length === 0)) {
+          return null;
+        }
+        return {
+          key: typeof palette.key === "string" ? palette.key : normalizeSlug(`${palette.primary}-${palette.secondary}`),
+          label: typeof palette.label === "string" ? palette.label : "Generated Palette",
+          primary: palette.primary.trim(),
+          secondary: palette.secondary.trim(),
+          accent: palette.accent.trim(),
+          glow: palette.glow.trim(),
+          shadow: palette.shadow.trim(),
+          metal: palette.metal.trim()
+        };
+      };
+      normalizeStructureRecipe = (recipe) => {
+        if (!isPlainObject(recipe)) {
+          return null;
+        }
+        const family = resolveStructureFamily(recipe.family);
+        if (!family) {
+          return null;
+        }
+        return {
+          family: family.id,
+          silhouette: typeof recipe.silhouette === "string" ? recipe.silhouette : family.silhouette,
+          membrane: recipe.membrane === true || recipe.membrane === false ? recipe.membrane : family.membrane,
+          span: clamp(Number(recipe.span) || family.spanRange[0], 2.4, 5.9),
+          height: clamp(Number(recipe.height) || family.heightRange[0], 1.4, 4.4),
+          primaryLayerCount: clamp(Math.round(Number(recipe.primaryLayerCount) || family.primaryRange[0]), 3, 12),
+          secondaryLayerCount: clamp(Math.round(Number(recipe.secondaryLayerCount) || family.secondaryRange[0]), 0, 9),
+          featherLength: clamp(Number(recipe.featherLength) || 1.12, 0.6, 2.2),
+          featherWidth: clamp(Number(recipe.featherWidth) || 0.28, 0.12, 0.76),
+          innerLift: clamp(Number(recipe.innerLift) || family.tipLift, 0.16, 1.35),
+          outerSweep: clamp(Number(recipe.outerSweep) || family.curveBias, 0.1, 1.2),
+          crestCount: clamp(Math.round(Number(recipe.crestCount) || 1), 0, 4),
+          tipFlare: clamp(Number(recipe.tipFlare) || 0.28, 0, 0.95)
+        };
+      };
+      normalizeOrnamentRecipe = (recipe) => {
+        if (!isPlainObject(recipe)) {
+          return null;
+        }
+        return {
+          haloBands: clamp(Math.round(Number(recipe.haloBands) || 0), 0, 3),
+          crystalClusters: clamp(Math.round(Number(recipe.crystalClusters) || 0), 0, 4),
+          runeSigils: clamp(Math.round(Number(recipe.runeSigils) || 0), 0, 5),
+          ribbonTrails: clamp(Math.round(Number(recipe.ribbonTrails) || 0), 0, 3),
+          emberNodes: clamp(Math.round(Number(recipe.emberNodes) || 0), 0, 4),
+          crownSpurs: clamp(Math.round(Number(recipe.crownSpurs) || 0), 0, 4),
+          glowMode: typeof recipe.glowMode === "string" ? recipe.glowMode : "soft",
+          ornamentBudget: clamp(Math.round(Number(recipe.ornamentBudget) || 0), 0, 6)
+        };
+      };
+      normalizeDisplaySummary = (summary) => isPlainObject(summary) ? {
+        categoryLabel: typeof summary.categoryLabel === "string" ? summary.categoryLabel : "Wings",
+        rarityLabel: typeof summary.rarityLabel === "string" ? summary.rarityLabel : "Rare",
+        themeLabel: typeof summary.themeLabel === "string" ? summary.themeLabel : "Royal",
+        detailLabel: typeof summary.detailLabel === "string" ? summary.detailLabel : "Medium",
+        materialDirection: typeof summary.materialDirection === "string" ? summary.materialDirection : "Balanced",
+        fitLabel: typeof summary.fitLabel === "string" ? summary.fitLabel : "XiO Wing Master Template",
+        baseReferenceLabel: typeof summary.baseReferenceLabel === "string" ? summary.baseReferenceLabel : "Auto Select"
+      } : null;
+      normalizeRequestedTheme = (value) => {
+        const resolved = resolveThemeOption(value);
+        return resolved ? resolved.value : "";
+      };
+      createExistingKeySet = (existingProps) => {
+        const values = Array.isArray(existingProps) ? existingProps : [];
+        return new Set(
+          values.map((entry) => normalizeSlug(typeof (entry == null ? void 0 : entry.key) === "string" ? entry.key : "")).filter(Boolean)
+        );
+      };
+      buildUniqueKey = (label, existingKeys) => {
+        const baseKey = normalizeSlug(label) || "generated-wing-prop";
+        if (!existingKeys.has(baseKey)) {
+          return baseKey;
+        }
+        let suffix = 2;
+        while (existingKeys.has(`${baseKey}-${suffix}`)) {
+          suffix += 1;
+        }
+        return `${baseKey}-${suffix}`;
+      };
+      buildThemeDescriptor = (rng, themeValue) => pickRandom(rng, THEME_NAME_LIBRARY[themeValue] || [getGeneratorOptionLabel(GENERATOR_THEME_OPTIONS, themeValue, "Generated")], "Generated");
+      buildStructureDescriptor = (rng, structureFamilyId) => pickRandom(rng, STRUCTURE_NAME_LIBRARY[structureFamilyId] || ["Wing"], "Wing");
+      resolvePaletteFamily = ({ themeConfig, colorHarmonyMode, rarityProfile, baseReference }) => {
+        const harmonyFamily = COLOR_HARMONY_TO_PALETTE_FAMILY[colorHarmonyMode] || null;
+        if (harmonyFamily && Array.isArray(PALETTE_LIBRARY[harmonyFamily]) && PALETTE_LIBRARY[harmonyFamily].length) {
+          return harmonyFamily;
+        }
+        const referenceFamily = normalizeValue(baseReference == null ? void 0 : baseReference.paletteFamily);
+        if (referenceFamily && Array.isArray(PALETTE_LIBRARY[referenceFamily]) && PALETTE_LIBRARY[referenceFamily].length) {
+          return referenceFamily;
+        }
+        const themeFamily = themeConfig.paletteFamilies.find((family) => Array.isArray(PALETTE_LIBRARY[family]) && PALETTE_LIBRARY[family].length);
+        if (themeFamily) {
+          return themeFamily;
+        }
+        const rarityFamily = (rarityProfile.preferredPalettes || []).find((family) => Array.isArray(PALETTE_LIBRARY[family]) && PALETTE_LIBRARY[family].length);
+        return rarityFamily || "royal";
+      };
+      resolveGeneratedTheme = ({ input, baseReference, categoryConfig, rng }) => {
+        if (input.themeMode === "guidedTheme") {
+          const guidedThemeValue = normalizeRequestedTheme(input.themeInput);
+          return resolveThemeConfig(guidedThemeValue || DEFAULT_THEME_VALUE);
+        }
+        if (input.themeMode === "matchExistingStyle" || input.fitMode === "copyWingTemplate" && normalizeValue(baseReference == null ? void 0 : baseReference.theme)) {
+          const referenceTheme = normalizeValue(baseReference == null ? void 0 : baseReference.theme);
+          return resolveThemeConfig(referenceTheme || DEFAULT_THEME_VALUE);
+        }
+        const choices = categoryConfig.allowedThemes.map((value) => THEME_CONFIGS[value]).filter(Boolean);
+        return pickRandom(rng, choices, THEME_CONFIGS[DEFAULT_THEME_VALUE]);
+      };
+      resolveBaseReference = ({ input, baseReferenceOptions, themeMode, rng }) => {
+        const requestedKey = normalizeValue(input.baseReferenceKey);
+        const references = Array.isArray(baseReferenceOptions) ? baseReferenceOptions : [];
+        const requestedReference = requestedKey ? references.find((entry) => entry.key === requestedKey) || null : null;
+        if (requestedReference) {
+          return requestedReference;
+        }
+        if (!references.length) {
+          return null;
+        }
+        if (themeMode === "matchExistingStyle") {
+          return pickRandom(rng, references, references[0]);
+        }
+        return references[0];
+      };
+      resolveMaterialFamilyForRecipe = ({ themeConfig, rarityProfile, baseReference, input, templateReference, rng }) => {
+        if (input.fitMode === "copyWingTemplate") {
+          const generatedRecipe = resolveTemplateReferenceGeneratedRecipe(templateReference);
+          const copiedFamily = normalizeValue((generatedRecipe == null ? void 0 : generatedRecipe.materialFamily) || (templateReference == null ? void 0 : templateReference.materialFamily) || (baseReference == null ? void 0 : baseReference.materialFamily));
+          if (copiedFamily && rarityProfile.allowedMaterials.includes(copiedFamily)) {
+            return resolveMaterialFamily(copiedFamily);
+          }
+        }
+        const themePreferred = themeConfig.preferredMaterials.filter((value) => rarityProfile.allowedMaterials.includes(value));
+        if (themePreferred.length) {
+          return resolveMaterialFamily(pickRandom(rng, themePreferred, themePreferred[0]));
+        }
+        const fallbackFamily = normalizeValue(baseReference == null ? void 0 : baseReference.materialFamily);
+        if (fallbackFamily && rarityProfile.allowedMaterials.includes(fallbackFamily)) {
+          return resolveMaterialFamily(fallbackFamily);
+        }
+        return resolveMaterialFamily(rarityProfile.allowedMaterials[0] || "royalEnamel");
+      };
+      resolveStructureFamilyForRecipe = ({ themeConfig, rarityProfile, baseReference, input, templateReference, rng }) => {
+        var _a;
+        if (input.fitMode === "copyWingTemplate") {
+          const copiedFamily = resolveTemplateReferenceStructureFamily(templateReference, baseReference);
+          if (copiedFamily && rarityProfile.allowedStructures.includes(copiedFamily)) {
+            return resolveStructureFamily(copiedFamily);
+          }
+        }
+        const themePreferred = themeConfig.preferredStructures.filter((value) => rarityProfile.allowedStructures.includes(value));
+        if (themePreferred.length) {
+          return resolveStructureFamily(pickRandom(rng, themePreferred, themePreferred[0]));
+        }
+        const referenceSignature = baseReference ? inferWingReferenceSignature(baseReference) : null;
+        const referenceThemeConfig = referenceSignature ? resolveThemeConfig(referenceSignature.theme) : null;
+        const referenceStructure = (_a = referenceThemeConfig == null ? void 0 : referenceThemeConfig.preferredStructures) == null ? void 0 : _a.find((value) => rarityProfile.allowedStructures.includes(value));
+        if (referenceStructure) {
+          return resolveStructureFamily(referenceStructure);
+        }
+        return resolveStructureFamily(rarityProfile.allowedStructures[0] || "aetherPlume");
+      };
+      resolveDetailDensity = (input, rarityProfile) => input.detailDensity === "autoByRarity" ? rarityProfile.defaultDetailDensity : GENERATOR_DETAIL_DENSITY_OPTIONS.some((entry) => entry.value === input.detailDensity) ? input.detailDensity : rarityProfile.defaultDetailDensity;
+      computeCountFromRange = (rng, range, rarityProfile, detailDensity, extraBoost = 0) => {
+        const [min, max] = Array.isArray(range) ? range : [0, 0];
+        const densityScale = DETAIL_DENSITY_SCALE[detailDensity] || 1;
+        const base = min + (max - min) * clamp((0.45 + rng() * 0.55) * rarityProfile.complexityScale * densityScale, 0, 1.15);
+        return clamp(Math.round(base + extraBoost), min, max + extraBoost);
+      };
+      buildStructureRecipe = ({
+        rng,
+        structureFamily,
+        rarityProfile,
+        detailDensity,
+        templateReference = null,
+        fitTemplate = null
+      }) => {
+        var _a;
+        const primaryLayerCount = computeCountFromRange(rng, structureFamily.primaryRange, rarityProfile, detailDensity, rarityProfile.layerBoost);
+        const secondaryLayerCount = computeCountFromRange(rng, structureFamily.secondaryRange, rarityProfile, detailDensity, Math.max(0, rarityProfile.layerBoost - 1));
+        const scaleVariance = 0.92 + rng() * 0.16;
+        const recipe = {
+          family: structureFamily.id,
+          silhouette: structureFamily.silhouette,
+          membrane: structureFamily.membrane,
+          span: Number((pickRandom(rng, [structureFamily.spanRange[0], structureFamily.spanRange[1]], structureFamily.spanRange[0]) * scaleVariance).toFixed(3)),
+          height: Number((pickRandom(rng, [structureFamily.heightRange[0], structureFamily.heightRange[1]], structureFamily.heightRange[0]) * (0.96 + rng() * 0.12)).toFixed(3)),
+          primaryLayerCount,
+          secondaryLayerCount,
+          featherLength: Number((0.9 + primaryLayerCount * 0.08 + rng() * 0.18).toFixed(3)),
+          featherWidth: Number((0.18 + rarityProfile.complexityScale * 0.08 + rng() * 0.1).toFixed(3)),
+          innerLift: Number((structureFamily.tipLift + rarityProfile.glowIntensity * 0.35 + (rng() - 0.5) * 0.12).toFixed(3)),
+          outerSweep: Number((structureFamily.curveBias + (rng() - 0.5) * 0.12).toFixed(3)),
+          crestCount: clamp(Math.round((rarityProfile.ornamentBudget - 1) * 0.5 + rng()), 0, 4),
+          tipFlare: Number((0.18 + rarityProfile.complexityScale * 0.14 + rng() * 0.12).toFixed(3))
+        };
+        const generatedTemplateRecipe = (_a = resolveTemplateReferenceGeneratedRecipe(templateReference)) == null ? void 0 : _a.structureRecipe;
+        const templateMetrics = resolveTemplateReferenceMetrics(templateReference);
+        if (!generatedTemplateRecipe && !templateMetrics) {
+          return recipe;
+        }
+        const fitTemplateScaleAverage = averageAttachmentScale(fitTemplate == null ? void 0 : fitTemplate.attachment, 1.9);
+        const referenceScaleAverage = Number.isFinite(Number(templateMetrics == null ? void 0 : templateMetrics.attachmentScaleAverage)) ? Number(templateMetrics.attachmentScaleAverage) : averageAttachmentScale(templateReference == null ? void 0 : templateReference.attachment, fitTemplateScaleAverage);
+        const referenceScaleBias = clamp(referenceScaleAverage / Math.max(fitTemplateScaleAverage, 1e-3), 0.84, 1.18);
+        const spreadRatio = clamp(Number(templateMetrics == null ? void 0 : templateMetrics.spreadRatio) || 1.8, 1.1, 3.4);
+        const verticalRatio = clamp(Number(templateMetrics == null ? void 0 : templateMetrics.verticalRatio) || 0.58, 0.24, 1.1);
+        const depthRatio = clamp(Number(templateMetrics == null ? void 0 : templateMetrics.depthRatio) || 0.12, 0.04, 0.56);
+        const wideBias = clamp((spreadRatio - 1.55) / 1.1, 0, 1.2);
+        const tallBias = clamp((verticalRatio - 0.42) / 0.34, 0, 1.15);
+        const depthBias = clamp((depthRatio - 0.08) / 0.22, 0, 1.2);
+        recipe.span = clampToRange(
+          generatedTemplateRecipe ? lerp(recipe.span, Number(generatedTemplateRecipe.span || recipe.span) * (0.9 + rng() * 0.22), 0.72) : recipe.span * clamp(referenceScaleBias * (0.92 + wideBias * 0.12), 0.84, 1.2),
+          structureFamily.spanRange,
+          recipe.span,
+          0.55
+        );
+        recipe.height = clampToRange(
+          generatedTemplateRecipe ? lerp(recipe.height, Number(generatedTemplateRecipe.height || recipe.height) * (0.9 + rng() * 0.2), 0.7) : recipe.height * clamp(0.94 + tallBias * 0.18 + (referenceScaleBias - 1) * 0.18, 0.84, 1.2),
+          structureFamily.heightRange,
+          recipe.height,
+          0.5
+        );
+        recipe.primaryLayerCount = clamp(
+          Math.round(
+            generatedTemplateRecipe ? lerp(recipe.primaryLayerCount, Number(generatedTemplateRecipe.primaryLayerCount || recipe.primaryLayerCount) + (rng() - 0.5) * 2.4, 0.74) : recipe.primaryLayerCount + wideBias * 2.2 + depthBias * 0.8 + (rng() - 0.5) * 1.4
+          ),
+          structureFamily.primaryRange[0],
+          structureFamily.primaryRange[1] + rarityProfile.layerBoost + 3
+        );
+        recipe.secondaryLayerCount = clamp(
+          Math.round(
+            generatedTemplateRecipe ? lerp(recipe.secondaryLayerCount, Number(generatedTemplateRecipe.secondaryLayerCount || recipe.secondaryLayerCount) + (rng() - 0.5) * 2, 0.66) : recipe.secondaryLayerCount + tallBias * 1.2 + (rng() - 0.5) * 1.1
+          ),
+          structureFamily.secondaryRange[0],
+          structureFamily.secondaryRange[1] + Math.max(1, rarityProfile.layerBoost) + 2
+        );
+        recipe.featherLength = clamp(
+          generatedTemplateRecipe ? lerp(recipe.featherLength, Number(generatedTemplateRecipe.featherLength || recipe.featherLength) * (0.92 + rng() * 0.18), 0.68) : recipe.featherLength * clamp(0.96 + tallBias * 0.1 + wideBias * 0.08, 0.84, 1.22),
+          0.6,
+          2.25
+        );
+        recipe.featherWidth = clamp(
+          generatedTemplateRecipe ? lerp(recipe.featherWidth, Number(generatedTemplateRecipe.featherWidth || recipe.featherWidth) * (0.9 + rng() * 0.16), 0.64) : recipe.featherWidth * clamp(0.96 + depthBias * 0.18 + wideBias * 0.08, 0.82, 1.28),
+          0.12,
+          0.82
+        );
+        recipe.innerLift = clamp(
+          generatedTemplateRecipe ? lerp(recipe.innerLift, Number(generatedTemplateRecipe.innerLift || recipe.innerLift) + (rng() - 0.5) * 0.14, 0.7) : lerp(recipe.innerLift, structureFamily.tipLift + tallBias * 0.18 - wideBias * 0.06, 0.48),
+          0.16,
+          1.35
+        );
+        recipe.outerSweep = clamp(
+          generatedTemplateRecipe ? lerp(recipe.outerSweep, Number(generatedTemplateRecipe.outerSweep || recipe.outerSweep) + (rng() - 0.5) * 0.14, 0.72) : lerp(recipe.outerSweep, structureFamily.curveBias + wideBias * 0.2 + tallBias * 0.04, 0.52),
+          0.1,
+          1.2
+        );
+        recipe.crestCount = clamp(
+          Math.round(
+            generatedTemplateRecipe ? lerp(recipe.crestCount, Number(generatedTemplateRecipe.crestCount || recipe.crestCount) + (rng() - 0.5) * 1.2, 0.64) : recipe.crestCount + depthBias * 0.6
+          ),
+          0,
+          4
+        );
+        recipe.tipFlare = clamp(
+          generatedTemplateRecipe ? lerp(recipe.tipFlare, Number(generatedTemplateRecipe.tipFlare || recipe.tipFlare) + (rng() - 0.5) * 0.12, 0.66) : lerp(recipe.tipFlare, recipe.tipFlare + wideBias * 0.14 + depthBias * 0.08, 0.52),
+          0,
+          0.95
+        );
+        return recipe;
+      };
+      buildOrnamentRecipe = ({ rng, structureFamily, rarityProfile, detailDensity }) => {
+        const densityScale = DETAIL_DENSITY_SCALE[detailDensity] || 1;
+        const ornamentBudget = clamp(Math.round(rarityProfile.ornamentBudget * densityScale), 1, 6);
+        const baseBias = structureFamily.ornamentBias;
+        const pull = (key, variance = 1) => clamp(Math.round((baseBias[key] || 0) + rng() * variance + ornamentBudget * 0.18), 0, 5);
+        return {
+          haloBands: pull("haloBands", 0.6),
+          crystalClusters: pull("crystalClusters", 0.7),
+          runeSigils: pull("runeSigils", 0.8),
+          ribbonTrails: pull("ribbonTrails", 0.65),
+          emberNodes: pull("emberNodes", 0.6),
+          crownSpurs: pull("crownSpurs", 0.6),
+          glowMode: rarityProfile.value === "legendaryDark" ? "heroic-dark" : rarityProfile.value === "legendaryLight" ? "heroic-light" : rarityProfile.value === "legendary" ? "prestige" : "soft",
+          ornamentBudget
+        };
+      };
+      buildWingMotionPreview = (basePreview, recipe) => {
+        const base = cloneJson(basePreview, {}) || {};
+        const next = {
+          linked: true,
+          master: {
+            flapHz: 0.82,
+            direction: "normal",
+            amplitude: 1,
+            sweep: 1,
+            pitch: 0.08,
+            featherTwist: 0.48,
+            shoulderSpread: 0.22,
+            phaseOffset: 0
+          }
+        };
+        const theme = recipe.theme;
+        const rarity = recipe.rarityProfile;
+        if (theme === "storm" || theme === "mechanical") {
+          next.master.flapHz = 1.05;
+          next.master.sweep = 1.08;
+        } else if (theme === "moonlight" || theme === "celestial") {
+          next.master.flapHz = 0.72;
+          next.master.amplitude = 0.92;
+          next.master.pitch = 0.11;
+        } else if (theme === "ember" || theme === "dragon") {
+          next.master.flapHz = 0.95;
+          next.master.amplitude = 1.08;
+          next.master.shoulderSpread = 0.28;
+        }
+        if (rarity === "legendaryLight") {
+          next.master.featherTwist = 0.7;
+          next.master.pitch = 0.12;
+        } else if (rarity === "legendaryDark") {
+          next.master.sweep = 1.14;
+          next.master.amplitude = 1.12;
+          next.master.shoulderSpread = 0.32;
+        } else if (rarity === "common") {
+          next.master.amplitude = 0.88;
+          next.master.featherTwist = 0.34;
+          next.master.shoulderSpread = 0.16;
+        }
+        return {
+          ...base,
+          linked: true,
+          master: {
+            ...isPlainObject(base.master) ? base.master : {},
+            ...next.master
+          }
+        };
+      };
+      buildSummaryObject = ({ categoryOption, rarityOption, themeConfig, detailDensity, materialFamily, fitTemplate, baseReference, fitMode }) => ({
+        categoryLabel: categoryOption.label,
+        rarityLabel: rarityOption.label,
+        themeLabel: themeConfig.label,
+        detailLabel: getGeneratorOptionLabel(GENERATOR_DETAIL_DENSITY_OPTIONS, detailDensity, "Medium"),
+        materialDirection: materialFamily.label,
+        fitLabel: fitMode === "copyWingTemplate" ? `${fitTemplate.label} + derivative` : fitTemplate.label,
+        baseReferenceLabel: getReferenceTemplateLabel(baseReference, fitMode)
+      });
+      validateHexPalette = (palette) => {
+        const hexPattern = /^#[0-9a-f]{6}$/i;
+        return ["primary", "secondary", "accent", "glow", "shadow", "metal"].every((key) => hexPattern.test(palette[key] || ""));
+      };
+    }
+  });
+
+  // public/HomePageAPP/src/runtime/xio-generated-wing-props.js
+  var xio_generated_wing_props_exports = {};
+  __export(xio_generated_wing_props_exports, {
+    buildGeneratedWingPreview: () => buildGeneratedWingPreview,
+    createGeneratedProceduralWingPropFactory: () => createGeneratedProceduralWingPropFactory
+  });
+  function buildGeneratedWingPreview({ THREE, recipe, attachment = null }) {
+    var _a;
+    const normalizedRecipe = normalizeGeneratedWingRecipe(recipe);
+    if (!normalizedRecipe) {
+      return null;
+    }
+    const previewAttachment = cloneGeneratorAttachment(
+      attachment || normalizedRecipe.fitAttachment || ((_a = FIT_TEMPLATE_PROFILES[normalizedRecipe.fitTemplateId]) == null ? void 0 : _a.attachment)
+    );
+    const group = buildGeneratedWingAssembly(THREE, normalizedRecipe, { attachment: previewAttachment });
+    return {
+      left: group.userData.left,
+      right: group.userData.right,
+      attachment: previewAttachment
+    };
+  }
+  function createGeneratedProceduralWingPropFactory({ THREE, leftWingGroup, rightWingGroup }) {
+    return function makeGeneratedProceduralWingProp(entry) {
+      var _a, _b;
+      const normalizedRecipe = normalizeGeneratedWingRecipe(((_a = entry == null ? void 0 : entry.preview) == null ? void 0 : _a.generated) || (entry == null ? void 0 : entry.generated) || null);
+      if (!normalizedRecipe) {
+        return new THREE.Group();
+      }
+      const attachment = cloneGeneratorAttachment(
+        (entry == null ? void 0 : entry.attachment) || normalizedRecipe.fitAttachment || ((_b = FIT_TEMPLATE_PROFILES[normalizedRecipe.fitTemplateId]) == null ? void 0 : _b.attachment)
+      );
+      return buildGeneratedWingAssembly(THREE, normalizedRecipe, {
+        wingParents: {
+          left: leftWingGroup,
+          right: rightWingGroup
+        },
+        attachment
+      });
+    };
+  }
+  var RARITY_GLOW_INTENSITY, RARITY_IRIDESCENCE, BASE_STYLE_PROFILE, FAMILY_STYLE_PROFILES, PANEL_GEOMETRY_CACHE, QUILL_GEOMETRY_CACHE, clampNumber2, lerpNumber, easeOutCubic, ensureColor, enrichColor, createCurve, resolveStyleProfile, getWingPanelGeometry, getQuillGeometry, createMaterialSet, createGuideCurves, sampleCurveRange, createRibbonSurfaceGeometry, createFeatherMesh, orientAlongVector, addFeatherAxisYaw, createFeatherLayer, addShoulderPlumage, addShoulderAssembly, addSupportBones, addSilhouetteVeils, addMembraneSurface, addSparkleInstances, addOrnaments, createWingSide, applyAttachmentToWingSide, buildGeneratedWingAssembly;
+  var init_xio_generated_wing_props = __esm({
+    "public/HomePageAPP/src/runtime/xio-generated-wing-props.js"() {
+      init_random_prop_generator_config();
+      init_random_prop_generator_core();
+      RARITY_GLOW_INTENSITY = Object.freeze({
+        common: 0.18,
+        rare: 0.28,
+        legendary: 0.42,
+        legendaryLight: 0.7,
+        legendaryDark: 0.78
+      });
+      RARITY_IRIDESCENCE = Object.freeze({
+        common: 0.08,
+        rare: 0.18,
+        legendary: 0.3,
+        legendaryLight: 0.7,
+        legendaryDark: 0.44
+      });
+      BASE_STYLE_PROFILE = Object.freeze({
+        profile: "plume",
+        armatureDepth: 0.22,
+        shoulderLift: 0.1,
+        midLift: 0.18,
+        upperBloom: 0.18,
+        tipRise: 0.08,
+        lowerSweep: 0.22,
+        trailingLift: 0.08,
+        primaryRoll: 0.18,
+        secondaryRoll: 0.08,
+        covertCount: 3,
+        rootScale: 1,
+        sparkleCount: 4,
+        primaryCountBoost: 1.55,
+        secondaryCountBoost: 1.4,
+        covertCountBoost: 1.5,
+        primaryYaw: 0.14,
+        secondaryYaw: 0.08,
+        primarySpread: 0.42,
+        secondarySpread: 0.24,
+        featherWidthBias: 1,
+        featherLengthBias: 1,
+        veilStrength: 0.78,
+        shoulderPlumeCount: 4,
+        braceDensity: 0.28,
+        armatureVisibility: 0.7
+      });
+      FAMILY_STYLE_PROFILES = Object.freeze({
+        aetherPlume: Object.freeze({
+          profile: "plume",
+          armatureDepth: 0.24,
+          upperBloom: 0.22,
+          tipRise: 0.16,
+          lowerSweep: 0.2,
+          primaryRoll: 0.22,
+          secondaryRoll: 0.1,
+          covertCount: 4,
+          sparkleCount: 6,
+          primaryCountBoost: 1.8,
+          secondaryCountBoost: 1.55,
+          covertCountBoost: 1.7,
+          primaryYaw: 0.18,
+          secondaryYaw: 0.12,
+          primarySpread: 0.58,
+          secondarySpread: 0.34,
+          featherWidthBias: 1.18,
+          featherLengthBias: 1.08,
+          veilStrength: 0.92,
+          shoulderPlumeCount: 6,
+          braceDensity: 0.18,
+          armatureVisibility: 0.48
+        }),
+        royalFiligree: Object.freeze({
+          profile: "filigree",
+          armatureDepth: 0.18,
+          shoulderLift: 0.14,
+          midLift: 0.22,
+          upperBloom: 0.16,
+          tipRise: 0.06,
+          lowerSweep: 0.18,
+          primaryRoll: 0.14,
+          secondaryRoll: 0.06,
+          covertCount: 3,
+          rootScale: 1.06,
+          sparkleCount: 5,
+          primaryCountBoost: 1.62,
+          secondaryCountBoost: 1.38,
+          covertCountBoost: 1.45,
+          primaryYaw: 0.16,
+          secondaryYaw: 0.08,
+          primarySpread: 0.46,
+          secondarySpread: 0.22,
+          featherWidthBias: 1.06,
+          featherLengthBias: 1.02,
+          veilStrength: 0.68,
+          shoulderPlumeCount: 5,
+          braceDensity: 0.22,
+          armatureVisibility: 0.62
+        }),
+        crystalFan: Object.freeze({
+          profile: "crystal",
+          armatureDepth: 0.16,
+          upperBloom: 0.08,
+          tipRise: 0.02,
+          lowerSweep: 0.12,
+          trailingLift: 0.02,
+          primaryRoll: 0.08,
+          secondaryRoll: 0.04,
+          covertCount: 2,
+          sparkleCount: 7,
+          primaryCountBoost: 1.36,
+          secondaryCountBoost: 1.2,
+          covertCountBoost: 1.18,
+          primaryYaw: 0.1,
+          secondaryYaw: 0.04,
+          primarySpread: 0.22,
+          secondarySpread: 0.12,
+          featherWidthBias: 0.94,
+          featherLengthBias: 0.96,
+          veilStrength: 0.54,
+          shoulderPlumeCount: 3,
+          braceDensity: 0.36,
+          armatureVisibility: 0.74
+        }),
+        emberBlade: Object.freeze({
+          profile: "blade",
+          armatureDepth: 0.2,
+          shoulderLift: 0.06,
+          midLift: 0.12,
+          upperBloom: 0.1,
+          tipRise: 0.02,
+          lowerSweep: 0.16,
+          trailingLift: 0.04,
+          primaryRoll: 0.06,
+          secondaryRoll: 0.04,
+          covertCount: 2,
+          sparkleCount: 5,
+          primaryCountBoost: 1.42,
+          secondaryCountBoost: 1.18,
+          covertCountBoost: 1.2,
+          primaryYaw: 0.08,
+          secondaryYaw: 0.04,
+          primarySpread: 0.2,
+          secondarySpread: 0.1,
+          featherWidthBias: 0.9,
+          featherLengthBias: 1.04,
+          veilStrength: 0.46,
+          shoulderPlumeCount: 3,
+          braceDensity: 0.42,
+          armatureVisibility: 0.8
+        }),
+        stormRibbon: Object.freeze({
+          profile: "plume",
+          armatureDepth: 0.18,
+          shoulderLift: 0.08,
+          midLift: 0.18,
+          upperBloom: 0.16,
+          tipRise: 0.06,
+          lowerSweep: 0.22,
+          trailingLift: 0.12,
+          primaryRoll: 0.14,
+          secondaryRoll: 0.08,
+          covertCount: 4,
+          sparkleCount: 8,
+          primaryCountBoost: 1.7,
+          secondaryCountBoost: 1.5,
+          covertCountBoost: 1.55,
+          primaryYaw: 0.2,
+          secondaryYaw: 0.12,
+          primarySpread: 0.54,
+          secondarySpread: 0.3,
+          featherWidthBias: 1.14,
+          featherLengthBias: 1.06,
+          veilStrength: 0.86,
+          shoulderPlumeCount: 5,
+          braceDensity: 0.18,
+          armatureVisibility: 0.44
+        }),
+        mechanicalAegis: Object.freeze({
+          profile: "filigree",
+          armatureDepth: 0.12,
+          shoulderLift: 0.04,
+          midLift: 0.08,
+          upperBloom: 0.04,
+          tipRise: -0.02,
+          lowerSweep: 0.08,
+          trailingLift: 0.02,
+          primaryRoll: 0.04,
+          secondaryRoll: 0.02,
+          covertCount: 2,
+          rootScale: 1.14,
+          sparkleCount: 3,
+          primaryCountBoost: 1.18,
+          secondaryCountBoost: 1.08,
+          covertCountBoost: 1.08,
+          primaryYaw: 0.04,
+          secondaryYaw: 0.02,
+          primarySpread: 0.12,
+          secondarySpread: 0.08,
+          featherWidthBias: 0.84,
+          featherLengthBias: 0.96,
+          veilStrength: 0.18,
+          shoulderPlumeCount: 2,
+          braceDensity: 0.88,
+          armatureVisibility: 1
+        })
+      });
+      PANEL_GEOMETRY_CACHE = /* @__PURE__ */ new Map();
+      QUILL_GEOMETRY_CACHE = /* @__PURE__ */ new Map();
+      clampNumber2 = (value, min, max) => Math.min(max, Math.max(min, value));
+      lerpNumber = (start, end, alpha) => start + (end - start) * alpha;
+      easeOutCubic = (alpha) => 1 - (1 - alpha) ** 3;
+      ensureColor = (THREE, value, fallback) => new THREE.Color(typeof value === "string" ? value : fallback);
+      enrichColor = (color, {
+        mixColor = null,
+        mixAmount = 0,
+        saturationBoost = 0,
+        lightnessShift = 0
+      } = {}) => {
+        const result = color.clone();
+        if (mixColor && mixAmount > 0) {
+          result.lerp(mixColor, clampNumber2(mixAmount, 0, 1));
+        }
+        const hsl = { h: 0, s: 0, l: 0 };
+        result.getHSL(hsl);
+        result.setHSL(
+          hsl.h,
+          clampNumber2(hsl.s + saturationBoost, 0, 1),
+          clampNumber2(hsl.l + lightnessShift, 0, 1)
+        );
+        return result;
+      };
+      createCurve = (THREE, points) => new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.45);
+      resolveStyleProfile = (recipe) => {
+        const familyProfile = FAMILY_STYLE_PROFILES[recipe.structureRecipe.family] || {};
+        return {
+          ...BASE_STYLE_PROFILE,
+          ...familyProfile
+        };
+      };
+      getWingPanelGeometry = (THREE, profile, tipFlare) => {
+        const key = `${profile}:${tipFlare.toFixed(2)}`;
+        if (PANEL_GEOMETRY_CACHE.has(key)) {
+          return PANEL_GEOMETRY_CACHE.get(key);
+        }
+        const shape = new THREE.Shape();
+        const flare = clampNumber2(tipFlare, 0, 0.95);
+        if (profile === "blade") {
+          shape.moveTo(0, 0);
+          shape.lineTo(0.34 + flare * 0.12, 0.08);
+          shape.lineTo(0.3 + flare * 0.18, 0.54);
+          shape.lineTo(0.08, 1);
+          shape.lineTo(-0.08, 1);
+          shape.lineTo(-(0.3 + flare * 0.18), 0.54);
+          shape.lineTo(-(0.34 + flare * 0.12), 0.08);
+          shape.lineTo(0, 0);
+        } else if (profile === "ribbon") {
+          shape.moveTo(0, 0);
+          shape.bezierCurveTo(0.24, 0.18, 0.28 + flare * 0.06, 0.58, 0.18, 1);
+          shape.quadraticCurveTo(0.02, 1.06, 0, 1.08);
+          shape.quadraticCurveTo(-0.02, 1.06, -0.18, 1);
+          shape.bezierCurveTo(-(0.28 + flare * 0.06), 0.58, -0.24, 0.18, 0, 0);
+        } else if (profile === "crystal") {
+          shape.moveTo(0, 0);
+          shape.lineTo(0.2, 0.12);
+          shape.lineTo(0.3 + flare * 0.06, 0.42);
+          shape.lineTo(0.18, 0.82);
+          shape.lineTo(0, 1);
+          shape.lineTo(-0.18, 0.82);
+          shape.lineTo(-(0.3 + flare * 0.06), 0.42);
+          shape.lineTo(-0.2, 0.12);
+          shape.lineTo(0, 0);
+        } else if (profile === "filigree") {
+          shape.moveTo(0, 0);
+          shape.bezierCurveTo(0.22, 0.1, 0.34 + flare * 0.08, 0.3, 0.26 + flare * 0.04, 0.62);
+          shape.quadraticCurveTo(0.18, 0.96, 0, 1);
+          shape.quadraticCurveTo(-0.18, 0.96, -(0.26 + flare * 0.04), 0.62);
+          shape.bezierCurveTo(-(0.34 + flare * 0.08), 0.3, -0.22, 0.1, 0, 0);
+        } else {
+          shape.moveTo(0, 0);
+          shape.bezierCurveTo(0.28, 0.1, 0.42 + flare * 0.12, 0.34, 0.36 + flare * 0.08, 0.74);
+          shape.quadraticCurveTo(0.16, 1.02, 0, 1);
+          shape.quadraticCurveTo(-0.16, 1.02, -(0.36 + flare * 0.08), 0.74);
+          shape.bezierCurveTo(-(0.42 + flare * 0.12), 0.34, -0.28, 0.1, 0, 0);
+        }
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth: 0.08,
+          steps: 1,
+          bevelEnabled: true,
+          bevelSegments: 1,
+          bevelThickness: 0.01,
+          bevelSize: 0.01,
+          curveSegments: 18
+        });
+        geometry.translate(0, 0, -0.04);
+        geometry.computeVertexNormals();
+        PANEL_GEOMETRY_CACHE.set(key, geometry);
+        return geometry;
+      };
+      getQuillGeometry = (THREE) => {
+        const key = "quill";
+        if (QUILL_GEOMETRY_CACHE.has(key)) {
+          return QUILL_GEOMETRY_CACHE.get(key);
+        }
+        const geometry = new THREE.CylinderGeometry(0.022, 0.014, 1, 8, 1, false);
+        QUILL_GEOMETRY_CACHE.set(key, geometry);
+        return geometry;
+      };
+      createMaterialSet = (THREE, recipe) => {
+        const palette = recipe.palette;
+        const materialFamily = MATERIAL_FAMILY_CONFIGS[recipe.materialFamily] || MATERIAL_FAMILY_CONFIGS.royalEnamel;
+        const glowIntensity = RARITY_GLOW_INTENSITY[recipe.rarityProfile] || RARITY_GLOW_INTENSITY.rare;
+        const iridescence = RARITY_IRIDESCENCE[recipe.rarityProfile] || RARITY_IRIDESCENCE.rare;
+        const emissiveColor = ensureColor(THREE, palette.glow, "#8ed9ff");
+        const primaryColor = enrichColor(ensureColor(THREE, palette.primary, "#cfe6ff"), {
+          mixColor: emissiveColor,
+          mixAmount: 0.08,
+          saturationBoost: 0.1,
+          lightnessShift: recipe.rarityProfile === "common" ? 0.02 : 0.04
+        });
+        const secondaryColor = enrichColor(ensureColor(THREE, palette.secondary, "#7ab8ff"), {
+          mixColor: emissiveColor,
+          mixAmount: 0.12,
+          saturationBoost: 0.12,
+          lightnessShift: 0.02
+        });
+        const accentColor = enrichColor(ensureColor(THREE, palette.accent, "#ffffff"), {
+          mixColor: emissiveColor,
+          mixAmount: 0.06,
+          saturationBoost: 0.04,
+          lightnessShift: 0.02
+        });
+        const metalColor = enrichColor(ensureColor(THREE, palette.metal, "#d5dceb"), {
+          mixColor: accentColor,
+          mixAmount: 0.12,
+          saturationBoost: 0.04,
+          lightnessShift: 0.01
+        });
+        const shadowColor = ensureColor(THREE, palette.shadow, "#1b2232");
+        const surfaceEmissive = enrichColor(primaryColor, {
+          mixColor: emissiveColor,
+          mixAmount: 0.34,
+          saturationBoost: 0.04
+        });
+        const accentEmissive = enrichColor(secondaryColor, {
+          mixColor: emissiveColor,
+          mixAmount: 0.4,
+          saturationBoost: 0.04
+        });
+        const highlightColor = enrichColor(accentColor, {
+          mixColor: emissiveColor,
+          mixAmount: 0.42,
+          saturationBoost: 0.08,
+          lightnessShift: 0.03
+        });
+        const surfaceTransmission = clampNumber2(materialFamily.transmission * 0.22, 0, 0.08);
+        const vaneMaterial = new THREE.MeshPhysicalMaterial({
+          color: primaryColor,
+          emissive: surfaceEmissive,
+          emissiveIntensity: glowIntensity * 0.1,
+          roughness: clampNumber2(materialFamily.roughness - 0.06, 0.08, 0.58),
+          metalness: clampNumber2(materialFamily.metalness * 0.82, 0.04, 0.72),
+          clearcoat: clampNumber2(materialFamily.clearcoat + 0.08, 0.3, 1),
+          clearcoatRoughness: 0.12,
+          transmission: 0,
+          thickness: 0.04,
+          sheen: clampNumber2(materialFamily.sheen + 0.14, 0.08, 0.84),
+          sheenColor: accentColor,
+          reflectivity: 0.7,
+          iridescence: clampNumber2(iridescence * 0.72, 0.04, 0.58),
+          iridescenceIOR: 1.24,
+          specularIntensity: 0.84,
+          attenuationColor: secondaryColor,
+          attenuationDistance: 1.2,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
+          dithering: true,
+          side: THREE.DoubleSide
+        });
+        const accentMaterial = new THREE.MeshPhysicalMaterial({
+          color: secondaryColor,
+          emissive: accentEmissive,
+          emissiveIntensity: glowIntensity * 0.08,
+          roughness: clampNumber2(materialFamily.roughness - 0.08, 0.04, 0.62),
+          metalness: clampNumber2(materialFamily.metalness + 0.14, 0.08, 0.98),
+          clearcoat: clampNumber2(materialFamily.clearcoat + 0.18, 0.18, 1),
+          clearcoatRoughness: 0.1,
+          iridescence: clampNumber2(iridescence + 0.14, 0.16, 1),
+          iridescenceIOR: 1.3,
+          specularIntensity: 0.88,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
+          dithering: true,
+          side: THREE.DoubleSide
+        });
+        const spineMaterial = new THREE.MeshPhysicalMaterial({
+          color: metalColor,
+          emissive: shadowColor,
+          emissiveIntensity: glowIntensity * 0.05,
+          roughness: clampNumber2(materialFamily.roughness - 0.14, 0.04, 0.54),
+          metalness: clampNumber2(materialFamily.metalness + 0.28, 0.2, 1),
+          clearcoat: clampNumber2(materialFamily.clearcoat + 0.1, 0.28, 1),
+          clearcoatRoughness: 0.1,
+          specularIntensity: 0.72,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true
+        });
+        const boneMaterial = new THREE.MeshPhysicalMaterial({
+          color: enrichColor(metalColor, {
+            mixColor: shadowColor,
+            mixAmount: 0.18,
+            lightnessShift: -0.04
+          }),
+          emissive: shadowColor,
+          emissiveIntensity: glowIntensity * 0.03,
+          roughness: clampNumber2(materialFamily.roughness + 0.14, 0.18, 0.76),
+          metalness: clampNumber2(materialFamily.metalness + 0.04, 0.12, 0.78),
+          clearcoat: clampNumber2(materialFamily.clearcoat * 0.72, 0.12, 0.74),
+          clearcoatRoughness: 0.22,
+          specularIntensity: 0.34,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true
+        });
+        const ornamentMaterial = new THREE.MeshPhysicalMaterial({
+          color: accentColor,
+          emissive: highlightColor,
+          emissiveIntensity: glowIntensity * 0.26,
+          roughness: 0.12,
+          metalness: 0.34,
+          clearcoat: 0.94,
+          clearcoatRoughness: 0.08,
+          iridescence: clampNumber2(iridescence + 0.1, 0.18, 1),
+          iridescenceIOR: 1.28,
+          specularIntensity: 0.92,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true
+        });
+        const membraneMaterial = new THREE.MeshPhysicalMaterial({
+          color: enrichColor(primaryColor, {
+            mixColor: secondaryColor,
+            mixAmount: 0.18,
+            saturationBoost: 0.06,
+            lightnessShift: 0.02
+          }),
+          emissive: surfaceEmissive,
+          emissiveIntensity: glowIntensity * 0.05,
+          roughness: clampNumber2(materialFamily.roughness + 0.08, 0.12, 0.8),
+          metalness: clampNumber2(materialFamily.metalness - 0.08, 0, 0.54),
+          clearcoat: clampNumber2(materialFamily.clearcoat * 0.66, 0.08, 0.72),
+          clearcoatRoughness: 0.18,
+          transmission: surfaceTransmission,
+          thickness: 0.06,
+          attenuationColor: highlightColor,
+          attenuationDistance: 1.05,
+          transparent: true,
+          opacity: clampNumber2(0.32 + glowIntensity * 0.06, 0.32, 0.42),
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          dithering: true
+        });
+        const veilMaterial = new THREE.MeshBasicMaterial({
+          color: highlightColor,
+          transparent: true,
+          opacity: clampNumber2(0.12 + glowIntensity * 0.04, 0.12, 0.18),
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending
+        });
+        const highlightMaterial = new THREE.MeshBasicMaterial({
+          color: enrichColor(highlightColor, {
+            mixColor: accentColor,
+            mixAmount: 0.22,
+            lightnessShift: 0.04
+          }),
+          transparent: true,
+          opacity: clampNumber2(0.14 + glowIntensity * 0.06, 0.14, 0.24),
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending
+        });
+        const glowMaterial = new THREE.MeshBasicMaterial({
+          color: emissiveColor,
+          transparent: true,
+          opacity: clampNumber2(0.22 + glowIntensity * 0.28, 0.18, 0.72),
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+        return {
+          vaneMaterial,
+          accentMaterial,
+          spineMaterial,
+          boneMaterial,
+          ornamentMaterial,
+          membraneMaterial,
+          veilMaterial,
+          highlightMaterial,
+          glowMaterial
+        };
+      };
+      createGuideCurves = (THREE, recipe, directionSign) => {
+        const structureRecipe = recipe.structureRecipe;
+        const style = resolveStyleProfile(recipe);
+        const span = structureRecipe.span;
+        const height = structureRecipe.height;
+        const lift = structureRecipe.innerLift;
+        const sweep = structureRecipe.outerSweep;
+        const depth = clampNumber2((0.1 + span * 0.04) * (0.72 + style.armatureDepth), 0.12, 0.42);
+        const root = new THREE.Vector3(0, 0, 0);
+        const shoulder = new THREE.Vector3(
+          directionSign * span * 0.12,
+          height * (0.03 + style.shoulderLift * 0.1),
+          depth * 0.44
+        );
+        const elbow = new THREE.Vector3(
+          directionSign * span * clampNumber2(0.36 + sweep * 0.08, 0.28, 0.46),
+          height * clampNumber2(0.26 + lift * 0.08 + style.midLift * 0.08, 0.22, 0.48),
+          depth * 0.52
+        );
+        const wrist = new THREE.Vector3(
+          directionSign * span * clampNumber2(0.78 + sweep * 0.08, 0.66, 0.94),
+          height * clampNumber2(0.5 + style.upperBloom * 0.12, 0.42, 0.72),
+          depth * 0.26
+        );
+        const tip = new THREE.Vector3(
+          directionSign * span * 1.08,
+          height * clampNumber2(0.42 + style.tipRise * 0.14, 0.32, 0.62),
+          depth * 0.08
+        );
+        const supportRoot = new THREE.Vector3(directionSign * span * 0.06, -height * 0.08, -depth * 0.08);
+        const supportMid = new THREE.Vector3(
+          directionSign * span * 0.28,
+          height * clampNumber2(0.12 + style.lowerSweep * 0.1, 0.08, 0.28),
+          -depth * 0.05
+        );
+        const supportOuter = new THREE.Vector3(
+          directionSign * span * 0.58,
+          height * clampNumber2(0.18 + style.lowerSweep * 0.08, 0.14, 0.32),
+          -depth * 0.02
+        );
+        const supportTip = new THREE.Vector3(
+          directionSign * span * 0.86,
+          height * clampNumber2(0.04 + style.trailingLift * 0.12, -0.02, 0.2),
+          depth * 0.02
+        );
+        const primaryTipStart = new THREE.Vector3(
+          directionSign * span * 0.3,
+          height * clampNumber2(0.22 + style.upperBloom * 0.05, 0.16, 0.36),
+          depth * 0.2
+        );
+        const primaryTipMid = new THREE.Vector3(
+          directionSign * span * 0.66,
+          height * clampNumber2(0.48 + style.upperBloom * 0.08, 0.4, 0.64),
+          depth * 0.14
+        );
+        const primaryTipHigh = new THREE.Vector3(
+          directionSign * span * 1.06,
+          height * clampNumber2(0.42 + style.tipRise * 0.1, 0.32, 0.56),
+          depth * 0.06
+        );
+        const primaryTipLow = new THREE.Vector3(
+          directionSign * span * 1.02,
+          height * clampNumber2(0.08 + style.lowerSweep * 0.06, 0.02, 0.2),
+          -depth * 0.02
+        );
+        const secondaryTipStart = new THREE.Vector3(
+          directionSign * span * 0.18,
+          height * clampNumber2(0.08 + style.shoulderLift * 0.06, 0.06, 0.16),
+          0
+        );
+        const secondaryTipMid = new THREE.Vector3(
+          directionSign * span * 0.48,
+          height * clampNumber2(0.18 + style.midLift * 0.06, 0.14, 0.28),
+          -depth * 0.02
+        );
+        const secondaryTipOuter = new THREE.Vector3(
+          directionSign * span * 0.72,
+          height * clampNumber2(-0.02 + style.trailingLift * 0.06, -0.1, 0.08),
+          -depth * 0.06
+        );
+        const secondaryTipLow = new THREE.Vector3(
+          directionSign * span * 0.48,
+          -height * clampNumber2(0.08 + style.lowerSweep * 0.1, 0.06, 0.18),
+          -depth * 0.1
+        );
+        const covertTipStart = new THREE.Vector3(directionSign * span * 0.1, height * 0.04, depth * 0.04);
+        const covertTipMid = new THREE.Vector3(directionSign * span * 0.24, height * 0.16, depth * 0.06);
+        const covertTipEnd = new THREE.Vector3(directionSign * span * 0.34, height * 0.1, -depth * 0.01);
+        return {
+          style,
+          depth,
+          mainCurve: createCurve(THREE, [root, shoulder, elbow, wrist, tip]),
+          supportCurve: createCurve(THREE, [supportRoot, supportMid, supportOuter, supportTip]),
+          primaryTipCurve: createCurve(THREE, [primaryTipStart, primaryTipMid, primaryTipHigh, primaryTipLow]),
+          secondaryTipCurve: createCurve(THREE, [secondaryTipStart, secondaryTipMid, secondaryTipOuter, secondaryTipLow]),
+          covertTipCurve: createCurve(THREE, [covertTipStart, covertTipMid, covertTipEnd]),
+          landmarks: {
+            root,
+            shoulder,
+            elbow,
+            wrist,
+            tip,
+            lowerTip: secondaryTipLow,
+            supportTip
+          }
+        };
+      };
+      sampleCurveRange = (curve, start, end, count) => {
+        const samples = [];
+        const safeCount = Math.max(2, count);
+        for (let index = 0; index < safeCount; index += 1) {
+          const alpha = index / (safeCount - 1);
+          const t = lerpNumber(start, end, alpha);
+          samples.push(curve.getPoint(t));
+        }
+        return samples;
+      };
+      createRibbonSurfaceGeometry = (THREE, upperPoints, lowerPoints) => {
+        const count = Math.min(upperPoints.length, lowerPoints.length);
+        if (count < 2) {
+          return null;
+        }
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+        for (let index = 0; index < count; index += 1) {
+          const upper = upperPoints[index];
+          const lower = lowerPoints[index];
+          const u = index / (count - 1);
+          positions.push(upper.x, upper.y, upper.z);
+          positions.push(lower.x, lower.y, lower.z);
+          uvs.push(u, 1, u, 0);
+        }
+        for (let index = 0; index < count - 1; index += 1) {
+          const base = index * 2;
+          indices.push(base, base + 1, base + 2);
+          indices.push(base + 1, base + 3, base + 2);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        return geometry;
+      };
+      createFeatherMesh = (THREE, materials, {
+        profile,
+        length,
+        width,
+        thickness,
+        tipFlare,
+        accent = false,
+        glowScale = 0
+      }) => {
+        const feather = new THREE.Group();
+        const panel = new THREE.Mesh(
+          getWingPanelGeometry(THREE, profile, tipFlare),
+          accent ? materials.accentMaterial : materials.vaneMaterial
+        );
+        panel.scale.set(width, length, thickness);
+        panel.position.y = length * 0.48;
+        feather.add(panel);
+        const quill = new THREE.Mesh(getQuillGeometry(THREE), materials.spineMaterial);
+        quill.scale.set(Math.max(0.32, width * 0.12), length, Math.max(0.36, thickness * 0.58));
+        quill.position.y = length * 0.5;
+        feather.add(quill);
+        const vaneCrest = new THREE.Mesh(
+          new THREE.PlaneGeometry(width * 0.58, length * 0.46),
+          materials.highlightMaterial
+        );
+        vaneCrest.position.set(0, length * 0.6, Math.max(0.03, thickness * 0.18));
+        feather.add(vaneCrest);
+        if (glowScale > 0) {
+          const glow = new THREE.Mesh(
+            new THREE.PlaneGeometry(width * glowScale, length * Math.max(0.4, glowScale * 0.66)),
+            materials.glowMaterial
+          );
+          glow.position.y = length * 0.5;
+          glow.position.z = -Math.max(0.02, thickness * 0.08);
+          feather.add(glow);
+        }
+        return feather;
+      };
+      orientAlongVector = (THREE, object, direction, roll, pitch) => {
+        const axis = new THREE.Vector3(0, 1, 0);
+        const vector = direction.clone();
+        if (vector.lengthSq() < 1e-4) {
+          return;
+        }
+        vector.normalize();
+        object.quaternion.setFromUnitVectors(axis, vector);
+        object.rotateOnAxis(new THREE.Vector3(0, 1, 0), roll);
+        object.rotateOnAxis(new THREE.Vector3(1, 0, 0), pitch);
+      };
+      addFeatherAxisYaw = (THREE, object, yaw) => {
+        if (!yaw) {
+          return;
+        }
+        object.rotateOnAxis(new THREE.Vector3(0, 0, 1), yaw);
+      };
+      createFeatherLayer = (THREE, wing, recipe, materials, curveInfo, {
+        count,
+        anchorRange,
+        tipRange,
+        tipCurve,
+        baseLengthScale,
+        baseWidthScale,
+        rollBase,
+        pitchBase,
+        accentEvery = 3,
+        depthBias = 0.02,
+        profile,
+        glowBias = 0,
+        yawBase = 0,
+        fanSpread = 0,
+        widthBias = 1,
+        lengthBias = 1
+      }) => {
+        for (let index = 0; index < count; index += 1) {
+          const alpha = count <= 1 ? 0.5 : index / (count - 1);
+          const eased = easeOutCubic(alpha);
+          const anchorT = lerpNumber(anchorRange[0], anchorRange[1], alpha);
+          const tipT = lerpNumber(tipRange[0], tipRange[1], eased);
+          const anchor = curveInfo.mainCurve.getPoint(anchorT);
+          const tip = tipCurve.getPoint(tipT);
+          anchor.z += depthBias * (index % 2 === 0 ? 1 : -0.45);
+          tip.z += depthBias * 0.2;
+          const direction = tip.clone().sub(anchor);
+          const length = clampNumber2(direction.length() * baseLengthScale * lengthBias * (1.06 - alpha * 0.08), 0.48, 2.8);
+          const width = clampNumber2(recipe.structureRecipe.featherWidth * baseWidthScale * widthBias * (1.14 - alpha * 0.16), 0.14, 0.92);
+          const thickness = clampNumber2(0.2 + recipe.structureRecipe.tipFlare * 0.2 + alpha * 0.04, 0.14, 0.42);
+          const feather = createFeatherMesh(THREE, materials, {
+            profile,
+            length,
+            width,
+            thickness,
+            tipFlare: recipe.structureRecipe.tipFlare,
+            accent: index % accentEvery === 0,
+            glowScale: glowBias > 0 ? glowBias * (0.92 - alpha * 0.16) : 0
+          });
+          feather.position.copy(anchor);
+          orientAlongVector(
+            THREE,
+            feather,
+            direction,
+            rollBase * (0.88 + alpha * 0.52) + fanSpread * (alpha - 0.2),
+            pitchBase * (0.78 + alpha * 0.24)
+          );
+          addFeatherAxisYaw(THREE, feather, yawBase * (0.8 + alpha * 0.4));
+          wing.add(feather);
+        }
+      };
+      addShoulderPlumage = (THREE, wing, recipe, materials, curveInfo, directionSign) => {
+        const plumeCount = Math.max(2, Math.round(curveInfo.style.shoulderPlumeCount));
+        for (let index = 0; index < plumeCount; index += 1) {
+          const alpha = plumeCount <= 1 ? 0.5 : index / (plumeCount - 1);
+          const anchor = curveInfo.mainCurve.getPoint(lerpNumber(0.04, 0.18, alpha));
+          const target = curveInfo.primaryTipCurve.getPoint(lerpNumber(0.12, 0.28, alpha));
+          anchor.z += 0.05 - alpha * 0.02;
+          target.z += 0.06 - alpha * 0.03;
+          target.y += 0.08 + alpha * 0.05;
+          const direction = target.clone().sub(anchor);
+          const length = clampNumber2(direction.length() * 0.92, 0.52, 1.36);
+          const width = clampNumber2(recipe.structureRecipe.featherWidth * (1.36 - alpha * 0.08) * curveInfo.style.featherWidthBias, 0.18, 0.76);
+          const feather = createFeatherMesh(THREE, materials, {
+            profile: curveInfo.style.profile === "blade" ? "filigree" : curveInfo.style.profile,
+            length,
+            width,
+            thickness: 0.24,
+            tipFlare: clampNumber2(recipe.structureRecipe.tipFlare + 0.08, 0, 0.95),
+            accent: index === 0 || index === plumeCount - 1,
+            glowScale: recipe.rarityProfile.startsWith("legendary") ? 0.22 : 0
+          });
+          feather.position.copy(anchor);
+          orientAlongVector(
+            THREE,
+            feather,
+            direction,
+            directionSign * (curveInfo.style.primarySpread * (0.65 - alpha * 0.08)),
+            -0.06 + alpha * 0.04
+          );
+          addFeatherAxisYaw(THREE, feather, directionSign * curveInfo.style.primaryYaw * 0.88);
+          wing.add(feather);
+        }
+      };
+      addShoulderAssembly = (THREE, wing, materials, curveInfo, directionSign) => {
+        const socket = new THREE.Group();
+        const bulb = new THREE.Mesh(
+          new THREE.SphereGeometry(0.16 * curveInfo.style.rootScale, 20, 18),
+          materials.spineMaterial
+        );
+        bulb.scale.set(1.28, 1.06, 0.88);
+        socket.add(bulb);
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(0.19 * curveInfo.style.rootScale, 0.02, 10, 36, Math.PI * 1.18),
+          materials.accentMaterial
+        );
+        ring.rotation.set(0.18, directionSign * 0.42, directionSign * 0.84);
+        ring.position.set(directionSign * 0.02, 0.04, 0.04);
+        socket.add(ring);
+        const gem = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.08 * curveInfo.style.rootScale, 0),
+          materials.ornamentMaterial
+        );
+        gem.position.set(directionSign * 0.04, 0.06, 0.08);
+        socket.add(gem);
+        wing.add(socket);
+      };
+      addSupportBones = (THREE, wing, recipe, materials, curveInfo) => {
+        const visibility = clampNumber2(curveInfo.style.armatureVisibility || 0.7, 0.24, 1);
+        const primaryRadius = clampNumber2((0.018 + recipe.structureRecipe.primaryLayerCount * 12e-4) * visibility, 0.012, 0.034);
+        const supportRadius = clampNumber2(primaryRadius * 0.58, 8e-3, 0.022);
+        const mainSpine = new THREE.Mesh(
+          new THREE.TubeGeometry(curveInfo.mainCurve, 40, primaryRadius, 10, false),
+          materials.boneMaterial
+        );
+        wing.add(mainSpine);
+        const supportSpine = new THREE.Mesh(
+          new THREE.TubeGeometry(curveInfo.supportCurve, 28, supportRadius, 8, false),
+          materials.boneMaterial
+        );
+        supportSpine.position.z -= 0.01;
+        wing.add(supportSpine);
+        const braceCount = clampNumber2(Math.round((recipe.structureRecipe.crestCount + 1) * curveInfo.style.braceDensity), 0, 4);
+        for (let index = 0; index < braceCount; index += 1) {
+          const alpha = braceCount <= 1 ? 0.5 : index / (braceCount - 1);
+          const armPoint = curveInfo.mainCurve.getPoint(lerpNumber(0.18, 0.8, alpha));
+          const supportPoint = curveInfo.supportCurve.getPoint(lerpNumber(0.1, 0.92, alpha));
+          const braceDirection = supportPoint.clone().sub(armPoint);
+          const brace = new THREE.Mesh(
+            new THREE.CylinderGeometry(6e-3, 4e-3, Math.max(0.1, braceDirection.length()), 6),
+            materials.boneMaterial
+          );
+          brace.position.copy(armPoint.clone().add(supportPoint).multiplyScalar(0.5));
+          orientAlongVector(THREE, brace, braceDirection, 0, 0);
+          wing.add(brace);
+        }
+      };
+      addSilhouetteVeils = (THREE, wing, recipe, materials, curveInfo) => {
+        const veilStrength = clampNumber2(curveInfo.style.veilStrength || 0, 0, 1);
+        if (veilStrength <= 0.05) {
+          return;
+        }
+        const outerUpper = sampleCurveRange(curveInfo.primaryTipCurve, 0.08, 0.98, 12).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, 0.03 + (1 - alpha) * 0.04, 0.06 - alpha * 0.05));
+        });
+        const outerLower = sampleCurveRange(curveInfo.mainCurve, 0.18, 0.98, 12).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, -0.05 + alpha * 0.04, -0.02 - alpha * 0.03));
+        });
+        const outerVeilGeometry = createRibbonSurfaceGeometry(THREE, outerUpper, outerLower);
+        if (outerVeilGeometry) {
+          const outerVeilMaterial = materials.veilMaterial.clone();
+          outerVeilMaterial.opacity = clampNumber2(materials.veilMaterial.opacity * (0.82 + veilStrength * 0.22), 0.12, 0.24);
+          const outerVeil = new THREE.Mesh(outerVeilGeometry, outerVeilMaterial);
+          outerVeil.position.z -= 0.02;
+          wing.add(outerVeil);
+        }
+        const innerUpper = sampleCurveRange(curveInfo.mainCurve, 0.08, 0.7, 10).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, 0.02 + (1 - alpha) * 0.03, 0.03));
+        });
+        const innerLower = sampleCurveRange(curveInfo.secondaryTipCurve, 0.08, 0.94, 10).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, -0.03 - alpha * 0.05, -0.05 - alpha * 0.02));
+        });
+        const innerVeilGeometry = createRibbonSurfaceGeometry(THREE, innerUpper, innerLower);
+        if (innerVeilGeometry) {
+          const innerVeilMaterial = materials.veilMaterial.clone();
+          innerVeilMaterial.opacity = clampNumber2(materials.veilMaterial.opacity * (0.7 + veilStrength * 0.2), 0.1, 0.2);
+          const innerVeil = new THREE.Mesh(innerVeilGeometry, innerVeilMaterial);
+          innerVeil.position.z -= 0.04;
+          wing.add(innerVeil);
+        }
+      };
+      addMembraneSurface = (THREE, wing, recipe, materials, curveInfo) => {
+        if (!recipe.structureRecipe.membrane) {
+          return;
+        }
+        const upper = sampleCurveRange(curveInfo.mainCurve, 0.16, 0.84, 8).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, 0, lerpNumber(0.02, -0.01, alpha)));
+        });
+        const lower = sampleCurveRange(curveInfo.supportCurve, 0.08, 0.98, 8).map((point, index, points) => {
+          const alpha = index / Math.max(1, points.length - 1);
+          return point.clone().add(new THREE.Vector3(0, 0, lerpNumber(-0.05, -0.02, alpha)));
+        });
+        const membraneGeometry = createRibbonSurfaceGeometry(THREE, upper, lower);
+        if (!membraneGeometry) {
+          return;
+        }
+        const membrane = new THREE.Mesh(membraneGeometry, materials.membraneMaterial);
+        wing.add(membrane);
+      };
+      addSparkleInstances = (THREE, wing, materials, anchors, count, baseScale) => {
+        if (count <= 0 || anchors.length === 0) {
+          return;
+        }
+        const sparkleGeometry = new THREE.IcosahedronGeometry(0.04, 0);
+        const sparkleMesh = new THREE.InstancedMesh(sparkleGeometry, materials.ornamentMaterial, count);
+        const pivot = new THREE.Object3D();
+        for (let index = 0; index < count; index += 1) {
+          const anchor = anchors[index % anchors.length];
+          pivot.position.copy(anchor);
+          pivot.rotation.set(index * 0.32, index * 0.26, index * 0.18);
+          const scale = baseScale * (0.84 + index % 3 * 0.18);
+          pivot.scale.setScalar(scale);
+          pivot.updateMatrix();
+          sparkleMesh.setMatrixAt(index, pivot.matrix);
+        }
+        sparkleMesh.instanceMatrix.needsUpdate = true;
+        wing.add(sparkleMesh);
+      };
+      addOrnaments = (THREE, wing, recipe, materials, curveInfo, directionSign) => {
+        const ornament = recipe.ornamentRecipe;
+        const { landmarks } = curveInfo;
+        for (let index = 0; index < ornament.haloBands; index += 1) {
+          const radius = 0.2 + index * 0.06;
+          const band = new THREE.Mesh(
+            new THREE.TorusGeometry(radius, 0.012, 10, 40, Math.PI * 0.92),
+            materials.glowMaterial
+          );
+          band.position.set(
+            landmarks.elbow.x + directionSign * (0.04 + index * 0.08),
+            landmarks.elbow.y + 0.18 + index * 0.12,
+            0.12 + index * 0.02
+          );
+          band.rotation.z = directionSign * (0.56 + index * 0.08);
+          wing.add(band);
+        }
+        for (let index = 0; index < ornament.crownSpurs; index += 1) {
+          const spur = new THREE.Mesh(
+            new THREE.ConeGeometry(0.028 + index * 4e-3, 0.18 + index * 0.03, 6),
+            materials.spineMaterial
+          );
+          spur.position.set(
+            landmarks.shoulder.x + directionSign * (0.02 + index * 0.06),
+            landmarks.shoulder.y + 0.12 + index * 0.06,
+            0.08
+          );
+          spur.rotation.z = directionSign * (-0.46 - index * 0.08);
+          wing.add(spur);
+        }
+        for (let index = 0; index < ornament.crystalClusters; index += 1) {
+          const crystal = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.06 + index * 0.014, 0),
+            index % 2 === 0 ? materials.ornamentMaterial : materials.accentMaterial
+          );
+          crystal.position.set(
+            landmarks.wrist.x - directionSign * (0.08 + index * 0.06),
+            landmarks.wrist.y - 0.04 + index * 0.04,
+            0.08 + index * 0.02
+          );
+          crystal.rotation.set(index * 0.24, directionSign * 0.44, 0.2 + index * 0.1);
+          wing.add(crystal);
+        }
+        for (let index = 0; index < ornament.runeSigils; index += 1) {
+          const sigil = new THREE.Mesh(
+            new THREE.TorusGeometry(0.06 + index * 0.014, 8e-3, 10, 28),
+            materials.glowMaterial
+          );
+          sigil.position.set(
+            landmarks.tip.x - directionSign * (0.08 + index * 0.07),
+            landmarks.tip.y - 0.06 - index * 0.05,
+            0.04
+          );
+          sigil.rotation.y = directionSign * 0.7;
+          wing.add(sigil);
+        }
+        const trailStart = landmarks.lowerTip.clone();
+        for (let index = 0; index < ornament.ribbonTrails; index += 1) {
+          const trailCurve = createCurve(THREE, [
+            trailStart.clone(),
+            trailStart.clone().add(new THREE.Vector3(directionSign * (0.18 + index * 0.06), -0.16, -0.04)),
+            trailStart.clone().add(new THREE.Vector3(directionSign * (0.28 + index * 0.1), -0.44, -0.08)),
+            trailStart.clone().add(new THREE.Vector3(directionSign * (0.18 + index * 0.08), -0.76, -0.12))
+          ]);
+          const ribbon = new THREE.Mesh(
+            new THREE.TubeGeometry(trailCurve, 22, 0.012 + index * 3e-3, 8, false),
+            materials.glowMaterial
+          );
+          wing.add(ribbon);
+        }
+        for (let index = 0; index < ornament.emberNodes; index += 1) {
+          const ember = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04 + index * 0.01, 12, 10),
+            materials.ornamentMaterial
+          );
+          ember.position.set(
+            trailStart.x - directionSign * (0.08 + index * 0.08),
+            trailStart.y - 0.04 - index * 0.08,
+            0.06 + index * 0.02
+          );
+          wing.add(ember);
+        }
+        const sparkleAnchors = [
+          landmarks.shoulder.clone().add(new THREE.Vector3(directionSign * 0.06, 0.08, 0.08)),
+          landmarks.elbow.clone().add(new THREE.Vector3(directionSign * 0.08, 0.06, 0.1)),
+          landmarks.wrist.clone().add(new THREE.Vector3(directionSign * 0.04, 0.02, 0.12)),
+          landmarks.tip.clone().add(new THREE.Vector3(-directionSign * 0.06, -0.04, 0.08))
+        ];
+        addSparkleInstances(
+          THREE,
+          wing,
+          materials,
+          sparkleAnchors,
+          Math.min(curveInfo.style.sparkleCount + ornament.crystalClusters + ornament.runeSigils, 12),
+          0.54
+        );
+      };
+      createWingSide = (THREE, recipe, side, materials) => {
+        const directionSign = side === "left" ? -1 : 1;
+        const wing = new THREE.Group();
+        const curveInfo = createGuideCurves(THREE, recipe, directionSign);
+        const structureRecipe = recipe.structureRecipe;
+        const rarityGlow = RARITY_GLOW_INTENSITY[recipe.rarityProfile] || RARITY_GLOW_INTENSITY.rare;
+        addShoulderAssembly(THREE, wing, materials, curveInfo, directionSign);
+        addSupportBones(THREE, wing, recipe, materials, curveInfo);
+        addShoulderPlumage(THREE, wing, recipe, materials, curveInfo, directionSign);
+        addMembraneSurface(THREE, wing, recipe, materials, curveInfo);
+        addSilhouetteVeils(THREE, wing, recipe, materials, curveInfo);
+        const primaryCount = clampNumber2(
+          Math.round(structureRecipe.primaryLayerCount * curveInfo.style.primaryCountBoost),
+          structureRecipe.primaryLayerCount + 1,
+          18
+        );
+        createFeatherLayer(THREE, wing, recipe, materials, curveInfo, {
+          count: primaryCount,
+          anchorRange: [0.26, 0.98],
+          tipRange: [0.06, 0.98],
+          tipCurve: curveInfo.primaryTipCurve,
+          baseLengthScale: 1.14,
+          baseWidthScale: 1.82,
+          rollBase: directionSign * (curveInfo.style.primaryRoll + 0.22),
+          pitchBase: -0.04,
+          accentEvery: 3,
+          depthBias: 0.02,
+          profile: curveInfo.style.profile,
+          glowBias: recipe.rarityProfile.startsWith("legendary") ? 0.42 : rarityGlow * 0.18,
+          yawBase: directionSign * curveInfo.style.primaryYaw,
+          fanSpread: directionSign * curveInfo.style.primarySpread,
+          widthBias: curveInfo.style.featherWidthBias,
+          lengthBias: curveInfo.style.featherLengthBias
+        });
+        if (structureRecipe.secondaryLayerCount > 0) {
+          const secondaryCount = clampNumber2(
+            Math.round(structureRecipe.secondaryLayerCount * curveInfo.style.secondaryCountBoost),
+            structureRecipe.secondaryLayerCount,
+            14
+          );
+          createFeatherLayer(THREE, wing, recipe, materials, curveInfo, {
+            count: secondaryCount,
+            anchorRange: [0.08, 0.72],
+            tipRange: [0.04, 0.98],
+            tipCurve: curveInfo.secondaryTipCurve,
+            baseLengthScale: 0.98,
+            baseWidthScale: 1.2,
+            rollBase: directionSign * (curveInfo.style.secondaryRoll + 0.12),
+            pitchBase: 0.04,
+            accentEvery: 2,
+            depthBias: -0.018,
+            profile: curveInfo.style.profile === "blade" ? "filigree" : curveInfo.style.profile,
+            glowBias: recipe.rarityProfile.startsWith("legendary") ? 0.24 : 0,
+            yawBase: directionSign * curveInfo.style.secondaryYaw,
+            fanSpread: directionSign * curveInfo.style.secondarySpread,
+            widthBias: curveInfo.style.featherWidthBias * 0.96,
+            lengthBias: curveInfo.style.featherLengthBias * 0.94
+          });
+        }
+        createFeatherLayer(THREE, wing, recipe, materials, curveInfo, {
+          count: clampNumber2(Math.round(curveInfo.style.covertCount * curveInfo.style.covertCountBoost), curveInfo.style.covertCount, 8),
+          anchorRange: [0.08, 0.3],
+          tipRange: [0.1, 0.94],
+          tipCurve: curveInfo.covertTipCurve,
+          baseLengthScale: 0.68,
+          baseWidthScale: 1.04,
+          rollBase: directionSign * (curveInfo.style.secondaryRoll * 0.56 + 0.08),
+          pitchBase: 0.08,
+          accentEvery: 10,
+          depthBias: 0.01,
+          profile: "filigree",
+          yawBase: directionSign * curveInfo.style.secondaryYaw * 0.7,
+          fanSpread: directionSign * curveInfo.style.secondarySpread * 0.56,
+          widthBias: curveInfo.style.featherWidthBias * 0.9,
+          lengthBias: curveInfo.style.featherLengthBias * 0.82
+        });
+        addOrnaments(THREE, wing, recipe, materials, curveInfo, directionSign);
+        wing.userData.generatedWingSide = side;
+        wing.userData.generatedRecipe = recipe;
+        wing.userData.generatedGuideCurves = curveInfo;
+        return wing;
+      };
+      applyAttachmentToWingSide = (wing, attachment, side) => {
+        var _a;
+        const directionSign = side === "left" ? -1 : 1;
+        const position = Array.isArray(attachment == null ? void 0 : attachment.position) ? attachment.position : [0.72, -0.24, 0.08];
+        const rotation = Array.isArray(attachment == null ? void 0 : attachment.rotation) ? attachment.rotation : [0.016, 0.052, -0.018];
+        const scale = Array.isArray(attachment == null ? void 0 : attachment.scale) ? attachment.scale : [1.92, 1.92, 1.92];
+        const initialRotationY = Number((_a = attachment == null ? void 0 : attachment.fit) == null ? void 0 : _a.initialRotationY) || 0;
+        wing.position.set(
+          directionSign * Math.abs(Number(position[0]) || 0.72),
+          Number(position[1]) || -0.24,
+          Number(position[2]) || 0.08
+        );
+        wing.rotation.set(
+          Number(rotation[0]) || 0,
+          directionSign * (Math.abs(Number(rotation[1]) || 0) + initialRotationY),
+          directionSign * Math.abs(Number(rotation[2]) || 0)
+        );
+        wing.scale.set(
+          Math.abs(Number(scale[0]) || 1.92),
+          Math.abs(Number(scale[1]) || 1.92),
+          Math.abs(Number(scale[2]) || 1.92)
+        );
+      };
+      buildGeneratedWingAssembly = (THREE, recipe, {
+        wingParents = null,
+        attachment = null
+      } = {}) => {
+        const normalizedRecipe = normalizeGeneratedWingRecipe(recipe);
+        if (!normalizedRecipe) {
+          return new THREE.Group();
+        }
+        const resolvedAttachment = cloneGeneratorAttachment(
+          attachment || normalizedRecipe.fitAttachment || FIT_TEMPLATE_PROFILES["xio-wing-master"].attachment
+        );
+        const materials = createMaterialSet(THREE, normalizedRecipe);
+        const group = new THREE.Group();
+        const left = createWingSide(THREE, normalizedRecipe, "left", materials);
+        const right = createWingSide(THREE, normalizedRecipe, "right", materials);
+        if ((wingParents == null ? void 0 : wingParents.left) && (wingParents == null ? void 0 : wingParents.right)) {
+          applyAttachmentToWingSide(left, resolvedAttachment, "left");
+          applyAttachmentToWingSide(right, resolvedAttachment, "right");
+          left.visible = false;
+          right.visible = false;
+          wingParents.left.add(left);
+          wingParents.right.add(right);
+        } else {
+          left.visible = true;
+          right.visible = true;
+          group.add(left);
+          group.add(right);
+        }
+        group.userData.left = left;
+        group.userData.right = right;
+        group.userData.generatedRecipe = normalizedRecipe;
+        return group;
+      };
+    }
+  });
+
   // public/HomePageAPP/src/creator/character-creator-app.js
   (async () => {
+    var _a, _b;
     const [
       THREE,
       { OrbitControls },
@@ -5237,7 +8486,10 @@
       gltfPropsModule,
       inventoryModule,
       propCatalogModule,
-      wingPreviewModule
+      wingPreviewModule,
+      generatorConfigModule,
+      generatorCoreModule,
+      generatedWingRuntimeModule
     ] = await Promise.all([
       import("https://esm.sh/three@0.160.0"),
       import("https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js"),
@@ -5249,7 +8501,10 @@
       Promise.resolve().then(() => (init_homepage_gltf_props(), homepage_gltf_props_exports)),
       Promise.resolve().then(() => (init_inventory_config(), inventory_config_exports)),
       Promise.resolve().then(() => (init_prop_catalog(), prop_catalog_exports)),
-      Promise.resolve().then(() => (init_xio_live_wing_previews(), xio_live_wing_previews_exports))
+      Promise.resolve().then(() => (init_xio_live_wing_previews(), xio_live_wing_previews_exports)),
+      Promise.resolve().then(() => (init_random_prop_generator_config(), random_prop_generator_config_exports)),
+      Promise.resolve().then(() => (init_random_prop_generator_core(), random_prop_generator_core_exports)),
+      Promise.resolve().then(() => (init_xio_generated_wing_props(), xio_generated_wing_props_exports))
     ]);
     const {
       createXioCharacter: createXioCharacter2,
@@ -5292,6 +8547,24 @@
       buildLiveGameWingPreview: buildLiveGameWingPreview2,
       isLiveGameWingPreviewKey: isLiveGameWingPreviewKey2
     } = wingPreviewModule;
+    const {
+      GENERATOR_CATEGORY_OPTIONS: GENERATOR_CATEGORY_OPTIONS2,
+      GENERATOR_RARITY_OPTIONS: GENERATOR_RARITY_OPTIONS2,
+      GENERATOR_THEME_MODE_OPTIONS: GENERATOR_THEME_MODE_OPTIONS2,
+      GENERATOR_DETAIL_DENSITY_OPTIONS: GENERATOR_DETAIL_DENSITY_OPTIONS2,
+      GENERATOR_COLOR_HARMONY_OPTIONS: GENERATOR_COLOR_HARMONY_OPTIONS2,
+      GENERATOR_FIT_MODE_OPTIONS: GENERATOR_FIT_MODE_OPTIONS2,
+      GENERATOR_THEME_OPTIONS: GENERATOR_THEME_OPTIONS2,
+      getWingBaseReferenceOptions: getWingBaseReferenceOptions2
+    } = generatorConfigModule;
+    const {
+      buildGeneratorPreviewSummary: buildGeneratorPreviewSummary2,
+      generateRandomWingDraft: generateRandomWingDraft2,
+      isGeneratedPropPreview: isGeneratedPropPreview2
+    } = generatorCoreModule;
+    const {
+      buildGeneratedWingPreview: buildGeneratedWingPreview2
+    } = generatedWingRuntimeModule;
     const $ = (id) => document.getElementById(id);
     const creatorCanvas = $("creator-canvas");
     const stageShell = $("stage-shell");
@@ -5315,6 +8588,39 @@
     const saveSuccessCloseButton = $("save-success-close");
     const saveSuccessStayButton = $("save-success-stay");
     const saveSuccessLaunchButton = $("save-success-launch");
+    const randomPropGeneratorButton = $("random-prop-generator-button");
+    const randomGeneratorModal = $("random-prop-generator-modal");
+    const randomGeneratorCloseButton = $("random-generator-close");
+    const randomGeneratorCancelButton = $("random-generator-cancel-button");
+    const randomGeneratorGenerateButton = $("random-generator-generate-button");
+    const randomGeneratorStatus = $("random-generator-status");
+    const randomGeneratorCategorySelect = $("random-generator-category-select");
+    const randomGeneratorRaritySelect = $("random-generator-rarity-select");
+    const randomGeneratorThemeModeSelect = $("random-generator-theme-mode-select");
+    const randomGeneratorThemeField = $("random-generator-theme-field");
+    const randomGeneratorThemeInput = $("random-generator-theme-input");
+    const randomGeneratorDetailDensitySelect = $("random-generator-detail-density-select");
+    const randomGeneratorColorHarmonySelect = $("random-generator-color-harmony-select");
+    const randomGeneratorFitModeSelect = $("random-generator-fit-mode-select");
+    const randomGeneratorBaseReferenceSelect = $("random-generator-base-reference-select");
+    const randomGeneratorThemeSuggestions = $("random-generator-theme-suggestions");
+    const randomGeneratorSummaryState = $("random-generator-summary-state");
+    const randomGeneratorSummaryCategory = $("random-generator-summary-category");
+    const randomGeneratorSummaryRarity = $("random-generator-summary-rarity");
+    const randomGeneratorSummaryTheme = $("random-generator-summary-theme");
+    const randomGeneratorSummaryDetail = $("random-generator-summary-detail");
+    const randomGeneratorSummaryMaterial = $("random-generator-summary-material");
+    const randomGeneratorSummaryFit = $("random-generator-summary-fit");
+    const randomGeneratorSummaryReference = $("random-generator-summary-reference");
+    const randomGeneratorReferenceHint = $("random-generator-reference-hint");
+    const generatedStageCard = $("generated-stage-card");
+    const generatedStageTitle = $("generated-stage-title");
+    const generatedStageStatus = $("generated-stage-status");
+    const generatedStageMessage = $("generated-stage-message");
+    const generatedStageTheme = $("generated-stage-theme");
+    const generatedStageRarity = $("generated-stage-rarity");
+    const generatedStageMaterial = $("generated-stage-material");
+    const generatedStageFit = $("generated-stage-fit");
     const workspaceLog = $("workspace-log");
     const draftOriginChip = $("draft-origin-chip");
     const publishModeChip = $("publish-mode-chip");
@@ -5332,6 +8638,7 @@
     const liveSearchInput = $("live-search-input");
     const liveCategoryFilter = $("live-category-filter");
     const motionPreviewButton = $("toggle-preview-motion-button");
+    const autoLockFitButton = $("auto-lock-fit-button");
     const syncBothWingsButton = $("sync-both-wings-button");
     const syncOneWingButton = $("sync-one-wing-button");
     const turntableButton = $("toggle-turntable-button");
@@ -5512,8 +8819,8 @@
       publishEnabled: false,
       publishReason: "Open through the manager route to publish live.",
       selectedLivePropKey: null,
-      draftCategoryKey: fallbackSnapshot.categories[0]?.key || "wingSet",
-      categoryEditorKey: fallbackSnapshot.categories[0]?.key || null,
+      draftCategoryKey: ((_a = fallbackSnapshot.categories[0]) == null ? void 0 : _a.key) || "wingSet",
+      categoryEditorKey: ((_b = fallbackSnapshot.categories[0]) == null ? void 0 : _b.key) || null,
       draftProp: null,
       draftTemplateRoot: null,
       draftTemplatePair: null,
@@ -5562,6 +8869,8 @@
     let deleteConfirmLastActiveElement = null;
     let saveSuccessResolver = null;
     let saveSuccessLastActiveElement = null;
+    let randomGeneratorLastActiveElement = null;
+    let randomGeneratorIsBusy = false;
     function renderWorkspaceLog() {
       const visibleEntries = logEntries.slice(0, 18);
       if (!visibleEntries.length) {
@@ -5587,7 +8896,7 @@
       renderWorkspaceLog();
     };
     const slugify = (value) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
-    const escapeHtml2 = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const escapeHtml2 = (value) => String(value != null ? value : "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     renderWorkspaceLog();
     function hideCreatorNotice() {
       if (creatorNoticeTimeoutId) {
@@ -5623,39 +8932,41 @@
         }, timeoutMs);
       }
     }
+    function restoreFocusBeforeHidingModal(lastActiveElement, fallbackElement = null) {
+      const focusTarget = [lastActiveElement, fallbackElement].find((candidate) => candidate instanceof HTMLElement && typeof candidate.focus === "function" && !candidate.hasAttribute("disabled") && !candidate.hidden && candidate.isConnected) || null;
+      if (focusTarget && document.activeElement !== focusTarget) {
+        focusTarget.focus({ preventScroll: true });
+        return;
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
     function resolveDeleteConfirm(confirmed) {
       if (!deleteConfirmModal) {
         return;
       }
-      deleteConfirmModal.hidden = true;
-      deleteConfirmModal.setAttribute("aria-hidden", "true");
       const resolver = deleteConfirmResolver;
       deleteConfirmResolver = null;
       const lastActiveElement = deleteConfirmLastActiveElement;
       deleteConfirmLastActiveElement = null;
-      if (lastActiveElement instanceof HTMLElement) {
-        window.setTimeout(() => {
-          lastActiveElement.focus();
-        }, 0);
-      }
-      resolver?.(confirmed);
+      restoreFocusBeforeHidingModal(lastActiveElement);
+      deleteConfirmModal.hidden = true;
+      deleteConfirmModal.setAttribute("aria-hidden", "true");
+      resolver == null ? void 0 : resolver(confirmed);
     }
     function resolveSaveSuccessPrompt(shouldLaunch) {
       if (!saveSuccessModal) {
         return;
       }
-      saveSuccessModal.hidden = true;
-      saveSuccessModal.setAttribute("aria-hidden", "true");
       const resolver = saveSuccessResolver;
       saveSuccessResolver = null;
       const lastActiveElement = saveSuccessLastActiveElement;
       saveSuccessLastActiveElement = null;
-      if (lastActiveElement instanceof HTMLElement) {
-        window.setTimeout(() => {
-          lastActiveElement.focus();
-        }, 0);
-      }
-      resolver?.(shouldLaunch);
+      restoreFocusBeforeHidingModal(lastActiveElement);
+      saveSuccessModal.hidden = true;
+      saveSuccessModal.setAttribute("aria-hidden", "true");
+      resolver == null ? void 0 : resolver(shouldLaunch);
     }
     function requestDestructiveConfirmation({
       eyebrow = "Delete",
@@ -5713,6 +9024,437 @@
       return new Promise((resolve) => {
         saveSuccessResolver = resolve;
       });
+    }
+    function getRandomGeneratorBaseReferenceCatalog() {
+      const referenceMap = /* @__PURE__ */ new Map();
+      propCatalogModule.PROP_CATALOG.forEach((entry) => {
+        if ((entry == null ? void 0 : entry.category) !== "wingSet") {
+          return;
+        }
+        referenceMap.set(entry.key, {
+          key: entry.key,
+          label: entry.label,
+          rarity: entry.rarity,
+          attachment: entry.attachment,
+          categoryKey: "wingSet",
+          assetUrl: entry.assetUrl || null,
+          factoryId: entry.factoryId || null,
+          preview: clonePreviewData(entry.preview)
+        });
+      });
+      getProps().forEach((entry) => {
+        if ((entry == null ? void 0 : entry.categoryKey) !== "wingSet" || !(entry == null ? void 0 : entry.label) || entry.archived === true || entry.active === false) {
+          return;
+        }
+        referenceMap.set(entry.key, {
+          key: entry.key,
+          label: entry.label,
+          rarity: entry.rarity,
+          attachment: entry.attachment,
+          categoryKey: "wingSet",
+          assetUrl: entry.assetUrl || null,
+          factoryId: entry.factoryId || null,
+          preview: clonePreviewData(entry.preview)
+        });
+      });
+      return [...referenceMap.values()];
+    }
+    function getRandomGeneratorBaseReferenceOptions() {
+      return getWingBaseReferenceOptions2(getRandomGeneratorBaseReferenceCatalog());
+    }
+    function resolveRandomGeneratorSelectedBaseReference(formState, references = getRandomGeneratorBaseReferenceOptions()) {
+      const requestedKey = typeof (formState == null ? void 0 : formState.baseReferenceKey) === "string" ? formState.baseReferenceKey.trim() : "";
+      const requestedReference = requestedKey ? references.find((entry) => entry.key === requestedKey) || null : null;
+      if (requestedReference) {
+        return requestedReference;
+      }
+      if (((formState == null ? void 0 : formState.fitMode) === "copyWingTemplate" || (formState == null ? void 0 : formState.themeMode) === "matchExistingStyle") && references.length) {
+        return references[0];
+      }
+      return null;
+    }
+    function measureRandomGeneratorTemplateBounds({ templateRoot = null, templatePair = null, attachment = null } = {}) {
+      const measurementRoot = new THREE.Group();
+      if ((templatePair == null ? void 0 : templatePair.left) && (templatePair == null ? void 0 : templatePair.right)) {
+        measurementRoot.add(cloneSceneGraph2(templatePair.left));
+        measurementRoot.add(cloneSceneGraph2(templatePair.right));
+      } else if (templateRoot) {
+        measurementRoot.add(cloneSceneGraph2(templateRoot));
+      } else {
+        return null;
+      }
+      measurementRoot.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(measurementRoot);
+      if (box.isEmpty()) {
+        return null;
+      }
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const width = Math.max(size.x, 1e-3);
+      const height = Math.max(size.y, 1e-3);
+      const depth = Math.max(size.z, 1e-3);
+      const attachmentScaleAverage = Array.isArray(attachment == null ? void 0 : attachment.scale) ? attachment.scale.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0).reduce((sum, value, _, values) => sum + value / Math.max(values.length, 1), 0) : 1.9;
+      return {
+        width: Number(width.toFixed(3)),
+        height: Number(height.toFixed(3)),
+        depth: Number(depth.toFixed(3)),
+        spreadRatio: Number((width / height).toFixed(3)),
+        verticalRatio: Number((height / width).toFixed(3)),
+        depthRatio: Number((depth / width).toFixed(3)),
+        attachmentScaleAverage: Number(attachmentScaleAverage.toFixed(3))
+      };
+    }
+    function deriveRandomGeneratorMetricsFromGeneratedRecipe(generatedRecipe, attachment = null) {
+      const structureRecipe = generatedRecipe == null ? void 0 : generatedRecipe.structureRecipe;
+      if (!structureRecipe || typeof structureRecipe !== "object") {
+        return null;
+      }
+      const width = Math.max((Number(structureRecipe.span) || 3.2) * 2.04, 1e-3);
+      const height = Math.max(Number(structureRecipe.height) || 2.1, 1e-3);
+      const depth = Math.max((Number(structureRecipe.featherWidth) || 0.28) * 0.86, 1e-3);
+      const attachmentScaleAverage = Array.isArray(attachment == null ? void 0 : attachment.scale) ? attachment.scale.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0).reduce((sum, value, _, values) => sum + value / Math.max(values.length, 1), 0) : 1.9;
+      return {
+        width: Number(width.toFixed(3)),
+        height: Number(height.toFixed(3)),
+        depth: Number(depth.toFixed(3)),
+        spreadRatio: Number((width / height).toFixed(3)),
+        verticalRatio: Number((height / width).toFixed(3)),
+        depthRatio: Number((depth / width).toFixed(3)),
+        attachmentScaleAverage: Number(attachmentScaleAverage.toFixed(3))
+      };
+    }
+    async function resolveRandomGeneratorTemplateReference(formState, baseReferenceOptions = getRandomGeneratorBaseReferenceOptions()) {
+      var _a2;
+      if ((formState == null ? void 0 : formState.fitMode) !== "copyWingTemplate") {
+        return null;
+      }
+      const selectedReference = resolveRandomGeneratorSelectedBaseReference(formState, baseReferenceOptions);
+      if (!selectedReference) {
+        return null;
+      }
+      const templateReference = {
+        key: selectedReference.key,
+        label: selectedReference.label,
+        sourceKind: selectedReference.sourceKind || (selectedReference.assetUrl ? "glb" : "metadata"),
+        theme: selectedReference.theme || null,
+        materialFamily: selectedReference.materialFamily || null,
+        paletteFamily: selectedReference.paletteFamily || null,
+        fitTemplateId: selectedReference.fitTemplateId || null,
+        structureFamily: selectedReference.structureFamily || null,
+        attachment: cloneAttachment2(selectedReference.attachment || {
+          position: [0.72, -0.24, 0.08],
+          rotation: [0.02, 0.06, -0.02],
+          scale: [1.9, 1.9, 1.9],
+          mirrorMode: "paired",
+          fit: { yOffsetRatio: 0.56, zOffsetRatio: 0.02, distanceMultiplier: 1.28, initialRotationY: 0 }
+        }),
+        generatedRecipe: selectedReference.generatedRecipe ? clonePreviewData(selectedReference.generatedRecipe) : null,
+        metrics: null
+      };
+      if (templateReference.generatedRecipe) {
+        templateReference.metrics = deriveRandomGeneratorMetricsFromGeneratedRecipe(
+          templateReference.generatedRecipe,
+          templateReference.attachment
+        );
+      }
+      if (selectedReference.assetUrl) {
+        try {
+          const templateState = await loadWingTemplateState2({
+            GLTFLoader,
+            THREE,
+            assetUrl: selectedReference.assetUrl
+          });
+          const boundsMetrics = measureRandomGeneratorTemplateBounds({
+            templateRoot: (templateState == null ? void 0 : templateState.sourceTemplateRoot) || null,
+            templatePair: (templateState == null ? void 0 : templateState.sourceTemplatePair) || null,
+            attachment: templateReference.attachment
+          });
+          if (boundsMetrics) {
+            templateReference.metrics = {
+              ...templateReference.metrics || {},
+              ...boundsMetrics
+            };
+          }
+        } catch (error) {
+          console.warn("[XiO Creator] Template-copy analysis fell back to metadata.", error);
+        }
+      }
+      if (!templateReference.metrics) {
+        templateReference.metrics = {
+          attachmentScaleAverage: Number(
+            (Array.isArray((_a2 = templateReference.attachment) == null ? void 0 : _a2.scale) ? templateReference.attachment.scale.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0).reduce((sum, value, _, values) => sum + value / Math.max(values.length, 1), 0) : 1.9).toFixed(3)
+          )
+        };
+      }
+      return templateReference;
+    }
+    function setRandomGeneratorStatus(message = "", { tone = "info" } = {}) {
+      if (!randomGeneratorStatus) {
+        return;
+      }
+      if (!message) {
+        randomGeneratorStatus.hidden = true;
+        randomGeneratorStatus.textContent = "";
+        randomGeneratorStatus.removeAttribute("data-tone");
+        return;
+      }
+      randomGeneratorStatus.hidden = false;
+      randomGeneratorStatus.dataset.tone = tone;
+      randomGeneratorStatus.textContent = message;
+    }
+    function setRandomGeneratorBusy(isBusy) {
+      randomGeneratorIsBusy = Boolean(isBusy);
+      if (randomGeneratorGenerateButton) {
+        randomGeneratorGenerateButton.disabled = randomGeneratorIsBusy;
+        randomGeneratorGenerateButton.textContent = randomGeneratorIsBusy ? "Generating..." : "Generate";
+      }
+      if (randomGeneratorCancelButton) {
+        randomGeneratorCancelButton.disabled = randomGeneratorIsBusy;
+      }
+      if (randomGeneratorCloseButton) {
+        randomGeneratorCloseButton.disabled = randomGeneratorIsBusy;
+      }
+    }
+    function readRandomGeneratorFormState() {
+      return {
+        category: (randomGeneratorCategorySelect == null ? void 0 : randomGeneratorCategorySelect.value) || "wingSet",
+        rarity: (randomGeneratorRaritySelect == null ? void 0 : randomGeneratorRaritySelect.value) || "rare",
+        themeMode: (randomGeneratorThemeModeSelect == null ? void 0 : randomGeneratorThemeModeSelect.value) || "fullyRandom",
+        themeInput: (randomGeneratorThemeInput == null ? void 0 : randomGeneratorThemeInput.value) || "",
+        detailDensity: (randomGeneratorDetailDensitySelect == null ? void 0 : randomGeneratorDetailDensitySelect.value) || "autoByRarity",
+        colorHarmonyMode: (randomGeneratorColorHarmonySelect == null ? void 0 : randomGeneratorColorHarmonySelect.value) || "auto",
+        fitMode: (randomGeneratorFitModeSelect == null ? void 0 : randomGeneratorFitModeSelect.value) || "useMasterTemplate",
+        baseReferenceKey: (randomGeneratorBaseReferenceSelect == null ? void 0 : randomGeneratorBaseReferenceSelect.value) || ""
+      };
+    }
+    function renderRandomGeneratorSummary() {
+      const formState = readRandomGeneratorFormState();
+      const summary = buildGeneratorPreviewSummary2(formState, {
+        baseReferenceOptions: getRandomGeneratorBaseReferenceOptions()
+      });
+      if (randomGeneratorSummaryCategory) {
+        randomGeneratorSummaryCategory.textContent = summary.categoryLabel;
+      }
+      if (randomGeneratorSummaryRarity) {
+        randomGeneratorSummaryRarity.textContent = summary.rarityLabel;
+      }
+      if (randomGeneratorSummaryTheme) {
+        randomGeneratorSummaryTheme.textContent = summary.themeLabel;
+      }
+      if (randomGeneratorSummaryDetail) {
+        randomGeneratorSummaryDetail.textContent = summary.detailLabel;
+      }
+      if (randomGeneratorSummaryMaterial) {
+        randomGeneratorSummaryMaterial.textContent = summary.materialDirection;
+      }
+      if (randomGeneratorSummaryFit) {
+        randomGeneratorSummaryFit.textContent = summary.fitLabel;
+      }
+      if (randomGeneratorSummaryReference) {
+        randomGeneratorSummaryReference.textContent = summary.baseReferenceLabel;
+      }
+      if (randomGeneratorSummaryState) {
+        randomGeneratorSummaryState.textContent = formState.fitMode === "copyWingTemplate" ? "Derivative build" : (randomGeneratorThemeModeSelect == null ? void 0 : randomGeneratorThemeModeSelect.value) === "guidedTheme" ? "Guided" : (randomGeneratorThemeModeSelect == null ? void 0 : randomGeneratorThemeModeSelect.value) === "matchExistingStyle" ? "Style matched" : "Stage first";
+      }
+      if (randomGeneratorThemeField) {
+        randomGeneratorThemeField.hidden = (randomGeneratorThemeModeSelect == null ? void 0 : randomGeneratorThemeModeSelect.value) !== "guidedTheme";
+      }
+      if (randomGeneratorReferenceHint) {
+        randomGeneratorReferenceHint.hidden = formState.fitMode !== "copyWingTemplate";
+      }
+    }
+    function populateRandomGeneratorOptions() {
+      if (randomGeneratorCategorySelect) {
+        randomGeneratorCategorySelect.innerHTML = GENERATOR_CATEGORY_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}"${entry.enabled ? "" : " disabled"}>${escapeHtml2(entry.label)}${entry.enabled ? "" : " (Coming Soon)"}</option>`).join("");
+        randomGeneratorCategorySelect.value = "wingSet";
+      }
+      if (randomGeneratorRaritySelect) {
+        randomGeneratorRaritySelect.innerHTML = GENERATOR_RARITY_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}">${escapeHtml2(entry.label)}</option>`).join("");
+        randomGeneratorRaritySelect.value = "rare";
+      }
+      if (randomGeneratorThemeModeSelect) {
+        randomGeneratorThemeModeSelect.innerHTML = GENERATOR_THEME_MODE_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}">${escapeHtml2(entry.label)}</option>`).join("");
+        randomGeneratorThemeModeSelect.value = "fullyRandom";
+      }
+      if (randomGeneratorDetailDensitySelect) {
+        randomGeneratorDetailDensitySelect.innerHTML = GENERATOR_DETAIL_DENSITY_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}">${escapeHtml2(entry.label)}</option>`).join("");
+        randomGeneratorDetailDensitySelect.value = "autoByRarity";
+      }
+      if (randomGeneratorColorHarmonySelect) {
+        randomGeneratorColorHarmonySelect.innerHTML = GENERATOR_COLOR_HARMONY_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}">${escapeHtml2(entry.label)}</option>`).join("");
+        randomGeneratorColorHarmonySelect.value = "auto";
+      }
+      if (randomGeneratorFitModeSelect) {
+        randomGeneratorFitModeSelect.innerHTML = GENERATOR_FIT_MODE_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.value)}">${escapeHtml2(entry.label)}</option>`).join("");
+        randomGeneratorFitModeSelect.value = "useMasterTemplate";
+      }
+      if (randomGeneratorThemeSuggestions) {
+        randomGeneratorThemeSuggestions.innerHTML = GENERATOR_THEME_OPTIONS2.map((entry) => `<option value="${escapeHtml2(entry.label)}"></option>`).join("");
+      }
+    }
+    function populateRandomGeneratorBaseReferences() {
+      if (!randomGeneratorBaseReferenceSelect) {
+        return;
+      }
+      const references = getRandomGeneratorBaseReferenceOptions();
+      const previousValue = randomGeneratorBaseReferenceSelect.value || "";
+      randomGeneratorBaseReferenceSelect.innerHTML = [
+        '<option value="">Auto Select</option>',
+        ...references.map((entry) => {
+          const sourceLabel = entry.sourceKind === "generated" ? "Generated" : entry.sourceKind === "glb" ? "GLB" : "Template";
+          return `<option value="${escapeHtml2(entry.key)}">${escapeHtml2(`${entry.label} \xB7 ${sourceLabel}`)}</option>`;
+        })
+      ].join("");
+      randomGeneratorBaseReferenceSelect.value = references.some((entry) => entry.key === previousValue) ? previousValue : "";
+    }
+    function renderGeneratedStageCard() {
+      var _a2;
+      if (!generatedStageCard) {
+        return;
+      }
+      const draftProp = ensureDraftProp();
+      const generatedPreview = (_a2 = draftProp == null ? void 0 : draftProp.preview) == null ? void 0 : _a2.generated;
+      if (!isGeneratedPropPreview2(draftProp == null ? void 0 : draftProp.preview) || !(generatedPreview == null ? void 0 : generatedPreview.displaySummary)) {
+        generatedStageCard.hidden = true;
+        return;
+      }
+      generatedStageCard.hidden = false;
+      if (generatedStageTitle) {
+        generatedStageTitle.textContent = draftProp.label ? `${draftProp.label} staged` : "Generated wing draft staged";
+      }
+      if (generatedStageStatus) {
+        generatedStageStatus.textContent = state.publishEnabled ? "Ready to publish" : "Local only";
+      }
+      if (generatedStageMessage) {
+        generatedStageMessage.textContent = state.publishEnabled ? "This generated wing is staged on XiO and can be tested before you add it to the live inventory." : "This generated wing is staged locally on XiO and will not go live until you open the manager route and save it.";
+      }
+      if (generatedStageTheme) {
+        generatedStageTheme.textContent = generatedPreview.displaySummary.themeLabel || "Royal";
+      }
+      if (generatedStageRarity) {
+        generatedStageRarity.textContent = generatedPreview.displaySummary.rarityLabel || "Rare";
+      }
+      if (generatedStageMaterial) {
+        generatedStageMaterial.textContent = generatedPreview.displaySummary.materialDirection || "Royal Enamel";
+      }
+      if (generatedStageFit) {
+        generatedStageFit.textContent = generatedPreview.displaySummary.fitLabel || "XiO Wing Master Template";
+      }
+    }
+    function closeRandomGeneratorModal({ restoreFocus = true } = {}) {
+      if (!randomGeneratorModal) {
+        return;
+      }
+      const lastActiveElement = randomGeneratorLastActiveElement;
+      randomGeneratorLastActiveElement = null;
+      if (restoreFocus) {
+        restoreFocusBeforeHidingModal(lastActiveElement, randomPropGeneratorButton);
+      }
+      randomGeneratorModal.hidden = true;
+      randomGeneratorModal.setAttribute("aria-hidden", "true");
+      setRandomGeneratorBusy(false);
+      setRandomGeneratorStatus("");
+    }
+    function openRandomGeneratorModal() {
+      if (!randomGeneratorModal) {
+        return;
+      }
+      hideCreatorNotice();
+      randomGeneratorLastActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      populateRandomGeneratorBaseReferences();
+      renderRandomGeneratorSummary();
+      setRandomGeneratorStatus("Wing generation is stage-first. Copy Wing Template studies the selected wing as a guide, then generates a derivative result instead of cloning it exactly.", { tone: "info" });
+      setRandomGeneratorBusy(false);
+      randomGeneratorModal.hidden = false;
+      randomGeneratorModal.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => {
+        randomGeneratorCategorySelect == null ? void 0 : randomGeneratorCategorySelect.focus();
+      }, 0);
+    }
+    function trapFocusInsideRandomGenerator(event) {
+      if (event.key !== "Tab" || !randomGeneratorModal || randomGeneratorModal.hidden) {
+        return;
+      }
+      const focusableElements = [...randomGeneratorModal.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((element) => element instanceof HTMLElement && !element.hasAttribute("disabled") && !element.hidden && element.getAttribute("aria-hidden") !== "true" && element.offsetParent !== null);
+      if (!focusableElements.length) {
+        return;
+      }
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    async function generateRandomWingDraftToStage() {
+      if (randomGeneratorIsBusy) {
+        return;
+      }
+      setRandomGeneratorBusy(true);
+      setRandomGeneratorStatus("Synthesizing a coherent XiO-ready wing recipe...", { tone: "info" });
+      try {
+        const formState = readRandomGeneratorFormState();
+        const baseReferenceOptions = getRandomGeneratorBaseReferenceOptions();
+        const templateReference = await resolveRandomGeneratorTemplateReference(formState, baseReferenceOptions);
+        const generation = generateRandomWingDraft2(formState, {
+          existingProps: getProps(),
+          baseReferenceOptions,
+          defaultWingMotionPreview: DEFAULT_WING_MOTION_PREVIEW2,
+          templateReference
+        });
+        if (!generation.ok || !generation.draftRecord) {
+          throw new Error(generation.error || "The generator could not create a valid wing recipe.");
+        }
+        const previewPair = buildGeneratedWingPreview2({
+          THREE,
+          recipe: generation.recipe,
+          attachment: generation.draftRecord.attachment
+        });
+        if (!(previewPair == null ? void 0 : previewPair.left) || !(previewPair == null ? void 0 : previewPair.right)) {
+          throw new Error("The generated wing recipe did not produce a valid XiO preview pair.");
+        }
+        const previewState = prepareDraftTemplatePairStateFromLivePreview(
+          previewPair,
+          `${generation.draftRecord.label} (generated stage)`,
+          generation.draftRecord
+        );
+        const draftLoadPlan = buildDraftLoadPlanBase(generation.draftRecord, {
+          selectedLivePropKey: null,
+          draftCategoryKey: generation.draftRecord.categoryKey,
+          draftSourceLabel: `${generation.draftRecord.label} (generated stage)`,
+          draftTemplateRoot: (previewState == null ? void 0 : previewState.draftTemplateRoot) || null,
+          draftTemplatePair: (previewState == null ? void 0 : previewState.draftTemplatePair) || null,
+          draftTemplateSourceRoot: (previewState == null ? void 0 : previewState.draftTemplateRoot) || null,
+          draftTemplateSourcePair: (previewState == null ? void 0 : previewState.draftTemplatePair) || null
+        });
+        commitDraftLoadPlan({
+          ...draftLoadPlan,
+          ...previewState || {}
+        }, {
+          announceMessage: `Generated ${generation.draftRecord.label} and staged it on XiO.`
+        });
+        renderGeneratedStageCard();
+        setRandomGeneratorStatus(
+          formState.fitMode === "copyWingTemplate" && (templateReference == null ? void 0 : templateReference.label) ? `${generation.draftRecord.label} is staged on XiO as a derivative build from ${templateReference.label}.` : `${generation.draftRecord.label} is staged on XiO and ready for testing or live save.`,
+          { tone: "success" }
+        );
+        showCreatorNotice({
+          tone: "success",
+          eyebrow: "Generated Draft Ready",
+          title: `${generation.draftRecord.label} staged`,
+          message: "The generated wing is loaded on XiO. Review it, tweak it if needed, then save when you are ready.",
+          timeoutMs: 5600
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to generate a coherent XiO wing right now.";
+        setRandomGeneratorStatus(message, { tone: "error" });
+      } finally {
+        setRandomGeneratorBusy(false);
+        renderRandomGeneratorSummary();
+      }
     }
     function launchMysteryBoxTest() {
       if (window.parent && window.parent !== window) {
@@ -5819,12 +9561,13 @@
     }
     function isStandaloneFolderLinkRequired(propRecord) {
       return Boolean(
-        IS_FILE_RUNTIME && propRecord?.assetUrl && !isLiveGameWingPreviewKey2(propRecord.key)
+        IS_FILE_RUNTIME && (propRecord == null ? void 0 : propRecord.assetUrl) && !isLiveGameWingPreviewKey2(propRecord.key)
       );
     }
     function isPropProxyReady(propRecord) {
+      var _a2;
       return Boolean(
-        propRecord?.preview?.kind || isLiveGameWingPreviewKey2(propRecord?.key)
+        ((_a2 = propRecord == null ? void 0 : propRecord.preview) == null ? void 0 : _a2.kind) || isLiveGameWingPreviewKey2(propRecord == null ? void 0 : propRecord.key)
       );
     }
     async function validateStandalonePropsFolderHandle(handle) {
@@ -5867,7 +9610,7 @@
       state.standalonePropsFolder.name = name;
       state.standalonePropsFolder.missingAssetPath = missingAssetPath;
     }
-    const cloneAttachment = (attachment) => ({
+    const cloneAttachment2 = (attachment) => ({
       position: [...attachment.position],
       rotation: [...attachment.rotation],
       scale: [...attachment.scale],
@@ -5906,7 +9649,7 @@
       },
       eyePreset: null,
       materialPreset: null,
-      mysteryBoxEnabled: true,
+      mysteryBoxEnabled: false,
       active: true,
       archived: false,
       tags: [],
@@ -5923,8 +9666,8 @@
     }
     function cloneWingSyncPreviewState(previewState = state.wingSyncPreview) {
       return {
-        mode: previewState?.mode === "both" || previewState?.mode === "single" ? previewState.mode : null,
-        side: normalizeWingPreviewSide(previewState?.side, null)
+        mode: (previewState == null ? void 0 : previewState.mode) === "both" || (previewState == null ? void 0 : previewState.mode) === "single" ? previewState.mode : null,
+        side: normalizeWingPreviewSide(previewState == null ? void 0 : previewState.side, null)
       };
     }
     function syncPanelShellStateLabels() {
@@ -5973,7 +9716,7 @@
     }
     const deepCopyProp = (prop) => ({
       ...prop,
-      attachment: cloneAttachment(prop.attachment),
+      attachment: cloneAttachment2(prop.attachment),
       tags: [...prop.tags || []],
       preview: clonePreviewData(prop.preview)
     });
@@ -5984,18 +9727,21 @@
       return draftProp.preview;
     }
     function getDraftWingAuthoringPreview(draftProp = ensureDraftProp()) {
-      return normalizeWingAuthoringPreview2(draftProp?.preview?.wingAuthoring, {
-        defaultMirrorToBoth: draftProp?.attachment?.mirrorMode === "paired"
+      var _a2, _b2;
+      return normalizeWingAuthoringPreview2((_a2 = draftProp == null ? void 0 : draftProp.preview) == null ? void 0 : _a2.wingAuthoring, {
+        defaultMirrorToBoth: ((_b2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _b2.mirrorMode) === "paired"
       });
     }
     function getDraftWingMotionPreview(draftProp = ensureDraftProp()) {
-      return normalizeWingMotionPreview2(draftProp?.preview?.wingMotion);
+      var _a2;
+      return normalizeWingMotionPreview2((_a2 = draftProp == null ? void 0 : draftProp.preview) == null ? void 0 : _a2.wingMotion);
     }
     function setDraftWingAuthoringPreview(authoring, { persist = true } = {}) {
+      var _a2;
       const draftProp = ensureDraftProp();
       const preview = ensureDraftPreviewBucket(draftProp);
       const normalized = normalizeWingAuthoringPreview2(authoring, {
-        defaultMirrorToBoth: draftProp?.attachment?.mirrorMode === "paired"
+        defaultMirrorToBoth: ((_a2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired"
       });
       if (persist) {
         preview.wingAuthoring = clonePreviewData(normalized);
@@ -6016,11 +9762,12 @@
       return normalized;
     }
     function getDefaultWingMotionChannelLabel(profile) {
-      return profile?.direction === "reverse" ? "Reverse flap" : "Normal flap";
+      return (profile == null ? void 0 : profile.direction) === "reverse" ? "Reverse flap" : "Normal flap";
     }
     function syncDraftWingMirrorModeFromPreview(draftProp = ensureDraftProp()) {
-      if (draftProp?.categoryKey !== "wingSet") {
-        return draftProp?.attachment?.mirrorMode || "single";
+      var _a2;
+      if ((draftProp == null ? void 0 : draftProp.categoryKey) !== "wingSet") {
+        return ((_a2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _a2.mirrorMode) || "single";
       }
       const authoringPreview = getDraftWingAuthoringPreview(draftProp);
       if (authoringPreview.mode === "isolatedHalf") {
@@ -6042,6 +9789,46 @@
       faceAccessory: 1.2,
       bodyAccessory: 1.85,
       heldProp: 1.75
+    });
+    const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
+      Object.freeze([0, 0, 0]),
+      Object.freeze([0, Math.PI / 2, 0]),
+      Object.freeze([0, Math.PI, 0]),
+      Object.freeze([0, -Math.PI / 2, 0]),
+      Object.freeze([Math.PI / 2, 0, 0]),
+      Object.freeze([-Math.PI / 2, 0, 0]),
+      Object.freeze([Math.PI, 0, 0]),
+      Object.freeze([0, 0, Math.PI / 2]),
+      Object.freeze([0, 0, -Math.PI / 2]),
+      Object.freeze([Math.PI / 2, Math.PI / 2, 0]),
+      Object.freeze([-Math.PI / 2, Math.PI / 2, 0]),
+      Object.freeze([Math.PI / 2, 0, Math.PI / 2])
+    ]);
+    const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
+      headWear: Object.freeze({
+        horizontalSpan: 1.65,
+        ySinkRatio: 0.24,
+        zSinkRatio: 0.18,
+        rotationCandidates: HEADWEAR_ROTATION_CANDIDATES
+      }),
+      faceAccessory: Object.freeze({
+        horizontalSpan: 1.08,
+        ySinkRatio: 0.02,
+        zSinkRatio: 0.1,
+        rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])])
+      }),
+      bodyAccessory: Object.freeze({
+        horizontalSpan: 1.55,
+        ySinkRatio: 0.08,
+        zSinkRatio: 0.14,
+        rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])])
+      }),
+      heldProp: Object.freeze({
+        horizontalSpan: 1.35,
+        ySinkRatio: 0.02,
+        zSinkRatio: 0.08,
+        rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])])
+      })
     });
     const SINGLE_WING_SYNC_TARGET_SPAN = 2.55;
     const cloneHistorySnapshot = (snapshot) => ({
@@ -6243,15 +10030,16 @@
     const getSelectedLiveProp = () => getProps().find((entry) => entry.key === state.selectedLivePropKey) || null;
     function getHighestCategorySortOrder() {
       return getCategories().reduce((highest, entry) => {
-        const sortOrder = Number(entry?.sortOrder);
+        const sortOrder = Number(entry == null ? void 0 : entry.sortOrder);
         return Number.isFinite(sortOrder) && sortOrder > highest ? sortOrder : highest;
       }, -1);
     }
     function buildNewCategoryDraft() {
+      var _a2;
       return {
         key: "",
         label: "",
-        slotKey: getDraftCategoryRecord()?.slotKey || "wingSet",
+        slotKey: ((_a2 = getDraftCategoryRecord()) == null ? void 0 : _a2.slotKey) || "wingSet",
         equipLimit: 1,
         sortOrder: getHighestCategorySortOrder() + 1,
         enabled: true
@@ -6274,8 +10062,9 @@
       stageSelectionLabel.textContent = label;
     }
     function hasFileDataTransfer(dataTransfer) {
+      var _a2;
       if (!dataTransfer) return false;
-      if (dataTransfer.files?.length) {
+      if ((_a2 = dataTransfer.files) == null ? void 0 : _a2.length) {
         return true;
       }
       const items = Array.from(dataTransfer.items || []);
@@ -6286,15 +10075,16 @@
       return types.includes("files") || types.includes("application/x-moz-file");
     }
     function extractGlbFileFromDataTransfer(dataTransfer) {
+      var _a2, _b2;
       if (!dataTransfer) return null;
-      const directFile = dataTransfer.files?.[0];
+      const directFile = (_a2 = dataTransfer.files) == null ? void 0 : _a2[0];
       if (directFile) {
         return directFile;
       }
       const items = Array.from(dataTransfer.items || []);
       for (const item of items) {
         if (item.kind !== "file") continue;
-        const candidate = item.getAsFile?.();
+        const candidate = (_b2 = item.getAsFile) == null ? void 0 : _b2.call(item);
         if (!candidate) continue;
         if (/\.glb$/i.test(candidate.name) || candidate.type === "model/gltf-binary") {
           return candidate;
@@ -6318,11 +10108,11 @@
       state.draftLocalFile = null;
     }
     function isCreatorOnlyPropRecord(propRecord) {
-      return Boolean(propRecord?.creatorOnly);
+      return Boolean(propRecord == null ? void 0 : propRecord.creatorOnly);
     }
     function isBlobBackedLocalDraft(propRecord = state.draftProp) {
       return Boolean(
-        !state.publishEnabled && typeof propRecord?.assetUrl === "string" && propRecord.assetUrl.startsWith("blob:")
+        !state.publishEnabled && typeof (propRecord == null ? void 0 : propRecord.assetUrl) === "string" && propRecord.assetUrl.startsWith("blob:")
       );
     }
     function getDraftCategoryRecord() {
@@ -6330,29 +10120,32 @@
       return getCategoryByKey(draftProp.categoryKey) || getCategoryByKey(state.draftCategoryKey) || getCategories()[0] || null;
     }
     function getSlotLabel(slotKey) {
-      return XIO_SLOT_DEFINITIONS2[slotKey]?.label || slotKey || "Unassigned";
+      var _a2;
+      return ((_a2 = XIO_SLOT_DEFINITIONS2[slotKey]) == null ? void 0 : _a2.label) || slotKey || "Unassigned";
     }
     function hasEditableStageProp() {
       const selectedProp = getSelectedLiveProp();
       return Boolean(state.stageSelection) && (!selectedProp || !isCreatorOnlyPropRecord(selectedProp));
     }
     function getSlotAnchorDepth(categoryKey = ensureDraftProp().categoryKey) {
+      var _a2, _b2, _c, _d, _e, _f;
       const category = getCategoryByKey(categoryKey) || getDraftCategoryRecord();
       if (!category) {
         return 0;
       }
       if (category.slotKey === "wingSet") {
-        return Number(xio.slotAnchors.wingSet?.right?.position?.z) || 0;
+        return Number((_c = (_b2 = (_a2 = xio.slotAnchors.wingSet) == null ? void 0 : _a2.right) == null ? void 0 : _b2.position) == null ? void 0 : _c.z) || 0;
       }
-      return Number(xio.slotAnchors[category.slotKey]?.anchor?.position?.z) || 0;
+      return Number((_f = (_e = (_d = xio.slotAnchors[category.slotKey]) == null ? void 0 : _d.anchor) == null ? void 0 : _e.position) == null ? void 0 : _f.z) || 0;
     }
     function getDraftPlacementDepthMode(draftProp = ensureDraftProp()) {
-      const currentZ = Number(draftProp?.attachment?.position?.[2]) || 0;
-      const absoluteDepth = getSlotAnchorDepth(draftProp?.categoryKey) + currentZ;
+      var _a2, _b2;
+      const currentZ = Number((_b2 = (_a2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _a2.position) == null ? void 0 : _b2[2]) || 0;
+      const absoluteDepth = getSlotAnchorDepth(draftProp == null ? void 0 : draftProp.categoryKey) + currentZ;
       return absoluteDepth < 0 ? "behind" : "front";
     }
     function getSuggestedPlacementDepthMagnitude(draftProp = ensureDraftProp()) {
-      return SLOT_DEPTH_MAGNITUDES[draftProp?.categoryKey] || 0.45;
+      return SLOT_DEPTH_MAGNITUDES[draftProp == null ? void 0 : draftProp.categoryKey] || 0.45;
     }
     function getVisibleLiveProps() {
       return getProps().filter((entry) => isCreatorOnlyPropRecord(entry) || entry.active !== false && entry.archived !== true);
@@ -6377,20 +10170,24 @@
       });
     }
     function getPropAssetAvailability(propRecord) {
+      var _a2, _b2, _c;
       if (!propRecord) {
         return { status: PROP_ASSET_STATUS.appearanceOnly, label: "Appearance only", tone: "muted" };
       }
-      if (propRecord.preview?.kind === "xioNoWingProxy") {
+      if (isGeneratedPropPreview2(propRecord.preview)) {
+        return { status: PROP_ASSET_STATUS.proxyReady, label: "Generated / runtime-ready", tone: "success" };
+      }
+      if (((_a2 = propRecord.preview) == null ? void 0 : _a2.kind) === "xioNoWingProxy") {
         return { status: PROP_ASSET_STATUS.proxyReady, label: "Built in / proxy-ready", tone: "info" };
       }
-      if (propRecord.preview?.kind === "xioBaseWingProxy") {
+      if (((_b2 = propRecord.preview) == null ? void 0 : _b2.kind) === "xioBaseWingProxy") {
         return { status: PROP_ASSET_STATUS.proxyReady, label: "Built in / proxy-ready", tone: "info" };
       }
       if (isLiveGameWingPreviewKey2(propRecord.key)) {
         return { status: PROP_ASSET_STATUS.proxyReady, label: "Built in / proxy-ready", tone: "info" };
       }
       if (!propRecord.assetUrl) {
-        if (propRecord.preview?.kind) {
+        if ((_c = propRecord.preview) == null ? void 0 : _c.kind) {
           return { status: PROP_ASSET_STATUS.proxyReady, label: "Built in / proxy-ready", tone: "info" };
         }
         return { status: PROP_ASSET_STATUS.appearanceOnly, label: "Appearance only", tone: "muted" };
@@ -6402,7 +10199,7 @@
         return { status: PROP_ASSET_STATUS.needsLink, label: "Needs linked folder", tone: "warning" };
       }
       const cachedStatus = state.propAssetAvailability.get(propRecord.key);
-      if (cachedStatus?.status === PROP_ASSET_STATUS.missingAsset) {
+      if ((cachedStatus == null ? void 0 : cachedStatus.status) === PROP_ASSET_STATUS.missingAsset) {
         return { status: PROP_ASSET_STATUS.missingAsset, label: "Missing asset", tone: "danger" };
       }
       return { status: PROP_ASSET_STATUS.glbReady, label: "GLB ready", tone: "success" };
@@ -6414,13 +10211,14 @@
       return getPropAssetAvailability(propRecord).tone;
     }
     function getLivePropEquipLabel(propRecord) {
+      var _a2, _b2;
       if (state.selectedLivePropKey === propRecord.key) {
         return "Equipped on XiO";
       }
-      if (propRecord.preview?.kind === "xioNoWingProxy") {
+      if (((_a2 = propRecord.preview) == null ? void 0 : _a2.kind) === "xioNoWingProxy") {
         return "Unequip Wings";
       }
-      if (propRecord.preview?.kind === "xioBaseWingProxy") {
+      if (((_b2 = propRecord.preview) == null ? void 0 : _b2.kind) === "xioBaseWingProxy") {
         return "Equip Base Wings";
       }
       const availability = getPropAssetAvailability(propRecord);
@@ -6472,26 +10270,31 @@
       propsFolderStatusChip.classList.add("status-chip--warning");
     }
     function shouldHideBaseWings(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
+      var _a2;
       if (!draftProp || !category || category.slotKey !== "wingSet") {
         return false;
       }
-      if (draftProp.preview?.kind === "xioNoWingProxy") {
+      if (((_a2 = draftProp.preview) == null ? void 0 : _a2.kind) === "xioNoWingProxy") {
         return true;
       }
       return Boolean(state.draftTemplateRoot || state.draftTemplatePair);
     }
     function isNoWingProxyRecord(propRecord = ensureDraftProp()) {
-      return propRecord?.preview?.kind === "xioNoWingProxy";
+      var _a2;
+      return ((_a2 = propRecord == null ? void 0 : propRecord.preview) == null ? void 0 : _a2.kind) === "xioNoWingProxy";
     }
     function isBaseWingProxyRecord(propRecord = ensureDraftProp()) {
-      return propRecord?.preview?.kind === "xioBaseWingProxy";
+      var _a2;
+      return ((_a2 = propRecord == null ? void 0 : propRecord.preview) == null ? void 0 : _a2.kind) === "xioBaseWingProxy";
     }
     function hasDraftWingPairSource() {
-      return Boolean(state.draftTemplatePair?.left && state.draftTemplatePair?.right);
+      var _a2, _b2;
+      return Boolean(((_a2 = state.draftTemplatePair) == null ? void 0 : _a2.left) && ((_b2 = state.draftTemplatePair) == null ? void 0 : _b2.right));
     }
     function hasDraftWingAuthoringSource() {
+      var _a2, _b2;
       return Boolean(
-        state.draftTemplateSourceRoot || state.draftTemplateSourcePair?.left && state.draftTemplateSourcePair?.right
+        state.draftTemplateSourceRoot || ((_a2 = state.draftTemplateSourcePair) == null ? void 0 : _a2.left) && ((_b2 = state.draftTemplateSourcePair) == null ? void 0 : _b2.right)
       );
     }
     function hasLoadedWingDraftAsset(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
@@ -6503,7 +10306,8 @@
       );
     }
     function inferWingSideFromAttachment(attachment = ensureDraftProp().attachment) {
-      const positionX = Number(attachment?.position?.[0]) || 0;
+      var _a2;
+      const positionX = Number((_a2 = attachment == null ? void 0 : attachment.position) == null ? void 0 : _a2[0]) || 0;
       return positionX < 0 ? "left" : "right";
     }
     function getDefaultWingSyncPreviewState({
@@ -6512,13 +10316,14 @@
       draftTemplateRoot = state.draftTemplateRoot,
       draftTemplatePair = state.draftTemplatePair
     } = {}) {
+      var _a2, _b2;
       if (!draftProp || !category || category.slotKey !== "wingSet" || isNoWingProxyRecord(draftProp)) {
         return { mode: null, side: null };
       }
       if (isBaseWingProxyRecord(draftProp)) {
         return { mode: "both", side: "left" };
       }
-      const legacyPreviewSide = normalizeWingPreviewSide(draftProp?.preview?.singleWingSide, null);
+      const legacyPreviewSide = normalizeWingPreviewSide((_a2 = draftProp == null ? void 0 : draftProp.preview) == null ? void 0 : _a2.singleWingSide, null);
       const authoringPreview = getDraftWingAuthoringPreview(draftProp);
       const derivedSide = legacyPreviewSide || authoringPreview.sourceSide || inferWingSideFromAttachment(draftProp.attachment);
       if (authoringPreview.mode === "isolatedHalf") {
@@ -6527,8 +10332,8 @@
           side: derivedSide || (authoringPreview.mirrorToBoth ? "left" : "right")
         };
       }
-      const hasTemplatePair = Boolean(draftTemplatePair?.left && draftTemplatePair?.right);
-      if (hasTemplatePair || draftProp.attachment?.mirrorMode === "paired") {
+      const hasTemplatePair = Boolean((draftTemplatePair == null ? void 0 : draftTemplatePair.left) && (draftTemplatePair == null ? void 0 : draftTemplatePair.right));
+      if (hasTemplatePair || ((_b2 = draftProp.attachment) == null ? void 0 : _b2.mirrorMode) === "paired") {
         return { mode: "both", side: derivedSide || "left" };
       }
       if (draftTemplateRoot) {
@@ -6537,9 +10342,10 @@
       return { mode: null, side: derivedSide };
     }
     function setWingSyncPreviewState(mode, side = null) {
+      var _a2;
       state.wingSyncPreview = {
         mode: mode === "both" || mode === "single" ? mode : null,
-        side: normalizeWingPreviewSide(side, state.wingSyncPreview?.side)
+        side: normalizeWingPreviewSide(side, (_a2 = state.wingSyncPreview) == null ? void 0 : _a2.side)
       };
       if (!state.wingSyncPreview.mode) {
         state.wingSyncPreview.side = null;
@@ -6552,8 +10358,9 @@
       return state.wingSyncPreview;
     }
     function getDraftWingSingleSide(draftProp = ensureDraftProp()) {
+      var _a2;
       const defaultState = getDefaultWingSyncPreviewState({ draftProp });
-      return normalizeWingPreviewSide(state.wingSyncPreview?.side, defaultState.side || "right");
+      return normalizeWingPreviewSide((_a2 = state.wingSyncPreview) == null ? void 0 : _a2.side, defaultState.side || "right");
     }
     function setDraftWingSingleSide(side) {
       const normalizedSide = normalizeWingPreviewSide(side, getDraftWingSingleSide());
@@ -6566,23 +10373,25 @@
       return getDraftWingSingleSide(draftProp) === "left" ? xio.slotAnchors.wingSet.left : xio.slotAnchors.wingSet.right;
     }
     function getEffectiveWingSyncPreviewMode(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
+      var _a2, _b2;
       if (!draftProp || !category || category.slotKey !== "wingSet" || isNoWingProxyRecord(draftProp)) {
         return null;
       }
       if (isBaseWingProxyRecord(draftProp)) {
         return "both";
       }
-      if (state.wingSyncPreview?.mode === "both" || state.wingSyncPreview?.mode === "single") {
+      if (((_a2 = state.wingSyncPreview) == null ? void 0 : _a2.mode) === "both" || ((_b2 = state.wingSyncPreview) == null ? void 0 : _b2.mode) === "single") {
         return state.wingSyncPreview.mode;
       }
       return getDefaultWingSyncPreviewState({ draftProp, category }).mode;
     }
     function getEffectiveWingSyncPreviewSide(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
+      var _a2;
       if (!draftProp || !category || category.slotKey !== "wingSet") {
         return "right";
       }
       const defaultState = getDefaultWingSyncPreviewState({ draftProp, category });
-      return normalizeWingPreviewSide(state.wingSyncPreview?.side, defaultState.side || "right");
+      return normalizeWingPreviewSide((_a2 = state.wingSyncPreview) == null ? void 0 : _a2.side, defaultState.side || "right");
     }
     function canSyncBothWings(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
       if (!draftProp || !category || category.slotKey !== "wingSet" || isNoWingProxyRecord(draftProp)) {
@@ -6605,6 +10414,7 @@
       xio.rightWingBaseMesh.visible = !shouldHide;
     }
     function renderWorkspaceState() {
+      var _a2, _b2, _c;
       const draftProp = ensureDraftProp();
       const selectedProp = getSelectedLiveProp();
       const category = getDraftCategoryRecord();
@@ -6612,30 +10422,30 @@
       const hasLiveStageProp = Boolean(state.stageSelection && selectedProp) && !isCreatorOnlyPropRecord(selectedProp);
       const hasDraftStageProp = Boolean(state.stageSelection) && !selectedProp;
       const localBlobDraft = isBlobBackedLocalDraft(draftProp);
-      const draftOriginLabel = selectedProp ? isCreatorOnlyPropRecord(selectedProp) ? "XiO standard asset" : "Live inventory" : localBlobDraft ? "Local upload" : draftProp.assetUrl ? state.publishEnabled ? "Uploaded draft asset" : "Draft asset reference" : draftProp.eyePreset || draftProp.materialPreset || draftProp.label ? "Workspace draft" : "Fresh draft";
+      const draftOriginLabel = selectedProp ? isCreatorOnlyPropRecord(selectedProp) ? "XiO standard asset" : "Live inventory" : localBlobDraft ? "Local upload" : isGeneratedPropPreview2(draftProp.preview) ? "Generated stage" : draftProp.assetUrl ? state.publishEnabled ? "Uploaded draft asset" : "Draft asset reference" : draftProp.eyePreset || draftProp.materialPreset || draftProp.label ? "Workspace draft" : "Fresh draft";
       draftOriginChip.textContent = draftOriginLabel;
       draftSourceInline.textContent = state.draftSourceLabel || "No GLB loaded";
-      draftCategoryLabel.textContent = category?.label || "Unassigned";
+      draftCategoryLabel.textContent = (category == null ? void 0 : category.label) || "Unassigned";
       const wingPreviewMode = getEffectiveWingSyncPreviewMode(draftProp, category);
-      const wingPreviewLabel = category?.slotKey === "wingSet" ? isNoWingProxyRecord(draftProp) ? "No wings" : wingPreviewMode === "both" ? "Both wings preview" : wingPreviewMode === "single" ? `One wing preview (${getEffectiveWingSyncPreviewSide(draftProp, category)})` : draftProp.attachment?.mirrorMode === "paired" ? "Mirrored pair" : "" : "";
-      draftSlotLabel.textContent = `${getSlotLabel(category?.slotKey)}${wingPreviewLabel ? ` \xB7 ${wingPreviewLabel}` : ""}`;
+      const wingPreviewLabel = (category == null ? void 0 : category.slotKey) === "wingSet" ? isNoWingProxyRecord(draftProp) ? "No wings" : wingPreviewMode === "both" ? "Both wings preview" : wingPreviewMode === "single" ? `One wing preview (${getEffectiveWingSyncPreviewSide(draftProp, category)})` : ((_a2 = draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired" ? "Mirrored pair" : "" : "";
+      draftSlotLabel.textContent = `${getSlotLabel(category == null ? void 0 : category.slotKey)}${wingPreviewLabel ? ` \xB7 ${wingPreviewLabel}` : ""}`;
       currentAssetLabel.textContent = state.draftSourceLabel || "No GLB loaded";
       if (state.editSession.active) {
-        setSelectionLabel(`Editing ${state.editSession.baselineProp?.label || draftProp.label || "current prop"}`);
+        setSelectionLabel(`Editing ${((_b2 = state.editSession.baselineProp) == null ? void 0 : _b2.label) || draftProp.label || "current prop"}`);
         stageHintLabel.textContent = "Adjust the selected prop directly in the stage, then Save Edit or Cancel.";
         if (transformSection) transformSection.open = true;
       } else if (state.motionPreviewEnabled) {
-        setSelectionLabel(`Previewing ${selectedProp?.label || draftProp.label || "XiO motion"}`);
+        setSelectionLabel(`Previewing ${(selectedProp == null ? void 0 : selectedProp.label) || draftProp.label || "XiO motion"}`);
         stageHintLabel.textContent = "Motion preview is running. Pause preview when you want precise transform edits.";
       } else if (hasLiveStageProp) {
-        setSelectionLabel(`Ready: ${selectedProp?.label || draftProp.label || "current prop"}`);
+        setSelectionLabel(`Ready: ${(selectedProp == null ? void 0 : selectedProp.label) || draftProp.label || "current prop"}`);
         stageHintLabel.textContent = "Prop is loaded on XiO. Click Edit Prop when you want resize, move, or rotate controls.";
       } else if (hasDraftStageProp) {
         setSelectionLabel(`Draft: ${draftProp.label || "current prop"}`);
         stageHintLabel.textContent = "Local draft is loaded on XiO. Use the transform section or drag the gizmo directly to refine placement.";
       } else if (selectedProp) {
         setSelectionLabel(`Equipped: ${selectedProp.label}`);
-        stageHintLabel.textContent = selectedProp.preview?.kind === "xioNoWingProxy" ? "XiO is now in a clean no-wings state. Drop a GLB or equip another wing set when you are ready." : isCreatorOnlyPropRecord(selectedProp) ? "XiO signature wings are active. Equip another prop to edit transforms." : "Live prop equipped. Use Focus Prop for inspection or Edit Prop for transform tools.";
+        stageHintLabel.textContent = ((_c = selectedProp.preview) == null ? void 0 : _c.kind) === "xioNoWingProxy" ? "XiO is now in a clean no-wings state. Drop a GLB or equip another wing set when you are ready." : isCreatorOnlyPropRecord(selectedProp) ? "XiO signature wings are active. Equip another prop to edit transforms." : "Live prop equipped. Use Focus Prop for inspection or Edit Prop for transform tools.";
       } else {
         setSelectionLabel("Draft Mode");
         stageHintLabel.textContent = "";
@@ -6661,9 +10471,10 @@
       state.editSession.baselineProp = deepCopyProp(propRecord);
     }
     function renderEditSessionControls() {
+      var _a2, _b2;
       const isEditing = state.editSession.active;
-      const baselineLabel = state.editSession.baselineProp?.label;
-      const currentLabel = getSelectedLiveProp()?.label || ensureDraftProp().label || "current prop";
+      const baselineLabel = (_a2 = state.editSession.baselineProp) == null ? void 0 : _a2.label;
+      const currentLabel = ((_b2 = getSelectedLiveProp()) == null ? void 0 : _b2.label) || ensureDraftProp().label || "current prop";
       const selectedProp = getSelectedLiveProp();
       const hasLiveEditableStageProp = Boolean(state.stageSelection && selectedProp) && !isCreatorOnlyPropRecord(selectedProp);
       editSessionGroup.hidden = !isEditing;
@@ -6677,6 +10488,7 @@
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
       const canUseTransformShortcuts = hasEditableStageProp() && !state.motionPreviewEnabled;
+      const canUseAutoLockFit = canAutoLockCurrentDraft(draftProp, category);
       const canUseBothWingSync = canSyncBothWings(draftProp, category);
       const canUseOneWingSync = canSyncOneWing(draftProp, category);
       const activeWingSyncMode = getEffectiveWingSyncPreviewMode(draftProp, category);
@@ -6686,14 +10498,17 @@
       motionPreviewButton.textContent = state.motionPreviewEnabled ? "Pause Preview" : "Play Preview";
       motionPreviewButton.classList.toggle("is-active", state.motionPreviewEnabled);
       motionPreviewButton.setAttribute("aria-pressed", state.motionPreviewEnabled ? "true" : "false");
+      autoLockFitButton.disabled = !canUseAutoLockFit;
+      autoLockFitButton.setAttribute("aria-pressed", "false");
+      autoLockFitButton.title = canUseAutoLockFit ? (category == null ? void 0 : category.slotKey) === "headWear" ? "Detect the best XiO headwear fit, snap the crown or hat into place, then fine-tune it manually." : `Snap this ${(category == null ? void 0 : category.label) || "single-slot prop"} into XiO\u2019s ${(category == null ? void 0 : category.label) || "active"} slot and seed the transform controls.` : (category == null ? void 0 : category.slotKey) === "wingSet" ? "Auto Lock / Auto Fit is for headwear and other single-slot props." : "Load or drop a single-slot GLB into the XiO stage before using Auto Lock / Auto Fit.";
       syncBothWingsButton.disabled = !canUseBothWingSync;
       syncBothWingsButton.classList.toggle("is-active", canUseBothWingSync && activeWingSyncMode === "both");
       syncBothWingsButton.setAttribute("aria-pressed", canUseBothWingSync && activeWingSyncMode === "both" ? "true" : "false");
-      syncBothWingsButton.title = canUseBothWingSync ? isBaseWingProxyRecord(draftProp) ? "Confirm XiO signature glow wings in full two-wing motion preview." : "Preview this wing as a full two-wing sync on XiO." : category?.slotKey !== "wingSet" ? "Sync Both Wings is available only for wing props." : isNoWingProxyRecord(draftProp) ? "Equip or drop a wing first, then sync both wings." : "Load a wing into the XiO stage before syncing both wings.";
+      syncBothWingsButton.title = canUseBothWingSync ? isBaseWingProxyRecord(draftProp) ? "Confirm XiO signature glow wings in full two-wing motion preview." : "Preview this wing as a full two-wing sync on XiO." : (category == null ? void 0 : category.slotKey) !== "wingSet" ? "Sync Both Wings is available only for wing props." : isNoWingProxyRecord(draftProp) ? "Equip or drop a wing first, then sync both wings." : "Load a wing into the XiO stage before syncing both wings.";
       syncOneWingButton.disabled = !canUseOneWingSync;
       syncOneWingButton.classList.toggle("is-active", canUseOneWingSync && activeWingSyncMode === "single");
       syncOneWingButton.setAttribute("aria-pressed", canUseOneWingSync && activeWingSyncMode === "single" ? "true" : "false");
-      syncOneWingButton.title = canUseOneWingSync ? "Preview just one wing side while XiO keeps native flap motion." : category?.slotKey !== "wingSet" ? "Sync One Wing is available only for wing props." : isNoWingProxyRecord(draftProp) ? "Equip or drop a wing first, then sync one wing." : isBaseWingProxyRecord(draftProp) ? "XiO base glow wings always preview as a full two-wing set." : "Load a wing into the XiO stage before syncing one wing.";
+      syncOneWingButton.title = canUseOneWingSync ? "Preview just one wing side while XiO keeps native flap motion." : (category == null ? void 0 : category.slotKey) !== "wingSet" ? "Sync One Wing is available only for wing props." : isNoWingProxyRecord(draftProp) ? "Equip or drop a wing first, then sync one wing." : isBaseWingProxyRecord(draftProp) ? "XiO base glow wings always preview as a full two-wing set." : "Load a wing into the XiO stage before syncing one wing.";
       turntableButton.textContent = state.turntableEnabled ? "Turntable On" : "Turntable Off";
       turntableButton.classList.toggle("is-active", state.turntableEnabled && !state.motionPreviewEnabled);
       turntableButton.disabled = state.motionPreviewEnabled;
@@ -6726,18 +10541,19 @@
       }
       Object.entries(controls).forEach(([controlKey, input]) => {
         if (!input) return;
-        const rawValue = profile?.[controlKey];
+        const rawValue = profile == null ? void 0 : profile[controlKey];
         input.disabled = disabled;
-        input.value = controlKey === "direction" ? rawValue === "reverse" ? "reverse" : "normal" : String(rawValue ?? input.value);
-        if (valueLabels?.[controlKey]) {
-          valueLabels[controlKey].textContent = formatWingMotionValue(controlKey, rawValue ?? input.value);
+        input.value = controlKey === "direction" ? rawValue === "reverse" ? "reverse" : "normal" : String(rawValue != null ? rawValue : input.value);
+        if (valueLabels == null ? void 0 : valueLabels[controlKey]) {
+          valueLabels[controlKey].textContent = formatWingMotionValue(controlKey, rawValue != null ? rawValue : input.value);
         }
       });
     }
     function renderWingAuthoringControls() {
+      var _a2, _b2, _c;
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
-      const isWingDraft = category?.slotKey === "wingSet";
+      const isWingDraft = (category == null ? void 0 : category.slotKey) === "wingSet";
       const canUseWingAuthoring = isWingDraft && !isNoWingProxyRecord(draftProp) && !isBaseWingProxyRecord(draftProp) && hasDraftWingAuthoringSource();
       if (wingSourceSection) {
         wingSourceSection.hidden = !isWingDraft;
@@ -6746,9 +10562,9 @@
         return;
       }
       const authoringPreview = getDraftWingAuthoringPreview(draftProp);
-      const usingPairSource = Boolean(state.draftTemplateSourcePair?.left && state.draftTemplateSourcePair?.right);
+      const usingPairSource = Boolean(((_a2 = state.draftTemplateSourcePair) == null ? void 0 : _a2.left) && ((_b2 = state.draftTemplateSourcePair) == null ? void 0 : _b2.right));
       const sourceLabel = authoringPreview.mode === "isolatedHalf" ? `${authoringPreview.sourceSide === "right" ? "Right" : "Left"} half isolated` : usingPairSource ? "Original pair source" : "Original GLB";
-      const mirrorLabel = authoringPreview.mode === "isolatedHalf" ? authoringPreview.mirrorToBoth ? "Mirrored to both wings" : `${authoringPreview.sourceSide === "right" ? "Right" : "Left"} wing only` : draftProp.attachment?.mirrorMode === "paired" ? "Original mirrored pair" : "Original single wing";
+      const mirrorLabel = authoringPreview.mode === "isolatedHalf" ? authoringPreview.mirrorToBoth ? "Mirrored to both wings" : `${authoringPreview.sourceSide === "right" ? "Right" : "Left"} wing only` : ((_c = draftProp.attachment) == null ? void 0 : _c.mirrorMode) === "paired" ? "Original mirrored pair" : "Original single wing";
       wingAuthoringSourceLabel.textContent = sourceLabel;
       wingAuthoringModeLabel.textContent = mirrorLabel;
       wingAutoIsolateButton.disabled = !canUseWingAuthoring;
@@ -6770,7 +10586,7 @@
     function renderWingMotionControls() {
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
-      const isWingDraft = category?.slotKey === "wingSet";
+      const isWingDraft = (category == null ? void 0 : category.slotKey) === "wingSet";
       const canTuneWingMotion = canTuneCurrentWingMotion(draftProp, category);
       if (wingMotionSection) {
         wingMotionSection.hidden = !isWingDraft;
@@ -6842,10 +10658,11 @@
       propMirrorToggle.disabled = categoryKey !== "wingSet";
     }
     function syncPropForm() {
+      var _a2;
       const draftProp = ensureDraftProp();
       propLabelInput.value = draftProp.label || "";
       propKeyInput.value = draftProp.key || "";
-      propCategorySelect.value = draftProp.categoryKey || getCategories()[0]?.key || "";
+      propCategorySelect.value = draftProp.categoryKey || ((_a2 = getCategories()[0]) == null ? void 0 : _a2.key) || "";
       propRaritySelect.value = draftProp.rarity || "rare";
       propDescriptionInput.value = draftProp.description || "";
       propTagsInput.value = (draftProp.tags || []).join(", ");
@@ -6856,35 +10673,40 @@
       eyePresetSelect.value = draftProp.eyePreset || "";
       materialPresetSelect.value = draftProp.materialPreset || "";
       transformInputs.position.forEach((input, index) => {
-        input.value = String(draftProp.attachment.position[index] ?? 0);
+        var _a3;
+        input.value = String((_a3 = draftProp.attachment.position[index]) != null ? _a3 : 0);
       });
       transformInputs.rotation.forEach((input, index) => {
-        input.value = String(draftProp.attachment.rotation[index] ?? 0);
+        var _a3;
+        input.value = String((_a3 = draftProp.attachment.rotation[index]) != null ? _a3 : 0);
       });
       transformInputs.scale.forEach((input, index) => {
-        input.value = String(draftProp.attachment.scale[index] ?? 1);
+        var _a3;
+        input.value = String((_a3 = draftProp.attachment.scale[index]) != null ? _a3 : 1);
       });
       currentAssetLabel.textContent = state.draftSourceLabel;
     }
     function syncCategoryForm(category) {
+      var _a2, _b2;
       const currentCategory = category === void 0 ? getCategoryEditorRecord() || null : category;
       const categoryDraft = currentCategory || buildNewCategoryDraft();
-      categoryKeyInput.value = currentCategory?.key || "";
+      categoryKeyInput.value = (currentCategory == null ? void 0 : currentCategory.key) || "";
       categoryLabelInput.value = categoryDraft.label || "";
       categorySlotSelect.value = categoryDraft.slotKey || "wingSet";
-      categoryEquipLimitInput.value = String(categoryDraft.equipLimit ?? 1);
-      categorySortOrderInput.value = String(categoryDraft.sortOrder ?? 0);
+      categoryEquipLimitInput.value = String((_a2 = categoryDraft.equipLimit) != null ? _a2 : 1);
+      categorySortOrderInput.value = String((_b2 = categoryDraft.sortOrder) != null ? _b2 : 0);
       categoryEnabledToggle.checked = categoryDraft.enabled !== false;
       if (categoryEditorSelect) {
-        categoryEditorSelect.value = currentCategory?.key || CATEGORY_EDITOR_NEW_VALUE;
+        categoryEditorSelect.value = (currentCategory == null ? void 0 : currentCategory.key) || CATEGORY_EDITOR_NEW_VALUE;
       }
       if (deleteCategoryButton) {
-        const isProtectedCategory = Boolean(currentCategory?.key && CORE_CATEGORY_KEYS.has(currentCategory.key));
-        deleteCategoryButton.disabled = !currentCategory?.key || isProtectedCategory;
-        deleteCategoryButton.title = isProtectedCategory ? "XiO core categories stay available." : currentCategory?.key ? `Delete ${currentCategory.label}` : "Select a saved category to delete it.";
+        const isProtectedCategory = Boolean((currentCategory == null ? void 0 : currentCategory.key) && CORE_CATEGORY_KEYS.has(currentCategory.key));
+        deleteCategoryButton.disabled = !(currentCategory == null ? void 0 : currentCategory.key) || isProtectedCategory;
+        deleteCategoryButton.title = isProtectedCategory ? "XiO core categories stay available." : (currentCategory == null ? void 0 : currentCategory.key) ? `Delete ${currentCategory.label}` : "Select a saved category to delete it.";
       }
     }
     function renderCategoryOptions() {
+      var _a2;
       const categories = getCategories();
       propCategorySelect.innerHTML = categories.map((category) => `<option value="${category.key}">${category.label}</option>`).join("");
       if (categoryEditorSelect) {
@@ -6912,7 +10734,7 @@
       }
       propCategorySelect.value = ensureDraftProp().categoryKey || state.draftCategoryKey;
       liveCategoryFilter.value = state.liveCategoryFilter;
-      categorySlotSelect.value = getCategoryByKey(state.draftCategoryKey)?.slotKey || categorySlotSelect.value;
+      categorySlotSelect.value = ((_a2 = getCategoryByKey(state.draftCategoryKey)) == null ? void 0 : _a2.slotKey) || categorySlotSelect.value;
       if (categoryEditorSelect) {
         categoryEditorSelect.value = state.categoryEditorKey || CATEGORY_EDITOR_NEW_VALUE;
       }
@@ -7050,7 +10872,8 @@
       return root;
     }
     function createLegacyWingPreviewTemplate(propRecord) {
-      const previewKind2 = propRecord?.preview?.kind;
+      var _a2;
+      const previewKind2 = (_a2 = propRecord == null ? void 0 : propRecord.preview) == null ? void 0 : _a2.kind;
       let root = null;
       switch (previewKind2) {
         case "alphaWingProxy":
@@ -7171,8 +10994,9 @@
       rightY,
       shoulderShift = 0
     } = {}) {
-      const leftBasePosition = xio.leftWingGroup.userData?.basePosition;
-      const rightBasePosition = xio.rightWingGroup.userData?.basePosition;
+      var _a2, _b2;
+      const leftBasePosition = (_a2 = xio.leftWingGroup.userData) == null ? void 0 : _a2.basePosition;
+      const rightBasePosition = (_b2 = xio.rightWingGroup.userData) == null ? void 0 : _b2.basePosition;
       if (leftBasePosition) {
         xio.leftWingGroup.position.copy(leftBasePosition);
       }
@@ -7200,7 +11024,7 @@
       });
     }
     function canTuneCurrentWingMotion(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
-      return Boolean(category?.slotKey === "wingSet" && !isNoWingProxyRecord(draftProp));
+      return Boolean((category == null ? void 0 : category.slotKey) === "wingSet" && !isNoWingProxyRecord(draftProp));
     }
     function applyPreviewMotionPoseFromCurrentState({ eyeDt = 1 / 60 } = {}) {
       const wingMotion = resolveWingMotionProfiles2(getDraftWingMotionPreview());
@@ -7409,9 +11233,10 @@
       fallbackForPaired = "left",
       fallbackForSingle = "right"
     } = {}) {
+      var _a2;
       if (state.stageSelection === draftStage.leftPivot) return "left";
       if (state.stageSelection === draftStage.rightPivot) return "right";
-      const previewSide = normalizeWingPreviewSide(state.wingSyncPreview?.side, null);
+      const previewSide = normalizeWingPreviewSide((_a2 = state.wingSyncPreview) == null ? void 0 : _a2.side, null);
       if (previewSide) {
         return previewSide;
       }
@@ -7424,6 +11249,7 @@
       return captureAttachmentFromPivot(state.stageSelection) || captureAttachmentFromPivot(draftStage.singlePivot) || captureAttachmentFromPivot(draftStage.leftPivot) || captureAttachmentFromPivot(draftStage.rightPivot) || ensureDraftProp().attachment;
     }
     function syncBothWingsAnimationPreview() {
+      var _a2, _b2, _c, _d, _e;
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
       const selectedProp = getSelectedLiveProp();
@@ -7440,7 +11266,7 @@
       if (state.motionPreviewEnabled) {
         setMotionPreviewEnabled(false, { silent: true });
       }
-      if (!state.stageSelection && (state.draftTemplateRoot || state.draftTemplatePair?.left || state.draftTemplatePair?.right)) {
+      if (!state.stageSelection && (state.draftTemplateRoot || ((_a2 = state.draftTemplatePair) == null ? void 0 : _a2.left) || ((_b2 = state.draftTemplatePair) == null ? void 0 : _b2.right))) {
         rebuildDraftStage();
       }
       if (isBaseWingProxyRecord(draftProp)) {
@@ -7452,7 +11278,7 @@
         log("Synced XiO Signature Glow Wings on both wings.");
         return true;
       }
-      if (!state.draftTemplateRoot && !state.draftTemplatePair?.left && !state.draftTemplatePair?.right) {
+      if (!state.draftTemplateRoot && !((_c = state.draftTemplatePair) == null ? void 0 : _c.left) && !((_d = state.draftTemplatePair) == null ? void 0 : _d.right)) {
         log("Load or drop a wing prop into the XiO stage before syncing both wings.");
         renderAll();
         return false;
@@ -7460,7 +11286,7 @@
       refreshSelectedLiveWingPreviewTemplates(selectedProp, draftProp);
       const selectedSide = getPreferredWingSyncSide();
       const sourceAttachment = getCurrentWingSyncSourceAttachment();
-      if (hasDraftWingPairSource() || draftProp.attachment?.mirrorMode === "paired") {
+      if (hasDraftWingPairSource() || ((_e = draftProp.attachment) == null ? void 0 : _e.mirrorMode) === "paired") {
         draftProp.attachment = normalizePairedWingAttachment(sourceAttachment);
       } else {
         draftProp.attachment = normalizeSingleWingAttachmentForSide(sourceAttachment, selectedSide);
@@ -7475,11 +11301,12 @@
       commitDraftHistoryStep();
       state.turntableEnabled = false;
       setMotionPreviewEnabled(true, { silent: true });
-      const label = selectedProp?.label || draftProp.label || "current wing";
+      const label = (selectedProp == null ? void 0 : selectedProp.label) || draftProp.label || "current wing";
       log(`Synced ${label} on both wings${didAutoFit ? " and auto-fit the wing sweep." : "."}`);
       return true;
     }
     function syncOneWingAnimationPreview() {
+      var _a2, _b2, _c, _d, _e;
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
       const selectedProp = getSelectedLiveProp();
@@ -7501,10 +11328,10 @@
       if (state.motionPreviewEnabled) {
         setMotionPreviewEnabled(false, { silent: true });
       }
-      if (!state.stageSelection && (state.draftTemplateRoot || state.draftTemplatePair?.left || state.draftTemplatePair?.right)) {
+      if (!state.stageSelection && (state.draftTemplateRoot || ((_a2 = state.draftTemplatePair) == null ? void 0 : _a2.left) || ((_b2 = state.draftTemplatePair) == null ? void 0 : _b2.right))) {
         rebuildDraftStage();
       }
-      if (!state.draftTemplateRoot && !state.draftTemplatePair?.left && !state.draftTemplatePair?.right) {
+      if (!state.draftTemplateRoot && !((_c = state.draftTemplatePair) == null ? void 0 : _c.left) && !((_d = state.draftTemplatePair) == null ? void 0 : _d.right)) {
         log("Load or drop a wing prop into the XiO stage before syncing one wing.");
         renderAll();
         return false;
@@ -7515,7 +11342,7 @@
         fallbackForSingle: inferCurrentSingleWingPreviewSide()
       });
       const sourceAttachment = getCurrentWingSyncSourceAttachment();
-      if (hasDraftWingPairSource() || draftProp.attachment?.mirrorMode === "paired") {
+      if (hasDraftWingPairSource() || ((_e = draftProp.attachment) == null ? void 0 : _e.mirrorMode) === "paired") {
         draftProp.attachment = normalizePairedWingAttachment(sourceAttachment);
       } else {
         draftProp.attachment = normalizeSingleWingAttachmentForSide(sourceAttachment, selectedSide);
@@ -7530,7 +11357,7 @@
       commitDraftHistoryStep();
       state.turntableEnabled = false;
       setMotionPreviewEnabled(true, { silent: true });
-      const label = selectedProp?.label || draftProp.label || "current wing";
+      const label = (selectedProp == null ? void 0 : selectedProp.label) || draftProp.label || "current wing";
       log(`Synced ${label} on the ${selectedSide} wing only.`);
       return true;
     }
@@ -7569,15 +11396,16 @@
       setTransformMode("scale");
       focusCurrentProp();
       renderAll();
-      const label = selectedProp?.label || ensureDraftProp().label || "current prop";
+      const label = (selectedProp == null ? void 0 : selectedProp.label) || ensureDraftProp().label || "current prop";
       log(`Edit Prop is active for ${label}. Resize handles are ready.`);
     }
     async function saveActiveEditSession() {
+      var _a2;
       if (!state.editSession.active) {
         log("Edit mode is not active yet.");
         return;
       }
-      const label = ensureDraftProp().label || state.editSession.baselineProp?.label || "current prop";
+      const label = ensureDraftProp().label || ((_a2 = state.editSession.baselineProp) == null ? void 0 : _a2.label) || "current prop";
       await publishDraftProp({ archive: false });
       clearEditSession();
       resetDraftHistory();
@@ -7699,6 +11527,122 @@
       const numericValue = Number(value);
       return Number((Number.isFinite(numericValue) ? numericValue : fallback).toFixed(4));
     }
+    function getSingleSlotAutoLockPreset(slotKey) {
+      return SINGLE_SLOT_AUTO_LOCK_PRESETS[slotKey] || {
+        horizontalSpan: SLOT_STAGE_TARGET_SPANS[slotKey] || 1.4,
+        ySinkRatio: 0.08,
+        zSinkRatio: 0.08,
+        rotationCandidates: [[0, 0, 0]]
+      };
+    }
+    function scoreHeadwearRotationCandidate(size) {
+      const width = Math.max(size.x, size.z, 1e-4);
+      const depth = Math.min(size.x, size.z, 1e-4);
+      const height = Math.max(size.y, 1e-4);
+      const heightRatio = height / width;
+      const depthRatio = depth / width;
+      return width / height + depth / height - Math.abs(heightRatio - 0.42) * 3.2 - Math.abs(depthRatio - 0.84) * 1.2 - (heightRatio < 0.1 ? 1.4 : 0) - (heightRatio > 1.08 ? 2.6 : 0);
+    }
+    function measureSingleSlotAutoLockCandidate(sourceRoot, rotation, preset, slotKey) {
+      const candidateRoot = cloneSceneGraph2(sourceRoot);
+      candidateRoot.rotation.set(rotation[0], rotation[1], rotation[2]);
+      candidateRoot.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(candidateRoot);
+      if (bounds.isEmpty()) {
+        return null;
+      }
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      bounds.getSize(size);
+      bounds.getCenter(center);
+      const horizontalSpan = Math.max(size.x, size.z, 1e-4);
+      const scaleFactor = THREE.MathUtils.clamp((preset.horizontalSpan || 1.4) / horizontalSpan, 0.08, 40);
+      const scaledCenter = center.clone().multiplyScalar(scaleFactor);
+      const scaledSize = size.clone().multiplyScalar(scaleFactor);
+      const score = slotKey === "headWear" ? scoreHeadwearRotationCandidate(size) : horizontalSpan / Math.max(size.y, 1e-4);
+      return {
+        rotation,
+        scaledCenter,
+        scaledSize,
+        scaleFactor,
+        score
+      };
+    }
+    function pickSingleSlotAutoLockCandidate(sourceRoot, preset, slotKey) {
+      if (!sourceRoot) {
+        return null;
+      }
+      const candidates = Array.isArray(preset.rotationCandidates) && preset.rotationCandidates.length ? preset.rotationCandidates : [[0, 0, 0]];
+      return candidates.reduce((bestCandidate, rotation) => {
+        const measuredCandidate = measureSingleSlotAutoLockCandidate(sourceRoot, rotation, preset, slotKey);
+        if (!measuredCandidate) {
+          return bestCandidate;
+        }
+        if (!bestCandidate || measuredCandidate.score > bestCandidate.score) {
+          return measuredCandidate;
+        }
+        return bestCandidate;
+      }, null);
+    }
+    function canAutoLockCurrentDraft(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
+      return Boolean(
+        (category == null ? void 0 : category.slotKey) && category.slotKey !== "wingSet" && (state.draftTemplateSourceRoot || state.draftTemplateRoot) && !isNoWingProxyRecord(draftProp) && !isBaseWingProxyRecord(draftProp)
+      );
+    }
+    function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false } = {}) {
+      var _a2, _b2, _c;
+      const draftProp = ensureDraftProp();
+      const category = getDraftCategoryRecord();
+      if (!canAutoLockCurrentDraft(draftProp, category)) {
+        if (!silent) {
+          log("Load a single-slot prop such as headwear before using Auto Lock / Auto Fit.");
+        }
+        return false;
+      }
+      if (state.motionPreviewEnabled) {
+        setMotionPreviewEnabled(false, { silent: true });
+      }
+      const slotKey = category.slotKey;
+      const preset = getSingleSlotAutoLockPreset(slotKey);
+      const sourceRoot = state.draftTemplateSourceRoot || state.draftTemplateRoot;
+      const candidate = pickSingleSlotAutoLockCandidate(sourceRoot, preset, slotKey);
+      if (!candidate) {
+        if (!silent) {
+          log("XiO could not measure that GLB well enough to auto-fit it.");
+        }
+        return false;
+      }
+      draftProp.attachment = {
+        ...draftProp.attachment,
+        position: [
+          roundTransformValue(-candidate.scaledCenter.x, 0),
+          roundTransformValue(-candidate.scaledCenter.y - candidate.scaledSize.y * ((_a2 = preset.ySinkRatio) != null ? _a2 : 0.08), 0),
+          roundTransformValue(-candidate.scaledCenter.z - candidate.scaledSize.z * ((_b2 = preset.zSinkRatio) != null ? _b2 : 0.08), 0)
+        ],
+        rotation: [
+          roundTransformValue(candidate.rotation[0], 0),
+          roundTransformValue(candidate.rotation[1], 0),
+          roundTransformValue(candidate.rotation[2], 0)
+        ],
+        scale: [
+          roundTransformValue(candidate.scaleFactor, 1),
+          roundTransformValue(candidate.scaleFactor, 1),
+          roundTransformValue(candidate.scaleFactor, 1)
+        ],
+        mirrorMode: "single"
+      };
+      rebuildDraftStage();
+      selectStageSelectionByKey("single");
+      if (commitHistoryStep) {
+        commitDraftHistoryStep();
+      }
+      renderAll();
+      if (!silent) {
+        const label = ((_c = getSelectedLiveProp()) == null ? void 0 : _c.label) || draftProp.label || "current prop";
+        log(`Auto-locked ${label} to XiO\u2019s ${slotKey === "headWear" ? "headwear" : category.label} slot and staged it for final tuning.`);
+      }
+      return true;
+    }
     function captureAttachmentFromPivot(pivot) {
       if (!pivot) {
         return null;
@@ -7769,7 +11713,8 @@
       };
     }
     function inferCurrentSingleWingPreviewSide() {
-      const previewSide = normalizeWingPreviewSide(state.wingSyncPreview?.side, null);
+      var _a2, _b2, _c;
+      const previewSide = normalizeWingPreviewSide((_a2 = state.wingSyncPreview) == null ? void 0 : _a2.side, null);
       if (previewSide === "left" || previewSide === "right") {
         return previewSide;
       }
@@ -7779,10 +11724,10 @@
       if (state.stageSelection === draftStage.rightPivot) {
         return "right";
       }
-      if (draftStage.singlePivot?.parent === xio.slotAnchors.wingSet.left) {
+      if (((_b2 = draftStage.singlePivot) == null ? void 0 : _b2.parent) === xio.slotAnchors.wingSet.left) {
         return "left";
       }
-      if (draftStage.singlePivot?.parent === xio.slotAnchors.wingSet.right) {
+      if (((_c = draftStage.singlePivot) == null ? void 0 : _c.parent) === xio.slotAnchors.wingSet.right) {
         const bounds = new THREE.Box3().setFromObject(draftStage.singlePivot);
         if (!bounds.isEmpty()) {
           const center = new THREE.Vector3();
@@ -7813,6 +11758,7 @@
       return normalizeSingleWingAttachmentForSide(sourceAttachment, side);
     }
     function prepareSceneRootForDraftAsset(loadedScene, sourceLabel) {
+      var _a2;
       if (!loadedScene) {
         return null;
       }
@@ -7838,7 +11784,7 @@
             continue;
           }
           const bounds = new THREE.Box3().setFromObject(candidate);
-          if (!bounds.isEmpty() || candidate.children?.length) {
+          if (!bounds.isEmpty() || ((_a2 = candidate.children) == null ? void 0 : _a2.length)) {
             return candidate;
           }
         } catch (error) {
@@ -7871,16 +11817,16 @@
         sourcePair: state.draftTemplateSourcePair,
         authoring: authoringPreview
       });
-      state.draftTemplateRoot = authoredTemplateState?.draftTemplateRoot || null;
-      state.draftTemplatePair = authoredTemplateState?.draftTemplatePair || null;
+      state.draftTemplateRoot = (authoredTemplateState == null ? void 0 : authoredTemplateState.draftTemplateRoot) || null;
+      state.draftTemplatePair = (authoredTemplateState == null ? void 0 : authoredTemplateState.draftTemplatePair) || null;
       if (!state.draftTemplateRoot && !state.draftTemplatePair) {
         state.draftTemplateRoot = state.draftTemplateSourceRoot || null;
         state.draftTemplatePair = state.draftTemplateSourcePair || null;
       }
-      if (logFailure && authoredTemplateState?.failed) {
+      if (logFailure && (authoredTemplateState == null ? void 0 : authoredTemplateState.failed)) {
         log("XiO could not isolate that wing source cleanly, so the original GLB is still loaded.");
       }
-      return !authoredTemplateState?.failed;
+      return !(authoredTemplateState == null ? void 0 : authoredTemplateState.failed);
     }
     function getPreferredWingAuthoringSide() {
       if (state.stageSelection === draftStage.rightPivot) return "right";
@@ -7894,6 +11840,7 @@
       autoFit = true,
       silent = false
     } = {}) {
+      var _a2;
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
       if (!category || category.slotKey !== "wingSet") {
@@ -7908,7 +11855,7 @@
         ...previousPreview,
         ...authoringPatch
       }, {
-        defaultMirrorToBoth: draftProp.attachment?.mirrorMode === "paired"
+        defaultMirrorToBoth: ((_a2 = draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired"
       });
       setDraftWingAuthoringPreview(nextPreview);
       syncDraftWingMirrorModeFromPreview(draftProp);
@@ -7937,13 +11884,14 @@
       return didIsolate;
     }
     function resetWingAuthoringToOriginal() {
+      var _a2, _b2;
       const draftProp = ensureDraftProp();
       if (!hasDraftWingAuthoringSource()) {
         log("Load a wing source first, then reset it back to the original GLB.");
         return false;
       }
       clearDraftWingAuthoringPreview();
-      draftProp.attachment.mirrorMode = state.draftTemplateSourcePair?.left && state.draftTemplateSourcePair?.right ? "paired" : draftProp.attachment.mirrorMode;
+      draftProp.attachment.mirrorMode = ((_a2 = state.draftTemplateSourcePair) == null ? void 0 : _a2.left) && ((_b2 = state.draftTemplateSourcePair) == null ? void 0 : _b2.right) ? "paired" : draftProp.attachment.mirrorMode;
       resetWingSyncPreviewState({
         draftProp,
         draftTemplateRoot: state.draftTemplateSourceRoot,
@@ -8006,6 +11954,7 @@
       return true;
     }
     function toggleDraftPlacementDepth() {
+      var _a2, _b2, _c;
       if (!hasEditableStageProp()) {
         log("Equip a live or draft prop first, then use the front or behind toggle.");
         return;
@@ -8014,7 +11963,7 @@
         setMotionPreviewEnabled(false, { silent: true });
       }
       const draftProp = ensureDraftProp();
-      const currentZ = Number(draftProp.attachment?.position?.[2]) || 0;
+      const currentZ = Number((_b2 = (_a2 = draftProp.attachment) == null ? void 0 : _a2.position) == null ? void 0 : _b2[2]) || 0;
       const anchorDepth = getSlotAnchorDepth(draftProp.categoryKey);
       const depthMagnitude = Math.max(Math.abs(currentZ), getSuggestedPlacementDepthMagnitude(draftProp));
       const currentAbsoluteDepth = anchorDepth + currentZ;
@@ -8024,13 +11973,14 @@
       rebuildDraftStage();
       commitDraftHistoryStep();
       renderAll();
-      const label = getSelectedLiveProp()?.label || draftProp.label || "current prop";
+      const label = ((_c = getSelectedLiveProp()) == null ? void 0 : _c.label) || draftProp.label || "current prop";
       log(`Placed ${label} ${nextAbsoluteDepth >= 0 ? "in front of" : "behind"} XiO.`);
     }
     function clearDraftStage() {
-      if (draftStage.singlePivot?.parent) draftStage.singlePivot.parent.remove(draftStage.singlePivot);
-      if (draftStage.leftPivot?.parent) draftStage.leftPivot.parent.remove(draftStage.leftPivot);
-      if (draftStage.rightPivot?.parent) draftStage.rightPivot.parent.remove(draftStage.rightPivot);
+      var _a2, _b2, _c;
+      if ((_a2 = draftStage.singlePivot) == null ? void 0 : _a2.parent) draftStage.singlePivot.parent.remove(draftStage.singlePivot);
+      if ((_b2 = draftStage.leftPivot) == null ? void 0 : _b2.parent) draftStage.leftPivot.parent.remove(draftStage.leftPivot);
+      if ((_c = draftStage.rightPivot) == null ? void 0 : _c.parent) draftStage.rightPivot.parent.remove(draftStage.rightPivot);
       draftStage.singlePivot = null;
       draftStage.leftPivot = null;
       draftStage.rightPivot = null;
@@ -8039,20 +11989,22 @@
       xio.rightWingBaseMesh.visible = true;
     }
     function buildSingleWingPreviewAttachmentForSide(draftProp, side) {
-      if (draftProp?.attachment?.mirrorMode === "paired") {
+      var _a2;
+      if (((_a2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired") {
         return buildMirroredAttachmentTransform2(draftProp.attachment, side === "left" ? -1 : 1);
       }
       return normalizeSingleWingAttachmentForSide(draftProp.attachment, side);
     }
     function updateDraftFromSelection() {
+      var _a2, _b2, _c, _d;
       const draftProp = ensureDraftProp();
       const category = getDraftCategoryRecord();
       const effectiveWingPreviewMode = getEffectiveWingSyncPreviewMode(draftProp, category);
       if (draftStage.singlePivot) {
-        if (category?.slotKey === "wingSet") {
+        if ((category == null ? void 0 : category.slotKey) === "wingSet") {
           const singleSide = getEffectiveWingSyncPreviewSide(draftProp, category) || inferCurrentSingleWingPreviewSide();
           const sourceAttachment = captureAttachmentFromPivot(draftStage.singlePivot) || draftProp.attachment;
-          draftProp.attachment = draftProp.attachment?.mirrorMode === "paired" ? normalizePairedWingAttachment(sourceAttachment) : normalizeSingleWingAttachmentForSide(sourceAttachment, singleSide);
+          draftProp.attachment = ((_a2 = draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired" ? normalizePairedWingAttachment(sourceAttachment) : normalizeSingleWingAttachmentForSide(sourceAttachment, singleSide);
           setWingSyncPreviewState(effectiveWingPreviewMode || "single", singleSide);
         } else {
           draftProp.attachment.position = [draftStage.singlePivot.position.x, draftStage.singlePivot.position.y, draftStage.singlePivot.position.z];
@@ -8063,7 +12015,7 @@
         const selectedPivot = state.stageSelection === draftStage.rightPivot && draftStage.rightPivot ? draftStage.rightPivot : draftStage.leftPivot || draftStage.rightPivot;
         const selectedSide = selectedPivot === draftStage.rightPivot ? "right" : "left";
         const selectedAttachment = captureAttachmentFromPivot(selectedPivot) || draftProp.attachment;
-        if (category?.slotKey === "wingSet" && draftProp.attachment?.mirrorMode !== "paired") {
+        if ((category == null ? void 0 : category.slotKey) === "wingSet" && ((_b2 = draftProp.attachment) == null ? void 0 : _b2.mirrorMode) !== "paired") {
           draftProp.attachment = normalizeSingleWingAttachmentForSide(selectedAttachment, selectedSide);
           if (draftStage.leftPivot && selectedPivot !== draftStage.leftPivot) {
             applyAttachmentTransform2(draftStage.leftPivot, normalizeSingleWingAttachmentForSide(draftProp.attachment, "left"));
@@ -8097,10 +12049,10 @@
           }
         }
         setWingSyncPreviewState(effectiveWingPreviewMode || "both", selectedSide);
-        if (draftStage.leftPivot?.children[0]) {
+        if ((_c = draftStage.leftPivot) == null ? void 0 : _c.children[0]) {
           draftStage.leftPivot.children[0].scale.x = Math.abs(draftStage.leftPivot.children[0].scale.x);
         }
-        if (draftStage.rightPivot?.children[0]) {
+        if ((_d = draftStage.rightPivot) == null ? void 0 : _d.children[0]) {
           draftStage.rightPivot.children[0].scale.x = Math.abs(draftStage.rightPivot.children[0].scale.x) * -1;
         }
       }
@@ -8115,6 +12067,7 @@
       if (draftProp.materialPreset) xio.applyMaterialPreset(draftProp.materialPreset);
     }
     function rebuildDraftStage() {
+      var _a2, _b2;
       const previousSelectionKey = getStageSelectionKey();
       refreshDraftTemplatePresentationFromSource();
       clearDraftStage();
@@ -8133,7 +12086,7 @@
       if (category.slotKey === "wingSet" && effectiveWingPreviewMode === "both") {
         draftStage.leftPivot = new THREE.Group();
         draftStage.rightPivot = new THREE.Group();
-        if (draftProp.attachment?.mirrorMode === "paired") {
+        if (((_a2 = draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired") {
           applyAttachmentTransform2(draftStage.leftPivot, buildMirroredAttachmentTransform2(draftProp.attachment, -1));
           applyAttachmentTransform2(draftStage.rightPivot, buildMirroredAttachmentTransform2(draftProp.attachment, 1));
         } else {
@@ -8152,7 +12105,7 @@
         selectStageSelectionByKey(previousSelectionKey === "right" ? "right" : effectiveWingPreviewSide === "right" ? "right" : "left");
       } else {
         const singleWingSide = category.slotKey === "wingSet" ? effectiveWingPreviewSide : null;
-        const anchor = category.slotKey === "wingSet" ? singleWingSide === "left" ? xio.slotAnchors.wingSet.left : xio.slotAnchors.wingSet.right : xio.slotAnchors[category.slotKey]?.anchor;
+        const anchor = category.slotKey === "wingSet" ? singleWingSide === "left" ? xio.slotAnchors.wingSet.left : xio.slotAnchors.wingSet.right : (_b2 = xio.slotAnchors[category.slotKey]) == null ? void 0 : _b2.anchor;
         const singleModel = category.slotKey === "wingSet" && hasTemplatePair ? cloneSceneGraph2(singleWingSide === "left" ? state.draftTemplatePair.left : state.draftTemplatePair.right) : state.draftTemplateRoot ? cloneSceneGraph2(state.draftTemplateRoot) : null;
         if (!anchor || !singleModel) {
           syncPropForm();
@@ -8195,10 +12148,10 @@
       };
     }
     function prepareDraftTemplatePairStateFromLivePreview(previewPair, sourceLabel, draftProp) {
-      if (!previewPair?.left || !previewPair?.right) {
+      if (!(previewPair == null ? void 0 : previewPair.left) || !(previewPair == null ? void 0 : previewPair.right)) {
         return null;
       }
-      if (draftProp?.attachment && previewPair.attachment) {
+      if ((draftProp == null ? void 0 : draftProp.attachment) && previewPair.attachment) {
         draftProp.attachment = {
           ...draftProp.attachment,
           position: [...previewPair.attachment.position],
@@ -8217,6 +12170,7 @@
       };
     }
     async function prepareDraftTemplateStateFromAsset(assetUrl, sourceLabel, draftProp) {
+      var _a2;
       if (!assetUrl) {
         return {
           draftTemplateRoot: null,
@@ -8224,13 +12178,13 @@
           draftSourceLabel: "No GLB loaded"
         };
       }
-      const mirrorMode = draftProp?.attachment?.mirrorMode === "paired" ? "paired" : "single";
-      const wingAuthoringPreview = draftProp?.categoryKey === "wingSet" ? getDraftWingAuthoringPreview(draftProp) : null;
-      const effectiveMirrorMode = draftProp?.categoryKey === "wingSet" && wingAuthoringPreview?.mode === "isolatedHalf" ? wingAuthoringPreview.mirrorToBoth ? "paired" : "single" : mirrorMode;
-      const shouldUseWingTemplate = draftProp.categoryKey === "wingSet" && effectiveMirrorMode === "paired" && wingAuthoringPreview?.mode !== "isolatedHalf";
+      const mirrorMode = ((_a2 = draftProp == null ? void 0 : draftProp.attachment) == null ? void 0 : _a2.mirrorMode) === "paired" ? "paired" : "single";
+      const wingAuthoringPreview = (draftProp == null ? void 0 : draftProp.categoryKey) === "wingSet" ? getDraftWingAuthoringPreview(draftProp) : null;
+      const effectiveMirrorMode = (draftProp == null ? void 0 : draftProp.categoryKey) === "wingSet" && (wingAuthoringPreview == null ? void 0 : wingAuthoringPreview.mode) === "isolatedHalf" ? wingAuthoringPreview.mirrorToBoth ? "paired" : "single" : mirrorMode;
+      const shouldUseWingTemplate = draftProp.categoryKey === "wingSet" && effectiveMirrorMode === "paired" && (wingAuthoringPreview == null ? void 0 : wingAuthoringPreview.mode) !== "isolatedHalf";
       if (shouldUseWingTemplate) {
         const templateState = await loadWingTemplateState2({ GLTFLoader, THREE, assetUrl });
-        if (!templateState?.sourceTemplateRoot && !templateState?.sourceTemplatePair) {
+        if (!(templateState == null ? void 0 : templateState.sourceTemplateRoot) && !(templateState == null ? void 0 : templateState.sourceTemplatePair)) {
           throw createCreatorLoadError(`${sourceLabel} could not be prepared for XiO.`, "prepare-failed", {
             sourceLabel
           });
@@ -8257,7 +12211,7 @@
     }
     function buildDraftLoadPlanBase(draftProp, {
       selectedLivePropKey = null,
-      draftCategoryKey = draftProp?.categoryKey || state.draftCategoryKey,
+      draftCategoryKey = (draftProp == null ? void 0 : draftProp.categoryKey) || state.draftCategoryKey,
       draftSourceLabel = "No GLB loaded",
       draftTemplateRoot = null,
       draftTemplatePair = null,
@@ -8287,12 +12241,13 @@
       disableTurntable = false,
       announceMessage = null
     } = {}) {
+      var _a2, _b2, _c, _d, _e;
       const previousObjectUrl = state.draftObjectUrl;
       if (!preserveEditSession) {
         clearEditSession();
       }
-      state.selectedLivePropKey = draftLoadPlan.selectedLivePropKey ?? null;
-      state.draftCategoryKey = draftLoadPlan.draftCategoryKey || draftLoadPlan.draftProp?.categoryKey || state.draftCategoryKey;
+      state.selectedLivePropKey = (_a2 = draftLoadPlan.selectedLivePropKey) != null ? _a2 : null;
+      state.draftCategoryKey = draftLoadPlan.draftCategoryKey || ((_b2 = draftLoadPlan.draftProp) == null ? void 0 : _b2.categoryKey) || state.draftCategoryKey;
       state.draftProp = draftLoadPlan.draftProp;
       state.draftTemplateSourceRoot = draftLoadPlan.draftTemplateSourceRoot || null;
       state.draftTemplateSourcePair = draftLoadPlan.draftTemplateSourcePair || null;
@@ -8301,10 +12256,10 @@
       state.draftSourceLabel = draftLoadPlan.draftSourceLabel || "No GLB loaded";
       state.draftObjectUrl = draftLoadPlan.draftObjectUrl || null;
       state.draftLocalFile = draftLoadPlan.draftLocalFile || null;
-      if (state.draftProp?.preview && Object.hasOwn(state.draftProp.preview, "singleWingSide")) {
+      if (((_c = state.draftProp) == null ? void 0 : _c.preview) && Object.hasOwn(state.draftProp.preview, "singleWingSide")) {
         delete state.draftProp.preview.singleWingSide;
       }
-      if (!state.draftProp?.preview?.wingMotion) {
+      if (!((_e = (_d = state.draftProp) == null ? void 0 : _d.preview) == null ? void 0 : _e.wingMotion)) {
         setDraftWingMotionPreview(DEFAULT_WING_MOTION_PREVIEW2);
       }
       resetWingSyncPreviewState({
@@ -8315,7 +12270,11 @@
       refreshDraftTemplatePresentationFromSource();
       rebuildDraftStage();
       if (draftLoadPlan.autoFitToSlot) {
-        autoFitDraftPlacementToSlot();
+        const category = getDraftCategoryRecord();
+        const didAutoLock = canAutoLockCurrentDraft(state.draftProp, category) ? autoLockDraftPlacementToSlot({ commitHistoryStep: false, silent: true }) : false;
+        if (!didAutoLock) {
+          autoFitDraftPlacementToSlot();
+        }
       }
       resetDraftHistory();
       if (previousObjectUrl && previousObjectUrl !== state.draftObjectUrl) {
@@ -8412,7 +12371,7 @@
         const handle = await window.showDirectoryPicker({ id: "xio-props-folder", mode: "read" });
         const permission = await queryDirectoryPermissionState(handle, { request: true });
         if (permission !== STANDALONE_FOLDER_STATUS.linked) {
-          setStandaloneFolderState(STANDALONE_FOLDER_STATUS.relinkRequired, { name: handle?.name || "" });
+          setStandaloneFolderState(STANDALONE_FOLDER_STATUS.relinkRequired, { name: (handle == null ? void 0 : handle.name) || "" });
           renderAll();
           if (!silent) {
             log("Standalone GLB inventory still needs read permission for HomePageAPP/Images/PROPS.");
@@ -8446,7 +12405,7 @@
         }
         return true;
       } catch (error) {
-        if (error?.name === "AbortError") {
+        if ((error == null ? void 0 : error.name) === "AbortError") {
           if (!silent) {
             log("Props folder link cancelled.");
           }
@@ -8505,11 +12464,11 @@
       }
     }
     async function resolveLiveInventoryAssetSource(propRecord, { allowPromptForLink = false } = {}) {
-      if (!propRecord?.assetUrl) {
+      if (!(propRecord == null ? void 0 : propRecord.assetUrl)) {
         return {
           assetUrl: null,
           runtimeObjectUrl: null,
-          sourceLabel: propRecord?.label || "No GLB loaded",
+          sourceLabel: (propRecord == null ? void 0 : propRecord.label) || "No GLB loaded",
           relativePath: null
         };
       }
@@ -8572,22 +12531,43 @@
       };
     }
     async function buildDraftLoadPlanFromPropRecord(propRecord) {
+      var _a2, _b2;
       const nextDraftProp = deepCopyProp(propRecord);
       const draftLoadPlan = buildDraftLoadPlanBase(nextDraftProp, {
         selectedLivePropKey: propRecord.key,
         draftCategoryKey: propRecord.categoryKey
       });
-      if (propRecord.preview?.kind === "xioNoWingProxy") {
+      if (((_a2 = propRecord.preview) == null ? void 0 : _a2.kind) === "xioNoWingProxy") {
         return {
           ...draftLoadPlan,
           draftSourceLabel: `${propRecord.label} (clean wingless view)`
         };
       }
-      if (propRecord.preview?.kind === "xioBaseWingProxy") {
+      if (((_b2 = propRecord.preview) == null ? void 0 : _b2.kind) === "xioBaseWingProxy") {
         return {
           ...draftLoadPlan,
           draftSourceLabel: `${propRecord.label} (XiO base wings)`
         };
+      }
+      if (isGeneratedPropPreview2(propRecord.preview)) {
+        const previewPair = buildGeneratedWingPreview2({
+          THREE,
+          recipe: propRecord.preview.generated,
+          attachment: propRecord.attachment
+        });
+        const previewState = prepareDraftTemplatePairStateFromLivePreview(
+          previewPair,
+          `${propRecord.label} (generated wing recipe)`,
+          nextDraftProp
+        );
+        if (previewState) {
+          return {
+            ...draftLoadPlan,
+            ...previewState,
+            draftTemplateSourceRoot: previewState.draftTemplateRoot || null,
+            draftTemplateSourcePair: previewState.draftTemplatePair || null
+          };
+        }
       }
       if (isLiveGameWingPreviewKey2(propRecord.key)) {
         const previewPair = buildLiveGameWingPreview2({
@@ -8747,7 +12727,7 @@
       >
         <div class="list-card__header">
           <div class="list-card__title">
-            <div class="list-card__eyebrow">${escapeHtml2(category?.label || prop.categoryKey)}</div>
+            <div class="list-card__eyebrow">${escapeHtml2((category == null ? void 0 : category.label) || prop.categoryKey)}</div>
             <button type="button" class="list-card__title-button" data-load-prop="${escapeHtml2(prop.key)}">
               <span class="list-card__title-text">${escapeHtml2(prop.label)}</span>
             </button>
@@ -8787,12 +12767,18 @@
       renderEditSessionControls();
       renderStageToolbarControls();
       renderHistoryControls();
+      renderGeneratedStageCard();
+      if (randomGeneratorModal && !randomGeneratorModal.hidden) {
+        populateRandomGeneratorBaseReferences();
+        renderRandomGeneratorSummary();
+      }
     }
     function applyDraftFromInputs() {
+      var _a2, _b2, _c, _d, _e;
       const draftProp = ensureDraftProp();
       const previousCategoryKey = draftProp.categoryKey;
-      const previousMirrorMode = draftProp.attachment?.mirrorMode || "single";
-      const previousWingAuthoring = clonePreviewData(draftProp.preview?.wingAuthoring);
+      const previousMirrorMode = ((_a2 = draftProp.attachment) == null ? void 0 : _a2.mirrorMode) || "single";
+      const previousWingAuthoring = clonePreviewData((_b2 = draftProp.preview) == null ? void 0 : _b2.wingAuthoring);
       draftProp.label = propLabelInput.value.trim();
       draftProp.key = propKeyInput.value.trim();
       draftProp.categoryKey = propCategorySelect.value;
@@ -8803,7 +12789,10 @@
       draftProp.mysteryBoxEnabled = propMysteryToggle.checked;
       draftProp.eyePreset = eyePresetSelect.value || null;
       draftProp.materialPreset = materialPresetSelect.value || null;
-      if (draftProp.categoryKey === "wingSet" && draftProp.preview?.wingAuthoring?.mode === "isolatedHalf") {
+      if (draftProp.categoryKey !== "wingSet" && draftProp.preview && Object.hasOwn(draftProp.preview, "generated")) {
+        delete draftProp.preview.generated;
+      }
+      if (draftProp.categoryKey === "wingSet" && ((_d = (_c = draftProp.preview) == null ? void 0 : _c.wingAuthoring) == null ? void 0 : _d.mode) === "isolatedHalf") {
         setDraftWingAuthoringPreview({
           ...getDraftWingAuthoringPreview(draftProp),
           mirrorToBoth: propMirrorToggle.checked
@@ -8820,7 +12809,7 @@
         setWingSyncPreviewState(null, null);
       } else if (previousCategoryKey !== draftProp.categoryKey || previousMirrorMode !== draftProp.attachment.mirrorMode) {
         resetWingSyncPreviewState({ draftProp });
-      } else if (JSON.stringify(previousWingAuthoring) !== JSON.stringify(draftProp.preview?.wingAuthoring || null)) {
+      } else if (JSON.stringify(previousWingAuthoring) !== JSON.stringify(((_e = draftProp.preview) == null ? void 0 : _e.wingAuthoring) || null)) {
         resetWingSyncPreviewState({ draftProp });
       }
       refreshDraftTemplatePresentationFromSource();
@@ -8873,39 +12862,39 @@
       });
     }
     function resolveSnapshotPropKey(snapshot, propRecord, preferredKey = null) {
-      const props = Array.isArray(snapshot?.props) ? snapshot.props : [];
+      const props = Array.isArray(snapshot == null ? void 0 : snapshot.props) ? snapshot.props : [];
       const preferredRawKey = typeof preferredKey === "string" ? preferredKey.trim() : "";
       if (preferredRawKey) {
         const exactPreferredMatch = props.find((entry) => entry.key === preferredRawKey);
-        if (exactPreferredMatch?.key) return exactPreferredMatch.key;
+        if (exactPreferredMatch == null ? void 0 : exactPreferredMatch.key) return exactPreferredMatch.key;
         const normalizedPreferredKey = normalizeHomepagePropKey2(preferredRawKey);
         if (normalizedPreferredKey) {
           const normalizedPreferredMatch = props.find((entry) => normalizeHomepagePropKey2(entry.key) === normalizedPreferredKey);
-          if (normalizedPreferredMatch?.key) return normalizedPreferredMatch.key;
+          if (normalizedPreferredMatch == null ? void 0 : normalizedPreferredMatch.key) return normalizedPreferredMatch.key;
         }
       }
-      if (propRecord?.key) {
+      if (propRecord == null ? void 0 : propRecord.key) {
         const exactPropMatch = props.find((entry) => entry.key === propRecord.key);
-        if (exactPropMatch?.key) return exactPropMatch.key;
+        if (exactPropMatch == null ? void 0 : exactPropMatch.key) return exactPropMatch.key;
         const normalizedPropKey = normalizeHomepagePropKey2(propRecord.key);
         if (normalizedPropKey) {
           const normalizedPropMatch = props.find((entry) => normalizeHomepagePropKey2(entry.key) === normalizedPropKey);
-          if (normalizedPropMatch?.key) return normalizedPropMatch.key;
+          if (normalizedPropMatch == null ? void 0 : normalizedPropMatch.key) return normalizedPropMatch.key;
         }
       }
-      if (propRecord?.storagePath) {
+      if (propRecord == null ? void 0 : propRecord.storagePath) {
         const storagePathMatch = props.find((entry) => entry.storagePath === propRecord.storagePath);
-        if (storagePathMatch?.key) return storagePathMatch.key;
+        if (storagePathMatch == null ? void 0 : storagePathMatch.key) return storagePathMatch.key;
       }
-      if (propRecord?.assetUrl) {
+      if (propRecord == null ? void 0 : propRecord.assetUrl) {
         const assetUrlMatch = props.find((entry) => entry.assetUrl === propRecord.assetUrl);
-        if (assetUrlMatch?.key) return assetUrlMatch.key;
+        if (assetUrlMatch == null ? void 0 : assetUrlMatch.key) return assetUrlMatch.key;
       }
-      if (propRecord?.label && propRecord?.categoryKey) {
+      if ((propRecord == null ? void 0 : propRecord.label) && (propRecord == null ? void 0 : propRecord.categoryKey)) {
         const labelCategoryMatch = props.find((entry) => entry.label === propRecord.label && entry.categoryKey === propRecord.categoryKey);
-        if (labelCategoryMatch?.key) return labelCategoryMatch.key;
+        if (labelCategoryMatch == null ? void 0 : labelCategoryMatch.key) return labelCategoryMatch.key;
       }
-      return preferredRawKey || propRecord?.key || null;
+      return preferredRawKey || (propRecord == null ? void 0 : propRecord.key) || null;
     }
     function remapPropsToCategoryKey(snapshot, previousKey, nextKey) {
       if (!previousKey || !nextKey || previousKey === nextKey) {
@@ -8927,6 +12916,7 @@
       return true;
     }
     async function publishDraftProp({ archive = false } = {}) {
+      var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k;
       applyDraftFromInputs();
       const draftProp = ensureDraftProp();
       if (draftProp.preview && Object.hasOwn(draftProp.preview, "singleWingSide")) {
@@ -8938,7 +12928,7 @@
       if (isBlobBackedLocalDraft(draftProp)) {
         throw new Error("Standalone local draft saves cannot persist dropped GLB files after refresh. Open the manager route to publish this asset.");
       }
-      if (state.publishEnabled && typeof draftProp?.assetUrl === "string" && draftProp.assetUrl.startsWith("blob:")) {
+      if (state.publishEnabled && typeof (draftProp == null ? void 0 : draftProp.assetUrl) === "string" && draftProp.assetUrl.startsWith("blob:")) {
         if (!(state.draftLocalFile instanceof File)) {
           throw new Error("This local GLB preview needs to be re-dropped before it can be published live.");
         }
@@ -8946,8 +12936,8 @@
           const uploadResponse = await sendHostRequest(HOMEPAGE_PROP_UPLOAD_REQUEST2, {
             file: state.draftLocalFile
           });
-          draftProp.assetUrl = uploadResponse?.data?.assetUrl || draftProp.assetUrl;
-          draftProp.storagePath = uploadResponse?.data?.storagePath || null;
+          draftProp.assetUrl = ((_a2 = uploadResponse == null ? void 0 : uploadResponse.data) == null ? void 0 : _a2.assetUrl) || draftProp.assetUrl;
+          draftProp.storagePath = ((_b2 = uploadResponse == null ? void 0 : uploadResponse.data) == null ? void 0 : _b2.storagePath) || null;
           state.draftSourceLabel = state.draftLocalFile.name;
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unable to upload the dropped GLB for live publishing.";
@@ -8961,11 +12951,11 @@
         draftProp.active = false;
         draftProp.mysteryBoxEnabled = false;
       } else if (state.publishEnabled) {
-        draftProp.active = true;
-        draftProp.mysteryBoxEnabled = true;
+        draftProp.active = draftProp.active !== false;
+        draftProp.mysteryBoxEnabled = draftProp.mysteryBoxEnabled === true;
       }
       draftProp.archived = archive;
-      const baselineKey = state.editSession.baselineProp?.key || null;
+      const baselineKey = ((_c = state.editSession.baselineProp) == null ? void 0 : _c.key) || null;
       const selectedLiveKey = state.selectedLivePropKey && state.selectedLivePropKey !== draftProp.key ? state.selectedLivePropKey : null;
       const previousKey = baselineKey && baselineKey !== draftProp.key ? baselineKey : selectedLiveKey;
       let saveResponse = null;
@@ -8976,8 +12966,8 @@
           previousKey
         });
       }
-      const persistedPropKey = typeof saveResponse?.data?.persistedPropKey === "string" && saveResponse.data.persistedPropKey.trim().length > 0 ? saveResponse.data.persistedPropKey.trim() : draftProp.key;
-      const authoritativeSnapshot = saveResponse?.data?.snapshot ? withCatalogFallback(saveResponse.data.snapshot) : null;
+      const persistedPropKey = typeof ((_d = saveResponse == null ? void 0 : saveResponse.data) == null ? void 0 : _d.persistedPropKey) === "string" && saveResponse.data.persistedPropKey.trim().length > 0 ? saveResponse.data.persistedPropKey.trim() : draftProp.key;
+      const authoritativeSnapshot = ((_e = saveResponse == null ? void 0 : saveResponse.data) == null ? void 0 : _e.snapshot) ? withCatalogFallback(saveResponse.data.snapshot) : null;
       const nextSnapshot = authoritativeSnapshot || upsertProp(state.snapshot, deepCopyProp(draftProp), previousKey);
       const resolvedPersistedPropKey = resolveSnapshotPropKey(nextSnapshot, draftProp, persistedPropKey);
       if (resolvedPersistedPropKey) {
@@ -8993,8 +12983,8 @@
         console.info("[XiO Creator] Live prop save completed.", {
           draftPropKey: ensureDraftProp().key,
           persistedPropKey: resolvedPersistedPropKey,
-          snapshotUpdatedAt: authoritativeSnapshot?.updatedAt ?? saveResponse?.data?.snapshot?.updatedAt ?? null,
-          mysteryTestOverride: saveResponse?.data?.mysteryTestOverride ?? null
+          snapshotUpdatedAt: (_i = (_h = authoritativeSnapshot == null ? void 0 : authoritativeSnapshot.updatedAt) != null ? _h : (_g = (_f = saveResponse == null ? void 0 : saveResponse.data) == null ? void 0 : _f.snapshot) == null ? void 0 : _g.updatedAt) != null ? _i : null,
+          mysteryTestOverride: (_k = (_j = saveResponse == null ? void 0 : saveResponse.data) == null ? void 0 : _j.mysteryTestOverride) != null ? _k : null
         });
       }
       log(`${archive ? "Archived" : state.publishEnabled ? "Published" : "Saved"} ${draftProp.label} ${state.publishEnabled ? "to the live game" : "to local draft storage"}.`);
@@ -9026,6 +13016,7 @@
       });
     }
     async function permanentlyDeleteProp(propKey) {
+      var _a2, _b2;
       const propRecord = getProps().find((entry) => entry.key === propKey);
       if (!propRecord) {
         throw new Error("Select a live prop before deleting it.");
@@ -9044,24 +13035,26 @@
         return false;
       }
       const deleteMode = propRecord.storagePath ? "hard" : "tombstone";
+      let deleteResponse = null;
       if (state.publishEnabled) {
-        await sendHostRequest(HOMEPAGE_PROP_SAVE_REQUEST2, {
+        deleteResponse = await sendHostRequest(HOMEPAGE_PROP_SAVE_REQUEST2, {
           entity: "prop",
           action: "delete",
           deleteMode,
           record: propRecord
         });
       }
-      state.snapshot = deleteMode === "hard" ? removeProp(state.snapshot, propRecord.key) : upsertProp(state.snapshot, {
+      const authoritativeSnapshot = ((_a2 = deleteResponse == null ? void 0 : deleteResponse.data) == null ? void 0 : _a2.snapshot) ? withCatalogFallback(deleteResponse.data.snapshot) : null;
+      state.snapshot = authoritativeSnapshot || (deleteMode === "hard" ? removeProp(state.snapshot, propRecord.key) : upsertProp(state.snapshot, {
         ...deepCopyProp(propRecord),
         active: false,
         archived: true,
         mysteryBoxEnabled: false
-      });
+      }));
       if (state.selectedLivePropKey === propRecord.key) {
         state.selectedLivePropKey = null;
       }
-      if (state.draftProp?.key === propRecord.key) {
+      if (((_b2 = state.draftProp) == null ? void 0 : _b2.key) === propRecord.key) {
         clearEditSession();
         clearDraftTemplateSources({ releaseObjectUrl: true });
         state.draftProp = createEmptyDraftProp(propRecord.categoryKey || state.draftCategoryKey);
@@ -9083,7 +13076,8 @@
       return true;
     }
     async function saveCategory() {
-      const previousKey = getCategoryEditorRecord()?.key || null;
+      var _a2;
+      const previousKey = ((_a2 = getCategoryEditorRecord()) == null ? void 0 : _a2.key) || null;
       const categoryRecord = {
         key: categoryKeyInput.value.trim(),
         label: categoryLabelInput.value.trim(),
@@ -9129,7 +13123,7 @@
     }
     async function deleteCurrentCategory() {
       const categoryRecord = getCategoryEditorRecord();
-      if (!categoryRecord?.key) {
+      if (!(categoryRecord == null ? void 0 : categoryRecord.key)) {
         throw new Error("Select a saved category before deleting it.");
       }
       if (CORE_CATEGORY_KEYS.has(categoryRecord.key)) {
@@ -9161,7 +13155,7 @@
       if (deletedDraftCategory) {
         clearEditSession();
         clearDraftTemplateSources({ releaseObjectUrl: true });
-        state.draftProp = createEmptyDraftProp(nextAvailableCategory?.key || state.draftCategoryKey);
+        state.draftProp = createEmptyDraftProp((nextAvailableCategory == null ? void 0 : nextAvailableCategory.key) || state.draftCategoryKey);
         state.draftSourceLabel = "No GLB loaded";
         resetWingSyncPreviewState({ draftProp: state.draftProp });
         rebuildDraftStage();
@@ -9173,7 +13167,7 @@
       if (state.selectedLivePropKey && !getProps().some((entry) => entry.key === state.selectedLivePropKey)) {
         state.selectedLivePropKey = null;
       }
-      setCategoryEditorKey(nextAvailableCategory?.key || null);
+      setCategoryEditorKey((nextAvailableCategory == null ? void 0 : nextAvailableCategory.key) || null);
       persistHomepageCatalogSnapshot2(state.snapshot);
       renderAll();
       log(`Deleted category ${categoryRecord.label} ${state.publishEnabled ? "from the live game" : "locally"}.`);
@@ -9195,7 +13189,7 @@
       }
       if (focusKeyField) {
         window.setTimeout(() => {
-          categoryLabelInput?.focus();
+          categoryLabelInput == null ? void 0 : categoryLabelInput.focus();
         }, 0);
       }
     }
@@ -9219,12 +13213,12 @@
         return true;
       } catch (error) {
         const fallbackMessage = `Unable to load ${propRecord.label} on XiO.`;
-        if (error?.code === "link-required") {
+        if ((error == null ? void 0 : error.code) === "link-required") {
           log(error.message || fallbackMessage);
           renderAll();
           return false;
         }
-        if (error?.code === "missing-asset") {
+        if ((error == null ? void 0 : error.code) === "missing-asset") {
           log(error.message || fallbackMessage);
           renderAll();
           return false;
@@ -9244,15 +13238,16 @@
       void loadLiveProp(choice.key);
     }
     window.addEventListener("message", (event) => {
+      var _a2, _b2, _c;
       if (event.origin !== window.location.origin) return;
       if (!event.data || typeof event.data !== "object") return;
       if (event.data.type === HOMEPAGE_CATALOG_SYNC2) {
-        if (event.data.payload?.snapshot) {
+        if ((_a2 = event.data.payload) == null ? void 0 : _a2.snapshot) {
           state.snapshot = withCatalogFallback(event.data.payload.snapshot);
           persistHomepageCatalogSnapshot2(state.snapshot);
         }
-        state.publishEnabled = event.data.payload?.publishEnabled === true;
-        state.publishReason = event.data.payload?.reason || null;
+        state.publishEnabled = ((_b2 = event.data.payload) == null ? void 0 : _b2.publishEnabled) === true;
+        state.publishReason = ((_c = event.data.payload) == null ? void 0 : _c.reason) || null;
         updatePublishStatus();
         renderAll();
         return;
@@ -9296,12 +13291,15 @@
       syncPropForm();
       if (!wasAlreadySelected) {
         const selectedProp = getSelectedLiveProp();
-        const label = selectedProp?.label || ensureDraftProp().label || "current prop";
+        const label = (selectedProp == null ? void 0 : selectedProp.label) || ensureDraftProp().label || "current prop";
         log(`Selected ${label} for direct transform editing.`);
       }
     });
     $("toggle-preview-motion-button").addEventListener("click", () => {
       setMotionPreviewEnabled(!state.motionPreviewEnabled);
+    });
+    $("auto-lock-fit-button").addEventListener("click", () => {
+      autoLockDraftPlacementToSlot();
     });
     $("sync-both-wings-button").addEventListener("click", () => {
       syncBothWingsAnimationPreview();
@@ -9374,7 +13372,36 @@
     });
     $("random-wings-button").addEventListener("click", () => loadRandomPropFromCategory("wingSet"));
     $("random-crown-button").addEventListener("click", () => loadRandomPropFromCategory("headWear"));
-    wingAutoIsolateButton?.addEventListener("click", () => {
+    randomPropGeneratorButton == null ? void 0 : randomPropGeneratorButton.addEventListener("click", () => {
+      openRandomGeneratorModal();
+    });
+    randomGeneratorCloseButton == null ? void 0 : randomGeneratorCloseButton.addEventListener("click", () => {
+      if (!randomGeneratorIsBusy) {
+        closeRandomGeneratorModal();
+      }
+    });
+    randomGeneratorCancelButton == null ? void 0 : randomGeneratorCancelButton.addEventListener("click", () => {
+      if (!randomGeneratorIsBusy) {
+        closeRandomGeneratorModal();
+      }
+    });
+    randomGeneratorGenerateButton == null ? void 0 : randomGeneratorGenerateButton.addEventListener("click", () => {
+      void generateRandomWingDraftToStage();
+    });
+    [
+      randomGeneratorCategorySelect,
+      randomGeneratorRaritySelect,
+      randomGeneratorThemeModeSelect,
+      randomGeneratorThemeInput,
+      randomGeneratorDetailDensitySelect,
+      randomGeneratorColorHarmonySelect,
+      randomGeneratorFitModeSelect,
+      randomGeneratorBaseReferenceSelect
+    ].filter(Boolean).forEach((input) => {
+      input.addEventListener("input", renderRandomGeneratorSummary);
+      input.addEventListener("change", renderRandomGeneratorSummary);
+    });
+    wingAutoIsolateButton == null ? void 0 : wingAutoIsolateButton.addEventListener("click", () => {
       void applyWingAuthoringState({
         mode: "isolatedHalf",
         sourceSide: getPreferredWingAuthoringSide(),
@@ -9383,10 +13410,10 @@
         announceMessage: "Auto-isolated the active wing source and mirrored it to both wings."
       });
     });
-    wingResetSourceButton?.addEventListener("click", () => {
+    wingResetSourceButton == null ? void 0 : wingResetSourceButton.addEventListener("click", () => {
       resetWingAuthoringToOriginal();
     });
-    wingUseLeftButton?.addEventListener("click", () => {
+    wingUseLeftButton == null ? void 0 : wingUseLeftButton.addEventListener("click", () => {
       void applyWingAuthoringState({
         mode: "isolatedHalf",
         sourceSide: "left"
@@ -9394,7 +13421,7 @@
         announceMessage: "Switched the wing source to the left half."
       });
     });
-    wingUseRightButton?.addEventListener("click", () => {
+    wingUseRightButton == null ? void 0 : wingUseRightButton.addEventListener("click", () => {
       void applyWingAuthoringState({
         mode: "isolatedHalf",
         sourceSide: "right"
@@ -9402,7 +13429,7 @@
         announceMessage: "Switched the wing source to the right half."
       });
     });
-    wingMirrorBothToggle?.addEventListener("change", () => {
+    wingMirrorBothToggle == null ? void 0 : wingMirrorBothToggle.addEventListener("change", () => {
       void applyWingAuthoringState({
         mode: "isolatedHalf",
         mirrorToBoth: wingMirrorBothToggle.checked
@@ -9410,7 +13437,7 @@
         announceMessage: wingMirrorBothToggle.checked ? "Mirroring the isolated wing source to both wings." : "Previewing only one authored wing side."
       });
     });
-    wingSplitOffsetInput?.addEventListener("input", () => {
+    wingSplitOffsetInput == null ? void 0 : wingSplitOffsetInput.addEventListener("input", () => {
       if (getDraftWingAuthoringPreview().mode !== "isolatedHalf") return;
       void applyWingAuthoringState({
         splitOffset: Number(wingSplitOffsetInput.value)
@@ -9420,7 +13447,7 @@
         silent: true
       });
     });
-    wingSplitOffsetInput?.addEventListener("change", () => {
+    wingSplitOffsetInput == null ? void 0 : wingSplitOffsetInput.addEventListener("change", () => {
       if (getDraftWingAuthoringPreview().mode !== "isolatedHalf") return;
       void applyWingAuthoringState({
         splitOffset: Number(wingSplitOffsetInput.value)
@@ -9430,7 +13457,7 @@
         announceMessage: "Updated the wing split offset."
       });
     });
-    wingTrimMarginInput?.addEventListener("input", () => {
+    wingTrimMarginInput == null ? void 0 : wingTrimMarginInput.addEventListener("input", () => {
       if (getDraftWingAuthoringPreview().mode !== "isolatedHalf") return;
       void applyWingAuthoringState({
         trimMargin: Number(wingTrimMarginInput.value)
@@ -9440,7 +13467,7 @@
         silent: true
       });
     });
-    wingTrimMarginInput?.addEventListener("change", () => {
+    wingTrimMarginInput == null ? void 0 : wingTrimMarginInput.addEventListener("change", () => {
       if (getDraftWingAuthoringPreview().mode !== "isolatedHalf") return;
       void applyWingAuthoringState({
         trimMargin: Number(wingTrimMarginInput.value)
@@ -9450,10 +13477,10 @@
         announceMessage: "Updated the wing trim margin."
       });
     });
-    wingMotionPreviewButton?.addEventListener("click", () => {
+    wingMotionPreviewButton == null ? void 0 : wingMotionPreviewButton.addEventListener("click", () => {
       setMotionPreviewEnabled(!state.motionPreviewEnabled);
     });
-    wingMotionLinkedToggle?.addEventListener("change", () => {
+    wingMotionLinkedToggle == null ? void 0 : wingMotionLinkedToggle.addEventListener("change", () => {
       setDraftWingMotionLinked(wingMotionLinkedToggle.checked, { commitHistoryStep: true });
       refreshWingMotionPreviewLive({ autoStart: true });
     });
@@ -9472,7 +13499,7 @@
         });
       });
     });
-    linkPropsFolderButton?.addEventListener("click", () => {
+    linkPropsFolderButton == null ? void 0 : linkPropsFolderButton.addEventListener("click", () => {
       void promptToLinkStandalonePropsFolder();
     });
     $("publish-prop-button").addEventListener("click", async () => {
@@ -9521,7 +13548,8 @@
       }
     });
     $("use-category-button").addEventListener("click", () => {
-      const nextCategoryKey = getCategoryEditorRecord()?.key;
+      var _a2;
+      const nextCategoryKey = (_a2 = getCategoryEditorRecord()) == null ? void 0 : _a2.key;
       if (!nextCategoryKey) {
         showCreatorNotice({
           tone: "error",
@@ -9542,7 +13570,7 @@
       });
       renderAll();
     });
-    categoryEditorSelect?.addEventListener("change", () => {
+    categoryEditorSelect == null ? void 0 : categoryEditorSelect.addEventListener("change", () => {
       const nextValue = categoryEditorSelect.value;
       if (nextValue === CATEGORY_EDITOR_NEW_VALUE) {
         beginNewCategoryDraft();
@@ -9551,10 +13579,10 @@
       setCategoryEditorKey(nextValue);
       syncCategoryForm();
     });
-    newCategoryButton?.addEventListener("click", () => {
+    newCategoryButton == null ? void 0 : newCategoryButton.addEventListener("click", () => {
       beginNewCategoryDraft({ focusKeyField: true });
     });
-    deleteCategoryButton?.addEventListener("click", async () => {
+    deleteCategoryButton == null ? void 0 : deleteCategoryButton.addEventListener("click", async () => {
       try {
         await deleteCurrentCategory();
       } catch (error) {
@@ -9569,7 +13597,7 @@
         });
       }
     });
-    categoryLabelInput?.addEventListener("input", () => {
+    categoryLabelInput == null ? void 0 : categoryLabelInput.addEventListener("input", () => {
       if (!categoryKeyInput.value.trim()) {
         categoryKeyInput.value = slugify(categoryLabelInput.value);
       }
@@ -9611,12 +13639,20 @@
       ...transformInputs.scale
     ].forEach((input) => input.addEventListener("change", applyDraftFromInputs));
     window.addEventListener("keydown", (event) => {
-      if (!saveSuccessModal?.hidden && event.key === "Escape") {
+      if (!(randomGeneratorModal == null ? void 0 : randomGeneratorModal.hidden)) {
+        if (event.key === "Escape" && !randomGeneratorIsBusy) {
+          event.preventDefault();
+          closeRandomGeneratorModal();
+          return;
+        }
+        trapFocusInsideRandomGenerator(event);
+      }
+      if (!(saveSuccessModal == null ? void 0 : saveSuccessModal.hidden) && event.key === "Escape") {
         event.preventDefault();
         resolveSaveSuccessPrompt(false);
         return;
       }
-      if (!deleteConfirmModal?.hidden && event.key === "Escape") {
+      if (!(deleteConfirmModal == null ? void 0 : deleteConfirmModal.hidden) && event.key === "Escape") {
         event.preventDefault();
         resolveDeleteConfirm(false);
         return;
@@ -9649,7 +13685,8 @@
       }
     });
     $("glb-upload-input").addEventListener("change", async (event) => {
-      const file = event.target.files?.[0];
+      var _a2;
+      const file = (_a2 = event.target.files) == null ? void 0 : _a2[0];
       if (!file) return;
       try {
         await uploadCurrentFile(file);
@@ -9663,35 +13700,40 @@
         event.target.value = "";
       }
     });
-    creatorNoticeCloseButton?.addEventListener("click", () => {
+    creatorNoticeCloseButton == null ? void 0 : creatorNoticeCloseButton.addEventListener("click", () => {
       hideCreatorNotice();
     });
-    saveSuccessCloseButton?.addEventListener("click", () => {
+    saveSuccessCloseButton == null ? void 0 : saveSuccessCloseButton.addEventListener("click", () => {
       resolveSaveSuccessPrompt(false);
     });
-    saveSuccessStayButton?.addEventListener("click", () => {
+    saveSuccessStayButton == null ? void 0 : saveSuccessStayButton.addEventListener("click", () => {
       resolveSaveSuccessPrompt(false);
     });
-    saveSuccessLaunchButton?.addEventListener("click", () => {
+    saveSuccessLaunchButton == null ? void 0 : saveSuccessLaunchButton.addEventListener("click", () => {
       resolveSaveSuccessPrompt(true);
     });
-    deleteConfirmCloseButton?.addEventListener("click", () => {
+    deleteConfirmCloseButton == null ? void 0 : deleteConfirmCloseButton.addEventListener("click", () => {
       resolveDeleteConfirm(false);
     });
-    deleteConfirmCancelButton?.addEventListener("click", () => {
+    deleteConfirmCancelButton == null ? void 0 : deleteConfirmCancelButton.addEventListener("click", () => {
       resolveDeleteConfirm(false);
     });
-    deleteConfirmConfirmButton?.addEventListener("click", () => {
+    deleteConfirmConfirmButton == null ? void 0 : deleteConfirmConfirmButton.addEventListener("click", () => {
       resolveDeleteConfirm(true);
     });
-    deleteConfirmModal?.addEventListener("click", (event) => {
+    deleteConfirmModal == null ? void 0 : deleteConfirmModal.addEventListener("click", (event) => {
       if (event.target === deleteConfirmModal) {
         resolveDeleteConfirm(false);
       }
     });
-    saveSuccessModal?.addEventListener("click", (event) => {
+    saveSuccessModal == null ? void 0 : saveSuccessModal.addEventListener("click", (event) => {
       if (event.target === saveSuccessModal) {
         resolveSaveSuccessPrompt(false);
+      }
+    });
+    randomGeneratorModal == null ? void 0 : randomGeneratorModal.addEventListener("click", (event) => {
+      if (event.target === randomGeneratorModal && !randomGeneratorIsBusy) {
+        closeRandomGeneratorModal();
       }
     });
     ["dragenter", "dragover"].forEach((eventName) => {
@@ -9829,6 +13871,9 @@
     resetWingSyncPreviewState({ draftProp: state.draftProp });
     setTransformMode(state.transformMode);
     initializeLeftPanelSectionState();
+    populateRandomGeneratorOptions();
+    populateRandomGeneratorBaseReferences();
+    renderRandomGeneratorSummary();
     renderAll();
     resetDraftHistory();
     syncPropForm();

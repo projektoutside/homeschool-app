@@ -47,6 +47,7 @@ const HOME_PAGE_MYSTERY_PULL_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_REQUE
 const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
 const HOME_PAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
 const HOME_PAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
+const HOME_PAGE_SUMMON_NAV_LOCK_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_NAV_LOCK';
 const HOME_PAGE_BOOT_READY_MESSAGE = 'LAHS_HOMEPAGE_BOOT_READY';
 const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
@@ -95,6 +96,7 @@ declare global {
 interface UserHomePageProps {
   isActive?: boolean;
   onBootStable?: () => void;
+  onSummonNavigationLockChange?: (locked: boolean) => void;
 }
 
 const buildDailyLunchboxClaimStorageKey = (userId: string): string => {
@@ -156,7 +158,11 @@ const writeDailyLunchboxClaimExpiresAt = (userId: string | null | undefined, exp
   }
 };
 
-const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStable }) => {
+const UserHomePage: React.FC<UserHomePageProps> = ({
+  isActive = true,
+  onBootStable,
+  onSummonNavigationLockChange,
+}) => {
   const [initialLaunchState] = useState(createInitialHomepageLaunchState);
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -256,6 +262,20 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStab
   const dailyLunchboxRewardReady = Boolean(user?.id) && !dailyLunchboxClaimed;
 
   useZoomLock({ enabled: isActive, iframeRefs: zoomLockIframes });
+
+  useEffect(() => {
+    if (isActive) {
+      return;
+    }
+
+    onSummonNavigationLockChange?.(false);
+  }, [isActive, onSummonNavigationLockChange]);
+
+  useEffect(() => {
+    return () => {
+      onSummonNavigationLockChange?.(false);
+    };
+  }, [onSummonNavigationLockChange]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -495,6 +515,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStab
       const type = (event.data as { type?: string }).type;
       if (type === HOME_PAGE_BOOT_READY_MESSAGE) {
         setBootReadyReceived(true);
+        return;
+      }
+      if (type === HOME_PAGE_SUMMON_NAV_LOCK_MESSAGE) {
+        onSummonNavigationLockChange?.(isActive && Boolean((event.data as { locked?: unknown }).locked));
         return;
       }
       if (type === HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE) {
@@ -763,6 +787,8 @@ const UserHomePage: React.FC<UserHomePageProps> = ({ isActive = true, onBootStab
     syncHomepagePointsToIframe,
     syncTiltBridgeStateToIframe,
     totalPoints,
+    isActive,
+    onSummonNavigationLockChange,
     user?.id,
   ]);
 

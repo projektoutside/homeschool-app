@@ -11,6 +11,22 @@ const smooth01 = (value) => {
     return clamped * clamped * (3 - 2 * clamped);
 };
 
+const easeInCubic = (value) => Math.pow(clamp01(value), 3);
+
+const easeOutQuint = (value) => 1 - Math.pow(1 - clamp01(value), 5);
+
+const easeInOutQuint = (value) => {
+    const t = clamp01(value);
+    return t < 0.5
+        ? 16 * t * t * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 5) / 2;
+};
+
+const easeOutExpo = (value) => {
+    const t = clamp01(value);
+    return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+};
+
 const pulse = (phaseTime, center, width, amplitude = 1) => {
     const delta = (phaseTime - center) / Math.max(0.0001, width);
     return amplitude * Math.exp(-(delta * delta) * 2.2);
@@ -128,7 +144,18 @@ const LEGENDARY_STORM_VISUAL_CHANNEL_DEFAULTS = Object.freeze({
     impactRadius: 0,
     previewBlend: 0,
     revealEnergy: 0,
-    videoOpacity: 0
+    videoOpacity: 0,
+    godRayIntensity: 0,
+    vortexEnergy: 0,
+    chromaticAberration: 0,
+    screenShake: 0,
+    vignetteStrength: 0
+});
+
+const LEGENDARY_PRE_VIDEO_DARKNESS_CEILING = Object.freeze({
+    darkness: 0.24,
+    nightfallProgress: 0.68,
+    overlayOpacity: 0.68
 });
 
 export const LEGENDARY_STORM_LANDING_PHASES = new Set([
@@ -197,7 +224,12 @@ export function collectLegendaryStormVisualChannelSnapshot(source, sanitizeNumbe
         impactRadius: sanitizeNumber(source?.impactRadius, 0),
         previewBlend: sanitizeNumber(source?.previewBlend, 0),
         revealEnergy: sanitizeNumber(source?.revealEnergy, 0),
-        videoOpacity: sanitizeNumber(source?.videoOpacity, 0)
+        videoOpacity: sanitizeNumber(source?.videoOpacity, 0),
+        godRayIntensity: sanitizeNumber(source?.godRayIntensity, 0),
+        vortexEnergy: sanitizeNumber(source?.vortexEnergy, 0),
+        chromaticAberration: sanitizeNumber(source?.chromaticAberration, 0),
+        screenShake: sanitizeNumber(source?.screenShake, 0),
+        vignetteStrength: sanitizeNumber(source?.vignetteStrength, 0)
     };
 }
 
@@ -253,6 +285,24 @@ export function createLegendaryStormTimings(
             };
     timings.videoPlayback = DEFAULT_SANITIZE(videoPlaybackDuration, config.cutsceneFallbackDuration);
     return refreshLegendaryStormTimingTotals(timings);
+}
+
+function constrainLegendaryPreVideoDarkness(storm) {
+    if (!storm) {
+        return;
+    }
+    storm.darkness = Math.min(
+        clamp01(DEFAULT_SANITIZE(storm.darkness, 0)),
+        LEGENDARY_PRE_VIDEO_DARKNESS_CEILING.darkness
+    );
+    storm.nightfallProgress = Math.min(
+        clamp01(DEFAULT_SANITIZE(storm.nightfallProgress, 0)),
+        LEGENDARY_PRE_VIDEO_DARKNESS_CEILING.nightfallProgress
+    );
+    storm.overlayOpacity = Math.min(
+        clamp01(DEFAULT_SANITIZE(storm.overlayOpacity, 0)),
+        LEGENDARY_PRE_VIDEO_DARKNESS_CEILING.overlayOpacity
+    );
 }
 
 export function updateLegendaryStormDirector({
@@ -318,9 +368,10 @@ export function updateLegendaryStormDirector({
     if (storm.phase === 'cloudFormation') {
         const duration = timings.cloudFormation;
         const progress = clamp01(storm.phaseTime / duration);
-        const eased = smooth01(progress);
-        const dimProgress = smooth01(clamp01(progress / 0.48));
-        const internalProgress = smooth01(clamp01((progress - 0.28) / 0.72));
+        const eased = easeInOutQuint(progress);
+        const dimProgress = easeOutQuint(clamp01(progress / 0.44));
+        const rollingFront = easeOutExpo(clamp01((progress - 0.08) / 0.52));
+        const internalProgress = easeInOutQuint(clamp01((progress - 0.18) / 0.82));
         const internalFlash = clusteredPulse(
             storm.phaseTime * (storm.reducedMotion ? 0.26 : 0.4),
             storm.seed + 4.2,
@@ -338,26 +389,31 @@ export function updateLegendaryStormDirector({
         storm.strikeScreenY = THREE.MathUtils.clamp(preVideoSkyY, 0.11, 0.32);
         storm.environmentMix = THREE.MathUtils.lerp(0, 0.82, dimProgress);
         storm.darkness = THREE.MathUtils.lerp(0, 0.66, dimProgress);
-        storm.mist = THREE.MathUtils.lerp(0.008, 0.26, eased);
-        storm.flash = clamp01(internalFlash * 0.05 + embeddedFlicker * 0.028);
-        storm.nightfallProgress = THREE.MathUtils.lerp(0, storm.lightweightMode ? 0.78 : 0.9, smooth01(Math.pow(progress, 0.96)));
-        storm.overlayOpacity = THREE.MathUtils.lerp(0, 0.98, smooth01(Math.pow(progress, 1.06)));
-        storm.lightningMix = clamp01(internalFlash * 0.22 + embeddedFlicker * 0.08 + internalProgress * 0.08);
+        storm.mist = THREE.MathUtils.lerp(0.006, 0.34, easeInOutQuint(clamp01(progress * 1.08)));
+        storm.flash = clamp01(internalFlash * 0.06 + embeddedFlicker * 0.032 + rollingFront * 0.012);
+        storm.nightfallProgress = THREE.MathUtils.lerp(0, storm.lightweightMode ? 0.78 : 0.92, easeOutQuint(Math.pow(progress, 0.96)));
+        storm.overlayOpacity = THREE.MathUtils.lerp(0, 1, easeInOutQuint(clamp01((progress - 0.06) / 0.94)));
+        storm.lightningMix = clamp01(internalFlash * 0.28 + embeddedFlicker * 0.12 + internalProgress * 0.08 + rollingFront * 0.08);
         storm.cloudShiftPx =
             storm.totalTime * drift.fast * (0.22 + eased * 0.18) +
-            Math.sin(storm.totalTime * 0.48 + storm.seed) * (2 + eased * 2.2);
+            Math.sin(storm.totalTime * 0.48 + storm.seed) * (2 + eased * 2.8);
         storm.cloudShiftAltPx =
             storm.totalTime * drift.slow * (0.16 + eased * 0.12) +
-            Math.cos(storm.totalTime * 0.38 + storm.seed * 0.7) * (2.4 + eased * 2.4);
-        storm.boltOpacity = clamp01(internalFlash * 0.16 + embeddedFlicker * 0.08);
-        storm.cloudFlash = clamp01(internalFlash * 0.3 + internalProgress * 0.12);
-        storm.cloudSheet = clamp01((internalFlash * 0.12 + embeddedFlicker * 0.11) * cloudContrastGain);
-        storm.boltGlowOpacity = clamp01(internalFlash * 0.32 + embeddedFlicker * 0.09 + internalProgress * 0.05);
-        storm.boltBranchOpacity = clamp01(internalFlash * 0.15 + embeddedFlicker * 0.06);
+            Math.cos(storm.totalTime * 0.38 + storm.seed * 0.7) * (2.4 + eased * 2.9);
+        storm.boltOpacity = clamp01(internalFlash * 0.2 + embeddedFlicker * 0.1 + rollingFront * 0.04);
+        storm.cloudFlash = clamp01(internalFlash * 0.36 + embeddedFlicker * 0.08 + internalProgress * 0.12 + rollingFront * 0.06);
+        storm.cloudSheet = clamp01((internalFlash * 0.16 + embeddedFlicker * 0.12 + rollingFront * 0.08) * cloudContrastGain);
+        storm.boltGlowOpacity = clamp01(internalFlash * 0.4 + embeddedFlicker * 0.12 + internalProgress * 0.08);
+        storm.boltBranchOpacity = clamp01(internalFlash * 0.2 + embeddedFlicker * 0.08 + rollingFront * 0.04);
         storm.returnStroke = clamp01(internalFlash * 0.06 * returnStrokeGain);
-        storm.boltScale = THREE.MathUtils.lerp(0.84, 1.12, dimProgress);
-        storm.boltHeightScale = THREE.MathUtils.lerp(0.46, 0.86, dimProgress);
-        storm.revealEnergy = clamp01(internalProgress * 0.24);
+        storm.boltScale = THREE.MathUtils.lerp(0.84, 1.18, dimProgress);
+        storm.boltHeightScale = THREE.MathUtils.lerp(0.46, 0.92, dimProgress);
+        storm.revealEnergy = clamp01(internalProgress * 0.3 + rollingFront * 0.08);
+        storm.vortexEnergy = THREE.MathUtils.lerp(0, 0.52, easeOutQuint(clamp01((progress - 0.24) / 0.76)));
+        storm.godRayIntensity = THREE.MathUtils.lerp(0, 0.08, rollingFront);
+        storm.screenShake = clamp01(internalFlash * 0.02 + embeddedFlicker * 0.01);
+        storm.vignetteStrength = THREE.MathUtils.lerp(0, 0.32, eased);
+        constrainLegendaryPreVideoDarkness(storm);
         if (storm.phaseTime >= duration) {
             transitionLegendaryStormPhase?.('escalation');
         }
@@ -367,7 +423,8 @@ export function updateLegendaryStormDirector({
     if (storm.phase === 'escalation') {
         const duration = timings.escalation;
         const progress = clamp01(storm.phaseTime / duration);
-        const eased = smooth01(progress);
+        const eased = easeInOutQuint(progress);
+        const surge = easeOutQuint(clamp01((progress - 0.12) / 0.88));
         const visiblePulse = clusteredPulse(
             storm.phaseTime * (storm.reducedMotion ? 0.5 : 0.78),
             storm.seed + 9.3,
@@ -381,29 +438,35 @@ export function updateLegendaryStormDirector({
         maybeRefreshLegendaryStormStrikeGeometry?.('escalation', 0.28, 0.54);
         storm.strikeScreenX = THREE.MathUtils.clamp(escalationSkyX, 0.2, 0.8);
         storm.strikeScreenY = THREE.MathUtils.clamp(escalationSkyY, 0.13, 0.4);
-        storm.environmentMix = THREE.MathUtils.lerp(0.82, 1, eased);
-        storm.darkness = THREE.MathUtils.lerp(0.66, 0.92, eased);
-        storm.mist = THREE.MathUtils.lerp(0.26, 0.34, eased);
-        storm.flash = clamp01(visiblePulse * 0.16 + sheetPulse * 0.08);
-        storm.nightfallProgress = THREE.MathUtils.lerp(storm.lightweightMode ? 0.78 : 0.9, 1, eased);
-        storm.overlayOpacity = THREE.MathUtils.lerp(1, 0.88, eased);
-        storm.lightningMix = clamp01(visiblePulse * 0.54 + sheetPulse * 0.22 + 0.12);
+        storm.environmentMix = THREE.MathUtils.lerp(0.82, 1, surge);
+        storm.darkness = THREE.MathUtils.lerp(0.66, 0.96, surge);
+        storm.mist = THREE.MathUtils.lerp(0.26, 0.4, surge);
+        storm.flash = clamp01(visiblePulse * 0.18 + sheetPulse * 0.1 + surge * 0.04);
+        storm.nightfallProgress = THREE.MathUtils.lerp(storm.lightweightMode ? 0.78 : 0.9, 1, surge);
+        storm.overlayOpacity = THREE.MathUtils.lerp(1, 0.92, eased);
+        storm.lightningMix = clamp01(visiblePulse * 0.6 + sheetPulse * 0.3 + surge * 0.16);
         storm.cloudShiftPx =
             storm.totalTime * drift.fast * (0.5 + eased * 0.24) +
-            Math.sin(storm.totalTime * 0.86 + storm.seed * 0.7) * (2.8 + eased * 2.3);
+            Math.sin(storm.totalTime * 0.86 + storm.seed * 0.7) * (2.8 + surge * 2.8);
         storm.cloudShiftAltPx =
             storm.totalTime * drift.slow * (0.34 + eased * 0.18) +
-            Math.cos(storm.totalTime * 0.68 + storm.seed * 0.5) * (3.1 + eased * 2.5);
-        storm.boltOpacity = clamp01(visiblePulse * 0.5 + sheetPulse * 0.12);
-        storm.cloudFlash = clamp01(visiblePulse * 0.34 + sheetPulse * 0.22 + eased * 0.1);
-        storm.cloudSheet = clamp01((sheetPulse * 0.34 + visiblePulse * 0.14) * cloudContrastGain);
-        storm.groundGlow = clamp01(visiblePulse * 0.08 * groundSpillGain);
-        storm.boltGlowOpacity = clamp01(visiblePulse * 0.68 + sheetPulse * 0.14);
-        storm.boltBranchOpacity = clamp01(visiblePulse * 0.38 + sheetPulse * 0.08);
-        storm.returnStroke = clamp01((visiblePulse * 0.18 + sheetPulse * 0.06) * returnStrokeGain);
-        storm.boltScale = THREE.MathUtils.lerp(1.06, storm.lightweightMode ? 1.34 : 1.5, eased);
-        storm.boltHeightScale = THREE.MathUtils.lerp(0.84, 1.08, eased);
-        storm.revealEnergy = clamp01(0.18 + visiblePulse * 0.18 + sheetPulse * 0.08);
+            Math.cos(storm.totalTime * 0.68 + storm.seed * 0.5) * (3.1 + surge * 3.1);
+        storm.boltOpacity = clamp01(visiblePulse * 0.54 + sheetPulse * 0.14 + surge * 0.06);
+        storm.cloudFlash = clamp01(visiblePulse * 0.38 + sheetPulse * 0.24 + surge * 0.12);
+        storm.cloudSheet = clamp01((sheetPulse * 0.38 + visiblePulse * 0.16 + surge * 0.06) * cloudContrastGain);
+        storm.groundGlow = clamp01((visiblePulse * 0.1 + surge * 0.04) * groundSpillGain);
+        storm.boltGlowOpacity = clamp01(visiblePulse * 0.72 + sheetPulse * 0.18 + surge * 0.04);
+        storm.boltBranchOpacity = clamp01(visiblePulse * 0.42 + sheetPulse * 0.1 + surge * 0.04);
+        storm.returnStroke = clamp01((visiblePulse * 0.22 + sheetPulse * 0.08 + surge * 0.04) * returnStrokeGain);
+        storm.boltScale = THREE.MathUtils.lerp(1.06, storm.lightweightMode ? 1.42 : 1.62, surge);
+        storm.boltHeightScale = THREE.MathUtils.lerp(0.84, 1.12, surge);
+        storm.revealEnergy = clamp01(0.22 + visiblePulse * 0.22 + sheetPulse * 0.12 + surge * 0.08);
+        storm.vortexEnergy = THREE.MathUtils.lerp(0.4, 1.0, easeInOutQuint(progress));
+        storm.godRayIntensity = THREE.MathUtils.lerp(0.02, 0.12, surge) + visiblePulse * 0.06;
+        storm.screenShake = clamp01(visiblePulse * 0.04 + sheetPulse * 0.02);
+        storm.vignetteStrength = THREE.MathUtils.lerp(0.25, 0.66, surge);
+        storm.chromaticAberration = clamp01(visiblePulse * 0.1 + sheetPulse * 0.06 + surge * 0.04);
+        constrainLegendaryPreVideoDarkness(storm);
         if (storm.phaseTime >= duration) {
             transitionLegendaryStormPhase?.('transitionStrike');
         }
@@ -416,7 +479,8 @@ export function updateLegendaryStormDirector({
             ? storm.phaseTime
             : Math.min(storm.phaseTime, duration * 0.8);
         const progress = clamp01(Math.min(visualTime, duration) / duration);
-        const eased = smooth01(progress);
+        const eased = easeInOutQuint(progress);
+        const fractureLift = easeOutExpo(clamp01((progress - 0.1) / 0.38));
         const leaderStrike = steppedLeaderStrike({
             storm,
             duration,
@@ -439,26 +503,32 @@ export function updateLegendaryStormDirector({
             : 1 - smooth01((progress - 0.14) / 0.86);
         storm.strikeScreenX = 0.5 + Math.sin(storm.seed * 1.7) * 0.035;
         storm.strikeScreenY = 0.21;
-        storm.environmentMix = THREE.MathUtils.lerp(1, 0.24, eased);
-        storm.darkness = THREE.MathUtils.lerp(0.92, 0.18, eased);
-        storm.mist = THREE.MathUtils.lerp(0.34, 0.04, eased);
-        storm.flash = clamp01(leaderStrike.envelope * 1.08 + leaderStrike.returnStroke * 0.38 + strikeWhiteout * 0.18 + cover * 0.16);
+        storm.environmentMix = THREE.MathUtils.lerp(1, 0.18, eased);
+        storm.darkness = THREE.MathUtils.lerp(0.92, 0.14, eased);
+        storm.mist = THREE.MathUtils.lerp(0.34, 0.02, easeOutQuint(progress));
+        storm.flash = clamp01(leaderStrike.envelope * 1.12 + leaderStrike.returnStroke * 0.42 + strikeWhiteout * 0.2 + cover * 0.2);
         storm.whiteout = clamp01(strikeWhiteout * (lightVariant ? 0.72 : 0.9) + leaderStrike.returnStroke * 0.22 + leaderStrike.afterimage * 0.06);
         storm.nightfallProgress = THREE.MathUtils.lerp(1, 0.06, revealProgress);
-        storm.overlayOpacity = THREE.MathUtils.lerp(0.9, 0.68, eased);
-        storm.lightningMix = clamp01(leaderStrike.envelope + leaderStrike.returnStroke * 0.28 + storm.whiteout * 0.12);
+        storm.overlayOpacity = THREE.MathUtils.lerp(0.92, 0.64, eased);
+        storm.lightningMix = clamp01(leaderStrike.envelope + leaderStrike.returnStroke * 0.34 + storm.whiteout * 0.14 + fractureLift * 0.08);
         storm.cloudShiftPx = storm.totalTime * drift.fast * 1.12;
         storm.cloudShiftAltPx = storm.totalTime * drift.slow * 0.9;
         storm.boltOpacity = clamp01(leaderStrike.leader * 1.02 + leaderStrike.returnStroke * 0.52 + leaderStrike.afterimage * 0.08);
-        storm.cloudFlash = clamp01(leaderStrike.envelope * 0.74 + strikeWhiteout * 0.34 + leaderStrike.returnStroke * 0.18);
-        storm.cloudSheet = clamp01((leaderStrike.returnStroke * 0.66 + leaderStrike.afterimage * 0.22) * cloudContrastGain);
+        storm.cloudFlash = clamp01(leaderStrike.envelope * 0.78 + strikeWhiteout * 0.36 + leaderStrike.returnStroke * 0.2 + fractureLift * 0.08);
+        storm.cloudSheet = clamp01((leaderStrike.returnStroke * 0.72 + leaderStrike.afterimage * 0.24 + fractureLift * 0.08) * cloudContrastGain);
         storm.boltGlowOpacity = clamp01(leaderStrike.envelope + leaderStrike.returnStroke * 0.32 + strikeWhiteout * 0.08);
-        storm.boltBranchOpacity = clamp01(leaderStrike.envelope * 0.74 + leaderStrike.returnStroke * 0.12);
+        storm.boltBranchOpacity = clamp01(leaderStrike.envelope * 0.8 + leaderStrike.returnStroke * 0.14 + fractureLift * 0.04);
         storm.returnStroke = clamp01((leaderStrike.returnStroke + leaderStrike.afterimage * 0.16) * returnStrokeGain);
         storm.boltScale = THREE.MathUtils.lerp(1.18, storm.lightweightMode ? 1.9 : 2.18, clamp01(leaderStrike.envelope * 0.7 + leaderStrike.returnStroke * 0.3));
         storm.boltHeightScale = THREE.MathUtils.lerp(1.02, storm.lightweightMode ? 1.2 : 1.32, clamp01(leaderStrike.envelope * 0.68 + leaderStrike.returnStroke * 0.32));
-        storm.revealEnergy = clamp01(0.28 + leaderStrike.envelope * 0.24);
+        storm.revealEnergy = clamp01(0.32 + leaderStrike.envelope * 0.3 + fractureLift * 0.08);
+        storm.godRayIntensity = clamp01(fractureLift * 0.18 + leaderStrike.returnStroke * 0.12);
+        storm.vortexEnergy = clamp01(1.0 - revealProgress * 0.6);
+        storm.vignetteStrength = clamp01(0.6 + leaderStrike.returnStroke * 0.3 - revealProgress * 0.4);
+        storm.chromaticAberration = clamp01(leaderStrike.returnStroke * 0.42 + leaderStrike.envelope * 0.18 + strikeWhiteout * 0.12);
+        storm.screenShake = clamp01(leaderStrike.returnStroke * 0.46 + strikeWhiteout * 0.22);
         storm.videoOpacity = storm.videoFrameReady ? revealProgress : 0;
+        constrainLegendaryPreVideoDarkness(storm);
         if (
             storm.phaseTime >= Math.min(duration * 0.26, 0.24) &&
             !storm.videoStartConfirmed &&
@@ -499,7 +569,7 @@ export function updateLegendaryStormDirector({
     if (storm.phase === 'postVideoStormHold') {
         const duration = timings.postVideoStormHold;
         const progress = clamp01(storm.phaseTime / duration);
-        const stormReveal = smooth01(clamp01((progress - 0.08) / 0.92));
+        const stormReveal = easeInOutQuint(clamp01((progress - 0.08) / 0.92));
         const whiteBridge = 1 - smooth01(clamp01(progress / 0.42));
         const holdLightning = clusteredPulse(
             storm.phaseTime * (storm.reducedMotion ? 0.28 : 0.42),
@@ -512,27 +582,30 @@ export function updateLegendaryStormDirector({
         }
         storm.strikeScreenX = THREE.MathUtils.clamp(ambientIdleSkyX, 0.24, 0.76);
         storm.strikeScreenY = THREE.MathUtils.clamp(ambientIdleSkyY, 0.16, 0.36);
-        storm.environmentMix = THREE.MathUtils.lerp(0.14, 0.4, stormReveal);
-        storm.darkness = THREE.MathUtils.lerp(0.02, 0.14, stormReveal);
-        storm.mist = THREE.MathUtils.lerp(0.025, Math.max(0.08, lingeringMistFloor + 0.02), stormReveal);
-        storm.flash = clamp01(whiteBridge * 0.16 + holdLightning * 0.06);
+        storm.environmentMix = THREE.MathUtils.lerp(0.16, 0.46, stormReveal);
+        storm.darkness = THREE.MathUtils.lerp(0.04, 0.18, stormReveal);
+        storm.mist = THREE.MathUtils.lerp(0.025, Math.max(0.1, lingeringMistFloor + 0.04), stormReveal);
+        storm.flash = clamp01(whiteBridge * 0.18 + holdLightning * 0.08);
         storm.whiteout = clamp01(whiteBridge * (lightVariant ? 0.8 : 0.96));
-        storm.nightfallProgress = THREE.MathUtils.lerp(0.02, 0.18, stormReveal);
-        storm.lightningMix = clamp01(whiteBridge * 0.06 + 0.08 + holdLightning * 0.24);
+        storm.nightfallProgress = THREE.MathUtils.lerp(0.02, 0.22, stormReveal);
+        storm.lightningMix = clamp01(whiteBridge * 0.08 + 0.1 + holdLightning * 0.28 + stormReveal * 0.04);
         storm.cloudShiftPx = storm.totalTime * drift.fast * 0.5;
         storm.cloudShiftAltPx = storm.totalTime * drift.slow * 0.36;
-        storm.boltOpacity = clamp01(holdLightning * 0.2);
-        storm.cloudFlash = clamp01(whiteBridge * 0.26 + 0.06 + holdLightning * 0.18);
-        storm.cloudSheet = clamp01((whiteBridge * 0.72 + 0.06 + holdLightning * 0.12) * cloudContrastGain);
-        storm.groundGlow = clamp01(holdLightning * 0.12 * groundSpillGain);
-        storm.boltGlowOpacity = clamp01(whiteBridge * 0.08 + 0.06 + holdLightning * 0.24);
-        storm.boltBranchOpacity = clamp01(holdLightning * 0.14);
-        storm.returnStroke = clamp01(holdLightning * 0.08 * returnStrokeGain);
+        storm.boltOpacity = clamp01(holdLightning * 0.24);
+        storm.cloudFlash = clamp01(whiteBridge * 0.3 + 0.06 + holdLightning * 0.22);
+        storm.cloudSheet = clamp01((whiteBridge * 0.78 + 0.08 + holdLightning * 0.16) * cloudContrastGain);
+        storm.groundGlow = clamp01((holdLightning * 0.16 + stormReveal * 0.06) * groundSpillGain);
+        storm.boltGlowOpacity = clamp01(whiteBridge * 0.1 + 0.08 + holdLightning * 0.28);
+        storm.boltBranchOpacity = clamp01(holdLightning * 0.18);
+        storm.returnStroke = clamp01((holdLightning * 0.1 + stormReveal * 0.04) * returnStrokeGain);
         storm.overlayOpacity = 1;
-        storm.boltScale = THREE.MathUtils.lerp(0.98, 1.12, stormReveal);
-        storm.boltHeightScale = THREE.MathUtils.lerp(0.88, 1.02, stormReveal);
-        storm.previewBlend = THREE.MathUtils.lerp(0.12, previewStormBlend * 0.68, stormReveal);
-        storm.revealEnergy = clamp01(0.26 + holdLightning * 0.24);
+        storm.boltScale = THREE.MathUtils.lerp(0.98, 1.16, stormReveal);
+        storm.boltHeightScale = THREE.MathUtils.lerp(0.88, 1.04, stormReveal);
+        storm.previewBlend = THREE.MathUtils.lerp(0.16, previewStormBlend * 0.74, stormReveal);
+        storm.revealEnergy = clamp01(0.32 + stormReveal * 0.14 + holdLightning * 0.26);
+        storm.godRayIntensity = THREE.MathUtils.lerp(0.1, 0.44, stormReveal) + holdLightning * 0.1;
+        storm.vignetteStrength = THREE.MathUtils.lerp(0.34, 0.18, stormReveal);
+        storm.chromaticAberration = clamp01(holdLightning * 0.08);
         if (storm.phaseTime >= duration) {
             transitionLegendaryStormPhase?.('targetedImpact');
         }
@@ -542,7 +615,7 @@ export function updateLegendaryStormDirector({
     if (storm.phase === 'targetedImpact') {
         const duration = timings.targetedImpact;
         const progress = clamp01(storm.phaseTime / duration);
-        const eased = smooth01(progress);
+        const eased = easeInOutQuint(progress);
         const impactMoment = Math.max(0.1, duration * (storm.reducedMotion ? 0.18 : 0.22));
         const detonationWindow = Math.max(0.28, duration * (storm.reducedMotion ? 0.58 : 0.72));
         const leaderStrike = steppedLeaderStrike({
@@ -571,7 +644,7 @@ export function updateLegendaryStormDirector({
         }
         const impactElapsed = Math.max(0, storm.phaseTime - impactMoment);
         const detonationProgress = clamp01(impactElapsed / detonationWindow);
-        const detonationAttack = smooth01(clamp01(detonationProgress / 0.16));
+        const detonationAttack = easeOutQuint(clamp01(detonationProgress / 0.16));
         const detonationDecay = 1 - smooth01(clamp01((detonationProgress - 0.08) / 0.92));
         const detonationCore = storm.landingImpactTriggered
             ? clamp01(detonationAttack * detonationDecay)
@@ -586,6 +659,7 @@ export function updateLegendaryStormDirector({
         const impactAfterglow = storm.landingImpactTriggered
             ? clamp01(1 - impactElapsed / Math.max(0.14, duration * 0.82))
             : 0;
+        const detonationSurge = easeOutQuint(detonationProgress);
         const detonationWhiteout = progress < 0.12
             ? smooth01(progress / 0.12)
             : 1 - smooth01((progress - 0.12) / 0.88);
@@ -600,7 +674,7 @@ export function updateLegendaryStormDirector({
         storm.environmentMix = THREE.MathUtils.lerp(0.4, 0.3, eased);
         storm.darkness = THREE.MathUtils.lerp(0.14, 0.08, eased);
         storm.mist = THREE.MathUtils.lerp(Math.max(0.08, lingeringMistFloor + 0.02), Math.max(0.06, lingeringMistFloor), eased);
-        storm.flash = clamp01(impactEnvelope * 1.04 + detonationWhiteout * 0.14 + explosionEnvelope * 0.34);
+        storm.flash = clamp01(impactEnvelope * 1.08 + detonationWhiteout * 0.16 + explosionEnvelope * 0.4);
         storm.whiteout = clamp01(
             detonationWhiteout * (lightVariant ? 0.64 : 0.84) +
             detonationCore * (lightVariant ? 0.58 : 0.88) +
@@ -608,11 +682,11 @@ export function updateLegendaryStormDirector({
             detonationBurst * 0.08
         );
         storm.nightfallProgress = THREE.MathUtils.lerp(0.18, 0.12, eased);
-        storm.lightningMix = clamp01(impactEnvelope + storm.whiteout * 0.12 + explosionEnvelope * 0.28);
+        storm.lightningMix = clamp01(impactEnvelope + storm.whiteout * 0.14 + explosionEnvelope * 0.32 + detonationSurge * 0.06);
         storm.boltOpacity = clamp01(leaderStrike.leader * 0.9 + impactEnvelope * 0.92 + leaderStrike.afterimage * 0.08);
-        storm.cloudFlash = clamp01(impactEnvelope * 0.88 + storm.whiteout * 0.18 + detonationCore * 0.42);
-        storm.cloudSheet = clamp01((leaderStrike.returnStroke * 0.92 + detonationCore * 0.5 + impactAfterglow * 0.28 + detonationBurst * 0.16) * cloudContrastGain);
-        storm.groundGlow = clamp01((impactEnvelope * 0.78 + detonationCore * 0.94 + impactAfterglow * 0.38) * groundSpillGain);
+        storm.cloudFlash = clamp01(impactEnvelope * 0.92 + storm.whiteout * 0.22 + detonationCore * 0.46);
+        storm.cloudSheet = clamp01((leaderStrike.returnStroke * 0.96 + detonationCore * 0.56 + impactAfterglow * 0.3 + detonationBurst * 0.18 + detonationSurge * 0.08) * cloudContrastGain);
+        storm.groundGlow = clamp01((impactEnvelope * 0.82 + detonationCore * 0.98 + impactAfterglow * 0.42) * groundSpillGain);
         storm.impactCore = clamp01((detonationCore * 1.42 + detonationBurst * 0.28) * (lightVariant ? 0.94 : 1.08));
         storm.impactBloom = clamp01((explosionEnvelope * 1.46 + detonationBurst * 0.34 + impactAfterglow * 0.28) * impactBloomGain * (lightVariant ? 0.88 : 1.04));
         storm.impactRing = clamp01(Math.sin(detonationProgress * Math.PI) * (0.88 + detonationCore * 0.96 + detonationBurst * 0.24));
@@ -634,7 +708,11 @@ export function updateLegendaryStormDirector({
         storm.cloudShiftPx = storm.totalTime * drift.fast * 0.44;
         storm.cloudShiftAltPx = storm.totalTime * drift.slow * 0.32;
         storm.previewBlend = THREE.MathUtils.lerp(previewStormBlend * 0.34, previewStormBlend * 0.58, detonationProgress);
-        storm.revealEnergy = clamp01(explosionEnvelope * 0.92 + impactAfterglow * 0.56);
+        storm.revealEnergy = clamp01(explosionEnvelope * 1.04 + impactAfterglow * 0.62 + detonationSurge * 0.08);
+        storm.godRayIntensity = clamp01(detonationCore * 1.28 + impactAfterglow * 0.62 + detonationBurst * 0.22);
+        storm.chromaticAberration = clamp01(detonationCore * 0.62 + leaderStrike.returnStroke * 0.28 + detonationBurst * 0.14);
+        storm.screenShake = clamp01(detonationCore * 0.94 + detonationBurst * 0.28 + impactAfterglow * 0.16);
+        storm.vignetteStrength = clamp01(0.52 + detonationCore * 0.42 + detonationBurst * 0.14);
         if (storm.phaseTime >= duration) {
             transitionLegendaryStormPhase?.('boxMaterialize');
         }
@@ -644,7 +722,7 @@ export function updateLegendaryStormDirector({
     if (storm.phase === 'boxMaterialize') {
         const duration = timings.boxMaterialize;
         const progress = clamp01(storm.phaseTime / duration);
-        const eased = smooth01(progress);
+        const eased = easeInOutQuint(progress);
         const settlePulse = clusteredPulse(
             storm.phaseTime * (storm.reducedMotion ? 0.24 : 0.38),
             storm.seed + 32.6,
@@ -660,31 +738,34 @@ export function updateLegendaryStormDirector({
         maybeRefreshLegendaryStormStrikeGeometry?.('persistent', 0.56, 0.96);
         storm.strikeScreenX = THREE.MathUtils.clamp(ambientIdleSkyX, 0.24, 0.76);
         storm.strikeScreenY = THREE.MathUtils.clamp(ambientIdleSkyY, 0.16, 0.36);
-        storm.environmentMix = THREE.MathUtils.lerp(0.44, 0.26, eased);
-        storm.darkness = THREE.MathUtils.lerp(lightVariant ? 0.12 : 0.18, lightVariant ? 0.04 : 0.08, eased);
-        storm.mist = THREE.MathUtils.lerp(Math.max(lingeringMistFloor, 0.09), Math.max(lingeringMistFloor, 0.05), eased);
-        storm.flash = clamp01(settlePulse * 0.05 + (1 - eased) * 0.04);
+        storm.environmentMix = THREE.MathUtils.lerp(0.48, 0.22, eased);
+        storm.darkness = THREE.MathUtils.lerp(lightVariant ? 0.1 : 0.18, lightVariant ? 0.03 : 0.06, eased);
+        storm.mist = THREE.MathUtils.lerp(Math.max(lingeringMistFloor, 0.1), Math.max(lingeringMistFloor, 0.05), eased);
+        storm.flash = clamp01(settlePulse * 0.08 + (1 - eased) * 0.05);
         storm.whiteout = clamp01((1 - eased) * (lightVariant ? 0.06 : 0.08));
         storm.nightfallProgress = THREE.MathUtils.lerp(0.3, 0.12, eased);
-        storm.lightningMix = clamp01(0.12 + settlePulse * 0.2);
+        storm.lightningMix = clamp01(0.14 + settlePulse * 0.24);
         storm.cloudShiftPx = storm.totalTime * drift.fast * 0.36;
         storm.cloudShiftAltPx = storm.totalTime * drift.slow * 0.26;
-        storm.boltOpacity = clamp01(0.1 + settlePulse * 0.16);
-        storm.cloudFlash = clamp01(0.08 + settlePulse * 0.14);
-        storm.cloudSheet = clamp01((0.06 + settlePulse * 0.1) * cloudContrastGain);
-        storm.groundGlow = THREE.MathUtils.lerp(lingeringGroundGlow * 1.48, lingeringGroundGlow, eased);
-        storm.impactBloom = THREE.MathUtils.lerp(0.52 * impactBloomGain, 0.26 * impactBloomGain, eased);
+        storm.boltOpacity = clamp01(0.12 + settlePulse * 0.18);
+        storm.cloudFlash = clamp01(0.1 + settlePulse * 0.16);
+        storm.cloudSheet = clamp01((0.08 + settlePulse * 0.12) * cloudContrastGain);
+        storm.groundGlow = THREE.MathUtils.lerp(lingeringGroundGlow * 1.68, lingeringGroundGlow * 1.08, eased);
+        storm.impactBloom = THREE.MathUtils.lerp(0.64 * impactBloomGain, 0.28 * impactBloomGain, eased);
         storm.impactCore = THREE.MathUtils.lerp(0.28, 0.12, eased);
         storm.impactRing = THREE.MathUtils.lerp(0.16, 0, eased);
         storm.impactRadius = THREE.MathUtils.lerp(0.62, 0.3, eased);
-        storm.boltGlowOpacity = clamp01(0.14 + settlePulse * 0.18);
-        storm.boltBranchOpacity = clamp01(0.08 + settlePulse * 0.12);
-        storm.returnStroke = clamp01((0.05 + settlePulse * 0.1) * returnStrokeGain);
+        storm.boltGlowOpacity = clamp01(0.16 + settlePulse * 0.2);
+        storm.boltBranchOpacity = clamp01(0.1 + settlePulse * 0.14);
+        storm.returnStroke = clamp01((0.06 + settlePulse * 0.12) * returnStrokeGain);
         storm.overlayOpacity = 1;
         storm.boltScale = THREE.MathUtils.lerp(1.12, 0.98, eased);
         storm.boltHeightScale = THREE.MathUtils.lerp(1.04, 0.94, eased);
-        storm.previewBlend = THREE.MathUtils.lerp(previewStormBlend * 0.56, previewStormBlend * 0.82, eased);
-        storm.revealEnergy = clamp01(0.72 - eased * 0.18 + settlePulse * 0.16);
+        storm.previewBlend = THREE.MathUtils.lerp(previewStormBlend * 0.6, previewStormBlend * 0.9, eased);
+        storm.revealEnergy = clamp01(0.78 - eased * 0.12 + settlePulse * 0.18);
+        storm.godRayIntensity = THREE.MathUtils.lerp(0.42, 0.22, eased) + settlePulse * 0.1;
+        storm.vignetteStrength = THREE.MathUtils.lerp(0.4, 0.18, eased);
+        storm.chromaticAberration = clamp01(settlePulse * 0.04);
         if (storm.phaseTime >= duration) {
             requestMysteryFlightReturn?.();
             transitionLegendaryStormPhase?.('idleStormReveal');
@@ -726,11 +807,13 @@ export function updateLegendaryStormDirector({
         storm.boltGlowOpacity = clamp01(0.12 + ambientLightning * 0.18);
         storm.boltBranchOpacity = clamp01(0.08 + ambientLightning * 0.12);
         storm.returnStroke = clamp01(ambientLightning * 0.1 * returnStrokeGain);
-        storm.overlayOpacity = lightVariant ? 0.56 : 0.66;
+        storm.overlayOpacity = lightVariant ? 0.5 : 0.62;
         storm.boltScale = 1;
         storm.boltHeightScale = 0.94;
-        storm.previewBlend = previewStormBlend;
-        storm.revealEnergy = clamp01(0.46 + ambientLightning * 0.34 + ambientSheet * 0.18);
+        storm.previewBlend = previewStormBlend * 1.04;
+        storm.revealEnergy = clamp01(0.56 + ambientLightning * 0.28 + ambientSheet * 0.14);
+        storm.godRayIntensity = clamp01(0.18 + ambientLightning * 0.12 + ambientSheet * 0.08);
+        storm.vignetteStrength = lightVariant ? 0.1 : 0.16;
         if (storm.dissipateRequested) {
             transitionLegendaryStormPhase?.('stormDissipate');
         }
@@ -774,6 +857,8 @@ export function updateLegendaryStormDirector({
         storm.boltHeightScale = THREE.MathUtils.lerp(0.94, 0.86, eased);
         storm.previewBlend = THREE.MathUtils.lerp(previewStormBlend, 0, eased);
         storm.revealEnergy = THREE.MathUtils.lerp(0.42, 0, eased);
+        storm.godRayIntensity = THREE.MathUtils.lerp(0.1, 0, eased);
+        storm.vignetteStrength = THREE.MathUtils.lerp(lightVariant ? 0.12 : 0.18, 0, eased);
         if (storm.phaseTime >= duration) {
             onStormCompleted?.();
             return { completed: true };

@@ -94,6 +94,29 @@ html, body {
     pointer-events: auto;
 }
 
+.layout-interaction-shield {
+    position: fixed;
+    inset: 0;
+    z-index: 21000;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: rgba(2, 8, 20, 0.001);
+    touch-action: none;
+    user-select: none;
+    cursor: progress;
+    transition: opacity 120ms ease, visibility 0s linear 120ms;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.layout-interaction-shield.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 80ms ease;
+}
+
 /* Immersive mode settings */
 .layout-container.home-immersive .main-content {
     padding: 0;

@@ -9,6 +9,7 @@ import './BottomNavigation.css';
 interface BottomNavigationProps {
     onOpenSettings: () => void;
     isSettingsOpen: boolean;
+    isInteractionLocked?: boolean;
 }
 
 const HOME_TRANSITION_NAV_DELAY_MS = 16;
@@ -22,7 +23,11 @@ const CLASSROOM_IMMERSIVE_SCOPE = 'classroom-3d';
 const CLASSROOM_IMMERSIVE_OPEN_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_OPEN';
 const CLASSROOM_IMMERSIVE_CLOSE_MESSAGE = 'LAHS_CLASSROOM_IMMERSIVE_CLOSE';
 
-export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettings, isSettingsOpen }) => {
+export const BottomNavigation: React.FC<BottomNavigationProps> = ({
+    onOpenSettings,
+    isSettingsOpen,
+    isInteractionLocked = false,
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { totalPoints, stars } = usePoints();
@@ -87,6 +92,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     }, []);
 
     const startHomepageTransition = useCallback(() => {
+        if (isInteractionLocked) {
+            return;
+        }
         if (homeTransitionPhase !== 'idle') {
             return;
         }
@@ -105,7 +113,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             }
             navigate('/home-profile');
         }, HOME_TRANSITION_NAV_DELAY_MS);
-    }, [clearHomeTransitionTimers, homeTransitionPhase, location.pathname, navigate]);
+    }, [clearHomeTransitionTimers, homeTransitionPhase, isInteractionLocked, location.pathname, navigate]);
 
     const handleSliderHomeClick = useCallback(() => {
         setExpandedMode(false);
@@ -113,9 +121,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     }, [startHomepageTransition]);
 
     const openMiniAppSlider = useCallback(() => {
+        if (isInteractionLocked) {
+            return;
+        }
         setFavoriteGameIds(readFavoriteGameIds());
         setExpandedMode(true);
-    }, []);
+    }, [isInteractionLocked]);
 
     const enforceGameDockFlush = useCallback(() => {
         setExpandedMode(false);
@@ -939,12 +950,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
     return (
         <>
             <nav 
-                className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''} ${expandedMode ? 'expanded' : ''} ${isStatsMinimized ? 'stats-minimized-active' : ''}`} 
+                className={`bottom-navigation-dock ${isMinimized ? 'minimized' : ''} ${expandedMode ? 'expanded' : ''} ${isStatsMinimized ? 'stats-minimized-active' : ''} ${isInteractionLocked ? 'is-locked' : ''}`}
                 aria-label="Main navigation"
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-                onClickCapture={handleClickCapture}
+                aria-hidden={isInteractionLocked}
+                onTouchStart={isInteractionLocked ? undefined : onTouchStart}
+                onTouchMove={isInteractionLocked ? undefined : onTouchMove}
+                onTouchEnd={isInteractionLocked ? undefined : onTouchEnd}
+                onClickCapture={isInteractionLocked ? undefined : handleClickCapture}
             >
             {/* Restore Handle (Thin Line) - Visible only when minimized */}
             <button
@@ -973,7 +985,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         onClick={onOpenSettings}
                         aria-label="Open settings"
                         title="Settings"
-                        tabIndex={expandedMode ? -1 : 0}
+                        aria-disabled={isInteractionLocked}
+                        tabIndex={isInteractionLocked ? -1 : (expandedMode ? -1 : 0)}
                     >
                         <span className="nav-settings-icon" aria-hidden="true">
                             <span className="settings-square"></span>
@@ -987,7 +1000,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         className={`nav-tab-btn ${isHomeActive ? 'active' : ''}`}
                         onClick={startHomepageTransition}
                         aria-label="Homepage"
-                        tabIndex={expandedMode ? -1 : 0}
+                        aria-disabled={isInteractionLocked}
+                        tabIndex={isInteractionLocked ? -1 : (expandedMode ? -1 : 0)}
                     >
                         <span className="nav-tab-icon" aria-hidden="true">🏠</span>
                         <span>Homepage</span>
@@ -998,7 +1012,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         className={`nav-tab-btn ${isGamesActive ? 'active' : ''}`}
                         onClick={() => navigate('/apps')}
                         aria-label="Games"
-                        tabIndex={expandedMode ? -1 : 0}
+                        aria-disabled={isInteractionLocked}
+                        tabIndex={isInteractionLocked ? -1 : (expandedMode ? -1 : 0)}
                     >
                         <span className="nav-tab-icon" aria-hidden="true">🎮</span>
                         <span>Games</span>
@@ -1009,7 +1024,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                         className={`nav-tab-btn ${isClassroomActive ? 'active' : ''}`}
                         onClick={() => navigate('/classroom')}
                         aria-label="Classroom"
-                        tabIndex={expandedMode ? -1 : 0}
+                        aria-disabled={isInteractionLocked}
+                        tabIndex={isInteractionLocked ? -1 : (expandedMode ? -1 : 0)}
                     >
                         <span className="nav-tab-icon" aria-hidden="true">🏫</span>
                         <span>Classroom</span>
@@ -1028,7 +1044,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                             className="nav-slider-item"
                             onClick={handleSliderHomeClick}
                             title="Home"
-                            tabIndex={expandedMode ? 0 : -1}
+                            aria-disabled={isInteractionLocked}
+                            tabIndex={isInteractionLocked ? -1 : (expandedMode ? 0 : -1)}
                         >
                             <span className="nav-slider-icon">🏠</span>
                             <span className="nav-slider-label">Home</span>
@@ -1047,7 +1064,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                     className="nav-slider-item has-image"
                                     onClick={() => navigate(`/play/${game.id}`)}
                                     title={game.title}
-                                    tabIndex={expandedMode ? 0 : -1}
+                                    aria-disabled={isInteractionLocked}
+                                    tabIndex={isInteractionLocked ? -1 : (expandedMode ? 0 : -1)}
                                 >
                                     <span className="nav-slider-icon">
                                         {showGameImage ? (
@@ -1079,7 +1097,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                                     navigate('/apps');
                                 }}
                                 title="Open Games to save favorites"
-                                tabIndex={expandedMode ? 0 : -1}
+                                aria-disabled={isInteractionLocked}
+                                tabIndex={isInteractionLocked ? -1 : (expandedMode ? 0 : -1)}
                             >
                                 <span className="nav-slider-icon" aria-hidden="true">⭐</span>
                                 <span className="nav-slider-label">Save favorites in Games</span>
@@ -1111,14 +1130,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
             </nav>
 
                 <aside
-                className={`bottom-stats-dock ${shouldShowStatsDock ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''}`}
+                className={`bottom-stats-dock ${shouldShowStatsDock ? 'visible' : 'hidden'} ${isStatsMinimized ? 'minimized' : ''} ${isStatsLineDormant ? 'dormant' : ''} ${isStatsLinePulsing ? 'pulse' : ''} ${isStatsLineAwakeFlash ? 'awake' : ''} ${isInteractionLocked ? 'is-locked' : ''}`}
                 aria-label="User stats"
-                aria-hidden={!shouldShowStatsDock}
+                aria-hidden={!shouldShowStatsDock || isInteractionLocked}
                 style={{ '--stats-pulse-count': String(statsPulseCount) } as React.CSSProperties}
-                onTouchStart={onStatsTouchStart}
-                onTouchMove={onStatsTouchMove}
-                onTouchEnd={onStatsTouchEnd}
-                onClickCapture={handleStatsClickCapture}
+                onTouchStart={isInteractionLocked ? undefined : onStatsTouchStart}
+                onTouchMove={isInteractionLocked ? undefined : onStatsTouchMove}
+                onTouchEnd={isInteractionLocked ? undefined : onStatsTouchEnd}
+                onClickCapture={isInteractionLocked ? undefined : handleStatsClickCapture}
             >
                     <button
                         type="button"
@@ -1161,14 +1180,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
                     </div>
                 </aside>
             {isMinimized && isStatsMinimized && !isGameLikeImmersive ? (
-                <button
-                    type="button"
-                    className="stats-wake-zone"
-                    aria-label={isStatsLineDormant ? "Activate dock handle glow" : "Open bottom tabs"}
-                    title={isStatsLineDormant ? "Tap once to wake handle, tap again or slide right to open" : "Tap to open bottom tabs"}
-                    onPointerDown={handleWakeZonePress}
-                />
-            ) : null}
+                    <button
+                        type="button"
+                        className={`stats-wake-zone ${isInteractionLocked ? 'is-locked' : ''}`}
+                        aria-hidden={isInteractionLocked}
+                        aria-label={isStatsLineDormant ? "Activate dock handle glow" : "Open bottom tabs"}
+                        title={isStatsLineDormant ? "Tap once to wake handle, tap again or slide right to open" : "Tap to open bottom tabs"}
+                        onPointerDown={isInteractionLocked ? undefined : handleWakeZonePress}
+                    />
+                ) : null}
             <div
                 className={`homepage-transition-overlay ${homeTransitionPhase === 'idle' ? '' : 'is-active'} ${homeTransitionPhase === 'fading-out' ? 'is-fading-out' : ''}`}
                 aria-hidden="true"

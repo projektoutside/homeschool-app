@@ -17,6 +17,14 @@ const createWingAttachment = ({ position, rotation, scale, fit }) => Object.free
   fit: fit ? createAttachmentFit(fit) : null,
 });
 
+const createSingleAttachment = ({ position, rotation, scale, fit = null }) => Object.freeze({
+  position: freezeTuple(position),
+  rotation: freezeTuple(rotation),
+  scale: freezeTuple(scale),
+  mirrorMode: 'single',
+  fit: fit ? createAttachmentFit(fit) : null,
+});
+
 const previewKind = (kind) => Object.freeze({ kind });
 
 const WING_ATTACHMENTS = Object.freeze({
@@ -109,6 +117,14 @@ const WING_ATTACHMENTS = Object.freeze({
     rotation: [0.02, 0.045, -0.015],
     scale: [6.3, 6.3, 6.3],
     fit: { yOffsetRatio: 1.18, zOffsetRatio: 0.028, distanceMultiplier: 1.36 },
+  }),
+});
+
+const SINGLE_ATTACHMENTS = Object.freeze({
+  xioStandardCrown: createSingleAttachment({
+    position: [0, -0.08, -0.18],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
   }),
 });
 
@@ -292,5 +308,19 @@ export const PROP_CATALOG = Object.freeze([
     rarity: 'common',
     mysteryBoxEnabled: true,
     active: true,
+  }),
+  Object.freeze({
+    key: 'xioStandardCrown',
+    label: 'XiO Standard Crown',
+    category: 'headWear',
+    prewarmPriority: 4,
+    factoryId: 'makeXioStandardCrownProp',
+    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+    attachment: SINGLE_ATTACHMENTS.xioStandardCrown,
+    rarity: 'common',
+    mysteryBoxEnabled: true,
+    active: true,
+    tags: Object.freeze(['crown', 'headwear', 'xio', 'starter']),
+    description: 'A clean reference crown sized for XiO so new headwear GLBs can be matched against a proven fit baseline.',
   }),
 ]);

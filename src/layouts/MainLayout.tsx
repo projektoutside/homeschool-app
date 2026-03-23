@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/variables.css';
 import './MainLayout.css';
@@ -19,6 +19,8 @@ const MainLayout: React.FC = () => {
     const { user } = useAuth();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [settingsCloseRequestId, setSettingsCloseRequestId] = useState(0);
+    const [isHomepageSummonNavigationLocked, setIsHomepageSummonNavigationLocked] = useState(false);
+    const interactionShieldRef = useRef<HTMLDivElement | null>(null);
     const currentUserId = user?.id ?? null;
     const [homepageSessionState, setHomepageSessionState] = useState(() => ({
         ownerId: currentUserId,
@@ -43,6 +45,7 @@ const MainLayout: React.FC = () => {
     const shouldRenderHomepageSession = !shouldBypassHomepageSessionBootstrap;
     const isHomepageSessionVisible = shouldRenderHomepageSession && (isUserHomeRoute || isPrimingHomepageSession);
     const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionGateReady;
+    const isHomepageSummonInteractionLocked = isUserHomeRoute && isHomepageSummonNavigationLocked;
     const isImmersiveRoute =
         isHomeRoute
         || isAppsRoute
@@ -56,6 +59,70 @@ const MainLayout: React.FC = () => {
     const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isHtmlViewerRoute || isPrimingHomepageSession;
 
     useZoomLock({ enabled: shouldDisableZoom });
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return undefined;
+        }
+
+        document.body.classList.toggle('homepage-summon-locked', isHomepageSummonInteractionLocked);
+
+        return () => {
+            document.body.classList.remove('homepage-summon-locked');
+        };
+    }, [isHomepageSummonInteractionLocked]);
+
+    useEffect(() => {
+        const currentDocument = typeof document !== 'undefined' ? document : null;
+        if (!isHomepageSummonInteractionLocked || typeof window === 'undefined' || !currentDocument) {
+            return undefined;
+        }
+
+        const consumeLockedInteraction = (event: Event) => {
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+            event.stopPropagation();
+            if (typeof (event as Event & { stopImmediatePropagation?: () => void }).stopImmediatePropagation === 'function') {
+                (event as Event & { stopImmediatePropagation: () => void }).stopImmediatePropagation();
+            }
+        };
+
+        const pointerEventNames = [
+            'click',
+            'dblclick',
+            'auxclick',
+            'contextmenu',
+            'mousedown',
+            'mouseup',
+            'pointerdown',
+            'pointerup',
+            'pointermove',
+            'pointercancel',
+            'touchstart',
+            'touchmove',
+            'touchend',
+            'touchcancel',
+            'wheel',
+        ] as const;
+        const keyboardEventNames = ['keydown', 'keypress', 'keyup'] as const;
+
+        pointerEventNames.forEach((eventName) => {
+            window.addEventListener(eventName, consumeLockedInteraction, { capture: true, passive: false });
+        });
+        keyboardEventNames.forEach((eventName) => {
+            window.addEventListener(eventName, consumeLockedInteraction, { capture: true });
+        });
+
+        return () => {
+            pointerEventNames.forEach((eventName) => {
+                window.removeEventListener(eventName, consumeLockedInteraction, true);
+            });
+            keyboardEventNames.forEach((eventName) => {
+                window.removeEventListener(eventName, consumeLockedInteraction, true);
+            });
+        };
+    }, [isHomepageSummonInteractionLocked]);
 
     // Dev-only shortcut: Ctrl+Shift+M to toggle manager
     useEffect(() => {
@@ -79,6 +146,10 @@ const MainLayout: React.FC = () => {
     }, [location.pathname, navigate]);
 
     const handleSettingsButtonClick = () => {
+        if (isHomepageSummonInteractionLocked) {
+            return;
+        }
+
         if (!isSettingsOpen) {
             setIsSettingsOpen(true);
             return;
@@ -100,10 +171,17 @@ const MainLayout: React.FC = () => {
         });
     }, [currentUserId]);
 
+    const handleSummonNavigationLockChange = useCallback((locked: boolean) => {
+        setIsHomepageSummonNavigationLocked(locked);
+        if (locked) {
+            setIsSettingsOpen(false);
+        }
+    }, []);
+
     return (
         <HomepageSessionProvider value={{ isReady: isHomepageSessionGateReady }}>
             <div
-                className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''}`}
+                className={`layout-container ${isImmersiveRoute ? 'home-immersive' : ''} ${isGamePlayerRoute ? 'game-immersive' : ''} ${isHomepageSummonInteractionLocked ? 'homepage-summon-locked' : ''}`}
             >
                 {/* Skip to main content link for keyboard users */}
                 <a href="#main-content" className="skip-to-main">
@@ -121,6 +199,7 @@ const MainLayout: React.FC = () => {
                                 key={currentUserId ?? 'homepage-session'}
                                 isActive={isHomepageSessionVisible}
                                 onBootStable={handleHomepageBootStable}
+                                onSummonNavigationLockChange={handleSummonNavigationLockChange}
                             />
                         </div>
                     ) : null}
@@ -132,7 +211,19 @@ const MainLayout: React.FC = () => {
                     </div>
                 </main>
 
-                <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
+                <BottomNavigation
+                    onOpenSettings={handleSettingsButtonClick}
+                    isSettingsOpen={isSettingsOpen}
+                    isInteractionLocked={isHomepageSummonInteractionLocked}
+                />
+
+                <div
+                    ref={interactionShieldRef}
+                    className={`layout-interaction-shield ${isHomepageSummonInteractionLocked ? 'is-active' : ''}`}
+                    aria-hidden="true"
+                    data-no-click-sound="true"
+                    tabIndex={-1}
+                />
 
                 <GlobalSettings
                     isOpen={isSettingsOpen}

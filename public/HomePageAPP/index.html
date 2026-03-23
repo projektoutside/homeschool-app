@@ -107,6 +107,10 @@
             background: transparent;
         }
 
+        body.legendary-storm-box-focus #game-container {
+            z-index: 91;
+        }
+
         #gif-background,
         #gif-background-fallback {
             position: fixed;
@@ -185,6 +189,27 @@
             background:
                 radial-gradient(120% 78% at 50% 62%, rgba(126, 225, 255, 0.08) 0%, rgba(0, 0, 0, 0) 58%),
                 linear-gradient(180deg, rgba(2, 21, 42, 0.06) 0%, rgba(8, 19, 16, 0.03) 40%, rgba(5, 24, 15, 0.1) 100%);
+        }
+
+        #legendary-interaction-lock {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            pointer-events: none;
+            user-select: none;
+            touch-action: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 180ms ease, visibility 0s linear 180ms;
+            outline: none;
+        }
+
+        body.legendary-storm-locked #legendary-interaction-lock {
+            pointer-events: all;
+            opacity: 1;
+            visibility: visible;
+            cursor: progress;
+            transition: opacity 120ms ease;
         }
 
         #legendary-storm-overlay {
@@ -1732,6 +1757,14 @@
             overflow: hidden;
         }
 
+        body.prop-preview-active #ui-overlay {
+            z-index: 106;
+        }
+
+        body.prop-preview-active .prop-preview-overlay {
+            z-index: 104;
+        }
+
         .prop-preview-overlay::before {
             content: "";
             position: absolute;
@@ -3232,7 +3265,7 @@
             max-width: min(480px, 94vw);
             max-height: min(80vh, 540px);
             transform: translate(-50%, -50%);
-            z-index: 40;
+            z-index: 120;
             background:
                 radial-gradient(140% 130% at 8% 5%, rgba(79, 70, 229, 0.2) 0%, rgba(79, 70, 229, 0) 52%),
                 radial-gradient(140% 130% at 94% 8%, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0) 54%),
@@ -4166,6 +4199,7 @@
     </video>
     <img id="gif-background-fallback" src="./windy_scene_loop_school_still_hyperreal_clouds_animated.webp" alt="" aria-hidden="true" decoding="async">
     <div id="gif-tint"></div>
+    <div id="legendary-interaction-lock" aria-hidden="true" tabindex="-1"></div>
         <div id="legendary-storm-overlay" aria-hidden="true">
             <div class="legendary-storm-shade"></div>
             <div class="legendary-storm-veil"></div>
@@ -4297,73 +4331,10 @@
         <section class="store-panel" id="store-panel" aria-label="Prop inventory">
             <h2 class="store-title">Store: Props</h2>
             <p class="store-subtitle">Categories</p>
-            <div class="category-tabs" role="tablist" aria-label="Prop categories">
-                <button class="category-btn active" type="button" data-category="wingSet">Wing Set</button>
-            </div>
+            <div class="category-tabs" id="store-category-tabs" role="tablist" aria-label="Prop categories"></div>
             <p class="store-subtitle" id="category-title">Wing Set</p>
             <div class="store-content">
-                <div class="item-grid">
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="blossomissWings" data-prop-label="Blossomiss Wings">
-                        <span class="item-btn-label">Blossomiss Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Blossomiss Wings" data-preview-for="blossomissWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="canvasOfNavelleWings" data-prop-label="Canvas of Navelle">
-                        <span class="item-btn-label">Canvas of Navelle</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Canvas of Navelle" data-preview-for="canvasOfNavelleWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="goddessOfValleysWings" data-prop-label="Goddess of Valleys">
-                        <span class="item-btn-label">Goddess of Valleys</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Goddess of Valleys" data-preview-for="goddessOfValleysWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="honeycombBloomsWings" data-prop-label="Honeycomb Blooms">
-                        <span class="item-btn-label">Honeycomb Blooms</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Honeycomb Blooms" data-preview-for="honeycombBloomsWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="lavalcanoWings" data-prop-label="Lavalcano Wings">
-                        <span class="item-btn-label">Lavalcano Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Lavalcano Wings" data-preview-for="lavalcanoWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="lightOfSmilesWings" data-prop-label="Light of Smiles">
-                        <span class="item-btn-label">Light of Smiles</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Light of Smiles" data-preview-for="lightOfSmilesWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="moonlightAmayaWings" data-prop-label="Moonlight Amaya">
-                        <span class="item-btn-label">Moonlight Amaya</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Moonlight Amaya" data-preview-for="moonlightAmayaWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="endlessWings" data-prop-label="Endless Wings">
-                        <span class="item-btn-label">Endless Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Endless Wings" data-preview-for="endlessWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="emeraldCoenWings" data-prop-label="Emerald Coen Wings">
-                        <span class="item-btn-label">Emerald Coen Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Emerald Coen Wings" data-preview-for="emeraldCoenWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="xatoriWings" data-prop-label="Xatori Wings">
-                        <span class="item-btn-label">Xatori Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Xatori Wings" data-preview-for="xatoriWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="alphaWings" data-prop-label="Alpha Wings">
-                        <span class="item-btn-label">Alpha Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Alpha Wings" data-preview-for="alphaWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="rainbowWings" data-prop-label="Rainbow Wings">
-                        <span class="item-btn-label">Rainbow Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Rainbow Wings" data-preview-for="rainbowWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="omegaWings" data-prop-label="Omega Wings">
-                        <span class="item-btn-label">Omega Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Omega Wings" data-preview-for="omegaWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="efernoWings" data-prop-label="Eferno Wings">
-                        <span class="item-btn-label">Eferno Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Eferno Wings" data-preview-for="efernoWings">◈</span>
-                    </button>
-                    <button class="item-btn" type="button" data-category="wingSet" data-prop="roboticWings" data-prop-label="Robotic Wings">
-                        <span class="item-btn-label">Robotic Wings</span>
-                        <span class="item-preview-trigger" role="button" tabindex="0" aria-label="Preview Robotic Wings" data-preview-for="roboticWings">◈</span>
-                    </button>
-                </div>
+                <div class="item-grid" id="store-item-grid"></div>
             </div>
         </section>
         <div class="inventory-focus-overlay" id="inventory-focus-overlay" aria-hidden="true">
@@ -4390,9 +4361,7 @@
                     <div class="inventory-list" id="inventory-list" role="list"></div>
                     <p class="inventory-empty" id="inventory-empty">No mystery rewards yet. Open Mystery Box to collect items.</p>
                 </div>
-                <div class="inventory-category-tabs" role="tablist" aria-label="Inventory categories" hidden>
-                    <button class="inventory-category-btn category-btn active" type="button" data-category="wingSet">Wing Set</button>
-                </div>
+                <div class="inventory-category-tabs" id="inventory-category-tabs" role="tablist" aria-label="Inventory categories" hidden></div>
             </div>
         </section>
         <section class="prop-preview-panel" id="prop-preview-panel" aria-label="Prop preview">
@@ -4431,6 +4400,7 @@
             LEGENDARY_STORM_CLEARED_STRIKE_PHASES,
             LEGENDARY_STORM_LANDING_PHASES,
             LEGENDARY_STORM_PERSISTENT_STRIKE_PHASES,
+            LEGENDARY_STORM_TIMING_INTERACTION_PHASES,
             collectLegendaryStormVisualChannelSnapshot,
             refreshLegendaryStormTimingTotals,
             resetLegendaryStormVisualChannels,
@@ -8785,12 +8755,131 @@
         }
 
 
+        function createSingleSlotGlbPropFactory({
+            label,
+            assetUrl,
+            slotKey,
+            attachment = null,
+            preview = null
+        }) {
+            if (typeof createRuntimeGlbPropFactory === 'function') {
+                return createRuntimeGlbPropFactory({
+                    THREE,
+                    GLTFLoader,
+                    slotAnchors,
+                    label,
+                    assetUrl,
+                    slotKey,
+                    attachment,
+                    preview
+                });
+            }
+
+            const loadState = {
+                promise: null,
+                templateRoot: null
+            };
+
+            const cloneSceneGraph = (root) => {
+                const clone = root.clone(true);
+                clone.traverse((node) => {
+                    if (!node?.isMesh) return;
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                    node.frustumCulled = false;
+                    if (Array.isArray(node.material)) {
+                        node.material = node.material.map((material) => material?.clone?.() || material);
+                    } else if (node.material?.clone) {
+                        node.material = node.material.clone();
+                    }
+                });
+                return clone;
+            };
+
+            const centerSceneGraphAtOrigin = (root) => {
+                const bounds = new THREE.Box3().setFromObject(root);
+                if (bounds.isEmpty()) {
+                    return root;
+                }
+                const center = new THREE.Vector3();
+                bounds.getCenter(center);
+                root.position.sub(center);
+                return root;
+            };
+
+            const applyAttachmentTransform = (target, nextAttachment = attachment) => {
+                const position = Array.isArray(nextAttachment?.position) ? nextAttachment.position : [0, 0, 0];
+                const rotation = Array.isArray(nextAttachment?.rotation) ? nextAttachment.rotation : [0, 0, 0];
+                const scale = Array.isArray(nextAttachment?.scale) ? nextAttachment.scale : [1, 1, 1];
+                target.position.set(Number(position[0]) || 0, Number(position[1]) || 0, Number(position[2]) || 0);
+                target.rotation.set(Number(rotation[0]) || 0, Number(rotation[1]) || 0, Number(rotation[2]) || 0);
+                target.scale.set(Number(scale[0]) || 1, Number(scale[1]) || 1, Number(scale[2]) || 1);
+            };
+
+            const ensureTemplateRoot = async () => {
+                if (loadState.templateRoot) {
+                    return loadState.templateRoot;
+                }
+                if (!loadState.promise) {
+                    loadState.promise = new Promise((resolve, reject) => {
+                        const loader = new GLTFLoader();
+                        loader.load(
+                            assetUrl,
+                            (gltf) => {
+                                const sourceRoot = gltf?.scene || gltf?.scenes?.[0] || null;
+                                if (!sourceRoot) {
+                                    reject(new Error(`${label} did not contain a scene root.`));
+                                    return;
+                                }
+                                const templateRoot = cloneSceneGraph(sourceRoot);
+                                centerSceneGraphAtOrigin(templateRoot);
+                                templateRoot.updateMatrixWorld(true);
+                                loadState.templateRoot = templateRoot;
+                                resolve(templateRoot);
+                            },
+                            undefined,
+                            reject
+                        );
+                    }).catch((error) => {
+                        console.warn(`Unable to load ${label} from ${assetUrl}.`, error);
+                        loadState.templateRoot = null;
+                        throw error;
+                    });
+                }
+                return loadState.promise;
+            };
+
+            return function makeSingleSlotGlbProp() {
+                const group = new THREE.Group();
+                const pivot = new THREE.Group();
+                const slotAnchor = slotAnchors[slotKey];
+                applyAttachmentTransform(pivot);
+                slotAnchor?.anchor?.add(pivot);
+                group.userData.anchor = pivot;
+                group.userData.ensureEquippedReady = async () => {
+                    const templateRoot = await ensureTemplateRoot();
+                    if (!templateRoot || pivot.userData.loaded) {
+                        return;
+                    }
+                    pivot.clear();
+                    pivot.add(cloneSceneGraph(templateRoot));
+                    pivot.userData.loaded = true;
+                };
+                group.userData.ensurePreviewReady = ensureTemplateRoot;
+                group.userData.createPreviewObject = () => (
+                    loadState.templateRoot ? cloneSceneGraph(loadState.templateRoot) : null
+                );
+                return group;
+            };
+        }
+
         function createLegacyInventoryAndPropDefinitionsFileFallback({ factoryById, warn = console.warn } = {}) {
             const INVENTORY_CONFIG = {
                 defaultCategory: 'wingSet',
                 perCategoryLimit: 5,
                 categories: [
-                    { key: 'wingSet', label: 'Wing Set', slotKey: 'wingSet', equipLimit: 1 }
+                    { key: 'wingSet', label: 'Wing Set', slotKey: 'wingSet', equipLimit: 1 },
+                    { key: 'headWear', label: 'Headwear', slotKey: 'headWear', equipLimit: 1 }
                 ]
             };
 
@@ -8809,7 +8898,26 @@
                 { key: 'rainbowWings', label: 'Rainbow Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeRainbowWingsProp', rarity: 'legendary', mysteryBoxEnabled: true, active: true },
                 { key: 'roboticWings', label: 'Robotic Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeRoboticWingsProp', rarity: 'rare', mysteryBoxEnabled: true, active: true },
                 { key: 'omegaWings', label: 'Omega Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeOmegaWingsProp', rarity: 'rare', mysteryBoxEnabled: false, active: true },
-                { key: 'efernoWings', label: 'Eferno Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeEfernoWingsProp', rarity: 'common', mysteryBoxEnabled: true, active: true }
+                { key: 'efernoWings', label: 'Eferno Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeEfernoWingsProp', rarity: 'common', mysteryBoxEnabled: true, active: true },
+                {
+                    key: 'xioStandardCrown',
+                    label: 'XiO Standard Crown',
+                    category: 'headWear',
+                    prewarmPriority: 4,
+                    factoryId: 'makeXioStandardCrownProp',
+                    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+                    attachment: {
+                        position: [0, -0.08, -0.18],
+                        rotation: [0, 0, 0],
+                        scale: [1, 1, 1],
+                        mirrorMode: 'single'
+                    },
+                    rarity: 'common',
+                    mysteryBoxEnabled: true,
+                    active: true,
+                    tags: ['crown', 'headwear', 'xio', 'starter'],
+                    description: 'A clean reference crown sized for XiO so new headwear GLBs can match a proven fit baseline.'
+                }
             ];
 
             const categoryKeySet = new Set(INVENTORY_CONFIG.categories.map((category) => category.key));
@@ -8870,6 +8978,17 @@
             leftWingGroup,
             rightWingGroup
         });
+        const makeXioStandardCrownProp = createSingleSlotGlbPropFactory({
+            label: 'XiO Standard Crown',
+            assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+            slotKey: 'headWear',
+            attachment: {
+                position: [0, -0.08, -0.18],
+                rotation: [0, 0, 0],
+                scale: [1, 1, 1],
+                mirrorMode: 'single'
+            }
+        });
         const propFactoryById = {
             makeBlossomissWingsProp,
             makeCanvasOfNavelleWingsProp,
@@ -8886,6 +9005,7 @@
             makeRoboticWingsProp,
             makeOmegaWingsProp,
             makeEfernoWingsProp,
+            makeXioStandardCrownProp,
             makeGeneratedProceduralWingProp
         };
         const legacyCatalogRuntime = createLegacyInventoryAndPropDefinitions({
@@ -9200,45 +9320,7 @@
                 }
             });
 
-            categoryButtons.forEach((button) => {
-                const categoryKey = button?.dataset?.category;
-                if (!categoryKey || !isInventoryCategory(categoryKey)) {
-                    return;
-                }
-                button.textContent = getInventoryCategoryLabel(categoryKey);
-            });
-
-            inventoryCategoryButtons.forEach((button) => {
-                const categoryKey = button?.dataset?.category;
-                if (!categoryKey || !isInventoryCategory(categoryKey)) {
-                    return;
-                }
-                button.textContent = getInventoryDisplayNameWithCount(categoryKey);
-            });
-
-            propButtons.forEach((button) => {
-                const propKey = button?.dataset?.prop;
-                if (!propKey) {
-                    return;
-                }
-                const definition = nextDefinitionsByKey.get(propKey);
-                if (!definition) {
-                    return;
-                }
-                button.dataset.category = definition.category;
-                button.dataset.propLabel = definition.label || definition.key;
-                const labelNode = button.querySelector('.item-btn-label');
-                if (labelNode) {
-                    labelNode.textContent = definition.label || definition.key;
-                }
-                const previewTrigger = button.querySelector('[data-preview-for]');
-                if (previewTrigger) {
-                    previewTrigger.setAttribute('aria-label', `Preview ${definition.label || definition.key}`);
-                    if (previewTrigger instanceof HTMLElement) {
-                        previewTrigger.dataset.previewFor = definition.key;
-                    }
-                }
-            });
+            rebuildStoreCatalogUi();
 
             if (previewState?.propKey) {
                 const activeDefinition = nextDefinitionsByKey.get(previewState.propKey);
@@ -10016,6 +10098,7 @@
         const gifBackgroundVideo = document.getElementById('gif-background');
         const legendaryCutsceneVideo = document.getElementById('legendary-cutscene-video');
         const gifBackgroundFallback = document.getElementById('gif-background-fallback');
+        const legendaryInteractionLock = document.getElementById('legendary-interaction-lock');
         const backgroundMediaState = {
             retries: 0,
             maxRetries: 4,
@@ -10067,6 +10150,62 @@
             }
             legendaryStormOverlay.classList.toggle('legendary-storm-enhanced', Boolean(legendaryStormFxRenderer?.isAvailable));
         }
+        const consumeLegendaryLockEvent = (event) => {
+            if (!isLegendaryInteractionLockActive()) {
+                return;
+            }
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === 'function') {
+                event.stopImmediatePropagation();
+            }
+        };
+        if (legendaryInteractionLock) {
+            [
+                'pointerdown',
+                'pointerup',
+                'pointermove',
+                'pointercancel',
+                'click',
+                'dblclick',
+                'auxclick',
+                'wheel',
+                'contextmenu',
+                'touchstart',
+                'touchmove',
+                'touchend',
+                'touchcancel'
+            ].forEach((eventName) => {
+                legendaryInteractionLock.addEventListener(eventName, consumeLegendaryLockEvent, { passive: false });
+            });
+        }
+        [
+            'pointerdown',
+            'pointerup',
+            'pointermove',
+            'pointercancel',
+            'click',
+            'dblclick',
+            'auxclick',
+            'wheel',
+            'contextmenu',
+            'touchstart',
+            'touchmove',
+            'touchend',
+            'touchcancel',
+            'keydown',
+            'keypress',
+            'keyup'
+        ].forEach((eventName) => {
+            const usesPassiveBlock = eventName === 'wheel' || eventName.startsWith('pointer') || eventName.startsWith('touch');
+            document.addEventListener(
+                eventName,
+                consumeLegendaryLockEvent,
+                usesPassiveBlock ? { capture: true, passive: false } : true
+            );
+        });
         const LEGENDARY_STORM_BOLT_VIEWBOX = Object.freeze({
             width: 320,
             height: 1280,
@@ -10084,6 +10223,7 @@
         const HOMEPAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT';
         const HOMEPAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
         const HOMEPAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
+        const HOMEPAGE_SUMMON_NAV_LOCK_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_NAV_LOCK';
         const HOMEPAGE_HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
         const DAILY_LUNCHBOX_DEFAULT_POINTS = 100;
         const MYSTERY_PULL_COST_POINTS = 100;
@@ -10103,6 +10243,7 @@
             claimed: false,
             lastClaimAccepted: false
         };
+        let homepageSummonNavLockPosted = null;
         const mysteryPullSpendState = {
             pending: false,
             requestId: null,
@@ -10382,6 +10523,24 @@
             updateDailyLunchboxUi();
         }
 
+        function syncHomepageSummonNavigationLockToHost(locked) {
+            if (window.parent === window) {
+                homepageSummonNavLockPosted = Boolean(locked);
+                return;
+            }
+            const nextLocked = Boolean(locked);
+            if (homepageSummonNavLockPosted === nextLocked) {
+                return;
+            }
+            homepageSummonNavLockPosted = nextLocked;
+            try {
+                window.parent.postMessage({
+                    type: HOMEPAGE_SUMMON_NAV_LOCK_MESSAGE,
+                    locked: nextLocked
+                }, window.location.origin);
+            } catch (_) {}
+        }
+
         updateHomepageHudMetrics();
         updateDailyLunchboxUi();
         window.addEventListener('message', handleHomepagePointsBridgeMessage);
@@ -10549,10 +10708,13 @@
         };
 
         characterCreatorQuickOpen?.addEventListener('click', openCharacterCreatorApp);
-        const categoryButtons = Array.from(document.querySelectorAll('.category-btn'));
-        const inventoryCategoryButtons = Array.from(document.querySelectorAll('.inventory-category-btn'));
-        const itemButtons = Array.from(document.querySelectorAll('.item-btn'));
-        const propButtons = itemButtons.filter((btn) => btn.dataset.prop);
+        const storeCategoryTabs = document.getElementById('store-category-tabs');
+        const inventoryCategoryTabs = document.getElementById('inventory-category-tabs');
+        const storeItemGrid = document.getElementById('store-item-grid');
+        const storeCategoryButtons = [];
+        const inventoryCategoryButtons = [];
+        const itemButtons = [];
+        const propButtons = [];
         const itemThumbCache = new Map();
         const itemThumbInFlight = new Map();
         const mysteryRevealStillMemoryCache = new Map();
@@ -11311,7 +11473,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
 
         function isLegendarySummonHoldingRouteAudio() {
             return Boolean(
-                legendaryStormState.active ||
+                (legendaryStormState.active && !legendaryStormState.routeAudioReleased) ||
                 legendarySummonMusicState.restorePendingAfterPreview ||
                 legendarySummonMusicState.restoreInProgress
             );
@@ -11451,19 +11613,31 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             if (legendarySummonMusicState.restoreInProgress) {
                 return true;
             }
+            const shouldReleaseRouteAudio = Boolean(
+                legendaryStormState.active &&
+                !legendaryStormState.routeAudioReleased
+            );
             const hasPendingTrack =
                 legendarySummonMusicState.restorePendingAfterPreview ||
                 legendarySummonMusicState.leadInTriggered ||
                 Boolean(legendarySummonMusicState.activeAudio);
-            if (!hasPendingTrack) {
+            if (!hasPendingTrack && !shouldReleaseRouteAudio) {
                 return false;
             }
 
             const finalizeRestore = () => {
+                if (legendaryStormState.active) {
+                    legendaryStormState.routeAudioReleased = true;
+                }
                 resetLegendarySummonMusicSession({ releaseAudio: true });
                 restoreHomePageAudioAfterLegendaryCutscene({ immediate, force: true });
                 resumeBackgroundPlaybackIfActive();
             };
+
+            if (!hasPendingTrack) {
+                finalizeRestore();
+                return true;
+            }
 
             legendarySummonMusicState.restorePendingAfterPreview = false;
             legendarySummonMusicState.restoreInProgress = true;
@@ -11569,15 +11743,26 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             applyLegendaryCutsceneAudioGain();
         }
 
-        function fadeOutHomePageAudioForLegendaryCutscene() {
+        function fadeOutHomePageAudioForLegendaryCutscene(options = {}) {
             legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
             clearScheduledHomePageMusicStart();
-            clearHomePageRouteFadeAnimation();
-            homePageRouteAudioState.fadeToken += 1;
-            homePageRouteAudioState.gain = 0;
-            applyHomePageMusicGain();
-            applyNatureSoundsGain();
-            pauseHomePageRouteMusicAndNatureImmediately();
+            const immediate = Boolean(options.immediate);
+            const durationMs = Math.max(0, Number(options.durationMs) || LEGENDARY_STORM_CONFIG.backgroundAudioFadeOutMs);
+            if (!homePageRouteAudioState.isActive || immediate || durationMs <= 0) {
+                clearHomePageRouteFadeAnimation();
+                homePageRouteAudioState.fadeToken += 1;
+                homePageRouteAudioState.gain = 0;
+                applyHomePageMusicGain();
+                applyNatureSoundsGain();
+                pauseHomePageRouteMusicAndNatureImmediately();
+                return;
+            }
+            animateHomePageRouteGain(0, durationMs, {
+                pauseAfter: false,
+                onComplete: () => {
+                    pauseHomePageRouteMusicAndNatureImmediately();
+                }
+            });
         }
 
         function restoreHomePageAudioAfterLegendaryCutscene({ immediate = false, force = false } = {}) {
@@ -11720,6 +11905,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         function animateHomePageRouteGain(targetGain, durationMs, options = {}) {
             const target = clampUnitVolume(targetGain, targetGain > 0 ? 1 : 0);
             const pauseAfter = Boolean(options.pauseAfter) && target <= 0.001;
+            const onComplete = typeof options.onComplete === 'function' ? options.onComplete : null;
             const startGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
             const delta = target - startGain;
             clearHomePageRouteFadeAnimation();
@@ -11730,6 +11916,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 applyNatureSoundsGain();
                 if (pauseAfter) {
                     pauseHomePageAudioImmediately();
+                }
+                if (onComplete) {
+                    onComplete();
                 }
                 return;
             }
@@ -11759,6 +11948,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 applyNatureSoundsGain();
                 if (pauseAfter) {
                     pauseHomePageAudioImmediately();
+                }
+                if (onComplete) {
+                    onComplete();
                 }
             };
 
@@ -14180,6 +14372,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             savedWorldVisible: false,
             savedGrassVisible: false,
             savedRouteGain: 1,
+            routeAudioReleased: false,
             grassRevealVisible: false,
             strikeScreenX: 0.5,
             strikeScreenY: 0.48,
@@ -14804,6 +14997,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             if (nextPhase === 'cloudFormation') {
                 prepareLegendaryStormStrikeGeometry('anticipation');
                 setLegendaryStormStrikeRefresh(0.72, 1.14);
+                fadeOutHomePageAudioForLegendaryCutscene({
+                    durationMs: (
+                        (legendaryStormState.timings?.cloudFormation || LEGENDARY_STORM_CONFIG.cloudFormationDuration) +
+                        (legendaryStormState.timings?.escalation || LEGENDARY_STORM_CONFIG.escalationDuration)
+                    ) * 1000
+                });
             } else if (nextPhase === 'escalation') {
                 prepareLegendaryStormStrikeGeometry('escalation');
                 setLegendaryStormStrikeRefresh(0.34, 0.72);
@@ -15055,25 +15254,80 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             return requestLegendaryCutsceneVideoPlaybackAttempt({ token, resetTime: false });
         }
 
+        function isLegendaryInteractionLockActive() {
+            return Boolean(
+                legendaryStormState.active &&
+                LEGENDARY_STORM_TIMING_INTERACTION_PHASES.includes(legendaryStormState.phase)
+            );
+        }
+
+        function syncLegendaryInteractionLockState(active = isLegendaryInteractionLockActive()) {
+            document.body.classList.toggle('legendary-storm-locked', active);
+            if (!legendaryInteractionLock) {
+                return;
+            }
+            legendaryInteractionLock.setAttribute('aria-hidden', String(!active));
+            if (active) {
+                const activeElement = document.activeElement;
+                if (activeElement instanceof HTMLElement && activeElement !== legendaryInteractionLock) {
+                    activeElement.blur();
+                }
+                if (document.activeElement !== legendaryInteractionLock) {
+                    legendaryInteractionLock.focus({ preventScroll: true });
+                }
+                return;
+            }
+            if (document.activeElement === legendaryInteractionLock) {
+                legendaryInteractionLock.blur();
+            }
+        }
+
+        function hasVisibleLegendaryStormVisuals() {
+            if (!legendaryStormState?.active) {
+                return false;
+            }
+            return Boolean(
+                legendaryStormState.environmentMix > 0.001 ||
+                legendaryStormState.darkness > 0.001 ||
+                legendaryStormState.mist > 0.001 ||
+                legendaryStormState.flash > 0.001 ||
+                legendaryStormState.whiteout > 0.001 ||
+                legendaryStormState.nightfallProgress > 0.001 ||
+                legendaryStormState.overlayOpacity > 0.001 ||
+                legendaryStormState.lightningMix > 0.001 ||
+                legendaryStormState.boltOpacity > 0.001 ||
+                legendaryStormState.cloudFlash > 0.001 ||
+                legendaryStormState.cloudSheet > 0.001 ||
+                legendaryStormState.groundGlow > 0.001 ||
+                legendaryStormState.boltGlowOpacity > 0.001 ||
+                legendaryStormState.boltBranchOpacity > 0.001 ||
+                legendaryStormState.returnStroke > 0.001 ||
+                legendaryStormState.impactBloom > 0.001 ||
+                legendaryStormState.impactCore > 0.001 ||
+                legendaryStormState.impactRing > 0.001 ||
+                legendaryStormState.previewBlend > 0.001 ||
+                legendaryStormState.revealEnergy > 0.001 ||
+                legendaryStormState.videoOpacity > 0.001 ||
+                legendaryStormState.godRayIntensity > 0.001 ||
+                legendaryStormState.vortexEnergy > 0.001
+            );
+        }
+
         function syncLegendaryStormOverlayVisuals(theme = null) {
             const rootStyle = document.documentElement?.style;
             if (!rootStyle || !document.body) {
                 return;
             }
             const landingImpactVisualsVisible = LEGENDARY_STORM_LANDING_PHASES.has(legendaryStormState.phase);
-            const isActive = Boolean(
-                legendaryStormState.active && (
-                    legendaryStormState.phase !== 'videoPlayback' ||
-                    legendaryStormState.overlayOpacity > 0.001 ||
-                    legendaryStormState.flash > 0.001 ||
-                    legendaryStormState.whiteout > 0.001 ||
-                    legendaryStormState.darkness > 0.001 ||
-                    legendaryStormState.mist > 0.001 ||
-                    legendaryStormState.nightfallProgress > 0.001
-                )
-            );
+            const isActive = hasVisibleLegendaryStormVisuals();
+            const interactionLockActive = isLegendaryInteractionLockActive();
             document.body.classList.toggle('legendary-storm-active', isActive);
+            document.body.classList.toggle(
+                'legendary-storm-box-focus',
+                Boolean(legendaryStormState.active && landingImpactVisualsVisible)
+            );
             document.body.classList.toggle('legendary-storm-lite', Boolean(isActive && legendaryStormState.lightweightMode));
+            syncHomepageSummonNavigationLockToHost(interactionLockActive);
             document.body.classList.toggle(
                 'legendary-cutscene-playing',
                 Boolean(
@@ -15087,6 +15341,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryStormOverlay.classList.toggle('active', isActive);
                 legendaryStormOverlay.classList.toggle('legendary-storm-enhanced', Boolean(legendaryStormFxRenderer?.isAvailable));
             }
+            syncLegendaryInteractionLockState(interactionLockActive);
 
             let strikeX = THREE.MathUtils.clamp((legendaryStormState.strikeScreenX || 0.5) * 100, 10, 90);
             let strikeY = THREE.MathUtils.clamp((legendaryStormState.strikeScreenY || 0.32) * 100, 12, 88);
@@ -15281,6 +15536,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 0,
                 1
             );
+            const pulseMix = THREE.MathUtils.clamp(
+                Math.max(
+                    (legendaryStormState.flash || 0) * 0.82,
+                    (legendaryStormState.cloudFlash || 0) * 0.74,
+                    (legendaryStormState.returnStroke || 0) * 0.92,
+                    (legendaryStormState.lightningMix || 0) * 0.44
+                ),
+                0,
+                1
+            );
+            const eclipseMix = THREE.MathUtils.clamp(
+                stormMix * 0.66 +
+                sanitizeFiniteNumber(legendaryStormState.nightfallProgress, 0) * 0.54 +
+                sanitizeFiniteNumber(legendaryStormState.darkness, 0) * 0.44,
+                0,
+                1
+            );
             const boxHeroMix = (() => {
                 if (phase === 'boxMaterialize') {
                     return 0.5;
@@ -15293,6 +15565,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 }
                 return 0;
             })();
+            const heroPulse = THREE.MathUtils.clamp(
+                Math.max(
+                    (legendaryStormState.revealEnergy || 0) * 0.88,
+                    (legendaryStormState.godRayIntensity || 0) * 0.58,
+                    impactMix * 0.42,
+                    boxHeroMix * 0.74
+                ),
+                0,
+                1
+            );
             const landingPhaseVisible = LEGENDARY_STORM_LANDING_PHASES.has(phase);
             const silhouetteGuard = lightVariant && landingPhaseVisible
                 ? THREE.MathUtils.lerp(1, 0.72, THREE.MathUtils.clamp(boxHeroMix + impactMix * 0.28, 0, 1))
@@ -15304,7 +15586,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryStormColorScratchA.setHex(theme.ambientColor),
                 stormMix
             );
-            ambientLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.ambientIntensity, theme.ambientIntensity, stormMix) + strikeMix * 0.12 + returnMix * 0.1 + boxHeroMix * 0.18;
+            ambientLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.ambientIntensity, theme.ambientIntensity, stormMix) + strikeMix * 0.14 + returnMix * 0.12 + pulseMix * 0.08 + boxHeroMix * 0.2 + heroPulse * 0.08 - eclipseMix * 0.04;
 
             hemiLight.color.copy(homePageDayLightingDefaults.hemiSkyColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.hemiSkyColor),
@@ -15314,25 +15596,25 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryStormColorScratchB.setHex(theme.hemiGroundColor),
                 stormMix
             );
-            hemiLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.hemiIntensity, theme.hemiIntensity, stormMix) + strikeMix * 0.2 + returnMix * 0.16 + boxHeroMix * 0.28;
+            hemiLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.hemiIntensity, theme.hemiIntensity, stormMix) + strikeMix * 0.22 + returnMix * 0.18 + pulseMix * 0.08 + boxHeroMix * 0.3 + heroPulse * 0.12;
 
             sunLight.color.copy(homePageDayLightingDefaults.sunColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.sunColor),
                 stormMix
             );
-            sunLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.sunIntensity, theme.sunIntensity, stormMix) + strikeMix * 0.28 + returnMix * 0.28 + boxHeroMix * 0.12;
+            sunLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.sunIntensity, theme.sunIntensity, stormMix) + strikeMix * 0.3 + returnMix * 0.3 + pulseMix * 0.08 + boxHeroMix * 0.16 + heroPulse * 0.1 - eclipseMix * 0.08;
 
             fillLight.color.copy(homePageDayLightingDefaults.fillColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.fillColor),
                 stormMix
             );
-            fillLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.fillIntensity, theme.fillIntensity, stormMix) + strikeMix * 0.24 + returnMix * 0.22 + boxHeroMix * 0.34;
+            fillLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.fillIntensity, theme.fillIntensity, stormMix) + strikeMix * 0.26 + returnMix * 0.24 + pulseMix * 0.08 + boxHeroMix * 0.38 + heroPulse * 0.12;
 
             petRim.color.copy(homePageDayLightingDefaults.petRimColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.petRimColor),
                 stormMix
             );
-            petRim.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.petRimIntensity, theme.petRimIntensity, stormMix) + strikeMix * 0.64 + returnMix * 0.46 + boxHeroMix * 0.34;
+            petRim.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.petRimIntensity, theme.petRimIntensity, stormMix) + strikeMix * 0.68 + returnMix * 0.52 + pulseMix * 0.12 + boxHeroMix * 0.4 + heroPulse * 0.16;
 
             legendaryStormSkyLight.color.setHex(theme.skyLightColor);
             legendaryStormSkyLight.intensity =
@@ -15341,16 +15623,19 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     strikeMix * (theme.strikeIntensity * 0.13) +
                     returnMix * (theme.strikeIntensity * 0.18 * returnStrokeGain) +
                     impactMix * (0.3 + groundSpillGain * 0.06) +
+                    pulseMix * 0.16 +
+                    heroPulse * (lightVariant ? 0.26 : 0.32) +
                     boxHeroMix * (lightVariant ? 0.44 : 0.78)
                 ) * silhouetteGuard;
             legendaryStormStrikeLight.color.setHex(theme.strikeColor);
             legendaryStormStrikeLight.intensity =
                 (
-                    (strikeMix * 0.48 + returnMix * 0.96 * returnStrokeGain) * (1 + impactMix * (0.28 + groundSpillGain * 0.08)) +
-                    boxHeroMix * (lightVariant ? 0.34 : 0.68)
+                    (strikeMix * 0.5 + returnMix * 1.02 * returnStrokeGain + pulseMix * 0.18) * (1 + impactMix * (0.28 + groundSpillGain * 0.08) + heroPulse * 0.18) +
+                    boxHeroMix * (lightVariant ? 0.34 : 0.68) +
+                    heroPulse * (lightVariant ? 0.18 : 0.22)
                 ) * theme.strikeIntensity * silhouetteGuard;
             legendaryStormStrikeLight.distance = (strikeMix > 0.001 || returnMix > 0.001)
-                ? THREE.MathUtils.lerp(10, 28, THREE.MathUtils.clamp(strikeMix * 0.42 + returnMix * 0.82 * returnStrokeGain, 0, 1)) + stormMix * 4 + impactMix * (5.6 + groundSpillGain * 1.6) + boxHeroMix * 12.8
+                ? THREE.MathUtils.lerp(10, 28, THREE.MathUtils.clamp(strikeMix * 0.42 + returnMix * 0.82 * returnStrokeGain + pulseMix * 0.12, 0, 1)) + stormMix * 4 + impactMix * (5.6 + groundSpillGain * 1.6) + heroPulse * 5.4 + boxHeroMix * 12.8
                 : (boxHeroMix > 0.001 ? 12 + boxHeroMix * 18 : 0);
             legendaryStormStrikeLight.position.copy(legendaryStormState.target);
             legendaryStormStrikeLight.position.y += THREE.MathUtils.lerp(7.2, 5.1, boxHeroMix) + stormMix * 4.4 + impactMix * 0.9 + returnMix * 0.6;
@@ -15391,13 +15676,15 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 THREE.MathUtils.clamp(stormMix * 0.92 + strikeMix * 0.12 + returnMix * 0.12 + impactMix * 0.08, 0, 1)
             );
             legendaryStormFog.color.setHex(theme.fogColor);
-            legendaryStormFog.density = Math.max(0, reducedFogDensity * stormMix + strikeMix * 0.0038 + returnMix * (0.0042 * returnStrokeGain) + impactMix * (0.0026 + groundSpillGain * 0.0008) - boxHeroMix * (lightVariant ? 0.0032 : 0.0026));
+            legendaryStormFog.density = Math.max(0, reducedFogDensity * stormMix + eclipseMix * 0.0028 + strikeMix * 0.0038 + returnMix * (0.0042 * returnStrokeGain) + impactMix * (0.0026 + groundSpillGain * 0.0008) - heroPulse * 0.0012 - boxHeroMix * (lightVariant ? 0.0032 : 0.0026));
             scene.fog = stormMix > 0.001 || strikeMix > 0.001 || returnMix > 0.001 ? legendaryStormFog : null;
             const targetExposure =
                 THREE.MathUtils.lerp(homePageDayLightingDefaults.toneMappingExposure, theme.exposure, stormMix) +
                 strikeMix * (lightVariant ? 0.1 : 0.18) +
                 returnMix * (lightVariant ? 0.14 : 0.24) +
                 impactMix * (lightVariant ? 0.08 : 0.2) +
+                pulseMix * (lightVariant ? 0.04 : 0.08) +
+                heroPulse * (lightVariant ? 0.08 : 0.14) +
                 boxHeroMix * (lightVariant ? 0.14 : 0.38) +
                 (legendaryStormState.whiteout || 0) * (lightVariant ? 0.02 : 0.08);
             const exposureCap = landingPhaseVisible
@@ -15460,6 +15747,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryStormState.landingImpactTriggered = false;
             legendaryStormState.userInitiated = false;
             legendaryStormState.savedRouteGain = 1;
+            legendaryStormState.routeAudioReleased = false;
             restoreHomePageDayLighting();
             resetLegendaryCutsceneStartupState({ releasePreparedAudio: true, resetVideo: false });
             stopLegendaryCutsceneVideoPlayback();
@@ -15537,14 +15825,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function startLegendaryLandingImpactFeedback(strength = 1) {
-            const impactStrength = THREE.MathUtils.clamp(strength, 0, 1.35);
+            const impactStrength = prefersReducedMotionHomePage()
+                ? 0
+                : THREE.MathUtils.clamp(strength, 0, 1.35);
             legendaryImpactFeedbackState.hudTime = 0;
             legendaryImpactFeedbackState.hudDuration = LEGENDARY_IMPACT_FEEDBACK_CONFIG.hudDuration;
             legendaryImpactFeedbackState.hudStrength = impactStrength;
             legendaryImpactFeedbackState.cameraTime = 0;
             legendaryImpactFeedbackState.cameraDuration = LEGENDARY_IMPACT_FEEDBACK_CONFIG.cameraDuration;
             legendaryImpactFeedbackState.cameraStrength = impactStrength;
-            triggerLegendaryLandingImpactVibration();
+            if (impactStrength > 0) {
+                triggerLegendaryLandingImpactVibration();
+            }
         }
 
         function sampleLegendaryImpactShake(progress, octaves = 1) {
@@ -15668,6 +15960,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryStormState.savedWorldVisible = Boolean(worldGroup.visible);
             legendaryStormState.savedGrassVisible = Boolean(grassGroup.visible);
             legendaryStormState.savedRouteGain = clampUnitVolume(homePageRouteAudioState.gain, 1);
+            legendaryStormState.routeAudioReleased = false;
             clearLegendaryImpactFeedback();
             clearLegendaryStormStrikeGeometry();
             setLegendaryGrassRevealVisible(false);
@@ -15675,7 +15968,6 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             prepareLegendarySummonMusicForCurrentCinematic({ usePreparedAudio: true });
             legendarySummonMusicState.savedRouteGain = legendaryStormState.savedRouteGain;
             legendaryStormState.target.copy(spawnContext.landingTarget);
-            fadeOutHomePageAudioForLegendaryCutscene();
             lockMysteryInteractions((legendaryStormState.timings.interactionDuration * 1000) + LEGENDARY_STORM_CONFIG.interactionBufferMs);
             const theme = getLegendaryStormTheme(legendaryStormState.rarityKey);
             syncLegendaryStormOverlayVisuals(theme);
@@ -15920,6 +16212,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 return;
             }
             propPreviewPanel.classList.toggle('reveal-settled', Boolean(isSettled));
+        }
+
+        function syncPropPreviewLayerState() {
+            document.body?.classList.toggle('prop-preview-active', Boolean(previewState.open));
         }
 
         function setPreviewPresentationMode(presentation = 'standard') {
@@ -19140,6 +19436,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             const initialMode = 'item';
             propPreviewPanel.classList.add('open');
             previewState.open = true;
+            syncPropPreviewLayerState();
             resetPreviewDragState();
             previewState.viewMode = initialMode;
             previewState.fitCategory = propCategory || null;
@@ -19350,6 +19647,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 propPreviewOverlay.classList.add('open');
             }
             previewState.open = true;
+            syncPropPreviewLayerState();
             previewState.propKey = propKey;
             previewState.label = label;
             previewState.fitCategory = previewMetadata?.category || propRecord?.category || null;
@@ -20583,7 +20881,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 opacityWaveScale = 0.14,
                 opacityEnergyScale = 0.38,
                 maxOpacity = 0.84,
-                renderOrder = 6
+                renderOrder = 6,
+                depthTest = false
             } = {}) => {
                 const sprite = createSoftHaloSprite({ size, inner, mid, outer });
                 sprite.position.set(position[0], position[1], position[2]);
@@ -20591,7 +20890,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 sprite.frustumCulled = false;
                 sprite.visible = false;
                 sprite.material.opacity = opacity;
-                sprite.material.depthTest = false;
+                sprite.material.depthTest = depthTest;
                 sprite.material.depthWrite = false;
                 sprite.material.toneMapped = false;
                 rememberMysteryMaterialDefaults(sprite.material);
@@ -20617,6 +20916,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             };
 
             if (normalizedRarity === MYSTERY_BOX_RARITY.LEGENDARY_LIGHT || normalizedRarity === MYSTERY_BOX_RARITY.LEGENDARY_DARK) {
+                const shouldOccludeLegendaryHaloBehindBox = normalizedRarity === MYSTERY_BOX_RARITY.LEGENDARY_DARK;
                 addLegendaryHalo({
                     size: theme.haloCoreSize ?? 5.6,
                     opacity: theme.haloCoreOpacity ?? 0.32,
@@ -20633,7 +20933,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     opacityWaveScale: 0.18,
                     opacityEnergyScale: 0.46,
                     maxOpacity: 0.88,
-                    renderOrder: 6
+                    renderOrder: shouldOccludeLegendaryHaloBehindBox ? 4 : 6,
+                    depthTest: shouldOccludeLegendaryHaloBehindBox
                 });
                 addLegendaryHalo({
                     size: theme.haloWideSize ?? 8.4,
@@ -20651,7 +20952,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     opacityWaveScale: 0.12,
                     opacityEnergyScale: 0.24,
                     maxOpacity: 0.44,
-                    renderOrder: 5
+                    renderOrder: shouldOccludeLegendaryHaloBehindBox ? 3 : 5,
+                    depthTest: shouldOccludeLegendaryHaloBehindBox
                 });
             }
 
@@ -21192,6 +21494,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
             MYSTERY_BOX_RARITY.LEGENDARY_DARK
         ]);
+        const FORCE_LEGENDARY_ONLY_MYSTERY_REWARDS = true;
+        const FORCED_LEGENDARY_MYSTERY_RARITIES = Object.freeze([
+            MYSTERY_BOX_RARITY.LEGENDARY_LIGHT,
+            MYSTERY_BOX_RARITY.LEGENDARY_DARK
+        ]);
         const MYSTERY_BOX_SUMMON_WEIGHTS = Object.freeze({
             [MYSTERY_BOX_RARITY.COMMON]: 40,
             [MYSTERY_BOX_RARITY.RARE]: 30,
@@ -21199,6 +21506,25 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             [MYSTERY_BOX_RARITY.LEGENDARY_LIGHT]: 5,
             [MYSTERY_BOX_RARITY.LEGENDARY_DARK]: 5
         });
+
+        function isLegendaryOnlyMysteryRewardTestPhaseEnabled() {
+            return FORCE_LEGENDARY_ONLY_MYSTERY_REWARDS === true;
+        }
+
+        function isLegendaryMysteryRewardRarity(rarityKey) {
+            return FORCED_LEGENDARY_MYSTERY_RARITIES.includes(normalizeMysteryBoxRarity(rarityKey));
+        }
+
+        function getSelectableMysteryRewardRarities(availableKeysByRarity) {
+            const availableRarities = MYSTERY_RARITY_SELECTION_ORDER.filter((rarityKey) => (
+                Array.isArray(availableKeysByRarity?.[rarityKey]) && availableKeysByRarity[rarityKey].length > 0
+            ));
+            if (!isLegendaryOnlyMysteryRewardTestPhaseEnabled()) {
+                return availableRarities;
+            }
+            const legendaryRarities = availableRarities.filter((rarityKey) => isLegendaryMysteryRewardRarity(rarityKey));
+            return legendaryRarities.length ? legendaryRarities : availableRarities;
+        }
 
         function getMysteryWingRewardKeys() {
             return Array.from(propRegistry.values())
@@ -21376,6 +21702,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 });
             }
             const resolvedRarityKey = getMysteryRewardBoxRarity(matchedReward.rewardKey);
+            if (
+                isLegendaryOnlyMysteryRewardTestPhaseEnabled()
+                && !isLegendaryMysteryRewardRarity(resolvedRarityKey)
+            ) {
+                console.info('[HomepageMystery] Clearing next-pull override because the current legendary-only test phase rejects the resolved prop rarity.', {
+                    override: overridePayload,
+                    resolvedRewardKey: matchedReward.rewardKey,
+                    resolvedRarityKey
+                });
+                clearPinnedMysteryRewardKey();
+                return null;
+            }
             mysteryTestSessionState.active = true;
             mysteryTestSessionState.launchId = typeof overridePayload.launchId === 'string' ? overridePayload.launchId : null;
             mysteryTestSessionState.payload = overridePayload;
@@ -21607,9 +21945,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function pickMysteryRewardRarity(availableKeysByRarity) {
-            const availableRarities = MYSTERY_RARITY_SELECTION_ORDER.filter((rarityKey) => (
-                Array.isArray(availableKeysByRarity?.[rarityKey]) && availableKeysByRarity[rarityKey].length > 0
-            ));
+            const availableRarities = getSelectableMysteryRewardRarities(availableKeysByRarity);
 
             if (!availableRarities.length) {
                 return MYSTERY_RARITY_SELECTION_ORDER.find((rarityKey) =>
@@ -24298,12 +24634,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 const pressSqueezeY = 1 - (MYSTERY_BOX_CONFIG.pressSqueezeY || 0.14) * mysteryState.pressDepth - arrivalCompression;
                 const pressSqueezeXZ = 1 + (MYSTERY_BOX_CONFIG.pressSqueezeXZ || 0.1) * mysteryState.pressDepth + arrivalStretch;
                 const baseScale = mysteryState.baseScale || 1;
+                const legendaryDarkFocusBoost = boxTheme.key === MYSTERY_BOX_RARITY.LEGENDARY_DARK
+                    ? THREE.MathUtils.clamp(
+                        0.18 + materializeFactor * 0.12 + visibleArrivalEnvelope * 0.16 + reactiveRattle * 0.04,
+                        0,
+                        0.42
+                    )
+                    : 0;
                 root.scale.set(baseScale * pressSqueezeXZ, baseScale * pressSqueezeY, baseScale * pressSqueezeXZ);
+                if (legendaryDarkFocusBoost > 0) {
+                    root.scale.multiplyScalar(1 + legendaryDarkFocusBoost * 0.16);
+                    root.position.y += legendaryDarkFocusBoost * 0.12;
+                }
                 updateMysteryCoreVisuals(
-                    0.96 + reactiveRattle * 0.46 + mysteryState.pressDepth * 0.24 + visibleArrivalEnvelope * 1.62 + visibleArrivalOvershoot * 0.48 + (1 - materializeFactor) * 0.18,
+                    0.96 + reactiveRattle * 0.46 + mysteryState.pressDepth * 0.24 + visibleArrivalEnvelope * 1.62 + visibleArrivalOvershoot * 0.48 + (1 - materializeFactor) * 0.18 + legendaryDarkFocusBoost * 0.94,
                     mysteryState.timer * 7.4 + reactiveRattle * 3.2 + arrivalProgress * 4.8,
                     materializeFactor,
-                    mysteryState.pressDepth * 0.04 + visibleArrivalEnvelope * 0.22
+                    mysteryState.pressDepth * 0.04 + visibleArrivalEnvelope * 0.22 + legendaryDarkFocusBoost * 0.12
                 );
                 if (dustPoints && dustMaterial && smokeStrength > 0.01) {
                     dustPoints.visible = true;
@@ -24348,6 +24695,9 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 const openEase = openEaseOut(openRatio);
                 const baseScale = mysteryState.baseScale || 1;
                 const openingPress = THREE.MathUtils.clamp(mysteryState.openStartPressDepth || 0, 0, 1);
+                const legendaryDarkFocusBoost = boxTheme.key === MYSTERY_BOX_RARITY.LEGENDARY_DARK
+                    ? THREE.MathUtils.clamp(0.24 + openEase * 0.22, 0, 0.48)
+                    : 0;
                 if (openingPress > 0) {
                     const releaseRecover = Math.max(0.2, MYSTERY_BOX_CONFIG.pressReleaseRecover || 1.85);
                     const releaseBlend = 1 - Math.exp(-mysteryState.timer * releaseRecover);
@@ -24367,14 +24717,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     root.scale.setScalar(baseScale);
                     root.position.y = mysteryState.landingY;
                 }
+                if (legendaryDarkFocusBoost > 0) {
+                    root.scale.multiplyScalar(1 + legendaryDarkFocusBoost * 0.14);
+                    root.position.y += legendaryDarkFocusBoost * 0.14;
+                }
                 if (lidPivot) {
                     lidPivot.rotation.x = THREE.MathUtils.lerp(0, -1.25, openEase);
                 }
                 updateMysteryCoreVisuals(
-                    1.28 + openEase * 1.38,
+                    1.28 + openEase * 1.38 + legendaryDarkFocusBoost * 1.08,
                     mysteryState.timer * 10.8 + openEase * 4.1,
                     1,
-                    0.12 + openEase * 0.22
+                    0.12 + openEase * 0.22 + legendaryDarkFocusBoost * 0.16
                 );
                 if (Array.isArray(burstPieces) && Array.isArray(burstStartPos) && Array.isArray(burstStartRot) && Array.isArray(burstDirs)) {
                     burstPieces.forEach((piece, index) => {
@@ -24441,11 +24795,18 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     dustMaterial.opacity = Math.max(0, 0.88 - dustRatio * 0.86);
                     dustMaterial.size = 0.1 + dustRatio * 0.04;
                 }
+                const legendaryDarkFocusBoost = boxTheme.key === MYSTERY_BOX_RARITY.LEGENDARY_DARK
+                    ? THREE.MathUtils.clamp(0.22 - dustRatio * 0.08, 0, 0.22)
+                    : 0;
+                if (legendaryDarkFocusBoost > 0) {
+                    root.scale.setScalar((mysteryState.baseScale || 1) * (1 + legendaryDarkFocusBoost * 0.16));
+                    root.position.y = mysteryState.landingY + legendaryDarkFocusBoost * 0.12;
+                }
                 updateMysteryCoreVisuals(
-                    1.95 - dustRatio * 0.28,
+                    1.95 - dustRatio * 0.28 + legendaryDarkFocusBoost * 0.96,
                     mysteryState.timer * 8.4 + dustRatio * 3.4,
                     1,
-                    0.24 - dustRatio * 0.08
+                    0.24 - dustRatio * 0.08 + legendaryDarkFocusBoost * 0.14
                 );
                 const rewardRevealRatio = THREE.MathUtils.clamp(
                     MYSTERY_BOX_CONFIG.rewardRevealRatio ?? 0.92,
@@ -24593,6 +24954,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             if (propPreviewOverlay) {
                 propPreviewOverlay.classList.remove('open');
             }
+            syncPropPreviewLayerState();
             setPreviewFallbackMessage('');
             setPreviewActionButtonsDisabled(true);
             if (propPreviewName) {
@@ -24652,6 +25014,136 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             void openPropPreviewSafely(selected, label);
         }
 
+        function bindStoreItemButtonEvents(button) {
+            const previewTrigger = button.querySelector('.item-preview-trigger');
+            if (previewTrigger) {
+                const launchPreview = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    previewOpenForButton(button);
+                };
+                previewTrigger.addEventListener('click', launchPreview);
+                previewTrigger.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    launchPreview(event);
+                });
+            }
+
+            button.addEventListener('click', (event) => {
+                if (event && event.target && event.target.closest('.item-preview-trigger')) {
+                    return;
+                }
+                if (button.dataset.empty === 'true') {
+                    return;
+                }
+                if (button.dataset.action === 'clearAll') {
+                    clearAllProps();
+                    updatePropButtonStates();
+                    return;
+                }
+                const selected = button.dataset.prop;
+                if (!selected) return;
+                toggleProp(selected);
+                updatePropButtonStates();
+            });
+        }
+
+        function createStoreCategoryButton(categoryKey) {
+            const button = document.createElement('button');
+            button.className = 'category-btn';
+            button.type = 'button';
+            button.dataset.category = categoryKey;
+            button.textContent = getInventoryCategoryLabel(categoryKey);
+            button.addEventListener('click', () => {
+                setActiveCategory(button.dataset.category);
+            });
+            return button;
+        }
+
+        function createInventoryCategoryButton(categoryKey) {
+            const button = document.createElement('button');
+            button.className = 'inventory-category-btn category-btn';
+            button.type = 'button';
+            button.dataset.category = categoryKey;
+            button.textContent = getInventoryDisplayNameWithCount(categoryKey);
+            button.addEventListener('click', () => {
+                setActiveInventoryCategory(button.dataset.category);
+            });
+            return button;
+        }
+
+        function createStoreItemButton(propKey) {
+            const button = document.createElement('button');
+            button.className = 'item-btn';
+            button.type = 'button';
+            button.dataset.prop = propKey;
+            button.dataset.category = getPropCategory(propKey) || '';
+            button.dataset.propLabel = getPropLabelByKey(propKey);
+
+            const labelNode = document.createElement('span');
+            labelNode.className = 'item-btn-label';
+            labelNode.textContent = getPropLabelByKey(propKey);
+
+            const previewTrigger = document.createElement('span');
+            previewTrigger.className = 'item-preview-trigger';
+            previewTrigger.setAttribute('role', 'button');
+            previewTrigger.setAttribute('tabindex', '0');
+            previewTrigger.setAttribute('aria-label', `Preview ${getPropLabelByKey(propKey)}`);
+            previewTrigger.dataset.previewFor = propKey;
+            previewTrigger.textContent = '◈';
+
+            button.append(labelNode, previewTrigger);
+            bindStoreItemButtonEvents(button);
+            return button;
+        }
+
+        function rebuildStoreCatalogUi() {
+            if (!storeCategoryTabs || !inventoryCategoryTabs || !storeItemGrid) {
+                return;
+            }
+
+            const categories = [...INVENTORY_CONFIG.categories]
+                .filter((category) => category?.key && category.enabled !== false)
+                .sort((a, b) => {
+                    if ((a.sortOrder ?? 0) !== (b.sortOrder ?? 0)) {
+                        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+                    }
+                    return getInventoryCategoryLabel(a.key).localeCompare(getInventoryCategoryLabel(b.key));
+                });
+            const visiblePropKeys = Array.from(propRegistry.values())
+                .filter((metadata) => metadata?.key && metadata.active !== false && metadata.archived !== true)
+                .sort((a, b) => comparePropCatalogOrder(a.key, b.key))
+                .map((metadata) => metadata.key);
+
+            storeCategoryTabs.textContent = '';
+            inventoryCategoryTabs.textContent = '';
+            storeItemGrid.textContent = '';
+            storeCategoryButtons.splice(0, storeCategoryButtons.length);
+            inventoryCategoryButtons.splice(0, inventoryCategoryButtons.length);
+            itemButtons.splice(0, itemButtons.length);
+            propButtons.splice(0, propButtons.length);
+
+            categories.forEach((category) => {
+                const storeButton = createStoreCategoryButton(category.key);
+                const inventoryButton = createInventoryCategoryButton(category.key);
+                storeCategoryButtons.push(storeButton);
+                inventoryCategoryButtons.push(inventoryButton);
+                storeCategoryTabs.appendChild(storeButton);
+                inventoryCategoryTabs.appendChild(inventoryButton);
+            });
+
+            visiblePropKeys.forEach((propKey) => {
+                const button = createStoreItemButton(propKey);
+                itemButtons.push(button);
+                propButtons.push(button);
+                storeItemGrid.appendChild(button);
+            });
+
+            inventoryCategoryTabs.hidden = categories.length <= 1;
+        }
+
         function updatePropButtonStates() {
             propButtons.forEach((btn) => {
                 btn.classList.toggle('active', activeProps.has(btn.dataset.prop));
@@ -24661,7 +25153,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
 
         function setActiveCategory(categoryKey) {
             activeCategory = isInventoryCategory(categoryKey) ? categoryKey : INVENTORY_CONFIG.defaultCategory;
-            categoryButtons.forEach((btn) => {
+            storeCategoryButtons.forEach((btn) => {
                 btn.classList.toggle('active', btn.dataset.category === activeCategory);
             });
             itemButtons.forEach((btn) => {
@@ -24827,59 +25319,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             });
         }
 
-        categoryButtons.forEach((btn) => {
-            btn.addEventListener('click', () => {
-                setActiveCategory(btn.dataset.category);
-            });
-        });
-
-        inventoryCategoryButtons.forEach((btn) => {
-            btn.addEventListener('click', () => {
-                setActiveInventoryCategory(btn.dataset.category);
-            });
-        });
-
-        itemButtons.forEach((btn) => {
-            const previewTrigger = btn.querySelector('.item-preview-trigger');
-            if (previewTrigger) {
-                const launchPreview = (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    previewOpenForButton(btn);
-                };
-                previewTrigger.addEventListener('click', launchPreview);
-                previewTrigger.addEventListener('keydown', (event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    launchPreview(event);
-                });
-            }
-
-            btn.addEventListener('click', (event) => {
-                if (event && event.target && event.target.closest('.item-preview-trigger')) {
-                    return;
-                }
-                if (btn.dataset.empty === 'true') {
-                    return;
-                }
-                if (btn.dataset.action === 'clearAll') {
-                    clearAllProps();
-                    updatePropButtonStates();
-                    return;
-                }
-                const selected = btn.dataset.prop;
-                if (!selected) return;
-                toggleProp(selected);
-                updatePropButtonStates();
-            });
-        });
-
         if (propPreviewInventoryBtn) {
             propPreviewInventoryBtn.addEventListener('click', () => {
                 if (!previewState.propKey) {
                     return;
                 }
+                restoreHomePageAudioAfterLegendarySummonPreview({ immediate: false });
                 const forceDecision = isMysterySummonDecisionRequired();
                 const stashResult = stashPropInInventory(previewState.propKey);
                 if (propPreviewName) {
@@ -24913,6 +25358,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 if (!previewState.propKey) {
                     return;
                 }
+                restoreHomePageAudioAfterLegendarySummonPreview({ immediate: false });
                 const forceDecision = isMysterySummonDecisionRequired();
                 const equipped = equipPropNow(previewState.propKey);
                 if (equipped && propPreviewName) {
@@ -25200,6 +25646,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             });
         }
 
+        rebuildStoreCatalogUi();
         setActiveCategory(INVENTORY_CONFIG.defaultCategory);
         setActiveInventoryCategory(INVENTORY_CONFIG.defaultCategory);
         renderInventoryList();

@@ -164,6 +164,7 @@ const livePropCount = $('live-prop-count');
 const liveSearchInput = $('live-search-input');
 const liveCategoryFilter = $('live-category-filter');
 const motionPreviewButton = $('toggle-preview-motion-button');
+const autoLockFitButton = $('auto-lock-fit-button');
 const syncBothWingsButton = $('sync-both-wings-button');
 const syncOneWingButton = $('sync-one-wing-button');
 const turntableButton = $('toggle-turntable-button');
@@ -1468,6 +1469,46 @@ const SLOT_STAGE_TARGET_SPANS = Object.freeze({
   bodyAccessory: 1.85,
   heldProp: 1.75,
 });
+const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
+  Object.freeze([0, 0, 0]),
+  Object.freeze([0, Math.PI / 2, 0]),
+  Object.freeze([0, Math.PI, 0]),
+  Object.freeze([0, -Math.PI / 2, 0]),
+  Object.freeze([Math.PI / 2, 0, 0]),
+  Object.freeze([-Math.PI / 2, 0, 0]),
+  Object.freeze([Math.PI, 0, 0]),
+  Object.freeze([0, 0, Math.PI / 2]),
+  Object.freeze([0, 0, -Math.PI / 2]),
+  Object.freeze([Math.PI / 2, Math.PI / 2, 0]),
+  Object.freeze([-Math.PI / 2, Math.PI / 2, 0]),
+  Object.freeze([Math.PI / 2, 0, Math.PI / 2]),
+]);
+const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
+  headWear: Object.freeze({
+    horizontalSpan: 1.65,
+    ySinkRatio: 0.24,
+    zSinkRatio: 0.18,
+    rotationCandidates: HEADWEAR_ROTATION_CANDIDATES,
+  }),
+  faceAccessory: Object.freeze({
+    horizontalSpan: 1.08,
+    ySinkRatio: 0.02,
+    zSinkRatio: 0.1,
+    rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])]),
+  }),
+  bodyAccessory: Object.freeze({
+    horizontalSpan: 1.55,
+    ySinkRatio: 0.08,
+    zSinkRatio: 0.14,
+    rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])]),
+  }),
+  heldProp: Object.freeze({
+    horizontalSpan: 1.35,
+    ySinkRatio: 0.02,
+    zSinkRatio: 0.08,
+    rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])]),
+  }),
+});
 const SINGLE_WING_SYNC_TARGET_SPAN = 2.55;
 const cloneHistorySnapshot = (snapshot) => ({
   ...snapshot,
@@ -2214,6 +2255,7 @@ function renderStageToolbarControls() {
   const draftProp = ensureDraftProp();
   const category = getDraftCategoryRecord();
   const canUseTransformShortcuts = hasEditableStageProp() && !state.motionPreviewEnabled;
+  const canUseAutoLockFit = canAutoLockCurrentDraft(draftProp, category);
   const canUseBothWingSync = canSyncBothWings(draftProp, category);
   const canUseOneWingSync = canSyncOneWing(draftProp, category);
   const activeWingSyncMode = getEffectiveWingSyncPreviewMode(draftProp, category);
@@ -2224,6 +2266,16 @@ function renderStageToolbarControls() {
   motionPreviewButton.textContent = state.motionPreviewEnabled ? 'Pause Preview' : 'Play Preview';
   motionPreviewButton.classList.toggle('is-active', state.motionPreviewEnabled);
   motionPreviewButton.setAttribute('aria-pressed', state.motionPreviewEnabled ? 'true' : 'false');
+
+  autoLockFitButton.disabled = !canUseAutoLockFit;
+  autoLockFitButton.setAttribute('aria-pressed', 'false');
+  autoLockFitButton.title = canUseAutoLockFit
+    ? category?.slotKey === 'headWear'
+      ? 'Detect the best XiO headwear fit, snap the crown or hat into place, then fine-tune it manually.'
+      : `Snap this ${category?.label || 'single-slot prop'} into XiO’s ${category?.label || 'active'} slot and seed the transform controls.`
+    : category?.slotKey === 'wingSet'
+      ? 'Auto Lock / Auto Fit is for headwear and other single-slot props.'
+      : 'Load or drop a single-slot GLB into the XiO stage before using Auto Lock / Auto Fit.';
 
   syncBothWingsButton.disabled = !canUseBothWingSync;
   syncBothWingsButton.classList.toggle('is-active', canUseBothWingSync && activeWingSyncMode === 'both');
@@ -3415,6 +3467,144 @@ function roundTransformValue(value, fallback = 0) {
   return Number((Number.isFinite(numericValue) ? numericValue : fallback).toFixed(4));
 }
 
+function getSingleSlotAutoLockPreset(slotKey) {
+  return SINGLE_SLOT_AUTO_LOCK_PRESETS[slotKey] || {
+    horizontalSpan: SLOT_STAGE_TARGET_SPANS[slotKey] || 1.4,
+    ySinkRatio: 0.08,
+    zSinkRatio: 0.08,
+    rotationCandidates: [[0, 0, 0]],
+  };
+}
+
+function scoreHeadwearRotationCandidate(size) {
+  const width = Math.max(size.x, size.z, 0.0001);
+  const depth = Math.min(size.x, size.z, 0.0001);
+  const height = Math.max(size.y, 0.0001);
+  const heightRatio = height / width;
+  const depthRatio = depth / width;
+  return (width / height)
+    + (depth / height)
+    - (Math.abs(heightRatio - 0.42) * 3.2)
+    - (Math.abs(depthRatio - 0.84) * 1.2)
+    - (heightRatio < 0.1 ? 1.4 : 0)
+    - (heightRatio > 1.08 ? 2.6 : 0);
+}
+
+function measureSingleSlotAutoLockCandidate(sourceRoot, rotation, preset, slotKey) {
+  const candidateRoot = cloneSceneGraph(sourceRoot);
+  candidateRoot.rotation.set(rotation[0], rotation[1], rotation[2]);
+  candidateRoot.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(candidateRoot);
+  if (bounds.isEmpty()) {
+    return null;
+  }
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  bounds.getSize(size);
+  bounds.getCenter(center);
+  const horizontalSpan = Math.max(size.x, size.z, 0.0001);
+  const scaleFactor = THREE.MathUtils.clamp((preset.horizontalSpan || 1.4) / horizontalSpan, 0.08, 40);
+  const scaledCenter = center.clone().multiplyScalar(scaleFactor);
+  const scaledSize = size.clone().multiplyScalar(scaleFactor);
+  const score = slotKey === 'headWear'
+    ? scoreHeadwearRotationCandidate(size)
+    : horizontalSpan / Math.max(size.y, 0.0001);
+  return {
+    rotation,
+    scaledCenter,
+    scaledSize,
+    scaleFactor,
+    score,
+  };
+}
+
+function pickSingleSlotAutoLockCandidate(sourceRoot, preset, slotKey) {
+  if (!sourceRoot) {
+    return null;
+  }
+  const candidates = Array.isArray(preset.rotationCandidates) && preset.rotationCandidates.length
+    ? preset.rotationCandidates
+    : [[0, 0, 0]];
+  return candidates.reduce((bestCandidate, rotation) => {
+    const measuredCandidate = measureSingleSlotAutoLockCandidate(sourceRoot, rotation, preset, slotKey);
+    if (!measuredCandidate) {
+      return bestCandidate;
+    }
+    if (!bestCandidate || measuredCandidate.score > bestCandidate.score) {
+      return measuredCandidate;
+    }
+    return bestCandidate;
+  }, null);
+}
+
+function canAutoLockCurrentDraft(draftProp = ensureDraftProp(), category = getDraftCategoryRecord()) {
+  return Boolean(
+    category?.slotKey
+      && category.slotKey !== 'wingSet'
+      && (state.draftTemplateSourceRoot || state.draftTemplateRoot)
+      && !isNoWingProxyRecord(draftProp)
+      && !isBaseWingProxyRecord(draftProp)
+  );
+}
+
+function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false } = {}) {
+  const draftProp = ensureDraftProp();
+  const category = getDraftCategoryRecord();
+  if (!canAutoLockCurrentDraft(draftProp, category)) {
+    if (!silent) {
+      log('Load a single-slot prop such as headwear before using Auto Lock / Auto Fit.');
+    }
+    return false;
+  }
+
+  if (state.motionPreviewEnabled) {
+    setMotionPreviewEnabled(false, { silent: true });
+  }
+
+  const slotKey = category.slotKey;
+  const preset = getSingleSlotAutoLockPreset(slotKey);
+  const sourceRoot = state.draftTemplateSourceRoot || state.draftTemplateRoot;
+  const candidate = pickSingleSlotAutoLockCandidate(sourceRoot, preset, slotKey);
+  if (!candidate) {
+    if (!silent) {
+      log('XiO could not measure that GLB well enough to auto-fit it.');
+    }
+    return false;
+  }
+
+  draftProp.attachment = {
+    ...draftProp.attachment,
+    position: [
+      roundTransformValue(-candidate.scaledCenter.x, 0),
+      roundTransformValue(-candidate.scaledCenter.y - (candidate.scaledSize.y * (preset.ySinkRatio ?? 0.08)), 0),
+      roundTransformValue(-candidate.scaledCenter.z - (candidate.scaledSize.z * (preset.zSinkRatio ?? 0.08)), 0),
+    ],
+    rotation: [
+      roundTransformValue(candidate.rotation[0], 0),
+      roundTransformValue(candidate.rotation[1], 0),
+      roundTransformValue(candidate.rotation[2], 0),
+    ],
+    scale: [
+      roundTransformValue(candidate.scaleFactor, 1),
+      roundTransformValue(candidate.scaleFactor, 1),
+      roundTransformValue(candidate.scaleFactor, 1),
+    ],
+    mirrorMode: 'single',
+  };
+
+  rebuildDraftStage();
+  selectStageSelectionByKey('single');
+  if (commitHistoryStep) {
+    commitDraftHistoryStep();
+  }
+  renderAll();
+  if (!silent) {
+    const label = getSelectedLiveProp()?.label || draftProp.label || 'current prop';
+    log(`Auto-locked ${label} to XiO’s ${slotKey === 'headWear' ? 'headwear' : category.label} slot and staged it for final tuning.`);
+  }
+  return true;
+}
+
 function captureAttachmentFromPivot(pivot) {
   if (!pivot) {
     return null;
@@ -4111,7 +4301,13 @@ function commitDraftLoadPlan(draftLoadPlan, {
   refreshDraftTemplatePresentationFromSource();
   rebuildDraftStage();
   if (draftLoadPlan.autoFitToSlot) {
-    autoFitDraftPlacementToSlot();
+    const category = getDraftCategoryRecord();
+    const didAutoLock = canAutoLockCurrentDraft(state.draftProp, category)
+      ? autoLockDraftPlacementToSlot({ commitHistoryStep: false, silent: true })
+      : false;
+    if (!didAutoLock) {
+      autoFitDraftPlacementToSlot();
+    }
   }
   resetDraftHistory();
 
@@ -5257,6 +5453,9 @@ creatorCanvas.addEventListener('click', (event) => {
 
 $('toggle-preview-motion-button').addEventListener('click', () => {
   setMotionPreviewEnabled(!state.motionPreviewEnabled);
+});
+$('auto-lock-fit-button').addEventListener('click', () => {
+  autoLockDraftPlacementToSlot();
 });
 $('sync-both-wings-button').addEventListener('click', () => {
   syncBothWingsAnimationPreview();

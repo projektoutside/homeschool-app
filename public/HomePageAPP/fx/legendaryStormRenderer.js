@@ -49,98 +49,178 @@ const FULLSCREEN_VERTEX_SHADER = `
     }
 `;
 
-const CLOUD_FRAGMENT_SHADER = `
-    varying vec2 vUv;
-    uniform vec2 uResolution;
-    uniform vec2 uStrikePos;
-    uniform float uTime;
-    uniform float uEnvironmentMix;
-    uniform float uDarkness;
-    uniform float uNightfallProgress;
-    uniform float uCloudFlash;
-    uniform float uCloudSheet;
-    uniform float uFlash;
-    uniform float uReturnStroke;
-    uniform float uGroundGlow;
-    uniform float uMist;
-    uniform vec3 uThemeA;
-    uniform vec3 uThemeB;
-    uniform vec3 uCloudTint;
-
-    float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-    }
-
-    float noise(vec2 p) {
-        vec2 i = floor(p);
-        vec2 f = fract(p);
-        vec2 u = f * f * (3.0 - 2.0 * f);
-        return mix(
-            mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-            u.y
-        );
-    }
-
-    float fbm(vec2 p) {
-        float value = 0.0;
-        float amplitude = 0.5;
-        for (int i = 0; i < 5; i++) {
-            value += amplitude * noise(p);
-            p = p * 2.07 + vec2(11.3, -7.1);
-            amplitude *= 0.53;
-        }
-        return value;
-    }
-
-    void main() {
-        vec2 aspectUv = vec2(
-            (vUv.x - 0.5) * (uResolution.x / max(uResolution.y, 1.0)),
-            vUv.y
-        );
-        float t = uTime * 0.042;
-        float skyMask = smoothstep(1.04, 0.04, vUv.y);
-        float highSky = smoothstep(0.6, 0.02, vUv.y);
-        float base = fbm(aspectUv * vec2(2.6, 1.85) + vec2(0.0, -t));
-        float detail = fbm(aspectUv * vec2(5.9, 3.3) + vec2(t * 0.46, t * 0.14));
-        float wisps = fbm(aspectUv * vec2(9.2, 5.1) + vec2(-t * 0.28, t * 0.12));
-        float cloud = smoothstep(0.34, 0.86, base * 0.72 + detail * 0.38 + wisps * 0.18 + skyMask * 0.28);
-
-        vec2 strike = vec2(uStrikePos.x, 1.0 - uStrikePos.y);
-        float dx = (vUv.x - strike.x) * (uResolution.x / max(uResolution.y, 1.0));
-        float dy = vUv.y - strike.y;
-        float upperChannel = exp(-dx * dx * 22.0) * smoothstep(strike.y + 0.12, -0.02, vUv.y);
-        float strikeDepth = max(0.0, strike.y - vUv.y);
-        float strikeWake = exp(-(dx * dx * 12.5 + strikeDepth * strikeDepth * 9.6)) * smoothstep(strike.y + 0.06, -0.02, vUv.y);
-        float strikeSpill = exp(-(dx * dx * 7.4 + strikeDepth * strikeDepth * 3.4)) * smoothstep(strike.y + 0.22, 0.0, vUv.y);
-        float sheetBand = exp(-pow((vUv.y - min(0.14, strike.y * 0.42)) * 3.3, 2.0)) * (0.28 + 0.72 * exp(-dx * dx * 2.8));
-        float mistBand = smoothstep(0.18, 1.0, vUv.y) * fbm(aspectUv * vec2(3.1, 2.2) + vec2(t * 0.24, -t * 0.18));
-        float groundAura = exp(-(dx * dx * 10.0 + dy * dy * 26.0));
-
-        float curtainEdge = mix(1.28, 0.14, clamp(uNightfallProgress, 0.0, 1.0));
-        float topCurtain = smoothstep(curtainEdge - 0.18, curtainEdge + 0.1, vUv.y);
-        float curtainFeather = topCurtain * (0.3 + cloud * 0.5 + highSky * 0.22);
-        float ambientDark =
-            uEnvironmentMix * (0.024 + cloud * 0.09 + topCurtain * 0.14 + highSky * 0.05) +
-            uDarkness * (0.018 + cloud * 0.07 + curtainFeather * 0.5 + highSky * 0.05);
-        float illumination =
-            uCloudFlash * (strikeWake * 0.42 + strikeSpill * 0.26 + sheetBand * 0.46 + upperChannel * 0.22) +
-            uCloudSheet * (sheetBand * 0.92 + upperChannel * 0.48 + strikeSpill * 0.18) +
-            uReturnStroke * (strikeWake * 0.34 + upperChannel * 0.54 + strikeSpill * 0.22) +
-            uGroundGlow * groundAura * 0.18;
-        float whiteLift = uFlash * highSky * 0.08;
-
-        vec3 darkColor = mix(vec3(0.02, 0.03, 0.05), uCloudTint * 0.34, 0.64);
-        vec3 energyColor = mix(mix(uThemeB, uThemeA, 0.46), vec3(1.0), 0.58);
-        vec3 color =
-            darkColor * ambientDark +
-            energyColor * illumination +
-            vec3(1.0) * whiteLift +
-            uThemeA * uMist * mistBand * 0.08;
-
-        float alpha = clamp(ambientDark * 0.82 + illumination * 0.72 + uMist * mistBand * 0.12 + whiteLift, 0.0, 1.0);
-        gl_FragColor = vec4(color, alpha);
-    }
+const CLOUD_FRAGMENT_SHADER = `\r
+    varying vec2 vUv;\r
+    uniform vec2 uResolution;\r
+    uniform vec2 uStrikePos;\r
+    uniform float uTime;\r
+    uniform float uEnvironmentMix;\r
+    uniform float uDarkness;\r
+    uniform float uNightfallProgress;\r
+    uniform float uCloudFlash;\r
+    uniform float uCloudSheet;\r
+    uniform float uFlash;\r
+    uniform float uReturnStroke;\r
+    uniform float uGroundGlow;\r
+    uniform float uMist;\r
+    uniform float uVortexEnergy;\r
+    uniform float uGodRayIntensity;\r
+    uniform float uTopOcclusion;\r
+    uniform float uLightDiffusion;\r
+    uniform float uLightningWeb;\r
+    uniform float uStormPulse;\r
+    uniform float uHeroPulse;\r
+    uniform float uAftershock;\r
+    uniform vec3 uThemeA;\r
+    uniform vec3 uThemeB;\r
+    uniform vec3 uCloudTint;\r
+    uniform vec3 uGodRayTint;\r
+\r
+    float hash(vec2 p) {\r
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);\r
+    }\r
+\r
+    float noise(vec2 p) {\r
+        vec2 i = floor(p);\r
+        vec2 f = fract(p);\r
+        vec2 u = f * f * (3.0 - 2.0 * f);\r
+        return mix(\r
+            mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),\r
+            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),\r
+            u.y\r
+        );\r
+    }\r
+\r
+    float fbm(vec2 p) {\r
+        float value = 0.0;\r
+        float amplitude = 0.5;\r
+        for (int i = 0; i < 5; i++) {\r
+            value += amplitude * noise(p);\r
+            p = p * 2.07 + vec2(11.3, -7.1);\r
+            amplitude *= 0.53;\r
+        }\r
+        return value;\r
+    }\r
+\r
+    float worley(vec2 p) {\r
+        vec2 i = floor(p);\r
+        vec2 f = fract(p);\r
+        float minDist = 1.0;\r
+        for (int y = -1; y <= 1; y++) {\r
+            for (int x = -1; x <= 1; x++) {\r
+                vec2 neighbor = vec2(float(x), float(y));\r
+                vec2 point = hash(i + neighbor + vec2(float(x) * 127.3, float(y) * 269.5)) * vec2(0.7, 0.7) + vec2(0.15);\r
+                float d = length(neighbor + point - f);\r
+                minDist = min(minDist, d);\r
+            }\r
+        }\r
+        return minDist;\r
+    }\r
+\r
+    void main() {\r
+        vec2 aspectUv = vec2(\r
+            (vUv.x - 0.5) * (uResolution.x / max(uResolution.y, 1.0)),\r
+            vUv.y\r
+        );\r
+        float t = uTime * 0.042;\r
+        float skyMask = smoothstep(1.04, 0.04, vUv.y);\r
+        float highSky = smoothstep(0.6, 0.02, vUv.y);\r
+\r
+        // Primary cloud layer with FBM\r
+        float base = fbm(aspectUv * vec2(2.6, 1.85) + vec2(0.0, -t));\r
+        float detail = fbm(aspectUv * vec2(5.9, 3.3) + vec2(t * 0.46, t * 0.14));\r
+        float wisps = fbm(aspectUv * vec2(9.2, 5.1) + vec2(-t * 0.28, t * 0.12));\r
+\r
+        // Worley noise for dramatic tower formations\r
+        float cellNoise = worley(aspectUv * vec2(3.8, 2.4) + vec2(t * 0.18, -t * 0.08));\r
+        float towerForm = smoothstep(0.62, 0.18, cellNoise) * skyMask * 0.34;\r
+\r
+        // Parallax depth layer (shifted UV for pseudo-volumetric)\r
+        vec2 depthOffset = vec2(0.04 + sin(uTime * 0.06) * 0.012, -0.02);\r
+        float depthLayer = fbm((aspectUv + depthOffset) * vec2(2.2, 1.7) + vec2(0.0, -t * 0.88));\r
+        float depthBlend = smoothstep(0.26, 0.74, depthLayer) * skyMask * 0.28;\r
+\r
+        float cloud = smoothstep(0.34, 0.86, base * 0.62 + detail * 0.32 + wisps * 0.14 + towerForm + depthBlend + skyMask * 0.22);\r
+\r
+        // Aurora / energy vortex channel\r
+        vec2 vortexCenter = vec2(uStrikePos.x, 1.0 - uStrikePos.y);\r
+        vec2 vortexDelta = aspectUv - vec2(vortexCenter.x * (uResolution.x / max(uResolution.y, 1.0)), vortexCenter.y);\r
+        float vortexDist = length(vortexDelta);\r
+        float vortexAngle = atan(vortexDelta.y, vortexDelta.x);\r
+        float spiral = sin(vortexAngle * 3.0 + vortexDist * 8.0 - uTime * 1.8) * 0.5 + 0.5;\r
+        float spiralMask = smoothstep(0.8, 0.12, vortexDist) * smoothstep(0.02, 0.14, vortexDist);\r
+        float auroraSwirl = spiral * spiralMask * uVortexEnergy;\r
+\r
+        vec2 strike = vec2(uStrikePos.x, 1.0 - uStrikePos.y);\r
+        float dx = (vUv.x - strike.x) * (uResolution.x / max(uResolution.y, 1.0));\r
+        float dy = vUv.y - strike.y;\r
+        float upperChannel = exp(-dx * dx * 22.0) * smoothstep(strike.y + 0.12, -0.02, vUv.y);\r
+        float strikeDepth = max(0.0, strike.y - vUv.y);\r
+        float strikeWake = exp(-(dx * dx * 12.5 + strikeDepth * strikeDepth * 9.6)) * smoothstep(strike.y + 0.06, -0.02, vUv.y);\r
+        float strikeSpill = exp(-(dx * dx * 7.4 + strikeDepth * strikeDepth * 3.4)) * smoothstep(strike.y + 0.22, 0.0, vUv.y);\r
+        float sheetBand = exp(-pow((vUv.y - min(0.14, strike.y * 0.42)) * 3.3, 2.0)) * (0.28 + 0.72 * exp(-dx * dx * 2.8));\r
+        float mistBand = smoothstep(0.18, 1.0, vUv.y) * fbm(aspectUv * vec2(3.1, 2.2) + vec2(t * 0.24, -t * 0.18));\r
+        float groundAura = exp(-(dx * dx * 10.0 + dy * dy * 26.0));\r
+\r
+        // God-ray beams rising from impact\r
+        float rayAngle = atan(vUv.x - strike.x, strike.y - vUv.y);\r
+        float rayNoise = fbm(vec2(rayAngle * 4.0, vUv.y * 3.0 + uTime * 0.3));\r
+        float rayMask = smoothstep(strike.y + 0.02, strike.y + 0.6, vUv.y) * exp(-dx * dx * 4.0) * smoothstep(0.44, 0.68, rayNoise);\r
+        float godRays = rayMask * uGodRayIntensity * 0.42;\r
+\r
+        float curtainEdge = mix(1.28, 0.14, clamp(uNightfallProgress, 0.0, 1.0));\r
+        float topCurtain = smoothstep(curtainEdge - 0.18, curtainEdge + 0.1, vUv.y);\r
+        float anvilField = fbm(aspectUv * vec2(4.8, 2.1) + vec2(t * 0.12, -t * 0.18));\r
+        float anvilCrest = smoothstep(0.24, 0.82, anvilField + skyMask * 0.22);\r
+        float topOcclusion = uTopOcclusion * (topCurtain * (0.44 + anvilCrest * 0.54) + highSky * 0.12);\r
+\r
+        float diffusionField = exp(-(dx * dx * 2.8 + strikeDepth * strikeDepth * 1.18));\r
+        float diffusionSheet = exp(-(dx * dx * 1.36 + strikeDepth * strikeDepth * 0.46));\r
+        float lightDiffusion = uLightDiffusion * (diffusionField * 0.38 + diffusionSheet * 0.18 + sheetBand * 0.22 + skyMask * 0.05);\r
+\r
+        float webNoiseA = fbm(aspectUv * vec2(8.2, 4.7) + vec2(t * 0.36, -t * 0.14));\r
+        float webNoiseB = fbm(aspectUv * vec2(16.4, 9.8) + vec2(-t * 0.44, t * 0.22));\r
+        float webDelta = abs(webNoiseA - webNoiseB);\r
+        float webMask = smoothstep(0.085, 0.018, webDelta) * highSky * smoothstep(-0.06, strike.y + 0.18, vUv.y);\r
+        float webArc = exp(-pow((vUv.y - min(0.22, strike.y * 0.72)) * 3.8, 2.0)) * (0.38 + 0.62 * exp(-dx * dx * 1.2));\r
+        float lightningWeb = webMask * webArc * uLightningWeb;\r
+\r
+        float pulseRibbon = exp(-(dx * dx * 5.6 + strikeDepth * strikeDepth * 1.9)) * uStormPulse;\r
+        float heroColumn = exp(-dx * dx * 3.2) * smoothstep(strike.y - 0.04, strike.y + 0.56, vUv.y) * (uHeroPulse * 0.42 + uAftershock * 0.26);\r
+\r
+        float curtainFeather = topCurtain * (0.3 + cloud * 0.5 + highSky * 0.22);\r
+        float ambientDark =\r
+            uEnvironmentMix * (0.024 + cloud * 0.09 + topCurtain * 0.14 + highSky * 0.05) +\r
+            uDarkness * (0.018 + cloud * 0.07 + curtainFeather * 0.5 + highSky * 0.05) +\r
+            topOcclusion * (0.22 + anvilCrest * 0.18);\r
+        float illumination =\r
+            uCloudFlash * (strikeWake * 0.42 + strikeSpill * 0.26 + sheetBand * 0.46 + upperChannel * 0.22) +\r
+            uCloudSheet * (sheetBand * 0.92 + upperChannel * 0.48 + strikeSpill * 0.18) +\r
+            uReturnStroke * (strikeWake * 0.34 + upperChannel * 0.54 + strikeSpill * 0.22) +\r
+            uGroundGlow * groundAura * 0.18 +\r
+            lightDiffusion * (0.82 + uStormPulse * 0.18) +\r
+            lightningWeb * (0.74 + uStormPulse * 0.16) +\r
+            pulseRibbon * 0.16 +\r
+            heroColumn * 0.34;\r
+        float whiteLift = uFlash * highSky * 0.08;\r
+\r
+        vec3 darkColor = mix(vec3(0.02, 0.03, 0.05), uCloudTint * 0.34, 0.64);\r
+        vec3 energyColor = mix(mix(uThemeB, uThemeA, 0.46), vec3(1.0), 0.58);\r
+        vec3 godRayColor = mix(uGodRayTint, vec3(1.0), 0.42);\r
+        vec3 auroraColor = mix(uThemeA, uThemeB, 0.34 + sin(uTime * 0.7) * 0.12);\r
+        vec3 webColor = mix(vec3(1.0), mix(uThemeA, uThemeB, 0.42), 0.42);\r
+        vec3 color =\r
+            darkColor * ambientDark +\r
+            energyColor * illumination +\r
+            vec3(1.0) * whiteLift +\r
+            uThemeA * uMist * mistBand * 0.08 +\r
+            auroraColor * (auroraSwirl * 0.34 + pulseRibbon * 0.12) +\r
+            godRayColor * (godRays + heroColumn * 0.66) +\r
+            webColor * lightningWeb * (0.46 + uStormPulse * 0.12);\r
+\r
+        float alpha = clamp(ambientDark * 0.82 + illumination * 0.72 + uMist * mistBand * 0.12 + whiteLift + auroraSwirl * 0.22 + godRays * 0.56 + lightningWeb * 0.34 + lightDiffusion * 0.28 + heroColumn * 0.22, 0.0, 1.0);\r
+        gl_FragColor = vec4(color, alpha);\r
+    }\r
 `;
 
 const IMPACT_FRAGMENT_SHADER = `
@@ -148,6 +228,7 @@ const IMPACT_FRAGMENT_SHADER = `
     uniform float uIntensity;
     uniform float uCore;
     uniform float uRing;
+    uniform float uBeam;
     uniform float uTime;
     uniform vec3 uTint;
 
@@ -187,12 +268,15 @@ const IMPACT_FRAGMENT_SHADER = `
         float whiteCore = exp(-r * r * 14.0) * (0.62 + uCore * 1.3);
         float detonation = pow(max(0.0, 1.0 - r), 0.42) * (0.22 + uIntensity * 1.24);
         float ring = exp(-pow((r - 0.42 - (blastNoise - 0.5) * 0.06) * 6.2, 2.0)) * (0.16 + uRing * 1.1);
+        float beamColumn = exp(-p.x * p.x * (8.0 - uBeam * 2.0)) * smoothstep(-0.08, 0.94, p.y);
+        float beamRibs = beamColumn * (0.7 + 0.3 * sin(angle * 6.0 + uTime * 1.2)) * (0.16 + uBeam * 0.92);
         vec3 warmTint = mix(uTint, vec3(1.0, 0.94, 0.86), 0.62);
         vec3 color =
             vec3(1.0) * whiteCore * (1.25 + uCore * 1.14) +
             warmTint * detonation * 0.78 +
-            mix(uTint, vec3(1.0), 0.38) * ring * 0.74;
-        float alpha = clamp(whiteCore * 0.92 + detonation * 0.72 + ring * 0.52 + bloom * uIntensity * 0.04, 0.0, 1.0);
+            mix(uTint, vec3(1.0), 0.38) * ring * 0.74 +
+            mix(vec3(1.0), warmTint, 0.28) * beamRibs * 0.76;
+        float alpha = clamp(whiteCore * 0.92 + detonation * 0.72 + ring * 0.52 + beamRibs * 0.3 + bloom * uIntensity * 0.04, 0.0, 1.0);
         gl_FragColor = vec4(color, alpha);
     }
 `;
@@ -287,20 +371,52 @@ const SHOCKWAVE_FRAGMENT_SHADER = `
     uniform float uRadius;
     uniform float uEdge;
     uniform float uReturnStroke;
+    uniform float uChromaticAberration;
+    uniform float uVignetteStrength;
+    uniform float uScreenShake;
+    uniform float uMotionBlur;
+    uniform float uTime;
     varying vec2 vUv;
 
     void main() {
+        // Screen-shake UV offset
+        float shakeX = sin(uTime * 67.3) * uScreenShake * 0.006;
+        float shakeY = cos(uTime * 83.7) * uScreenShake * 0.004;
+        vec2 shakenUv = vUv + vec2(shakeX, shakeY);
+
         vec2 aspect = vec2(uResolution.x / max(uResolution.y, 1.0), 1.0);
-        vec2 delta = vUv - uShockCenter;
+        vec2 delta = shakenUv - uShockCenter;
         vec2 scaled = delta * aspect;
         float dist = length(scaled);
         float safeEdge = max(0.02, uEdge);
         float wave = exp(-pow((dist - uRadius) / safeEdge, 2.0));
         vec2 dir = dist > 0.0001 ? scaled / dist : vec2(0.0, -1.0);
         vec2 offset = (dir * wave * uStrength * 0.014) / aspect;
-        vec4 color = texture2D(tDiffuse, vUv + offset);
+
+        // Chromatic aberration — split RGB at shockwave edge
+        float chromaOffset = uChromaticAberration * wave * 0.008 + uChromaticAberration * 0.002;
+        vec2 chromaDir = dist > 0.0001 ? normalize(delta) : vec2(0.0);
+        float r = texture2D(tDiffuse, shakenUv + offset + chromaDir * chromaOffset).r;
+        float g = texture2D(tDiffuse, shakenUv + offset).g;
+        float b = texture2D(tDiffuse, shakenUv + offset - chromaDir * chromaOffset).b;
+        vec4 color = vec4(r, g, b, 1.0);
+
+        vec2 blurDir = (offset + vec2(shakeX, shakeY) * 0.4) * (0.2 + uMotionBlur * 2.2);
+        vec4 blurColor = (
+            texture2D(tDiffuse, shakenUv + offset) +
+            texture2D(tDiffuse, shakenUv + offset + blurDir) +
+            texture2D(tDiffuse, shakenUv + offset - blurDir * 0.6)
+        ) / 3.0;
+        color = mix(color, blurColor, clamp(uMotionBlur, 0.0, 1.0) * 0.24);
+
+        // Energy spill
         float spill = exp(-dist * 6.2) * (uStrength * 0.16 + uReturnStroke * 0.08) + wave * uStrength * 0.12;
         color.rgb += uSpillTint * spill + vec3(1.0) * uReturnStroke * wave * 0.05;
+
+        // Radial vignette darkening
+        float vignette = 1.0 - smoothstep(0.3, 1.1, length(shakenUv - 0.5) * 1.5) * uVignetteStrength;
+        color.rgb *= vignette;
+
         gl_FragColor = color;
     }
 `;
@@ -655,7 +771,12 @@ function createShockwavePass() {
             uStrength: { value: 0 },
             uRadius: { value: 0.1 },
             uEdge: { value: 0.05 },
-            uReturnStroke: { value: 0 }
+            uReturnStroke: { value: 0 },
+            uChromaticAberration: { value: 0 },
+            uVignetteStrength: { value: 0 },
+            uScreenShake: { value: 0 },
+            uMotionBlur: { value: 0 },
+            uTime: { value: 0 }
         },
         vertexShader: FULLSCREEN_VERTEX_SHADER,
         fragmentShader: SHOCKWAVE_FRAGMENT_SHADER
@@ -678,6 +799,21 @@ const STRIKE_FRAGMENT_SHADER = `
     uniform float uCoreBoost;
     uniform float uSoftness;
 
+    float strikeHash(vec2 p) {
+        return fract(sin(dot(p, vec2(41.1, 289.7))) * 43758.5453);
+    }
+
+    float strikeNoise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+            mix(strikeHash(i), strikeHash(i + vec2(1.0, 0.0)), f.x),
+            mix(strikeHash(i + vec2(0.0, 1.0)), strikeHash(i + vec2(1.0, 1.0)), f.x),
+            f.y
+        );
+    }
+
     void main() {
         vec2 uv = vUv;
         float lateral = abs(uv.x - 0.5) * 2.0;
@@ -685,18 +821,28 @@ const STRIKE_FRAGMENT_SHADER = `
         float softness = clamp(uSoftness, 0.02, 1.0);
         float feather = pow(widthFalloff, mix(2.4, 0.62, softness));
         float core = pow(widthFalloff, mix(13.0, 4.8, softness)) * (1.0 + uCoreBoost * 1.55);
+
+        // Plasma electric noise texture for organic lightning look
+        float plasmaFreq = 32.0 + uCoreBoost * 12.0;
+        float plasmaNoise = strikeNoise(vec2(uv.x * plasmaFreq, uv.y * 18.0 + uPulse * 4.2));
+        float plasmaDetail = strikeNoise(vec2(uv.x * plasmaFreq * 2.1, uv.y * 34.0 - uPulse * 6.8));
+        float plasmaTexture = mix(0.74, 1.0, plasmaNoise * 0.6 + plasmaDetail * 0.4);
+
+        // Travel bands with stepped-leader crawl
         float travelBands = 0.88 + 0.12 * sin((uv.y * 12.0 + uPulse * 0.72) * 6.28318530718);
+        float leaderCrawl = smoothstep(0.0, 0.06, uv.y - (1.0 - clamp(uPulse * 0.8, 0.0, 1.0)));
+
         float microFlicker = 0.9 + 0.1 * sin((uv.y * 28.0 + uPulse * 1.34) * 6.28318530718 + lateral * 4.0);
         float returnSnap = smoothstep(0.18, 1.0, uPulse) * (0.64 + 0.36 * sin((uv.y * 7.5 + uPulse * 2.2) * 6.28318530718));
         float tipHeat = smoothstep(0.72, 1.0, uv.y) * (0.18 + uPulse * 0.28);
-        float glow = feather * travelBands * microFlicker;
-        float alpha = uOpacity * (glow * (0.7 + returnSnap * 0.24) + core * (0.5 + tipHeat * 0.3));
+        float glow = feather * travelBands * microFlicker * plasmaTexture * leaderCrawl;
+        float alpha = uOpacity * (glow * (0.7 + returnSnap * 0.24) + core * plasmaTexture * (0.5 + tipHeat * 0.3));
         if (alpha <= 0.001) {
             discard;
         }
         vec3 color =
             uColor * (0.72 + glow * 0.34 + returnSnap * 0.24) +
-            vec3(1.0) * core * (0.26 + uCoreBoost * 0.22 + uPulse * 0.14 + tipHeat * 0.16);
+            vec3(1.0) * core * plasmaTexture * (0.26 + uCoreBoost * 0.22 + uPulse * 0.14 + tipHeat * 0.16);
         gl_FragColor = vec4(color, clamp(alpha, 0.0, 1.0));
     }
 `;
@@ -861,7 +1007,16 @@ export class LegendaryStormFxRenderer {
                     uMist: { value: 0 },
                     uThemeA: { value: new THREE.Color(0xffffff) },
                     uThemeB: { value: new THREE.Color(0xffffff) },
-                    uCloudTint: { value: new THREE.Color(0x0c1828) }
+                    uCloudTint: { value: new THREE.Color(0x0c1828) },
+                    uVortexEnergy: { value: 0 },
+                    uGodRayIntensity: { value: 0 },
+                    uTopOcclusion: { value: 0 },
+                    uLightDiffusion: { value: 0 },
+                    uLightningWeb: { value: 0 },
+                    uStormPulse: { value: 0 },
+                    uHeroPulse: { value: 0 },
+                    uAftershock: { value: 0 },
+                    uGodRayTint: { value: new THREE.Color(0xc8eeff) }
                 },
                 vertexShader: FULLSCREEN_VERTEX_SHADER,
                 fragmentShader: CLOUD_FRAGMENT_SHADER
@@ -906,6 +1061,7 @@ export class LegendaryStormFxRenderer {
                     uIntensity: { value: 0 },
                     uCore: { value: 0 },
                     uRing: { value: 0 },
+                    uBeam: { value: 0 },
                     uTime: { value: 0 },
                     uTint: { value: new THREE.Color(0xffffff) }
                 },
@@ -1135,6 +1291,8 @@ export class LegendaryStormFxRenderer {
         this.cloudMesh.material.uniforms.uThemeA.value.copy(accentA);
         this.cloudMesh.material.uniforms.uThemeB.value.copy(accentB);
         this.cloudMesh.material.uniforms.uCloudTint.value.copy(cloudTint);
+        const godRayTint = makeColorFromStyle(resolvedTheme.godRayColor, 'rgba(200, 238, 255, 0.82)', 1.1);
+        this.cloudMesh.material.uniforms.uGodRayTint.value.copy(godRayTint);
         this.impactMesh.material.uniforms.uTint.value.copy(groundTint);
         this.craterMesh.material.uniforms.uTint.value.copy(groundTint);
         this.shockwavePass.uniforms.uSpillTint.value.copy(groundTint);
@@ -1345,6 +1503,7 @@ export class LegendaryStormFxRenderer {
     #updateStormMedia(stormState, theme, strikeTarget, t, dt = 1 / 60) {
         const environmentMix = clamp01(stormState?.environmentMix || 0);
         const darkness = clamp01(stormState?.darkness || 0);
+        const lightningMix = clamp01(stormState?.lightningMix || 0);
         const cloudFlash = clamp01(stormState?.cloudFlash || 0);
         const cloudSheet = clamp01(stormState?.cloudSheet || 0);
         const flash = clamp01(stormState?.flash || 0);
@@ -1355,6 +1514,17 @@ export class LegendaryStormFxRenderer {
         const groundSpillGain = Math.max(0.75, theme?.groundSpillGain || 1);
         const landingGroundGlow = landingPhase ? groundGlow : 0;
         const mist = clamp01(stormState?.mist || 0);
+        const revealEnergy = clamp01(stormState?.revealEnergy || 0);
+        const godRayIntensity = clamp01(stormState?.godRayIntensity || 0);
+        const impactBloom = clamp01(stormState?.impactBloom || 0);
+        const impactCore = clamp01(stormState?.impactCore || 0);
+        const impactRing = clamp01(stormState?.impactRing || 0);
+        const topOcclusion = clamp01((stormState?.nightfallProgress || 0) * 0.84 + environmentMix * 0.22 + darkness * 0.46);
+        const lightDiffusion = clamp01(Math.max(cloudFlash * 0.54, flash * 0.48, landingGroundGlow * 0.3, impactCore * 0.32, revealEnergy * 0.26, godRayIntensity * 0.18));
+        const lightningWeb = clamp01(Math.max(lightningMix * 0.82, clamp01(stormState?.boltBranchOpacity || 0) * 1.06, cloudSheet * 0.44));
+        const stormPulse = clamp01(Math.max(returnStroke * 1.18, flash * 0.72, cloudFlash * 0.58, cloudSheet * 0.4));
+        const heroPulse = clamp01(Math.max(revealEnergy * 0.86, godRayIntensity * 0.58, landingGroundGlow * 0.42));
+        const aftershock = clamp01(Math.max(impactCore, impactBloom, landingGroundGlow * 0.64, returnStroke * 0.24));
         this.cloudMesh.material.uniforms.uTime.value = t;
         this.cloudMesh.material.uniforms.uStrikePos.value.set(strikeTarget.x, strikeTarget.y);
         this.cloudMesh.material.uniforms.uEnvironmentMix.value = environmentMix;
@@ -1366,13 +1536,26 @@ export class LegendaryStormFxRenderer {
         this.cloudMesh.material.uniforms.uReturnStroke.value = returnStroke;
         this.cloudMesh.material.uniforms.uGroundGlow.value = landingGroundGlow;
         this.cloudMesh.material.uniforms.uMist.value = mist;
+        this.cloudMesh.material.uniforms.uVortexEnergy.value = clamp01(stormState?.vortexEnergy || 0);
+        this.cloudMesh.material.uniforms.uGodRayIntensity.value = godRayIntensity * Math.max(0.8, theme?.godRayIntensityScale || 1);
+        this.cloudMesh.material.uniforms.uTopOcclusion.value = topOcclusion;
+        this.cloudMesh.material.uniforms.uLightDiffusion.value = lightDiffusion;
+        this.cloudMesh.material.uniforms.uLightningWeb.value = lightningWeb;
+        this.cloudMesh.material.uniforms.uStormPulse.value = stormPulse;
+        this.cloudMesh.material.uniforms.uHeroPulse.value = heroPulse;
+        this.cloudMesh.material.uniforms.uAftershock.value = aftershock;
+        this.shockwavePass.uniforms.uChromaticAberration.value = clamp01(stormState?.chromaticAberration || 0);
+        this.shockwavePass.uniforms.uScreenShake.value = clamp01(stormState?.screenShake || 0) * (stormState?.reducedMotion ? 0 : stormState?.lightweightMode ? 0.5 : 1);
+        this.shockwavePass.uniforms.uVignetteStrength.value = clamp01(stormState?.vignetteStrength || 0);
+        this.shockwavePass.uniforms.uMotionBlur.value = clamp01((clamp01(stormState?.screenShake || 0) * 0.7 + returnStroke * 0.22 + cloudSheet * 0.18 + aftershock * 0.26) * (stormState?.reducedMotion ? 0 : stormState?.lightweightMode ? 0.4 : 1));
+        this.shockwavePass.uniforms.uTime.value = t;
 
         const impactIntensity = landingPhase
             ? clamp01(Math.max(
                 landingGroundGlow * (0.85 + groundSpillGain * 0.08),
-                (stormState?.impactBloom || 0) * impactBloomGain,
-                stormState?.impactCore || 0,
-                stormState?.impactRing || 0
+                impactBloom * impactBloomGain,
+                impactCore,
+                impactRing
             ))
             : 0;
         const impactScale = stormState?.strikeVariant === 'landing'
@@ -1384,8 +1567,9 @@ export class LegendaryStormFxRenderer {
         this.impactMesh.position.set(impactX, impactY, 0);
         this.impactMesh.scale.set(impactScale * 1.72, impactScale, 1);
         this.impactMesh.material.uniforms.uIntensity.value = impactIntensity;
-        this.impactMesh.material.uniforms.uCore.value = clamp01(stormState?.impactCore || 0);
-        this.impactMesh.material.uniforms.uRing.value = clamp01(stormState?.impactRing || 0);
+        this.impactMesh.material.uniforms.uCore.value = impactCore;
+        this.impactMesh.material.uniforms.uRing.value = impactRing;
+        this.impactMesh.material.uniforms.uBeam.value = clamp01(heroPulse * 0.62 + aftershock * 0.5);
         this.impactMesh.material.uniforms.uTime.value = t;
         this.impactMesh.visible = landingPhase && impactIntensity > 0.002;
 
@@ -1413,25 +1597,25 @@ export class LegendaryStormFxRenderer {
         this.craterMesh.visible = craterStrength > 0.015 && landingPhase;
 
         const shockStrength = landingPhase
-            ? clamp01(Math.max(stormState?.impactRing || 0, (stormState?.impactBloom || 0) * 0.7, (stormState?.returnStroke || 0) * 0.48))
+            ? clamp01(Math.max(impactRing, impactBloom * 0.7, returnStroke * 0.48, aftershock * 0.22))
             : 0;
         const shockRadius = landingPhase
             ? THREE.MathUtils.lerp(0.06, 0.38, clamp01((stormState?.impactRadius || 0) * 0.9 + shockStrength * 0.26))
             : 0;
         this.shockwavePass.uniforms.uShockCenter.value.set(strikeTarget.x, 1 - strikeTarget.y);
-        this.shockwavePass.uniforms.uStrength.value = shockStrength * (stormState?.reducedMotion ? 0.45 : stormState?.lightweightMode ? 0.72 : 1);
+        this.shockwavePass.uniforms.uStrength.value = shockStrength * (stormState?.reducedMotion ? 0.18 : stormState?.lightweightMode ? 0.72 : 1);
         this.shockwavePass.uniforms.uRadius.value = shockRadius;
         this.shockwavePass.uniforms.uEdge.value = landingPhase ? 0.09 : 0.04;
         this.shockwavePass.uniforms.uReturnStroke.value = returnStroke;
 
-        const peakLightning = clamp01(Math.max(returnStroke, cloudSheet, flash, landingGroundGlow * groundSpillGain, (stormState?.impactCore || 0) * impactBloomGain));
+        const peakLightning = clamp01(Math.max(returnStroke, cloudSheet, flash, landingGroundGlow * groundSpillGain, impactCore * impactBloomGain, lightDiffusion * 0.74, lightningWeb * 0.72, heroPulse * 0.5));
         const bloomBase = this.qualityKey === 'reduced' ? 0.82 : this.qualityKey === 'lightweight' ? 1.02 : 1.34;
         const bloomBoost = stormState?.strikeVariant === 'landing'
             ? (this.qualityKey === 'cinematic' ? 0.84 : 0.5)
             : this.qualityKey === 'cinematic'
                 ? 0.68
                 : 0.38;
-        this.bloomPass.strength = bloomBase + peakLightning * bloomBoost * impactBloomGain;
+        this.bloomPass.strength = bloomBase + peakLightning * bloomBoost * impactBloomGain + heroPulse * (this.qualityKey === 'cinematic' ? 0.24 : 0.1);
     }
 
     #emitLandingBurst(theme, stormState) {
@@ -1441,9 +1625,9 @@ export class LegendaryStormFxRenderer {
         const widthFactor = this.qualityKey === 'cinematic' ? 1 : this.qualityKey === 'lightweight' ? 0.76 : 0.62;
         const impactX = this.impactAnchor.x;
         const impactY = this.impactAnchor.y;
-        const smokeCount = this.qualityKey === 'cinematic' ? 60 : this.qualityKey === 'lightweight' ? 34 : 22;
-        const vaporCount = this.qualityKey === 'cinematic' ? 26 : this.qualityKey === 'lightweight' ? 16 : 10;
-        const sparkCount = this.qualityKey === 'cinematic' ? 30 : this.qualityKey === 'lightweight' ? 18 : 12;
+        const smokeCount = this.qualityKey === 'cinematic' ? 78 : this.qualityKey === 'lightweight' ? 40 : 24;
+        const vaporCount = this.qualityKey === 'cinematic' ? 32 : this.qualityKey === 'lightweight' ? 18 : 10;
+        const sparkCount = this.qualityKey === 'cinematic' ? 38 : this.qualityKey === 'lightweight' ? 20 : 12;
 
         this.vaporField.emit(() => {
             const angle = randomBetween(-Math.PI, 0);
@@ -1525,6 +1709,92 @@ export class LegendaryStormFxRenderer {
         this.sparkField.points.material.opacity = stormState?.reducedMotion ? 0.58 : 0.94;
     }
 
+    #emitVortexParticles(theme, stormState, dt) {
+        const phase = stormState?.phase || 'idle';
+        if (!(phase === 'cloudFormation' || phase === 'escalation' || phase === 'transitionStrike')) {
+            return;
+        }
+        const vortexEnergy = clamp01(stormState?.vortexEnergy || 0);
+        if (vortexEnergy <= 0.05) {
+            return;
+        }
+        const safeDt = Number.isFinite(dt) && dt > 0 ? dt : 1 / 60;
+        const qualityScale = this.qualityKey === 'cinematic' ? 1 : this.qualityKey === 'lightweight' ? 0.65 : 0.4;
+        this.ambientParticleCarry += vortexEnergy * qualityScale * safeDt * 22;
+        const emissionCount = Math.min(6, Math.floor(this.ambientParticleCarry));
+        if (emissionCount <= 0) {
+            return;
+        }
+        this.ambientParticleCarry -= emissionCount;
+
+        const accent = makeColorFromStyle(theme?.vortexParticleColor || theme?.overlayAccentA, FALLBACK_THEME.overlayAccentA, 1.14);
+        const spill = makeColorFromStyle(theme?.overlayGroundSpillColor, FALLBACK_THEME.overlayGroundSpillColor, 1.08);
+        const widthFactor = this.qualityKey === 'cinematic' ? 1 : this.qualityKey === 'lightweight' ? 0.78 : 0.6;
+        const impactX = this.impactAnchor.x || (this.width || 1) * 0.5;
+        const impactY = this.impactAnchor.y || (this.height || 1) * 0.5;
+        const height = this.height || 1;
+        const width = this.width || 1;
+
+        this.sparkField.emit(() => {
+            const spawnAngle = randomBetween(0, Math.PI * 2);
+            const spawnRadius = randomBetween(0.3, 0.6) * Math.min(width, height);
+            const startX = impactX + Math.cos(spawnAngle) * spawnRadius;
+            const startY = impactY + Math.sin(spawnAngle) * spawnRadius * 0.5;
+            const spiralSpeed = randomBetween(80, 180) * vortexEnergy;
+            const inwardAngle = Math.atan2(impactY - startY, impactX - startX);
+            const tangentAngle = inwardAngle + (Math.random() > 0.5 ? 1 : -1) * (Math.PI * 0.3 + Math.random() * Math.PI * 0.3);
+            return {
+                x: startX,
+                y: startY,
+                vx: Math.cos(tangentAngle) * spiralSpeed + Math.cos(inwardAngle) * spiralSpeed * 0.4,
+                vy: Math.sin(tangentAngle) * spiralSpeed + Math.sin(inwardAngle) * spiralSpeed * 0.4,
+                drag: 1.8,
+                gravity: randomBetween(-12, 8),
+                turbulence: randomBetween(4, 12),
+                swirl: randomBetween(8, 24),
+                phase: Math.random() * Math.PI * 2,
+                life: randomBetween(0.5, 1.2),
+                sizeStart: randomBetween(5, 12) * widthFactor,
+                sizeEnd: randomBetween(2, 5) * widthFactor,
+                alphaStart: 0,
+                alphaPeak: randomBetween(0.3, 0.6) * vortexEnergy,
+                alphaEnd: 0,
+                peakPoint: 0.2,
+                colorStart: accent,
+                colorEnd: spill
+            };
+        }, emissionCount);
+
+        this.smokeField.emit(() => {
+            const spawnAngle = randomBetween(0, Math.PI * 2);
+            const spawnRadius = randomBetween(0.18, 0.54) * Math.min(width, height);
+            const startX = impactX + Math.cos(spawnAngle) * spawnRadius;
+            const startY = impactY + Math.sin(spawnAngle) * spawnRadius * 0.28 - randomBetween(40, 120);
+            const inwardAngle = Math.atan2(impactY - startY, impactX - startX);
+            const cloudTint = makeColorFromStyle(theme?.overlayCloudColor, FALLBACK_THEME.overlayCloudColor, 0.78);
+            return {
+                x: startX,
+                y: startY,
+                vx: Math.cos(inwardAngle) * randomBetween(22, 54) * vortexEnergy,
+                vy: Math.sin(inwardAngle) * randomBetween(18, 42) * vortexEnergy + randomBetween(-6, 10),
+                drag: 1.04,
+                gravity: randomBetween(-10, 4),
+                turbulence: randomBetween(6, 18),
+                swirl: randomBetween(8, 20),
+                phase: Math.random() * Math.PI * 2,
+                life: randomBetween(0.9, 1.8),
+                sizeStart: randomBetween(18, 38) * widthFactor,
+                sizeEnd: randomBetween(74, 138) * widthFactor,
+                alphaStart: 0,
+                alphaPeak: randomBetween(0.12, 0.24) * vortexEnergy,
+                alphaEnd: 0,
+                peakPoint: 0.22,
+                colorStart: cloudTint,
+                colorEnd: spill
+            };
+        }, Math.max(1, Math.ceil(emissionCount * 0.7)));
+    }
+
     #emitAmbientAtmosphere(theme, stormState, dt) {
         const phase = stormState?.phase || 'idle';
         if (!(phase === 'boxMaterialize' || phase === 'idleStormReveal' || phase === 'stormDissipate')) {
@@ -1536,8 +1806,8 @@ export class LegendaryStormFxRenderer {
         if (ambientRate <= 0.02) {
             return;
         }
-        this.ambientParticleCarry += ambientRate * qualityScale * safeDt * 14;
-        const emissionCount = Math.min(8, Math.floor(this.ambientParticleCarry));
+        this.ambientParticleCarry += ambientRate * qualityScale * safeDt * 16;
+        const emissionCount = Math.min(10, Math.floor(this.ambientParticleCarry));
         if (emissionCount <= 0) {
             return;
         }
@@ -1681,6 +1951,7 @@ export class LegendaryStormFxRenderer {
             this.#emitLandingBurst(theme, stormState);
             this.landingBurstTriggered = true;
         }
+        this.#emitVortexParticles(theme, stormState, dt);
         this.#emitAmbientAtmosphere(theme, stormState, dt);
         this.#updateParticles(Math.max(0, dt));
         this.composer.render(Math.max(0, dt));

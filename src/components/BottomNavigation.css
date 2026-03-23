@@ -55,6 +55,17 @@ body.homepage-host-loading .stats-wake-zone {
     pointer-events: none !important;
 }
 
+.bottom-navigation-dock.is-locked,
+.bottom-stats-dock.is-locked,
+.stats-wake-zone.is-locked {
+    pointer-events: none !important;
+}
+
+.bottom-navigation-dock.is-locked,
+.bottom-stats-dock.is-locked {
+    cursor: default;
+}
+
 /* View Stack */
 .dock-view-stack {
     display: grid;
