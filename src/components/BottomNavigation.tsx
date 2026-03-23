@@ -36,7 +36,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenSettin
         || isOpenRoute
         || isResourceRoute;
     
-    const [isMinimized, setIsMinimized] = useState(true);
+    // Start expanded so the first post-boot view shows the main tabs immediately.
+    const [isMinimized, setIsMinimized] = useState(false);
     const [isStatsMinimized, setIsStatsMinimized] = useState(false);
     const [isStatsLineDormant, setIsStatsLineDormant] = useState(false);
     const [isStatsLinePulsing, setIsStatsLinePulsing] = useState(false);
