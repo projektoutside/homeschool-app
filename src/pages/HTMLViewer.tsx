@@ -1,149 +1,71 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { buildAssetPath } from '../utils/pathUtils';
+import { findBaseModuleById } from '../data/moduleRegistry';
 import { useSoundSettings } from '../context/SoundSettingsContext';
+import { useTheme } from '../context/ThemeContext';
 import { usePWA } from '../hooks/usePWA';
+import type { WorksheetManifest, WorksheetManifestEntry, WorksheetManifestSubject } from '../types/worksheetManifest';
+import { buildAssetPath } from '../utils/pathUtils';
 import { teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
+import {
+    buildWorksheetViewerRoute,
+    getWorksheetLookupAliases,
+    migrateLegacyWorksheetPath,
+} from '../utils/worksheetRoutes';
 import './HTMLViewer.css';
 
-interface WorksheetFile {
-    name: string;
-    path: string;
-    folder: string;
-    title: string;
-    description: string;
-}
-
-interface WorksheetFolder {
-    name: string;
-    path: string;
-    files: WorksheetFile[];
-}
+type WorksheetScreen = 'home' | 'open' | 'create' | 'settings' | 'viewer';
+type WorksheetLayoutMode = 'auto' | 'touch' | 'compact';
 
 interface WorksheetSize {
     width: number;
     height: number;
 }
 
-const buildWorksheetUrl = (folderName: string): string => {
-    return buildAssetPath(`Worksheets/${folderName}/index.html`);
-};
+interface WorksheetAppPreferences {
+    uiScale: number;
+    layoutMode: WorksheetLayoutMode;
+    rememberLastSelection: boolean;
+}
 
-const KNOWN_WORKSHEET_FOLDERS = [
-    '1minuteadditiontest', '1minutedivisiontest', '1minutemultiplicationtest', '1minutesubtractiontest',
-    '2stepmathproblems', '2stepmathproblems-easy', '2stepmathproblems-hard',
-    '30-addition-worksheet', '30-addition-worksheet-5s', '30-addition-worksheet-10s',
-    '30-addsub-worksheet', '30-division-worksheet', '30-double-digit-addition-worksheet',
-    '30-double-digit-addsub-worksheet', '30-double-digit-division-worksheet',
-    '30-double-digit-multiplication-worksheet', '30-double-digit-subtraction-worksheet',
-    '30-multiplication-worksheet', '30-multiplicationdivision-worksheet',
-    '30-simple-substitution-worksheet', '30-subtraction-worksheet',
-    '30-subtraction-worksheet-5s', '30-subtraction-worksheet-10s',
-    'additionsubtractionmissing-substitution', 'countby2s', 'countby5s', 'countby10s',
-    'countingoddnumbers', 'crosswordpuzzlegenerator', 'decimal-numbers-worksheet',
-    'emptymultiplicationtable', 'extraeasyadditionmissingaddend', 'extraeasysubtractionmissingminuend',
-    'fillintheblankartcalender', 'fillintheblankcalender', 'introduction-to-fractions-worksheet',
-    'introtofractions', 'missingpattern8shape', 'missingpatterncountsheet',
-    'missingpatterncountsheet-easy', 'missingpatterncountsheet-hard', 'missingpatternshape',
-    'positive-negative-add-sub-worksheet', 'positivenegativesecretword', 'presidents-worksheet',
-    'presidenttestfirst10', 'presidenttestlast15', 'simple-substitution10-worksheet',
-    'simple-substitution16-additionworksheet', 'simple-substitution16-divisionworksheet',
-    'simple-substitution16-mixaddsubworksheet', 'simple-substitution16-multiplicationworksheet',
-    'simple-substitution16-subtractionworksheet', 'simple-substitution16-variablesworksheet',
-    'simple-substitutionwordproblems', 'storytelling-elements-worksheet', 'substitutionsecretword',
-    'uniquepatternworksheet', 'uniquepatternworksheeteasy', 'uniquepatternworksheethard',
-    'uniquepatternworksheetmedium', 'us-states-word-bank'
-] as const;
+interface WorksheetSubjectGroup {
+    slug: string;
+    label: string;
+    totalCount: number;
+    entries: WorksheetManifestEntry[];
+}
 
-const WORKSHEET_LAST_SELECTED_STORAGE_KEY = 'lhs.htmlViewer.lastWorksheetPath';
-
-const FALLBACK_WORKSHEET_SIZE: WorksheetSize = {
-    width: 816,
-    height: 1056,
-};
-
-const FALLBACK_VIEWPORT_SIZE: WorksheetSize = {
-    width: 816,
-    height: 600,
-};
-
-const MIN_VIEWPORT_FIT_MARGIN = 8;
-const MAX_VIEWPORT_FIT_MARGIN = 18;
+const WORKSHEET_MANIFEST_PATH = '/Worksheets/manifest.json';
+const WORKSHEET_APP_PREFERENCES_KEY = 'lhs.worksheet-app.preferences.v1';
+const WORKSHEET_LAST_SELECTED_STORAGE_KEY = 'lhs.worksheet-app.last-selected.v1';
+const DEBUG_WORKSHEETS_QUERY_KEY = 'debugWorksheets';
+const FALLBACK_WORKSHEET_SIZE: WorksheetSize = { width: 816, height: 1056 };
+const FALLBACK_VIEWPORT_SIZE: WorksheetSize = { width: 816, height: 600 };
+const MIN_VIEWPORT_FIT_MARGIN = 10;
+const MAX_VIEWPORT_FIT_MARGIN = 24;
 const MIN_EFFECTIVE_SCALE = 0.25;
 const MAX_EFFECTIVE_SCALE = 6;
-const MIN_ZOOM_MULTIPLIER = 0.5;
-const MAX_ZOOM_MULTIPLIER = 12;
-
-const clamp = (value: number, min: number, max: number): number => {
-    return Math.max(min, Math.min(max, value));
+const DEFAULT_PREFERENCES: WorksheetAppPreferences = {
+    uiScale: 100,
+    layoutMode: 'auto',
+    rememberLastSelection: true,
 };
+
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 const clampScale = (value: number): number => {
     if (!Number.isFinite(value) || value <= 0) {
         return 1;
     }
+
     return clamp(value, MIN_EFFECTIVE_SCALE, MAX_EFFECTIVE_SCALE);
 };
 
-const normalizeWorksheetRouteValue = (value: string | null | undefined): string => {
-    if (!value) {
-        return '';
-    }
-
-    let normalized = value.trim().replace(/\\/g, '/');
-    if (!normalized) {
-        return '';
-    }
-
-    try {
-        if (/^https?:\/\//i.test(normalized)) {
-            normalized = new URL(normalized).pathname;
-        }
-    } catch {
-        // Ignore malformed launch values and fall through to string normalization.
-    }
-
-    normalized = normalized.split('?')[0]?.split('#')[0] ?? normalized;
-    normalized = normalized.replace(/^.*\/Worksheets\//i, '');
-    normalized = normalized.replace(/^\/?Worksheets\//i, '');
-    normalized = normalized.replace(/\/index\.html$/i, '');
-    normalized = normalized.replace(/^\/+|\/+$/g, '');
-    return normalized.toLowerCase();
-};
-
-const findWorksheetFile = (folders: WorksheetFolder[], candidate: string | null | undefined): WorksheetFile | null => {
-    const normalizedCandidate = normalizeWorksheetRouteValue(candidate);
-    if (!normalizedCandidate) {
-        return null;
-    }
-
-    for (const folder of folders) {
-        for (const file of folder.files) {
-            if (
-                normalizeWorksheetRouteValue(folder.name) === normalizedCandidate
-                || normalizeWorksheetRouteValue(file.folder) === normalizedCandidate
-                || normalizeWorksheetRouteValue(file.path) === normalizedCandidate
-            ) {
-                return file;
-            }
-        }
-    }
-
-    return null;
-};
-
-const clampZoomMultiplier = (value: number): number => {
-    if (!Number.isFinite(value) || value <= 0) {
-        return 1;
-    }
-    return clamp(value, MIN_ZOOM_MULTIPLIER, MAX_ZOOM_MULTIPLIER);
-};
-
-const areSizesEqual = (left: WorksheetSize, right: WorksheetSize): boolean => {
-    return left.width === right.width && left.height === right.height;
-};
+const areSizesEqual = (left: WorksheetSize, right: WorksheetSize): boolean => (
+    left.width === right.width && left.height === right.height
+);
 
 const getRectSize = (element: HTMLElement | null | undefined): WorksheetSize => {
     if (!element) {
@@ -199,7 +121,7 @@ const waitForStableWorksheetLayout = async (doc: Document): Promise<void> => {
             await doc.fonts.ready;
         }
     } catch {
-        // Ignore font readiness failures and continue with fallback sizing.
+        // Ignore font readiness failures.
     }
 
     await new Promise<void>((resolve) => {
@@ -264,45 +186,205 @@ const computeFitScale = (viewport: WorksheetSize, intrinsic: WorksheetSize): num
     return clampScale(Math.min(scaleX, scaleY));
 };
 
+const isWorksheetScreen = (value: string | null): value is WorksheetScreen => (
+    value === 'home'
+    || value === 'open'
+    || value === 'create'
+    || value === 'settings'
+    || value === 'viewer'
+);
+
+const isEnabledQueryFlag = (value: string | null): boolean => {
+    if (!value) {
+        return false;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+};
+
+const readStoredPreferences = (): WorksheetAppPreferences => {
+    if (typeof window === 'undefined') {
+        return DEFAULT_PREFERENCES;
+    }
+
+    try {
+        const raw = window.localStorage.getItem(WORKSHEET_APP_PREFERENCES_KEY);
+        if (!raw) {
+            return DEFAULT_PREFERENCES;
+        }
+
+        const parsed = JSON.parse(raw) as Partial<WorksheetAppPreferences>;
+        const layoutMode = parsed.layoutMode === 'touch' || parsed.layoutMode === 'compact' ? parsed.layoutMode : 'auto';
+
+        return {
+            uiScale: clamp(Number(parsed.uiScale ?? DEFAULT_PREFERENCES.uiScale), 85, 125),
+            layoutMode,
+            rememberLastSelection: parsed.rememberLastSelection !== false,
+        };
+    } catch {
+        return DEFAULT_PREFERENCES;
+    }
+};
+
+const readStoredSelection = (): string => {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
+    try {
+        return window.localStorage.getItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY) ?? '';
+    } catch {
+        return '';
+    }
+};
+
+const findWorksheetEntry = (
+    subjects: WorksheetManifestSubject[],
+    candidate: string | null | undefined,
+): WorksheetManifestEntry | null => {
+    const candidateAliases = new Set(getWorksheetLookupAliases(candidate));
+    if (candidateAliases.size === 0) {
+        return null;
+    }
+
+    for (const subject of subjects) {
+        for (const entry of subject.entries) {
+            const entryAliases = new Set<string>([
+                ...getWorksheetLookupAliases(entry.launchPath),
+                ...getWorksheetLookupAliases(entry.downloadPath),
+                `${entry.subjectSlug}/${entry.slug}`.toLowerCase(),
+                entry.slug.toLowerCase(),
+            ]);
+
+            for (const alias of candidateAliases) {
+                if (entryAliases.has(alias)) {
+                    return entry;
+                }
+            }
+        }
+    }
+
+    return null;
+};
+
 const HTMLViewer: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
     const { shouldUseNativeFullscreenFallback } = usePWA();
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<WorksheetFile | null>(null);
-    const [showFileBrowser, setShowFileBrowser] = useState(false);
-    const [folders, setFolders] = useState<WorksheetFolder[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { settings: soundSettings } = useSoundSettings();
+    const [manifest, setManifest] = useState<WorksheetManifest | null>(null);
+    const [isManifestLoading, setIsManifestLoading] = useState(true);
+    const [manifestError, setManifestError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+    const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
+    const [preferences, setPreferences] = useState<WorksheetAppPreferences>(readStoredPreferences);
+    const [selectedBuilderSubject, setSelectedBuilderSubject] = useState('math');
+    const [rememberedPath, setRememberedPath] = useState<string>(readStoredSelection);
     const [viewportSize, setViewportSize] = useState<WorksheetSize>(FALLBACK_VIEWPORT_SIZE);
     const [intrinsicSize, setIntrinsicSize] = useState<WorksheetSize>(FALLBACK_WORKSHEET_SIZE);
-    const [zoomMultiplier, setZoomMultiplier] = useState(1);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const viewerContainerRef = useRef<HTMLDivElement>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const viewerContainerRef = useRef<HTMLDivElement | null>(null);
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const measurementCleanupRef = useRef<(() => void) | null>(null);
     const scheduledMeasureRef = useRef<number | null>(null);
     const measurementTokenRef = useRef(0);
-    const lastScrollResetKeyRef = useRef<string | null>(null);
-    const lastLaunchKeyRef = useRef<string | null>(null);
     const viewerOwnsNativeFullscreenRef = useRef(false);
-    const { settings: soundSettings } = useSoundSettings();
+    const previousScreenRef = useRef<WorksheetScreen | null>(null);
 
-    const fitScale = computeFitScale(viewportSize, intrinsicSize);
-    const effectiveScale = clampScale(fitScale * zoomMultiplier);
-    const scaledWorksheetWidth = intrinsicSize.width * effectiveScale;
-    const scaledWorksheetHeight = intrinsicSize.height * effectiveScale;
-    const stageWidth = Math.max(viewportSize.width, scaledWorksheetWidth);
-    const stageHeight = Math.max(viewportSize.height, scaledWorksheetHeight);
-    const paperOffsetX = scaledWorksheetWidth < viewportSize.width ? (stageWidth - scaledWorksheetWidth) / 2 : 0;
-    const paperOffsetY = scaledWorksheetHeight < viewportSize.height ? (stageHeight - scaledWorksheetHeight) / 2 : 0;
+    const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+    const currentSource = (queryParams.get('source') ?? '').trim().toLowerCase() === 'classroom'
+        ? 'classroom'
+        : null;
+    const debugWorksheets = useMemo(
+        () => isEnabledQueryFlag(queryParams.get(DEBUG_WORKSHEETS_QUERY_KEY)),
+        [queryParams],
+    );
+    const openMode = (queryParams.get('open') ?? '').trim().toLowerCase();
+    const requestedScreen = useMemo<WorksheetScreen | null>(() => {
+        const nextScreen = queryParams.get('screen');
+        return isWorksheetScreen(nextScreen) ? nextScreen : null;
+    }, [queryParams]);
+    const requestedWorksheetPath = useMemo(() => {
+        const directPath = queryParams.get('path')
+            ?? queryParams.get('worksheet')
+            ?? queryParams.get('folder')
+            ?? queryParams.get('file');
+
+        if (directPath) {
+            return migrateLegacyWorksheetPath(directPath);
+        }
+
+        const requestedId = (queryParams.get('id') ?? '').trim();
+        if (!requestedId) {
+            return '';
+        }
+
+        const item = findBaseModuleById(requestedId);
+        return migrateLegacyWorksheetPath(item?.customHtmlPath);
+    }, [queryParams]);
+
+    const manifestSubjects = manifest?.subjects ?? [];
+    const rememberedEntry = useMemo(
+        () => findWorksheetEntry(manifestSubjects, rememberedPath),
+        [manifestSubjects, rememberedPath],
+    );
+    const activeEntry = useMemo(
+        () => findWorksheetEntry(manifestSubjects, requestedWorksheetPath),
+        [manifestSubjects, requestedWorksheetPath],
+    );
+    const logWorksheetDebug = useCallback((event: string, details: Record<string, unknown> = {}) => {
+        if (!debugWorksheets) {
+            return;
+        }
+
+        console.info('[WorksheetsDebug]', event, details);
+    }, [debugWorksheets]);
+    const withWorksheetDebugQuery = useCallback((route: string) => {
+        if (!debugWorksheets) {
+            return route;
+        }
+
+        const nextUrl = new URL(route, window.location.origin);
+        nextUrl.searchParams.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
+        return `${nextUrl.pathname}${nextUrl.search}`;
+    }, [debugWorksheets]);
+    const currentScreen: WorksheetScreen = useMemo(() => {
+        if (activeEntry) {
+            return 'viewer';
+        }
+
+        if (requestedScreen && requestedScreen !== 'viewer') {
+            return requestedScreen;
+        }
+
+        if (openMode === 'browser') {
+            return 'open';
+        }
+
+        return 'home';
+    }, [activeEntry, openMode, requestedScreen]);
+    const isViewerScreen = currentScreen === 'viewer' && Boolean(activeEntry);
+
+    const fitScale = isViewerScreen
+        ? clampScale(Math.min(viewportSize.width / Math.max(intrinsicSize.width, 1), 1))
+        : computeFitScale(viewportSize, intrinsicSize);
+    const scaledWorksheetWidth = intrinsicSize.width * fitScale;
+    const scaledWorksheetHeight = intrinsicSize.height * fitScale;
+    const stageWidth = isViewerScreen
+        ? Math.max(viewportSize.width, Math.ceil(scaledWorksheetWidth))
+        : viewportSize.width;
+    const stageHeight = isViewerScreen
+        ? Math.max(viewportSize.height, Math.ceil(scaledWorksheetHeight))
+        : viewportSize.height;
+    const paperOffsetX = Math.max(0, (stageWidth - scaledWorksheetWidth) / 2);
+    const paperOffsetY = isViewerScreen ? 0 : Math.max(0, (stageHeight - scaledWorksheetHeight) / 2);
 
     const updateViewportSize = useCallback(() => {
         const nextViewport = getPanelViewportSize(panelRef.current);
-        setViewportSize((currentViewport) => {
-            return areSizesEqual(currentViewport, nextViewport) ? currentViewport : nextViewport;
-        });
+        setViewportSize((currentViewport) => (areSizesEqual(currentViewport, nextViewport) ? currentViewport : nextViewport));
         return nextViewport;
     }, []);
 
@@ -318,9 +400,7 @@ const HTMLViewer: React.FC = () => {
 
     const measureWorksheet = useCallback((doc: Document) => {
         const nextIntrinsicSize = getDocumentIntrinsicSize(doc);
-        setIntrinsicSize((currentSize) => {
-            return areSizesEqual(currentSize, nextIntrinsicSize) ? currentSize : nextIntrinsicSize;
-        });
+        setIntrinsicSize((currentSize) => (areSizesEqual(currentSize, nextIntrinsicSize) ? currentSize : nextIntrinsicSize));
     }, []);
 
     const scheduleWorksheetMeasurement = useCallback((doc: Document) => {
@@ -378,25 +458,328 @@ const HTMLViewer: React.FC = () => {
         const handleInnerResize = () => scheduleWorksheetMeasurement(doc);
         doc.defaultView?.addEventListener('resize', handleInnerResize);
 
-        const enforceTopViewport = () => {
-            resetWorksheetViewport(doc);
-        };
-
-        doc.defaultView?.addEventListener('load', enforceTopViewport);
-        const resetTimers = [
-            window.setTimeout(enforceTopViewport, 0),
-            window.setTimeout(enforceTopViewport, 120),
-            window.setTimeout(enforceTopViewport, 300),
-        ];
-
         measurementCleanupRef.current = () => {
             resizeObserver.disconnect();
             mutationObserver.disconnect();
             doc.defaultView?.removeEventListener('resize', handleInnerResize);
-            doc.defaultView?.removeEventListener('load', enforceTopViewport);
-            resetTimers.forEach((timerId) => window.clearTimeout(timerId));
         };
     }, [cleanupWorksheetMeasurement, measureWorksheet, scheduleWorksheetMeasurement]);
+
+    const buildShellRoute = useCallback((screen: Exclude<WorksheetScreen, 'viewer'>) => {
+        const params = new URLSearchParams();
+        if (screen !== 'home') {
+            params.set('screen', screen);
+        }
+        if (currentSource === 'classroom') {
+            params.set('source', 'classroom');
+        }
+        if (debugWorksheets) {
+            params.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
+        }
+
+        const query = params.toString();
+        return query ? `/html-viewer?${query}` : '/html-viewer';
+    }, [currentSource, debugWorksheets]);
+
+    const goToScreen = useCallback((screen: Exclude<WorksheetScreen, 'viewer'>) => {
+        navigate(buildShellRoute(screen));
+    }, [buildShellRoute, navigate]);
+
+    const openWorksheet = useCallback((entry: WorksheetManifestEntry) => {
+        navigate(withWorksheetDebugQuery(buildWorksheetViewerRoute({
+            path: entry.launchPath,
+            screen: 'viewer',
+            source: currentSource,
+        })));
+    }, [currentSource, navigate, withWorksheetDebugQuery]);
+
+    const toggleSubject = useCallback((subjectSlug: string) => {
+        setExpandedSubjects((currentSubjects) => {
+            const nextSubjects = new Set(currentSubjects);
+            if (nextSubjects.has(subjectSlug)) {
+                nextSubjects.delete(subjectSlug);
+            } else {
+                nextSubjects.add(subjectSlug);
+            }
+            return nextSubjects;
+        });
+    }, []);
+
+    const handleDownload = useCallback(async () => {
+        if (!activeEntry) {
+            return;
+        }
+
+        const safeFileName = `${activeEntry.slug.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}.html`;
+        const downloadUrl = buildAssetPath(activeEntry.downloadPath);
+
+        try {
+            const response = await fetch(downloadUrl, { credentials: 'same-origin' });
+            if (!response.ok) {
+                throw new Error(`Download request failed with status ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = safeFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+            return;
+        } catch {
+            // Fall back to a direct download attempt.
+        }
+
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = safeFileName;
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, [activeEntry]);
+
+    const handlePrint = useCallback(() => {
+        if (!activeEntry) {
+            return;
+        }
+
+        try {
+            const frameWindow = iframeRef.current?.contentWindow;
+            if (frameWindow) {
+                frameWindow.focus();
+                frameWindow.print();
+                return;
+            }
+        } catch {
+            // Fall through to popup printing.
+        }
+
+        const printUrl = buildAssetPath(activeEntry.launchPath);
+        const printWindow = window.open(printUrl, '_blank', 'noopener,noreferrer');
+        if (!printWindow) {
+            return;
+        }
+
+        const triggerPrint = () => {
+            try {
+                printWindow.focus();
+                printWindow.print();
+            } catch {
+                // Browser may block the fallback.
+            }
+        };
+
+        printWindow.addEventListener('load', triggerPrint, { once: true });
+        window.setTimeout(triggerPrint, 800);
+    }, [activeEntry]);
+
+    const handleFullscreenToggle = useCallback(() => {
+        if (isFullscreen) {
+            if (!shouldUseNativeFullscreenFallback) {
+                viewerOwnsNativeFullscreenRef.current = false;
+                setIsFullscreen(false);
+                return;
+            }
+
+            if (getFullscreenElement() === viewerContainerRef.current) {
+                void exitDocumentFullscreen().finally(() => {
+                    viewerOwnsNativeFullscreenRef.current = false;
+                    setIsFullscreen(false);
+                });
+                return;
+            }
+
+            viewerOwnsNativeFullscreenRef.current = false;
+            setIsFullscreen(false);
+            return;
+        }
+
+        if (!shouldUseNativeFullscreenFallback) {
+            setIsFullscreen(true);
+            return;
+        }
+
+        const rootElement = viewerContainerRef.current;
+        if (!rootElement) {
+            setIsFullscreen(true);
+            return;
+        }
+
+        const fullscreenElement = getFullscreenElement();
+        if (fullscreenElement && fullscreenElement !== rootElement) {
+            setIsFullscreen(true);
+            return;
+        }
+
+        void requestElementFullscreen(rootElement).then((ownsFullscreen) => {
+            viewerOwnsNativeFullscreenRef.current = ownsFullscreen;
+            setIsFullscreen(true);
+        });
+    }, [isFullscreen, shouldUseNativeFullscreenFallback]);
+
+    const filteredSubjects = useMemo<WorksheetSubjectGroup[]>(() => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+
+        return manifestSubjects
+            .map((subject) => {
+                const subjectMatches = normalizedQuery.length > 0 && subject.label.toLowerCase().includes(normalizedQuery);
+                const entries = normalizedQuery.length === 0
+                    ? subject.entries
+                    : subject.entries.filter((entry) => {
+                        const searchIndex = `${entry.title} ${entry.slug} ${entry.subjectLabel}`.toLowerCase();
+                        return subjectMatches || searchIndex.includes(normalizedQuery);
+                    });
+
+                return {
+                    slug: subject.slug,
+                    label: subject.label,
+                    totalCount: subject.entries.length,
+                    entries,
+                };
+            })
+            .filter((subject) => subject.entries.length > 0 || normalizedQuery.length === 0);
+    }, [manifestSubjects, searchQuery]);
+
+    useEffect(() => {
+        logWorksheetDebug('route-mount', {
+            path: location.pathname,
+            search: location.search,
+            source: currentSource,
+            requestedScreen,
+            requestedWorksheetPath,
+        });
+    }, [currentSource, location.pathname, location.search, logWorksheetDebug, requestedScreen, requestedWorksheetPath]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        const loadManifest = async () => {
+            setIsManifestLoading(true);
+            setManifestError(null);
+            logWorksheetDebug('manifest-load-start', {
+                manifestPath: buildAssetPath(WORKSHEET_MANIFEST_PATH),
+            });
+
+            try {
+                const response = await fetch(buildAssetPath(WORKSHEET_MANIFEST_PATH), {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Manifest request failed with status ${response.status}`);
+                }
+
+                const nextManifest = await response.json() as WorksheetManifest;
+                if (!isActive) {
+                    return;
+                }
+
+                setManifest(nextManifest);
+                logWorksheetDebug('manifest-load-success', {
+                    generatedAt: nextManifest.generatedAt,
+                    subjectCount: nextManifest.subjects.length,
+                    worksheetCount: nextManifest.subjects.reduce((total, subject) => total + subject.entries.length, 0),
+                });
+            } catch (error) {
+                if (!isActive) {
+                    return;
+                }
+
+                setManifest(null);
+                setManifestError(error instanceof Error ? error.message : 'Failed to load worksheets.');
+                logWorksheetDebug('manifest-load-failure', {
+                    error: error instanceof Error ? error.message : 'Failed to load worksheets.',
+                });
+            } finally {
+                if (isActive) {
+                    setIsManifestLoading(false);
+                }
+            }
+        };
+
+        void loadManifest();
+
+        return () => {
+            isActive = false;
+        };
+    }, [logWorksheetDebug]);
+
+    useEffect(() => {
+        logWorksheetDebug('worksheet-resolution', {
+            currentScreen,
+            requestedWorksheetPath,
+            subjectCount: manifestSubjects.length,
+            activeEntry: activeEntry
+                ? {
+                    slug: activeEntry.slug,
+                    title: activeEntry.title,
+                    launchPath: activeEntry.launchPath,
+                    subjectSlug: activeEntry.subjectSlug,
+                }
+                : null,
+        });
+    }, [activeEntry, currentScreen, logWorksheetDebug, manifestSubjects.length, requestedWorksheetPath]);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(WORKSHEET_APP_PREFERENCES_KEY, JSON.stringify(preferences));
+        } catch {
+            // Ignore storage failures.
+        }
+    }, [preferences]);
+
+    useEffect(() => {
+        if (!preferences.rememberLastSelection) {
+            try {
+                window.localStorage.removeItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY);
+            } catch {
+                // Ignore storage failures.
+            }
+            setRememberedPath('');
+        }
+    }, [preferences.rememberLastSelection]);
+
+    useEffect(() => {
+        if (!activeEntry || !preferences.rememberLastSelection) {
+            return;
+        }
+
+        try {
+            window.localStorage.setItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY, activeEntry.launchPath);
+        } catch {
+            // Ignore storage failures.
+        }
+
+        setRememberedPath(activeEntry.launchPath);
+    }, [activeEntry, preferences.rememberLastSelection]);
+
+    useEffect(() => {
+        const previousScreen = previousScreenRef.current;
+        if (currentScreen === 'open' && previousScreen !== 'open') {
+            setExpandedSubjects((currentSubjects) => (currentSubjects.size === 0 ? currentSubjects : new Set()));
+        }
+        previousScreenRef.current = currentScreen;
+    }, [currentScreen]);
+
+    useEffect(() => {
+        setExpandedSubjects((currentSubjects) => {
+            if (currentSubjects.size === 0) {
+                return currentSubjects;
+            }
+
+            const availableSubjects = new Set(filteredSubjects.map((subject) => subject.slug));
+            const nextSubjects = new Set(
+                [...currentSubjects].filter((subjectSlug) => availableSubjects.has(subjectSlug)),
+            );
+
+            return nextSubjects.size === currentSubjects.size ? currentSubjects : nextSubjects;
+        });
+    }, [filteredSubjects]);
 
     useEffect(() => {
         syncIframeSoundSettings(iframeRef.current, soundSettings);
@@ -410,40 +793,7 @@ const HTMLViewer: React.FC = () => {
                 iframeRef.current = null;
             }
         };
-    }, [selectedFile?.path]);
-
-    const formatFolderName = (name: string): string => {
-        return name
-            .replace(/-/g, ' ')
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .split(' ')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
-    };
-
-    useEffect(() => {
-        setIsLoading(true);
-
-        const scannedFolders: WorksheetFolder[] = KNOWN_WORKSHEET_FOLDERS.map((folderName) => {
-            const filePath = buildWorksheetUrl(folderName);
-            const file: WorksheetFile = {
-                name: 'index.html',
-                path: filePath,
-                folder: folderName,
-                title: formatFolderName(folderName),
-                description: 'Interactive worksheet',
-            };
-
-            return {
-                name: folderName,
-                path: buildAssetPath(`Worksheets/${folderName}`),
-                files: [file],
-            };
-        });
-
-        setFolders(scannedFolders.sort((left, right) => left.name.localeCompare(right.name)));
-        setIsLoading(false);
-    }, []);
+    }, [activeEntry?.launchPath]);
 
     useEffect(() => {
         const panel = panelRef.current;
@@ -471,21 +821,15 @@ const HTMLViewer: React.FC = () => {
             window.removeEventListener('resize', handleWindowResize);
             window.removeEventListener('orientationchange', handleWindowResize);
         };
-    }, [updateViewportSize]);
+    }, [currentScreen, updateViewportSize]);
 
     useEffect(() => {
-        if (!selectedFile) {
+        if (!activeEntry) {
             return;
         }
 
         updateViewportSize();
-    }, [selectedFile, isFullscreen, updateViewportSize]);
-
-    useEffect(() => {
-        return () => {
-            cleanupWorksheetMeasurement();
-        };
-    }, [cleanupWorksheetMeasurement]);
+    }, [activeEntry, isFullscreen, updateViewportSize]);
 
     useEffect(() => {
         if (!shouldUseNativeFullscreenFallback) {
@@ -522,527 +866,395 @@ const HTMLViewer: React.FC = () => {
         }
 
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                if (document.fullscreenElement === viewerContainerRef.current && document.exitFullscreen) {
-                    void document.exitFullscreen().catch(() => setIsFullscreen(false));
-                    return;
-                }
+            if (event.key === 'Escape' && !shouldUseNativeFullscreenFallback) {
                 setIsFullscreen(false);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFullscreen]);
+    }, [isFullscreen, shouldUseNativeFullscreenFallback]);
 
     useEffect(() => {
-        if (!selectedFile || !panelRef.current) {
-            return;
-        }
-
-        const resetKey = `${selectedFile.path}|${intrinsicSize.width}x${intrinsicSize.height}`;
-        if (lastScrollResetKeyRef.current === resetKey) {
-            return;
-        }
-
-        lastScrollResetKeyRef.current = resetKey;
-
-        window.requestAnimationFrame(() => {
-            const panel = panelRef.current;
-            if (!panel) {
-                return;
+        if (currentScreen !== 'viewer') {
+            cleanupWorksheetMeasurement();
+            setIntrinsicSize(FALLBACK_WORKSHEET_SIZE);
+            if (!shouldUseNativeFullscreenFallback) {
+                setIsFullscreen(false);
             }
-
-            const maxScrollLeft = Math.max(0, panel.scrollWidth - panel.clientWidth);
-            panel.scrollLeft = maxScrollLeft / 2;
-            panel.scrollTop = 0;
-        });
-    }, [selectedFile, intrinsicSize]);
-
-    const handleZoomIn = useCallback(() => {
-        setZoomMultiplier((currentZoom) => clampZoomMultiplier(currentZoom * 1.1));
-    }, []);
-
-    const handleZoomOut = useCallback(() => {
-        setZoomMultiplier((currentZoom) => clampZoomMultiplier(currentZoom / 1.1));
-    }, []);
-
-    const handlePrint = useCallback(() => {
-        if (!selectedFile) {
-            return;
         }
+    }, [cleanupWorksheetMeasurement, currentScreen, shouldUseNativeFullscreenFallback]);
 
-        try {
-            const frameWindow = iframeRef.current?.contentWindow;
-            if (frameWindow) {
-                frameWindow.focus();
-                frameWindow.print();
-                return;
-            }
-        } catch {
-            // Fall through to popup-based print fallback.
-        }
-
-        const printWindow = window.open(selectedFile.path, '_blank', 'noopener,noreferrer');
-        if (printWindow) {
-            const triggerPrint = () => {
-                try {
-                    printWindow.focus();
-                    printWindow.print();
-                } catch {
-                    // No-op: browser may block print in this fallback.
-                }
-            };
-
-            printWindow.addEventListener('load', triggerPrint, { once: true });
-            window.setTimeout(triggerPrint, 800);
-        }
-    }, [selectedFile]);
-
-    const handleDownload = useCallback(async () => {
-        if (!selectedFile) {
-            return;
-        }
-
-        const safeFileName = `${selectedFile.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
-
-        try {
-            const response = await fetch(selectedFile.path, { credentials: 'same-origin' });
-            if (!response.ok) {
-                throw new Error(`Download request failed with status ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = safeFileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(blobUrl);
-            return;
-        } catch {
-            // Fall back to a direct URL download attempt.
-        }
-
-        const fallbackLink = document.createElement('a');
-        fallbackLink.href = selectedFile.path;
-        fallbackLink.download = safeFileName;
-        fallbackLink.rel = 'noopener noreferrer';
-        document.body.appendChild(fallbackLink);
-        fallbackLink.click();
-        document.body.removeChild(fallbackLink);
-    }, [selectedFile]);
-
-    const handleFileSelect = useCallback((file: WorksheetFile) => {
-        cleanupWorksheetMeasurement();
-        lastScrollResetKeyRef.current = null;
-        setSelectedFile(file);
-        setShowFileBrowser(false);
-        setZoomMultiplier(1);
-        setIntrinsicSize(FALLBACK_WORKSHEET_SIZE);
+    useEffect(() => {
+        return () => {
+            cleanupWorksheetMeasurement();
+        };
     }, [cleanupWorksheetMeasurement]);
 
-    useEffect(() => {
-        if (!selectedFile) {
-            return;
-        }
-
-        try {
-            window.localStorage.setItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY, selectedFile.path);
-        } catch {
-            // Ignore storage write failures and keep the viewer usable.
-        }
-    }, [selectedFile]);
+    const viewerSrc = activeEntry ? buildAssetPath(activeEntry.launchPath) : '';
 
     useEffect(() => {
-        if (isLoading || folders.length === 0) {
+        if (currentScreen !== 'viewer') {
             return;
         }
 
-        const params = new URLSearchParams(location.search);
-        const source = (params.get('source') ?? '').trim().toLowerCase();
-        const openMode = (params.get('open') ?? '').trim().toLowerCase();
-        const requestedWorksheet = params.get('worksheet')
-            ?? params.get('folder')
-            ?? params.get('path')
-            ?? params.get('file');
-        const launchKey = location.search || '__default__';
-
-        if (lastLaunchKeyRef.current === launchKey) {
-            return;
-        }
-
-        lastLaunchKeyRef.current = launchKey;
-
-        const requestedFile = findWorksheetFile(folders, requestedWorksheet);
-        let fallbackFile: WorksheetFile | null = null;
-
-        if (!requestedFile && source === 'classroom') {
-            try {
-                fallbackFile = findWorksheetFile(
-                    folders,
-                    window.localStorage.getItem(WORKSHEET_LAST_SELECTED_STORAGE_KEY),
-                );
-            } catch {
-                fallbackFile = null;
-            }
-        }
-
-        const nextFile = requestedFile ?? fallbackFile;
-        if (nextFile) {
-            setExpandedFolders(new Set([nextFile.folder]));
-            handleFileSelect(nextFile);
-            return;
-        }
-
-        if (source === 'classroom' || openMode === 'browser') {
-            const folderToExpand = requestedFile?.folder ?? fallbackFile?.folder ?? '';
-            if (folderToExpand) {
-                setExpandedFolders(new Set([folderToExpand]));
-            }
-            setShowFileBrowser(true);
-        }
-    }, [folders, handleFileSelect, isLoading, location.search]);
-
-    const toggleFolder = useCallback((folderName: string) => {
-        setExpandedFolders((currentFolders) => {
-            const nextFolders = new Set(currentFolders);
-            if (nextFolders.has(folderName)) {
-                nextFolders.delete(folderName);
-            } else {
-                nextFolders.add(folderName);
-            }
-            return nextFolders;
+        logWorksheetDebug('iframe-target', {
+            viewerSrc,
+            worksheetTitle: activeEntry?.title ?? null,
         });
-    }, []);
+    }, [activeEntry?.title, currentScreen, logWorksheetDebug, viewerSrc]);
 
-    const enterFullscreen = useCallback(() => {
-        if (!shouldUseNativeFullscreenFallback) {
-            viewerOwnsNativeFullscreenRef.current = false;
-            setIsFullscreen(true);
-            return;
-        }
+    const appScaleStyle = useMemo(
+        () => ({ '--worksheet-app-scale': `${preferences.uiScale / 100}` } as React.CSSProperties),
+        [preferences.uiScale],
+    );
 
-        const rootElement = viewerContainerRef.current;
-        if (!rootElement) {
-            setIsFullscreen(true);
-            return;
-        }
-
-        const fullscreenElement = getFullscreenElement();
-        if (fullscreenElement && fullscreenElement !== rootElement) {
-            viewerOwnsNativeFullscreenRef.current = false;
-            setIsFullscreen(true);
-            return;
-        }
-
-        void requestElementFullscreen(rootElement).then((ownsFullscreen) => {
-            viewerOwnsNativeFullscreenRef.current = ownsFullscreen;
-            setIsFullscreen(true);
-        });
-    }, [shouldUseNativeFullscreenFallback]);
-
-    const exitFullscreen = useCallback(() => {
-        if (!shouldUseNativeFullscreenFallback) {
-            viewerOwnsNativeFullscreenRef.current = false;
-            setIsFullscreen(false);
-            return;
-        }
-
-        if (getFullscreenElement() === viewerContainerRef.current) {
-            void exitDocumentFullscreen().finally(() => {
-                viewerOwnsNativeFullscreenRef.current = false;
-                setIsFullscreen(false);
-            });
-            return;
-        }
-
-        viewerOwnsNativeFullscreenRef.current = false;
-        setIsFullscreen(false);
-    }, [shouldUseNativeFullscreenFallback]);
-
-    const filteredFolders = folders.filter((folder) => {
-        const normalizedQuery = searchQuery.toLowerCase();
-        return folder.name.toLowerCase().includes(normalizedQuery)
-            || folder.files.some((file) => file.title.toLowerCase().includes(normalizedQuery));
-    });
-
-    const stageStyle: React.CSSProperties = {
-        width: `${stageWidth}px`,
-        height: `${stageHeight}px`,
-        minWidth: `${stageWidth}px`,
-        minHeight: `${stageHeight}px`,
-    };
-
-    const paperShellStyle: React.CSSProperties = {
-        width: `${scaledWorksheetWidth}px`,
-        height: `${scaledWorksheetHeight}px`,
-        left: `${paperOffsetX}px`,
-        top: `${paperOffsetY}px`,
-    };
-
-    const iframeStyle: React.CSSProperties = {
-        width: `${intrinsicSize.width}px`,
-        height: `${intrinsicSize.height}px`,
-        transform: `scale(${effectiveScale})`,
-        transformOrigin: 'top left',
-        background: 'white',
-        border: 'none',
-        margin: 0,
-        padding: 0,
-    };
+    const builderMessage = selectedBuilderSubject === 'math'
+        ? 'Launch the existing Math Worksheet Creator Studio to build new printable math pages today.'
+        : `A guided ${selectedBuilderSubject.replace(/-/g, ' ')} worksheet builder will fit into this workspace next.`;
 
     return (
-        <div className={`html-viewer-page ${isFullscreen ? 'is-fullscreen' : ''}`} ref={viewerContainerRef}>
-            <div className="html-viewer-container">
-                <header className="html-viewer-header">
-                    <button
-                        className="open-worksheet-btn"
-                        onClick={() => setShowFileBrowser(true)}
-                        aria-label="Open Worksheet"
-                    >
-                        <span className="open-worksheet-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="16" y1="13" x2="8" y2="13" />
-                                <line x1="16" y1="17" x2="8" y2="17" />
-                                <polyline points="10 9 9 9 8 9" />
-                            </svg>
+        <div
+            className={`html-viewer-page theme-${theme} layout-${preferences.layoutMode} ${isFullscreen ? 'is-fullscreen' : ''}`}
+            ref={viewerContainerRef}
+            style={appScaleStyle}
+        >
+            <div className={`worksheet-app-shell ${isViewerScreen ? 'is-viewer-screen' : ''}`}>
+                <header className={`worksheet-app-topbar ${isViewerScreen ? 'worksheet-app-topbar--viewer' : ''}`}>
+                    <div className="worksheet-app-topbar__brand">
+                        <span className="worksheet-app-topbar__eyebrow">
+                            {isViewerScreen && activeEntry ? activeEntry.subjectLabel : 'STUDENT WORKSHEET HUB'}
                         </span>
-                        <span className="open-worksheet-text">Open Worksheet</span>
-                    </button>
+                        {isViewerScreen ? (
+                            <h1>{activeEntry?.title ?? 'Worksheet Viewer'}</h1>
+                        ) : null}
+                    </div>
 
-                    <div className="worksheet-info-panel">
-                        {selectedFile ? (
-                            <>
-                                <p className="worksheet-title">"{selectedFile.title}"</p>
-                                <p className="worksheet-description">{selectedFile.description}</p>
-                            </>
-                        ) : (
-                            <>
-                                <p className="worksheet-title">"No worksheet selected"</p>
-                                <p className="worksheet-description">Click "Open Worksheet" to browse files</p>
-                            </>
-                        )}
+                    <div className="worksheet-app-topbar__actions">
+                        {isViewerScreen ? (
+                            <button
+                                type="button"
+                                className="worksheet-secondary-link"
+                                onClick={() => goToScreen('home')}
+                            >
+                                Main Menu
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            className="worksheet-theme-button"
+                            onClick={toggleTheme}
+                            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        >
+                            {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                        </button>
                     </div>
                 </header>
-
-                <div className="html-viewer-toolbar">
-                    <div className="zoom-control">
+                {manifestError ? (
+                    <section className="worksheet-app-error" aria-live="polite">
+                        <h2>Worksheet library unavailable</h2>
+                        <p>{manifestError}</p>
                         <button
-                            className="zoom-btn zoom-out"
-                            onClick={handleZoomOut}
-                            disabled={!selectedFile}
-                            aria-label="Zoom Out"
-                            title="Zoom Out"
+                            type="button"
+                            className="worksheet-primary-button"
+                            onClick={() => window.location.reload()}
                         >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
+                            Retry
                         </button>
-                        <span className="zoom-level">{Math.round(effectiveScale * 100)}%</span>
-                        <button
-                            className="zoom-btn zoom-in"
-                            onClick={handleZoomIn}
-                            disabled={!selectedFile}
-                            aria-label="Zoom In"
-                            title="Zoom In"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                        </button>
-                    </div>
+                    </section>
+                ) : null}
 
-                    <div className="toolbar-actions">
-                        <button
-                            className="toolbar-action-btn home-btn"
-                            onClick={() => navigate('/classroom')}
-                            aria-label="Classroom"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                <polyline points="9 22 9 12 15 12 15 22" />
-                            </svg>
-                            <span>Classroom</span>
-                        </button>
-                        <button
-                            className="toolbar-action-btn print-btn"
-                            onClick={handlePrint}
-                            disabled={!selectedFile}
-                            aria-label="Print"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="6 9 6 2 18 2 18 9" />
-                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                                <rect width="12" height="8" x="6" y="14" />
-                            </svg>
-                            <span>Print</span>
-                        </button>
-                        <button
-                            className="toolbar-action-btn download-btn"
-                            onClick={handleDownload}
-                            disabled={!selectedFile}
-                            aria-label="Download"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="7 10 12 15 17 10" />
-                                <line x1="12" x2="12" y1="15" y2="3" />
-                            </svg>
-                            <span>Download</span>
-                        </button>
-                        <button
-                            className="toolbar-action-btn fullscreen-btn"
-                            onClick={enterFullscreen}
-                            disabled={!selectedFile}
-                            aria-label="Fullscreen"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                            </svg>
-                            <span>Fullscreen</span>
-                        </button>
-                    </div>
-                </div>
+                {!manifestError && currentScreen !== 'viewer' ? (
+                    <main className="worksheet-app-content">
+                        {currentScreen === 'home' ? (
+                            <section className="worksheet-home">
+                                <div className="worksheet-home__hero">
+                                    <div className="worksheet-home__copy">
+                                        <span className="worksheet-home__badge">Main Menu</span>
+                                        <h2>Choose what you want to do</h2>
+                                        <p>
+                                            Open a worksheet, create a new one, or change your worksheet settings.
+                                        </p>
+                                    </div>
 
-                <div className="html-viewer-panel" ref={panelRef}>
-                    <button
-                        className="exit-fullscreen-btn"
-                        onClick={exitFullscreen}
-                        aria-label="Exit Fullscreen"
-                        title="Exit Fullscreen (Esc)"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-                        </svg>
-                        <span>Exit Fullscreen</span>
-                    </button>
-
-                    {selectedFile ? (
-                        <div className="html-viewer-stage" style={stageStyle}>
-                            <div className="html-viewer-paper-shell" style={paperShellStyle}>
-                                <iframe
-                                    ref={iframeRef}
-                                    src={selectedFile.path}
-                                    title={selectedFile.title}
-                                    className="html-viewer-iframe"
-                                    allowFullScreen
-                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-                                    style={iframeStyle}
-                                    onLoad={() => {
-                                        resumeIframeRuntime(iframeRef.current, {
-                                            reason: 'html-viewer-load',
-                                            soundSettings,
-                                        });
-                                        void initializeWorksheetMeasurement();
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="html-viewer-placeholder">
-                            <p>HTML viewer display panel</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {showFileBrowser && (
-                <div className="file-browser-overlay" onClick={() => setShowFileBrowser(false)}>
-                    <div className="file-browser-panel" onClick={(event) => event.stopPropagation()}>
-                        <div className="file-browser-header">
-                            <h2>Select a Worksheet</h2>
-                            <button
-                                className="close-browser-btn"
-                                onClick={() => setShowFileBrowser(false)}
-                                aria-label="Close"
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className="file-browser-search">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Search worksheets..."
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                            />
-                        </div>
-
-                        <div className="file-browser-content">
-                            {isLoading ? (
-                                <div className="file-browser-loading">
-                                    <div className="loading-spinner"></div>
-                                    <p>Loading worksheets...</p>
+                                    <div className="worksheet-home__actions">
+                                        <button type="button" className="worksheet-home-card worksheet-home-card--open" onClick={() => goToScreen('open')}>
+                                            <span className="worksheet-home-card__label">Open Worksheets</span>
+                                            <span className="worksheet-home-card__detail">Browse subjects and open a worksheet.</span>
+                                        </button>
+                                        <button type="button" className="worksheet-home-card worksheet-home-card--create" onClick={() => goToScreen('create')}>
+                                            <span className="worksheet-home-card__label">Create Worksheets</span>
+                                            <span className="worksheet-home-card__detail">Go to the worksheet builder.</span>
+                                        </button>
+                                        <button type="button" className="worksheet-home-card worksheet-home-card--settings" onClick={() => goToScreen('settings')}>
+                                            <span className="worksheet-home-card__label">Settings</span>
+                                            <span className="worksheet-home-card__detail">Change theme, size, and layout.</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            ) : filteredFolders.length === 0 ? (
-                                <div className="file-browser-empty">
-                                    <p>No worksheets found</p>
-                                </div>
-                            ) : (
-                                <div className="folder-list">
-                                    {filteredFolders.map((folder) => (
-                                        <div key={folder.name} className="folder-item">
-                                            <button
-                                                className="folder-header"
-                                                onClick={() => toggleFolder(folder.name)}
-                                            >
-                                                <span className={`folder-arrow ${expandedFolders.has(folder.name) ? 'expanded' : ''}`}>
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <polyline points="9 18 15 12 9 6" />
-                                                    </svg>
-                                                </span>
-                                                <span className="folder-icon">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                                                    </svg>
-                                                </span>
-                                                <span className="folder-name">{formatFolderName(folder.name)}</span>
-                                            </button>
 
-                                            {expandedFolders.has(folder.name) && (
-                                                <div className="folder-files">
-                                                    {folder.files.map((file) => (
-                                                        <button
-                                                            key={file.path}
-                                                            className={`file-item ${selectedFile?.path === file.path ? 'selected' : ''}`}
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-                                                                handleFileSelect(file);
-                                                            }}
-                                                        >
-                                                            <span className="file-icon">
-                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                                                    <polyline points="14 2 14 8 20 8" />
-                                                                </svg>
-                                                            </span>
-                                                            <span className="file-name">{file.title}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                                <div className="worksheet-home__summary-grid">
+                                    <article className="worksheet-summary-card">
+                                        <span className="worksheet-summary-card__eyebrow">Subjects Ready</span>
+                                        <strong>{manifestSubjects.length}</strong>
+                                        <p>Organized folders that can expand as you add more worksheet collections.</p>
+                                    </article>
+                                </div>
+
+                                {preferences.rememberLastSelection && rememberedEntry ? (
+                                    <section className="worksheet-home__recent">
+                                        <div>
+                                            <span className="worksheet-home__recent-label">Last worksheet</span>
+                                            <h3>{rememberedEntry.title}</h3>
+                                            <p>{rememberedEntry.subjectLabel}</p>
                                         </div>
+                                        <button type="button" className="worksheet-secondary-button" onClick={() => openWorksheet(rememberedEntry)}>
+                                            Open Last Worksheet
+                                        </button>
+                                    </section>
+                                ) : null}
+                            </section>
+                        ) : null}
+
+                        {currentScreen === 'open' ? (
+                            <section className="worksheet-library">
+                                <div className="worksheet-section-header">
+                                    <div>
+                                        <span className="worksheet-section-header__eyebrow">Choose a Subject</span>
+                                        <h2>Pick a subject</h2>
+                                        <p>Open a subject to see its worksheets.</p>
+                                    </div>
+                                    <button type="button" className="worksheet-secondary-button" onClick={() => goToScreen('home')}>
+                                        Back Home
+                                    </button>
+                                </div>
+
+                                <div className="worksheet-library__toolbar">
+                                    <label className="worksheet-search-field">
+                                        <span>Search worksheets</span>
+                                        <input
+                                            type="search"
+                                            value={searchQuery}
+                                            onChange={(event) => setSearchQuery(event.target.value)}
+                                            placeholder="Search worksheet titles"
+                                        />
+                                    </label>
+                                </div>
+
+                                <div className="worksheet-library__subjects">
+                                    {isManifestLoading ? (
+                                        <div className="worksheet-empty-card">Loading worksheet subjects...</div>
+                                    ) : filteredSubjects.length === 0 ? (
+                                        <div className="worksheet-empty-card">No worksheets matched your search.</div>
+                                    ) : filteredSubjects.map((subject) => {
+                                        const isExpanded = expandedSubjects.has(subject.slug);
+                                        return (
+                                            <section key={subject.slug} className={`worksheet-subject-card ${isExpanded ? 'is-expanded' : ''}`} data-subject={subject.slug}>
+                                                <button type="button" className="worksheet-subject-card__header" onClick={() => toggleSubject(subject.slug)} aria-expanded={isExpanded}>
+                                                    <div>
+                                                        <span className="worksheet-folder-pill">{subject.label}</span>
+                                                        <h3>{subject.label}</h3>
+                                                        <p>{subject.totalCount} worksheet{subject.totalCount === 1 ? '' : 's'} available</p>
+                                                    </div>
+                                                    <span className="worksheet-subject-card__toggle">{isExpanded ? 'Minimize' : 'Open'}</span>
+                                                </button>
+
+                                                {isExpanded ? (
+                                                    <div className="worksheet-subject-card__entries">
+                                                        {subject.entries.map((entry) => (
+                                                            <button type="button" key={`${subject.slug}:${entry.slug}`} className="worksheet-entry-button" onClick={() => openWorksheet(entry)}>
+                                                                <span className="worksheet-entry-button__title">{entry.title}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : null}
+                                            </section>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        ) : null}
+
+                        {currentScreen === 'create' ? (
+                            <section className="worksheet-create">
+                                <div className="worksheet-section-header">
+                                    <div>
+                                        <span className="worksheet-section-header__eyebrow">Builder Workspace</span>
+                                        <h2>What subject are we covering on this new worksheet?</h2>
+                                        <p>Select a subject now so this screen can grow into the full worksheet builder system later.</p>
+                                    </div>
+                                    <button type="button" className="worksheet-secondary-button" onClick={() => goToScreen('home')}>
+                                        Back Home
+                                    </button>
+                                </div>
+
+                                <div className="worksheet-create__grid">
+                                    {manifestSubjects.map((subject) => (
+                                        <button
+                                            type="button"
+                                            key={subject.slug}
+                                            className={`worksheet-builder-card ${selectedBuilderSubject === subject.slug ? 'is-selected' : ''}`}
+                                            onClick={() => setSelectedBuilderSubject(subject.slug)}
+                                        >
+                                            <span className="worksheet-builder-card__eyebrow">Subject</span>
+                                            <strong>{subject.label}</strong>
+                                            <p>{subject.entries.length} existing worksheet{subject.entries.length === 1 ? '' : 's'} in this folder</p>
+                                        </button>
                                     ))}
                                 </div>
-                            )}
+
+                                <div className="worksheet-create__detail-card">
+                                    <div>
+                                        <span className="worksheet-create__detail-label">Selected Subject</span>
+                                        <h3>{manifestSubjects.find((subject) => subject.slug === selectedBuilderSubject)?.label ?? 'Math'}</h3>
+                                        <p>{builderMessage}</p>
+                                    </div>
+
+                                    <div className="worksheet-create__detail-actions">
+                                        {selectedBuilderSubject === 'math' ? (
+                                            <button type="button" className="worksheet-primary-button" onClick={() => navigate('/open/MathWorksheetCreator')}>
+                                                Open Math Worksheet Creator Studio
+                                            </button>
+                                        ) : (
+                                            <button type="button" className="worksheet-secondary-button" onClick={() => goToScreen('open')}>
+                                                Browse Existing {manifestSubjects.find((subject) => subject.slug === selectedBuilderSubject)?.label ?? 'Worksheets'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+                        ) : null}
+
+                        {currentScreen === 'settings' ? (
+                            <section className="worksheet-settings">
+                                <div className="worksheet-section-header">
+                                    <div>
+                                        <span className="worksheet-section-header__eyebrow">Settings</span>
+                                        <h2>Adjust the worksheet experience</h2>
+                                        <p>These controls tune the worksheet app while reusing the platform theme system.</p>
+                                    </div>
+                                    <button type="button" className="worksheet-secondary-button" onClick={() => goToScreen('home')}>
+                                        Back Home
+                                    </button>
+                                </div>
+
+                                <div className="worksheet-settings__grid">
+                                    <article className="worksheet-settings-card">
+                                        <span className="worksheet-settings-card__eyebrow">Theme</span>
+                                        <h3>{theme === 'light' ? 'Light mode active' : 'Dark mode active'}</h3>
+                                        <p>Use the same global light and dark theme switch as the rest of the app.</p>
+                                        <button type="button" className="worksheet-primary-button" onClick={toggleTheme}>
+                                            Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
+                                        </button>
+                                    </article>
+
+                                    <article className="worksheet-settings-card">
+                                        <span className="worksheet-settings-card__eyebrow">UI Scaling</span>
+                                        <h3>{preferences.uiScale}%</h3>
+                                        <p>Increase or reduce the chrome size without changing worksheet print proportions.</p>
+                                        <label className="worksheet-range-field">
+                                            <span>Interface scale</span>
+                                            <input type="range" min="85" max="125" step="5" value={preferences.uiScale} onChange={(event) => setPreferences((currentPreferences) => ({ ...currentPreferences, uiScale: clamp(Number(event.target.value), 85, 125) }))} />
+                                        </label>
+                                    </article>
+
+                                    <article className="worksheet-settings-card">
+                                        <span className="worksheet-settings-card__eyebrow">Responsiveness</span>
+                                        <h3>Device behavior</h3>
+                                        <p>Choose how roomy or touch-friendly the worksheet menus should feel across screens.</p>
+                                        <div className="worksheet-choice-group">
+                                            {([
+                                                ['auto', 'Auto adapt'],
+                                                ['touch', 'Touch-friendly'],
+                                                ['compact', 'Compact library'],
+                                            ] as const).map(([mode, label]) => (
+                                                <button type="button" key={mode} className={`worksheet-choice-chip ${preferences.layoutMode === mode ? 'is-active' : ''}`} onClick={() => setPreferences((currentPreferences) => ({ ...currentPreferences, layoutMode: mode }))}>
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </article>
+
+                                    <article className="worksheet-settings-card">
+                                        <span className="worksheet-settings-card__eyebrow">Basic Preference</span>
+                                        <h3>Remember last worksheet</h3>
+                                        <p>Keep the most recently opened worksheet ready as a quick shortcut on the landing page.</p>
+                                        <label className="worksheet-toggle-row">
+                                            <span>{preferences.rememberLastSelection ? 'Enabled' : 'Disabled'}</span>
+                                            <input type="checkbox" checked={preferences.rememberLastSelection} onChange={(event) => setPreferences((currentPreferences) => ({ ...currentPreferences, rememberLastSelection: event.target.checked }))} />
+                                        </label>
+                                    </article>
+                                </div>
+                            </section>
+                        ) : null}
+                    </main>
+                ) : null}
+
+                {!manifestError && currentScreen === 'viewer' ? (
+                    <main className="worksheet-viewer">
+                        <div className="worksheet-viewer__toolbar">
+                            {activeEntry ? (
+                                <div className="worksheet-viewer__toolbar-copy">
+                                    <span className="worksheet-folder-pill">{activeEntry.subjectLabel}</span>
+                                    <span className="worksheet-viewer__toolbar-title">{activeEntry.title}</span>
+                                </div>
+                            ) : null}
+                            <div className="worksheet-viewer__toolbar-group">
+                                <button type="button" className="worksheet-toolbar-button worksheet-toolbar-button--primary" onClick={() => goToScreen('home')}>Home</button>
+                                <button type="button" className="worksheet-toolbar-button" onClick={handleDownload} disabled={!activeEntry}>Download</button>
+                                <button type="button" className="worksheet-toolbar-button" onClick={handlePrint} disabled={!activeEntry}>Print</button>
+                                <button type="button" className="worksheet-toolbar-button" onClick={handleFullscreenToggle} disabled={!activeEntry}>
+                                    {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+
+                        {activeEntry ? (
+                            <>
+                                <div className="worksheet-viewer__panel" ref={panelRef}>
+                                    <div className="worksheet-viewer__stage" style={{ width: `${stageWidth}px`, height: `${stageHeight}px` }}>
+                                        <div
+                                            className="worksheet-viewer__paper"
+                                            style={{
+                                                width: `${scaledWorksheetWidth}px`,
+                                                height: `${scaledWorksheetHeight}px`,
+                                                left: `${paperOffsetX}px`,
+                                                top: `${paperOffsetY}px`,
+                                            }}
+                                        >
+                                            <iframe
+                                                ref={iframeRef}
+                                                src={viewerSrc}
+                                                title={activeEntry.title}
+                                                className="worksheet-viewer__iframe"
+                                                style={{
+                                                    width: `${intrinsicSize.width}px`,
+                                                    height: `${intrinsicSize.height}px`,
+                                                    transform: `scale(${fitScale})`,
+                                                    transformOrigin: 'top left',
+                                                }}
+                                                allowFullScreen
+                                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
+                                                onLoad={() => {
+                                                    logWorksheetDebug('iframe-loaded', {
+                                                        viewerSrc,
+                                                        worksheetTitle: activeEntry.title,
+                                                    });
+                                                    resumeIframeRuntime(iframeRef.current, { reason: 'html-viewer-worksheet-load', soundSettings });
+                                                    syncIframeSoundSettings(iframeRef.current, soundSettings);
+                                                    void initializeWorksheetMeasurement();
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="worksheet-empty-card">Select a worksheet from the library to open it here.</div>
+                        )}
+                    </main>
+                ) : null}
+            </div>
         </div>
     );
 };

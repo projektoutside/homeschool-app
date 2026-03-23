@@ -5,6 +5,18 @@ const MANAGER_ENV_ALLOWLIST = String(import.meta.env.VITE_3DCLASS_MANAGER_ALLOWL
   .map((entry) => entry.trim().toLowerCase())
   .filter((entry) => entry.length > 0);
 
+export type ManagerAccessSource = 'metadata' | 'allowlist' | null;
+
+export interface ManagerAccessState {
+  hasAccess: boolean;
+  accessSource: ManagerAccessSource;
+  hasManagerMetadataClaims: boolean;
+  allowlistConfigured: boolean;
+  matchedAllowlistIdentity: string | null;
+  evaluatedIdentities: string[];
+  denialReason: 'unauthenticated' | 'missing-manager-claim' | null;
+}
+
 const toBooleanLike = (value: unknown): boolean => {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value === 1;
@@ -41,15 +53,9 @@ export const getUsername = (user: User | null): string => {
 export const hasManagerMetadataClaims = (user: User | null): boolean => {
   if (!user) return false;
 
-  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
   const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
-  if (toBooleanLike(metadata.is_manager) || toBooleanLike(metadata.isManager) || toBooleanLike(metadata.manager)) {
-    return true;
-  }
-
   if (
-    isManagerRole(metadata.role)
-    || toBooleanLike(appMetadata.is_manager)
+    toBooleanLike(appMetadata.is_manager)
     || toBooleanLike(appMetadata.isManager)
     || toBooleanLike(appMetadata.manager)
     || isManagerRole(appMetadata.role)
@@ -60,20 +66,82 @@ export const hasManagerMetadataClaims = (user: User | null): boolean => {
   return false;
 };
 
-export const isManagerUser = (user: User | null): boolean => {
-  if (!user) return false;
-
-  if (hasManagerMetadataClaims(user)) {
-    return true;
+const getIdentityTokens = (user: User | null): string[] => {
+  if (!user) {
+    return [];
   }
 
-  if (MANAGER_ENV_ALLOWLIST.length === 0) {
-    return false;
-  }
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
+  const rawTokens = [
+    user.id,
+    user.email ?? '',
+    getUsername(user),
+    typeof metadata.email === 'string' ? metadata.email : '',
+    typeof metadata.username === 'string' ? metadata.username : '',
+    typeof appMetadata.email === 'string' ? appMetadata.email : '',
+    typeof appMetadata.username === 'string' ? appMetadata.username : '',
+  ];
 
-  const identityTokens = [user.id, user.email ?? '', getUsername(user)]
-    .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => entry.length > 0);
-
-  return identityTokens.some((entry) => MANAGER_ENV_ALLOWLIST.includes(entry));
+  return Array.from(new Set(
+    rawTokens
+      .map((entry) => entry.trim().toLowerCase())
+      .filter((entry) => entry.length > 0),
+  ));
 };
+
+export const getManagerAccessState = (user: User | null): ManagerAccessState => {
+  if (!user) {
+    return {
+      hasAccess: false,
+      accessSource: null,
+      hasManagerMetadataClaims: false,
+      allowlistConfigured: MANAGER_ENV_ALLOWLIST.length > 0,
+      matchedAllowlistIdentity: null,
+      evaluatedIdentities: [],
+      denialReason: 'unauthenticated',
+    };
+  }
+
+  const hasMetadataClaims = hasManagerMetadataClaims(user);
+  const evaluatedIdentities = getIdentityTokens(user);
+  const matchedAllowlistIdentity = MANAGER_ENV_ALLOWLIST.length === 0
+    ? null
+    : evaluatedIdentities.find((entry) => MANAGER_ENV_ALLOWLIST.includes(entry)) ?? null;
+
+  if (hasMetadataClaims) {
+    return {
+      hasAccess: true,
+      accessSource: 'metadata',
+      hasManagerMetadataClaims: true,
+      allowlistConfigured: MANAGER_ENV_ALLOWLIST.length > 0,
+      matchedAllowlistIdentity,
+      evaluatedIdentities,
+      denialReason: null,
+    };
+  }
+
+  if (matchedAllowlistIdentity) {
+    return {
+      hasAccess: true,
+      accessSource: 'allowlist',
+      hasManagerMetadataClaims: false,
+      allowlistConfigured: true,
+      matchedAllowlistIdentity,
+      evaluatedIdentities,
+      denialReason: null,
+    };
+  }
+
+  return {
+    hasAccess: false,
+    accessSource: null,
+    hasManagerMetadataClaims: false,
+    allowlistConfigured: MANAGER_ENV_ALLOWLIST.length > 0,
+    matchedAllowlistIdentity: null,
+    evaluatedIdentities,
+    denialReason: 'missing-manager-claim',
+  };
+};
+
+export const isManagerUser = (user: User | null): boolean => getManagerAccessState(user).hasAccess;

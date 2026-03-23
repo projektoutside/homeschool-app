@@ -1,8 +1,9 @@
 .character-creator-host {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(0.45rem, 0.9vw, 0.8rem);
   padding: clamp(0.5rem, 1vw, 0.9rem);
   background:
@@ -10,6 +11,31 @@
     radial-gradient(circle at top right, rgba(247, 178, 78, 0.2), transparent 24%),
     linear-gradient(180deg, #081020 0%, #101a31 100%);
   color: #f7fbff;
+  overflow: hidden;
+}
+
+.character-creator-host--denied {
+  align-content: center;
+}
+
+.character-creator-host__access-card {
+  width: min(42rem, 100%);
+  margin: auto;
+  display: grid;
+  gap: 0.85rem;
+  padding: clamp(1.1rem, 2.4vw, 1.75rem);
+  border: 1px solid rgba(173, 208, 255, 0.16);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, rgba(5, 10, 22, 0.88), rgba(8, 15, 29, 0.82));
+  backdrop-filter: blur(20px);
+  box-shadow: 0 18px 42px rgba(2, 7, 22, 0.28);
+}
+
+.character-creator-host__access-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(241, 248, 255, 0.74);
 }
 
 .character-creator-host__header {
@@ -96,6 +122,7 @@
 
 .character-creator-host__frame-shell {
   position: relative;
+  height: 100%;
   min-height: 0;
   display: grid;
   overflow: hidden;
@@ -110,9 +137,29 @@
   inset: 0;
   display: grid;
   place-items: center;
+  padding: 1.25rem;
   color: rgba(255, 255, 255, 0.82);
   background: rgba(7, 11, 21, 0.4);
   z-index: 1;
+}
+
+.character-creator-host__loading-copy {
+  display: grid;
+  gap: 0.35rem;
+  max-width: min(34rem, 100%);
+  text-align: center;
+}
+
+.character-creator-host__loading-copy strong {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.character-creator-host__loading-copy p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(241, 248, 255, 0.76);
 }
 
 .character-creator-host__frame {

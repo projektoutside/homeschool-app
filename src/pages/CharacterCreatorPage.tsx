@@ -32,7 +32,7 @@ import {
   readHomepageMysteryTestSession,
   readHomepageMysteryTestOverride,
 } from '../utils/homepageCatalogBridge';
-import { isManagerUser } from '../utils/managerAccess';
+import { getManagerAccessState } from '../utils/managerAccess';
 import { buildAssetPath } from '../utils/pathUtils';
 import { HOMEPAGE_CREATOR_APP_VERSION } from '../constants/homepageAppVersion';
 import type { HomepageCatalogSnapshot, HomepageCategoryRecord, HomepagePropRecord } from '../types/homepageCatalog';
@@ -41,6 +41,7 @@ import { resumeIframeRuntime } from '../utils/iframeRuntime';
 import './CharacterCreatorPage.css';
 
 const CHARACTER_CREATOR_APP_VERSION = HOMEPAGE_CREATOR_APP_VERSION;
+const CREATOR_READY_TIMEOUT_MS = 12000;
 
 type CreatorMessage = {
   type?: unknown;
@@ -112,9 +113,14 @@ const CharacterCreatorPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const creatorReadyTimerRef = useRef<number | null>(null);
+  const creatorReadyRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isCreatorReady, setIsCreatorReady] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('Connecting creator workspace...');
-  const hasManagerAccess = useMemo(() => isManagerUser(user), [user]);
+  const managerAccess = useMemo(() => getManagerAccessState(user), [user]);
+  const hasManagerAccess = managerAccess.hasAccess;
   const { snapshot, canManage, uploadPropAsset, saveCategory, deleteCategory, deleteProp, saveProp, error, isLoading } = useHomepageCatalog({
     includeInactive: true,
   });
@@ -126,6 +132,37 @@ const CharacterCreatorPage: React.FC = () => {
   const postMessageToCreator = useCallback((message: Record<string, unknown>) => {
     iframeRef.current?.contentWindow?.postMessage(message, window.location.origin);
   }, []);
+
+  const clearCreatorReadyTimer = useCallback(() => {
+    if (creatorReadyTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(creatorReadyTimerRef.current);
+    creatorReadyTimerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    creatorReadyRef.current = false;
+    setIsLoaded(false);
+    setIsCreatorReady(false);
+    setBootError(null);
+    setStatusMessage('Connecting creator workspace...');
+    clearCreatorReadyTimer();
+  }, [clearCreatorReadyTimer, launchPath]);
+
+  useEffect(() => {
+    if (hasManagerAccess) {
+      return;
+    }
+
+    console.warn('[CharacterCreatorPage] Manager access denied for XiO Studio route.', {
+      accessSource: managerAccess.accessSource,
+      allowlistConfigured: managerAccess.allowlistConfigured,
+      evaluatedIdentities: managerAccess.evaluatedIdentities,
+      denialReason: managerAccess.denialReason,
+    });
+  }, [hasManagerAccess, managerAccess]);
 
   const syncCatalogToCreator = useCallback((reason: string | null = null, snapshotOverride: HomepageCatalogSnapshot | null = null) => {
     const nextSnapshot = snapshotOverride ?? snapshot;
@@ -188,20 +225,15 @@ const CharacterCreatorPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!hasManagerAccess) {
-      navigate('/manager', { replace: true });
-    }
-  }, [hasManagerAccess, navigate]);
-
-  useEffect(() => {
     const iframe = iframeRef.current;
     return () => {
+      clearCreatorReadyTimer();
       teardownIframeElementWhenDisconnected(iframe, { reason: 'character-creator-unmount' });
       if (iframeRef.current === iframe) {
         iframeRef.current = null;
       }
     };
-  }, [launchPath]);
+  }, [clearCreatorReadyTimer, launchPath]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -222,6 +254,10 @@ const CharacterCreatorPage: React.FC = () => {
       const previousKey = typeof payload.previousKey === 'string' ? payload.previousKey.trim() : '';
 
       if (messageType === HOMEPAGE_CREATOR_READY) {
+        creatorReadyRef.current = true;
+        clearCreatorReadyTimer();
+        setIsCreatorReady(true);
+        setBootError(null);
         setStatusMessage(canManage ? 'Creator connected.' : 'Creator is running in local draft mode.');
         syncCatalogToCreator(error ?? null);
         return;
@@ -413,10 +449,35 @@ const CharacterCreatorPage: React.FC = () => {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [canManage, clearPinnedMysteryRewardKeyIfMatch, deleteCategory, deleteProp, error, navigate, persistNextMysteryTestReward, postMessageToCreator, saveCategory, saveProp, snapshot, snapshot?.props, syncCatalogToCreator, uploadPropAsset]);
+  }, [canManage, clearCreatorReadyTimer, clearPinnedMysteryRewardKeyIfMatch, deleteCategory, deleteProp, error, navigate, persistNextMysteryTestReward, postMessageToCreator, saveCategory, saveProp, snapshot, snapshot?.props, syncCatalogToCreator, uploadPropAsset]);
 
   if (!hasManagerAccess) {
-    return null;
+    const accessMessage = !user
+      ? 'Sign in with the manager account that owns XiO Studio to open this workspace.'
+      : managerAccess.allowlistConfigured
+        ? 'This signed-in account does not currently match a XiO manager claim or the configured manager allowlist.'
+        : 'This signed-in account does not carry a XiO manager claim, and no XiO manager allowlist is configured yet.';
+
+    return (
+      <section className="character-creator-host character-creator-host--denied">
+        <div className="character-creator-host__access-card">
+          <p className="character-creator-host__eyebrow">Studio Workspace</p>
+          <h1>XiO Character Creator</h1>
+          <p className="character-creator-host__status">
+            Manager access is required for this route. The blank page has been replaced with an explicit access state.
+          </p>
+          <p className="character-creator-host__error">{accessMessage}</p>
+          <p className="character-creator-host__access-hint">
+            If this is your owner account, restore the manager metadata claim in Supabase or add the account identity to
+            <code> VITE_3DCLASS_MANAGER_ALLOWLIST</code>.
+          </p>
+          <div className="character-creator-host__actions">
+            <Link className="character-creator-host__link" to="/">Back to Homepage</Link>
+            <Link className="character-creator-host__link" to="/manager">Open Manager</Link>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -440,16 +501,33 @@ const CharacterCreatorPage: React.FC = () => {
       </header>
 
       <div className="character-creator-host__frame-shell">
-        {!isLoaded ? <div className="character-creator-host__loading">Launching creator...</div> : null}
+        {!isCreatorReady ? (
+          <div className="character-creator-host__loading" aria-live="polite">
+            <div className="character-creator-host__loading-copy">
+              <strong>{bootError ? 'XiO Studio did not finish loading.' : 'Launching creator...'}</strong>
+              <p>{bootError ?? 'Connecting creator workspace...'}</p>
+            </div>
+          </div>
+        ) : null}
         <iframe
           ref={iframeRef}
           src={launchPath}
           title="XiO Character Creator"
-          className={`character-creator-host__frame ${isLoaded ? 'is-loaded' : ''}`}
+          className={`character-creator-host__frame ${isLoaded && isCreatorReady ? 'is-loaded' : ''}`}
           allow="fullscreen"
           sandbox="allow-same-origin allow-scripts allow-forms allow-downloads"
           onLoad={() => {
             setIsLoaded(true);
+            setBootError(null);
+            clearCreatorReadyTimer();
+            if (!creatorReadyRef.current) {
+              setStatusMessage('Connecting creator workspace...');
+              creatorReadyTimerRef.current = window.setTimeout(() => {
+                creatorReadyTimerRef.current = null;
+                setBootError('The XiO Studio frame loaded, but the creator runtime did not complete boot. Use Open Standalone to confirm the asset bundle and then reload this route.');
+                setStatusMessage('Creator boot is stalled.');
+              }, CREATOR_READY_TIMEOUT_MS);
+            }
             resumeIframeRuntime(iframeRef.current, { reason: 'character-creator-load' });
             syncCatalogToCreator(error ?? null);
           }}

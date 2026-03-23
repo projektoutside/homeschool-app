@@ -483,21 +483,34 @@ function showCreatorNotice({
   }
 }
 
+function restoreFocusBeforeHidingModal(lastActiveElement, fallbackElement = null) {
+  const focusTarget = [lastActiveElement, fallbackElement].find((candidate) => (
+    candidate instanceof HTMLElement
+    && typeof candidate.focus === 'function'
+    && !candidate.hasAttribute('disabled')
+    && !candidate.hidden
+    && candidate.isConnected
+  )) || null;
+  if (focusTarget && document.activeElement !== focusTarget) {
+    focusTarget.focus({ preventScroll: true });
+    return;
+  }
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+}
+
 function resolveDeleteConfirm(confirmed) {
   if (!deleteConfirmModal) {
     return;
   }
-  deleteConfirmModal.hidden = true;
-  deleteConfirmModal.setAttribute('aria-hidden', 'true');
   const resolver = deleteConfirmResolver;
   deleteConfirmResolver = null;
   const lastActiveElement = deleteConfirmLastActiveElement;
   deleteConfirmLastActiveElement = null;
-  if (lastActiveElement instanceof HTMLElement) {
-    window.setTimeout(() => {
-      lastActiveElement.focus();
-    }, 0);
-  }
+  restoreFocusBeforeHidingModal(lastActiveElement);
+  deleteConfirmModal.hidden = true;
+  deleteConfirmModal.setAttribute('aria-hidden', 'true');
   resolver?.(confirmed);
 }
 
@@ -505,17 +518,13 @@ function resolveSaveSuccessPrompt(shouldLaunch) {
   if (!saveSuccessModal) {
     return;
   }
-  saveSuccessModal.hidden = true;
-  saveSuccessModal.setAttribute('aria-hidden', 'true');
   const resolver = saveSuccessResolver;
   saveSuccessResolver = null;
   const lastActiveElement = saveSuccessLastActiveElement;
   saveSuccessLastActiveElement = null;
-  if (lastActiveElement instanceof HTMLElement) {
-    window.setTimeout(() => {
-      lastActiveElement.focus();
-    }, 0);
-  }
+  restoreFocusBeforeHidingModal(lastActiveElement);
+  saveSuccessModal.hidden = true;
+  saveSuccessModal.setAttribute('aria-hidden', 'true');
   resolver?.(shouldLaunch);
 }
 
@@ -967,17 +976,15 @@ function closeRandomGeneratorModal({ restoreFocus = true } = {}) {
   if (!randomGeneratorModal) {
     return;
   }
+  const lastActiveElement = randomGeneratorLastActiveElement;
+  randomGeneratorLastActiveElement = null;
+  if (restoreFocus) {
+    restoreFocusBeforeHidingModal(lastActiveElement, randomPropGeneratorButton);
+  }
   randomGeneratorModal.hidden = true;
   randomGeneratorModal.setAttribute('aria-hidden', 'true');
   setRandomGeneratorBusy(false);
   setRandomGeneratorStatus('');
-  const lastActiveElement = randomGeneratorLastActiveElement;
-  randomGeneratorLastActiveElement = null;
-  if (restoreFocus && lastActiveElement instanceof HTMLElement) {
-    window.setTimeout(() => {
-      lastActiveElement.focus();
-    }, 0);
-  }
 }
 
 function openRandomGeneratorModal() {

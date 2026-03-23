@@ -11,30 +11,29 @@ import { UpdateNotification } from './components/UpdateNotification';
 import CinematicLoadingScreen from './components/CinematicLoadingScreen';
 import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
+import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
 import { buildAssetPath } from './utils/pathUtils';
 import Home from './pages/Home';
+import HTMLViewer from './pages/HTMLViewer';
+import ClassroomPage from './pages/ClassroomPage';
 import './App.css';
 import './components/ErrorBoundary.css';
 
 const loadGamePlayerRoute = () => import('./pages/GamePlayer');
 const loadManagerRoute = () => import('./pages/ManagerPage');
 const loadViewerRoute = () => import('./pages/Viewer');
-const loadHTMLViewerRoute = () => import('./pages/HTMLViewer');
 const loadInstallRoute = () => import('./pages/InstallPage');
 const loadAuthRoute = () => import('./pages/AuthPage');
-const loadClassroomRoute = () => import('./pages/ClassroomPage');
 const loadCharacterCreatorRoute = () => import('./pages/CharacterCreatorPage');
 
 // Lazy load pages for performance
 const GamePlayer = React.lazy(loadGamePlayerRoute);
 const ManagerPage = React.lazy(loadManagerRoute);
 const Viewer = React.lazy(loadViewerRoute);
-const HTMLViewer = React.lazy(loadHTMLViewerRoute);
 const InstallPage = React.lazy(loadInstallRoute);
 const AuthPage = React.lazy(loadAuthRoute);
-const ClassroomPage = React.lazy(loadClassroomRoute);
 const CharacterCreatorPage = React.lazy(loadCharacterCreatorRoute);
 
 // Loading component with accessibility
@@ -53,7 +52,40 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
     loading,
     children,
 }) => {
-    if (loading) return <LoadingFallback />;
+    const location = useLocation();
+    const canBypassLoadingFallback = React.useMemo(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        const isWorksheetOrClassroomRoute =
+            location.pathname === '/html-viewer'
+            || location.pathname === '/classroom';
+
+        if (!isWorksheetOrClassroomRoute) {
+            return false;
+        }
+
+        try {
+            for (let index = 0; index < window.localStorage.length; index += 1) {
+                const key = window.localStorage.key(index) ?? '';
+                if (!/^sb-.*-auth-token$/i.test(key)) {
+                    continue;
+                }
+
+                if (window.localStorage.getItem(key)) {
+                    return true;
+                }
+            }
+        } catch {
+            return false;
+        }
+
+        return false;
+    }, [location.pathname]);
+
+    if (loading && !canBypassLoadingFallback) return <LoadingFallback />;
+    if (loading && canBypassLoadingFallback) return <>{children}</>;
     if (!user) return <Navigate to="/auth" replace />;
     return <>{children}</>;
 };
@@ -139,6 +171,9 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
 const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
+const CLASSROOM_APP_PATH = '3dClass/index.html';
+const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
+const CLASSROOM_DOOR_AUDIO_PATH = '3dClass/audio/dooropening.mp3';
 
 const App: React.FC = () => {
     const { user, loading } = useAuth();
@@ -146,11 +181,20 @@ const App: React.FC = () => {
     const pwa = usePWA();
     useNativeShell({ isNativeApp: pwa.isNativeApp, nativePlatform: pwa.nativePlatform });
     const homePageAppUrl = buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}`);
+    const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_RUNTIME_VERSION}&intro=0`);
+    const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_RUNTIME_VERSION}`);
+    const classroomDoorAudioUrl = buildAssetPath(CLASSROOM_DOOR_AUDIO_PATH);
 
     useAppAssetPrefetch({
         loading,
         homePageAppUrl,
+        classroomAppUrl,
+        classroomDoorIntroUrl,
+        classroomDoorAudioUrl,
         homePageThreeModuleUrl: HOME_PAGE_APP_THREE_MODULE_URL,
+        loadClassroomRoute: async () => Promise.resolve({ default: ClassroomPage }),
+        loadHTMLViewerRoute: async () => Promise.resolve({ default: HTMLViewer }),
+        loadViewerRoute,
     });
 
 
@@ -236,11 +280,7 @@ const App: React.FC = () => {
                             />
                             <Route
                                 path="html-viewer"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><HTMLViewer /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
+                                element={<RouteBoundary><HTMLViewer /></RouteBoundary>}
                             />
                             <Route path="home-profile" element={<HomeRoutePlaceholder />} />
                             <Route

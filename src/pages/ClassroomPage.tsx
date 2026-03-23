@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CLASSROOM_RUNTIME_VERSION } from '../constants/classroomRuntimeVersion';
 import { useAuth } from '../context/AuthContext';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { supabase } from '../lib/supabase';
@@ -10,7 +11,6 @@ import { resumeIframeRuntime } from '../utils/iframeRuntime';
 import './Home.css';
 import './ClassroomPage.css';
 
-const CLASSROOM_APP_VERSION = '2026-03-10-1';
 const CLASSROOM_SYNC_SCOPE = 'classroom-3d';
 const CLASSROOM_GLOBAL_STATE_TABLE = 'classroom_global_states';
 const CLASSROOM_GLOBAL_STATE_APP_ID = '3dClass';
@@ -21,10 +21,12 @@ const CLASSROOM_MESSAGE_STATE_REQUEST = 'LAHS_CLASSROOM_STATE_REQUEST';
 const CLASSROOM_MESSAGE_STATE_SYNC = 'LAHS_CLASSROOM_STATE_SYNC';
 const CLASSROOM_MESSAGE_STATE_SAVE = 'LAHS_CLASSROOM_STATE_SAVE';
 const CLASSROOM_MESSAGE_NAVIGATE = 'LAHS_CLASSROOM_NAVIGATE';
+const CLASSROOM_MESSAGE_NAVIGATE_ACK = 'LAHS_CLASSROOM_NAVIGATE_ACK';
 const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
 const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
 const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
 const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 2200;
+const DEBUG_WORKSHEETS_QUERY_KEY = 'debugWorksheets';
 
 type ClassroomLayoutEntry = {
     left: number;
@@ -131,22 +133,53 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         const params = new URLSearchParams(location.search);
         return parseBooleanQuery(params.get('manager')) || parseBooleanQuery(params.get('manager_ui'));
     }, [isActive, location.search]);
+    const worksheetDebugEnabled = useMemo(() => {
+        if (!isActive) {
+            return false;
+        }
+        const params = new URLSearchParams(location.search);
+        return parseBooleanQuery(params.get(DEBUG_WORKSHEETS_QUERY_KEY));
+    }, [isActive, location.search]);
+    const logWorksheetDebug = useCallback((event: string, details: Record<string, unknown> = {}) => {
+        if (!worksheetDebugEnabled) {
+            return;
+        }
+        console.info('[WorksheetsDebug]', event, details);
+    }, [worksheetDebugEnabled]);
+    const appendWorksheetDebugQuery = useCallback((path: string) => {
+        if (!worksheetDebugEnabled || !path) {
+            return path;
+        }
+
+        try {
+            const nextUrl = new URL(path, window.location.origin);
+            nextUrl.searchParams.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
+            return `${nextUrl.pathname}${nextUrl.search}`;
+        } catch {
+            return path.includes('?')
+                ? `${path}&${DEBUG_WORKSHEETS_QUERY_KEY}=1`
+                : `${path}?${DEBUG_WORKSHEETS_QUERY_KEY}=1`;
+        }
+    }, [worksheetDebugEnabled]);
     const launchPath = useMemo(
         () => {
             const params = new URLSearchParams();
-            params.set('v', CLASSROOM_APP_VERSION);
+            params.set('v', CLASSROOM_RUNTIME_VERSION);
             params.set('intro', '0');
             if (hasManagerAccess && managerRequested) {
                 params.set('manager', '1');
                 params.set('manager_ui', '1');
             }
+            if (worksheetDebugEnabled) {
+                params.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
+            }
             return buildAssetPath(`3dClass/index.html?${params.toString()}`);
         },
-        [hasManagerAccess, managerRequested],
+        [hasManagerAccess, managerRequested, worksheetDebugEnabled],
     );
     const doorIntroPath = useMemo(() => {
         const params = new URLSearchParams();
-        params.set('v', CLASSROOM_APP_VERSION);
+        params.set('v', CLASSROOM_RUNTIME_VERSION);
         return buildAssetPath(`3dClass/door-intro.html?${params.toString()}`);
     }, []);
     const shouldPlayDoorIntro = useMemo(() => {
@@ -361,19 +394,35 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
                 case CLASSROOM_MESSAGE_NAVIGATE: {
                     const payload = (message.payload ?? {}) as Record<string, unknown>;
                     const requestedPath = typeof payload.path === 'string' ? payload.path.trim() : '';
+                    const nextPath = appendWorksheetDebugQuery(requestedPath);
                     // Only allow in-app navigation targets initiated by the classroom iframe.
-                    const isAllowedTarget = requestedPath === '/html-viewer' || requestedPath.startsWith('/html-viewer?');
+                    const isAllowedTarget = nextPath === '/html-viewer' || nextPath.startsWith('/html-viewer?');
                     if (!isAllowedTarget) {
                         return;
                     }
-                    navigate(requestedPath);
+                    logWorksheetDebug('classroom-handoff', {
+                        source: payload.source ?? null,
+                        requestedPath,
+                        nextPath,
+                    });
+                    iframeRef.current?.contentWindow?.postMessage(
+                        {
+                            scope: CLASSROOM_SYNC_SCOPE,
+                            type: CLASSROOM_MESSAGE_NAVIGATE_ACK,
+                            payload: {
+                                path: nextPath,
+                            },
+                        },
+                        window.location.origin,
+                    );
+                    navigate(nextPath);
                     break;
                 }
                 default:
                     break;
             }
         },
-        [hasManagerAccess, navigate, queueStateSave, syncAuthToClassroom, syncLatestStateToClassroom],
+        [appendWorksheetDebugQuery, hasManagerAccess, logWorksheetDebug, navigate, queueStateSave, syncAuthToClassroom, syncLatestStateToClassroom],
     );
 
     useEffect(() => {
@@ -458,7 +507,8 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         resumeIframeRuntime(iframeRef.current, { reason: 'classroom-load' });
         syncAuthToClassroom();
         void syncLatestStateToClassroom('frame-load');
-    }, [launchPath, syncAuthToClassroom, syncLatestStateToClassroom]);
+        logWorksheetDebug('classroom-frame-loaded', { launchPath });
+    }, [launchPath, logWorksheetDebug, syncAuthToClassroom, syncLatestStateToClassroom]);
 
     useEffect(() => {
         postIframeLifecyclePhase(iframeRef.current, isActive ? 'resume' : 'pause', {

@@ -1,0 +1,651 @@
+{
+  "generatedAt": "2026-03-23T10:32:16.135Z",
+  "subjects": [
+    {
+      "slug": "ela",
+      "label": "ELA",
+      "entries": []
+    },
+    {
+      "slug": "math",
+      "label": "Math",
+      "entries": [
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "1minuteadditiontest",
+          "title": "Single Digit Addition Practice",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/1minuteadditiontest/index.html",
+          "downloadPath": "/Worksheets/math/1minuteadditiontest/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "1minutedivisiontest",
+          "title": "Single Digit Division Practice",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/1minutedivisiontest/index.html",
+          "downloadPath": "/Worksheets/math/1minutedivisiontest/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "1minutemultiplicationtest",
+          "title": "Single Digit Multiplication Practice",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/1minutemultiplicationtest/index.html",
+          "downloadPath": "/Worksheets/math/1minutemultiplicationtest/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "1minutesubtractiontest",
+          "title": "Single Digit Subtraction Practice",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/1minutesubtractiontest/index.html",
+          "downloadPath": "/Worksheets/math/1minutesubtractiontest/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "2stepmathproblems",
+          "title": "Two-Step Math Problems - Medium",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/2stepmathproblems/index.html",
+          "downloadPath": "/Worksheets/math/2stepmathproblems/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "2stepmathproblems-easy",
+          "title": "Two-Step Math Problems - Easy",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/2stepmathproblems-easy/index.html",
+          "downloadPath": "/Worksheets/math/2stepmathproblems-easy/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "2stepmathproblems-hard",
+          "title": "Two-Step Math Problems - Hard",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/2stepmathproblems-hard/index.html",
+          "downloadPath": "/Worksheets/math/2stepmathproblems-hard/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-addition-worksheet",
+          "title": "Addition Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-addition-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-addition-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-addition-worksheet-10s",
+          "title": "Addition with 10's",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-addition-worksheet-10s/index.html",
+          "downloadPath": "/Worksheets/math/30-addition-worksheet-10s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-addition-worksheet-5s",
+          "title": "Addition with 5's",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-addition-worksheet-5s/index.html",
+          "downloadPath": "/Worksheets/math/30-addition-worksheet-5s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-addsub-worksheet",
+          "title": "Addition & Subtraction Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-addsub-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-addsub-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-division-worksheet",
+          "title": "Division Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-division-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-division-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-double-digit-addition-worksheet",
+          "title": "Double Digit Addition Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-double-digit-addition-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-double-digit-addition-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-double-digit-addsub-worksheet",
+          "title": "Double Digit Addition & Subtraction Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-double-digit-addsub-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-double-digit-addsub-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-double-digit-division-worksheet",
+          "title": "Double Digit Division Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-double-digit-division-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-double-digit-division-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-double-digit-multiplication-worksheet",
+          "title": "Double Digit Multiplication Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-double-digit-multiplication-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-double-digit-multiplication-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-double-digit-subtraction-worksheet",
+          "title": "Double Digit Subtraction Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-double-digit-subtraction-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-double-digit-subtraction-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-multiplication-worksheet",
+          "title": "Multiplication Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-multiplication-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-multiplication-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-multiplicationdivision-worksheet",
+          "title": "Multiplication & Division Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-multiplicationdivision-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-multiplicationdivision-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-simple-substitution-worksheet",
+          "title": "Solve for x – Simple Substitution",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-simple-substitution-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-simple-substitution-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-subtraction-worksheet",
+          "title": "Subtraction Problems",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-subtraction-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/30-subtraction-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-subtraction-worksheet-10s",
+          "title": "Subtraction with 10's",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-subtraction-worksheet-10s/index.html",
+          "downloadPath": "/Worksheets/math/30-subtraction-worksheet-10s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "30-subtraction-worksheet-5s",
+          "title": "Subtraction with 5's",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/30-subtraction-worksheet-5s/index.html",
+          "downloadPath": "/Worksheets/math/30-subtraction-worksheet-5s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "additionsubtractionmissing-substitution",
+          "title": "Find the Missing Number – Mixed Addition & Subtraction",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/additionsubtractionmissing-substitution/index.html",
+          "downloadPath": "/Worksheets/math/additionsubtractionmissing-substitution/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "countby10s",
+          "title": "Counting by Tens Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/countby10s/index.html",
+          "downloadPath": "/Worksheets/math/countby10s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "countby2s",
+          "title": "Counting by Twos Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/countby2s/index.html",
+          "downloadPath": "/Worksheets/math/countby2s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "countby5s",
+          "title": "Counting by Fives Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/countby5s/index.html",
+          "downloadPath": "/Worksheets/math/countby5s/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "countingoddnumbers",
+          "title": "Counting Odd Numbers Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/countingoddnumbers/index.html",
+          "downloadPath": "/Worksheets/math/countingoddnumbers/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "crosswordpuzzlegenerator",
+          "title": "Crossword Puzzle Generator",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/crosswordpuzzlegenerator/index.html",
+          "downloadPath": "/Worksheets/math/crosswordpuzzlegenerator/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "decimal-numbers-worksheet",
+          "title": "Introduction to Decimal Numbers",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/decimal-numbers-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/decimal-numbers-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "emptymultiplicationtable",
+          "title": "Multiplication Table Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/emptymultiplicationtable/index.html",
+          "downloadPath": "/Worksheets/math/emptymultiplicationtable/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "extraeasyadditionmissingaddend",
+          "title": "Extra Easy Math Worksheet: Missing Addends",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/extraeasyadditionmissingaddend/index.html",
+          "downloadPath": "/Worksheets/math/extraeasyadditionmissingaddend/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "extraeasysubtractionmissingminuend",
+          "title": "Extra Easy Math Worksheet: Missing Minuends",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/extraeasysubtractionmissingminuend/index.html",
+          "downloadPath": "/Worksheets/math/extraeasysubtractionmissingminuend/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "fillintheblankartcalender",
+          "title": "Fill in the Missing Answers – Art Calendar",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/fillintheblankartcalender/index.html",
+          "downloadPath": "/Worksheets/math/fillintheblankartcalender/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "fillintheblankcalender",
+          "title": "Fill in the Missing Answers – May 2025 Calendar",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/fillintheblankcalender/index.html",
+          "downloadPath": "/Worksheets/math/fillintheblankcalender/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "introduction-to-fractions-worksheet",
+          "title": "Introduction to Fractions Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/introduction-to-fractions-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/introduction-to-fractions-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "introtofractions",
+          "title": "Introduction to Fractions Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/introtofractions/index.html",
+          "downloadPath": "/Worksheets/math/introtofractions/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "missingpattern8shape",
+          "title": "Recognize Patterns with Shapes - Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/missingpattern8shape/index.html",
+          "downloadPath": "/Worksheets/math/missingpattern8shape/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "missingpatterncountsheet",
+          "title": "Number Patterns – Skip Counting",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/missingpatterncountsheet/index.html",
+          "downloadPath": "/Worksheets/math/missingpatterncountsheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "missingpatterncountsheet-easy",
+          "title": "Easy Number Patterns – Skip Counting",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/missingpatterncountsheet-easy/index.html",
+          "downloadPath": "/Worksheets/math/missingpatterncountsheet-easy/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "missingpatterncountsheet-hard",
+          "title": "Hard Number Patterns – Skip Counting",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/missingpatterncountsheet-hard/index.html",
+          "downloadPath": "/Worksheets/math/missingpatterncountsheet-hard/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "missingpatternshape",
+          "title": "Patterns with Shapes - Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/missingpatternshape/index.html",
+          "downloadPath": "/Worksheets/math/missingpatternshape/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "positive-negative-add-sub-worksheet",
+          "title": "Adding and Subtracting Negative Numbers",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/positive-negative-add-sub-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/positive-negative-add-sub-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "positivenegativesecretword",
+          "title": "Decode the Secret Word – Solve Positive & Negative Numbers!",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/positivenegativesecretword/index.html",
+          "downloadPath": "/Worksheets/math/positivenegativesecretword/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "presidents-worksheet",
+          "title": "Last 15 U.S. Presidents Vocabulary Fill-in-the-Blank",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/presidents-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/presidents-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "presidenttestfirst10",
+          "title": "First 10 U.S. Presidents Vocabulary",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/presidenttestfirst10/index.html",
+          "downloadPath": "/Worksheets/math/presidenttestfirst10/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "presidenttestlast15",
+          "title": "Last 15 U.S. Presidents Vocabulary",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/presidenttestlast15/index.html",
+          "downloadPath": "/Worksheets/math/presidenttestlast15/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution10-worksheet",
+          "title": "Solve for x – Simple Substitution",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution10-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution10-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-additionworksheet",
+          "title": "Solve for x – Simple Addition",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-additionworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-additionworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-divisionworksheet",
+          "title": "Solve for x – Simple Division",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-divisionworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-divisionworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-mixaddsubworksheet",
+          "title": "Solve for x – Mixed Addition & Subtraction",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-mixaddsubworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-mixaddsubworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-multiplicationworksheet",
+          "title": "Solve for x – Simple Multiplication",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-multiplicationworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-multiplicationworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-subtractionworksheet",
+          "title": "Solve for x – Simple Subtraction",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-subtractionworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-subtractionworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitution16-variablesworksheet",
+          "title": "Variable Substitution Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitution16-variablesworksheet/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitution16-variablesworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "simple-substitutionwordproblems",
+          "title": "Solve for x – Word‑Problem Substitution",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/simple-substitutionwordproblems/index.html",
+          "downloadPath": "/Worksheets/math/simple-substitutionwordproblems/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "Simplemathworksheettest",
+          "title": "Simple Math Worksheet Test",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/Simplemathworksheettest.html",
+          "downloadPath": "/Worksheets/math/Simplemathworksheettest.html",
+          "sourceKind": "file"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "storytelling-elements-worksheet",
+          "title": "Storytelling Elements Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/storytelling-elements-worksheet/index.html",
+          "downloadPath": "/Worksheets/math/storytelling-elements-worksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "substitutionsecretword",
+          "title": "Decode the Secret Word – Solve for x!",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/substitutionsecretword/index.html",
+          "downloadPath": "/Worksheets/math/substitutionsecretword/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "uniquepatternworksheet",
+          "title": "Unique Number Patterns Worksheet",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/uniquepatternworksheet/index.html",
+          "downloadPath": "/Worksheets/math/uniquepatternworksheet/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "uniquepatternworksheeteasy",
+          "title": "Unique Number Patterns Worksheet - EASY",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/uniquepatternworksheeteasy/index.html",
+          "downloadPath": "/Worksheets/math/uniquepatternworksheeteasy/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "uniquepatternworksheethard",
+          "title": "Unique Number Patterns Worksheet - HARD",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/uniquepatternworksheethard/index.html",
+          "downloadPath": "/Worksheets/math/uniquepatternworksheethard/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "uniquepatternworksheetmedium",
+          "title": "Unique Number Patterns Worksheet - MEDIUM",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/uniquepatternworksheetmedium/index.html",
+          "downloadPath": "/Worksheets/math/uniquepatternworksheetmedium/index.html",
+          "sourceKind": "directory"
+        },
+        {
+          "subjectSlug": "math",
+          "subjectLabel": "Math",
+          "slug": "us-states-word-bank",
+          "title": "U.S. States Word Bank",
+          "description": "Math worksheet",
+          "launchPath": "/Worksheets/math/us-states-word-bank/index.html",
+          "downloadPath": "/Worksheets/math/us-states-word-bank/index.html",
+          "sourceKind": "directory"
+        }
+      ]
+    },
+    {
+      "slug": "social-studies",
+      "label": "Social Studies",
+      "entries": []
+    }
+  ]
+}

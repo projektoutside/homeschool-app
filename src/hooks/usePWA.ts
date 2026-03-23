@@ -57,7 +57,7 @@ interface UsePWAReturn {
  * Handles installation, fullscreen mode, auto-updates, and offline support
  */
 export function usePWA(): UsePWAReturn {
-  const SW_SCRIPT_VERSION = '2026-02-18-1';
+  const SW_SCRIPT_VERSION = '2026-03-23-worksheet-fix-1';
   // Install state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);

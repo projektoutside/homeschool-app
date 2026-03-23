@@ -1568,8 +1568,11 @@
       const CLASSROOM_MESSAGE_STATE_SYNC = "LAHS_CLASSROOM_STATE_SYNC";
       const CLASSROOM_MESSAGE_STATE_SAVE = "LAHS_CLASSROOM_STATE_SAVE";
       const CLASSROOM_MESSAGE_NAVIGATE = "LAHS_CLASSROOM_NAVIGATE";
+      const CLASSROOM_MESSAGE_NAVIGATE_ACK = "LAHS_CLASSROOM_NAVIGATE_ACK";
       const CLASSROOM_MESSAGE_IMMERSIVE_OPEN = "LAHS_CLASSROOM_IMMERSIVE_OPEN";
       const CLASSROOM_MESSAGE_IMMERSIVE_CLOSE = "LAHS_CLASSROOM_IMMERSIVE_CLOSE";
+      const DEBUG_WORKSHEETS_QUERY_KEY = "debugWorksheets";
+      const CLASSROOM_NAVIGATE_FALLBACK_MS = 3000;
       const CLASSROOM_REMOTE_SAVE_DEBOUNCE_MS = 350;
       const CLASSROOM_INITIAL_SYNC_WAIT_MS = 220;
       const PORTRAIT_COMPONENT_SCALE = 1;
@@ -1996,6 +1999,7 @@
       let initialSyncResolved = false;
       let initialSyncResolver = null;
       let lastRemoteStateSignature = "";
+      let worksheetNavigationFallbackTimerId = null;
       const iframeClientId = "classroom3d-" + Math.random().toString(36).slice(2, 10);
       const hotspotElementsById = new Map();
       const SUPPORTS_POINTER_EVENTS = typeof window.PointerEvent === "function";
@@ -3459,6 +3463,15 @@
           return;
         }
 
+        if (message.type === CLASSROOM_MESSAGE_NAVIGATE_ACK) {
+          const payload = message.payload && typeof message.payload === "object" ? message.payload : {};
+          logWorksheetDebug("classroom-navigate-ack", {
+            path: typeof payload.path === "string" ? payload.path : null
+          });
+          clearWorksheetNavigationFallback();
+          return;
+        }
+
         if (message.type === CLASSROOM_MESSAGE_AUTH_SYNC) {
           const payload = message.payload && typeof message.payload === "object" ? message.payload : {};
           const nextUserId = payload.userId;
@@ -3909,15 +3922,41 @@
         return (basePrefix || "") + "/html-viewer";
       }
 
-      function openWorksheetViewerFromHotspot() {
-        const worksheetViewerQuery = "?source=classroom&open=browser";
-        const targetPath = "/html-viewer" + worksheetViewerQuery;
-        const resolvedPath = resolveHtmlViewerPath() + worksheetViewerQuery;
-        postMessageToParent(CLASSROOM_MESSAGE_NAVIGATE, {
-          path: targetPath,
-          source: "component-worksheets"
-        });
-        // Guaranteed navigation fallback: direct top-level route change.
+      function isWorksheetDebugEnabled() {
+        try {
+          const params = new URLSearchParams(window.location.search || "");
+          const value = String(params.get(DEBUG_WORKSHEETS_QUERY_KEY) || "").trim().toLowerCase();
+          return value === "1" || value === "true" || value === "yes" || value === "on";
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function logWorksheetDebug(event, payload) {
+        if (!isWorksheetDebugEnabled() || !window.console || typeof window.console.info !== "function") {
+          return;
+        }
+        window.console.info("[WorksheetsDebug]", event, payload || {});
+      }
+
+      function buildWorksheetViewerQuery() {
+        const params = new URLSearchParams();
+        params.set("source", "classroom");
+        if (isWorksheetDebugEnabled()) {
+          params.set(DEBUG_WORKSHEETS_QUERY_KEY, "1");
+        }
+        const query = params.toString();
+        return query ? "?" + query : "";
+      }
+
+      function clearWorksheetNavigationFallback() {
+        if (worksheetNavigationFallbackTimerId !== null) {
+          window.clearTimeout(worksheetNavigationFallbackTimerId);
+          worksheetNavigationFallbackTimerId = null;
+        }
+      }
+
+      function navigateToWorksheetViewerFallback(resolvedPath) {
         if (window.top && window.top !== window) {
           try {
             window.top.location.assign(resolvedPath);
@@ -3925,6 +3964,38 @@
           } catch (_) {}
         }
         window.location.assign(resolvedPath);
+      }
+
+      function openWorksheetViewerFromHotspot() {
+        const worksheetViewerQuery = buildWorksheetViewerQuery();
+        const targetPath = "/html-viewer" + worksheetViewerQuery;
+        const resolvedPath = resolveHtmlViewerPath() + worksheetViewerQuery;
+        const isEmbedded = !!window.parent && window.parent !== window;
+
+        logWorksheetDebug("classroom-hotspot-open", {
+          targetPath: targetPath,
+          resolvedPath: resolvedPath,
+          isEmbedded: isEmbedded
+        });
+        clearWorksheetNavigationFallback();
+
+        if (!isEmbedded) {
+          navigateToWorksheetViewerFallback(resolvedPath);
+          return;
+        }
+
+        postMessageToParent(CLASSROOM_MESSAGE_NAVIGATE, {
+          path: targetPath,
+          source: "component-worksheets"
+        });
+
+        clearWorksheetNavigationFallback();
+        worksheetNavigationFallbackTimerId = window.setTimeout(function () {
+          logWorksheetDebug("classroom-handoff-fallback", {
+            resolvedPath: resolvedPath
+          });
+          navigateToWorksheetViewerFallback(resolvedPath);
+        }, CLASSROOM_NAVIGATE_FALLBACK_MS);
       }
 
       function openGameFrame(url) {

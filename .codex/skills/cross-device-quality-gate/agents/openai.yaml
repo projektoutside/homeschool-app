@@ -1,4 +1,4 @@
 interface:
   display_name: "Cross-Device QA"
-  short_description: "Default cross-device compatibility workflow"
-  default_prompt: "Use $cross-device-quality-gate to validate this app change across phone, tablet, desktop, iframe, and native-wrapper modes."
+  short_description: "Tier 3 cross-device validation workflow"
+  default_prompt: "Use $cross-device-quality-gate for Tier 3 device-sensitive changes in this app across phone, tablet, desktop, iframe, and native-wrapper modes."

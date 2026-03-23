@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as tus from 'tus-js-client';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured, supabaseUrl } from '../lib/supabase';
@@ -9,7 +9,7 @@ import {
   normalizeHomepageProp,
   normalizeHomepageRarity,
 } from '../utils/homepageCatalogBridge';
-import { getUsername, hasManagerMetadataClaims } from '../utils/managerAccess';
+import { getUsername, isManagerUser } from '../utils/managerAccess';
 import type {
   HomepageCatalogSnapshot,
   HomepageCategoryRecord,
@@ -55,6 +55,15 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
     }
   }
   return fallback;
+};
+
+const isAbortLikeError = (error: unknown): boolean => {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return true;
+  }
+
+  const message = getErrorMessage(error, '').toLowerCase();
+  return message.includes('aborterror') || message.includes('signal is aborted');
 };
 
 const slugify = (value: string): string => value
@@ -230,9 +239,16 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
   const [props, setProps] = useState<HomepagePropRecord[]>([]);
   const [isLoading, setIsLoading] = useState(() => Boolean(supabase && isSupabaseConfigured));
   const [error, setError] = useState<string | null>(null);
+  const categoriesRef = useRef<HomepageCategoryRecord[]>([]);
+  const propsRef = useRef<HomepagePropRecord[]>([]);
 
-  const canManage = useMemo(() => hasManagerMetadataClaims(user), [user]);
+  const canManage = useMemo(() => isManagerUser(user), [user]);
   const username = useMemo(() => getUsername(user), [user]);
+
+  useEffect(() => {
+    categoriesRef.current = categories;
+    propsRef.current = props;
+  }, [categories, props]);
 
   const ensureWritableManagerSession = useCallback(async () => {
     if (!supabase || !isSupabaseConfigured) {
@@ -257,8 +273,8 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
       throw new Error('Sign in again to publish live HomepageAPP props.');
     }
 
-    if (!hasManagerMetadataClaims(nextSession.user)) {
-      throw new Error('Your current Supabase session does not have manager publish permissions yet. Sign out and sign back in, then try again.');
+    if (!isManagerUser(nextSession.user)) {
+      throw new Error('Your current Supabase session does not have XiO manager access yet. Sign out and sign back in, then try again.');
     }
 
     return nextSession;
@@ -275,12 +291,35 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
     setIsLoading(true);
     setError(null);
 
-    const [categoryResult, propResult] = await Promise.all([
-      supabase.from(CATEGORY_TABLE).select('*').order('sort_order', { ascending: true }),
-      supabase.from(PROP_TABLE).select('*').order('label', { ascending: true }),
-    ]);
+    let categoryResult;
+    let propResult;
+    try {
+      [categoryResult, propResult] = await Promise.all([
+        supabase.from(CATEGORY_TABLE).select('*').order('sort_order', { ascending: true }),
+        supabase.from(PROP_TABLE).select('*').order('label', { ascending: true }),
+      ]);
+    } catch (loadError) {
+      if (isAbortLikeError(loadError)) {
+        setIsLoading(false);
+        return buildHomepageCatalogSnapshot({
+          categories: categoriesRef.current,
+          props: propsRef.current,
+        });
+      }
+
+      setIsLoading(false);
+      throw loadError;
+    }
 
     if (categoryResult.error || propResult.error) {
+      if (isAbortLikeError(categoryResult.error) || isAbortLikeError(propResult.error)) {
+        setIsLoading(false);
+        return buildHomepageCatalogSnapshot({
+          categories: categoriesRef.current,
+          props: propsRef.current,
+        });
+      }
+
       if (isHomepageCatalogSchemaMissingError(categoryResult.error) || isHomepageCatalogSchemaMissingError(propResult.error)) {
         setCategories([]);
         setProps([]);

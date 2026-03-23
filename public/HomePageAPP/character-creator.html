@@ -8,7 +8,7 @@
     rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%234c1d95'/%3E%3Ccircle cx='23' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='41' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='24' cy='31' r='2.8' fill='%230b1220'/%3E%3Ccircle cx='40' cy='31' r='2.8' fill='%230b1220'/%3E%3C/svg%3E"
   />
-  <link rel="stylesheet" href="./character-creator.css?v=2026-03-15-39" />
+  <link rel="stylesheet" href="./character-creator.css?v=2026-03-23-40" />
 </head>
 <body>
   <div class="creator-app">
@@ -416,15 +416,15 @@
                 </div>
               </div>
               <div class="transform-grid">
-                <label class="field"><span>Pos X</span><input id="pos-x-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Pos Y</span><input id="pos-y-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Pos Z</span><input id="pos-z-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Rot X</span><input id="rot-x-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Rot Y</span><input id="rot-y-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Rot Z</span><input id="rot-z-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Scale X</span><input id="scale-x-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Scale Y</span><input id="scale-y-input" type="number" step="0.01" /></label>
-                <label class="field"><span>Scale Z</span><input id="scale-z-input" type="number" step="0.01" /></label>
+                <label class="field"><span>Pos X</span><input id="pos-x-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Pos Y</span><input id="pos-y-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Pos Z</span><input id="pos-z-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Rot X</span><input id="rot-x-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Rot Y</span><input id="rot-y-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Rot Z</span><input id="rot-z-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Scale X</span><input id="scale-x-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Scale Y</span><input id="scale-y-input" type="number" step="0.0001" /></label>
+                <label class="field"><span>Scale Z</span><input id="scale-z-input" type="number" step="0.0001" /></label>
               </div>
             </div>
           </details>
@@ -790,7 +790,7 @@
   </aside>
 
   <script>
-    const creatorAssetVersion = '2026-03-15-39';
+    const creatorAssetVersion = '2026-03-23-40';
     const creatorScript = document.createElement('script');
     const creatorScriptPath = window.location.protocol === 'file:'
       ? './src/creator/character-creator-standalone.js'

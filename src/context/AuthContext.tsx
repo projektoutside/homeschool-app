@@ -28,27 +28,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const client = supabase;
 
     if (!client || !isSupabaseConfigured) {
+      setLoading(false);
       return;
     }
 
     const initializeSession = async () => {
-      const { data } = await client.auth.getSession();
-      if (!isMounted) return;
+      try {
+        const { data } = await client.auth.getSession();
+        if (!isMounted) return;
 
-      const currentSession = data.session ?? null;
-      if (!currentSession) {
+        const currentSession = data.session ?? null;
+        if (!currentSession) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const { data: refreshedData } = await client.auth.refreshSession();
+          if (!isMounted) return;
+
+          const nextSession = refreshedData.session ?? currentSession;
+          setSession(nextSession);
+          setUser(nextSession?.user ?? null);
+        } catch (error) {
+          if (!isMounted) return;
+
+          console.warn('[AuthProvider] Session refresh failed, using cached session.', error);
+          setSession(currentSession);
+          setUser(currentSession.user ?? null);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+
+        console.error('[AuthProvider] Failed to initialize auth session.', error);
         setSession(null);
         setUser(null);
-        setLoading(false);
-        return;
       }
-
-      const { data: refreshedData } = await client.auth.refreshSession();
-      if (!isMounted) return;
-
-      const nextSession = refreshedData.session ?? currentSession;
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
       setLoading(false);
     };
 

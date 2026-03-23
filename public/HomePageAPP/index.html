@@ -10515,7 +10515,7 @@
         }
 
         const getCharacterCreatorLaunchUrl = () => {
-const creatorVersion = '2026-03-15-39';
+            const creatorVersion = '2026-03-23-40';
             const standaloneUrl = new URL('./character-creator.html', window.location.href);
             standaloneUrl.searchParams.set('v', creatorVersion);
             if (window.location.protocol === 'file:') {
@@ -10524,7 +10524,7 @@ const creatorVersion = '2026-03-15-39';
 
             try {
                 if (window.top && window.top !== window && window.top.location.origin === window.location.origin) {
-                    const managerUrl = new URL('/character-creator', window.top.location.href);
+                    const managerUrl = new URL('../character-creator', window.location.href);
                     managerUrl.searchParams.set('v', creatorVersion);
                     return managerUrl.toString();
                 }

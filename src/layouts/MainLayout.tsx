@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/variables.css';
 import './MainLayout.css';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { GlobalSettings } from '../components/GlobalSettings';
-import { HomeInstallLauncher } from '../components/HomeInstallLauncher';
 import { AppShellGuard } from '../components/AppShellGuard';
 import { useGlobalUiClickSound } from '../hooks/useGlobalUiClickSound';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { HomepageSessionProvider } from '../context/homepageSessionContext';
 import { useAuth } from '../context/AuthContext';
-import { isManagerUser } from '../utils/managerAccess';
 import UserHomePage from '../pages/UserHomePage';
 
 const MainLayout: React.FC = () => {
@@ -37,8 +35,9 @@ const MainLayout: React.FC = () => {
     const isCharacterCreatorRoute = location.pathname === '/character-creator';
     const isGamePlayerRoute = location.pathname.startsWith('/play/') || location.pathname.startsWith('/open/');
     const isManagerRoute = location.pathname === '/manager';
-    // Developer tooling should not be blocked by the hidden homepage bootstrap.
-    const shouldBypassHomepageSessionBootstrap = isManagerRoute || isCharacterCreatorRoute;
+    const isHtmlViewerRoute = location.pathname === '/html-viewer';
+    // Tool-style routes should render immediately even on direct entry or hard reload.
+    const shouldBypassHomepageSessionBootstrap = isManagerRoute || isCharacterCreatorRoute || isHtmlViewerRoute;
     const isHomepageSessionGateReady = isHomepageSessionReady || shouldBypassHomepageSessionBootstrap;
     const isPrimingHomepageSession = !isHomepageSessionGateReady;
     const shouldRenderHomepageSession = !shouldBypassHomepageSessionBootstrap;
@@ -51,14 +50,10 @@ const MainLayout: React.FC = () => {
         || isGamePlayerRoute
         || isManagerRoute
         || isClassroomRoute
+        || isHtmlViewerRoute
         || isCharacterCreatorRoute
         || isPrimingHomepageSession;
-    const hasDeveloperAccess = isManagerUser(user);
-    const shouldShowCharacterCreatorLauncher =
-        hasDeveloperAccess
-        && isUserHomeRoute
-        && !isCharacterCreatorRoute;
-    const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isPrimingHomepageSession;
+    const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isHtmlViewerRoute || isPrimingHomepageSession;
 
     useZoomLock({ enabled: shouldDisableZoom });
 
@@ -136,19 +131,6 @@ const MainLayout: React.FC = () => {
                         <Outlet />
                     </div>
                 </main>
-
-                {shouldShowCharacterCreatorLauncher ? (
-                    <Link
-                        to="/character-creator"
-                        className="character-creator-launcher"
-                        aria-label="Open XiO Studio"
-                    >
-                        <span className="character-creator-launcher__eyebrow">Studio Access</span>
-                        <span className="character-creator-launcher__title">XiO Studio</span>
-                    </Link>
-                ) : null}
-
-                {isUserHomeRoute ? <HomeInstallLauncher /> : null}
 
                 <BottomNavigation onOpenSettings={handleSettingsButtonClick} isSettingsOpen={isSettingsOpen} />
 

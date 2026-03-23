@@ -14,6 +14,9 @@ import {
 const USER_POINTS_TOTALS_TABLE = 'user_points_totals';
 const APPLY_GAME_POINTS_RPC = 'apply_game_points_event';
 const POINTS_CACHE_VERSION = 1;
+const REMOTE_POINTS_SYNC_ENABLED = !['0', 'false', 'no', 'off'].includes(
+  String(import.meta.env.VITE_ENABLE_REMOTE_POINTS_SYNC ?? 'true').trim().toLowerCase(),
+);
 
 interface PendingPointEvent {
   gameId: string;
@@ -312,6 +315,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (
             flushInProgressRef.current
             || pointsSyncUnavailableRef.current
+            || !REMOTE_POINTS_SYNC_ENABLED
             || !user?.id
             || !client
             || !isSupabaseConfigured
@@ -385,7 +389,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
     commitState(cachedState.serverTotalPoints, cachedState.pendingEvents);
 
-        if (!client || !isSupabaseConfigured || pointsSyncUnavailableRef.current) {
+        if (!REMOTE_POINTS_SYNC_ENABLED || !client || !isSupabaseConfigured || pointsSyncUnavailableRef.current) {
             setLoading(false);
             return;
         }
@@ -432,7 +436,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         const client = supabase;
-        if (!user?.id || !client || !isSupabaseConfigured) {
+        if (!REMOTE_POINTS_SYNC_ENABLED || !user?.id || !client || !isSupabaseConfigured) {
             return;
         }
 

@@ -5,8 +5,20 @@ import {
     polygonGameEntry,
     polygonToolEntry,
 } from './sharedEntries';
+import { migrateLegacyWorksheetPath } from '../../utils/worksheetRoutes';
 
-export const mathContent: ContentItem[] = [
+const normalizeMathEntry = (entry: ContentItem): ContentItem => {
+    if (entry.type !== 'worksheet' || !entry.customHtmlPath) {
+        return entry;
+    }
+
+    return {
+        ...entry,
+        customHtmlPath: migrateLegacyWorksheetPath(entry.customHtmlPath),
+    };
+};
+
+const mathEntries: ContentItem[] = [
     // Example game entry removed - file '/example-game/index.html' does not exist
     // {
     //     id: 'legacy-html-example',
@@ -1089,3 +1101,5 @@ export const mathContent: ContentItem[] = [
         "dateAdded": "2026-03-18"
     }
 ];
+
+export const mathContent: ContentItem[] = mathEntries.map(normalizeMathEntry);

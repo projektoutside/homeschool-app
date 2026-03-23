@@ -1,6 +1,7 @@
 import { CONTENT_ITEMS } from './mockContent';
 import type { ContentItem, ContentType } from '../types/content';
 import type { AppAreaId, AreaDefinition, ModuleDefinition, ModuleLaunchTarget } from '../types/appAreas';
+import { buildWorksheetViewerRoute, migrateLegacyWorksheetPath } from '../utils/worksheetRoutes';
 
 export const APP_AREAS: AreaDefinition[] = [
   {
@@ -119,7 +120,17 @@ export const resolveModuleLaunchTarget = (
     return { kind: 'play', path: `/play/${item.id}` };
   }
 
-  if (item.type === 'worksheet' || item.type === 'tool') {
+  if (item.type === 'worksheet') {
+    return {
+      kind: 'open',
+      path: buildWorksheetViewerRoute({
+        path: migrateLegacyWorksheetPath(item.customHtmlPath),
+        screen: item.customHtmlPath ? 'viewer' : 'open',
+      }),
+    };
+  }
+
+  if (item.type === 'tool') {
     return { kind: 'open', path: `/open/${item.id}` };
   }
 

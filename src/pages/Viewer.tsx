@@ -10,6 +10,7 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
+import { buildWorksheetViewerRoute, migrateLegacyWorksheetPath } from '../utils/worksheetRoutes';
 import './Viewer.css';
 
 const ViewerPage: React.FC = () => {
@@ -17,7 +18,6 @@ const ViewerPage: React.FC = () => {
     const navigate = useNavigate();
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [zoomScale, setZoomScale] = useState(1);
@@ -142,13 +142,29 @@ const ViewerPage: React.FC = () => {
     }, [resetControlsTimeout, isWorksheetContent, shouldUseNativeFullscreenFallback]);
 
     useEffect(() => {
-        setIsLoading(true);
         setZoomScale(1);
 
         if (item?.customHtmlPath && iframeRef.current) {
             iframeRef.current.src = buildAssetPath(item.customHtmlPath);
         }
     }, [item]);
+
+    useEffect(() => {
+        if (!item || item.type !== 'worksheet') {
+            return;
+        }
+
+        navigate(
+            buildWorksheetViewerRoute({
+                path: migrateLegacyWorksheetPath(item.customHtmlPath),
+                screen: item.customHtmlPath ? 'viewer' : 'open',
+            }),
+            {
+                replace: true,
+                state: { launchItem: item },
+            },
+        );
+    }, [item, navigate]);
 
     const handleDownload = useCallback(async () => {
         if (!item) return;
@@ -174,9 +190,13 @@ const ViewerPage: React.FC = () => {
             <div className="empty-state">
                 <p>Resource not found</p>
                 <button onClick={() => navigate(-1)} className="back-btn">← Go Back</button>
-            </div>
+                </div>
         );
 
+    }
+
+    if (item.type === 'worksheet') {
+        return null;
     }
 
     const renderContent = () => {
@@ -193,10 +213,6 @@ const ViewerPage: React.FC = () => {
         if (isGameContent) {
             return (
                 <div className="game-viewport">
-                    <div className={`loading-overlay ${!isLoading ? 'hidden' : ''}`}>
-                        <div className="loading-spinner" />
-                        <p className="loading-text">Loading Game...</p>
-                    </div>
                     <button
                         className="fullscreen-toggle-btn"
                         onClick={isFullscreen ? exitFullscreen : enterFullscreen}
@@ -212,7 +228,6 @@ const ViewerPage: React.FC = () => {
                         allowFullScreen
                         sandbox="allow-scripts allow-forms allow-popups"
                         onLoad={() => {
-                            setIsLoading(false);
                             resumeIframeRuntime(iframeRef.current, {
                                 reason: 'viewer-game-load',
                                 soundSettings,
@@ -226,10 +241,6 @@ const ViewerPage: React.FC = () => {
         // Worksheet view with inner container for proper zoom isolation
         return (
             <div className="worksheet-viewport">
-                <div className={`loading-overlay ${!isLoading ? 'hidden' : ''}`}>
-                    <div className="loading-spinner" />
-                    <p className="loading-text">Loading Worksheet...</p>
-                </div>
                 <div className="worksheet-inner">
                     <iframe
                         ref={iframeRef}
@@ -246,7 +257,6 @@ const ViewerPage: React.FC = () => {
                         allowFullScreen
                         sandbox="allow-scripts"
                         onLoad={() => {
-                            setIsLoading(false);
                             resumeIframeRuntime(iframeRef.current, {
                                 reason: 'viewer-worksheet-load',
                                 soundSettings,
