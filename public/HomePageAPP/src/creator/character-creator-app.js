@@ -1510,6 +1510,7 @@ const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
   Object.freeze([0, 0, 0]),
   Object.freeze([0, Math.PI, 0]),
 ]);
+const XIO_STANDARD_CROWN_AUTO_LOCK_POSITION = Object.freeze([0, 1.55, -1.65]);
 const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
   headWear: Object.freeze({
     horizontalSpan: 5.95,
@@ -3599,9 +3600,12 @@ function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false
     return false;
   }
 
-  draftProp.attachment = {
-    ...draftProp.attachment,
-    position: [
+  const useStandardCrownLockedPosition =
+    slotKey === 'headWear'
+    && normalizeHomepagePropKey(draftProp.key) === 'xiostandardcrown';
+  const nextPosition = useStandardCrownLockedPosition
+    ? XIO_STANDARD_CROWN_AUTO_LOCK_POSITION
+    : [
       roundTransformValue(-candidate.scaledCenter.x, 0),
       roundTransformValue(
         -candidate.scaledCenter.y + (candidate.scaledSize.y * (
@@ -3619,7 +3623,11 @@ function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false
         )),
         0,
       ),
-    ],
+    ];
+
+  draftProp.attachment = {
+    ...draftProp.attachment,
+    position: nextPosition.map((value) => roundTransformValue(value, 0)),
     rotation: [
       roundTransformValue(candidate.rotation[0], 0),
       roundTransformValue(candidate.rotation[1], 0),

@@ -481,7 +481,7 @@ const HOMEPAGE_SYSTEM_PROP_OVERRIDES = Object.freeze({
     mysteryBoxEnabled: true,
     active: true,
     attachment: Object.freeze({
-      position: Object.freeze([0, 1.2, -0.8]),
+      position: Object.freeze([0, 1.55, -1.65]),
       rotation: Object.freeze([0, 0, 0]),
       scale: Object.freeze([2.7, 2.7, 2.7]),
       mirrorMode: 'single',

@@ -122,7 +122,7 @@ const WING_ATTACHMENTS = Object.freeze({
 
 const SINGLE_ATTACHMENTS = Object.freeze({
   xioStandardCrown: createSingleAttachment({
-    position: [0, 1.2, -0.8],
+    position: [0, 1.55, -1.65],
     rotation: [0, 0, 0],
     scale: [2.7, 2.7, 2.7],
   }),

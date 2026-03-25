@@ -916,7 +916,7 @@
           mysteryBoxEnabled: true,
           active: true,
           attachment: Object.freeze({
-            position: Object.freeze([0, 1.2, -0.8]),
+            position: Object.freeze([0, 1.55, -1.65]),
             rotation: Object.freeze([0, 0, 0]),
             scale: Object.freeze([2.7, 2.7, 2.7]),
             mirrorMode: "single"
@@ -2390,7 +2390,7 @@
       });
       SINGLE_ATTACHMENTS = Object.freeze({
         xioStandardCrown: createSingleAttachment({
-          position: [0, 1.2, -0.8],
+          position: [0, 1.55, -1.65],
           rotation: [0, 0, 0],
           scale: [2.7, 2.7, 2.7]
         })
@@ -9846,6 +9846,7 @@
       Object.freeze([0, 0, 0]),
       Object.freeze([0, Math.PI, 0])
     ]);
+    const XIO_STANDARD_CROWN_AUTO_LOCK_POSITION = Object.freeze([0, 1.55, -1.65]);
     const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
       headWear: Object.freeze({
         horizontalSpan: 5.95,
@@ -11654,19 +11655,21 @@
         }
         return false;
       }
+      const useStandardCrownLockedPosition = slotKey === "headWear" && normalizeHomepagePropKey(draftProp.key) === "xiostandardcrown";
+      const nextPosition = useStandardCrownLockedPosition ? XIO_STANDARD_CROWN_AUTO_LOCK_POSITION : [
+        roundTransformValue(-candidate.scaledCenter.x, 0),
+        roundTransformValue(
+          -candidate.scaledCenter.y + candidate.scaledSize.y * (Number.isFinite(preset.yOffsetRatio) ? preset.yOffsetRatio : -((_a2 = preset.ySinkRatio) != null ? _a2 : 0.08)),
+          0
+        ),
+        roundTransformValue(
+          -candidate.scaledCenter.z + candidate.scaledSize.z * (Number.isFinite(preset.zOffsetRatio) ? preset.zOffsetRatio : -((_b2 = preset.zSinkRatio) != null ? _b2 : 0.08)),
+          0
+        )
+      ];
       draftProp.attachment = {
         ...draftProp.attachment,
-        position: [
-          roundTransformValue(-candidate.scaledCenter.x, 0),
-          roundTransformValue(
-            -candidate.scaledCenter.y + candidate.scaledSize.y * (Number.isFinite(preset.yOffsetRatio) ? preset.yOffsetRatio : -((_a2 = preset.ySinkRatio) != null ? _a2 : 0.08)),
-            0
-          ),
-          roundTransformValue(
-            -candidate.scaledCenter.z + candidate.scaledSize.z * (Number.isFinite(preset.zOffsetRatio) ? preset.zOffsetRatio : -((_b2 = preset.zSinkRatio) != null ? _b2 : 0.08)),
-            0
-          )
-        ],
+        position: nextPosition.map((value) => roundTransformValue(value, 0)),
         rotation: [
           roundTransformValue(candidate.rotation[0], 0),
           roundTransformValue(candidate.rotation[1], 0),
