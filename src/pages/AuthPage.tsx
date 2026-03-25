@@ -131,7 +131,7 @@ const AuthPage: React.FC = () => {
       }
 
       if (didSignIn) {
-        navigate('/home-profile', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (err) {
       const status = typeof err === 'object' && err && 'status' in err
@@ -166,7 +166,7 @@ const AuthPage: React.FC = () => {
       await signIn(credentials.usernameOrEmail, credentials.password);
       setMessage('Unlocked! Welcome back 👋');
       setQuickUnlockPin('');
-      navigate('/home-profile', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       const nextMessage = err instanceof Error ? err.message : 'Quick unlock failed.';
       setError(nextMessage);

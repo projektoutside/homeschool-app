@@ -36,6 +36,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const isPlayRoute = location.pathname.startsWith('/play/');
     const isOpenRoute = location.pathname.startsWith('/open/');
     const isResourceRoute = location.pathname.startsWith('/resource/');
+    const isHomepageRoute = location.pathname === '/' || location.pathname === '/home-profile';
     const isClassroomViewerRoute =
         location.pathname === '/html-viewer'
         || isOpenRoute
@@ -105,15 +106,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
         homeTransitionFadeInTimerRef.current = window.setTimeout(() => {
             homeTransitionFadeInTimerRef.current = null;
-            const isAlreadyHome = location.pathname === '/home-profile' || location.pathname === '/';
-            if (isAlreadyHome) {
+            if (isHomepageRoute) {
                 homeTransitionPendingNavRef.current = false;
                 setHomeTransitionPhase('fading-out');
                 return;
             }
-            navigate('/home-profile');
+            navigate('/');
         }, HOME_TRANSITION_NAV_DELAY_MS);
-    }, [clearHomeTransitionTimers, homeTransitionPhase, isInteractionLocked, location.pathname, navigate]);
+    }, [clearHomeTransitionTimers, homeTransitionPhase, isHomepageRoute, isInteractionLocked, navigate]);
 
     const handleSliderHomeClick = useCallback(() => {
         setExpandedMode(false);
@@ -230,12 +230,28 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     }, []);
 
     useEffect(() => {
+        if (!isHomepageRoute) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            setExpandedMode(false);
+            setIsMinimized(false);
+            setIsStatsMinimized(false);
+            setIsStatsLineDormant(false);
+            setIsStatsLinePulsing(false);
+            setIsStatsLineAwakeFlash(false);
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [isHomepageRoute]);
+
+    useEffect(() => {
         if (!homeTransitionPendingNavRef.current) {
             return;
         }
 
-        const isHomeRoute = location.pathname === '/home-profile' || location.pathname === '/';
-        if (!isHomeRoute) {
+        if (!isHomepageRoute) {
             return;
         }
 
@@ -245,7 +261,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [location.pathname]);
+    }, [isHomepageRoute]);
 
     // Auto-collapse the bottom dock when immersive content opens so only the flush gold bar remains.
     useLayoutEffect(() => {
@@ -927,7 +943,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     }, [isPlayRoute]);
 
     // Helper to determine active state
-    const isHomeActive = location.pathname === '/' || location.pathname === '/home-profile';
+    const isHomeActive = isHomepageRoute;
     const shouldShowStatsDock = isMinimized;
     const isGamesActive = location.pathname === '/apps' || isPlayRoute;
     const isClassroomActive = 

@@ -20,6 +20,8 @@ const MainLayout: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [settingsCloseRequestId, setSettingsCloseRequestId] = useState(0);
     const [isHomepageSummonNavigationLocked, setIsHomepageSummonNavigationLocked] = useState(false);
+    const [isHomepageSummonSkipVisible, setIsHomepageSummonSkipVisible] = useState(false);
+    const [homepageSummonSkipRequestId, setHomepageSummonSkipRequestId] = useState(0);
     const interactionShieldRef = useRef<HTMLDivElement | null>(null);
     const currentUserId = user?.id ?? null;
     const [homepageSessionState, setHomepageSessionState] = useState(() => ({
@@ -73,12 +75,22 @@ const MainLayout: React.FC = () => {
     }, [isHomepageSummonInteractionLocked]);
 
     useEffect(() => {
+        if (!isUserHomeRoute) {
+            setIsHomepageSummonSkipVisible(false);
+        }
+    }, [isUserHomeRoute]);
+
+    useEffect(() => {
         const currentDocument = typeof document !== 'undefined' ? document : null;
         if (!isHomepageSummonInteractionLocked || typeof window === 'undefined' || !currentDocument) {
             return undefined;
         }
 
         const consumeLockedInteraction = (event: Event) => {
+            const eventTarget = event.target;
+            if (eventTarget instanceof Element && eventTarget.closest('[data-homepage-summon-skip="true"]')) {
+                return;
+            }
             if (event.cancelable) {
                 event.preventDefault();
             }
@@ -178,6 +190,15 @@ const MainLayout: React.FC = () => {
         }
     }, []);
 
+    const handleSummonSkipVisibilityChange = useCallback((visible: boolean) => {
+        setIsHomepageSummonSkipVisible(visible);
+    }, []);
+
+    const handleSummonSkipRequest = useCallback(() => {
+        setIsHomepageSummonSkipVisible(false);
+        setHomepageSummonSkipRequestId((current) => current + 1);
+    }, []);
+
     return (
         <HomepageSessionProvider value={{ isReady: isHomepageSessionGateReady }}>
             <div
@@ -200,6 +221,8 @@ const MainLayout: React.FC = () => {
                                 isActive={isHomepageSessionVisible}
                                 onBootStable={handleHomepageBootStable}
                                 onSummonNavigationLockChange={handleSummonNavigationLockChange}
+                                onSummonSkipVisibilityChange={handleSummonSkipVisibilityChange}
+                                summonSkipRequestId={homepageSummonSkipRequestId}
                             />
                         </div>
                     ) : null}
@@ -224,6 +247,18 @@ const MainLayout: React.FC = () => {
                     data-no-click-sound="true"
                     tabIndex={-1}
                 />
+
+                {isHomepageSummonSkipVisible ? (
+                    <button
+                        type="button"
+                        className="homepage-summon-skip-button"
+                        onClick={handleSummonSkipRequest}
+                        data-no-click-sound="true"
+                        data-homepage-summon-skip="true"
+                    >
+                        Skip Scene
+                    </button>
+                ) : null}
 
                 <GlobalSettings
                     isOpen={isSettingsOpen}

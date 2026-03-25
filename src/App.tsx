@@ -222,14 +222,14 @@ const App: React.FC = () => {
                                 loading
                                     ? <LoadingFallback />
                                     : user
-                                        ? <Navigate to="/home-profile" replace />
+                                        ? <Navigate to="/" replace />
                                         : <RouteBoundary><AuthPage /></RouteBoundary>
                             }
                         />
                         
                         {/* Main app routes with layout */}
                         <Route path="/" element={renderProtectedPage(<MainLayout />)}>
-                            <Route index element={<Navigate to="/home-profile" replace />} />
+                            <Route index element={<HomeRoutePlaceholder />} />
                             <Route
                                 path="apps"
                                 element={(
@@ -282,7 +282,7 @@ const App: React.FC = () => {
                                 path="html-viewer"
                                 element={<RouteBoundary><HTMLViewer /></RouteBoundary>}
                             />
-                            <Route path="home-profile" element={<HomeRoutePlaceholder />} />
+                            <Route path="home-profile" element={<Navigate to="/" replace />} />
                             <Route
                                 path="classroom"
                                 element={(
@@ -291,7 +291,7 @@ const App: React.FC = () => {
                                     </HomepageSessionGate>
                                 )}
                             />
-                            <Route path="*" element={<Navigate to="/home-profile" replace />} />
+                            <Route path="*" element={<Navigate to="/" replace />} />
                         </Route>
                     </Routes>
                     <UpdateNotification

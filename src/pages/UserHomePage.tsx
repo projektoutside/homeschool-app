@@ -48,6 +48,8 @@ const HOME_PAGE_MYSTERY_PULL_RESULT_MESSAGE = 'LAHS_HOMEPAGE_MYSTERY_PULL_RESULT
 const HOME_PAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
 const HOME_PAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
 const HOME_PAGE_SUMMON_NAV_LOCK_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_NAV_LOCK';
+const HOME_PAGE_SUMMON_SKIP_VISIBILITY_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_SKIP_VISIBILITY';
+const HOME_PAGE_SUMMON_SKIP_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_SKIP_REQUEST';
 const HOME_PAGE_BOOT_READY_MESSAGE = 'LAHS_HOMEPAGE_BOOT_READY';
 const HOME_PAGE_DAILY_LUNCHBOX_REWARD_POINTS = 100;
 const HOME_PAGE_DAILY_LUNCHBOX_GAME_ID = 'homepage-daily-lunchbox';
@@ -97,6 +99,8 @@ interface UserHomePageProps {
   isActive?: boolean;
   onBootStable?: () => void;
   onSummonNavigationLockChange?: (locked: boolean) => void;
+  onSummonSkipVisibilityChange?: (visible: boolean) => void;
+  summonSkipRequestId?: number;
 }
 
 const buildDailyLunchboxClaimStorageKey = (userId: string): string => {
@@ -162,6 +166,8 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   isActive = true,
   onBootStable,
   onSummonNavigationLockChange,
+  onSummonSkipVisibilityChange,
+  summonSkipRequestId = 0,
 }) => {
   const [initialLaunchState] = useState(createInitialHomepageLaunchState);
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
@@ -187,6 +193,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [dailyLunchboxClaimExpiresAtByUser, setDailyLunchboxClaimExpiresAtByUser] = useState<Record<string, number | null>>({});
   const [dailyLunchboxClaimPendingByUser, setDailyLunchboxClaimPendingByUser] = useState<Record<string, boolean>>({});
   const [dailyLunchboxClockTick, setDailyLunchboxClockTick] = useState(() => Date.now());
+  const lastHandledSummonSkipRequestIdRef = useRef(0);
   const zoomLockIframes = useMemo(() => [iframeRef], []);
   const shouldHoldStoredSnapshot = useMemo(() => {
     if (isCatalogLoading) {
@@ -269,13 +276,15 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     }
 
     onSummonNavigationLockChange?.(false);
-  }, [isActive, onSummonNavigationLockChange]);
+    onSummonSkipVisibilityChange?.(false);
+  }, [isActive, onSummonNavigationLockChange, onSummonSkipVisibilityChange]);
 
   useEffect(() => {
     return () => {
       onSummonNavigationLockChange?.(false);
+      onSummonSkipVisibilityChange?.(false);
     };
-  }, [onSummonNavigationLockChange]);
+  }, [onSummonNavigationLockChange, onSummonSkipVisibilityChange]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -519,6 +528,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       }
       if (type === HOME_PAGE_SUMMON_NAV_LOCK_MESSAGE) {
         onSummonNavigationLockChange?.(isActive && Boolean((event.data as { locked?: unknown }).locked));
+        return;
+      }
+      if (type === HOME_PAGE_SUMMON_SKIP_VISIBILITY_MESSAGE) {
+        onSummonSkipVisibilityChange?.(isActive && Boolean((event.data as { visible?: unknown }).visible));
         return;
       }
       if (type === HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE) {
@@ -789,8 +802,22 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     totalPoints,
     isActive,
     onSummonNavigationLockChange,
+    onSummonSkipVisibilityChange,
     user?.id,
   ]);
+
+  useEffect(() => {
+    if (!isActive || summonSkipRequestId <= 0) {
+      return;
+    }
+    if (lastHandledSummonSkipRequestIdRef.current === summonSkipRequestId) {
+      return;
+    }
+    lastHandledSummonSkipRequestIdRef.current = summonSkipRequestId;
+    postTiltBridgeMessage({
+      type: HOME_PAGE_SUMMON_SKIP_REQUEST_MESSAGE,
+    });
+  }, [isActive, postTiltBridgeMessage, summonSkipRequestId]);
 
   useEffect(() => {
     if (isCatalogLoading) {

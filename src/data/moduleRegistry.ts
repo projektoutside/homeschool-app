@@ -8,7 +8,7 @@ export const APP_AREAS: AreaDefinition[] = [
     id: 'home',
     label: 'Home page',
     icon: '🏠',
-    route: '/home-profile',
+    route: '/',
     description: 'Persistent homepage experience and account-bound ambient systems.',
     supportsModules: false,
   },
@@ -95,7 +95,7 @@ export const isLegacyClassroomTabRequest = (value: string | null | undefined): b
 };
 
 export const resolveAreaRoute = (areaId: AppAreaId): string => {
-  return APP_AREAS.find((area) => area.id === areaId)?.route ?? '/home-profile';
+  return APP_AREAS.find((area) => area.id === areaId)?.route ?? '/';
 };
 
 export const resolveAreaFromRequest = (value: unknown): AppAreaId | null => {

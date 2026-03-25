@@ -1469,7 +1469,7 @@ class Main {
         const gamesSegmentIndex = pathname.toLowerCase().indexOf('/games/');
         const basePath = gamesSegmentIndex >= 0 ? pathname.slice(0, gamesSegmentIndex) : '';
         const normalizedBase = basePath ? (basePath.endsWith('/') ? basePath : `${basePath}/`) : '/';
-        return `${normalizedBase}home-profile`;
+        return normalizedBase;
     }
 
     navigateToMainAppHome() {

@@ -279,7 +279,7 @@ const CharacterCreatorPage: React.FC = () => {
           legacyStorageKey: HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY,
           launchStorageKey: HOMEPAGE_MYSTERY_TEST_LAUNCH_STORAGE_KEY,
         });
-        navigate('/home-profile');
+        navigate('/');
         return;
       }
 

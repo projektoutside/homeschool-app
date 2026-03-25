@@ -10226,6 +10226,8 @@
         const HOMEPAGE_SUMMON_RECOVERY_UPDATE_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_UPDATE';
         const HOMEPAGE_SUMMON_RECOVERY_SYNC_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_RECOVERY_SYNC';
         const HOMEPAGE_SUMMON_NAV_LOCK_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_NAV_LOCK';
+        const HOMEPAGE_SUMMON_SKIP_VISIBILITY_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_SKIP_VISIBILITY';
+        const HOMEPAGE_SUMMON_SKIP_REQUEST_MESSAGE = 'LAHS_HOMEPAGE_SUMMON_SKIP_REQUEST';
         const HOMEPAGE_HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
         const DAILY_LUNCHBOX_DEFAULT_POINTS = 100;
         const MYSTERY_PULL_COST_POINTS = 100;
@@ -10246,6 +10248,7 @@
             lastClaimAccepted: false
         };
         let homepageSummonNavLockPosted = null;
+        let homepageSummonSkipVisibilityPosted = null;
         const mysteryPullSpendState = {
             pending: false,
             requestId: null,
@@ -10427,6 +10430,36 @@
             }
         }
 
+        function handleHomepageSummonSkipRequestMessage(event) {
+            if (window.parent === window || event.origin !== window.location.origin || event.source !== window.parent) {
+                return;
+            }
+
+            const data = event?.data;
+            if (!data || typeof data !== 'object' || data.type !== HOMEPAGE_SUMMON_SKIP_REQUEST_MESSAGE) {
+                return;
+            }
+
+            const canSkipToReveal = Boolean(
+                legendaryStormState.active &&
+                !legendaryStormState.dissipateRequested &&
+                (
+                    legendaryStormState.phase === 'transitionStrike' ||
+                    legendaryStormState.phase === 'videoPlayback' ||
+                    legendaryStormState.phase === 'postVideoStormHold' ||
+                    legendaryStormState.phase === 'targetedImpact' ||
+                    legendaryStormState.phase === 'boxMaterialize' ||
+                    legendaryStormState.phase === 'idleStormReveal'
+                )
+            );
+
+            if (!canSkipToReveal || legendaryStormState.videoFailed) {
+                return;
+            }
+
+            finishLegendaryStormCinematicImmediately({ resetFlightCinematic: true });
+        }
+
         function updateDailyLunchboxUi() {
             const rewardPointsText = formatHudMetricValue(dailyLunchboxRewardState.rewardPoints);
             if (dailyLunchboxBtn) {
@@ -10543,12 +10576,31 @@
             } catch (_) {}
         }
 
+        function syncHomepageSummonSkipVisibilityToHost(visible) {
+            if (window.parent === window) {
+                homepageSummonSkipVisibilityPosted = Boolean(visible);
+                return;
+            }
+            const nextVisible = Boolean(visible);
+            if (homepageSummonSkipVisibilityPosted === nextVisible) {
+                return;
+            }
+            homepageSummonSkipVisibilityPosted = nextVisible;
+            try {
+                window.parent.postMessage({
+                    type: HOMEPAGE_SUMMON_SKIP_VISIBILITY_MESSAGE,
+                    visible: nextVisible
+                }, window.location.origin);
+            } catch (_) {}
+        }
+
         updateHomepageHudMetrics();
         updateDailyLunchboxUi();
         window.addEventListener('message', handleHomepagePointsBridgeMessage);
         window.addEventListener('message', handleDailyLunchboxClaimResultMessage);
         window.addEventListener('message', handleMysteryPullResultMessage);
         window.addEventListener('message', handleMysterySummonRecoverySyncMessage);
+        window.addEventListener('message', handleHomepageSummonSkipRequestMessage);
         requestHomepageHudMetricsSync();
         window.setTimeout(() => {
             const initialPendingSummonRecovery = readHomepagePendingSummonRecovery();
@@ -15323,6 +15375,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             const landingImpactVisualsVisible = LEGENDARY_STORM_LANDING_PHASES.has(legendaryStormState.phase);
             const isActive = hasVisibleLegendaryStormVisuals();
             const interactionLockActive = isLegendaryInteractionLockActive();
+            const cutscenePlaying = Boolean(
+                legendaryStormState.active &&
+                legendaryStormState.phase === 'videoPlayback' &&
+                legendaryStormState.videoFrameReady &&
+                !legendaryStormState.videoFailed
+            );
             document.body.classList.toggle('legendary-storm-active', isActive);
             document.body.classList.toggle(
                 'legendary-storm-box-focus',
@@ -15330,14 +15388,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             );
             document.body.classList.toggle('legendary-storm-lite', Boolean(isActive && legendaryStormState.lightweightMode));
             syncHomepageSummonNavigationLockToHost(interactionLockActive);
+            syncHomepageSummonSkipVisibilityToHost(cutscenePlaying);
             document.body.classList.toggle(
                 'legendary-cutscene-playing',
-                Boolean(
-                    legendaryStormState.active &&
-                    legendaryStormState.phase === 'videoPlayback' &&
-                    legendaryStormState.videoFrameReady &&
-                    !legendaryStormState.videoFailed
-                )
+                cutscenePlaying
             );
             if (legendaryStormOverlay) {
                 legendaryStormOverlay.classList.toggle('active', isActive);
@@ -15905,7 +15959,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             }
         }
 
-        function finishLegendaryStormCinematicImmediately() {
+        function finishLegendaryStormCinematicImmediately({ resetFlightCinematic = false } = {}) {
             if (!legendaryStormState.active) {
                 return;
             }
@@ -15913,7 +15967,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 spawnMysteryBoxWithContext(legendaryStormState.spawnContext, { phase: 'landed', playLandingSfx: false });
                 legendaryStormState.boxPrepared = true;
             }
-            requestMysteryFlightReturn();
+            if (resetFlightCinematic) {
+                resetMysteryCinematicState();
+            } else {
+                requestMysteryFlightReturn();
+            }
             unlockMysteryInteractionsNow();
             resetLegendarySummonMusicSession({ releaseAudio: true });
             restoreHomePageAudioAfterLegendaryCutscene({ immediate: true, force: true });
