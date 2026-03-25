@@ -936,6 +936,18 @@
           scale: Object.freeze([5.7, 5.7, 5.7]),
           mirrorMode: "single"
         })
+      }),
+      "optimized-glb-visual-safe-q95": Object.freeze({
+        label: "Execution Wings",
+        assetUrl: "./Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb"
+      }),
+      "7d757ac9af9739c111859cdb10bb9794-opt-2048": Object.freeze({
+        label: "Honeycomb Blooms",
+        assetUrl: "./Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb"
+      }),
+      xiostandardcrowncopy: Object.freeze({
+        label: "XiO Standard Crown Copy",
+        assetUrl: "./Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb"
       })
       });
       normalizeHomepageProp = (raw) => {
@@ -2596,6 +2608,101 @@
           rarity: "common",
           mysteryBoxEnabled: true,
           active: true
+        }),
+        Object.freeze({
+          key: "optimized-glb-visual-safe-q95",
+          label: "Execution Wings",
+          category: "wingSet",
+          prewarmPriority: 4,
+          factoryId: "makeExecutionWingsProp",
+          assetUrl: "./Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb",
+          attachment: {
+            position: [0.7011, -1.3938, 0],
+            rotation: [0, 0, 0],
+            scale: [24.4479, 24.4479, 24.4479],
+            mirrorMode: "paired"
+          },
+          preview: {
+            wingMotion: {
+              master: {
+                pitch: 0,
+                sweep: 1.1,
+                flapHz: 0.85,
+                amplitude: 0.8,
+                direction: "normal",
+                phaseOffset: -1.6e-3,
+                featherTwist: 1,
+                shoulderSpread: 0
+              }
+            },
+            wingAuthoring: {
+              mode: "isolatedHalf",
+              sourceSide: "left",
+              trimMargin: 0.02,
+              splitOffset: 0,
+              mirrorToBoth: true
+            }
+          },
+          rarity: "legendaryLight",
+          mysteryBoxEnabled: true,
+          active: true
+        }),
+        Object.freeze({
+          key: "7d757ac9af9739c111859cdb10bb9794-opt-2048",
+          label: "Honeycomb Blooms",
+          category: "wingSet",
+          prewarmPriority: 4,
+          factoryId: "makeHoneycombBloomsSavedProp",
+          assetUrl: "./Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb",
+          attachment: {
+            position: [0.5911, -0.1454, -0.0317],
+            rotation: [0, 0, 0],
+            scale: [22.5242, 22.5242, 4.9638],
+            mirrorMode: "paired"
+          },
+          preview: {
+            wingMotion: {
+              master: {
+                pitch: 0,
+                sweep: 1.2,
+                flapHz: 0.85,
+                amplitude: 0.85,
+                direction: "normal",
+                phaseOffset: -1.6e-3,
+                featherTwist: 1,
+                shoulderSpread: 0
+              }
+            },
+            wingAuthoring: {
+              mode: "isolatedHalf",
+              sourceSide: "left",
+              trimMargin: 0.02,
+              splitOffset: 0,
+              mirrorToBoth: true
+            }
+          },
+          rarity: "legendaryDark",
+          mysteryBoxEnabled: false,
+          active: true
+        }),
+        Object.freeze({
+          key: "xioStandardCrown-copy",
+          label: "XiO Standard Crown Copy",
+          category: "headWear",
+          prewarmPriority: 4,
+          factoryId: "makeXioStandardCrownCopyProp",
+          assetUrl: "./Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb",
+          attachment: {
+            position: [0, 1.2, -0.8],
+            rotation: [0, 0, 0],
+            scale: [2.7, 2.7, 2.7],
+            mirrorMode: "single"
+          },
+          rarity: "legendaryLight",
+          mysteryBoxEnabled: true,
+          active: true,
+          tags: Object.freeze(["crown", "headwear", "xio", "starter"]),
+          description: "A saved XiO crown variant that keeps the earlier fitted crown transform available as its own prop."
         }),
         Object.freeze({
           key: "xioStandardCrown",

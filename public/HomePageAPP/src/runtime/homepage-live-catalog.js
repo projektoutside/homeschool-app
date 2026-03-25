@@ -502,6 +502,18 @@ const HOMEPAGE_SYSTEM_PROP_OVERRIDES = Object.freeze({
       mirrorMode: 'single',
     }),
   }),
+  'optimized-glb-visual-safe-q95': Object.freeze({
+    label: 'Execution Wings',
+    assetUrl: './Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb',
+  }),
+  '7d757ac9af9739c111859cdb10bb9794-opt-2048': Object.freeze({
+    label: 'Honeycomb Blooms',
+    assetUrl: './Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb',
+  }),
+  xiostandardcrowncopy: Object.freeze({
+    label: 'XiO Standard Crown Copy',
+    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+  }),
 });
 
 export const normalizeHomepageProp = (raw) => {

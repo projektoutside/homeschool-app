@@ -118,6 +118,16 @@ const WING_ATTACHMENTS = Object.freeze({
     scale: [6.3, 6.3, 6.3],
     fit: { yOffsetRatio: 1.18, zOffsetRatio: 0.028, distanceMultiplier: 1.36 },
   }),
+  'optimized-glb-visual-safe-q95': createWingAttachment({
+    position: [0.7011, -1.3938, 0],
+    rotation: [0, 0, 0],
+    scale: [24.4479, 24.4479, 24.4479],
+  }),
+  '7d757ac9af9739c111859cdb10bb9794-opt-2048': createWingAttachment({
+    position: [0.5911, -0.1454, -0.0317],
+    rotation: [0, 0, 0],
+    scale: [22.5242, 22.5242, 4.9638],
+  }),
 });
 
 const SINGLE_ATTACHMENTS = Object.freeze({
@@ -130,6 +140,11 @@ const SINGLE_ATTACHMENTS = Object.freeze({
     position: [0, -4, -2],
     rotation: [0, 0, 0],
     scale: [5.7, 5.7, 5.7],
+  }),
+  'xioStandardCrown-copy': createSingleAttachment({
+    position: [0, 1.2, -0.8],
+    rotation: [0, 0, 0],
+    scale: [2.7, 2.7, 2.7],
   }),
 });
 
@@ -313,6 +328,86 @@ export const PROP_CATALOG = Object.freeze([
     rarity: 'common',
     mysteryBoxEnabled: true,
     active: true,
+  }),
+  Object.freeze({
+    key: 'optimized-glb-visual-safe-q95',
+    label: 'Execution Wings',
+    category: 'wingSet',
+    prewarmPriority: 4,
+    factoryId: 'makeExecutionWingsProp',
+    assetUrl: './Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb',
+    attachment: WING_ATTACHMENTS['optimized-glb-visual-safe-q95'],
+    preview: Object.freeze({
+      wingMotion: Object.freeze({
+        master: Object.freeze({
+          pitch: 0,
+          sweep: 1.1,
+          flapHz: 0.85,
+          amplitude: 0.8,
+          direction: 'normal',
+          phaseOffset: -0.0016,
+          featherTwist: 1,
+          shoulderSpread: 0,
+        }),
+      }),
+      wingAuthoring: Object.freeze({
+        mode: 'isolatedHalf',
+        sourceSide: 'left',
+        trimMargin: 0.02,
+        splitOffset: 0,
+        mirrorToBoth: true,
+      }),
+    }),
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
+  }),
+  Object.freeze({
+    key: '7d757ac9af9739c111859cdb10bb9794-opt-2048',
+    label: 'Honeycomb Blooms',
+    category: 'wingSet',
+    prewarmPriority: 4,
+    factoryId: 'makeHoneycombBloomsSavedProp',
+    assetUrl: './Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb',
+    attachment: WING_ATTACHMENTS['7d757ac9af9739c111859cdb10bb9794-opt-2048'],
+    preview: Object.freeze({
+      wingMotion: Object.freeze({
+        master: Object.freeze({
+          pitch: 0,
+          sweep: 1.2,
+          flapHz: 0.85,
+          amplitude: 0.85,
+          direction: 'normal',
+          phaseOffset: -0.0016,
+          featherTwist: 1,
+          shoulderSpread: 0,
+        }),
+      }),
+      wingAuthoring: Object.freeze({
+        mode: 'isolatedHalf',
+        sourceSide: 'left',
+        trimMargin: 0.02,
+        splitOffset: 0,
+        mirrorToBoth: true,
+      }),
+    }),
+    rarity: 'legendaryDark',
+    mysteryBoxEnabled: false,
+    active: true,
+  }),
+  Object.freeze({
+    key: 'xioStandardCrown-copy',
+    label: 'XiO Standard Crown Copy',
+    category: 'headWear',
+    prewarmPriority: 4,
+    factoryId: 'makeXioStandardCrownCopyProp',
+    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+    attachment: SINGLE_ATTACHMENTS['xioStandardCrown-copy'],
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
+    tags: Object.freeze(['crown', 'headwear', 'xio', 'starter']),
+    description: 'A saved XiO crown variant that keeps the earlier fitted crown transform available as its own prop.',
   }),
   Object.freeze({
     key: 'xioStandardCrown',

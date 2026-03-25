@@ -8907,6 +8907,101 @@
                 { key: 'omegaWings', label: 'Omega Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeOmegaWingsProp', rarity: 'rare', mysteryBoxEnabled: false, active: true },
                 { key: 'efernoWings', label: 'Eferno Wings', category: 'wingSet', prewarmPriority: 4, factoryId: 'makeEfernoWingsProp', rarity: 'common', mysteryBoxEnabled: true, active: true },
                 {
+                    key: 'optimized-glb-visual-safe-q95',
+                    label: 'Execution Wings',
+                    category: 'wingSet',
+                    prewarmPriority: 4,
+                    factoryId: 'makeExecutionWingsProp',
+                    assetUrl: './Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb',
+                    attachment: {
+                        position: [0.7011, -1.3938, 0],
+                        rotation: [0, 0, 0],
+                        scale: [24.4479, 24.4479, 24.4479],
+                        mirrorMode: 'paired'
+                    },
+                    preview: {
+                        wingMotion: {
+                            master: {
+                                pitch: 0,
+                                sweep: 1.1,
+                                flapHz: 0.85,
+                                amplitude: 0.8,
+                                direction: 'normal',
+                                phaseOffset: -0.0016,
+                                featherTwist: 1,
+                                shoulderSpread: 0
+                            }
+                        },
+                        wingAuthoring: {
+                            mode: 'isolatedHalf',
+                            sourceSide: 'left',
+                            trimMargin: 0.02,
+                            splitOffset: 0,
+                            mirrorToBoth: true
+                        }
+                    },
+                    rarity: 'legendaryLight',
+                    mysteryBoxEnabled: true,
+                    active: true
+                },
+                {
+                    key: '7d757ac9af9739c111859cdb10bb9794-opt-2048',
+                    label: 'Honeycomb Blooms',
+                    category: 'wingSet',
+                    prewarmPriority: 4,
+                    factoryId: 'makeHoneycombBloomsSavedProp',
+                    assetUrl: './Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb',
+                    attachment: {
+                        position: [0.5911, -0.1454, -0.0317],
+                        rotation: [0, 0, 0],
+                        scale: [22.5242, 22.5242, 4.9638],
+                        mirrorMode: 'paired'
+                    },
+                    preview: {
+                        wingMotion: {
+                            master: {
+                                pitch: 0,
+                                sweep: 1.2,
+                                flapHz: 0.85,
+                                amplitude: 0.85,
+                                direction: 'normal',
+                                phaseOffset: -0.0016,
+                                featherTwist: 1,
+                                shoulderSpread: 0
+                            }
+                        },
+                        wingAuthoring: {
+                            mode: 'isolatedHalf',
+                            sourceSide: 'left',
+                            trimMargin: 0.02,
+                            splitOffset: 0,
+                            mirrorToBoth: true
+                        }
+                    },
+                    rarity: 'legendaryDark',
+                    mysteryBoxEnabled: false,
+                    active: true
+                },
+                {
+                    key: 'xioStandardCrown-copy',
+                    label: 'XiO Standard Crown Copy',
+                    category: 'headWear',
+                    prewarmPriority: 4,
+                    factoryId: 'makeXioStandardCrownCopyProp',
+                    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+                    attachment: {
+                        position: [0, 1.2, -0.8],
+                        rotation: [0, 0, 0],
+                        scale: [2.7, 2.7, 2.7],
+                        mirrorMode: 'single'
+                    },
+                    rarity: 'legendaryLight',
+                    mysteryBoxEnabled: true,
+                    active: true,
+                    tags: ['crown', 'headwear', 'xio', 'starter'],
+                    description: 'A saved XiO crown variant that keeps the earlier fitted crown transform available as its own prop.'
+                },
+                {
                     key: 'xioStandardCrown',
                     label: 'XiO Standard Crown',
                     category: 'headWear',
@@ -8965,9 +9060,15 @@
                     return;
                 }
 
-                const createFactory = factoryById?.[entry.factoryId];
+                const inlineFactory = typeof entry?.createFactory === 'function'
+                    ? entry.createFactory
+                    : typeof entry?.create === 'function'
+                        ? entry.create
+                        : null;
+                const factoryId = typeof entry?.factoryId === 'string' ? entry.factoryId.trim() : '';
+                const createFactory = inlineFactory || (factoryId ? factoryById?.[factoryId] : null);
                 if (typeof createFactory !== 'function') {
-                    warn(`Missing factory "${entry.factoryId}" for prop "${key}"`);
+                    warn(`Missing factory "${factoryId || 'inline'}" for prop "${key}"`);
                     return;
                 }
 
@@ -8988,7 +9089,7 @@
                     preview: entry.preview || null,
                     tags: entry.tags || [],
                     description: entry.description || '',
-                    create: createFactory
+                    create: () => createFactory(entry)
                 });
             });
 
@@ -9026,6 +9127,81 @@
                 mirrorMode: 'single'
             }
         });
+        const makeExecutionWingsProp = createSingleSlotGlbPropFactory({
+            label: 'Execution Wings',
+            assetUrl: './Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb',
+            slotKey: 'wingSet',
+            attachment: {
+                position: [0.7011, -1.3938, 0],
+                rotation: [0, 0, 0],
+                scale: [24.4479, 24.4479, 24.4479],
+                mirrorMode: 'paired'
+            },
+            preview: {
+                wingMotion: {
+                    master: {
+                        pitch: 0,
+                        sweep: 1.1,
+                        flapHz: 0.85,
+                        amplitude: 0.8,
+                        direction: 'normal',
+                        phaseOffset: -0.0016,
+                        featherTwist: 1,
+                        shoulderSpread: 0
+                    }
+                },
+                wingAuthoring: {
+                    mode: 'isolatedHalf',
+                    sourceSide: 'left',
+                    trimMargin: 0.02,
+                    splitOffset: 0,
+                    mirrorToBoth: true
+                }
+            }
+        });
+        const makeHoneycombBloomsSavedProp = createSingleSlotGlbPropFactory({
+            label: 'Honeycomb Blooms',
+            assetUrl: './Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb',
+            slotKey: 'wingSet',
+            attachment: {
+                position: [0.5911, -0.1454, -0.0317],
+                rotation: [0, 0, 0],
+                scale: [22.5242, 22.5242, 4.9638],
+                mirrorMode: 'paired'
+            },
+            preview: {
+                wingMotion: {
+                    master: {
+                        pitch: 0,
+                        sweep: 1.2,
+                        flapHz: 0.85,
+                        amplitude: 0.85,
+                        direction: 'normal',
+                        phaseOffset: -0.0016,
+                        featherTwist: 1,
+                        shoulderSpread: 0
+                    }
+                },
+                wingAuthoring: {
+                    mode: 'isolatedHalf',
+                    sourceSide: 'left',
+                    trimMargin: 0.02,
+                    splitOffset: 0,
+                    mirrorToBoth: true
+                }
+            }
+        });
+        const makeXioStandardCrownCopyProp = createSingleSlotGlbPropFactory({
+            label: 'XiO Standard Crown Copy',
+            assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+            slotKey: 'headWear',
+            attachment: {
+                position: [0, 1.2, -0.8],
+                rotation: [0, 0, 0],
+                scale: [2.7, 2.7, 2.7],
+                mirrorMode: 'single'
+            }
+        });
         const propFactoryById = {
             makeBlossomissWingsProp,
             makeCanvasOfNavelleWingsProp,
@@ -9043,7 +9219,10 @@
             makeOmegaWingsProp,
             makeEfernoWingsProp,
             makeXioStandardCrownProp,
+            makeXioStandardCrownCopyProp,
             makeXioStandardBodyGearProp,
+            makeExecutionWingsProp,
+            makeHoneycombBloomsSavedProp,
             makeGeneratedProceduralWingProp
         };
         const legacyCatalogRuntime = createLegacyInventoryAndPropDefinitions({
@@ -19915,7 +20094,46 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 { key: 'rainbowWings', label: 'Rainbow Wings', category: 'wingSet', rarity: 'legendary', factoryId: 'makeRainbowWingsProp' },
                 { key: 'roboticWings', label: 'Robotic Wings', category: 'wingSet', rarity: 'rare', factoryId: 'makeRoboticWingsProp' },
                 { key: 'omegaWings', label: 'Omega Wings', category: 'wingSet', rarity: 'rare', factoryId: 'makeOmegaWingsProp' },
-                { key: 'efernoWings', label: 'Eferno Wings', category: 'wingSet', rarity: 'common', factoryId: 'makeEfernoWingsProp' }
+                { key: 'efernoWings', label: 'Eferno Wings', category: 'wingSet', rarity: 'common', factoryId: 'makeEfernoWingsProp' },
+                {
+                    key: 'optimized-glb-visual-safe-q95',
+                    label: 'Execution Wings',
+                    category: 'wingSet',
+                    rarity: 'legendaryLight',
+                    assetUrl: './Images/PROPS/Wings/ExecutionWings/ExecutionWings.glb',
+                    attachment: {
+                        position: [0.7011, -1.3938, 0],
+                        rotation: [0, 0, 0],
+                        scale: [24.4479, 24.4479, 24.4479],
+                        mirrorMode: 'paired'
+                    }
+                },
+                {
+                    key: '7d757ac9af9739c111859cdb10bb9794-opt-2048',
+                    label: 'Honeycomb Blooms',
+                    category: 'wingSet',
+                    rarity: 'legendaryDark',
+                    assetUrl: './Images/PROPS/Wings/HoneycombBloomsSaved/HoneycombBloomsSaved.glb',
+                    attachment: {
+                        position: [0.5911, -0.1454, -0.0317],
+                        rotation: [0, 0, 0],
+                        scale: [22.5242, 22.5242, 4.9638],
+                        mirrorMode: 'paired'
+                    }
+                },
+                {
+                    key: 'xioStandardCrown-copy',
+                    label: 'XiO Standard Crown Copy',
+                    category: 'headWear',
+                    rarity: 'legendaryLight',
+                    assetUrl: './Images/PROPS/Headwear/XiOStandardCrown/XiOStandardCrown.glb',
+                    attachment: {
+                        position: [0, 1.2, -0.8],
+                        rotation: [0, 0, 0],
+                        scale: [2.7, 2.7, 2.7],
+                        mirrorMode: 'single'
+                    }
+                }
             ];
 
             window.__homepageMysteryDebug = {
@@ -21603,7 +21821,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
 
         const PRIORITY_MYSTERY_REWARD_KEYS = Object.freeze([
             'xioStandardCrown',
+            'xioStandardCrown-copy',
             'xioStandardBodyGear',
+            'optimized-glb-visual-safe-q95',
+            '7d757ac9af9739c111859cdb10bb9794-opt-2048',
             'blossomissWings',
             'canvasOfNavelleWings',
             'goddessOfValleysWings',
