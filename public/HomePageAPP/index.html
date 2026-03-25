@@ -8777,6 +8777,7 @@
                 });
             }
 
+            const AUTHORING_GLTF_SOCKET_TARGET_SIZE = 2.2;
             const loadState = {
                 promise: null,
                 templateRoot: null
@@ -8833,8 +8834,11 @@
                                     reject(new Error(`${label} did not contain a scene root.`));
                                     return;
                                 }
-                                const templateRoot = cloneSceneGraph(sourceRoot);
-                                centerSceneGraphAtOrigin(templateRoot);
+                                const templateRoot = prepareSceneRootForSocketAttachment({
+                                    THREE,
+                                    root: sourceRoot,
+                                    targetSize: AUTHORING_GLTF_SOCKET_TARGET_SIZE
+                                }) || cloneSceneGraph(sourceRoot);
                                 templateRoot.updateMatrixWorld(true);
                                 loadState.templateRoot = templateRoot;
                                 resolve(templateRoot);
@@ -8881,7 +8885,8 @@
                 perCategoryLimit: 5,
                 categories: [
                     { key: 'wingSet', label: 'Wing Set', slotKey: 'wingSet', equipLimit: 1 },
-                    { key: 'headWear', label: 'Headwear', slotKey: 'headWear', equipLimit: 1 }
+                    { key: 'headWear', label: 'Headwear', slotKey: 'headWear', equipLimit: 1 },
+                    { key: 'bodyAccessory', label: 'Body Gear', slotKey: 'bodyAccessory', equipLimit: 1 }
                 ]
             };
 
@@ -8919,6 +8924,25 @@
                     active: true,
                     tags: ['crown', 'headwear', 'xio', 'starter'],
                     description: 'A clean reference crown sized for XiO so new headwear GLBs can match a proven fit baseline.'
+                },
+                {
+                    key: 'xioStandardBodyGear',
+                    label: 'Ruby One',
+                    category: 'bodyAccessory',
+                    prewarmPriority: 4,
+                    factoryId: 'makeXioStandardBodyGearProp',
+                    assetUrl: './Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb',
+                    attachment: {
+                        position: [0, -4, -2],
+                        rotation: [0, 0, 0],
+                        scale: [5.7, 5.7, 5.7],
+                        mirrorMode: 'single'
+                    },
+                    rarity: 'legendaryLight',
+                    mysteryBoxEnabled: true,
+                    active: true,
+                    tags: ['body-gear', 'torso', 'ruby-one', 'starter'],
+                    description: 'Ruby One is the default XiO body gear baseline for calibrating torso GLBs and locking future body gear fits.'
                 }
             ];
 
@@ -8991,6 +9015,17 @@
                 mirrorMode: 'single'
             }
         });
+        const makeXioStandardBodyGearProp = createSingleSlotGlbPropFactory({
+            label: 'Ruby One',
+            assetUrl: './Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb',
+            slotKey: 'bodyAccessory',
+            attachment: {
+                position: [0, -4, -2],
+                rotation: [0, 0, 0],
+                scale: [5.7, 5.7, 5.7],
+                mirrorMode: 'single'
+            }
+        });
         const propFactoryById = {
             makeBlossomissWingsProp,
             makeCanvasOfNavelleWingsProp,
@@ -9008,6 +9043,7 @@
             makeOmegaWingsProp,
             makeEfernoWingsProp,
             makeXioStandardCrownProp,
+            makeXioStandardBodyGearProp,
             makeGeneratedProceduralWingProp
         };
         const legacyCatalogRuntime = createLegacyInventoryAndPropDefinitions({
@@ -10728,7 +10764,7 @@
         }
 
         const getCharacterCreatorLaunchUrl = () => {
-            const creatorVersion = '2026-03-23-40';
+            const creatorVersion = '2026-03-25-43';
             const standaloneUrl = new URL('./character-creator.html', window.location.href);
             standaloneUrl.searchParams.set('v', creatorVersion);
             if (window.location.protocol === 'file:') {
@@ -21567,6 +21603,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
 
         const PRIORITY_MYSTERY_REWARD_KEYS = Object.freeze([
             'xioStandardCrown',
+            'xioStandardBodyGear',
             'blossomissWings',
             'canvasOfNavelleWings',
             'goddessOfValleysWings',

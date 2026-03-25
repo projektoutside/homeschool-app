@@ -8,7 +8,7 @@
     rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%234c1d95'/%3E%3Ccircle cx='23' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='41' cy='30' r='6.5' fill='white'/%3E%3Ccircle cx='24' cy='31' r='2.8' fill='%230b1220'/%3E%3Ccircle cx='40' cy='31' r='2.8' fill='%230b1220'/%3E%3C/svg%3E"
   />
-  <link rel="stylesheet" href="./character-creator.css?v=2026-03-23-40" />
+    <link rel="stylesheet" href="./character-creator.css?v=2026-03-25-43" />
 </head>
 <body>
   <div class="creator-app">
@@ -53,6 +53,7 @@
           <div class="library-actions library-actions--secondary">
             <button type="button" class="ghost-button" id="random-wings-button">Load Random Wing</button>
             <button type="button" class="ghost-button" id="random-crown-button">Load Random Crown</button>
+            <button type="button" class="ghost-button" id="random-body-gear-button">Load Random Body Gear</button>
             <button type="button" class="ghost-button" id="duplicate-prop-button">Duplicate Draft</button>
           </div>
           <section class="generated-stage-card" id="generated-stage-card" hidden aria-live="polite">
@@ -791,7 +792,7 @@
   </aside>
 
   <script>
-    const creatorAssetVersion = '2026-03-23-40';
+      const creatorAssetVersion = '2026-03-25-43';
     const creatorScript = document.createElement('script');
     const creatorScriptPath = window.location.protocol === 'file:'
       ? './src/creator/character-creator-standalone.js'

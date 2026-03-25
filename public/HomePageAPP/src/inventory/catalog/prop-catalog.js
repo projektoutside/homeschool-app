@@ -126,6 +126,11 @@ const SINGLE_ATTACHMENTS = Object.freeze({
     rotation: [0, 0, 0],
     scale: [2.7, 2.7, 2.7],
   }),
+  xioStandardBodyGear: createSingleAttachment({
+    position: [0, -4, -2],
+    rotation: [0, 0, 0],
+    scale: [5.7, 5.7, 5.7],
+  }),
 });
 
 export const PROP_CATALOG = Object.freeze([
@@ -322,5 +327,19 @@ export const PROP_CATALOG = Object.freeze([
     active: true,
     tags: Object.freeze(['crown', 'headwear', 'xio', 'starter']),
     description: 'A clean reference crown sized for XiO so new headwear GLBs can be matched against a proven fit baseline.',
+  }),
+  Object.freeze({
+    key: 'xioStandardBodyGear',
+    label: 'Ruby One',
+    category: 'bodyAccessory',
+    prewarmPriority: 4,
+    factoryId: 'makeXioStandardBodyGearProp',
+    assetUrl: './Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb',
+    attachment: SINGLE_ATTACHMENTS.xioStandardBodyGear,
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
+    tags: Object.freeze(['body-gear', 'torso', 'ruby-one', 'starter']),
+    description: 'Ruby One is the default XiO body gear baseline for calibrating torso GLBs and locking future body gear fits.',
   }),
 ]);

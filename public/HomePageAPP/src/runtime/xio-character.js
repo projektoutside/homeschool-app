@@ -127,7 +127,7 @@ export const XIO_SLOT_DEFINITIONS = Object.freeze({
   headWear: Object.freeze({ key: 'headWear', label: 'Headwear', mode: 'single', position: [0, 1.5, 1.65] }),
   faceAccessory: Object.freeze({ key: 'faceAccessory', label: 'Face Accessory', mode: 'single', position: [0, 0.32, 2.7] }),
   eyeStyle: Object.freeze({ key: 'eyeStyle', label: 'Eye Style', mode: 'appearance', position: [0, 0.34, 2.58] }),
-  bodyAccessory: Object.freeze({ key: 'bodyAccessory', label: 'Body Accessory', mode: 'single', position: [0, 0.2, 2.05] }),
+  bodyAccessory: Object.freeze({ key: 'bodyAccessory', label: 'Body Gear', mode: 'single', position: [0, 0.2, 2.05] }),
   heldProp: Object.freeze({ key: 'heldProp', label: 'Held Prop', mode: 'single', position: [1.5, -0.55, 1.85], rotation: [0.28, -0.6, -0.16] }),
 });
 

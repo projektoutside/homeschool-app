@@ -71,6 +71,8 @@ async function loadGlbSceneSource({ GLTFLoader, assetUrl }) {
   return sourcePromise;
 }
 
+const AUTHORING_GLTF_SOCKET_TARGET_SIZE = 2.2;
+
 export function applyAttachmentTransform(target, attachment = {}) {
   if (!target) return;
   const position = Array.isArray(attachment.position) ? attachment.position : [0, 0, 0];
@@ -1122,8 +1124,11 @@ export function createRuntimeGlbPropFactory({
             if (!sceneRoot) {
               throw new Error(`${label} did not contain a scene root.`);
             }
-            const templateRoot = cloneSceneGraph(sceneRoot);
-            centerObjectAtOrigin(THREE, templateRoot);
+            const templateRoot = prepareSceneRootForSocketAttachment({
+              THREE,
+              root: sceneRoot,
+              targetSize: AUTHORING_GLTF_SOCKET_TARGET_SIZE,
+            }) || cloneSceneGraph(sceneRoot);
             return {
               sourceTemplateRoot: templateRoot,
               sourceTemplatePair: null,

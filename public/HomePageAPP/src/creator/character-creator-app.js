@@ -1496,14 +1496,14 @@ const SLOT_DEPTH_MAGNITUDES = Object.freeze({
   wingSet: 0.9,
   headWear: 0.4,
   faceAccessory: 0.36,
-  bodyAccessory: 0.52,
+  bodyAccessory: 0.68,
   heldProp: 0.72,
 });
 const SLOT_STAGE_TARGET_SPANS = Object.freeze({
   wingSet: 4.9,
   headWear: 5.95,
   faceAccessory: 1.2,
-  bodyAccessory: 1.85,
+  bodyAccessory: 12.54,
   heldProp: 1.75,
 });
 const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
@@ -1525,9 +1525,9 @@ const SINGLE_SLOT_AUTO_LOCK_PRESETS = Object.freeze({
     rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])]),
   }),
   bodyAccessory: Object.freeze({
-    horizontalSpan: 1.55,
-    ySinkRatio: 0.08,
-    zSinkRatio: 0.14,
+    horizontalSpan: 12.54,
+    ySinkRatio: 0.585318,
+    zSinkRatio: 0.28613,
     rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])]),
   }),
   heldProp: Object.freeze({
@@ -2302,7 +2302,7 @@ function renderStageToolbarControls() {
       ? 'Detect the best XiO headwear fit, snap the crown or hat into place, then fine-tune it manually.'
       : `Snap this ${category?.label || 'single-slot prop'} into XiO’s ${category?.label || 'active'} slot and seed the transform controls.`
     : category?.slotKey === 'wingSet'
-      ? 'Auto Lock / Auto Fit is for headwear and other single-slot props.'
+      ? 'Auto Lock / Auto Fit is for headwear and body gear single-slot props.'
       : 'Load or drop a single-slot GLB into the XiO stage before using Auto Lock / Auto Fit.';
 
   syncBothWingsButton.disabled = !canUseBothWingSync;
@@ -3580,7 +3580,7 @@ function autoLockDraftPlacementToSlot({ commitHistoryStep = true, silent = false
   const category = getDraftCategoryRecord();
   if (!canAutoLockCurrentDraft(draftProp, category)) {
     if (!silent) {
-      log('Load a single-slot prop such as headwear before using Auto Lock / Auto Fit.');
+      log('Load a single-slot prop such as headwear or body gear before using Auto Lock / Auto Fit.');
     }
     return false;
   }
@@ -5608,6 +5608,7 @@ $('duplicate-prop-button').addEventListener('click', () => {
 });
 $('random-wings-button').addEventListener('click', () => loadRandomPropFromCategory('wingSet'));
 $('random-crown-button').addEventListener('click', () => loadRandomPropFromCategory('headWear'));
+$('random-body-gear-button')?.addEventListener('click', () => loadRandomPropFromCategory('bodyAccessory'));
 randomPropGeneratorButton?.addEventListener('click', () => {
   openRandomGeneratorModal();
 });

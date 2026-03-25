@@ -37,7 +37,7 @@ const DEFAULT_CATEGORY_DEFINITIONS: ReadonlyArray<HomepageCategoryRecord> = Obje
   Object.freeze({ key: 'headWear', label: 'Headwear', slotKey: 'headWear', equipLimit: 1, sortOrder: 1, enabled: true, updatedAt: null }),
   Object.freeze({ key: 'faceAccessory', label: 'Face Accessory', slotKey: 'faceAccessory', equipLimit: 1, sortOrder: 2, enabled: true, updatedAt: null }),
   Object.freeze({ key: 'eyeStyle', label: 'Eye Style', slotKey: 'eyeStyle', equipLimit: 1, sortOrder: 3, enabled: true, updatedAt: null }),
-  Object.freeze({ key: 'bodyAccessory', label: 'Body Accessory', slotKey: 'bodyAccessory', equipLimit: 1, sortOrder: 4, enabled: true, updatedAt: null }),
+  Object.freeze({ key: 'bodyAccessory', label: 'Body Gear', slotKey: 'bodyAccessory', equipLimit: 1, sortOrder: 4, enabled: true, updatedAt: null }),
   Object.freeze({ key: 'heldProp', label: 'Held Prop', slotKey: 'heldProp', equipLimit: 1, sortOrder: 5, enabled: true, updatedAt: null }),
 ]);
 

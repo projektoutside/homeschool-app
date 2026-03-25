@@ -419,7 +419,7 @@
         headWear: Object.freeze({ key: "headWear", label: "Headwear", mode: "single", position: [0, 1.5, 1.65] }),
         faceAccessory: Object.freeze({ key: "faceAccessory", label: "Face Accessory", mode: "single", position: [0, 0.32, 2.7] }),
         eyeStyle: Object.freeze({ key: "eyeStyle", label: "Eye Style", mode: "appearance", position: [0, 0.34, 2.58] }),
-        bodyAccessory: Object.freeze({ key: "bodyAccessory", label: "Body Accessory", mode: "single", position: [0, 0.2, 2.05] }),
+        bodyAccessory: Object.freeze({ key: "bodyAccessory", label: "Body Gear", mode: "single", position: [0, 0.2, 2.05] }),
         heldProp: Object.freeze({ key: "heldProp", label: "Held Prop", mode: "single", position: [1.5, -0.55, 1.85], rotation: [0.28, -0.6, -0.16] })
       });
       ReferenceEye = class {
@@ -921,7 +921,22 @@
             scale: Object.freeze([2.7, 2.7, 2.7]),
             mirrorMode: "single"
           })
+        }),
+      xiostandardbodygear: Object.freeze({
+        label: "Ruby One",
+        assetUrl: "./Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb",
+        rarity: "legendaryLight",
+        mysteryBoxEnabled: true,
+        active: true,
+        tags: Object.freeze(["body-gear", "torso", "ruby-one", "starter"]),
+        description: "Ruby One is the default XiO body gear baseline for calibrating torso GLBs and locking future body gear fits.",
+        attachment: Object.freeze({
+          position: Object.freeze([0, -4, -2]),
+          rotation: Object.freeze([0, 0, 0]),
+          scale: Object.freeze([5.7, 5.7, 5.7]),
+          mirrorMode: "single"
         })
+      })
       });
       normalizeHomepageProp = (raw) => {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -2260,7 +2275,8 @@
         perCategoryLimit: 5,
         categories: Object.freeze([
           Object.freeze({ key: "wingSet", label: "Wing Set", slotKey: "wingSet", equipLimit: 1, sortOrder: 0, enabled: true }),
-          Object.freeze({ key: "headWear", label: "Headwear", slotKey: "headWear", equipLimit: 1, sortOrder: 1, enabled: true })
+          Object.freeze({ key: "headWear", label: "Headwear", slotKey: "headWear", equipLimit: 1, sortOrder: 1, enabled: true }),
+          Object.freeze({ key: "bodyAccessory", label: "Body Gear", slotKey: "bodyAccessory", equipLimit: 1, sortOrder: 2, enabled: true })
         ])
       });
     }
@@ -2393,6 +2409,11 @@
           position: [0, 1.55, -1.65],
           rotation: [0, 0, 0],
           scale: [2.7, 2.7, 2.7]
+        }),
+        xioStandardBodyGear: createSingleAttachment({
+          position: [0, -4, -2],
+          rotation: [0, 0, 0],
+          scale: [5.7, 5.7, 5.7]
         })
       });
       PROP_CATALOG = Object.freeze([
@@ -2589,6 +2610,20 @@
           active: true,
           tags: Object.freeze(["crown", "headwear", "xio", "starter"]),
           description: "A clean reference crown sized for XiO so new headwear GLBs can be matched against a proven fit baseline."
+        }),
+        Object.freeze({
+          key: "xioStandardBodyGear",
+          label: "Ruby One",
+          category: "bodyAccessory",
+          prewarmPriority: 4,
+          factoryId: "makeXioStandardBodyGearProp",
+          assetUrl: "./Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb",
+          attachment: SINGLE_ATTACHMENTS.xioStandardBodyGear,
+          rarity: "legendaryLight",
+          mysteryBoxEnabled: true,
+          active: true,
+          tags: Object.freeze(["body-gear", "torso", "ruby-one", "starter"]),
+          description: "Ruby One is the default XiO body gear baseline for calibrating torso GLBs and locking future body gear fits."
         })
       ]);
     }
@@ -9832,14 +9867,14 @@
       wingSet: 0.9,
       headWear: 0.4,
       faceAccessory: 0.36,
-      bodyAccessory: 0.52,
+      bodyAccessory: 0.68,
       heldProp: 0.72
     });
     const SLOT_STAGE_TARGET_SPANS = Object.freeze({
       wingSet: 4.9,
       headWear: 5.95,
       faceAccessory: 1.2,
-      bodyAccessory: 1.85,
+        bodyAccessory: 12.54,
       heldProp: 1.75
     });
     const HEADWEAR_ROTATION_CANDIDATES = Object.freeze([
@@ -9861,9 +9896,9 @@
         rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])])
       }),
       bodyAccessory: Object.freeze({
-        horizontalSpan: 1.55,
-        ySinkRatio: 0.08,
-        zSinkRatio: 0.14,
+        horizontalSpan: 12.54,
+        ySinkRatio: 0.585318,
+        zSinkRatio: 0.28613,
         rotationCandidates: Object.freeze([Object.freeze([0, 0, 0])])
       }),
       heldProp: Object.freeze({
@@ -10543,7 +10578,7 @@
       motionPreviewButton.setAttribute("aria-pressed", state.motionPreviewEnabled ? "true" : "false");
       autoLockFitButton.disabled = !canUseAutoLockFit;
       autoLockFitButton.setAttribute("aria-pressed", "false");
-      autoLockFitButton.title = canUseAutoLockFit ? (category == null ? void 0 : category.slotKey) === "headWear" ? "Detect the best XiO headwear fit, snap the crown or hat into place, then fine-tune it manually." : `Snap this ${(category == null ? void 0 : category.label) || "single-slot prop"} into XiO\u2019s ${(category == null ? void 0 : category.label) || "active"} slot and seed the transform controls.` : (category == null ? void 0 : category.slotKey) === "wingSet" ? "Auto Lock / Auto Fit is for headwear and other single-slot props." : "Load or drop a single-slot GLB into the XiO stage before using Auto Lock / Auto Fit.";
+      autoLockFitButton.title = canUseAutoLockFit ? (category == null ? void 0 : category.slotKey) === "headWear" ? "Detect the best XiO headwear fit, snap the crown or hat into place, then fine-tune it manually." : `Snap this ${(category == null ? void 0 : category.label) || "single-slot prop"} into XiO\u2019s ${(category == null ? void 0 : category.label) || "active"} slot and seed the transform controls.` : (category == null ? void 0 : category.slotKey) === "wingSet" ? "Auto Lock / Auto Fit is for headwear and body gear single-slot props." : "Load or drop a single-slot GLB into the XiO stage before using Auto Lock / Auto Fit.";
       syncBothWingsButton.disabled = !canUseBothWingSync;
       syncBothWingsButton.classList.toggle("is-active", canUseBothWingSync && activeWingSyncMode === "both");
       syncBothWingsButton.setAttribute("aria-pressed", canUseBothWingSync && activeWingSyncMode === "both" ? "true" : "false");
@@ -11638,7 +11673,7 @@
       const category = getDraftCategoryRecord();
       if (!canAutoLockCurrentDraft(draftProp, category)) {
         if (!silent) {
-          log("Load a single-slot prop such as headwear before using Auto Lock / Auto Fit.");
+          log("Load a single-slot prop such as headwear or body gear before using Auto Lock / Auto Fit.");
         }
         return false;
       }
@@ -13464,6 +13499,7 @@
     });
     $("random-wings-button").addEventListener("click", () => loadRandomPropFromCategory("wingSet"));
     $("random-crown-button").addEventListener("click", () => loadRandomPropFromCategory("headWear"));
+    $("random-body-gear-button") == null ? void 0 : $("random-body-gear-button").addEventListener("click", () => loadRandomPropFromCategory("bodyAccessory"));
     randomPropGeneratorButton == null ? void 0 : randomPropGeneratorButton.addEventListener("click", () => {
       openRandomGeneratorModal();
     });

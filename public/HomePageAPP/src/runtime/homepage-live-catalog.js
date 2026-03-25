@@ -487,6 +487,21 @@ const HOMEPAGE_SYSTEM_PROP_OVERRIDES = Object.freeze({
       mirrorMode: 'single',
     }),
   }),
+  xiostandardbodygear: Object.freeze({
+    label: 'Ruby One',
+    assetUrl: './Images/PROPS/BodyGear/RubyOne/redrubyarmor.glb',
+    rarity: 'legendaryLight',
+    mysteryBoxEnabled: true,
+    active: true,
+    tags: Object.freeze(['body-gear', 'torso', 'ruby-one', 'starter']),
+    description: 'Ruby One is the default XiO body gear baseline for calibrating torso GLBs and locking future body gear fits.',
+    attachment: Object.freeze({
+      position: Object.freeze([0, -4, -2]),
+      rotation: Object.freeze([0, 0, 0]),
+      scale: Object.freeze([5.7, 5.7, 5.7]),
+      mirrorMode: 'single',
+    }),
+  }),
 });
 
 export const normalizeHomepageProp = (raw) => {
