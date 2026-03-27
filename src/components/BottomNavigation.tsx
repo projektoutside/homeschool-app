@@ -32,6 +32,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const location = useLocation();
     const { totalPoints, stars } = usePoints();
     const { allItems } = useManagerConfig({ hydrateRemote: false });
+    const pointsIconSrc = useMemo(() => buildAssetPath('HomePageAPP/PTS.png'), []);
     const isClassroomRoute = location.pathname === '/classroom';
     const isPlayRoute = location.pathname.startsWith('/play/');
     const isOpenRoute = location.pathname.startsWith('/open/');
@@ -1190,6 +1191,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                             <span className="stats-text">{formattedStars}</span>
                         </div>
                         <div className="stats-item stats-item-right">
+                            <img
+                                className="stats-icon-image"
+                                src={pointsIconSrc}
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            />
                             <span className="stats-label">Total Points:</span>
                             <span className="stats-text">{formattedTotalPoints}</span>
                         </div>

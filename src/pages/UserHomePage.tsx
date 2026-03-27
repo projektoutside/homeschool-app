@@ -6,7 +6,9 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { buildAssetPath } from '../utils/pathUtils';
-import CinematicLoadingScreen from '../components/CinematicLoadingScreen';
+import CinematicLoadingScreen, {
+  type InteractiveRewardCollectPayload,
+} from '../components/CinematicLoadingScreen';
 import {
   buildHomepagePendingSummonRecovery,
   clearHomepagePendingSummonRecovery,
@@ -31,6 +33,7 @@ import {
 import type { HomepagePendingSummonRecoveryPayload } from '../utils/homepageCatalogBridge';
 import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
+import { createGamePointsSessionId } from '../utils/gamePoints';
 import './Home.css';
 import './UserHomePage.css';
 
@@ -62,6 +65,9 @@ const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
 const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 1200;
 const HOME_PAGE_HOST_LOAD_TIMEOUT_MS = 10 * 1000;
 const HOME_PAGE_HOST_INITIAL_PROGRESS = 0.06;
+const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
+const HOME_PAGE_LOADER_POINTS_REWARD = 10;
+const HOME_PAGE_LOADER_MIN_COLLECT_WINDOW_MS = 5000;
 
 const clampNumber = (value: number, min: number, max: number): number => {
   if (value < min) return min;
@@ -185,6 +191,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     () => initialLaunchState.storedSnapshot,
   );
   const { user } = useAuth();
+  const currentUserId = user?.id ?? null;
   const hasDeveloperAccess = useMemo(() => isManagerUser(user), [user]);
   const { totalPoints, stars, awardPoints, spendPoints } = usePoints();
   const { currentStamina, maxStamina } = useStamina();
@@ -197,7 +204,14 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [dailyLunchboxClaimExpiresAtByUser, setDailyLunchboxClaimExpiresAtByUser] = useState<Record<string, number | null>>({});
   const [dailyLunchboxClaimPendingByUser, setDailyLunchboxClaimPendingByUser] = useState<Record<string, boolean>>({});
   const [dailyLunchboxClockTick, setDailyLunchboxClockTick] = useState(() => Date.now());
+  const [loaderRewardExitHoldActive, setLoaderRewardExitHoldActive] = useState(false);
+  const [loaderRewardAwardState, setLoaderRewardAwardState] = useState(() => ({
+    userId: currentUserId,
+    confirmedTotalPoints: 0,
+  }));
   const lastHandledSummonSkipRequestIdRef = useRef(0);
+  const loaderPointsSessionIdRef = useRef(createGamePointsSessionId(HOME_PAGE_LOADER_POINTS_GAME_ID));
+  const acceptedLoaderRewardIdsRef = useRef<Set<string>>(new Set());
   const zoomLockIframes = useMemo(() => [iframeRef], []);
   const shouldHoldStoredSnapshot = useMemo(() => {
     if (isCatalogLoading) {
@@ -229,6 +243,13 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     () => buildAssetPath(`${HOME_PAGE_APP_PATH}?v=${HOMEPAGE_APP_RUNTIME_VERSION}&hostLoader=1${hasDeveloperAccess ? '&developer=1' : ''}`),
     [hasDeveloperAccess],
   );
+  const loaderRewardAssetPath = useMemo(() => buildAssetPath('HomePageAPP/PTS.png'), []);
+  const loaderRewardDisplayTotalPoints = Math.max(
+    totalPoints,
+    loaderRewardAwardState.userId === currentUserId
+      ? loaderRewardAwardState.confirmedTotalPoints
+      : 0,
+  );
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
   const iframeLoadedState = iframeLoaded;
   const bootReadyReceivedState = bootReadyReceived;
@@ -245,7 +266,11 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     listening: false,
     handler: null,
   });
-  const currentUserId = user?.id ?? null;
+  useEffect(() => {
+    loaderPointsSessionIdRef.current = createGamePointsSessionId(HOME_PAGE_LOADER_POINTS_GAME_ID);
+    acceptedLoaderRewardIdsRef.current.clear();
+  }, [currentUserId]);
+
   const dailyLunchboxClaimExpiresAt = useMemo(() => {
     if (!currentUserId) {
       return null;
@@ -327,11 +352,11 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     });
   }, [pendingSummonRecovery, postTiltBridgeMessage]);
 
-  const syncHomepagePointsToIframe = useCallback(() => {
+  const syncHomepagePointsSnapshotToIframe = useCallback((nextTotalPoints: number, nextStars: number) => {
     postTiltBridgeMessage({
       type: HOME_PAGE_POINTS_SYNC_MESSAGE,
-      totalPoints,
-      stars,
+      totalPoints: nextTotalPoints,
+      stars: nextStars,
       stamina: currentStamina,
       staminaMax: maxStamina,
       userId: user?.id ?? null,
@@ -348,10 +373,69 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     postTiltBridgeMessage,
     currentStamina,
     maxStamina,
-    stars,
-    totalPoints,
     user?.id,
   ]);
+
+  const syncHomepagePointsToIframe = useCallback(() => {
+    syncHomepagePointsSnapshotToIframe(totalPoints, stars);
+  }, [stars, syncHomepagePointsSnapshotToIframe, totalPoints]);
+
+  const handleLoaderRewardCollect = useCallback(async (payload: InteractiveRewardCollectPayload): Promise<boolean> => {
+    if (acceptedLoaderRewardIdsRef.current.has(payload.tokenId)) {
+      return true;
+    }
+
+    const maxAttempts = 4;
+    const awardTokenPoints = async (attemptIndex: number): Promise<boolean> => {
+      const result = await awardPoints({
+        gameId: HOME_PAGE_LOADER_POINTS_GAME_ID,
+        sessionId: loaderPointsSessionIdRef.current,
+        eventId: `collect:${payload.tokenId}`,
+        points: HOME_PAGE_LOADER_POINTS_REWARD,
+        occurredAt: payload.occurredAt,
+        label: 'Homepage Loader PTS Collectible',
+        meta: {
+          source: 'homepage-loader',
+          variant: payload.variant,
+          animationPreset: 'mystery-box-pop',
+          rewardPoints: HOME_PAGE_LOADER_POINTS_REWARD,
+        },
+      });
+
+      if (result.accepted) {
+        acceptedLoaderRewardIdsRef.current.add(payload.tokenId);
+        setLoaderRewardAwardState((current) => ({
+          userId: currentUserId,
+          confirmedTotalPoints: Math.max(
+            current.userId === currentUserId ? current.confirmedTotalPoints : 0,
+            result.totalPoints,
+          ),
+        }));
+        syncHomepagePointsSnapshotToIframe(result.totalPoints, result.stars);
+        return true;
+      }
+
+      if (result.reason === 'duplicate') {
+        acceptedLoaderRewardIdsRef.current.add(payload.tokenId);
+        return true;
+      }
+
+      if (attemptIndex >= (maxAttempts - 1)) {
+        return false;
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 140 + (attemptIndex * 120));
+      });
+      return awardTokenPoints(attemptIndex + 1);
+    };
+
+    try {
+      return await awardTokenPoints(0);
+    } catch {
+      return false;
+    }
+  }, [awardPoints, currentUserId, syncHomepagePointsSnapshotToIframe]);
 
   const syncTiltBridgeStateToIframe = useCallback(() => {
     const bridgeState = tiltBridgeStateRef.current;
@@ -975,7 +1059,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   return (
     <div className="os-desktop-shell">
       <section className="os-icon-area user-home-os-area" aria-label="Homepage app">
-        <div className="user-home-app-shell">
+        <div
+          className="user-home-app-shell"
+          data-loader-exit-hold={loaderRewardExitHoldActive ? 'true' : 'false'}
+        >
           {loaderVisible && (
             <div className="user-home-app-loading">
               <CinematicLoadingScreen
@@ -984,6 +1071,15 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
                 onFinish={handleLoaderFinish}
                 progressOverride={bootProgressValue}
                 surface="panel"
+                interactiveRewards={{
+                  enabled: true,
+                  assetSrc: loaderRewardAssetPath,
+                  totalPoints: loaderRewardDisplayTotalPoints,
+                  rewardPoints: HOME_PAGE_LOADER_POINTS_REWARD,
+                  minimumCollectWindowMs: HOME_PAGE_LOADER_MIN_COLLECT_WINDOW_MS,
+                  onCollect: handleLoaderRewardCollect,
+                  onExitHoldChange: setLoaderRewardExitHoldActive,
+                }}
               />
             </div>
           )}

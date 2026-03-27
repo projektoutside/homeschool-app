@@ -1689,6 +1689,14 @@
                 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
+        .metric-box .metric-icon-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.26));
+        }
+
         .metric-box .metric-copy {
             display: flex;
             flex-direction: column;
@@ -4358,7 +4366,9 @@
     </div>
     <aside id="top-right-hud" aria-label="Points and manager tools">
         <div class="hud-box metric-box" id="points-box" aria-live="polite">
-            <span class="metric-icon" aria-hidden="true">✦</span>
+            <span class="metric-icon" aria-hidden="true">
+                <img class="metric-icon-image" src="./PTS.png" alt="" />
+            </span>
             <span class="metric-copy">
                 <span class="metric-label">Total Points</span>
                 <span class="metric-value" id="points-box-value">0</span>

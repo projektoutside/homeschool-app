@@ -68,6 +68,138 @@
   pointer-events: none;
 }
 
+.cinematic-loading-screen__reward-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cinematic-loading-screen__reward-hud {
+  position: absolute;
+  inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+  inset-block-start: max(1rem, env(safe-area-inset-top, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  pointer-events: none;
+}
+
+.cinematic-loading-screen__reward-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.35rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(10, 22, 49, 0.92), rgba(6, 13, 31, 0.88)),
+    radial-gradient(circle at 24% 26%, rgba(119, 232, 255, 0.14), rgba(119, 232, 255, 0) 48%);
+  box-shadow:
+    0 0.65rem 1.6rem rgba(3, 8, 24, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #f8fbff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0.2rem 0.65rem rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(12px) saturate(1.08);
+}
+
+.cinematic-loading-screen__reward-chip--hint {
+  color: #fff4c2;
+}
+
+.cinematic-loading-screen__reward-token {
+  position: absolute;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  appearance: none;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: translate(-50%, -50%);
+  overflow: visible;
+}
+
+.cinematic-loading-screen__reward-token:disabled {
+  pointer-events: none;
+}
+
+.cinematic-loading-screen__reward-token:focus-visible {
+  outline: 2px solid rgba(191, 239, 255, 0.96);
+  outline-offset: 4px;
+}
+
+.cinematic-loading-screen__reward-token-shell {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+}
+
+.cinematic-loading-screen__reward-token-glow {
+  position: absolute;
+  inset: -8%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(125, 214, 255, 0.62), rgba(125, 214, 255, 0.16) 42%, rgba(125, 214, 255, 0) 76%);
+  filter: blur(0.8rem);
+  opacity: 0.88;
+  animation: loader-reward-glow 1.65s ease-in-out infinite alternate;
+}
+
+.cinematic-loading-screen__reward-token-image,
+.cinematic-loading-screen__reward-token-shard {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+.cinematic-loading-screen__reward-token-image {
+  object-fit: contain;
+}
+
+.cinematic-loading-screen__reward-token-shard {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.cinematic-loading-screen__reward-points-pop {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 4%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: max-content;
+  padding: 0.2rem 0.42rem;
+  color: #fff5bf;
+  font-size: clamp(0.92rem, 1.8vw, 1.1rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow:
+    0 0 0.25rem rgba(255, 231, 160, 0.78),
+    0 0.18rem 0.55rem rgba(6, 13, 31, 0.42);
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
 .cinematic-loading-screen__flight-bar {
   position: absolute;
   inset-inline-start: 50%;
@@ -326,6 +458,18 @@
   }
 }
 
+@keyframes loader-reward-glow {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.94);
+  }
+
+  100% {
+    opacity: 0.96;
+    transform: scale(1.06);
+  }
+}
+
 @media (max-width: 860px) {
   .cinematic-loading-screen {
     --cinematic-loader-dock-clearance: calc(5.9rem + env(safe-area-inset-bottom, 0px));
@@ -362,6 +506,17 @@
     block-size: clamp(0.38rem, 1vw, 0.5rem);
   }
 
+  .cinematic-loading-screen__reward-hud {
+    inset-inline: max(0.8rem, env(safe-area-inset-left, 0px)) max(0.8rem, env(safe-area-inset-right, 0px));
+    align-items: stretch;
+  }
+
+  .cinematic-loading-screen__reward-chip {
+    min-block-size: 2.1rem;
+    padding: 0.48rem 0.72rem;
+    font-size: 0.84rem;
+  }
+
 }
 
 @media (orientation: landscape) and (max-height: 740px) {
@@ -381,6 +536,11 @@
     block-size: var(--cinematic-flight-bar-height);
   }
 
+  .cinematic-loading-screen__reward-hud {
+    inset-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
+    gap: 0.45rem;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -395,5 +555,9 @@
   .cinematic-loading-screen__impact-ring,
   .cinematic-loading-screen__impact-star {
     animation-duration: 240ms !important;
+  }
+
+  .cinematic-loading-screen__reward-token-glow {
+    animation: none;
   }
 }

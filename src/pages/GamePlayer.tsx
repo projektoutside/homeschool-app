@@ -13,7 +13,7 @@ import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
 import { teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
-import { requestElementFullscreen } from '../utils/fullscreen';
+import { getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
 import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import {
@@ -41,6 +41,8 @@ const WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY = 'LAHS_WORD_PUZZLE_USER_CONTEXT_BO
 const WORD_PUZZLE_USER_CONTEXT_SYNC = 'LAHS_WORD_PUZZLE_USER_CONTEXT_SYNC';
 const WORD_PUZZLE_USER_CONTEXT_REQUEST = 'LAHS_WORD_PUZZLE_USER_CONTEXT_REQUEST';
 const DEV_CACHE_BUST = import.meta.env.DEV ? Date.now().toString() : '';
+const GAME_FULLSCREEN_RETRY_THROTTLE_MS = 250;
+const GAME_FULLSCREEN_RETRY_DELAYS_MS = [0, 120, 360, 900];
 
 type CarKingMicPreference = 'ask' | 'session' | 'always';
 type WordPuzzleUserContext = {
@@ -147,10 +149,41 @@ const GamePlayer: React.FC = () => {
     const { shouldUseNativeFullscreenFallback } = usePWA();
     useZoomLock({ enabled: true, iframeRefs: zoomLockIframes });
     const processedPointEventsRef = useRef<Set<string>>(new Set());
+    const fullscreenAttemptAtRef = useRef(0);
+    const [isRouteFullscreenActive, setIsRouteFullscreenActive] = useState(() => {
+        if (typeof document === 'undefined') {
+            return false;
+        }
+
+        return Boolean(getFullscreenElement(document));
+    });
 
     useEffect(() => {
         syncIframeSoundSettings(iframeRef.current, soundSettings);
     }, [soundSettings]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return undefined;
+        }
+
+        const syncFullscreenState = () => {
+            setIsRouteFullscreenActive(Boolean(getFullscreenElement(document)));
+        };
+
+        syncFullscreenState();
+        document.addEventListener('fullscreenchange', syncFullscreenState);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+        document.addEventListener('mozfullscreenchange', syncFullscreenState);
+        document.addEventListener('MSFullscreenChange', syncFullscreenState);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', syncFullscreenState);
+            document.removeEventListener('webkitfullscreenchange', syncFullscreenState);
+            document.removeEventListener('mozfullscreenchange', syncFullscreenState);
+            document.removeEventListener('MSFullscreenChange', syncFullscreenState);
+        };
+    }, []);
 
     const launchStateItem = useMemo(() => {
         const state = location.state as { launchItem?: ContentItem } | null;
@@ -221,6 +254,18 @@ const GamePlayer: React.FC = () => {
     const isImmersiveType = item?.type === 'game' || item?.type === 'tool';
     const requiresStaminaCharge = Boolean(item && launchPath && item.type === 'game' && staminaLaunchEventId);
     const isFrameLoading = loadedLaunchPath !== launchPath;
+    const requiresRouteFullscreen = Boolean(
+        shouldUseNativeFullscreenFallback
+        && isImmersiveType
+        && launchPath,
+    );
+    const isIframeReady = !isWordPuzzleGame || wordPuzzleBootstrapStamp === wordPuzzleBootstrapKey;
+    const effectiveStaminaGateState = requiresStaminaCharge
+        ? (staminaGateState.requestKey === staminaLaunchRequestKey ? staminaGateState.status : 'checking')
+        : 'allowed';
+    const isGameLaunchAllowed = !isGameItem || effectiveStaminaGateState === 'allowed';
+    const showLoadingOverlay = (isGameItem && effectiveStaminaGateState === 'checking') || (isGameLaunchAllowed && isFrameLoading);
+    const showFullscreenGuard = requiresRouteFullscreen && !isRouteFullscreenActive;
 
     const postMessageToGame = useCallback((payload: object) => {
         const targetWindow = iframeRef.current?.contentWindow;
@@ -548,13 +593,88 @@ const GamePlayer: React.FC = () => {
         return () => window.removeEventListener('message', handleGameMessage);
     }, [awardPoints, currentGameId, isCarKingGame, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
 
-    const enterFullscreen = useCallback(async () => {
-        if (!shouldUseNativeFullscreenFallback) {
-            return;
+    const attemptGameFullscreen = useCallback(async (force = false): Promise<boolean> => {
+        if (!requiresRouteFullscreen || typeof document === 'undefined') {
+            return false;
         }
 
-        await requestElementFullscreen(document.documentElement);
-    }, [shouldUseNativeFullscreenFallback]);
+        if (getFullscreenElement(document)) {
+            setIsRouteFullscreenActive(true);
+            return true;
+        }
+
+        const now = Date.now();
+        if (!force && (now - fullscreenAttemptAtRef.current) < GAME_FULLSCREEN_RETRY_THROTTLE_MS) {
+            return false;
+        }
+
+        fullscreenAttemptAtRef.current = now;
+        const didEnterFullscreen = await requestElementFullscreen(document.documentElement);
+        setIsRouteFullscreenActive(Boolean(getFullscreenElement(document)));
+        return didEnterFullscreen;
+    }, [requiresRouteFullscreen]);
+
+    useEffect(() => {
+        if (!requiresRouteFullscreen) {
+            return undefined;
+        }
+
+        const timeoutIds = GAME_FULLSCREEN_RETRY_DELAYS_MS.map((delayMs) => window.setTimeout(() => {
+            void attemptGameFullscreen();
+        }, delayMs));
+
+        return () => {
+            timeoutIds.forEach((timeoutId) => {
+                window.clearTimeout(timeoutId);
+            });
+        };
+    }, [attemptGameFullscreen, launchPath, requiresRouteFullscreen]);
+
+    useEffect(() => {
+        if (!requiresRouteFullscreen || typeof document === 'undefined') {
+            return undefined;
+        }
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                void attemptGameFullscreen();
+            }
+        };
+
+        const handleWindowFocus = () => {
+            void attemptGameFullscreen();
+        };
+
+        const handlePageShow = () => {
+            void attemptGameFullscreen();
+        };
+
+        const handleDocumentInteraction = (event: Event) => {
+            if (event instanceof KeyboardEvent && event.key === 'Escape') {
+                return;
+            }
+
+            void attemptGameFullscreen();
+        };
+
+        window.addEventListener('focus', handleWindowFocus, true);
+        window.addEventListener('pageshow', handlePageShow, true);
+        document.addEventListener('visibilitychange', handleVisibilityChange, true);
+        document.addEventListener('pointerdown', handleDocumentInteraction, true);
+        document.addEventListener('touchstart', handleDocumentInteraction, true);
+        document.addEventListener('mousedown', handleDocumentInteraction, true);
+        document.addEventListener('keydown', handleDocumentInteraction, true);
+
+        return () => {
+            window.removeEventListener('focus', handleWindowFocus, true);
+            window.removeEventListener('pageshow', handlePageShow, true);
+            document.removeEventListener('visibilitychange', handleVisibilityChange, true);
+            document.removeEventListener('pointerdown', handleDocumentInteraction, true);
+            document.removeEventListener('touchstart', handleDocumentInteraction, true);
+            document.removeEventListener('mousedown', handleDocumentInteraction, true);
+            document.removeEventListener('keydown', handleDocumentInteraction, true);
+        };
+    }, [attemptGameFullscreen, requiresRouteFullscreen]);
 
     useEffect(() => {
         if (!item || !isImmersiveType || !launchPath) {
@@ -565,13 +685,6 @@ const GamePlayer: React.FC = () => {
     if (!item || !isImmersiveType || !launchPath) {
         return null;
     }
-
-    const isIframeReady = !isWordPuzzleGame || wordPuzzleBootstrapStamp === wordPuzzleBootstrapKey;
-    const effectiveStaminaGateState = requiresStaminaCharge
-        ? (staminaGateState.requestKey === staminaLaunchRequestKey ? staminaGateState.status : 'checking')
-        : 'allowed';
-    const isGameLaunchAllowed = !isGameItem || effectiveStaminaGateState === 'allowed';
-    const showLoadingOverlay = (isGameItem && effectiveStaminaGateState === 'checking') || (isGameLaunchAllowed && isFrameLoading);
 
     return (
         <div className="game-player-shell" ref={containerRef}>
@@ -619,6 +732,36 @@ const GamePlayer: React.FC = () => {
                 </section>
             ) : null}
 
+            {showFullscreenGuard ? (
+                <section className="game-player-fullscreen-guard" aria-live="polite">
+                    <div className="game-player-fullscreen-guard__card">
+                        <p className="game-player-fullscreen-guard__eyebrow">Full Screen Required</p>
+                        <h1 className="game-player-fullscreen-guard__title">Opening {item.title} in full screen.</h1>
+                        <p className="game-player-fullscreen-guard__body">
+                            Keep this launch immersive and out of the browser frame. Tap below if the browser needs a fresh fullscreen confirmation.
+                        </p>
+                        <div className="game-player-fullscreen-guard__actions">
+                            <button
+                                type="button"
+                                className="game-player-fullscreen-guard__btn game-player-fullscreen-guard__btn--primary"
+                                onClick={() => {
+                                    void attemptGameFullscreen(true);
+                                }}
+                            >
+                                Continue Full Screen
+                            </button>
+                            <button
+                                type="button"
+                                className="game-player-fullscreen-guard__btn"
+                                onClick={() => navigate('/apps')}
+                            >
+                                Back To Apps
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
             {isIframeReady && isGameLaunchAllowed && (
                 <iframe
                     ref={iframeRef}
@@ -638,7 +781,7 @@ const GamePlayer: React.FC = () => {
                         syncWordPuzzleUserContext();
                         syncGamePointsContext();
                         window.setTimeout(() => {
-                            enterFullscreen().catch(() => {
+                            attemptGameFullscreen(true).catch(() => {
                                 // noop
                             });
                         }, 160);
