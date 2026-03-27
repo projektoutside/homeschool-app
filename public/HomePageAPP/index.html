@@ -11154,6 +11154,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         const HOME_PAGE_MYSTERY_BOX_OPEN_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/openingboxsound.mp3');
         const HOME_PAGE_MYSTERY_EQUIP_PROP_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/equipingprop.mp3');
         const HOME_PAGE_STANDARD_CLICK_SOUND_SOURCE = encodeURI('./HomePageMusic/MysterySoundEffects/standardclick.mp3');
+        const LEGENDARY_INTRO_THUNDER_SOURCE = encodeURI('./firstthunder.mp3');
+        const LEGENDARY_INTRO_THUNDER_DELAY_MS = 3000;
         const LEGENDARY_SUMMON_MUSIC_SOURCE = encodeURI('./HomePageMusic/LegendarySummonMusic/LegendaryAnimationSummonSound.mp3');
         const LEGENDARY_SUMMON_MUSIC_FADE_OUT_MS = 720;
         const LEGENDARY_CUTSCENE_STARTUP_RETRY_WINDOW_MS = 2500;
@@ -11246,6 +11248,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             primedToken: 0,
             activeToken: 0,
             preparedAudio: null,
+            preparedThunderAudio: null,
             startRequested: false,
             startConfirmed: false,
             hardFailure: false,
@@ -11253,6 +11256,11 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             retryDeadlineAt: 0,
             nextRetryAt: 0,
             lastFailureReason: ''
+        };
+        const legendaryIntroThunderState = {
+            activeAudio: null,
+            playbackTriggered: false,
+            delayTimer: null
         };
         const legendarySummonMusicState = {
             activeAudio: null,
@@ -11350,6 +11358,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             return encodeURI(`./HomePageMusic/${track.fileName}`);
         }
 
+        function buildLegendaryIntroThunderSource() {
+            return LEGENDARY_INTRO_THUNDER_SOURCE;
+        }
+
         function createHomePageMusicAudio(trackId) {
             const source = buildHomePageMusicSource(trackId);
             if (!source) return null;
@@ -11378,6 +11390,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             audio.autoplay = false;
             audio.playsInline = true;
             return audio;
+        }
+
+        function createLegendaryIntroThunderAudio() {
+            const source = buildLegendaryIntroThunderSource();
+            if (!source) return null;
+            return createMysterySfxAudio(source, { loop: false });
         }
 
         function createHomePageUiClickAudio() {
@@ -11514,6 +11532,23 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             applyGain(mysterySfxState.boxOpenAudio, 0.92);
             applyGain(mysterySfxState.equipPropAudio, 0.9);
             applyHomePageUiClickAudioGain();
+            applyLegendaryIntroThunderGain();
+        }
+
+        function applyLegendaryIntroThunderGain() {
+            const audio = legendaryIntroThunderState.activeAudio;
+            if (!audio) return;
+            const shouldMute = !canPlayMysterySfx();
+            const baseVolume = clampUnitVolume(homePageMusicState.sfxVolume, 0.75);
+            audio.muted = shouldMute;
+            audio.volume = shouldMute ? 0 : baseVolume;
+        }
+
+        function clearLegendaryIntroThunderDelayTimer() {
+            if (legendaryIntroThunderState.delayTimer !== null) {
+                window.clearTimeout(legendaryIntroThunderState.delayTimer);
+                legendaryIntroThunderState.delayTimer = null;
+            }
         }
 
         function playMysterySfxNow(audio, restart = true) {
@@ -11606,6 +11641,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     audio.pause();
                 } catch (_) {}
             });
+            resetLegendaryIntroThunderSession({ releaseAudio: true });
         }
 
         function releaseHomePageMusicAudio(audio) {
@@ -12181,6 +12217,21 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryCutsceneStartupState.preparedAudio = null;
         }
 
+        function releaseLegendaryCutscenePreparedThunderAudio() {
+            const audio = legendaryCutsceneStartupState.preparedThunderAudio;
+            if (!audio) {
+                return;
+            }
+            try {
+                audio.pause();
+            } catch (_) {}
+            try {
+                audio.currentTime = 0;
+            } catch (_) {}
+            releaseHomePageMusicAudio(audio);
+            legendaryCutsceneStartupState.preparedThunderAudio = null;
+        }
+
         function resetLegendaryCutsceneStartupState({ releasePreparedAudio = true, resetVideo = false } = {}) {
             legendaryCutsceneStartupState.token += 1;
             legendaryCutsceneStartupState.primedToken = 0;
@@ -12194,8 +12245,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryCutsceneStartupState.lastFailureReason = '';
             if (releasePreparedAudio) {
                 releaseLegendaryCutscenePreparedAudio();
+                releaseLegendaryCutscenePreparedThunderAudio();
             } else {
                 legendaryCutsceneStartupState.preparedAudio = null;
+                legendaryCutsceneStartupState.preparedThunderAudio = null;
             }
             if (legendaryCutsceneVideo) {
                 configureLegendaryCutsceneVideoElement();
@@ -12241,6 +12294,36 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                             } catch (_) {}
                             try {
                                 preparedAudio.currentTime = 0;
+                            } catch (_) {}
+                        });
+                }
+            }
+
+            const preparedThunderAudio = createLegendaryIntroThunderAudio();
+            if (preparedThunderAudio) {
+                legendaryCutsceneStartupState.preparedThunderAudio = preparedThunderAudio;
+                preparedThunderAudio.muted = true;
+                preparedThunderAudio.volume = 0;
+                try {
+                    preparedThunderAudio.load();
+                } catch (_) {}
+                const thunderWarmupAttempt = preparedThunderAudio.play();
+                if (thunderWarmupAttempt && typeof thunderWarmupAttempt.then === 'function') {
+                    thunderWarmupAttempt
+                        .catch(() => {})
+                        .then(() => {
+                            if (
+                                legendaryCutsceneStartupState.token !== token ||
+                                legendaryCutsceneStartupState.primedToken !== token ||
+                                legendaryCutsceneStartupState.preparedThunderAudio !== preparedThunderAudio
+                            ) {
+                                return;
+                            }
+                            try {
+                                preparedThunderAudio.pause();
+                            } catch (_) {}
+                            try {
+                                preparedThunderAudio.currentTime = 0;
                             } catch (_) {}
                         });
                 }
@@ -12298,6 +12381,97 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryCutsceneStartupState.nextRetryAt = 0;
             legendaryCutsceneStartupState.lastFailureReason = '';
             return token;
+        }
+
+        function resetLegendaryIntroThunderSession({ releaseAudio = true } = {}) {
+            clearLegendaryIntroThunderDelayTimer();
+            legendaryIntroThunderState.playbackTriggered = false;
+            const audio = legendaryIntroThunderState.activeAudio;
+            if (audio) {
+                try {
+                    audio.pause();
+                } catch (_) {}
+                try {
+                    audio.currentTime = 0;
+                } catch (_) {}
+                if (releaseAudio) {
+                    releaseHomePageMusicAudio(audio);
+                }
+            }
+            legendaryIntroThunderState.activeAudio = null;
+        }
+
+        function prepareLegendaryIntroThunderForCurrentCinematic({ usePreparedAudio = true } = {}) {
+            resetLegendaryIntroThunderSession({ releaseAudio: true });
+            let audio = null;
+            if (usePreparedAudio && legendaryCutsceneStartupState.preparedThunderAudio) {
+                audio = legendaryCutsceneStartupState.preparedThunderAudio;
+                legendaryCutsceneStartupState.preparedThunderAudio = null;
+                try {
+                    audio.pause();
+                } catch (_) {}
+                try {
+                    audio.currentTime = 0;
+                } catch (_) {}
+            } else {
+                audio = createLegendaryIntroThunderAudio();
+            }
+            if (!audio) {
+                return null;
+            }
+            legendaryIntroThunderState.activeAudio = audio;
+            legendaryIntroThunderState.playbackTriggered = false;
+            applyLegendaryIntroThunderGain();
+            try {
+                audio.load();
+            } catch (_) {}
+            return audio;
+        }
+
+        function startLegendaryIntroThunderPlayback() {
+            clearLegendaryIntroThunderDelayTimer();
+            if (legendaryIntroThunderState.playbackTriggered) {
+                return false;
+            }
+            legendaryIntroThunderState.playbackTriggered = true;
+            const audio = legendaryIntroThunderState.activeAudio;
+            if (!audio) {
+                return false;
+            }
+            applyLegendaryIntroThunderGain();
+            if (!canPlayMysterySfx()) {
+                return false;
+            }
+            try {
+                audio.currentTime = 0;
+            } catch (_) {}
+            const playAttempt = audio.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {
+                    try {
+                        audio.pause();
+                    } catch (_) {}
+                    try {
+                        audio.currentTime = 0;
+                    } catch (_) {}
+                });
+            }
+            return true;
+        }
+
+        function scheduleLegendaryIntroThunderPlayback(delayMs = LEGENDARY_INTRO_THUNDER_DELAY_MS) {
+            if (legendaryIntroThunderState.playbackTriggered || legendaryIntroThunderState.delayTimer !== null) {
+                return false;
+            }
+            const delay = Math.max(0, Number(delayMs) || 0);
+            if (delay <= 0) {
+                return startLegendaryIntroThunderPlayback();
+            }
+            legendaryIntroThunderState.delayTimer = window.setTimeout(() => {
+                legendaryIntroThunderState.delayTimer = null;
+                startLegendaryIntroThunderPlayback();
+            }, delay);
+            return true;
         }
 
         function buildLegendarySummonMusicSource() {
@@ -15917,6 +16091,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                         (legendaryStormState.timings?.escalation || LEGENDARY_STORM_CONFIG.escalationDuration)
                     ) * 1000
                 });
+                scheduleLegendaryIntroThunderPlayback();
             } else if (nextPhase === 'escalation') {
                 prepareLegendaryStormStrikeGeometry('escalation');
                 setLegendaryStormStrikeRefresh(0.34, 0.72);
@@ -17039,6 +17214,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 requestMysteryFlightReturn();
             }
             unlockMysteryInteractionsNow();
+            resetLegendaryIntroThunderSession({ releaseAudio: true });
             resetLegendarySummonMusicSession({ releaseAudio: true });
             restoreHomePageAudioAfterLegendaryCutscene({ immediate: true, force: true });
             resumeBackgroundPlaybackIfActive();
@@ -17093,6 +17269,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             clearLegendaryStormStrikeGeometry();
             setLegendaryGrassRevealVisible(false);
             stopLegendaryCutsceneVideoPlayback();
+            prepareLegendaryIntroThunderForCurrentCinematic({ usePreparedAudio: true });
             prepareLegendarySummonMusicForCurrentCinematic({ usePreparedAudio: true });
             legendarySummonMusicState.savedRouteGain = legendaryStormState.savedRouteGain;
             legendaryStormState.target.copy(spawnContext.landingTarget);
