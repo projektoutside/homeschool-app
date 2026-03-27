@@ -687,6 +687,32 @@
             }
         }
 
+        @keyframes timerRoundIntroPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                text-shadow: 0 0 0.8rem rgba(64, 157, 255, 0.72), 0 0 1.65rem rgba(74, 204, 255, 0.34);
+            }
+
+            50% {
+                transform: scale(1.04);
+                text-shadow: 0 0 1rem rgba(115, 214, 255, 0.84), 0 0 2rem rgba(45, 149, 255, 0.46);
+            }
+        }
+
+        @keyframes timerRoundIntroFinalPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+            }
+        }
+
         #top-center-stats .stat-bar-bg {
             width: 200px;
             height: 18px;
@@ -910,6 +936,40 @@
             font-weight: bold;
             color: #ffc107;
             text-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+        }
+
+        #goblin-launch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.48rem;
+            width: fit-content;
+            margin: 0 0 0.35rem;
+            padding: 0.46rem 0.82rem;
+            border-radius: 999px;
+            border: 1px solid rgba(111, 187, 255, 0.42);
+            background: linear-gradient(180deg, rgba(18, 40, 78, 0.92), rgba(11, 23, 49, 0.96));
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+                0 0.42rem 0.95rem rgba(0, 0, 0, 0.22),
+                0 0 0.7rem rgba(80, 149, 255, 0.18);
+            color: #d9efff;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .goblin-launch-badge__icon {
+            font-size: 1rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 0.4rem rgba(120, 186, 255, 0.34));
+        }
+
+        .goblin-launch-badge__text {
+            font-size: 0.72rem;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         #pet-status-section {
@@ -1702,6 +1762,18 @@
 
 #top-center-stats #timer-display.critical {
     font-size: clamp(1.56rem, 4.1vw, 2.32rem);
+}
+
+#top-center-stats #timer-display.round-intro {
+    color: #78bcff;
+    text-shadow: 0 0 0.8rem rgba(64, 157, 255, 0.72), 0 0 1.65rem rgba(74, 204, 255, 0.34);
+    animation: timerRoundIntroPulse 1.05s infinite ease-in-out;
+}
+
+#top-center-stats #timer-display.round-intro-final {
+    color: #a5dcff;
+    text-shadow: 0 0 1rem rgba(107, 206, 255, 0.86), 0 0 2rem rgba(42, 148, 255, 0.52);
+    animation: timerRoundIntroFinalPulse 0.5s infinite ease-in-out;
 }
 
 .top-center-status-row {
@@ -3197,6 +3269,12 @@ body.app-shell #right-side-panels {
     display: grid;
     align-content: start;
     gap: var(--panel-gap);
+}
+
+body.app-shell #goblin-launch-badge {
+    justify-self: start;
+    margin: 0;
+    padding: 0.5rem 0.84rem;
 }
 
 body.app-shell #top-left-panel > *:empty,

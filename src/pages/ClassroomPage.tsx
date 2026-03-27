@@ -197,6 +197,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
     const isFrameLoaded = loadedLaunchPath === launchPath;
     const isDoorIntroComplete = !introActivationKey || completedDoorIntroKey === introActivationKey;
     const isTransitionComplete = isFrameLoaded && isDoorIntroComplete;
+    const shouldUseLiveStateSync = isActive && hasManagerAccess;
 
     useZoomLock({ enabled: isActive, iframeRefs: zoomLockIframes });
 
@@ -460,7 +461,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
     }, [handleDoorIntroMessage]);
 
     useEffect(() => {
-        if (!supabase || !user) {
+        if (!shouldUseLiveStateSync || !supabase || !user) {
             return;
         }
 
@@ -493,7 +494,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         return () => {
             void supabaseClient.removeChannel(channel);
         };
-    }, [postStateToClassroom, user]);
+    }, [postStateToClassroom, shouldUseLiveStateSync, user]);
 
     useEffect(() => {
         syncAuthToClassroom();

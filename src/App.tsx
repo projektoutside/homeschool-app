@@ -15,12 +15,12 @@ import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
 import { buildAssetPath } from './utils/pathUtils';
-import Home from './pages/Home';
-import HTMLViewer from './pages/HTMLViewer';
-import ClassroomPage from './pages/ClassroomPage';
 import './App.css';
 import './components/ErrorBoundary.css';
 
+const loadHomeRoute = () => import('./pages/Home');
+const loadHTMLViewerRoute = () => import('./pages/HTMLViewer');
+const loadClassroomRoute = () => import('./pages/ClassroomPage');
 const loadGamePlayerRoute = () => import('./pages/GamePlayer');
 const loadManagerRoute = () => import('./pages/ManagerPage');
 const loadViewerRoute = () => import('./pages/Viewer');
@@ -29,6 +29,9 @@ const loadAuthRoute = () => import('./pages/AuthPage');
 const loadCharacterCreatorRoute = () => import('./pages/CharacterCreatorPage');
 
 // Lazy load pages for performance
+const Home = React.lazy(loadHomeRoute);
+const HTMLViewer = React.lazy(loadHTMLViewerRoute);
+const ClassroomPage = React.lazy(loadClassroomRoute);
 const GamePlayer = React.lazy(loadGamePlayerRoute);
 const ManagerPage = React.lazy(loadManagerRoute);
 const Viewer = React.lazy(loadViewerRoute);
@@ -92,6 +95,37 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
 
 type PWAState = ReturnType<typeof usePWA>;
 
+const RoutePrefetchCoordinator: React.FC<{
+    loading: boolean;
+    homePageAppUrl: string;
+    classroomAppUrl: string;
+    classroomDoorIntroUrl: string;
+    classroomDoorAudioUrl: string;
+}> = ({
+    loading,
+    homePageAppUrl,
+    classroomAppUrl,
+    classroomDoorIntroUrl,
+    classroomDoorAudioUrl,
+}) => {
+    const location = useLocation();
+
+    useAppAssetPrefetch({
+        loading,
+        routePath: location.pathname,
+        homePageAppUrl,
+        classroomAppUrl,
+        classroomDoorIntroUrl,
+        classroomDoorAudioUrl,
+        loadHomeRoute,
+        loadClassroomRoute,
+        loadHTMLViewerRoute,
+        loadViewerRoute,
+    });
+
+    return null;
+};
+
 const RequireInstalledShell: React.FC<{ pwa: PWAState; children: React.ReactNode }> = ({ pwa, children }) => {
     if (pwa.requiresInstalledShell) {
         return <AndroidInstallGate />;
@@ -113,17 +147,15 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
     const location = useLocation();
     const retryCount = useRef(0);
     const maxRetries = 3;
+    const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
+        location.pathname === route || location.pathname.startsWith(`${route}/`)
+    );
 
     useEffect(() => {
         const attemptFullscreen = async () => {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
-                location.pathname === route || location.pathname.startsWith(`${route}/`)
-            );
             const shellAlreadyImmersive = isFullscreen || isStandaloneShell;
 
-            // Keep the installed app shell fullscreen on every authenticated route.
-            // Skip iOS because the browser Fullscreen API is not reliable there.
             if (
                 !shellAlreadyImmersive
                 && !isIOS
@@ -132,45 +164,95 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
                 && shouldUseNativeFullscreenFallback
                 && retryCount.current < maxRetries
             ) {
-                retryCount.current++;
-                
-                // Try multiple times with increasing delays
+                retryCount.current += 1;
+
                 const delays = [100, 500, 1000];
                 const currentDelay = delays[retryCount.current - 1] || 1000;
-                
-                setTimeout(() => {
+
+                window.setTimeout(() => {
                     enterFullscreen().catch(() => {
-                        // Fullscreen may be blocked (user gesture required), will retry
                         if (retryCount.current < maxRetries) {
-                            attemptFullscreen();
+                            void attemptFullscreen();
                         }
                     });
                 }, currentDelay);
             }
         };
 
-        const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
-            location.pathname === route || location.pathname.startsWith(`${route}/`)
-        );
         if (!isFullscreenExemptRoute) {
             retryCount.current = 0;
         }
-        
-        attemptFullscreen();
+
+        void attemptFullscreen();
     }, [
         enterFullscreen,
         isFullscreen,
+        isFullscreenExemptRoute,
         isStandaloneShell,
-        location.pathname,
         requiresInstalledShell,
         shouldUseNativeFullscreenFallback,
     ]);
+
+    useEffect(() => {
+        if (isFullscreenExemptRoute || requiresInstalledShell || !shouldUseNativeFullscreenFallback) {
+            return;
+        }
+
+        let lastAttemptAt = 0;
+        const maybeEnterFullscreen = (event: Event) => {
+            if (isFullscreen || isStandaloneShell) {
+                return;
+            }
+
+            if (event instanceof KeyboardEvent && event.key === 'Escape') {
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastAttemptAt < 250) {
+                return;
+            }
+
+            lastAttemptAt = now;
+            void enterFullscreen();
+        };
+
+        const pointerHandler = (event: Event) => {
+            maybeEnterFullscreen(event);
+        };
+
+        const keyHandler = (event: KeyboardEvent) => {
+            maybeEnterFullscreen(event);
+        };
+
+        document.addEventListener('pointerdown', pointerHandler, true);
+        document.addEventListener('touchstart', pointerHandler, true);
+        document.addEventListener('mousedown', pointerHandler, true);
+        document.addEventListener('keydown', keyHandler, true);
+
+        return () => {
+            document.removeEventListener('pointerdown', pointerHandler, true);
+            document.removeEventListener('touchstart', pointerHandler, true);
+            document.removeEventListener('mousedown', pointerHandler, true);
+            document.removeEventListener('keydown', keyHandler, true);
+        };
+    }, [
+        enterFullscreen,
+        isFullscreen,
+        isFullscreenExemptRoute,
+        isStandaloneShell,
+        requiresInstalledShell,
+        shouldUseNativeFullscreenFallback,
+    ]);
+
+    if (isFullscreenExemptRoute || pwa.requiresInstalledShell) {
+        return <>{children}</>;
+    }
 
     return <>{children}</>;
 };
 
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
-const HOME_PAGE_APP_THREE_MODULE_URL = 'https://unpkg.com/three@0.160.0/build/three.module.js';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
 const CLASSROOM_DOOR_AUDIO_PATH = '3dClass/audio/dooropening.mp3';
@@ -184,19 +266,6 @@ const App: React.FC = () => {
     const classroomAppUrl = buildAssetPath(`${CLASSROOM_APP_PATH}?v=${CLASSROOM_RUNTIME_VERSION}&intro=0`);
     const classroomDoorIntroUrl = buildAssetPath(`${CLASSROOM_DOOR_INTRO_PATH}?v=${CLASSROOM_RUNTIME_VERSION}`);
     const classroomDoorAudioUrl = buildAssetPath(CLASSROOM_DOOR_AUDIO_PATH);
-
-    useAppAssetPrefetch({
-        loading,
-        homePageAppUrl,
-        classroomAppUrl,
-        classroomDoorIntroUrl,
-        classroomDoorAudioUrl,
-        homePageThreeModuleUrl: HOME_PAGE_APP_THREE_MODULE_URL,
-        loadClassroomRoute: async () => Promise.resolve({ default: ClassroomPage }),
-        loadHTMLViewerRoute: async () => Promise.resolve({ default: HTMLViewer }),
-        loadViewerRoute,
-    });
-
 
     // Use the same base path as Vite config
     // BASE_URL from Vite includes the trailing slash, but React Router basename shouldn't
@@ -213,6 +282,13 @@ const App: React.FC = () => {
         <ErrorBoundary>
             <BrowserRouter basename={basename}>
                 <PWAWrapperWithState pwa={pwa}>
+                    <RoutePrefetchCoordinator
+                        loading={loading}
+                        homePageAppUrl={homePageAppUrl}
+                        classroomAppUrl={classroomAppUrl}
+                        classroomDoorIntroUrl={classroomDoorIntroUrl}
+                        classroomDoorAudioUrl={classroomDoorAudioUrl}
+                    />
                     <Routes>
                         {/* Install page - accessible without layout */}
                         <Route path="/install" element={<RouteBoundary><InstallPage /></RouteBoundary>} />

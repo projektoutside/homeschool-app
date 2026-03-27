@@ -42,12 +42,14 @@ const MainLayout: React.FC = () => {
     const isHtmlViewerRoute = location.pathname === '/html-viewer';
     // Tool-style routes should render immediately even on direct entry or hard reload.
     const shouldBypassHomepageSessionBootstrap = isManagerRoute || isCharacterCreatorRoute || isHtmlViewerRoute;
-    const isHomepageSessionGateReady = isHomepageSessionReady || shouldBypassHomepageSessionBootstrap;
-    const isPrimingHomepageSession = !isHomepageSessionGateReady;
-    const shouldRenderHomepageSession = !shouldBypassHomepageSessionBootstrap;
-    const isHomepageSessionVisible = shouldRenderHomepageSession && (isUserHomeRoute || isPrimingHomepageSession);
+    const shouldRequireHomepageSessionBootstrap = isUserHomeRoute && !shouldBypassHomepageSessionBootstrap;
+    const isHomepageSessionGateReady = !shouldRequireHomepageSessionBootstrap || isHomepageSessionReady;
+    const isPrimingHomepageSession = shouldRequireHomepageSessionBootstrap && !isHomepageSessionGateReady;
+    const shouldRenderHomepageSession = shouldRequireHomepageSessionBootstrap;
+    const isHomepageSessionVisible = shouldRenderHomepageSession;
     const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionGateReady;
     const isHomepageSummonInteractionLocked = isUserHomeRoute && isHomepageSummonNavigationLocked;
+    const shouldShowHomepageSummonSkipButton = isUserHomeRoute && isHomepageSummonSkipVisible;
     const isImmersiveRoute =
         isHomeRoute
         || isAppsRoute
@@ -73,12 +75,6 @@ const MainLayout: React.FC = () => {
             document.body.classList.remove('homepage-summon-locked');
         };
     }, [isHomepageSummonInteractionLocked]);
-
-    useEffect(() => {
-        if (!isUserHomeRoute) {
-            setIsHomepageSummonSkipVisible(false);
-        }
-    }, [isUserHomeRoute]);
 
     useEffect(() => {
         const currentDocument = typeof document !== 'undefined' ? document : null;
@@ -248,7 +244,7 @@ const MainLayout: React.FC = () => {
                     tabIndex={-1}
                 />
 
-                {isHomepageSummonSkipVisible ? (
+                {shouldShowHomepageSummonSkipButton ? (
                     <button
                         type="button"
                         className="homepage-summon-skip-button"

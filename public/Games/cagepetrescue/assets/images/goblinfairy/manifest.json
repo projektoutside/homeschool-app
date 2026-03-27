@@ -1,0 +1,121 @@
+{
+  "characterId": "cage-pet-rescue-goblin-fairy",
+  "frameSize": {
+    "width": 320,
+    "height": 384
+  },
+  "anchorPx": {
+    "x": 160,
+    "y": 348
+  },
+  "collisionBoxPx": {
+    "x": 0,
+    "y": 6,
+    "width": 320,
+    "height": 343
+  },
+  "animations": {
+    "hover": {
+      "atlasPath": "./hover.atlas.png",
+      "reviewGifPath": "./hover.review.gif",
+      "frameCount": 20,
+      "columns": 5,
+      "rows": 4,
+      "fps": 12,
+      "loop": true,
+      "sourceWindow": {
+        "startFrame": 166,
+        "endFrame": 185
+      },
+      "sampleIndices": [
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184
+      ],
+      "footBottomPx": [
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        348,
+        347,
+        348,
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        347,
+        348
+      ]
+    },
+    "attack": {
+      "atlasPath": "./attack.atlas.png",
+      "reviewGifPath": "./attack.review.gif",
+      "frameCount": 14,
+      "columns": 4,
+      "rows": 4,
+      "fps": 18,
+      "loop": false,
+      "sourceWindow": {
+        "startFrame": 113,
+        "endFrame": 140
+      },
+      "sampleIndices": [
+        113,
+        115,
+        117,
+        119,
+        121,
+        123,
+        125,
+        128,
+        130,
+        132,
+        134,
+        136,
+        138,
+        140
+      ],
+      "footBottomPx": [
+        348,
+        347,
+        347,
+        348,
+        347,
+        347,
+        348,
+        348,
+        348,
+        348,
+        347,
+        347,
+        348,
+        348
+      ]
+    }
+  }
+}

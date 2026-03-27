@@ -233,11 +233,19 @@ const uploadPropAssetResumable = async ({
   });
 };
 
-export const useHomepageCatalog = ({ includeInactive = false }: { includeInactive?: boolean } = {}) => {
+export const useHomepageCatalog = ({
+  includeInactive = false,
+  enabled = true,
+  liveUpdates = enabled,
+}: {
+  includeInactive?: boolean;
+  enabled?: boolean;
+  liveUpdates?: boolean;
+} = {}) => {
   const { user } = useAuth();
   const [categories, setCategories] = useState<HomepageCategoryRecord[]>([]);
   const [props, setProps] = useState<HomepagePropRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(() => Boolean(supabase && isSupabaseConfigured));
+  const [isLoading, setIsLoading] = useState(() => enabled && Boolean(supabase && isSupabaseConfigured));
   const [error, setError] = useState<string | null>(null);
   const categoriesRef = useRef<HomepageCategoryRecord[]>([]);
   const propsRef = useRef<HomepagePropRecord[]>([]);
@@ -281,6 +289,13 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
   }, []);
 
   const refresh = useCallback(async () => {
+    if (!enabled) {
+      return buildHomepageCatalogSnapshot({
+        categories: categoriesRef.current,
+        props: propsRef.current,
+      });
+    }
+
     if (!supabase || !isSupabaseConfigured) {
       setCategories([]);
       setProps([]);
@@ -347,9 +362,13 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
     setProps(nextProps);
     setIsLoading(false);
     return buildHomepageCatalogSnapshot({ categories: nextCategories, props: nextProps });
-  }, [includeInactive]);
+  }, [enabled, includeInactive]);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     let active = true;
 
     const loadCatalog = async () => {
@@ -366,9 +385,13 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
     return () => {
       active = false;
     };
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   useEffect(() => {
+    if (!liveUpdates) {
+      return;
+    }
+
     const client = supabase;
     if (!client || !isSupabaseConfigured) {
       return;
@@ -387,7 +410,7 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
     return () => {
       void client.removeChannel(channel);
     };
-  }, [includeInactive, refresh]);
+  }, [includeInactive, liveUpdates, refresh]);
 
   const uploadPropAsset = useCallback(async (file: File) => {
     if (!supabase || !isSupabaseConfigured) {
@@ -579,8 +602,8 @@ export const useHomepageCatalog = ({ includeInactive = false }: { includeInactiv
     props,
     snapshot,
     canManage,
-    isLoading,
-    error,
+    isLoading: enabled ? isLoading : false,
+    error: enabled ? error : null,
     refresh,
     uploadPropAsset,
     deleteCategory,

@@ -12,6 +12,7 @@ const contentDir = path.join(repoRoot, 'src', 'data', 'content');
 const publicDir = path.join(repoRoot, 'public');
 const gamesDir = path.join(publicDir, 'Games');
 const SUPPORTED_CONTENT_TYPES = new Set(['game', 'worksheet', 'tool', 'resource']);
+const KNOWN_WORKSHEET_SUBJECTS = new Set(['math', 'ela', 'social-studies']);
 
 const warnings = [];
 const errors = [];
@@ -141,6 +142,25 @@ function toPublicFilePath(urlLikePath) {
   return path.join(publicDir, normalized);
 }
 
+function normalizeWorksheetContentPath(urlLikePath) {
+  if (!urlLikePath) return urlLikePath;
+
+  const normalized = urlLikePath.replace(/\\/g, '/').trim();
+  const leadingSlashPath = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  const worksheetMatch = leadingSlashPath.match(/^\/Worksheets\/(.+)$/i);
+  if (!worksheetMatch) {
+    return leadingSlashPath;
+  }
+
+  const worksheetSuffix = worksheetMatch[1];
+  const [subjectOrSlug] = worksheetSuffix.split('/');
+  if (subjectOrSlug && KNOWN_WORKSHEET_SUBJECTS.has(subjectOrSlug.toLowerCase())) {
+    return `/Worksheets/${worksheetSuffix}`;
+  }
+
+  return `/Worksheets/math/${worksheetSuffix}`;
+}
+
 function auditHtmlRefs(ownerLabel, htmlFilePath) {
   const folderPath = path.dirname(htmlFilePath);
   const html = fs.readFileSync(htmlFilePath, 'utf8');
@@ -196,7 +216,10 @@ function auditContentEntries(entries) {
       errors.push(`Content "${entry.id}" in ${fileLabel} has no customHtmlPath or externalUrl`);
     }
 
-    const htmlFilePath = toPublicFilePath(entry.customHtmlPath);
+    const normalizedContentPath = entry.type === 'worksheet'
+      ? normalizeWorksheetContentPath(entry.customHtmlPath)
+      : entry.customHtmlPath;
+    const htmlFilePath = toPublicFilePath(normalizedContentPath);
     if (htmlFilePath && !fs.existsSync(htmlFilePath)) {
       errors.push(`Missing content file for "${idLabel}" (${fileLabel}): ${path.relative(repoRoot, htmlFilePath)}`);
     } else if (htmlFilePath && !auditedHtmlFiles.has(htmlFilePath)) {

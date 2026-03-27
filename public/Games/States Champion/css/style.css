@@ -1025,6 +1025,15 @@ p {
   isolation: isolate;
 }
 
+.progress-map__silhouette {
+  pointer-events: none;
+}
+
+.progress-map__silhouette-path {
+  fill: rgba(73, 107, 132, 0.16);
+  stroke: none;
+}
+
 .progress-map__piece--solved {
   opacity: 1;
 }
@@ -1037,14 +1046,14 @@ p {
 
 .progress-map__state--blank {
   fill: transparent;
-  stroke: rgba(37, 68, 90, 0.72);
-  stroke-width: 1.8px;
+  stroke: none;
+  stroke-width: 0;
 }
 
 .progress-map__state--solved {
   fill: var(--state-fill, #55c3ff);
-  stroke: rgba(18, 42, 59, 0.86);
-  stroke-width: 1.9px;
+  stroke: none;
+  stroke-width: 0;
 }
 
 .reveal-card {

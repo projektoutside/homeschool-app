@@ -41,6 +41,10 @@
     window.LAHSPointsBridge && typeof window.LAHSPointsBridge.init === "function"
       ? window.LAHSPointsBridge
       : null;
+  const soundEffects =
+    window.StatesChampionSoundEffects && typeof window.StatesChampionSoundEffects.playCorrect === "function"
+      ? window.StatesChampionSoundEffects
+      : null;
 
   pointsBridge?.init({ gameId: POINTS_GAME_ID });
 
@@ -105,6 +109,7 @@
     mapOpen: false,
     mapRenderKey: "",
   };
+  let pendingKnowItAllSummary = null;
 
   function getModeConfig() {
     return MODE_CONFIG[run.mode];
@@ -119,6 +124,7 @@
   }
 
   function backToMenu() {
+    pendingKnowItAllSummary = null;
     viewState.mapOpen = false;
     clearRun();
     clearSummary();
@@ -170,6 +176,23 @@
         meta: award.meta ?? {},
       });
     });
+  }
+
+  function primeAudio() {
+    soundEffects?.prime?.();
+  }
+
+  function playAnswerSound(reveal) {
+    if (!reveal) {
+      return;
+    }
+
+    if (reveal.isCorrect) {
+      soundEffects?.playCorrect?.();
+      return;
+    }
+
+    soundEffects?.playWrong?.();
   }
 
   function getHintData(stateId = run.currentStateId) {
@@ -241,6 +264,20 @@
       .join("");
   }
 
+  function buildProgressMapSilhouettePaths(stateId) {
+    const stateEntry = US_PROGRESS_MAP_DATA.states?.[stateId];
+    if (!stateEntry) {
+      return "";
+    }
+
+    return stateEntry.paths
+      .map(
+        (pathData) =>
+          `<path data-state-id="${stateId}" class="progress-map__silhouette-path" d="${pathData}" fill-rule="evenodd"></path>`
+      )
+      .join("");
+  }
+
   function buildProgressMapMarkup() {
     const [mapWidth, mapHeight] = US_PROGRESS_MAP_DATA.viewBox ?? [0, 0];
     if (mapWidth <= 0 || mapHeight <= 0) {
@@ -248,6 +285,21 @@
     }
 
     const solvedSet = new Set(run.solvedStateIds ?? []);
+    const silhouette = US_PROGRESS_MAP_DATA.stateIds
+      .map((stateId) => {
+        const entry = US_PROGRESS_MAP_DATA.states?.[stateId];
+        if (!entry) {
+          return "";
+        }
+
+        const [left, top] = entry.bounds;
+        return `
+          <g class="progress-map__silhouette-piece" transform="translate(${left} ${top})">
+            ${buildProgressMapSilhouettePaths(stateId)}
+          </g>
+        `;
+      })
+      .join("");
     const pieces = US_PROGRESS_MAP_DATA.stateIds
       .map((stateId) => {
         const entry = US_PROGRESS_MAP_DATA.states?.[stateId];
@@ -273,7 +325,14 @@
       })
       .join("");
 
-    return `<svg class="progress-map" viewBox="0 0 ${mapWidth} ${mapHeight}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${pieces}</svg>`;
+    return `
+      <svg class="progress-map" viewBox="0 0 ${mapWidth} ${mapHeight}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <g class="progress-map__silhouette">
+          ${silhouette}
+        </g>
+        ${pieces}
+      </svg>
+    `;
   }
 
   function renderProgressMap() {
@@ -438,6 +497,13 @@
   }
 
   function advanceFromReveal() {
+    if (pendingKnowItAllSummary) {
+      const summary = pendingKnowItAllSummary;
+      pendingKnowItAllSummary = null;
+      window.location.href = buildSummaryHref(summary);
+      return;
+    }
+
     const outcome = advanceRun(run);
     awardGamePoints(outcome.awards);
 
@@ -459,12 +525,16 @@
     closeMapOverlay();
     const answerOutcome = answerRun(run, choiceId, options);
     run = answerOutcome.run;
+    playAnswerSound(run.reveal);
     awardGamePoints(answerOutcome.awards);
 
     if (isKnowItAllMode() && !run.reveal?.isCorrect) {
       const outcome = finalizeKnowItAllSummary(run, "miss");
       awardGamePoints(outcome.awards);
-      window.location.href = buildSummaryHref(outcome.summary);
+      pendingKnowItAllSummary = outcome.summary;
+      run.revealMsLeft = 0;
+      render();
+      focusSoon(elements.nextStateButton);
       return;
     }
 
@@ -590,6 +660,9 @@
       return;
     }
 
+    const showingKnowItAllGameOver = Boolean(pendingKnowItAllSummary);
+    const revealRegionRow = elements.revealRegion.parentElement;
+
     elements.revealBanner.textContent = run.reveal.isCorrect
       ? "Correct!"
       : run.reveal.timedOut
@@ -600,7 +673,13 @@
     elements.revealRegion.textContent = run.reveal.region;
     elements.revealMessage.textContent = buildRevealMessage(run.reveal);
     elements.revealFact.textContent = run.reveal.fact;
-    elements.nextStateButton.hidden = !getModeConfig().manualAdvance;
+    if (revealRegionRow) {
+      revealRegionRow.hidden = true;
+    }
+    elements.revealMessage.hidden = true;
+    elements.nextStateButton.hidden = !(getModeConfig().manualAdvance || showingKnowItAllGameOver);
+    elements.nextStateButton.textContent = showingKnowItAllGameOver ? "See Results" : "Next";
+    elements.revealMenuButton.textContent = showingKnowItAllGameOver ? "Exit to Menu" : "Menu";
   }
 
   function render() {
@@ -692,6 +771,7 @@
         const { choiceId } = button.dataset;
 
         if (choiceId) {
+          primeAudio();
           submitChoice(choiceId);
         }
       });
@@ -740,6 +820,7 @@
 
           if (choice) {
             event.preventDefault();
+            primeAudio();
             submitChoice(choice.id);
             return;
           }
@@ -749,7 +830,7 @@
       if (
         event.key === "Enter" &&
         run.phase === "reveal" &&
-        getModeConfig().manualAdvance &&
+        (getModeConfig().manualAdvance || Boolean(pendingKnowItAllSummary)) &&
         !run.reveal?.isCorrect
       ) {
         event.preventDefault();

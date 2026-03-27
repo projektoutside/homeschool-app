@@ -23,6 +23,13 @@ const LANDING_STORM_PHASES = new Set([
     'stormDissipate'
 ]);
 
+const PRE_VIDEO_DARK_ONLY_PHASES = new Set([
+    'stormPause',
+    'cloudFormation',
+    'escalation',
+    'transitionStrike'
+]);
+
 const DEFAULT_STRIKE_TARGET = Object.freeze({ x: 0.5, y: 0.48 });
 const FALLBACK_THEME = Object.freeze({
     overlayAccentA: 'rgba(245, 250, 255, 0.92)',
@@ -71,6 +78,7 @@ const CLOUD_FRAGMENT_SHADER = `\r
     uniform float uStormPulse;\r
     uniform float uHeroPulse;\r
     uniform float uAftershock;\r
+    uniform float uOccludedLightning;\r
     uniform vec3 uThemeA;\r
     uniform vec3 uThemeB;\r
     uniform vec3 uCloudTint;\r
@@ -185,6 +193,21 @@ const CLOUD_FRAGMENT_SHADER = `\r
         float webArc = exp(-pow((vUv.y - min(0.22, strike.y * 0.72)) * 3.8, 2.0)) * (0.38 + 0.62 * exp(-dx * dx * 1.2));\r
         float lightningWeb = webMask * webArc * uLightningWeb;\r
 \r
+        float forkTaper = smoothstep(strike.y + 0.16, -0.02, vUv.y);\r
+        float forkNoise = fbm(vec2(vUv.y * 18.0 + uTime * 0.12, strike.x * 7.4 + 3.1));\r
+        float forkDrift = (forkNoise - 0.5) * 0.18;\r
+        float forkColumn = exp(-pow((dx - forkDrift) * 26.0, 2.0)) * forkTaper;\r
+        float branchNoise = fbm(vec2(vUv.y * 24.0 - uTime * 0.08, strike.x * 11.0 + 9.7));\r
+        float branchSpan = (branchNoise - 0.5) * 0.32 * smoothstep(0.06, 0.56, strikeDepth);\r
+        float branchGate = smoothstep(0.1, 0.52, strikeDepth) * smoothstep(0.96, 0.26, strikeDepth);\r
+        float forkBranchA = exp(-pow((dx - forkDrift - branchSpan * 0.42) * 24.0, 2.0)) * forkTaper * branchGate;\r
+        float forkBranchB = exp(-pow((dx - forkDrift + branchSpan * 0.28) * 22.0, 2.0)) * forkTaper * branchGate * 0.78;\r
+        float occludedFork = (forkColumn * 0.78 + forkBranchA * 0.42 + forkBranchB * 0.28) *\r
+            uOccludedLightning *\r
+            highSky *\r
+            (0.38 + topOcclusion * 0.72) *\r
+            (0.42 + cloud * 0.44);\r
+\r
         float pulseRibbon = exp(-(dx * dx * 5.6 + strikeDepth * strikeDepth * 1.9)) * uStormPulse;\r
         float heroColumn = exp(-dx * dx * 3.2) * smoothstep(strike.y - 0.04, strike.y + 0.56, vUv.y) * (uHeroPulse * 0.42 + uAftershock * 0.26);\r
 \r
@@ -200,6 +223,7 @@ const CLOUD_FRAGMENT_SHADER = `\r
             uGroundGlow * groundAura * 0.18 +\r
             lightDiffusion * (0.82 + uStormPulse * 0.18) +\r
             lightningWeb * (0.74 + uStormPulse * 0.16) +\r
+            occludedFork * 0.24 +\r
             pulseRibbon * 0.16 +\r
             heroColumn * 0.34;\r
         float whiteLift = uFlash * highSky * 0.08;\r
@@ -216,9 +240,10 @@ const CLOUD_FRAGMENT_SHADER = `\r
             uThemeA * uMist * mistBand * 0.08 +\r
             auroraColor * (auroraSwirl * 0.34 + pulseRibbon * 0.12) +\r
             godRayColor * (godRays + heroColumn * 0.66) +\r
+            mix(webColor, energyColor, 0.22) * occludedFork * 0.34 +\r
             webColor * lightningWeb * (0.46 + uStormPulse * 0.12);\r
 \r
-        float alpha = clamp(ambientDark * 0.82 + illumination * 0.72 + uMist * mistBand * 0.12 + whiteLift + auroraSwirl * 0.22 + godRays * 0.56 + lightningWeb * 0.34 + lightDiffusion * 0.28 + heroColumn * 0.22, 0.0, 1.0);\r
+        float alpha = clamp(ambientDark * 0.82 + illumination * 0.72 + uMist * mistBand * 0.12 + whiteLift + auroraSwirl * 0.22 + godRays * 0.56 + lightningWeb * 0.34 + occludedFork * 0.18 + lightDiffusion * 0.28 + heroColumn * 0.22, 0.0, 1.0);\r
         gl_FragColor = vec4(color, alpha);\r
     }\r
 `;
@@ -930,6 +955,7 @@ export class LegendaryStormFxRenderer {
         this.vaporField = null;
         this.sparkField = null;
         this.qualityKey = '';
+        this.baseResolutionScale = 1;
         this.resolutionScale = 1;
         this.width = 0;
         this.height = 0;
@@ -1016,6 +1042,7 @@ export class LegendaryStormFxRenderer {
                     uStormPulse: { value: 0 },
                     uHeroPulse: { value: 0 },
                     uAftershock: { value: 0 },
+                    uOccludedLightning: { value: 0 },
                     uGodRayTint: { value: new THREE.Color(0xc8eeff) }
                 },
                 vertexShader: FULLSCREEN_VERTEX_SHADER,
@@ -1121,8 +1148,21 @@ export class LegendaryStormFxRenderer {
         }
         this.canvas.style.opacity = visible ? '1' : '0';
         this.canvas.style.visibility = visible ? 'visible' : 'hidden';
+        if (!visible) {
+            this.canvas.style.mixBlendMode = 'normal';
+            this.canvas.style.filter = 'none';
+        }
         this.overlayElement?.classList.toggle('legendary-storm-renderer-live', Boolean(visible));
         document.body?.classList.toggle('legendary-storm-renderer-live', Boolean(visible));
+    }
+
+    #syncCanvasPresentation(stormState) {
+        if (!this.canvas) {
+            return;
+        }
+        const preVideoDarkOnly = PRE_VIDEO_DARK_ONLY_PHASES.has(stormState?.phase);
+        this.canvas.style.mixBlendMode = preVideoDarkOnly ? 'multiply' : 'normal';
+        this.canvas.style.filter = preVideoDarkOnly ? 'brightness(0.74) saturate(0.88)' : 'none';
     }
 
     #resolveQuality(stormState) {
@@ -1133,11 +1173,30 @@ export class LegendaryStormFxRenderer {
             return nextKey;
         }
         this.qualityKey = nextKey;
-        this.resolutionScale = reduced ? 0.56 : lightweight ? 0.62 : 1;
+        this.baseResolutionScale = reduced ? 0.56 : lightweight ? 0.62 : 1;
+        this.resolutionScale = this.baseResolutionScale;
         this.bloomPass.strength = reduced ? 0.9 : lightweight ? 1.05 : 1.45;
         this.bloomPass.radius = reduced ? 0.28 : lightweight ? 0.34 : 0.46;
         this.bloomPass.threshold = reduced ? 0.08 : lightweight ? 0.07 : 0.045;
         return nextKey;
+    }
+
+    #resolvePhaseResolutionScale(stormState) {
+        const base = this.baseResolutionScale || 1;
+        const phase = stormState?.phase || 'idle';
+        if (this.qualityKey === 'reduced') {
+            return base;
+        }
+        if (phase === 'idleStormReveal') {
+            return base * (this.qualityKey === 'cinematic' ? 0.82 : 0.9);
+        }
+        if (phase === 'boxMaterialize') {
+            return base * (this.qualityKey === 'cinematic' ? 0.9 : 0.94);
+        }
+        if (phase === 'stormDissipate') {
+            return base * (this.qualityKey === 'cinematic' ? 0.78 : 0.88);
+        }
+        return base;
     }
 
     #ensureSize() {
@@ -1508,7 +1567,12 @@ export class LegendaryStormFxRenderer {
         const cloudSheet = clamp01(stormState?.cloudSheet || 0);
         const flash = clamp01(stormState?.flash || 0);
         const returnStroke = clamp01(stormState?.returnStroke || 0);
-        const landingPhase = LANDING_STORM_PHASES.has(stormState?.phase);
+        const phase = stormState?.phase;
+        const landingPhase = LANDING_STORM_PHASES.has(phase);
+        const preVideoDarkOnly = PRE_VIDEO_DARK_ONLY_PHASES.has(phase);
+        const introDarkenMix = preVideoDarkOnly
+            ? clamp01(Math.max(environmentMix * 0.94, darkness, clamp01(stormState?.nightfallProgress || 0) * 0.88))
+            : 0;
         const groundGlow = clamp01(stormState?.groundGlow || 0);
         const impactBloomGain = Math.max(0.7, theme?.impactBloomGain || 1);
         const groundSpillGain = Math.max(0.75, theme?.groundSpillGain || 1);
@@ -1519,35 +1583,48 @@ export class LegendaryStormFxRenderer {
         const impactBloom = clamp01(stormState?.impactBloom || 0);
         const impactCore = clamp01(stormState?.impactCore || 0);
         const impactRing = clamp01(stormState?.impactRing || 0);
+        const occludedLightning = clamp01(stormState?.occludedLightning || 0);
         const topOcclusion = clamp01((stormState?.nightfallProgress || 0) * 0.84 + environmentMix * 0.22 + darkness * 0.46);
         const lightDiffusion = clamp01(Math.max(cloudFlash * 0.54, flash * 0.48, landingGroundGlow * 0.3, impactCore * 0.32, revealEnergy * 0.26, godRayIntensity * 0.18));
         const lightningWeb = clamp01(Math.max(lightningMix * 0.82, clamp01(stormState?.boltBranchOpacity || 0) * 1.06, cloudSheet * 0.44));
         const stormPulse = clamp01(Math.max(returnStroke * 1.18, flash * 0.72, cloudFlash * 0.58, cloudSheet * 0.4));
         const heroPulse = clamp01(Math.max(revealEnergy * 0.86, godRayIntensity * 0.58, landingGroundGlow * 0.42));
         const aftershock = clamp01(Math.max(impactCore, impactBloom, landingGroundGlow * 0.64, returnStroke * 0.24));
+        const cloudFlashVisual = preVideoDarkOnly ? 0 : cloudFlash;
+        const cloudSheetVisual = preVideoDarkOnly ? 0 : cloudSheet;
+        const flashVisual = preVideoDarkOnly ? 0 : flash;
+        const returnStrokeVisual = preVideoDarkOnly ? 0 : returnStroke;
+        const mistVisual = preVideoDarkOnly ? mist * 0.18 * (1 - introDarkenMix * 0.3) : mist;
+        const godRayVisual = preVideoDarkOnly ? 0 : godRayIntensity * Math.max(0.8, theme?.godRayIntensityScale || 1);
+        const lightDiffusionVisual = preVideoDarkOnly ? 0 : lightDiffusion;
+        const lightningWebVisual = preVideoDarkOnly ? 0 : lightningWeb;
+        const stormPulseVisual = preVideoDarkOnly ? 0 : stormPulse;
+        const heroPulseVisual = preVideoDarkOnly ? 0 : heroPulse;
+        const aftershockVisual = preVideoDarkOnly ? 0 : aftershock;
         this.cloudMesh.material.uniforms.uTime.value = t;
         this.cloudMesh.material.uniforms.uStrikePos.value.set(strikeTarget.x, strikeTarget.y);
         this.cloudMesh.material.uniforms.uEnvironmentMix.value = environmentMix;
         this.cloudMesh.material.uniforms.uDarkness.value = darkness;
         this.cloudMesh.material.uniforms.uNightfallProgress.value = clamp01(stormState?.nightfallProgress || 0);
-        this.cloudMesh.material.uniforms.uCloudFlash.value = cloudFlash;
-        this.cloudMesh.material.uniforms.uCloudSheet.value = cloudSheet;
-        this.cloudMesh.material.uniforms.uFlash.value = flash;
-        this.cloudMesh.material.uniforms.uReturnStroke.value = returnStroke;
+        this.cloudMesh.material.uniforms.uCloudFlash.value = cloudFlashVisual;
+        this.cloudMesh.material.uniforms.uCloudSheet.value = cloudSheetVisual;
+        this.cloudMesh.material.uniforms.uFlash.value = flashVisual;
+        this.cloudMesh.material.uniforms.uReturnStroke.value = returnStrokeVisual;
         this.cloudMesh.material.uniforms.uGroundGlow.value = landingGroundGlow;
-        this.cloudMesh.material.uniforms.uMist.value = mist;
+        this.cloudMesh.material.uniforms.uMist.value = mistVisual;
         this.cloudMesh.material.uniforms.uVortexEnergy.value = clamp01(stormState?.vortexEnergy || 0);
-        this.cloudMesh.material.uniforms.uGodRayIntensity.value = godRayIntensity * Math.max(0.8, theme?.godRayIntensityScale || 1);
+        this.cloudMesh.material.uniforms.uGodRayIntensity.value = godRayVisual;
         this.cloudMesh.material.uniforms.uTopOcclusion.value = topOcclusion;
-        this.cloudMesh.material.uniforms.uLightDiffusion.value = lightDiffusion;
-        this.cloudMesh.material.uniforms.uLightningWeb.value = lightningWeb;
-        this.cloudMesh.material.uniforms.uStormPulse.value = stormPulse;
-        this.cloudMesh.material.uniforms.uHeroPulse.value = heroPulse;
-        this.cloudMesh.material.uniforms.uAftershock.value = aftershock;
+        this.cloudMesh.material.uniforms.uLightDiffusion.value = lightDiffusionVisual;
+        this.cloudMesh.material.uniforms.uLightningWeb.value = lightningWebVisual;
+        this.cloudMesh.material.uniforms.uStormPulse.value = stormPulseVisual;
+        this.cloudMesh.material.uniforms.uHeroPulse.value = heroPulseVisual;
+        this.cloudMesh.material.uniforms.uAftershock.value = aftershockVisual;
+        this.cloudMesh.material.uniforms.uOccludedLightning.value = occludedLightning;
         this.shockwavePass.uniforms.uChromaticAberration.value = clamp01(stormState?.chromaticAberration || 0);
         this.shockwavePass.uniforms.uScreenShake.value = clamp01(stormState?.screenShake || 0) * (stormState?.reducedMotion ? 0 : stormState?.lightweightMode ? 0.5 : 1);
         this.shockwavePass.uniforms.uVignetteStrength.value = clamp01(stormState?.vignetteStrength || 0);
-        this.shockwavePass.uniforms.uMotionBlur.value = clamp01((clamp01(stormState?.screenShake || 0) * 0.7 + returnStroke * 0.22 + cloudSheet * 0.18 + aftershock * 0.26) * (stormState?.reducedMotion ? 0 : stormState?.lightweightMode ? 0.4 : 1));
+        this.shockwavePass.uniforms.uMotionBlur.value = clamp01((clamp01(stormState?.screenShake || 0) * 0.7 + returnStrokeVisual * 0.22 + cloudSheetVisual * 0.18 + aftershockVisual * 0.26) * (stormState?.reducedMotion ? 0 : stormState?.lightweightMode ? 0.4 : 1));
         this.shockwavePass.uniforms.uTime.value = t;
 
         const impactIntensity = landingPhase
@@ -1606,16 +1683,20 @@ export class LegendaryStormFxRenderer {
         this.shockwavePass.uniforms.uStrength.value = shockStrength * (stormState?.reducedMotion ? 0.18 : stormState?.lightweightMode ? 0.72 : 1);
         this.shockwavePass.uniforms.uRadius.value = shockRadius;
         this.shockwavePass.uniforms.uEdge.value = landingPhase ? 0.09 : 0.04;
-        this.shockwavePass.uniforms.uReturnStroke.value = returnStroke;
+        this.shockwavePass.uniforms.uReturnStroke.value = returnStrokeVisual;
 
-        const peakLightning = clamp01(Math.max(returnStroke, cloudSheet, flash, landingGroundGlow * groundSpillGain, impactCore * impactBloomGain, lightDiffusion * 0.74, lightningWeb * 0.72, heroPulse * 0.5));
+        if (preVideoDarkOnly) {
+            this.bloomPass.strength = 0;
+            return;
+        }
+        const peakLightning = clamp01(Math.max(returnStrokeVisual, cloudSheetVisual, flashVisual, landingGroundGlow * groundSpillGain, impactCore * impactBloomGain, lightDiffusionVisual * 0.74, lightningWebVisual * 0.72, heroPulseVisual * 0.5));
         const bloomBase = this.qualityKey === 'reduced' ? 0.82 : this.qualityKey === 'lightweight' ? 1.02 : 1.34;
         const bloomBoost = stormState?.strikeVariant === 'landing'
             ? (this.qualityKey === 'cinematic' ? 0.84 : 0.5)
             : this.qualityKey === 'cinematic'
                 ? 0.68
                 : 0.38;
-        this.bloomPass.strength = bloomBase + peakLightning * bloomBoost * impactBloomGain + heroPulse * (this.qualityKey === 'cinematic' ? 0.24 : 0.1);
+        this.bloomPass.strength = bloomBase + peakLightning * bloomBoost * impactBloomGain + heroPulseVisual * (this.qualityKey === 'cinematic' ? 0.24 : 0.1);
     }
 
     #emitLandingBurst(theme, stormState) {
@@ -1806,8 +1887,18 @@ export class LegendaryStormFxRenderer {
         if (ambientRate <= 0.02) {
             return;
         }
-        this.ambientParticleCarry += ambientRate * qualityScale * safeDt * 16;
-        const emissionCount = Math.min(10, Math.floor(this.ambientParticleCarry));
+        const idleSettledTaper = phase === 'idleStormReveal'
+            ? THREE.MathUtils.lerp(
+                1,
+                this.qualityKey === 'cinematic' ? 0.48 : 0.58,
+                THREE.MathUtils.smoothstep(THREE.MathUtils.clamp(((stormState?.phaseTime || 0) - 1.2) / 3.2, 0, 1), 0, 1)
+            )
+            : 1;
+        this.ambientParticleCarry += ambientRate * qualityScale * idleSettledTaper * safeDt * 16;
+        const emissionCount = Math.min(
+            phase === 'idleStormReveal' ? 5 : 10,
+            Math.floor(this.ambientParticleCarry)
+        );
         if (emissionCount <= 0) {
             return;
         }
@@ -1901,6 +1992,7 @@ export class LegendaryStormFxRenderer {
         }
 
         this.#resolveQuality(stormState);
+        this.resolutionScale = this.#resolvePhaseResolutionScale(stormState);
         this.#ensureSize();
 
         const hasLiveParticles = this.vaporField.points.visible || this.smokeField.points.visible || this.sparkField.points.visible || this.craterPersistence > 0.014;
@@ -1922,6 +2014,7 @@ export class LegendaryStormFxRenderer {
         }
 
         this.#setCanvasVisible(true);
+        this.#syncCanvasPresentation(stormState);
         this.lastOverlayActive = true;
 
         if (stormState?.strikeGeometry !== this.lastStrikeGeometry || stormState?.strikeVariant !== this.lastStrikeVariant) {

@@ -326,7 +326,10 @@ const HTMLViewer: React.FC = () => {
         return migrateLegacyWorksheetPath(item?.customHtmlPath);
     }, [queryParams]);
 
-    const manifestSubjects = manifest?.subjects ?? [];
+    const manifestSubjects = useMemo(
+        () => manifest?.subjects ?? [],
+        [manifest],
+    );
     const rememberedEntry = useMemo(
         () => findWorksheetEntry(manifestSubjects, rememberedPath),
         [manifestSubjects, rememberedPath],
@@ -908,6 +911,10 @@ const HTMLViewer: React.FC = () => {
         () => ({ '--worksheet-app-scale': `${preferences.uiScale / 100}` } as React.CSSProperties),
         [preferences.uiScale],
     );
+    const selectedBuilderSubjectLabel = useMemo(
+        () => manifestSubjects.find((subject) => subject.slug === selectedBuilderSubject)?.label ?? 'Math',
+        [manifestSubjects, selectedBuilderSubject],
+    );
 
     const builderMessage = selectedBuilderSubject === 'math'
         ? 'Launch the existing Math Worksheet Creator Studio to build new printable math pages today.'
@@ -1106,7 +1113,7 @@ const HTMLViewer: React.FC = () => {
                                 <div className="worksheet-create__detail-card">
                                     <div>
                                         <span className="worksheet-create__detail-label">Selected Subject</span>
-                                        <h3>{manifestSubjects.find((subject) => subject.slug === selectedBuilderSubject)?.label ?? 'Math'}</h3>
+                                        <h3>{selectedBuilderSubjectLabel}</h3>
                                         <p>{builderMessage}</p>
                                     </div>
 
@@ -1117,7 +1124,7 @@ const HTMLViewer: React.FC = () => {
                                             </button>
                                         ) : (
                                             <button type="button" className="worksheet-secondary-button" onClick={() => goToScreen('open')}>
-                                                Browse Existing {manifestSubjects.find((subject) => subject.slug === selectedBuilderSubject)?.label ?? 'Worksheets'}
+                                                Browse Existing {selectedBuilderSubjectLabel}
                                             </button>
                                         )}
                                     </div>

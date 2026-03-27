@@ -127,13 +127,15 @@
         #gif-background {
             filter: saturate(1.1) contrast(1.06) brightness(0.92);
             opacity: 1;
-            transition: opacity 220ms ease;
+            transition: opacity 220ms ease, filter 920ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, filter;
         }
 
         #gif-background-fallback {
             opacity: 0;
-            transition: opacity 220ms ease;
+            transition: opacity 220ms ease, filter 920ms cubic-bezier(0.22, 1, 0.36, 1);
             filter: saturate(1.1) contrast(1.06) brightness(0.92);
+            will-change: opacity, filter;
         }
 
         #legendary-cutscene-video {
@@ -153,12 +155,53 @@
             will-change: opacity;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            filter: brightness(0.84) saturate(0.94) contrast(1.01);
             transform: translateZ(0);
             contain: paint;
         }
 
         #legendary-cutscene-video.active {
             visibility: visible;
+        }
+
+        #legendary-fog-source-video {
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+            background: transparent;
+        }
+
+        #legendary-fog-overlay {
+            position: fixed;
+            inset: auto;
+            left: calc(var(--homepage-viewport-left) - var(--legendary-storm-overscan) - var(--homepage-viewport-bleed));
+            top: calc(var(--homepage-viewport-top) - var(--legendary-storm-overscan) - var(--homepage-viewport-bleed));
+            width: calc(var(--homepage-viewport-width) + ((var(--legendary-storm-overscan) + var(--homepage-viewport-bleed)) * 2));
+            height: calc(var(--homepage-viewport-height) + ((var(--legendary-storm-overscan) + var(--homepage-viewport-bleed)) * 2));
+            pointer-events: none;
+            z-index: 93;
+            opacity: 0;
+            visibility: hidden;
+            background: transparent;
+            transition: opacity 140ms linear, visibility 0s linear 140ms;
+            will-change: opacity, transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translate3d(0, clamp(28px, 4.8vh, 60px), 0);
+            contain: paint;
+        }
+
+        #legendary-fog-overlay.active {
+            visibility: visible;
+            transition-delay: 0s;
+        }
+
+        #legendary-fog-overlay.under-video {
+            z-index: 87;
         }
 
         body.legendary-cutscene-playing #legendary-cutscene-video {
@@ -186,6 +229,9 @@
             height: calc(var(--homepage-viewport-height) + (var(--homepage-viewport-bleed) * 2));
             z-index: 1;
             pointer-events: none;
+            opacity: 1;
+            transition: opacity 980ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity;
             background:
                 radial-gradient(120% 78% at 50% 62%, rgba(126, 225, 255, 0.08) 0%, rgba(0, 0, 0, 0) 58%),
                 linear-gradient(180deg, rgba(2, 21, 42, 0.06) 0%, rgba(8, 19, 16, 0.03) 40%, rgba(5, 24, 15, 0.1) 100%);
@@ -281,6 +327,7 @@
             transform: translateZ(0);
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), filter 480ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         #legendary-storm-overlay.legendary-storm-enhanced.legendary-storm-renderer-live .legendary-storm-shade,
@@ -302,14 +349,31 @@
             display: none;
         }
 
-        body.legendary-storm-renderer-live #gif-background,
-        body.legendary-storm-renderer-live #gif-background-fallback {
+        body.legendary-storm-renderer-live:not(.legendary-storm-pre-video-dark-only) #gif-background,
+        body.legendary-storm-renderer-live:not(.legendary-storm-pre-video-dark-only) #gif-background-fallback {
             filter: none !important;
         }
 
-        body.legendary-storm-renderer-live #gif-tint {
+        body.legendary-storm-renderer-live:not(.legendary-storm-pre-video-dark-only) #gif-tint {
             opacity: 0 !important;
             background: none !important;
+        }
+
+        body.legendary-storm-renderer-live.legendary-storm-pre-video-dark-only #gif-background,
+        body.legendary-storm-renderer-live.legendary-storm-pre-video-dark-only #gif-background-fallback {
+            filter:
+                saturate(calc(1.1 - var(--legendary-storm-environment-mix) * 0.22))
+                contrast(calc(1.06 + var(--legendary-storm-environment-mix) * 0.08))
+                brightness(calc(0.92 - var(--legendary-storm-environment-mix) * 0.24 - var(--legendary-storm-darkness) * 0.16)) !important;
+        }
+
+        body.legendary-storm-renderer-live.legendary-storm-pre-video-dark-only #gif-tint {
+            opacity: 1 !important;
+            background:
+                radial-gradient(58% 34% at var(--legendary-storm-strike-x) 16%, rgba(255, 255, 255, calc(var(--legendary-storm-cloud-flare) * 0.12)) 0%, rgba(214, 235, 255, calc(var(--legendary-storm-cloud-flare) * 0.04)) 32%, rgba(255, 255, 255, 0) 66%),
+                linear-gradient(180deg, rgba(210, 232, 255, calc(var(--legendary-storm-flash) * 0.04)) 0%, rgba(126, 225, 255, calc(var(--legendary-storm-flash) * 0.02)) 18%, rgba(0, 0, 0, 0) 42%),
+                radial-gradient(120% 78% at 50% 62%, rgba(126, 225, 255, 0.08) 0%, rgba(0, 0, 0, 0) 58%),
+                linear-gradient(180deg, rgba(2, 21, 42, calc(0.06 + var(--legendary-storm-nightfall-progress) * 0.02 + var(--legendary-storm-darkness) * 0.22)) 0%, rgba(8, 19, 16, calc(0.03 + var(--legendary-storm-nightfall-progress) * 0.01 + var(--legendary-storm-darkness) * 0.14)) 40%, rgba(5, 24, 15, calc(0.1 + var(--legendary-storm-nightfall-progress) * 0.04 + var(--legendary-storm-darkness) * 0.4)) 100%) !important;
         }
 
         #legendary-storm-overlay .legendary-storm-shade {
@@ -613,17 +677,18 @@
         body.legendary-storm-active #gif-background,
         body.legendary-storm-active #gif-background-fallback {
             filter:
-                saturate(calc(1.05 - var(--legendary-storm-environment-mix) * 0.26))
+                saturate(calc(1.1 - var(--legendary-storm-environment-mix) * 0.31))
                 contrast(calc(1.06 + var(--legendary-storm-environment-mix) * 0.12))
-                brightness(calc(0.94 - var(--legendary-storm-environment-mix) * 0.36 - var(--legendary-storm-darkness) * 0.16));
+                brightness(calc(0.92 - var(--legendary-storm-environment-mix) * 0.32 - var(--legendary-storm-darkness) * 0.14));
         }
 
         body.legendary-storm-active #gif-tint {
-            opacity: calc(0.22 + var(--legendary-storm-darkness) * 0.62);
+            opacity: 1;
             background:
                 radial-gradient(58% 34% at var(--legendary-storm-strike-x) 16%, rgba(255, 255, 255, calc(var(--legendary-storm-cloud-flare) * 0.24)) 0%, rgba(214, 235, 255, calc(var(--legendary-storm-cloud-flare) * 0.08)) 32%, rgba(255, 255, 255, 0) 66%),
                 linear-gradient(180deg, rgba(210, 232, 255, calc(var(--legendary-storm-flash) * 0.08)) 0%, rgba(126, 225, 255, calc(var(--legendary-storm-flash) * 0.04)) 18%, rgba(0, 0, 0, 0) 42%),
-                linear-gradient(180deg, rgba(2, 12, 26, calc(0.04 + var(--legendary-storm-darkness) * 0.18)) 0%, rgba(5, 14, 20, calc(0.03 + var(--legendary-storm-darkness) * 0.12)) 40%, rgba(3, 12, 16, calc(0.08 + var(--legendary-storm-darkness) * 0.34)) 100%);
+                radial-gradient(120% 78% at 50% 62%, rgba(126, 225, 255, 0.08) 0%, rgba(0, 0, 0, 0) 58%),
+                linear-gradient(180deg, rgba(2, 21, 42, calc(0.06 + var(--legendary-storm-nightfall-progress) * 0.05 + var(--legendary-storm-darkness) * 0.18)) 0%, rgba(8, 19, 16, calc(0.03 + var(--legendary-storm-nightfall-progress) * 0.03 + var(--legendary-storm-darkness) * 0.12)) 40%, rgba(5, 24, 15, calc(0.1 + var(--legendary-storm-nightfall-progress) * 0.06 + var(--legendary-storm-darkness) * 0.34)) 100%);
         }
 
         body.legendary-storm-lite #legendary-storm-overlay {
@@ -636,9 +701,9 @@
         body.legendary-storm-active.legendary-storm-lite #gif-background,
         body.legendary-storm-active.legendary-storm-lite #gif-background-fallback {
             filter:
-                saturate(1)
-                contrast(1)
-                brightness(calc(0.9 - var(--legendary-storm-environment-mix) * 0.18));
+                saturate(1.1)
+                contrast(1.06)
+                brightness(calc(0.92 - var(--legendary-storm-environment-mix) * 0.18));
         }
 
         body.legendary-storm-lite #legendary-storm-overlay .legendary-storm-clouds-back,
@@ -4197,6 +4262,10 @@
     <video id="legendary-cutscene-video" muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback preload="auto" aria-hidden="true">
         <source src="./LegendaryAnimationScene.mp4" type="video/mp4">
     </video>
+    <video id="legendary-fog-source-video" muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback preload="auto" aria-hidden="true">
+        <source src="./darkclouds.mp4" type="video/mp4">
+    </video>
+    <canvas id="legendary-fog-overlay" aria-hidden="true"></canvas>
     <img id="gif-background-fallback" src="./windy_scene_loop_school_still_hyperreal_clouds_animated.webp" alt="" aria-hidden="true" decoding="async">
     <div id="gif-tint"></div>
     <div id="legendary-interaction-lock" aria-hidden="true" tabindex="-1"></div>
@@ -4425,6 +4494,12 @@
         let readHomepageMysteryTestOverride = () => null;
         let clearHomepageMysteryTestOverride = () => {};
         let buildHomepagePendingSummonRecovery = (payload) => payload || null;
+        const LEGENDARY_STORM_PRE_VIDEO_DARK_ONLY_PHASES = new Set([
+            'stormPause',
+            'cloudFormation',
+            'escalation',
+            'transitionStrike'
+        ]);
         let readHomepagePendingSummonRecovery = () => null;
         let persistHomepagePendingSummonRecovery = () => {};
         let clearHomepagePendingSummonRecovery = () => {};
@@ -10314,6 +10389,8 @@
         const startupFadeOverlay = document.getElementById('startup-fade-overlay');
         const gifBackgroundVideo = document.getElementById('gif-background');
         const legendaryCutsceneVideo = document.getElementById('legendary-cutscene-video');
+        const legendaryFogSourceVideo = document.getElementById('legendary-fog-source-video');
+        const legendaryFogOverlay = document.getElementById('legendary-fog-overlay');
         const gifBackgroundFallback = document.getElementById('gif-background-fallback');
         const legendaryInteractionLock = document.getElementById('legendary-interaction-lock');
         const backgroundMediaState = {
@@ -10324,6 +10401,32 @@
             stagnantTicks: 0,
             lastKnownTime: 0
         };
+        const legendaryFogOverlayState = {
+            active: false,
+            ready: false,
+            failed: false,
+            lastFailureReason: '',
+            presentationMode: 'inactive',
+            stackMode: 'front',
+            sourceAspect: 16 / 9,
+            resolutionScale: 0,
+            renderWidth: 0,
+            renderHeight: 0,
+            lastFrameTime: -1,
+            fadeOutActive: false,
+            fadeOutStartedAt: 0,
+            fadeOutDurationMs: 0,
+            fadeOutFromOpacity: 0,
+            fadeOutResetTime: true,
+            fadeOutClearFailure: false,
+            canvasContext: legendaryFogOverlay?.getContext('2d', { alpha: true, desynchronized: true }) || null,
+            workCanvas: document.createElement('canvas'),
+            workContext: null
+        };
+        legendaryFogOverlayState.workContext = legendaryFogOverlayState.workCanvas.getContext('2d', {
+            alpha: true,
+            willReadFrequently: true
+        }) || null;
         const categoryTitle = document.getElementById('category-title');
         const propPreviewPanel = document.getElementById('prop-preview-panel');
         const propPreviewViewport = document.getElementById('prop-preview-viewport');
@@ -11037,7 +11140,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         const HOME_PAGE_DEFAULT_MUSIC_TRACK_ID = 'homepage-track-3';
         const HOME_PAGE_MUSIC_CROSSFADE_SEC = 1.25;
         const HOME_PAGE_MUSIC_LOOP_CHECK_MS = 120;
-        const HOME_PAGE_ROUTE_FADE_OUT_MS = 2000;
+        const HOME_PAGE_ROUTE_FADE_OUT_MS = 320;
         const HOME_PAGE_ROUTE_FADE_IN_MS = 2000;
         const HOME_PAGE_MUSIC_ENTRY_DELAY_MS = 2000;
         const HOME_PAGE_MUSIC_FADE_IN_MS = 2000;
@@ -11569,6 +11672,498 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             try {
                 legendaryCutsceneVideo.disableRemotePlayback = true;
             } catch (_) {}
+        }
+
+        function configureLegendaryFogSourceVideoElement() {
+            if (!legendaryFogSourceVideo) {
+                return;
+            }
+            legendaryFogSourceVideo.loop = true;
+            legendaryFogSourceVideo.autoplay = false;
+            legendaryFogSourceVideo.preload = 'auto';
+            legendaryFogSourceVideo.playsInline = true;
+            legendaryFogSourceVideo.muted = true;
+            legendaryFogSourceVideo.defaultMuted = true;
+            legendaryFogSourceVideo.volume = 0;
+            try {
+                legendaryFogSourceVideo.setAttribute('playsinline', '');
+                legendaryFogSourceVideo.setAttribute('webkit-playsinline', 'true');
+                legendaryFogSourceVideo.setAttribute('disablepictureinpicture', '');
+                legendaryFogSourceVideo.setAttribute('disableremoteplayback', '');
+            } catch (_) {}
+            try {
+                legendaryFogSourceVideo.disablePictureInPicture = true;
+            } catch (_) {}
+            try {
+                legendaryFogSourceVideo.disableRemotePlayback = true;
+            } catch (_) {}
+        }
+
+        function clearLegendaryFogOverlayCanvas() {
+            const canvas = legendaryFogOverlay;
+            const ctx = legendaryFogOverlayState.canvasContext;
+            if (!canvas || !ctx || canvas.width <= 0 || canvas.height <= 0) {
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function syncLegendaryFogOverlayPlaybackReadiness() {
+            if (!legendaryFogSourceVideo) {
+                legendaryFogOverlayState.ready = false;
+                return false;
+            }
+            const videoWidth = legendaryFogSourceVideo.videoWidth || 0;
+            const videoHeight = legendaryFogSourceVideo.videoHeight || 0;
+            if (videoWidth > 0 && videoHeight > 0) {
+                legendaryFogOverlayState.sourceAspect = videoWidth / Math.max(1, videoHeight);
+            }
+            const ready = legendaryFogSourceVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+            legendaryFogOverlayState.ready = ready;
+            if (ready) {
+                legendaryFogOverlayState.failed = false;
+                legendaryFogOverlayState.lastFailureReason = '';
+            }
+            return ready;
+        }
+
+        function resetLegendaryFogOverlayFadeOutState() {
+            legendaryFogOverlayState.fadeOutActive = false;
+            legendaryFogOverlayState.fadeOutStartedAt = 0;
+            legendaryFogOverlayState.fadeOutDurationMs = 0;
+            legendaryFogOverlayState.fadeOutFromOpacity = 0;
+            legendaryFogOverlayState.fadeOutResetTime = true;
+            legendaryFogOverlayState.fadeOutClearFailure = false;
+        }
+
+        function resolveLegendaryFogOverlayBaseOpacity(theme = null) {
+            const themeMaxOpacity = Number.isFinite(theme?.fogOverlayMaxOpacity)
+                ? theme.fogOverlayMaxOpacity
+                : 1;
+            return THREE.MathUtils.clamp(
+                Math.min(legendaryStormState.fogOpacity || 0, themeMaxOpacity),
+                0,
+                1
+            );
+        }
+
+        function resetLegendaryFogOverlayPresentationState({ clearFailure = false } = {}) {
+            legendaryFogOverlayState.active = false;
+            legendaryFogOverlayState.ready = false;
+            legendaryFogOverlayState.lastFrameTime = -1;
+            legendaryFogOverlayState.presentationMode = 'inactive';
+            legendaryFogOverlayState.stackMode = 'front';
+            resetLegendaryFogOverlayFadeOutState();
+            if (clearFailure) {
+                legendaryFogOverlayState.failed = false;
+                legendaryFogOverlayState.lastFailureReason = '';
+            }
+        }
+
+        function getLegendaryFogOverlayFadeOutOpacity() {
+            if (!legendaryFogOverlayState.fadeOutActive) {
+                return 0;
+            }
+            const durationMs = Math.max(1, sanitizeFiniteNumber(legendaryFogOverlayState.fadeOutDurationMs, 0));
+            const startedAt = sanitizeFiniteNumber(legendaryFogOverlayState.fadeOutStartedAt, 0);
+            const progress = THREE.MathUtils.clamp((performance.now() - startedAt) / durationMs, 0, 1);
+            const opacity = THREE.MathUtils.clamp(
+                sanitizeFiniteNumber(legendaryFogOverlayState.fadeOutFromOpacity, 0) *
+                    (1 - THREE.MathUtils.smoothstep(progress, 0, 1)),
+                0,
+                1
+            );
+            if (progress >= 1 || opacity <= 0.001) {
+                const resetTime = legendaryFogOverlayState.fadeOutResetTime;
+                const clearFailure = legendaryFogOverlayState.fadeOutClearFailure;
+                if (legendaryFogSourceVideo) {
+                    try {
+                        legendaryFogSourceVideo.pause();
+                    } catch (_) {}
+                    if (resetTime) {
+                        try {
+                            legendaryFogSourceVideo.currentTime = 0;
+                        } catch (_) {}
+                    }
+                    configureLegendaryFogSourceVideoElement();
+                }
+                resetLegendaryFogOverlayPresentationState({ clearFailure });
+                return 0;
+            }
+            return opacity;
+        }
+
+        function syncLegendaryFogOverlayVisuals(theme = null) {
+            if (!legendaryFogOverlay) {
+                return;
+            }
+            const introConcealed = shouldConcealLegendaryStormVisualPresentation();
+            const liveOpacity = resolveLegendaryFogOverlayBaseOpacity(theme);
+            const liveActive = Boolean(
+                legendaryStormState.active &&
+                !legendaryStormState.reducedMotion &&
+                legendaryFogOverlayState.active &&
+                legendaryFogOverlayState.ready &&
+                !legendaryFogOverlayState.failed &&
+                !introConcealed &&
+                liveOpacity > 0.001
+            );
+            const fadeOpacity = getLegendaryFogOverlayFadeOutOpacity();
+            const opacity = liveActive ? liveOpacity : fadeOpacity;
+            const visible = opacity > 0.001;
+            legendaryFogOverlay.classList.toggle('active', visible);
+            legendaryFogOverlay.classList.toggle(
+                'under-video',
+                Boolean(visible && legendaryFogOverlayState.stackMode === 'under-video')
+            );
+            legendaryFogOverlay.style.opacity = opacity.toFixed(3);
+            if (!visible) {
+                clearLegendaryFogOverlayCanvas();
+            }
+        }
+
+        function stopLegendaryFogOverlayPlayback({ resetTime = true, clearFailure = false } = {}) {
+            if (legendaryFogSourceVideo) {
+                try {
+                    legendaryFogSourceVideo.pause();
+                } catch (_) {}
+                if (resetTime) {
+                    try {
+                        legendaryFogSourceVideo.currentTime = 0;
+                    } catch (_) {}
+                }
+                configureLegendaryFogSourceVideoElement();
+            }
+            resetLegendaryFogOverlayPresentationState({ clearFailure });
+            syncLegendaryFogOverlayVisuals();
+        }
+
+        function fadeOutLegendaryFogOverlayPlayback({
+            durationMs = 220,
+            resetTime = true,
+            clearFailure = false,
+            stackMode = 'front'
+        } = {}) {
+            if (!legendaryFogOverlay || !legendaryFogSourceVideo) {
+                stopLegendaryFogOverlayPlayback({ resetTime, clearFailure });
+                return false;
+            }
+            const theme = getLegendaryStormTheme(legendaryStormState.rarityKey);
+            let currentOpacity = Number.parseFloat(legendaryFogOverlay.style.opacity || '');
+            if (!Number.isFinite(currentOpacity)) {
+                currentOpacity = resolveLegendaryFogOverlayBaseOpacity(theme);
+            }
+            currentOpacity = THREE.MathUtils.clamp(currentOpacity, 0, 1);
+            if (
+                currentOpacity <= 0.001 ||
+                !legendaryFogOverlayState.ready ||
+                legendaryFogOverlayState.failed
+            ) {
+                stopLegendaryFogOverlayPlayback({ resetTime, clearFailure });
+                return false;
+            }
+            try {
+                legendaryFogSourceVideo.pause();
+            } catch (_) {}
+            legendaryFogOverlayState.active = false;
+            legendaryFogOverlayState.presentationMode = stackMode === 'under-video' ? 'frozen-under-video' : 'frozen';
+            legendaryFogOverlayState.stackMode = stackMode === 'under-video' ? 'under-video' : 'front';
+            legendaryFogOverlayState.fadeOutActive = true;
+            legendaryFogOverlayState.fadeOutStartedAt = performance.now();
+            legendaryFogOverlayState.fadeOutDurationMs = Math.max(1, sanitizeFiniteNumber(durationMs, 220));
+            legendaryFogOverlayState.fadeOutFromOpacity = currentOpacity;
+            legendaryFogOverlayState.fadeOutResetTime = resetTime;
+            legendaryFogOverlayState.fadeOutClearFailure = clearFailure;
+            syncLegendaryFogOverlayVisuals(theme);
+            return true;
+        }
+
+        function beginLegendaryFogOverlayVideoHandoff({ durationMs = 220, force = false } = {}) {
+            if (legendaryFogOverlayState.fadeOutActive) {
+                legendaryFogOverlayState.presentationMode = 'frozen-under-video';
+                legendaryFogOverlayState.stackMode = 'under-video';
+                syncLegendaryFogOverlayVisuals(getLegendaryStormTheme(legendaryStormState.rarityKey));
+                return true;
+            }
+            if (!legendaryFogOverlayState.active || legendaryFogOverlayState.failed) {
+                if (force) {
+                    stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: false });
+                }
+                return false;
+            }
+            return fadeOutLegendaryFogOverlayPlayback({
+                durationMs,
+                resetTime: true,
+                clearFailure: false,
+                stackMode: 'under-video'
+            });
+        }
+
+        function maybeStartLegendaryFogOverlayVideoHandoffFade({ force = false } = {}) {
+            if (
+                !legendaryStormState.active ||
+                (
+                    legendaryStormState.phase !== 'transitionStrike' &&
+                    !(force && legendaryStormState.phase === 'videoPlayback')
+                ) ||
+                legendaryFogOverlayState.failed ||
+                !legendaryStormState.videoFrameReady
+            ) {
+                return false;
+            }
+            const phaseDuration = Math.max(
+                0.001,
+                sanitizeFiniteNumber(
+                    legendaryStormState.phaseDuration,
+                    sanitizeFiniteNumber(legendaryStormState.timings?.[legendaryStormState.phase], 0)
+                )
+            );
+            const phaseProgress = THREE.MathUtils.clamp(
+                sanitizeFiniteNumber(legendaryStormState.phaseTime, 0) / phaseDuration,
+                0,
+                1
+            );
+            const handoffLeadThreshold = legendaryStormState.reducedMotion
+                ? 0.3
+                : legendaryStormState.lightweightMode
+                    ? 0.36
+                    : 0.4;
+            const coverThreshold = legendaryStormState.reducedMotion
+                ? 0.03
+                : legendaryStormState.lightweightMode
+                    ? 0.045
+                    : 0.06;
+            const videoCoverOpacity = THREE.MathUtils.clamp(
+                sanitizeFiniteNumber(legendaryStormState.videoOpacity, 0),
+                0,
+                1
+            );
+            if (!force && (phaseProgress < handoffLeadThreshold || videoCoverOpacity < coverThreshold)) {
+                return false;
+            }
+            return beginLegendaryFogOverlayVideoHandoff({
+                durationMs: force
+                    ? (legendaryStormState.reducedMotion ? 140 : legendaryStormState.lightweightMode ? 180 : 220)
+                    : (legendaryStormState.reducedMotion ? 160 : legendaryStormState.lightweightMode ? 220 : 280),
+                force
+            });
+        }
+
+        function markLegendaryFogOverlayFailure(reason = 'media-error') {
+            legendaryFogOverlayState.failed = true;
+            legendaryFogOverlayState.lastFailureReason = reason;
+            stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: false });
+            return false;
+        }
+
+        function startLegendaryFogOverlayPlayback() {
+            if (
+                !legendaryFogSourceVideo ||
+                !legendaryFogOverlay ||
+                !legendaryStormState.active ||
+                legendaryStormState.reducedMotion
+            ) {
+                stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: false });
+                return false;
+            }
+            if (legendaryFogOverlayState.failed) {
+                return false;
+            }
+            configureLegendaryFogSourceVideoElement();
+            resetLegendaryFogOverlayFadeOutState();
+            legendaryFogOverlayState.active = true;
+            legendaryFogOverlayState.lastFrameTime = -1;
+            legendaryFogOverlayState.presentationMode = 'live';
+            legendaryFogOverlayState.stackMode = 'front';
+            legendaryFogOverlayState.ready = legendaryFogSourceVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+            try {
+                legendaryFogSourceVideo.pause();
+            } catch (_) {}
+            try {
+                legendaryFogSourceVideo.currentTime = 0;
+            } catch (_) {}
+            if (legendaryFogSourceVideo.networkState === HTMLMediaElement.NETWORK_EMPTY) {
+                try {
+                    legendaryFogSourceVideo.load();
+                } catch (_) {}
+            }
+            syncLegendaryFogOverlayVisuals(getLegendaryStormTheme(legendaryStormState.rarityKey));
+            const playAttempt = legendaryFogSourceVideo.play();
+            if (playAttempt && typeof playAttempt.catch === 'function') {
+                playAttempt.catch(() => {
+                    markLegendaryFogOverlayFailure('play-rejected');
+                });
+            }
+            return true;
+        }
+
+        function ensureLegendaryFogOverlayCanvasSize(resolutionScale) {
+            if (!legendaryFogOverlay || !legendaryFogOverlayState.canvasContext || !legendaryFogOverlayState.workContext) {
+                return false;
+            }
+            const rect = legendaryFogOverlay.getBoundingClientRect();
+            const width = Math.max(1, Math.round(rect.width));
+            const height = Math.max(1, Math.round(rect.height));
+            const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 1.5));
+            const nextWidth = Math.max(1, Math.round(width * dpr * resolutionScale));
+            const nextHeight = Math.max(1, Math.round(height * dpr * resolutionScale));
+            if (
+                nextWidth === legendaryFogOverlayState.renderWidth &&
+                nextHeight === legendaryFogOverlayState.renderHeight &&
+                Math.abs((legendaryFogOverlayState.resolutionScale || 0) - resolutionScale) < 0.001
+            ) {
+                return false;
+            }
+            legendaryFogOverlayState.renderWidth = nextWidth;
+            legendaryFogOverlayState.renderHeight = nextHeight;
+            legendaryFogOverlayState.resolutionScale = resolutionScale;
+            legendaryFogOverlay.width = nextWidth;
+            legendaryFogOverlay.height = nextHeight;
+            legendaryFogOverlayState.workCanvas.width = nextWidth;
+            legendaryFogOverlayState.workCanvas.height = nextHeight;
+            legendaryFogOverlayState.lastFrameTime = -1;
+            clearLegendaryFogOverlayCanvas();
+            return true;
+        }
+
+        function getLegendaryFogOverlayRenderProfile() {
+            const phase = legendaryStormState.phase;
+            if (phase === 'idleStormReveal') {
+                return {
+                    resolutionScale: legendaryStormState.lightweightMode ? 0.46 : 0.56,
+                    minFrameDelta: 1 / 24
+                };
+            }
+            if (phase === 'boxMaterialize') {
+                return {
+                    resolutionScale: legendaryStormState.lightweightMode ? 0.48 : 0.62,
+                    minFrameDelta: 1 / 28
+                };
+            }
+            if (phase === 'postVideoStormHold' || phase === 'stormDissipate') {
+                return {
+                    resolutionScale: legendaryStormState.lightweightMode ? 0.5 : 0.64,
+                    minFrameDelta: 1 / 30
+                };
+            }
+            return {
+                resolutionScale: legendaryStormState.lightweightMode ? 0.52 : 0.72,
+                minFrameDelta: 1 / 90
+            };
+        }
+
+        function renderLegendaryFogOverlay(theme = null) {
+            if (
+                !legendaryFogOverlay ||
+                !legendaryFogSourceVideo ||
+                !legendaryFogOverlayState.canvasContext ||
+                !legendaryFogOverlayState.workContext
+            ) {
+                return;
+            }
+            const introConcealed = shouldConcealLegendaryStormVisualPresentation();
+            const liveOpacity = resolveLegendaryFogOverlayBaseOpacity(theme);
+            const liveVisible = Boolean(
+                legendaryStormState.active &&
+                !legendaryStormState.reducedMotion &&
+                legendaryFogOverlayState.active &&
+                !legendaryFogOverlayState.failed &&
+                legendaryFogOverlayState.ready &&
+                !introConcealed &&
+                liveOpacity > 0.001
+            );
+            const fadeOpacity = getLegendaryFogOverlayFadeOutOpacity();
+            const visible = Boolean(liveVisible || fadeOpacity > 0.001);
+            if (!visible) {
+                clearLegendaryFogOverlayCanvas();
+                return;
+            }
+            if (!liveVisible) {
+                return;
+            }
+
+            const renderProfile = getLegendaryFogOverlayRenderProfile();
+            const resized = ensureLegendaryFogOverlayCanvasSize(renderProfile.resolutionScale);
+            const videoTime = Number.isFinite(legendaryFogSourceVideo.currentTime)
+                ? legendaryFogSourceVideo.currentTime
+                : 0;
+            if (!resized && Math.abs(videoTime - legendaryFogOverlayState.lastFrameTime) < renderProfile.minFrameDelta) {
+                return;
+            }
+            legendaryFogOverlayState.lastFrameTime = videoTime;
+
+            const renderWidth = legendaryFogOverlayState.renderWidth;
+            const renderHeight = legendaryFogOverlayState.renderHeight;
+            if (renderWidth <= 0 || renderHeight <= 0) {
+                return;
+            }
+
+            const videoWidth = legendaryFogSourceVideo.videoWidth || 1280;
+            const videoHeight = legendaryFogSourceVideo.videoHeight || 720;
+            let sourceX = 0;
+            let sourceY = 0;
+            let sourceWidth = videoWidth;
+            let sourceHeight = videoHeight;
+            const targetAspect = renderWidth / Math.max(1, renderHeight);
+            const sourceAspect = videoWidth / Math.max(1, videoHeight);
+            if (sourceAspect > targetAspect) {
+                sourceWidth = Math.max(1, Math.round(videoHeight * targetAspect));
+                sourceX = Math.max(0, Math.round((videoWidth - sourceWidth) * 0.5));
+            } else if (sourceAspect < targetAspect) {
+                sourceHeight = Math.max(1, Math.round(videoWidth / targetAspect));
+                sourceY = Math.max(0, Math.round((videoHeight - sourceHeight) * 0.5));
+            }
+
+            const workCtx = legendaryFogOverlayState.workContext;
+            const outputCtx = legendaryFogOverlayState.canvasContext;
+            workCtx.clearRect(0, 0, renderWidth, renderHeight);
+            workCtx.drawImage(
+                legendaryFogSourceVideo,
+                sourceX,
+                sourceY,
+                sourceWidth,
+                sourceHeight,
+                0,
+                0,
+                renderWidth,
+                renderHeight
+            );
+
+            const imageData = workCtx.getImageData(0, 0, renderWidth, renderHeight);
+            const pixels = imageData.data;
+            const density = Number.isFinite(theme?.fogOverlayDensity) ? theme.fogOverlayDensity : 1;
+            const brightness = THREE.MathUtils.clamp(
+                Number.isFinite(theme?.fogOverlayBrightness) ? theme.fogOverlayBrightness : 1,
+                0.18,
+                1
+            );
+            for (let index = 0; index < pixels.length; index += 4) {
+                const red = pixels[index];
+                const green = pixels[index + 1];
+                const blue = pixels[index + 2];
+                const maxChannel = Math.max(red, green, blue);
+                const minChannel = Math.min(red, green, blue);
+                const chroma = maxChannel - minChannel;
+                const luma = (red * 0.2126) + (green * 0.7152) + (blue * 0.0722);
+                const darkness = 255 - luma;
+                const baseAlpha = THREE.MathUtils.smoothstep(darkness, 8, 116);
+                const whiteSpill = THREE.MathUtils.smoothstep(luma, 214, 252) * (1 - THREE.MathUtils.smoothstep(chroma, 10, 46));
+                let alpha = baseAlpha * (1 - whiteSpill * 0.94);
+                alpha = Math.pow(THREE.MathUtils.clamp(alpha, 0, 1), legendaryStormState.rarityKey === MYSTERY_BOX_RARITY.LEGENDARY_LIGHT ? 1.26 : 1.04);
+                alpha *= density;
+                if (alpha <= 0.018) {
+                    pixels[index + 3] = 0;
+                    continue;
+                }
+                const despill = whiteSpill * 0.58;
+                pixels[index] = Math.round(THREE.MathUtils.clamp(THREE.MathUtils.lerp(red * brightness, red * 0.46, despill), 0, 255));
+                pixels[index + 1] = Math.round(THREE.MathUtils.clamp(THREE.MathUtils.lerp(green * brightness, green * 0.46, despill), 0, 255));
+                pixels[index + 2] = Math.round(THREE.MathUtils.clamp(THREE.MathUtils.lerp(blue * brightness, blue * 0.46, despill), 0, 255));
+                pixels[index + 3] = Math.round(THREE.MathUtils.clamp(alpha, 0, 1) * 255);
+            }
+
+            outputCtx.clearRect(0, 0, renderWidth, renderHeight);
+            outputCtx.putImageData(imageData, 0, 0);
         }
 
         function releaseLegendaryCutscenePreparedAudio() {
@@ -12901,6 +13496,29 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryCutsceneVideo.addEventListener('error', handleLegendaryCutsceneError);
                 legendaryCutsceneVideo.addEventListener('abort', () => {
                     legendaryCutsceneStartupState.lastFailureReason = 'media-abort';
+                });
+            }
+
+            if (legendaryFogSourceVideo) {
+                configureLegendaryFogSourceVideoElement();
+                const syncLegendaryFogReadiness = () => {
+                    syncLegendaryFogOverlayPlaybackReadiness();
+                };
+                legendaryFogSourceVideo.addEventListener('loadedmetadata', syncLegendaryFogReadiness);
+                legendaryFogSourceVideo.addEventListener('loadeddata', syncLegendaryFogReadiness);
+                legendaryFogSourceVideo.addEventListener('canplay', syncLegendaryFogReadiness);
+                legendaryFogSourceVideo.addEventListener('playing', syncLegendaryFogReadiness);
+                legendaryFogSourceVideo.addEventListener('ended', () => {
+                    if (legendaryFogSourceVideo.loop && legendaryFogOverlayState.active && legendaryStormState.active) {
+                        syncLegendaryFogOverlayPlaybackReadiness();
+                        return;
+                    }
+                    legendaryFogOverlayState.ready = false;
+                });
+                legendaryFogSourceVideo.addEventListener('error', () => {
+                    if (legendaryFogOverlayState.active) {
+                        markLegendaryFogOverlayFailure('media-error');
+                    }
                 });
             }
 
@@ -14589,6 +15207,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             active: false,
             phase: 'idle',
             phaseTime: 0,
+            phaseDuration: 0,
+            phaseProgress: 0,
             totalTime: 0,
             nextStrikeRefreshAt: 0,
             lastDissipateReason: null,
@@ -14624,6 +15244,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             impactRadius: 0,
             previewBlend: 0,
             revealEnergy: 0,
+            fogOpacity: 0,
+            occludedLightning: 0,
             seed: 0,
             strikeGeometry: null,
             strikeVariant: 'none',
@@ -14669,14 +15291,26 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             return target;
         }
 
+        function syncLegendaryStormPhaseTimingSnapshot(target = legendaryStormState) {
+            if (!target) {
+                return { phaseDuration: 0, phaseProgress: 0 };
+            }
+            const phase = target.phase || 'idle';
+            const timings = target.timings || null;
+            const phaseDuration = timings && Number.isFinite(timings[phase]) ? timings[phase] : 0;
+            const phaseProgress = phaseDuration > 0
+                ? THREE.MathUtils.clamp((target.phaseTime || 0) / phaseDuration, 0, 1)
+                : 0;
+            target.phaseDuration = phaseDuration;
+            target.phaseProgress = phaseProgress;
+            return { phaseDuration, phaseProgress };
+        }
+
         function getLegendaryStormDebugSnapshot() {
             const storm = legendaryStormState;
             const phase = storm.phase || 'idle';
             const timings = storm.timings || null;
-            const phaseDuration = timings && Number.isFinite(timings[phase]) ? timings[phase] : 0;
-            const phaseProgress = phaseDuration > 0
-                ? THREE.MathUtils.clamp(storm.phaseTime / phaseDuration, 0, 1)
-                : 0;
+            const { phaseDuration, phaseProgress } = syncLegendaryStormPhaseTimingSnapshot(storm);
             return {
                 active: Boolean(storm.active),
                 phase,
@@ -14716,6 +15350,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     frameReady: Boolean(storm.videoFrameReady),
                     ended: Boolean(storm.videoEnded),
                     failed: Boolean(storm.videoFailed)
+                },
+                fog: {
+                    active: Boolean(legendaryFogOverlayState.active),
+                    ready: Boolean(legendaryFogOverlayState.ready),
+                    failed: Boolean(legendaryFogOverlayState.failed),
+                    presentationMode: legendaryFogOverlayState.presentationMode,
+                    stackMode: legendaryFogOverlayState.stackMode,
+                    fadeOutActive: Boolean(legendaryFogOverlayState.fadeOutActive),
+                    opacity: sanitizeFiniteNumber(storm.fogOpacity, 0),
+                    failureReason: legendaryFogOverlayState.lastFailureReason || null
                 },
                 landing: {
                     impactTriggered: Boolean(storm.landingImpactTriggered),
@@ -15266,6 +15910,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             if (nextPhase === 'cloudFormation') {
                 prepareLegendaryStormStrikeGeometry('anticipation');
                 setLegendaryStormStrikeRefresh(0.72, 1.14);
+                startLegendaryFogOverlayPlayback();
                 fadeOutHomePageAudioForLegendaryCutscene({
                     durationMs: (
                         (legendaryStormState.timings?.cloudFormation || LEGENDARY_STORM_CONFIG.cloudFormationDuration) +
@@ -15279,37 +15924,55 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 prepareLegendaryStormStrikeGeometry('transition');
                 pauseBackgroundPlaybackImmediately();
                 startLegendaryCutsceneVideoPlayback({ initialOpacity: 0 });
-            } else if (LEGENDARY_STORM_PERSISTENT_STRIKE_PHASES.has(nextPhase)) {
-                prepareLegendaryStormStrikeGeometry('persistent');
-                setLegendaryStormStrikeRefresh(
-                    nextPhase === 'idleStormReveal' ? 0.78 : 0.58,
-                    nextPhase === 'idleStormReveal' ? 1.42 : 1.04
-                );
-                if (nextPhase === 'postVideoStormHold') {
-                    legendaryStormState.environmentMix = 0.18;
-                    legendaryStormState.darkness = 0.02;
-                    legendaryStormState.mist = 0.03;
-                    legendaryStormState.flash = 0.4;
-                    legendaryStormState.whiteout = 1;
-                    legendaryStormState.nightfallProgress = 0.04;
-                    legendaryStormState.lightningMix = 0.12;
-                    legendaryStormState.boltOpacity = 0;
-                    legendaryStormState.cloudFlash = 0.4;
-                    legendaryStormState.cloudSheet = 0.82;
-                    legendaryStormState.groundGlow = 0;
-                    legendaryStormState.boltGlowOpacity = 0.04;
-                    legendaryStormState.boltBranchOpacity = 0;
-                    legendaryStormState.returnStroke = 0;
-                    legendaryStormState.overlayOpacity = 1;
+            } else {
+                const shouldRestartFogOverlay = nextPhase === 'postVideoStormHold';
+                const shouldKeepFogOverlayActive =
+                    shouldRestartFogOverlay ||
+                    nextPhase === 'targetedImpact' ||
+                    nextPhase === 'boxMaterialize' ||
+                    nextPhase === 'idleStormReveal' ||
+                    nextPhase === 'stormDissipate';
+                if (nextPhase === 'videoPlayback') {
+                    maybeStartLegendaryFogOverlayVideoHandoffFade({ force: true });
+                } else if (shouldRestartFogOverlay) {
+                    stopLegendaryCutsceneVideoPlayback();
                     legendaryStormState.videoOpacity = 0;
+                    startLegendaryFogOverlayPlayback();
+                } else if (!shouldKeepFogOverlayActive) {
+                    stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: false });
                 }
-                if (nextPhase === 'idleStormReveal') {
-                    unlockMysteryInteractionsNow();
+                if (LEGENDARY_STORM_PERSISTENT_STRIKE_PHASES.has(nextPhase)) {
+                    prepareLegendaryStormStrikeGeometry('persistent');
+                    setLegendaryStormStrikeRefresh(
+                        nextPhase === 'idleStormReveal' ? 0.78 : 0.58,
+                        nextPhase === 'idleStormReveal' ? 1.42 : 1.04
+                    );
+                    if (nextPhase === 'postVideoStormHold') {
+                        legendaryStormState.environmentMix = 0.18;
+                        legendaryStormState.darkness = 0.02;
+                        legendaryStormState.mist = 0.03;
+                        legendaryStormState.flash = 0.4;
+                        legendaryStormState.whiteout = 1;
+                        legendaryStormState.nightfallProgress = 0.04;
+                        legendaryStormState.lightningMix = 0.12;
+                        legendaryStormState.boltOpacity = 0;
+                        legendaryStormState.cloudFlash = 0.4;
+                        legendaryStormState.cloudSheet = 0.82;
+                        legendaryStormState.groundGlow = 0;
+                        legendaryStormState.boltGlowOpacity = 0.04;
+                        legendaryStormState.boltBranchOpacity = 0;
+                        legendaryStormState.returnStroke = 0;
+                        legendaryStormState.overlayOpacity = 1;
+                        legendaryStormState.videoOpacity = 0;
+                    }
+                    if (nextPhase === 'idleStormReveal') {
+                        unlockMysteryInteractionsNow();
+                    }
+                } else if (nextPhase === 'targetedImpact') {
+                    prepareLegendaryStormStrikeGeometry('landing');
+                } else if (LEGENDARY_STORM_CLEARED_STRIKE_PHASES.has(nextPhase)) {
+                    clearLegendaryStormStrikeGeometry();
                 }
-            } else if (nextPhase === 'targetedImpact') {
-                prepareLegendaryStormStrikeGeometry('landing');
-            } else if (LEGENDARY_STORM_CLEARED_STRIKE_PHASES.has(nextPhase)) {
-                clearLegendaryStormStrikeGeometry();
             }
         }
 
@@ -15576,9 +16239,45 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryStormState.impactRing > 0.001 ||
                 legendaryStormState.previewBlend > 0.001 ||
                 legendaryStormState.revealEnergy > 0.001 ||
+                legendaryStormState.fogOpacity > 0.001 ||
+                legendaryStormState.occludedLightning > 0.001 ||
                 legendaryStormState.videoOpacity > 0.001 ||
                 legendaryStormState.godRayIntensity > 0.001 ||
                 legendaryStormState.vortexEnergy > 0.001
+            );
+        }
+
+        function shouldConcealLegendaryStormVisualPresentation() {
+            if (!legendaryStormState?.active) {
+                return false;
+            }
+            if (legendaryStormState.phase === 'stormPause') {
+                return true;
+            }
+            if (legendaryStormState.phase !== 'cloudFormation') {
+                return false;
+            }
+            const introVisibilityMix = Math.max(
+                sanitizeFiniteNumber(legendaryStormState.environmentMix, 0),
+                sanitizeFiniteNumber(legendaryStormState.darkness, 0),
+                sanitizeFiniteNumber(legendaryStormState.nightfallProgress, 0) * 0.92,
+                sanitizeFiniteNumber(legendaryStormState.mist, 0) * 0.35,
+                sanitizeFiniteNumber(legendaryStormState.fogOpacity, 0) * 0.45,
+                sanitizeFiniteNumber(legendaryStormState.overlayOpacity, 0) * 0.08
+            );
+            const concealLeadSeconds = legendaryStormState.reducedMotion
+                ? 0.14
+                : legendaryStormState.lightweightMode
+                    ? 0.18
+                    : 0.24;
+            const visibilityThreshold = legendaryStormState.reducedMotion
+                ? 0.01
+                : legendaryStormState.lightweightMode
+                    ? 0.008
+                    : 0.006;
+            return (
+                sanitizeFiniteNumber(legendaryStormState.phaseTime, 0) < concealLeadSeconds ||
+                introVisibilityMix < visibilityThreshold
             );
         }
 
@@ -15589,6 +16288,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             }
             const landingImpactVisualsVisible = LEGENDARY_STORM_LANDING_PHASES.has(legendaryStormState.phase);
             const isActive = hasVisibleLegendaryStormVisuals();
+            const introConcealed = shouldConcealLegendaryStormVisualPresentation();
+            const presentedActive = Boolean(isActive && !introConcealed);
             const interactionLockActive = isLegendaryInteractionLockActive();
             const cutscenePlaying = Boolean(
                 legendaryStormState.active &&
@@ -15596,12 +16297,17 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 legendaryStormState.videoFrameReady &&
                 !legendaryStormState.videoFailed
             );
-            document.body.classList.toggle('legendary-storm-active', isActive);
+            const preVideoDarkOnly = LEGENDARY_STORM_PRE_VIDEO_DARK_ONLY_PHASES.has(legendaryStormState.phase);
+            document.body.classList.toggle('legendary-storm-active', presentedActive);
             document.body.classList.toggle(
                 'legendary-storm-box-focus',
                 Boolean(legendaryStormState.active && landingImpactVisualsVisible)
             );
-            document.body.classList.toggle('legendary-storm-lite', Boolean(isActive && legendaryStormState.lightweightMode));
+            document.body.classList.toggle('legendary-storm-lite', Boolean(presentedActive && legendaryStormState.lightweightMode));
+            document.body.classList.toggle(
+                'legendary-storm-pre-video-dark-only',
+                Boolean(presentedActive && preVideoDarkOnly)
+            );
             syncHomepageSummonNavigationLockToHost(interactionLockActive);
             syncHomepageSummonSkipVisibilityToHost(cutscenePlaying);
             document.body.classList.toggle(
@@ -15609,14 +16315,54 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 cutscenePlaying
             );
             if (legendaryStormOverlay) {
-                legendaryStormOverlay.classList.toggle('active', isActive);
+                legendaryStormOverlay.classList.toggle('active', presentedActive);
                 legendaryStormOverlay.classList.toggle('legendary-storm-enhanced', Boolean(legendaryStormFxRenderer?.isAvailable));
             }
             syncLegendaryInteractionLockState(interactionLockActive);
 
             let strikeX = THREE.MathUtils.clamp((legendaryStormState.strikeScreenX || 0.5) * 100, 10, 90);
             let strikeY = THREE.MathUtils.clamp((legendaryStormState.strikeScreenY || 0.32) * 100, 12, 88);
-            if (isActive) {
+            const cappedFlash = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : Math.min(legendaryStormState.flash || 0, 0.028),
+                0,
+                1
+            );
+            const cappedWhiteout = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : Math.min(legendaryStormState.whiteout || 0, 0.012),
+                0,
+                1
+            );
+            const cappedCloudFlare = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : Math.min(legendaryStormState.cloudFlash || 0, 0.045),
+                0,
+                1
+            );
+            const cappedCloudSheet = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : Math.min(legendaryStormState.cloudSheet || 0, 0.09),
+                0,
+                1
+            );
+            const cappedBoltOpacity = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : (legendaryStormState.boltOpacity || 0),
+                0,
+                1
+            );
+            const cappedBoltGlowOpacity = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : (legendaryStormState.boltGlowOpacity || 0),
+                0,
+                1
+            );
+            const cappedBoltBranchOpacity = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : (legendaryStormState.boltBranchOpacity || 0),
+                0,
+                1
+            );
+            const cappedReturnStroke = THREE.MathUtils.clamp(
+                preVideoDarkOnly ? 0 : (legendaryStormState.returnStroke || 0),
+                0,
+                1
+            );
+            if (presentedActive) {
                 const usesLandingTarget = LEGENDARY_STORM_LANDING_PHASES.has(legendaryStormState.phase);
                 if (usesLandingTarget) {
                     legendaryStormScreenTarget.copy(legendaryStormState.target).project(camera);
@@ -15633,22 +16379,22 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             rootStyle.setProperty('--legendary-storm-environment-mix', (legendaryStormState.environmentMix || 0).toFixed(3));
             rootStyle.setProperty('--legendary-storm-darkness', (legendaryStormState.darkness || 0).toFixed(3));
             rootStyle.setProperty('--legendary-storm-mist', (legendaryStormState.mist || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-flash', (legendaryStormState.flash || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-whiteout', (legendaryStormState.whiteout || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-flash', cappedFlash.toFixed(3));
+            rootStyle.setProperty('--legendary-storm-whiteout', cappedWhiteout.toFixed(3));
             rootStyle.setProperty('--legendary-storm-cloud-shift', `${(legendaryStormState.cloudShiftPx || 0).toFixed(1)}px`);
             rootStyle.setProperty('--legendary-storm-cloud-shift-alt', `${(legendaryStormState.cloudShiftAltPx || 0).toFixed(1)}px`);
             rootStyle.setProperty('--legendary-storm-nightfall-progress', (legendaryStormState.nightfallProgress || 0).toFixed(3));
             rootStyle.setProperty('--legendary-storm-overlay-opacity', (legendaryStormState.overlayOpacity || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-bolt-opacity', (legendaryStormState.boltOpacity || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-cloud-flare', (legendaryStormState.cloudFlash || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-cloud-sheet', (legendaryStormState.cloudSheet || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-bolt-opacity', cappedBoltOpacity.toFixed(3));
+            rootStyle.setProperty('--legendary-storm-cloud-flare', cappedCloudFlare.toFixed(3));
+            rootStyle.setProperty('--legendary-storm-cloud-sheet', cappedCloudSheet.toFixed(3));
             rootStyle.setProperty(
                 '--legendary-storm-ground-glow',
                 (landingImpactVisualsVisible ? (legendaryStormState.groundGlow || 0) : 0).toFixed(3)
             );
-            rootStyle.setProperty('--legendary-storm-bolt-glow-opacity', (legendaryStormState.boltGlowOpacity || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-bolt-branch-opacity', (legendaryStormState.boltBranchOpacity || 0).toFixed(3));
-            rootStyle.setProperty('--legendary-storm-return-stroke', (legendaryStormState.returnStroke || 0).toFixed(3));
+            rootStyle.setProperty('--legendary-storm-bolt-glow-opacity', cappedBoltGlowOpacity.toFixed(3));
+            rootStyle.setProperty('--legendary-storm-bolt-branch-opacity', cappedBoltBranchOpacity.toFixed(3));
+            rootStyle.setProperty('--legendary-storm-return-stroke', cappedReturnStroke.toFixed(3));
             rootStyle.setProperty('--legendary-storm-bolt-scale', (legendaryStormState.boltScale || 1).toFixed(3));
             rootStyle.setProperty('--legendary-storm-bolt-height-scale', (legendaryStormState.boltHeightScale || 1).toFixed(3));
             rootStyle.setProperty(
@@ -15673,6 +16419,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             );
             legendaryStormState.strikeScreenX = strikeX / 100;
             legendaryStormState.strikeScreenY = strikeY / 100;
+            rootStyle.setProperty('--legendary-storm-strike-x', `${strikeX.toFixed(2)}%`);
+            rootStyle.setProperty('--legendary-storm-strike-y', `${strikeY.toFixed(2)}%`);
             if (legendaryStormOverlay) {
                 legendaryStormOverlay.style.setProperty('--legendary-storm-strike-x', `${strikeX.toFixed(2)}%`);
                 legendaryStormOverlay.style.setProperty('--legendary-storm-strike-y', `${strikeY.toFixed(2)}%`);
@@ -15761,9 +16509,38 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function applyLegendaryStormLighting(theme, environmentMix = 0, lightningMix = 0) {
+            if (shouldConcealLegendaryStormVisualPresentation()) {
+                restoreHomePageDayLighting();
+                return;
+            }
             const stormMix = THREE.MathUtils.clamp(environmentMix, 0, 1);
             const flashMix = THREE.MathUtils.clamp(lightningMix, 0, 1);
             const phase = legendaryStormState.phase;
+            const preVideoDarkOnly = LEGENDARY_STORM_PRE_VIDEO_DARK_ONLY_PHASES.has(phase);
+            const stormPauseProgress = phase === 'stormPause'
+                ? THREE.MathUtils.clamp(
+                    sanitizeFiniteNumber(legendaryStormState.phaseDuration, 0) > 0
+                        ? legendaryStormState.phaseTime / legendaryStormState.phaseDuration
+                        : 0,
+                    0,
+                    1
+                )
+                : 0;
+            const introDarkenFloor = phase === 'stormPause'
+                ? THREE.MathUtils.smoothstep(stormPauseProgress, 0, 1) * 0.018
+                : 0;
+            const introDarkenMix = preVideoDarkOnly
+                ? THREE.MathUtils.clamp(
+                    Math.max(
+                        introDarkenFloor,
+                        stormMix * 0.94,
+                        sanitizeFiniteNumber(legendaryStormState.nightfallProgress, 0) * 0.9,
+                        sanitizeFiniteNumber(legendaryStormState.darkness, 0)
+                    ),
+                    0,
+                    1
+                )
+                : 0;
             const lightVariant = sanitizeFiniteNumber(theme?.landingExposureCap, 0) > 0.96;
             const groundSpillGain = Math.max(0.75, sanitizeFiniteNumber(theme?.groundSpillGain, 1));
             const returnStrokeGain = Math.max(0.75, sanitizeFiniteNumber(theme?.returnStrokeGain, 1));
@@ -15853,43 +16630,88 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             const reducedFogDensity = legendaryStormState.reducedMotion
                 ? LEGENDARY_STORM_CONFIG.reducedMotionFogDensity
                 : LEGENDARY_STORM_CONFIG.fogDensity;
+            const environmentColorMix = preVideoDarkOnly ? 0 : stormMix;
+            const skyEnvironmentMix = preVideoDarkOnly ? 0 : stormMix;
+            const strikeColorMix = preVideoDarkOnly ? 0 : strikeMix;
+            const returnColorMix = preVideoDarkOnly ? 0 : returnMix;
+            const ambientBaseIntensity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.ambientIntensity,
+                    homePageDayLightingDefaults.ambientIntensity * 0.42,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.ambientIntensity, theme.ambientIntensity, stormMix);
+            const hemiBaseIntensity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.hemiIntensity,
+                    homePageDayLightingDefaults.hemiIntensity * 0.36,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.hemiIntensity, theme.hemiIntensity, stormMix);
+            const sunBaseIntensity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.sunIntensity,
+                    homePageDayLightingDefaults.sunIntensity * 0.2,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.sunIntensity, theme.sunIntensity, stormMix);
+            const fillBaseIntensity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.fillIntensity,
+                    homePageDayLightingDefaults.fillIntensity * 0.28,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.fillIntensity, theme.fillIntensity, stormMix);
+            const petRimBaseIntensity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.petRimIntensity,
+                    homePageDayLightingDefaults.petRimIntensity * 0.24,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.petRimIntensity, theme.petRimIntensity, stormMix);
             ambientLight.color.copy(homePageDayLightingDefaults.ambientColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.ambientColor),
-                stormMix
+                environmentColorMix
             );
-            ambientLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.ambientIntensity, theme.ambientIntensity, stormMix) + strikeMix * 0.14 + returnMix * 0.12 + pulseMix * 0.08 + boxHeroMix * 0.2 + heroPulse * 0.08 - eclipseMix * 0.04;
+            ambientLight.intensity = ambientBaseIntensity + (preVideoDarkOnly ? 0 : strikeMix * 0.14 + returnMix * 0.12 + pulseMix * 0.08 + boxHeroMix * 0.2 + heroPulse * 0.08) - eclipseMix * 0.04;
 
             hemiLight.color.copy(homePageDayLightingDefaults.hemiSkyColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.hemiSkyColor),
-                stormMix
+                environmentColorMix
             );
             hemiLight.groundColor.copy(homePageDayLightingDefaults.hemiGroundColor).lerp(
                 legendaryStormColorScratchB.setHex(theme.hemiGroundColor),
-                stormMix
+                environmentColorMix
             );
-            hemiLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.hemiIntensity, theme.hemiIntensity, stormMix) + strikeMix * 0.22 + returnMix * 0.18 + pulseMix * 0.08 + boxHeroMix * 0.3 + heroPulse * 0.12;
+            hemiLight.intensity = hemiBaseIntensity + (preVideoDarkOnly ? 0 : strikeMix * 0.22 + returnMix * 0.18 + pulseMix * 0.08 + boxHeroMix * 0.3 + heroPulse * 0.12);
 
             sunLight.color.copy(homePageDayLightingDefaults.sunColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.sunColor),
-                stormMix
+                environmentColorMix
             );
-            sunLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.sunIntensity, theme.sunIntensity, stormMix) + strikeMix * 0.3 + returnMix * 0.3 + pulseMix * 0.08 + boxHeroMix * 0.16 + heroPulse * 0.1 - eclipseMix * 0.08;
+            sunLight.intensity = sunBaseIntensity + (preVideoDarkOnly ? 0 : strikeMix * 0.3 + returnMix * 0.3 + pulseMix * 0.08 + boxHeroMix * 0.16 + heroPulse * 0.1) - eclipseMix * 0.08;
 
             fillLight.color.copy(homePageDayLightingDefaults.fillColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.fillColor),
-                stormMix
+                environmentColorMix
             );
-            fillLight.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.fillIntensity, theme.fillIntensity, stormMix) + strikeMix * 0.26 + returnMix * 0.24 + pulseMix * 0.08 + boxHeroMix * 0.38 + heroPulse * 0.12;
+            fillLight.intensity = fillBaseIntensity + (preVideoDarkOnly ? 0 : strikeMix * 0.26 + returnMix * 0.24 + pulseMix * 0.08 + boxHeroMix * 0.38 + heroPulse * 0.12);
 
             petRim.color.copy(homePageDayLightingDefaults.petRimColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.petRimColor),
-                stormMix
+                environmentColorMix
             );
-            petRim.intensity = THREE.MathUtils.lerp(homePageDayLightingDefaults.petRimIntensity, theme.petRimIntensity, stormMix) + strikeMix * 0.68 + returnMix * 0.52 + pulseMix * 0.12 + boxHeroMix * 0.4 + heroPulse * 0.16;
+            petRim.intensity = petRimBaseIntensity + (preVideoDarkOnly ? 0 : strikeMix * 0.68 + returnMix * 0.52 + pulseMix * 0.12 + boxHeroMix * 0.4 + heroPulse * 0.16);
+            ambientLight.intensity = THREE.MathUtils.clamp(ambientLight.intensity, 0, homePageDayLightingDefaults.ambientIntensity);
+            hemiLight.intensity = THREE.MathUtils.clamp(hemiLight.intensity, 0, homePageDayLightingDefaults.hemiIntensity);
+            sunLight.intensity = THREE.MathUtils.clamp(sunLight.intensity, 0, homePageDayLightingDefaults.sunIntensity);
+            fillLight.intensity = THREE.MathUtils.clamp(fillLight.intensity, 0, homePageDayLightingDefaults.fillIntensity);
+            petRim.intensity = THREE.MathUtils.clamp(petRim.intensity, 0, homePageDayLightingDefaults.petRimIntensity);
 
             legendaryStormSkyLight.color.setHex(theme.skyLightColor);
-            legendaryStormSkyLight.intensity =
-                (
+            legendaryStormSkyLight.intensity = preVideoDarkOnly
+                ? 0
+                : (
                     stormMix * theme.skyLightIntensity +
                     strikeMix * (theme.strikeIntensity * 0.13) +
                     returnMix * (theme.strikeIntensity * 0.18 * returnStrokeGain) +
@@ -15899,13 +16721,16 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     boxHeroMix * (lightVariant ? 0.44 : 0.78)
                 ) * silhouetteGuard;
             legendaryStormStrikeLight.color.setHex(theme.strikeColor);
-            legendaryStormStrikeLight.intensity =
-                (
+            legendaryStormStrikeLight.intensity = preVideoDarkOnly
+                ? 0
+                : (
                     (strikeMix * 0.5 + returnMix * 1.02 * returnStrokeGain + pulseMix * 0.18) * (1 + impactMix * (0.28 + groundSpillGain * 0.08) + heroPulse * 0.18) +
                     boxHeroMix * (lightVariant ? 0.34 : 0.68) +
                     heroPulse * (lightVariant ? 0.18 : 0.22)
                 ) * theme.strikeIntensity * silhouetteGuard;
-            legendaryStormStrikeLight.distance = (strikeMix > 0.001 || returnMix > 0.001)
+            legendaryStormStrikeLight.distance = preVideoDarkOnly
+                ? 0
+                : (strikeMix > 0.001 || returnMix > 0.001)
                 ? THREE.MathUtils.lerp(10, 28, THREE.MathUtils.clamp(strikeMix * 0.42 + returnMix * 0.82 * returnStrokeGain + pulseMix * 0.12, 0, 1)) + stormMix * 4 + impactMix * (5.6 + groundSpillGain * 1.6) + heroPulse * 5.4 + boxHeroMix * 12.8
                 : (boxHeroMix > 0.001 ? 12 + boxHeroMix * 18 : 0);
             legendaryStormStrikeLight.position.copy(legendaryStormState.target);
@@ -15913,27 +16738,36 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryStormStrikeLight.position.z += 1.8;
             skyDome.material.uniforms.topColor.value.copy(homePageDayLightingDefaults.skyTopColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.skyTopColor),
-                stormMix
+                skyEnvironmentMix
             ).lerp(
                 legendaryStormColorScratchB.setHex(theme.strikeColor),
-                strikeMix * 0.1 + returnMix * 0.14
+                strikeColorMix * 0.1 + returnColorMix * 0.14
             );
             skyDome.material.uniforms.midColor.value.copy(homePageDayLightingDefaults.skyMidColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.skyMidColor),
-                stormMix
+                skyEnvironmentMix
             ).lerp(
                 legendaryStormColorScratchB.setHex(theme.strikeColor),
-                strikeMix * 0.08 + returnMix * 0.12
+                strikeColorMix * 0.08 + returnColorMix * 0.12
             );
             skyDome.material.uniforms.bottomColor.value.copy(homePageDayLightingDefaults.skyBottomColor).lerp(
                 legendaryStormColorScratchA.setHex(theme.skyBottomColor),
-                stormMix
+                skyEnvironmentMix
             ).lerp(
                 legendaryStormColorScratchB.setHex(theme.hemiSkyColor),
-                strikeMix * 0.06 + returnMix * 0.08
+                strikeColorMix * 0.06 + returnColorMix * 0.08
             );
             cloudPlanes.forEach((entry, index) => {
                 const baseOpacity = homePageDayLightingDefaults.cloudOpacities[index] ?? entry.mesh.material.opacity;
+                if (preVideoDarkOnly) {
+                    const darkenedOpacity = THREE.MathUtils.clamp(
+                        THREE.MathUtils.lerp(baseOpacity, Math.max(0, baseOpacity - 0.12), introDarkenMix),
+                        0,
+                        1
+                    );
+                    entry.mesh.material.opacity = darkenedOpacity;
+                    return;
+                }
                 const stormOpacity = THREE.MathUtils.clamp(
                     baseOpacity + LEGENDARY_STORM_CONFIG.cloudOpacityBoost + stormMix * 0.06 + strikeMix * 0.06 + sheetMix * (0.12 * cloudContrastGain),
                     0,
@@ -15941,29 +16775,43 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 );
                 entry.mesh.material.opacity = THREE.MathUtils.lerp(baseOpacity, stormOpacity, stormMix);
             });
-            pollenMaterial.opacity = THREE.MathUtils.lerp(
-                homePageDayLightingDefaults.pollenOpacity,
-                LEGENDARY_STORM_CONFIG.pollenOpacityFloor,
-                THREE.MathUtils.clamp(stormMix * 0.92 + strikeMix * 0.12 + returnMix * 0.12 + impactMix * 0.08, 0, 1)
-            );
+            pollenMaterial.opacity = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.pollenOpacity,
+                    homePageDayLightingDefaults.pollenOpacity * 0.34,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.pollenOpacity,
+                    LEGENDARY_STORM_CONFIG.pollenOpacityFloor,
+                    THREE.MathUtils.clamp(stormMix * 0.92 + strikeMix * 0.12 + returnMix * 0.12 + impactMix * 0.08, 0, 1)
+                );
             legendaryStormFog.color.setHex(theme.fogColor);
             legendaryStormFog.density = Math.max(0, reducedFogDensity * stormMix + eclipseMix * 0.0028 + strikeMix * 0.0038 + returnMix * (0.0042 * returnStrokeGain) + impactMix * (0.0026 + groundSpillGain * 0.0008) - heroPulse * 0.0012 - boxHeroMix * (lightVariant ? 0.0032 : 0.0026));
             scene.fog = stormMix > 0.001 || strikeMix > 0.001 || returnMix > 0.001 ? legendaryStormFog : null;
-            const targetExposure =
-                THREE.MathUtils.lerp(homePageDayLightingDefaults.toneMappingExposure, theme.exposure, stormMix) +
-                strikeMix * (lightVariant ? 0.1 : 0.18) +
-                returnMix * (lightVariant ? 0.14 : 0.24) +
-                impactMix * (lightVariant ? 0.08 : 0.2) +
-                pulseMix * (lightVariant ? 0.04 : 0.08) +
-                heroPulse * (lightVariant ? 0.08 : 0.14) +
-                boxHeroMix * (lightVariant ? 0.14 : 0.38) +
-                (legendaryStormState.whiteout || 0) * (lightVariant ? 0.02 : 0.08);
+            const targetExposure = preVideoDarkOnly
+                ? THREE.MathUtils.lerp(
+                    homePageDayLightingDefaults.toneMappingExposure,
+                    homePageDayLightingDefaults.toneMappingExposure * 0.72,
+                    introDarkenMix
+                )
+                : THREE.MathUtils.lerp(homePageDayLightingDefaults.toneMappingExposure, theme.exposure, stormMix) +
+                    strikeMix * (lightVariant ? 0.1 : 0.18) +
+                    returnMix * (lightVariant ? 0.14 : 0.24) +
+                    impactMix * (lightVariant ? 0.08 : 0.2) +
+                    pulseMix * (lightVariant ? 0.04 : 0.08) +
+                    heroPulse * (lightVariant ? 0.08 : 0.14) +
+                    boxHeroMix * (lightVariant ? 0.14 : 0.38) +
+                    (legendaryStormState.whiteout || 0) * (lightVariant ? 0.02 : 0.08);
             const exposureCap = landingPhaseVisible
                 ? sanitizeFiniteNumber(theme?.landingExposureCap, targetExposure)
                 : phase === 'idleStormReveal' || phase === 'stormDissipate'
                     ? sanitizeFiniteNumber(theme?.idleExposureCap, targetExposure)
                     : targetExposure;
-            renderer.toneMappingExposure = Math.min(targetExposure, exposureCap);
+            const noBrightenExposureCap = preVideoDarkOnly
+                ? homePageDayLightingDefaults.toneMappingExposure
+                : homePageDayLightingDefaults.toneMappingExposure * 0.92;
+            renderer.toneMappingExposure = Math.min(targetExposure, exposureCap, noBrightenExposureCap);
         }
 
         function restoreHomePageDayLighting() {
@@ -15996,6 +16844,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryStormState.active = false;
             legendaryStormState.phase = 'idle';
             legendaryStormState.phaseTime = 0;
+            legendaryStormState.phaseDuration = 0;
+            legendaryStormState.phaseProgress = 0;
             legendaryStormState.totalTime = 0;
             legendaryStormState.nextStrikeRefreshAt = 0;
             legendaryStormState.rarityKey = null;
@@ -16021,6 +16871,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             legendaryStormState.routeAudioReleased = false;
             restoreHomePageDayLighting();
             resetLegendaryCutsceneStartupState({ releasePreparedAudio: true, resetVideo: false });
+            stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: false });
             stopLegendaryCutsceneVideoPlayback();
             if (
                 !legendarySummonMusicState.restorePendingAfterPreview &&
@@ -16203,6 +17054,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             }
             const reducedMotion = prefersReducedMotionHomePage();
             const lightweightMode = shouldUseLightweightLegendaryStormMode();
+            stopLegendaryFogOverlayPlayback({ resetTime: true, clearFailure: true });
             legendaryStormState.active = true;
             legendaryStormState.phase = 'stormPause';
             legendaryStormState.phaseTime = 0;
@@ -16218,6 +17070,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 reducedMotion,
                 lightweightMode
             );
+            syncLegendaryStormPhaseTimingSnapshot(legendaryStormState);
             legendaryStormState.spawnContext = spawnContext;
             legendaryStormState.boxPrepared = false;
             legendaryStormState.dissipateRequested = false;
@@ -16249,6 +17102,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             applyLegendaryStormLighting(theme, 0, 0);
             refreshLegendaryStormPlaybackTimingFromMedia();
             syncLegendaryCutsceneVideoVisuals();
+            syncLegendaryFogOverlayVisuals(theme);
             return true;
         }
 
@@ -16295,9 +17149,14 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             if (updateResult?.completed) {
                 return;
             }
+            syncLegendaryStormPhaseTimingSnapshot(storm);
             syncLegendaryStormOverlayVisuals(theme);
             applyLegendaryStormLighting(theme, storm.environmentMix, storm.lightningMix);
             syncLegendaryCutsceneVideoVisuals();
+            syncLegendaryFogOverlayVisuals(theme);
+            renderLegendaryFogOverlay(theme);
+            maybeStartLegendaryFogOverlayVideoHandoffFade();
+            syncLegendaryFogOverlayVisuals(theme);
         }
 
         function getMysteryFlightVisualClearanceState(config = MYSTERY_CHARACTER_FLIGHT_CONFIG) {

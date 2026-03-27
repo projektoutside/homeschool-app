@@ -185,11 +185,15 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     () => initialLaunchState.storedSnapshot,
   );
   const { user } = useAuth();
+  const hasDeveloperAccess = useMemo(() => isManagerUser(user), [user]);
   const { totalPoints, stars, awardPoints, spendPoints } = usePoints();
   const { currentStamina, maxStamina } = useStamina();
   const { settings: soundSettings } = useSoundSettings();
-  const { snapshot, isLoading: isCatalogLoading } = useHomepageCatalog({ includeInactive: false });
-  const hasDeveloperAccess = useMemo(() => isManagerUser(user), [user]);
+  const { snapshot, isLoading: isCatalogLoading } = useHomepageCatalog({
+    includeInactive: false,
+    enabled: isActive,
+    liveUpdates: isActive && hasDeveloperAccess,
+  });
   const [dailyLunchboxClaimExpiresAtByUser, setDailyLunchboxClaimExpiresAtByUser] = useState<Record<string, number | null>>({});
   const [dailyLunchboxClaimPendingByUser, setDailyLunchboxClaimPendingByUser] = useState<Record<string, boolean>>({});
   const [dailyLunchboxClockTick, setDailyLunchboxClockTick] = useState(() => Date.now());

@@ -145,7 +145,6 @@ const GamePlayer: React.FC = () => {
     const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
     const { settings: soundSettings } = useSoundSettings();
     const { shouldUseNativeFullscreenFallback } = usePWA();
-
     useZoomLock({ enabled: true, iframeRefs: zoomLockIframes });
     const processedPointEventsRef = useRef<Set<string>>(new Set());
 
@@ -626,7 +625,7 @@ const GamePlayer: React.FC = () => {
                     src={launchPath}
                     title={item.title}
                     className={`game-player-frame ${isFrameLoading ? 'is-loading' : ''}`}
-                    allow="fullscreen; camera; microphone; geolocation"
+                    allow="autoplay; fullscreen; camera; microphone; geolocation"
                     allowFullScreen
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                     onLoad={() => {
@@ -638,7 +637,7 @@ const GamePlayer: React.FC = () => {
                         syncCarKingMicPreference();
                         syncWordPuzzleUserContext();
                         syncGamePointsContext();
-                        setTimeout(() => {
+                        window.setTimeout(() => {
                             enterFullscreen().catch(() => {
                                 // noop
                             });

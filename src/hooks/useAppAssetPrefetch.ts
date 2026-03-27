@@ -4,14 +4,38 @@ type RouteLoader = () => Promise<unknown>;
 
 type UseAppAssetPrefetchOptions = {
   loading: boolean;
+  routePath: string;
   homePageAppUrl: string;
   classroomAppUrl: string;
   classroomDoorIntroUrl: string;
   classroomDoorAudioUrl: string;
-  homePageThreeModuleUrl: string;
+  loadHomeRoute: RouteLoader;
   loadClassroomRoute: RouteLoader;
   loadHTMLViewerRoute: RouteLoader;
   loadViewerRoute: RouteLoader;
+};
+
+type IdleWindow = Window & {
+  cancelIdleCallback?: (handle: number) => void;
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+};
+
+type DeferredHandle = {
+  cancel: () => void;
+};
+
+const HOME_ROUTE_PATHS = new Set(['/', '/apps']);
+
+const normalizeRoutePath = (value: string): string => {
+  if (!value) {
+    return '/';
+  }
+
+  if (value === '/') {
+    return value;
+  }
+
+  return value.replace(/\/+$/, '') || '/';
 };
 
 const ensurePrefetchLink = (
@@ -37,144 +61,135 @@ const ensurePrefetchLink = (
   document.head.appendChild(nextLink);
 };
 
+const scheduleDeferredTask = (task: () => void, timeoutMs: number): DeferredHandle => {
+  const idleWindow = window as IdleWindow;
+
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    const handle = idleWindow.requestIdleCallback(() => {
+      task();
+    }, { timeout: timeoutMs });
+
+    return {
+      cancel: () => {
+        if (typeof idleWindow.cancelIdleCallback === 'function') {
+          idleWindow.cancelIdleCallback(handle);
+        }
+      },
+    };
+  }
+
+  const timeoutId = window.setTimeout(task, Math.min(timeoutMs, 250));
+  return {
+    cancel: () => window.clearTimeout(timeoutId),
+  };
+};
+
 export const useAppAssetPrefetch = ({
   loading,
+  routePath,
   homePageAppUrl,
   classroomAppUrl,
   classroomDoorIntroUrl,
   classroomDoorAudioUrl,
-  homePageThreeModuleUrl,
+  loadHomeRoute,
   loadClassroomRoute,
   loadHTMLViewerRoute,
   loadViewerRoute,
 }: UseAppAssetPrefetchOptions) => {
   useEffect(() => {
-    if (loading) {
+    if (loading || typeof window === 'undefined') {
       return;
     }
 
-    const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-    const normalizedPath = window.location.pathname.replace(/\/$/, '') || '/';
-    const authPath = basePath ? `${basePath}/auth` : '/auth';
-    const installPath = basePath ? `${basePath}/install` : '/install';
-    const shouldPrimeHomepageSession = normalizedPath !== authPath && normalizedPath !== installPath;
+    const normalizedRoutePath = normalizeRoutePath(routePath);
+    const shouldWarmHomeAdjacentRoutes = HOME_ROUTE_PATHS.has(normalizedRoutePath);
+    const shouldWarmClassroomAdjacentRoutes = normalizedRoutePath === '/classroom';
+    const deferredTasks: DeferredHandle[] = [];
 
-    if (!shouldPrimeHomepageSession) {
-      return;
-    }
-
-    const routeWarmupHandles: number[] = [];
-    const scheduleRouteWarmup = (delayMs: number, loader: RouteLoader) => {
-      const timerId = window.setTimeout(() => {
-        void loader();
-      }, delayMs);
-      routeWarmupHandles.push(timerId);
+    const queueTask = (task: () => void, timeoutMs = 1500) => {
+      deferredTasks.push(scheduleDeferredTask(task, timeoutMs));
     };
 
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-preconnect"]', () => {
-      const preconnectLink = document.createElement('link');
-      preconnectLink.rel = 'preconnect';
-      preconnectLink.href = `${window.location.origin}/`;
-      preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-preconnect');
-      return preconnectLink;
-    });
+    if (shouldWarmHomeAdjacentRoutes) {
+      queueTask(() => {
+        ensurePrefetchLink('link[data-prefetch="homeschool-classroom-app-prefetch"]', () => {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.as = 'document';
+          prefetchLink.href = classroomAppUrl;
+          prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-app-prefetch');
+          return prefetchLink;
+        });
 
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-external-unpkg-preconnect"]', () => {
-      const preconnectLink = document.createElement('link');
-      preconnectLink.rel = 'preconnect';
-      preconnectLink.href = 'https://unpkg.com';
-      preconnectLink.crossOrigin = 'anonymous';
-      preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-unpkg-preconnect');
-      return preconnectLink;
-    });
+        ensurePrefetchLink('link[data-prefetch="homeschool-classroom-door-prefetch"]', () => {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.as = 'document';
+          prefetchLink.href = classroomDoorIntroUrl;
+          prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-prefetch');
+          return prefetchLink;
+        });
 
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-external-fonts-preconnect"]', () => {
-      const preconnectLink = document.createElement('link');
-      preconnectLink.rel = 'preconnect';
-      preconnectLink.href = 'https://fonts.googleapis.com';
-      preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-fonts-preconnect');
-      return preconnectLink;
-    });
+        ensurePrefetchLink('link[data-prefetch="homeschool-classroom-door-audio-prefetch"]', () => {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.as = 'audio';
+          prefetchLink.href = classroomDoorAudioUrl;
+          prefetchLink.type = 'audio/mpeg';
+          prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-audio-prefetch');
+          return prefetchLink;
+        });
+      });
 
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-external-fonts-static-preconnect"]', () => {
-      const preconnectLink = document.createElement('link');
-      preconnectLink.rel = 'preconnect';
-      preconnectLink.href = 'https://fonts.gstatic.com';
-      preconnectLink.crossOrigin = 'anonymous';
-      preconnectLink.setAttribute('data-prefetch', 'homeschool-home-app-external-fonts-static-preconnect');
-      return preconnectLink;
-    });
-
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-prefetch"]', () => {
-      const prefetchLink = document.createElement('link');
-      prefetchLink.rel = 'prefetch';
-      prefetchLink.href = homePageAppUrl;
-      prefetchLink.setAttribute('data-prefetch', 'homeschool-home-app-prefetch');
-      return prefetchLink;
-    });
-
-    ensurePrefetchLink('link[data-prefetch="homeschool-home-app-external-three-preload"]', () => {
-      const preloadLink = document.createElement('link');
-      preloadLink.rel = 'preload';
-      preloadLink.as = 'script';
-      preloadLink.href = homePageThreeModuleUrl;
-      preloadLink.crossOrigin = 'anonymous';
-      preloadLink.setAttribute('data-prefetch', 'homeschool-home-app-external-three-preload');
-      return preloadLink;
-    });
-
-    ensurePrefetchLink('link[data-prefetch="homeschool-classroom-app-prefetch"]', () => {
-      const prefetchLink = document.createElement('link');
-      prefetchLink.rel = 'prefetch';
-      prefetchLink.as = 'document';
-      prefetchLink.href = classroomAppUrl;
-      prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-app-prefetch');
-      return prefetchLink;
-    });
-
-    ensurePrefetchLink('link[data-prefetch="homeschool-classroom-door-prefetch"]', () => {
-      const prefetchLink = document.createElement('link');
-      prefetchLink.rel = 'prefetch';
-      prefetchLink.as = 'document';
-      prefetchLink.href = classroomDoorIntroUrl;
-      prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-prefetch');
-      return prefetchLink;
-    });
-
-    ensurePrefetchLink('link[data-prefetch="homeschool-classroom-door-audio-prefetch"]', () => {
-      const prefetchLink = document.createElement('link');
-      prefetchLink.rel = 'prefetch';
-      prefetchLink.as = 'audio';
-      prefetchLink.href = classroomDoorAudioUrl;
-      prefetchLink.type = 'audio/mpeg';
-      prefetchLink.setAttribute('data-prefetch', 'homeschool-classroom-door-audio-prefetch');
-      return prefetchLink;
-    });
-
-    scheduleRouteWarmup(140, loadClassroomRoute);
-    scheduleRouteWarmup(220, loadHTMLViewerRoute);
-    scheduleRouteWarmup(300, loadViewerRoute);
+      queueTask(() => {
+        void loadHomeRoute();
+        void loadClassroomRoute();
+        void loadHTMLViewerRoute();
+        void loadViewerRoute();
+      }, 2500);
+    } else if (shouldWarmClassroomAdjacentRoutes) {
+      queueTask(() => {
+        void loadHTMLViewerRoute();
+        void loadViewerRoute();
+      }, 2000);
+    } else if (normalizedRoutePath === '/html-viewer') {
+      queueTask(() => {
+        void loadViewerRoute();
+      }, 2000);
+    } else if (normalizedRoutePath.startsWith('/play/') || normalizedRoutePath.startsWith('/open/')) {
+      queueTask(() => {
+        ensurePrefetchLink('link[data-prefetch="homeschool-home-app-prefetch"]', () => {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.as = 'document';
+          prefetchLink.href = homePageAppUrl;
+          prefetchLink.setAttribute('data-prefetch', 'homeschool-home-app-prefetch');
+          return prefetchLink;
+        });
+      }, 2500);
+    }
 
     return () => {
-      routeWarmupHandles.forEach((timerId) => window.clearTimeout(timerId));
+      deferredTasks.forEach((task) => task.cancel());
     };
   }, [
     classroomAppUrl,
     classroomDoorAudioUrl,
     classroomDoorIntroUrl,
     homePageAppUrl,
-    homePageThreeModuleUrl,
     loadClassroomRoute,
+    loadHomeRoute,
     loadHTMLViewerRoute,
     loadViewerRoute,
     loading,
+    routePath,
   ]);
 
   useEffect(() => {
     return () => {
       document
         .querySelectorAll<HTMLLinkElement>(
-          'link[data-prefetch^="homeschool-home-app-"], link[data-prefetch^="homeschool-classroom-app-"], link[data-prefetch^="homeschool-classroom-door-"], link[data-prefetch^="homeschool-home-app-external-"]',
+          'link[data-prefetch^="homeschool-home-app-"], link[data-prefetch^="homeschool-classroom-app-"], link[data-prefetch^="homeschool-classroom-door-"]',
         )
         .forEach((link) => link.remove());
     };
