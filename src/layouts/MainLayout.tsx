@@ -45,8 +45,12 @@ const MainLayout: React.FC = () => {
     const shouldRequireHomepageSessionBootstrap = isUserHomeRoute && !shouldBypassHomepageSessionBootstrap;
     const isHomepageSessionGateReady = !shouldRequireHomepageSessionBootstrap || isHomepageSessionReady;
     const isPrimingHomepageSession = shouldRequireHomepageSessionBootstrap && !isHomepageSessionGateReady;
-    const shouldRenderHomepageSession = shouldRequireHomepageSessionBootstrap;
-    const isHomepageSessionVisible = shouldRenderHomepageSession;
+    // Keep the homepage runtime mounted after the first successful boot so
+    // returning to "/" does not restart the entire cinematic load sequence.
+    const shouldRenderHomepageSession =
+        !shouldBypassHomepageSessionBootstrap
+        && (isUserHomeRoute || isHomepageSessionReady);
+    const isHomepageSessionVisible = isUserHomeRoute;
     const shouldShowRouteLayer = !isUserHomeRoute && isHomepageSessionGateReady;
     const isHomepageSummonInteractionLocked = isUserHomeRoute && isHomepageSummonNavigationLocked;
     const shouldShowHomepageSummonSkipButton = isUserHomeRoute && isHomepageSummonSkipVisible;

@@ -642,17 +642,29 @@ export const buildHomepageCatalogSnapshot = (params: {
   categories: HomepageCategoryRecord[];
   props: HomepagePropRecord[];
   updatedAt?: string | null;
-}): HomepageCatalogSnapshot => ({
-  version: 1,
-  updatedAt: params.updatedAt && params.updatedAt.trim().length > 0
-    ? params.updatedAt
-    : new Date().toISOString(),
-  categories: [...params.categories].sort((a, b) => {
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-    return a.label.localeCompare(b.label);
-  }),
-  props: [...params.props].sort((a, b) => a.label.localeCompare(b.label)),
-});
+}): HomepageCatalogSnapshot => {
+  const latestRecordUpdatedAt = [...params.categories, ...params.props]
+    .map((entry) => (typeof entry.updatedAt === 'string' ? entry.updatedAt.trim() : ''))
+    .filter((entry): entry is string => entry.length > 0)
+    .reduce<string | null>((latest, entry) => {
+      if (!latest || entry > latest) {
+        return entry;
+      }
+      return latest;
+    }, null);
+
+  return {
+    version: 1,
+    updatedAt: params.updatedAt && params.updatedAt.trim().length > 0
+      ? params.updatedAt
+      : latestRecordUpdatedAt ?? new Date().toISOString(),
+    categories: [...params.categories].sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.label.localeCompare(b.label);
+    }),
+    props: [...params.props].sort((a, b) => a.label.localeCompare(b.label)),
+  };
+};
 
 export const persistHomepageCatalogSnapshot = (snapshot: HomepageCatalogSnapshot | null): void => {
   try {
