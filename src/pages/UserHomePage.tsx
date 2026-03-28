@@ -62,10 +62,23 @@ const HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS = 10 * 1000;
 const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
-const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 4000;
 const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
 const HOME_PAGE_LOADER_POINTS_REWARD = 10;
 const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 7000;
+const HOME_PAGE_BOOT_FALLBACK_TARGET_MS = HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS;
+
+let activeHomePageBootStartedAtMs: number | null = null;
+
+const getActiveHomePageBootStartedAtMs = (): number => {
+  if (activeHomePageBootStartedAtMs === null) {
+    activeHomePageBootStartedAtMs = Date.now();
+  }
+  return activeHomePageBootStartedAtMs;
+};
+
+const clearActiveHomePageBootStartedAtMs = (): void => {
+  activeHomePageBootStartedAtMs = null;
+};
 
 type HomePageTiltPermissionState =
   | 'unknown'
@@ -170,6 +183,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [initialLaunchState] = useState(createInitialHomepageLaunchState);
   const initialPendingMysteryLaunch = initialLaunchState.pendingMysteryLaunch;
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [bootSessionStartedAtMs] = useState(getActiveHomePageBootStartedAtMs);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedInitialBoot, setHasCompletedInitialBoot] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -240,6 +254,10 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       ? loaderRewardAwardState.confirmedTotalPoints
       : 0,
   );
+  const [loaderMinimumDurationMs] = useState(() => {
+    const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
+    return Math.max(0, HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS - elapsedMs);
+  });
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
   const iframeRuntimeActive = isActive && !loaderVisible;
   const iframeLoadedState = iframeLoaded;
@@ -465,16 +483,18 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [syncPendingSummonRecoveryToIframe]);
 
   useEffect(() => {
-    if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState) {
+    if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState || bootFallbackReadyState) {
       return;
     }
 
+    const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
+    const remainingMs = Math.max(0, HOME_PAGE_BOOT_FALLBACK_TARGET_MS - elapsedMs);
     const timeoutId = window.setTimeout(() => {
       setBootFallbackReady(true);
-    }, HOME_PAGE_BOOT_SIGNAL_GRACE_MS);
+    }, remainingMs);
 
     return () => window.clearTimeout(timeoutId);
-  }, [bootReadyReceivedState, iframeLoadedState, loaderVisible]);
+  }, [bootFallbackReadyState, bootReadyReceivedState, bootSessionStartedAtMs, iframeLoadedState, loaderVisible]);
 
   useEffect(() => {
     if (!isActive) {
@@ -1032,6 +1052,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       });
       lastIframeLifecyclePhaseRef.current = 'resume';
     }
+    clearActiveHomePageBootStartedAtMs();
     setIsLoading(false);
     setHasCompletedInitialBoot(true);
     onBootStable?.();
@@ -1063,7 +1084,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
                 assetSrc={loaderRewardAssetPath}
                 totalPoints={loaderRewardDisplayTotalPoints}
                 rewardPoints={HOME_PAGE_LOADER_POINTS_REWARD}
-                minimumDurationMs={HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS}
+                minimumDurationMs={loaderMinimumDurationMs}
                 onCollect={handleLoaderRewardCollect}
                 onExitHoldChange={setLoaderRewardExitHoldActive}
               />
