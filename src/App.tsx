@@ -135,6 +135,23 @@ const RequireInstalledShell: React.FC<{ pwa: PWAState; children: React.ReactNode
 };
 
 const FULLSCREEN_EXEMPT_ROUTES = ['/install', '/auth'];
+const LOADER_INTERACTION_SELECTOR = '[data-loader-interaction="true"]';
+
+const eventTargetsLoaderInteraction = (event: Event): boolean => {
+    const target = event.target;
+    if (target instanceof Element && target.closest(LOADER_INTERACTION_SELECTOR)) {
+        return true;
+    }
+
+    if (event instanceof KeyboardEvent) {
+        const activeElement = document.activeElement;
+        if (activeElement instanceof Element && activeElement.closest(LOADER_INTERACTION_SELECTOR)) {
+            return true;
+        }
+    }
+
+    return false;
+};
 
 const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
     const {
@@ -201,6 +218,10 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
         let lastAttemptAt = 0;
         const maybeEnterFullscreen = (event: Event) => {
             if (isFullscreen || isStandaloneShell) {
+                return;
+            }
+
+            if (eventTargetsLoaderInteraction(event)) {
                 return;
             }
 
