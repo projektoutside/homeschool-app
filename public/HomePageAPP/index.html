@@ -11216,6 +11216,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             timerId: null,
             idleId: null
         };
+        const shouldDeferHostLoaderSecondaryWork = () => homepageHostLoaderEnabled && !homePageRouteAudioState.isActive;
         let queueHomepageMainRendererPrewarm = () => {};
         function clearHomepageMainRendererPrewarmSchedule() {
             if (homepageMainRendererPrewarmState.timerId !== null) {
@@ -17990,7 +17991,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function scheduleInventoryPanelAnchorUpdate({ afterPaint = false } = {}) {
-            if (!inventoryPanel || !isInventoryPanelOpen() || inventoryAnchorUpdateQueued) {
+            if (shouldDeferHostLoaderSecondaryWork() || !inventoryPanel || !isInventoryPanelOpen() || inventoryAnchorUpdateQueued) {
                 return;
             }
             inventoryAnchorUpdateQueued = true;
@@ -18131,7 +18132,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function updateDailyLunchboxLayout() {
-            if (!bottomLeftUtilityStack) {
+            if (shouldDeferHostLoaderSecondaryWork() || !bottomLeftUtilityStack) {
                 return;
             }
             const visualViewport = window.visualViewport;
@@ -18148,7 +18149,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         function scheduleDailyLunchboxLayoutUpdate({ afterPaint = false } = {}) {
-            if (!bottomLeftUtilityStack || dailyLunchboxLayoutQueued) {
+            if (shouldDeferHostLoaderSecondaryWork() || !bottomLeftUtilityStack || dailyLunchboxLayoutQueued) {
                 return;
             }
             dailyLunchboxLayoutQueued = true;
@@ -30169,7 +30170,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         };
 
         queueHomepageMainRendererPrewarm = () => {
-            if (homepageMainRendererPrewarmState.completed || prewarmProps.length === 0) {
+            if (shouldDeferHostLoaderSecondaryWork() || homepageMainRendererPrewarmState.completed || prewarmProps.length === 0) {
                 return;
             }
             scheduleNextPropPrewarmRun(homepageHostLoaderEnabled ? 900 : 80);

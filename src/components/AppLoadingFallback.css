@@ -1,0 +1,181 @@
+.app-loading-fallback {
+  position: relative;
+  min-block-size: 100svh;
+  inline-size: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: #081225;
+  color: #f8fbff;
+}
+
+.app-loading-fallback__backdrop,
+.app-loading-fallback__backdrop::before,
+.app-loading-fallback__backdrop::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.app-loading-fallback__backdrop {
+  background-image: var(--app-loading-background);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: scale(1.02);
+}
+
+.app-loading-fallback__backdrop::before {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(78, 240, 255, 0.22), rgba(78, 240, 255, 0) 28%),
+    radial-gradient(circle at 78% 24%, rgba(255, 216, 116, 0.16), rgba(255, 216, 116, 0) 20%);
+}
+
+.app-loading-fallback__backdrop::after {
+  background:
+    linear-gradient(180deg, rgba(8, 16, 37, 0.18) 0%, rgba(8, 16, 37, 0.04) 35%, rgba(5, 10, 24, 0.28) 100%),
+    radial-gradient(circle at 50% 55%, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1) 56%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+.app-loading-fallback__content {
+  position: relative;
+  z-index: 1;
+  min-block-size: inherit;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  padding:
+    max(1.25rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  text-align: center;
+}
+
+.app-loading-fallback__orb {
+  position: absolute;
+  inline-size: min(36vw, 18rem);
+  block-size: min(36vw, 18rem);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(77, 228, 255, 0.34), rgba(77, 228, 255, 0) 72%);
+  filter: blur(2px);
+  animation: app-loading-fallback-orb 2.8s ease-in-out infinite;
+}
+
+.app-loading-fallback__xio {
+  position: relative;
+  inline-size: clamp(6rem, 13vw, 8rem);
+  block-size: auto;
+  z-index: 1;
+  filter: drop-shadow(0 0.7rem 1.4rem rgba(5, 10, 24, 0.28));
+  animation: app-loading-fallback-float 2.2s ease-in-out infinite;
+}
+
+.app-loading-fallback__copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.45rem;
+  max-inline-size: min(32rem, calc(100vw - 2rem));
+}
+
+.app-loading-fallback__eyebrow {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(212, 242, 255, 0.82);
+}
+
+.app-loading-fallback__title {
+  font-size: clamp(1.4rem, 4.4vw, 2.25rem);
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+}
+
+.app-loading-fallback__body {
+  font-size: clamp(0.98rem, 2vw, 1.08rem);
+  color: rgba(237, 247, 255, 0.84);
+}
+
+.app-loading-fallback__dots {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.app-loading-fallback__dots span {
+  inline-size: 0.72rem;
+  block-size: 0.72rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef3c7, #f59e0b);
+  box-shadow: 0 0 1rem rgba(245, 158, 11, 0.32);
+  animation: app-loading-fallback-dot 1.2s ease-in-out infinite;
+}
+
+.app-loading-fallback__dots span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.app-loading-fallback__dots span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.app-loading-fallback__sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes app-loading-fallback-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -0.5rem, 0) scale(1.02);
+  }
+}
+
+@keyframes app-loading-fallback-orb {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes app-loading-fallback-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.34;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-0.28rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-fallback__orb,
+  .app-loading-fallback__xio,
+  .app-loading-fallback__dots span {
+    animation: none;
+  }
+}

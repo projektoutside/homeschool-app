@@ -6,9 +6,9 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useHomepageCatalog } from '../hooks/useHomepageCatalog';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { buildAssetPath } from '../utils/pathUtils';
-import CinematicLoadingScreen, {
+import HomePageIntroLoader, {
   type InteractiveRewardCollectPayload,
-} from '../components/CinematicLoadingScreen';
+} from '../components/HomePageIntroLoader';
 import {
   buildHomepagePendingSummonRecovery,
   clearHomepagePendingSummonRecovery,
@@ -63,17 +63,9 @@ const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
 const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 4000;
-const HOME_PAGE_HOST_INITIAL_PROGRESS = 0.06;
 const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
 const HOME_PAGE_LOADER_POINTS_REWARD = 10;
 const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 7000;
-const HOME_PAGE_LOADER_REWARD_WINDOW_MS = HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS;
-
-const clampNumber = (value: number, min: number, max: number): number => {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
-};
 
 type HomePageTiltPermissionState =
   | 'unknown'
@@ -183,7 +175,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [bootReadyReceived, setBootReadyReceived] = useState(false);
   const [bootFallbackReady, setBootFallbackReady] = useState(false);
-  const [bootProgress, setBootProgress] = useState(HOME_PAGE_HOST_INITIAL_PROGRESS);
   const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
   const [pendingSummonRecovery, setPendingSummonRecovery] = useState<HomepagePendingSummonRecoveryPayload | null>(null);
   const [storedSnapshot, setStoredSnapshot] = useState<HomepageCatalogSnapshot | null>(
@@ -254,7 +245,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const iframeLoadedState = iframeLoaded;
   const bootReadyReceivedState = bootReadyReceived;
   const bootFallbackReadyState = bootFallbackReady;
-  const bootProgressValue = bootProgress;
   const bootCompletionRequested = iframeLoadedState && (bootReadyReceivedState || bootFallbackReadyState);
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
@@ -473,29 +463,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   useEffect(() => {
     syncPendingSummonRecoveryToIframe();
   }, [syncPendingSummonRecoveryToIframe]);
-
-  useEffect(() => {
-    if (!loaderVisible) {
-      return;
-    }
-
-    let animationFrameId = 0;
-
-    const animateProgress = () => {
-      setBootProgress((current) => {
-        const target = bootCompletionRequested ? 1 : 0.9;
-        const easing = bootCompletionRequested ? 0.19 : 0.03;
-        const drift = bootCompletionRequested ? 0 : 0.0022;
-        const next = current + ((target - current) * easing);
-        return clampNumber(Math.max(next, Math.min(target, current + drift)), HOME_PAGE_HOST_INITIAL_PROGRESS, 1);
-      });
-
-      animationFrameId = window.requestAnimationFrame(animateProgress);
-    };
-
-    animationFrameId = window.requestAnimationFrame(animateProgress);
-    return () => window.cancelAnimationFrame(animationFrameId);
-  }, [bootCompletionRequested, loaderVisible]);
 
   useEffect(() => {
     if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState) {
@@ -1090,22 +1057,15 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
         >
           {loaderVisible && (
             <div className="user-home-app-loading">
-              <CinematicLoadingScreen
-                mode="boot"
+              <HomePageIntroLoader
                 ready={bootCompletionRequested}
                 onFinish={handleLoaderFinish}
-                progressOverride={bootProgressValue}
-                minimumBootDurationMs={HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS}
-                surface="panel"
-                interactiveRewards={{
-                  enabled: true,
-                  assetSrc: loaderRewardAssetPath,
-                  totalPoints: loaderRewardDisplayTotalPoints,
-                  rewardPoints: HOME_PAGE_LOADER_POINTS_REWARD,
-                  minimumCollectWindowMs: HOME_PAGE_LOADER_REWARD_WINDOW_MS,
-                  onCollect: handleLoaderRewardCollect,
-                  onExitHoldChange: setLoaderRewardExitHoldActive,
-                }}
+                assetSrc={loaderRewardAssetPath}
+                totalPoints={loaderRewardDisplayTotalPoints}
+                rewardPoints={HOME_PAGE_LOADER_POINTS_REWARD}
+                minimumDurationMs={HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS}
+                onCollect={handleLoaderRewardCollect}
+                onExitHoldChange={setLoaderRewardExitHoldActive}
               />
             </div>
           )}

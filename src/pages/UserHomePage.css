@@ -59,6 +59,7 @@
 .user-home-app-frame.is-loading {
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
 }
 
 .user-home-app-loading,
@@ -84,6 +85,7 @@
 
 .user-home-app-loading {
   background: transparent;
+  pointer-events: auto;
 }
 
 .user-home-app-error {

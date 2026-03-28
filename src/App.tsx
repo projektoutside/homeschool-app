@@ -8,7 +8,7 @@ import { usePWA } from './hooks/usePWA';
 import { useAppAssetPrefetch } from './hooks/useAppAssetPrefetch';
 import { useNativeShell } from './hooks/useNativeShell';
 import { UpdateNotification } from './components/UpdateNotification';
-import CinematicLoadingScreen from './components/CinematicLoadingScreen';
+import AppLoadingFallback from './components/AppLoadingFallback';
 import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
 import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
@@ -41,7 +41,7 @@ const CharacterCreatorPage = React.lazy(loadCharacterCreatorRoute);
 
 // Loading component with accessibility
 const LoadingFallback: React.FC = () => (
-    <CinematicLoadingScreen mode="indeterminate" ready={false} surface="page" />
+    <AppLoadingFallback />
 );
 
 const RouteBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -201,6 +201,10 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
         let lastAttemptAt = 0;
         const maybeEnterFullscreen = (event: Event) => {
             if (isFullscreen || isStandaloneShell) {
+                return;
+            }
+
+            if (event.target instanceof Element && event.target.closest('[data-loader-interaction="true"]')) {
                 return;
             }
 
