@@ -11211,6 +11211,26 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         const homePageAnimationState = {
             lastInactiveRenderAtMs: 0
         };
+        const homepageMainRendererPrewarmState = {
+            completed: false,
+            timerId: null,
+            idleId: null
+        };
+        let queueHomepageMainRendererPrewarm = () => {};
+        function clearHomepageMainRendererPrewarmSchedule() {
+            if (homepageMainRendererPrewarmState.timerId !== null) {
+                window.clearTimeout(homepageMainRendererPrewarmState.timerId);
+                homepageMainRendererPrewarmState.timerId = null;
+            }
+            if (homepageMainRendererPrewarmState.idleId !== null) {
+                if (typeof window.cancelIdleCallback === 'function' && typeof window.requestIdleCallback === 'function') {
+                    window.cancelIdleCallback(homepageMainRendererPrewarmState.idleId);
+                } else {
+                    window.clearTimeout(homepageMainRendererPrewarmState.idleId);
+                }
+            }
+            homepageMainRendererPrewarmState.idleId = null;
+        }
         const homePageMusicState = {
             activeAudio: null,
             queuedAudio: null,
@@ -13362,6 +13382,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                     homePageAnimationLoopState.preparedForUnload = false;
                     requestNextHomePageAnimationFrame();
                     scheduleResponsiveLayout({ afterPaint: true });
+                    queueHomepageMainRendererPrewarm();
                     resumeBackgroundPlaybackIfActive();
                     if (!homePageMusicState.muted && homePageMusicState.shouldPlay) {
                         attemptHomePageMusicPlayback();
@@ -13370,6 +13391,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                         attemptNatureSoundsPlayback();
                     }
                 } else {
+                    clearHomepageMainRendererPrewarmSchedule();
                     stopHomePageAnimationLoop();
                 }
                 return;
@@ -13382,6 +13404,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 homePageAnimationLoopState.preparedForUnload = false;
                 requestNextHomePageAnimationFrame();
                 scheduleResponsiveLayout({ afterPaint: true });
+                queueHomepageMainRendererPrewarm();
                 startHomePageActivationAudioSequence();
                 resumeBackgroundPlaybackIfActive();
                 return;
@@ -13397,6 +13420,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             clearScheduledHomePageMusicStart();
             animateHomePageRouteGain(0, HOME_PAGE_ROUTE_FADE_OUT_MS, { pauseAfter: true });
             pauseBackgroundPlaybackImmediately();
+            clearHomepageMainRendererPrewarmSchedule();
             stopHomePageAnimationLoop();
             flushPendingLiveCatalogReload('pause');
         }
@@ -30071,8 +30095,41 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 };
             });
 
+        const scheduleNextPropPrewarmRun = (delayMs = 0) => {
+            if (homepageMainRendererPrewarmState.completed || prewarmProps.length === 0) {
+                return;
+            }
+            if (
+                homepageMainRendererPrewarmState.timerId !== null
+                || homepageMainRendererPrewarmState.idleId !== null
+            ) {
+                return;
+            }
+
+            const requestRun = () => {
+                homepageMainRendererPrewarmState.timerId = null;
+                if (typeof window.requestIdleCallback === 'function') {
+                    homepageMainRendererPrewarmState.idleId = window.requestIdleCallback(runPropPrewarm, { timeout: 600 });
+                } else {
+                    homepageMainRendererPrewarmState.idleId = window.setTimeout(() => runPropPrewarm(), 16);
+                }
+            };
+
+            if (delayMs > 0) {
+                homepageMainRendererPrewarmState.timerId = window.setTimeout(requestRun, delayMs);
+                return;
+            }
+
+            requestRun();
+        };
+
         const runPropPrewarm = (deadline) => {
-            const batchSize = 3;
+            homepageMainRendererPrewarmState.idleId = null;
+            if (!homePageRouteAudioState.isActive) {
+                return;
+            }
+
+            const batchSize = 1;
             for (let i = 0; i < batchSize && prewarmProps.length > 0; i++) {
                 const { key, prop, wasVisible, leftWasVisible, rightWasVisible, left, right } = prewarmProps.shift();
 
@@ -30091,24 +30148,28 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 if (left) left.visible = leftWasVisible;
                 if (right) right.visible = rightWasVisible;
 
-                if (deadline && !deadline.didTimeout && deadline.timeRemaining() < 2) {
+                if (deadline && !deadline.didTimeout && deadline.timeRemaining() < 4) {
                     break;
                 }
             }
 
-            if (prewarmProps.length > 0) {
-                if (window.requestIdleCallback) {
-                    window.requestIdleCallback(runPropPrewarm, { timeout: 800 });
-                } else {
-                    setTimeout(runPropPrewarm, 8);
-                }
+            if (prewarmProps.length === 0) {
+                homepageMainRendererPrewarmState.completed = true;
+                return;
             }
+
+            scheduleNextPropPrewarmRun(60);
         };
 
-        if (window.requestIdleCallback) {
-            window.requestIdleCallback(runPropPrewarm, { timeout: 800 });
-        } else {
-            setTimeout(runPropPrewarm, 8);
+        queueHomepageMainRendererPrewarm = () => {
+            if (homepageMainRendererPrewarmState.completed || prewarmProps.length === 0) {
+                return;
+            }
+            scheduleNextPropPrewarmRun(homepageHostLoaderEnabled ? 900 : 80);
+        };
+
+        if (homePageRouteAudioState.isActive) {
+            queueHomepageMainRendererPrewarm();
         }
         requestNextHomePageAnimationFrame();
         scheduleHostBootReadySignal();

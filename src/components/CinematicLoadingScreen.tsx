@@ -171,7 +171,7 @@ const REWARD_TOKEN_OPEN_DURATION_MS = 560;
 const REWARD_TOKEN_LABEL_DURATION_MS = 420;
 const REWARD_TOKEN_COLLECTED_CLEANUP_MS = 48;
 const REWARD_TOKEN_PRESSED_STALE_MS = 1200;
-const REWARD_TOKEN_MAX_ACTIVE = 6;
+const REWARD_TOKEN_MAX_ACTIVE = 5;
 const REWARD_TOKEN_MAX_ACTIVE_REDUCED = 3;
 const REWARD_TOKEN_PRESS_SQUEEZE_Y = 0.14;
 const REWARD_TOKEN_PRESS_SQUEEZE_XZ = 0.10;
@@ -448,7 +448,7 @@ const getRewardMaxActiveTokens = (profile: RewardQualityProfile): number => (
 
 const getRewardSpawnDelayRangeMs = (profile: RewardQualityProfile): [number, number] => {
   if (profile === 'full') {
-    return [450, 900];
+    return [520, 980];
   }
   if (profile === 'lite') {
     return [720, 1180];
@@ -471,6 +471,8 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
   const rewardQualityProfile: RewardQualityProfile = prefersReducedMotion
     ? 'reduced-motion'
     : adaptiveQuality;
+  const rewardLayerRef = useRef<HTMLDivElement | null>(null);
+  const rewardLayerBoundsRef = useRef({ width: 0, height: 0 });
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>(
     Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
   );
@@ -504,6 +506,45 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
   const rollingFrameMsRef = useRef(16.67);
   const slowFrameStreakRef = useRef(0);
 
+  useEffect(() => {
+    const layer = rewardLayerRef.current;
+    if (!layer) {
+      return undefined;
+    }
+
+    let pendingFrameId = 0;
+    const updateBounds = () => {
+      pendingFrameId = 0;
+      const rect = layer.getBoundingClientRect();
+      rewardLayerBoundsRef.current = {
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+
+    const scheduleUpdate = () => {
+      if (pendingFrameId !== 0) {
+        return;
+      }
+      pendingFrameId = window.requestAnimationFrame(updateBounds);
+    };
+
+    updateBounds();
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(scheduleUpdate)
+      : null;
+    resizeObserver?.observe(layer);
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+
+    return () => {
+      if (pendingFrameId !== 0) {
+        window.cancelAnimationFrame(pendingFrameId);
+      }
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, []);
+
   const applyInactiveTokenSlot = useCallback((slotIndex: number) => {
     const button = buttonRefs.current[slotIndex];
     const shell = shellRefs.current[slotIndex];
@@ -516,8 +557,7 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
       button.style.visibility = 'hidden';
       button.style.opacity = '0';
       button.style.pointerEvents = 'none';
-      button.style.left = '-20%';
-      button.style.top = '-20%';
+      button.style.transform = 'translate3d(-240px, -240px, 0)';
       button.style.width = '0px';
       button.style.height = '0px';
       button.style.zIndex = '0';
@@ -661,14 +701,28 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
       button.className = nextClassName;
     }
 
+    const layerBounds = rewardLayerBoundsRef.current;
+    const layerWidth = Math.max(layerBounds.width, 1);
+    const layerHeight = Math.max(layerBounds.height, 1);
+    const anchorX = (anchorPose.x / 100) * layerWidth;
+    const anchorY = (anchorPose.y / 100) * layerHeight;
+    const buttonTransform = `translate3d(${anchorX.toFixed(2)}px, ${anchorY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`;
+    const buttonSize = `${token.sizeRem.toFixed(3)}rem`;
+    const buttonZIndex = String(token.zIndex);
+
     button.style.visibility = 'visible';
     button.style.opacity = '1';
     button.style.pointerEvents = 'auto';
-    button.style.left = `${anchorPose.x}%`;
-    button.style.top = `${anchorPose.y}%`;
-    button.style.width = `${token.sizeRem.toFixed(3)}rem`;
-    button.style.height = `${token.sizeRem.toFixed(3)}rem`;
-    button.style.zIndex = String(token.zIndex);
+    if (button.style.transform !== buttonTransform) {
+      button.style.transform = buttonTransform;
+    }
+    if (button.style.width !== buttonSize) {
+      button.style.width = buttonSize;
+      button.style.height = buttonSize;
+    }
+    if (button.style.zIndex !== buttonZIndex) {
+      button.style.zIndex = buttonZIndex;
+    }
     button.disabled = token.phase !== 'flying' && token.phase !== 'pressed';
     button.tabIndex = button.disabled ? -1 : 0;
 
@@ -895,6 +949,18 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
     return Number.isInteger(parsed) ? parsed : -1;
   };
 
+  const releasePointerCaptureSafely = useCallback((element: HTMLButtonElement, pointerId: number) => {
+    if (typeof element.hasPointerCapture !== 'function' || !element.hasPointerCapture(pointerId)) {
+      return;
+    }
+
+    try {
+      element.releasePointerCapture(pointerId);
+    } catch {
+      // Ignore browsers that reject release after implicit cancel/up.
+    }
+  }, []);
+
   const releaseRewardTokenBackToFlight = useCallback((slotIndex: number, pointerId: number) => {
     if (slotIndex < 0) {
       return;
@@ -935,6 +1001,11 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
     }
 
     event.preventDefault();
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Some browsers may reject capture during rapid teardown; keep the press flow alive.
+    }
     const nowMs = getAnimationClockNow();
     const pose = resolveRewardFlightPose(token, nowMs);
     const nextToken: RewardToken = {
@@ -957,7 +1028,10 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
   }, [applyTokenPresentation, prefersReducedMotion]);
 
   const handleRewardTokenPointerLeave = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.buttons === 0) {
+    if (
+      event.buttons === 0
+      || (typeof event.currentTarget.hasPointerCapture === 'function' && event.currentTarget.hasPointerCapture(event.pointerId))
+    ) {
       return;
     }
 
@@ -965,11 +1039,13 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
   }, [releaseRewardTokenBackToFlight]);
 
   const handleRewardTokenPointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    releasePointerCaptureSafely(event.currentTarget, event.pointerId);
     releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
-  }, [releaseRewardTokenBackToFlight]);
+  }, [releasePointerCaptureSafely, releaseRewardTokenBackToFlight]);
 
   const handleRewardTokenPointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    releasePointerCaptureSafely(event.currentTarget, event.pointerId);
 
     const slotIndex = resolveSlotIndex(event.currentTarget);
     const token = slotIndex >= 0 ? tokensRef.current[slotIndex] : null;
@@ -1014,7 +1090,11 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
       .catch(() => {
         // Keep the local boot bonus in sync with accepted awards only.
       });
-  }, [applyTokenPresentation, onCollect, prefersReducedMotion, rewardPoints]);
+  }, [applyTokenPresentation, onCollect, prefersReducedMotion, releasePointerCaptureSafely, rewardPoints]);
+
+  const handleRewardTokenLostPointerCapture = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
+  }, [releaseRewardTokenBackToFlight]);
 
   const rewardHudCopy = caughtRewardPoints > 0
     ? `Boot bonus +${caughtRewardPoints}`
@@ -1026,7 +1106,12 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={rewardLayerClassName} aria-live="polite" data-collect-window-active={collectWindowActive ? 'true' : 'false'}>
+    <div
+      ref={rewardLayerRef}
+      className={rewardLayerClassName}
+      aria-live="polite"
+      data-collect-window-active={collectWindowActive ? 'true' : 'false'}
+    >
       <div className="cinematic-loading-screen__reward-hud">
         <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--total">
           Total PTS {totalPoints}
@@ -1052,6 +1137,7 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
           onPointerLeave={handleRewardTokenPointerLeave}
           onPointerCancel={handleRewardTokenPointerCancel}
           onPointerUp={handleRewardTokenPointerUp}
+          onLostPointerCapture={handleRewardTokenLostPointerCapture}
           onDragStart={(event) => event.preventDefault()}
           aria-label={`Collect ${rewardPoints} points`}
           data-no-click-sound="true"
