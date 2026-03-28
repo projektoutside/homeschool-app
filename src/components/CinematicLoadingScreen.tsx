@@ -82,11 +82,6 @@ type RewardVisualSnapshot = {
   zIndex: number;
 };
 
-type PointerPositionSnapshot = {
-  clientX: number;
-  clientY: number;
-};
-
 type RewardToken = {
   id: string;
   variant: InteractiveRewardVariant;
@@ -250,13 +245,6 @@ const REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP = 0.92;
 const REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS = 700;
 const REWARD_TOKEN_FRAME_BUDGET_MS = 18;
 const REWARD_TOKEN_FRAME_SPIKE_MS = 22;
-const REWARD_TOKEN_HIT_RADIUS_MULTIPLIER = 1.16;
-const REWARD_TOKEN_RELEASE_RADIUS_MULTIPLIER = 1.34;
-const LOADER_INTERACTION_ATTRS = {
-  'data-cinematic-feedback': 'off',
-  'data-loader-interaction': 'true',
-  'data-no-click-sound': 'true',
-} as const;
 
 const BOOT_SCROLL_POINT = Object.freeze({ x: 87.2, y: 50.2 });
 const REDUCED_SCROLL_POINT = Object.freeze({ x: 86.8, y: 50.4 });
@@ -681,7 +669,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
   const assetWarmReadyRef = useRef(false);
   const qualityProfileRef = useRef<RewardQualityProfile>(prefersReducedMotion ? 'reduced-motion' : 'full');
   const pendingBitmapSourcesRef = useRef<CanvasImageSource[]>([]);
-  const pointerPositionsRef = useRef<Map<number, PointerPositionSnapshot>>(new Map());
 
   const notifyOpeningHoldChange = useCallback((holding: boolean) => {
     if (openingHoldActiveRef.current === holding) {
@@ -706,7 +693,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
     slowFrameStreakRef.current = 0;
     collectWindowActiveRef.current = false;
     bootReadyRef.current = false;
-    pointerPositionsRef.current.clear();
     notifyOpeningHoldChange(false);
     const context = contextRef.current;
     if (context) {
@@ -722,94 +708,14 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
     setQualityProfileState('lite');
   }, [prefersReducedMotion]);
 
-  const updatePointerPosition = useCallback((pointerId: number, clientX: number, clientY: number) => {
-    pointerPositionsRef.current.set(pointerId, { clientX, clientY });
-  }, []);
-
-  const clearPointerPosition = useCallback((pointerId: number) => {
-    pointerPositionsRef.current.delete(pointerId);
-  }, []);
-
-  const resolveLocalPointerPosition = useCallback((clientX: number, clientY: number): PointerPositionSnapshot | null => {
+  const resolveInteractiveToken = useCallback((clientX: number, clientY: number): RewardToken | null => {
     const layer = layerRef.current;
     if (!layer) {
       return null;
     }
-
     const rect = layer.getBoundingClientRect();
-    return {
-      clientX: clientX - rect.left,
-      clientY: clientY - rect.top,
-    };
-  }, []);
-
-  const isPointerWithinTokenRadius = useCallback((
-    token: RewardToken,
-    radiusMultiplier: number,
-    pointerPosition: PointerPositionSnapshot | null,
-  ): boolean => {
-    if (!token.visual || !pointerPosition) {
-      return false;
-    }
-
-    const localPointerPosition = resolveLocalPointerPosition(
-      pointerPosition.clientX,
-      pointerPosition.clientY,
-    );
-    if (!localPointerPosition) {
-      return false;
-    }
-
-    const distance = Math.hypot(
-      localPointerPosition.clientX - token.visual.xPx,
-      localPointerPosition.clientY - token.visual.yPx,
-    );
-    return distance <= token.visual.radiusPx * radiusMultiplier;
-  }, [resolveLocalPointerPosition]);
-
-  const collectPressedToken = useCallback((token: RewardToken) => {
-    const nowMs = lastFrameNowMsRef.current;
-    tokensRef.current = tokensRef.current.map((candidate) => {
-      if (candidate.id !== token.id) {
-        return candidate;
-      }
-      return {
-        ...candidate,
-        phase: 'opening',
-        phaseStartedAtMs: nowMs,
-        pointerId: null,
-      };
-    });
-
-    const collectPayload: InteractiveRewardCollectPayload = {
-      tokenId: token.id,
-      variant: token.variant,
-      occurredAt: new Date().toISOString(),
-    };
-
-    const collectResult = onCollect?.(collectPayload);
-    if (!onCollect) {
-      setCaughtRewardPoints((current) => current + rewardPoints);
-      return;
-    }
-
-    void Promise.resolve(collectResult)
-      .then((accepted) => {
-        if (accepted === false) {
-          return;
-        }
-        setCaughtRewardPoints((current) => current + rewardPoints);
-      })
-      .catch(() => {
-        // Keep the local boot bonus aligned with accepted rewards only.
-      });
-  }, [onCollect, rewardPoints]);
-
-  const resolveInteractiveToken = useCallback((clientX: number, clientY: number): RewardToken | null => {
-    const localPointerPosition = resolveLocalPointerPosition(clientX, clientY);
-    if (!localPointerPosition) {
-      return null;
-    }
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
     const candidates = [...tokensRef.current]
       .filter((token) => token.phase === 'flying' && token.visual)
       .sort((left, right) => right.zIndex - left.zIndex);
@@ -819,17 +725,14 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
       if (!visual) {
         continue;
       }
-      const distance = Math.hypot(
-        localPointerPosition.clientX - visual.xPx,
-        localPointerPosition.clientY - visual.yPx,
-      );
-      if (distance <= visual.radiusPx * REWARD_TOKEN_HIT_RADIUS_MULTIPLIER) {
+      const distance = Math.hypot(localX - visual.xPx, localY - visual.yPx);
+      if (distance <= visual.radiusPx) {
         return token;
       }
     }
 
     return null;
-  }, [resolveLocalPointerPosition]);
+  }, []);
 
   const releasePressedToken = useCallback((pointerId: number) => {
     const nowMs = lastFrameNowMsRef.current;
@@ -845,8 +748,7 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
         freezePose: null,
       };
     });
-    clearPointerPosition(pointerId);
-  }, [clearPointerPosition]);
+  }, []);
 
   const drawRewardTokens = useCallback((
     nowMs: number,
@@ -1080,56 +982,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
     }
   }, [downgradeToLite, notifyOpeningHoldChange, prefersReducedMotion, rewardPoints]);
 
-  const finalizePressedToken = useCallback((
-    pointerId: number,
-    fallbackClientX?: number,
-    fallbackClientY?: number,
-  ) => {
-    if (
-      typeof fallbackClientX === 'number'
-      && typeof fallbackClientY === 'number'
-    ) {
-      updatePointerPosition(pointerId, fallbackClientX, fallbackClientY);
-    }
-
-    const token = tokensRef.current.find(
-      (candidate) => candidate.phase === 'pressed' && candidate.pointerId === pointerId,
-    );
-    if (!token) {
-      clearPointerPosition(pointerId);
-      return false;
-    }
-
-    const pointerPosition = pointerPositionsRef.current.get(pointerId) ?? null;
-    const shouldCollect = isPointerWithinTokenRadius(
-      token,
-      REWARD_TOKEN_RELEASE_RADIUS_MULTIPLIER,
-      pointerPosition,
-    );
-
-    if (shouldCollect) {
-      collectPressedToken(token);
-    } else {
-      releasePressedToken(pointerId);
-    }
-
-    const canvas = canvasRef.current;
-    if (canvas?.hasPointerCapture(pointerId)) {
-      canvas.releasePointerCapture(pointerId);
-    }
-
-    clearPointerPosition(pointerId);
-    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
-    return shouldCollect;
-  }, [
-    clearPointerPosition,
-    collectPressedToken,
-    drawRewardTokens,
-    isPointerWithinTokenRadius,
-    releasePressedToken,
-    updatePointerPosition,
-  ]);
-
   useEffect(() => {
     const layer = layerRef.current;
     const canvas = canvasRef.current;
@@ -1180,17 +1032,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
       window.removeEventListener('resize', updateBounds);
     };
   }, []);
-
-  useEffect(() => {
-    const handleDocumentPointerUp = (event: PointerEvent) => {
-      finalizePressedToken(event.pointerId, event.clientX, event.clientY);
-    };
-
-    document.addEventListener('pointerup', handleDocumentPointerUp, true);
-    return () => {
-      document.removeEventListener('pointerup', handleDocumentPointerUp, true);
-    };
-  }, [finalizePressedToken]);
 
   useEffect(() => {
     qualityProfileRef.current = prefersReducedMotion ? 'reduced-motion' : 'full';
@@ -1275,7 +1116,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
       return;
     }
 
-    updatePointerPosition(event.pointerId, event.clientX, event.clientY);
     const token = resolveInteractiveToken(event.clientX, event.clientY);
     if (!token) {
       return;
@@ -1283,7 +1123,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
 
     const anchorPose = resolveTokenAnchorPose(token, lastFrameNowMsRef.current);
     event.preventDefault();
-    event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     tokensRef.current = tokensRef.current.map((candidate) => {
       if (candidate.id !== token.id) {
@@ -1301,7 +1140,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    updatePointerPosition(event.pointerId, event.clientX, event.clientY);
     const token = tokensRef.current.find(
       (candidate) => candidate.phase === 'pressed' && candidate.pointerId === event.pointerId,
     );
@@ -1317,7 +1155,7 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
     const distance = Math.hypot(localX - token.visual.xPx, localY - token.visual.yPx);
-    if (distance <= token.visual.radiusPx * REWARD_TOKEN_RELEASE_RADIUS_MULTIPLIER) {
+    if (distance <= token.visual.radiusPx * 1.28) {
       return;
     }
 
@@ -1329,17 +1167,63 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
   };
 
   const handlePointerCancel = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    updatePointerPosition(event.pointerId, event.clientX, event.clientY);
+    releasePressedToken(event.pointerId);
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
   };
 
   const handleLostPointerCapture = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    updatePointerPosition(event.pointerId, event.clientX, event.clientY);
+    releasePressedToken(event.pointerId);
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    finalizePressedToken(event.pointerId, event.clientX, event.clientY);
+    const token = tokensRef.current.find(
+      (candidate) => candidate.phase === 'pressed' && candidate.pointerId === event.pointerId,
+    );
+    if (!token) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const nowMs = lastFrameNowMsRef.current;
+    tokensRef.current = tokensRef.current.map((candidate) => {
+      if (candidate.id !== token.id) {
+        return candidate;
+      }
+      return {
+        ...candidate,
+        phase: 'opening',
+        phaseStartedAtMs: nowMs,
+        pointerId: null,
+      };
+    });
+
+    const collectPayload: InteractiveRewardCollectPayload = {
+      tokenId: token.id,
+      variant: token.variant,
+      occurredAt: new Date().toISOString(),
+    };
+
+    const collectResult = onCollect?.(collectPayload);
+    if (!onCollect) {
+      setCaughtRewardPoints((current) => current + rewardPoints);
+    } else {
+      void Promise.resolve(collectResult)
+        .then((accepted) => {
+          if (accepted === false) {
+            return;
+          }
+          setCaughtRewardPoints((current) => current + rewardPoints);
+        })
+        .catch(() => {
+          // Keep the local boot bonus aligned with accepted rewards only.
+        });
+    }
+
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
   };
 
   const rewardHudCopy = caughtRewardPoints > 0
@@ -1356,7 +1240,6 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
       ref={layerRef}
       className={rewardLayerClassName}
       aria-live="polite"
-      {...LOADER_INTERACTION_ATTRS}
     >
       <div className="cinematic-loading-screen__reward-hud">
         <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--total">
@@ -1370,16 +1253,11 @@ const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderR
         ref={canvasRef}
         className="cinematic-loading-screen__reward-canvas"
         aria-hidden="true"
-        {...LOADER_INTERACTION_ATTRS}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         onLostPointerCapture={handleLostPointerCapture}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        }}
       />
     </div>
   );
@@ -1768,7 +1646,6 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
       style={rootStyle}
       role="status"
       aria-live="polite"
-      {...(mode === 'boot' ? LOADER_INTERACTION_ATTRS : {})}
     >
       <div className="cinematic-loading-screen__backdrop" aria-hidden="true" />
       <div className="cinematic-loading-screen__stage">
