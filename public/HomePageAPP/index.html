@@ -11201,9 +11201,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         const MYSTERY_WING_ORDER_STORAGE_KEY = 'homepage_mystery_wing_order_v1';
         const HOMEPAGE_CATALOG_STORAGE_KEY = 'LAHS_HOMEPAGE_LIVE_CATALOG_SNAPSHOT';
         const HOMEPAGE_MYSTERY_TEST_REWARD_STORAGE_KEY = 'LAHS_HOMEPAGE_MYSTERY_TEST_REWARD_KEY';
+        const homepageHostLoaderEnabled = new URLSearchParams(window.location.search).get('hostLoader') === '1';
         const homePageRouteAudioState = {
-            isActive: true,
-            gain: 1,
+            isActive: !homepageHostLoaderEnabled,
+            gain: homepageHostLoaderEnabled ? 0 : 1,
             fadeToken: 0,
             fadeRafId: null
         };
@@ -14793,8 +14794,8 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         let startupFadeDismissed = false;
         let startupFadeFallbackTimer = null;
         const HOMEPAGE_HOST_BOOT_READY_MESSAGE = 'LAHS_HOMEPAGE_BOOT_READY';
-        const homepageHostLoaderEnabled = new URLSearchParams(window.location.search).get('hostLoader') === '1';
         let homepageHostBootReadyPosted = false;
+        let homepageHostBootPreviewFrameRendered = false;
 
         function revealMysterySignLayer() {
             if (mysterySignLayerRevealDone) return;
@@ -14858,12 +14859,34 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             } catch (_) {}
         }
 
+        function renderHostBootReadyPreviewFrame() {
+            if (homepageHostBootPreviewFrameRendered) {
+                return;
+            }
+            homepageHostBootPreviewFrameRendered = true;
+
+            try {
+                renderer.render(scene, camera);
+                legendaryStormFxRenderer?.render({
+                    dt: 0,
+                    t: elapsed,
+                    stormState: legendaryStormState,
+                    theme: legendaryStormState.rarityKey ? getLegendaryStormTheme(legendaryStormState.rarityKey) : null,
+                    overlayActive: document.body.classList.contains('legendary-storm-active'),
+                    camera
+                });
+            } catch (_) {}
+        }
+
         function scheduleHostBootReadySignal() {
             if (homepageHostBootReadyPosted || !homepageHostLoaderEnabled) {
                 return;
             }
             window.requestAnimationFrame(() => {
                 window.requestAnimationFrame(() => {
+                    applyResponsiveLayout();
+                    updateDailyLunchboxLayout();
+                    renderHostBootReadyPreviewFrame();
                     postHostBootReadySignal();
                 });
             });

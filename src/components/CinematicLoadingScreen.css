@@ -73,6 +73,7 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
+  contain: layout paint style;
 }
 
 .cinematic-loading-screen__reward-hud {
@@ -127,9 +128,16 @@
   -webkit-tap-highlight-color: transparent;
   transform: translate(-50%, -50%);
   overflow: visible;
+  contain: layout paint style;
 }
 
 .cinematic-loading-screen__reward-token:disabled {
+  pointer-events: none;
+}
+
+.cinematic-loading-screen__reward-token.is-inactive {
+  visibility: hidden;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -142,18 +150,18 @@
   position: absolute;
   inset: 0;
   transform-origin: center center;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 .cinematic-loading-screen__reward-token-glow {
   position: absolute;
-  inset: -8%;
+  inset: -18%;
   border-radius: 999px;
   background:
-    radial-gradient(circle, rgba(125, 214, 255, 0.62), rgba(125, 214, 255, 0.16) 42%, rgba(125, 214, 255, 0) 76%);
-  filter: blur(0.8rem);
+    radial-gradient(circle, rgba(125, 214, 255, 0.48), rgba(125, 214, 255, 0.18) 44%, rgba(125, 214, 255, 0) 76%);
   opacity: 0.88;
   animation: loader-reward-glow 1.65s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 .cinematic-loading-screen__reward-token-image,
@@ -197,7 +205,18 @@
     0 0 0.25rem rgba(255, 231, 160, 0.78),
     0 0.18rem 0.55rem rgba(6, 13, 31, 0.42);
   pointer-events: none;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
+}
+
+.cinematic-loading-screen__reward-layer.is-reward-lite .cinematic-loading-screen__reward-chip,
+.cinematic-loading-screen__reward-layer.is-reward-reduced-motion .cinematic-loading-screen__reward-chip {
+  backdrop-filter: none;
+}
+
+.cinematic-loading-screen__reward-layer.is-reward-lite .cinematic-loading-screen__reward-token-glow,
+.cinematic-loading-screen__reward-layer.is-reward-reduced-motion .cinematic-loading-screen__reward-token-glow {
+  animation: none;
+  opacity: 0;
 }
 
 .cinematic-loading-screen__flight-bar {

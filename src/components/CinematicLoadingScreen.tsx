@@ -143,6 +143,7 @@ export type CinematicLoadingScreenProps = {
   ready: boolean;
   onFinish?: () => void;
   progressOverride?: number;
+  minimumBootDurationMs?: number;
   surface?: 'page' | 'panel';
   className?: string;
   interactiveRewards?: CinematicLoadingScreenInteractiveRewards;
@@ -183,6 +184,10 @@ const REWARD_TOKEN_OPEN_BURST_LIFT = 1.9;
 const REWARD_TOKEN_OPEN_BURST_SPIN_DEG = 2.2 * (180 / Math.PI);
 const REWARD_TOKEN_MIN_COLLECT_WINDOW_MS = 5000;
 const REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP = 0.92;
+const REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS = 700;
+const REWARD_TOKEN_FRAME_BUDGET_MS = 18;
+const REWARD_TOKEN_FRAME_SPIKE_MS = 22;
+const REWARD_TOKEN_POOL_SIZE = REWARD_TOKEN_MAX_ACTIVE;
 
 const rewardBurstShards: RewardBurstShard[] = [
   {
@@ -424,11 +429,702 @@ const resolveIndeterminateTravelProgress = (timeMs: number): number => {
   return lerp(0.08, 0.78, easeOutCubic(loop));
 };
 
+type RewardQualityProfile = 'full' | 'lite' | 'reduced-motion';
+
+type LoaderRewardLayerProps = {
+  assetSrc: string;
+  totalPoints: number;
+  rewardPoints: number;
+  collectWindowActive: boolean;
+  bootReady: boolean;
+  prefersReducedMotion: boolean;
+  onCollect?: (payload: InteractiveRewardCollectPayload) => boolean | void | Promise<boolean | void>;
+  onOpeningHoldChange?: (holding: boolean) => void;
+};
+
+const getRewardMaxActiveTokens = (profile: RewardQualityProfile): number => (
+  profile === 'full' ? REWARD_TOKEN_MAX_ACTIVE : REWARD_TOKEN_MAX_ACTIVE_REDUCED
+);
+
+const getRewardSpawnDelayRangeMs = (profile: RewardQualityProfile): [number, number] => {
+  if (profile === 'full') {
+    return [450, 900];
+  }
+  if (profile === 'lite') {
+    return [720, 1180];
+  }
+  return [780, 1240];
+};
+
+const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
+  assetSrc,
+  totalPoints,
+  rewardPoints,
+  collectWindowActive,
+  bootReady,
+  prefersReducedMotion,
+  onCollect,
+  onOpeningHoldChange,
+}) => {
+  const [caughtRewardPoints, setCaughtRewardPoints] = useState(0);
+  const [adaptiveQuality, setAdaptiveQuality] = useState<'full' | 'lite'>('full');
+  const rewardQualityProfile: RewardQualityProfile = prefersReducedMotion
+    ? 'reduced-motion'
+    : adaptiveQuality;
+  const buttonRefs = useRef<Array<HTMLButtonElement | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const shellRefs = useRef<Array<HTMLSpanElement | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const glowRefs = useRef<Array<HTMLSpanElement | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const imageRefs = useRef<Array<HTMLImageElement | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const pointsRefs = useRef<Array<HTMLSpanElement | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const shardRefs = useRef<Array<Array<HTMLSpanElement | null>>>(
+    Array.from(
+      { length: REWARD_TOKEN_POOL_SIZE },
+      () => Array.from({ length: rewardBurstShards.length }, () => null),
+    ),
+  );
+  const tokensRef = useRef<Array<RewardToken | null>>(
+    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  );
+  const tokenSequenceRef = useRef(0);
+  const nextSpawnAtMsRef = useRef(0);
+  const animationNowRef = useRef(getAnimationClockNow());
+  const adaptiveQualityRef = useRef<'full' | 'lite'>('full');
+  const assetWarmReadyRef = useRef(false);
+  const openingHoldActiveRef = useRef(false);
+  const rollingFrameMsRef = useRef(16.67);
+  const slowFrameStreakRef = useRef(0);
+
+  const applyInactiveTokenSlot = useCallback((slotIndex: number) => {
+    const button = buttonRefs.current[slotIndex];
+    const shell = shellRefs.current[slotIndex];
+    const glow = glowRefs.current[slotIndex];
+    const image = imageRefs.current[slotIndex];
+    const points = pointsRefs.current[slotIndex];
+
+    if (button) {
+      button.className = 'cinematic-loading-screen__reward-token is-inactive';
+      button.style.visibility = 'hidden';
+      button.style.opacity = '0';
+      button.style.pointerEvents = 'none';
+      button.style.left = '-20%';
+      button.style.top = '-20%';
+      button.style.width = '0px';
+      button.style.height = '0px';
+      button.style.zIndex = '0';
+      button.disabled = true;
+      button.tabIndex = -1;
+    }
+
+    if (shell) {
+      shell.style.transform = 'scale(0.82)';
+      shell.style.opacity = '0';
+    }
+
+    if (glow) {
+      glow.style.opacity = '0';
+      glow.style.transform = 'scale(0.92)';
+    }
+
+    if (image) {
+      image.style.opacity = '0';
+    }
+
+    if (points) {
+      points.style.opacity = '0';
+      points.style.transform = 'translate(-50%, -10%) scale(0.94)';
+    }
+
+    shardRefs.current[slotIndex]?.forEach((shard) => {
+      if (!shard) {
+        return;
+      }
+      shard.style.opacity = '0';
+      shard.style.transform = 'translate(0rem, 0rem) scale(0.2)';
+    });
+  }, []);
+
+  const notifyOpeningHoldChange = useCallback((holding: boolean) => {
+    if (openingHoldActiveRef.current === holding) {
+      return;
+    }
+    openingHoldActiveRef.current = holding;
+    onOpeningHoldChange?.(holding);
+  }, [onOpeningHoldChange]);
+
+  const downgradeToLite = useCallback(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    setAdaptiveQuality((current) => {
+      if (current === 'lite') {
+        return current;
+      }
+      adaptiveQualityRef.current = 'lite';
+      return 'lite';
+    });
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    adaptiveQualityRef.current = adaptiveQuality;
+  }, [adaptiveQuality]);
+
+  const applyTokenPresentation = useCallback((
+    slotIndex: number,
+    token: RewardToken,
+    nowMs: number,
+    qualityProfile: RewardQualityProfile,
+  ) => {
+    const button = buttonRefs.current[slotIndex];
+    const shell = shellRefs.current[slotIndex];
+    const glow = glowRefs.current[slotIndex];
+    const image = imageRefs.current[slotIndex];
+    const points = pointsRefs.current[slotIndex];
+    const shards = shardRefs.current[slotIndex];
+
+    if (!button || !shell || !glow || !image || !points) {
+      return;
+    }
+
+    const frozenPose = (
+      typeof token.freezeX === 'number'
+      && typeof token.freezeY === 'number'
+      && typeof token.freezeRotation === 'number'
+    )
+      ? {
+        x: token.freezeX,
+        y: token.freezeY,
+        rotation: token.freezeRotation,
+      }
+      : null;
+    const flightPose = resolveRewardFlightPose(token, nowMs);
+    const anchorPose = frozenPose ?? {
+      x: flightPose.x,
+      y: flightPose.y,
+      rotation: flightPose.rotation,
+    };
+
+    let shellTransform = `rotate(${flightPose.rotation.toFixed(2)}deg) scale(${flightPose.scale.toFixed(3)})`;
+    let shellOpacity = flightPose.opacity;
+    let tokenOpacity = 1;
+    let pointsOpacity = 0;
+    let pointsTransform = 'translate(-50%, -10%) scale(0.96)';
+    let openProgress = 0;
+    let shardsVisible = qualityProfile === 'full' && !prefersReducedMotion;
+
+    if (token.phase === 'pressed') {
+      const pressedScaleX = 1 + REWARD_TOKEN_PRESS_SQUEEZE_XZ;
+      const pressedScaleY = 1 - REWARD_TOKEN_PRESS_SQUEEZE_Y;
+      const pressedSinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK;
+      shellTransform = `translate3d(0, ${pressedSinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - REWARD_TOKEN_PRESS_TILT_DEG).toFixed(2)}deg) scale(${pressedScaleX.toFixed(3)}, ${pressedScaleY.toFixed(3)})`;
+      shellOpacity = 1;
+    } else if (token.phase === 'opening') {
+      const openAgeMs = Math.max(0, nowMs - token.phaseStartedAtMs);
+      openProgress = clamp(openAgeMs / REWARD_TOKEN_OPEN_DURATION_MS);
+      const openEase = easeOutCubic(openProgress);
+      const releaseBlend = 1 - Math.exp(-(openAgeMs / 1000) * REWARD_TOKEN_PRESS_RELEASE_RECOVER);
+      const residual = 1 - clamp(releaseBlend);
+      const rebound = Math.sin(openProgress * Math.PI) * REWARD_TOKEN_PRESS_RELEASE_REBOUND;
+      const scaleY = 1 - (REWARD_TOKEN_PRESS_SQUEEZE_Y * residual) + (rebound * 0.25);
+      const scaleXZ = 1 + (REWARD_TOKEN_PRESS_SQUEEZE_XZ * residual) + rebound;
+      const sinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK * residual;
+      shellTransform = `translate3d(0, ${sinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - (REWARD_TOKEN_PRESS_TILT_DEG * residual)).toFixed(2)}deg) scale(${scaleXZ.toFixed(3)}, ${scaleY.toFixed(3)})`;
+      shellOpacity = Math.max(0, 1 - (openEase * 1.06));
+      tokenOpacity = Math.max(0, 1 - (openEase * 1.06));
+      shardsVisible = shardsVisible && openProgress > 0;
+      const labelProgress = clamp(openAgeMs / REWARD_TOKEN_LABEL_DURATION_MS);
+      pointsOpacity = 1 - smoothstep(labelProgress);
+      const pointsRiseRem = 0.35 + (labelProgress * 2.4);
+      const pointsScale = 0.96 + (labelProgress * 0.16);
+      pointsTransform = `translate(-50%, calc(-50% - ${pointsRiseRem.toFixed(3)}rem)) scale(${pointsScale.toFixed(3)})`;
+    } else if (token.phase === 'collected') {
+      shellTransform = `rotate(${anchorPose.rotation.toFixed(2)}deg) scale(0.18)`;
+      shellOpacity = 0;
+      tokenOpacity = 0;
+      shardsVisible = false;
+    } else {
+      shardsVisible = false;
+    }
+
+    const nextClassName = `cinematic-loading-screen__reward-token cinematic-loading-screen__reward-token--${token.variant} is-${token.phase}`;
+    if (button.className !== nextClassName) {
+      button.className = nextClassName;
+    }
+
+    button.style.visibility = 'visible';
+    button.style.opacity = '1';
+    button.style.pointerEvents = 'auto';
+    button.style.left = `${anchorPose.x}%`;
+    button.style.top = `${anchorPose.y}%`;
+    button.style.width = `${token.sizeRem.toFixed(3)}rem`;
+    button.style.height = `${token.sizeRem.toFixed(3)}rem`;
+    button.style.zIndex = String(token.zIndex);
+    button.disabled = token.phase !== 'flying' && token.phase !== 'pressed';
+    button.tabIndex = button.disabled ? -1 : 0;
+
+    shell.style.transform = shellTransform;
+    shell.style.opacity = shellOpacity.toFixed(3);
+    glow.style.opacity = qualityProfile === 'full' ? '0.88' : '0';
+    glow.style.transform = qualityProfile === 'full' ? 'scale(1)' : 'scale(0.92)';
+    image.style.opacity = tokenOpacity.toFixed(3);
+    points.style.opacity = pointsOpacity.toFixed(3);
+    points.style.transform = pointsTransform;
+
+    const burstDistanceRem = REWARD_TOKEN_OPEN_BURST_DISTANCE * openProgress;
+    const burstLiftRem = REWARD_TOKEN_OPEN_BURST_LIFT * openProgress;
+    const burstPieceScale = Math.max(0.16, 1 - (openProgress * 0.84));
+    const burstOpacity = Math.max(0, 1 - (easeOutCubic(openProgress) * 1.06));
+
+    shards?.forEach((shardNode, shardIndex) => {
+      if (!shardNode) {
+        return;
+      }
+      if (!shardsVisible) {
+        shardNode.style.opacity = '0';
+        shardNode.style.transform = 'translate(0rem, 0rem) scale(0.2)';
+        return;
+      }
+
+      const shard = rewardBurstShards[shardIndex];
+      shardNode.style.opacity = burstOpacity.toFixed(3);
+      shardNode.style.transform = `translate(${(shard.dx * burstDistanceRem).toFixed(3)}rem, ${((shard.dy * burstDistanceRem) - burstLiftRem).toFixed(3)}rem) rotate(${(shard.rotationOffsetDeg + (REWARD_TOKEN_OPEN_BURST_SPIN_DEG * shard.spinMultiplier * openProgress)).toFixed(2)}deg) scale(${burstPieceScale.toFixed(3)})`;
+    });
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    adaptiveQualityRef.current = 'full';
+    assetWarmReadyRef.current = false;
+    openingHoldActiveRef.current = false;
+    tokenSequenceRef.current = 0;
+    nextSpawnAtMsRef.current = 0;
+    rollingFrameMsRef.current = 16.67;
+    slowFrameStreakRef.current = 0;
+    tokensRef.current = Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null);
+    for (let index = 0; index < REWARD_TOKEN_POOL_SIZE; index += 1) {
+      applyInactiveTokenSlot(index);
+    }
+    onOpeningHoldChange?.(false);
+  }, [applyInactiveTokenSlot, assetSrc, onOpeningHoldChange]);
+
+  useEffect(() => {
+    let disposed = false;
+    let settled = false;
+    const warmImage = new Image();
+
+    const finalize = (fallbackToLite: boolean) => {
+      if (disposed || settled) {
+        return;
+      }
+      settled = true;
+      assetWarmReadyRef.current = true;
+      if (fallbackToLite) {
+        downgradeToLite();
+      }
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      finalize(true);
+    }, REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS);
+
+    warmImage.onload = () => finalize(false);
+    warmImage.onerror = () => finalize(true);
+    warmImage.decoding = 'async';
+    warmImage.src = assetSrc;
+
+    if (typeof warmImage.decode === 'function') {
+      warmImage.decode().then(
+        () => finalize(false),
+        () => finalize(true),
+      );
+    }
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [assetSrc, downgradeToLite]);
+
+  useEffect(() => {
+    let animationFrameId = 0;
+    let active = true;
+    let previousTimestamp = 0;
+
+    const step = (timestamp: number) => {
+      if (!active) {
+        return;
+      }
+
+      const nowMs = Number.isFinite(timestamp) ? timestamp : getAnimationClockNow();
+      animationNowRef.current = nowMs;
+      const deltaMs = previousTimestamp > 0
+        ? Math.min(48, Math.max(8, nowMs - previousTimestamp))
+        : 16.67;
+      previousTimestamp = nowMs;
+      const qualityProfile: RewardQualityProfile = prefersReducedMotion
+        ? 'reduced-motion'
+        : adaptiveQualityRef.current;
+      let activeTokenCount = 0;
+      let freeSlotIndex = -1;
+      let hasOpening = false;
+
+      for (let slotIndex = 0; slotIndex < REWARD_TOKEN_POOL_SIZE; slotIndex += 1) {
+        let token = tokensRef.current[slotIndex];
+        if (!token) {
+          if (freeSlotIndex < 0) {
+            freeSlotIndex = slotIndex;
+          }
+          applyInactiveTokenSlot(slotIndex);
+          continue;
+        }
+
+        if (token.phase === 'flying' && nowMs >= token.expiresAtMs) {
+          tokensRef.current[slotIndex] = null;
+          if (freeSlotIndex < 0) {
+            freeSlotIndex = slotIndex;
+          }
+          applyInactiveTokenSlot(slotIndex);
+          continue;
+        }
+
+        if (token.phase === 'pressed' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_PRESSED_STALE_MS) {
+          token = {
+            ...token,
+            phase: 'flying',
+            phaseStartedAtMs: nowMs,
+            pointerId: null,
+            freezeX: null,
+            freezeY: null,
+            freezeRotation: null,
+          };
+          tokensRef.current[slotIndex] = token;
+        }
+
+        if (token.phase === 'opening' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_OPEN_DURATION_MS) {
+          token = {
+            ...token,
+            phase: 'collected',
+            phaseStartedAtMs: nowMs,
+            pointerId: null,
+          };
+          tokensRef.current[slotIndex] = token;
+        }
+
+        if (token.phase === 'collected' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_COLLECTED_CLEANUP_MS) {
+          tokensRef.current[slotIndex] = null;
+          if (freeSlotIndex < 0) {
+            freeSlotIndex = slotIndex;
+          }
+          applyInactiveTokenSlot(slotIndex);
+          continue;
+        }
+
+        if (token.phase === 'opening') {
+          hasOpening = true;
+        }
+
+        activeTokenCount += 1;
+        applyTokenPresentation(slotIndex, token, nowMs, qualityProfile);
+      }
+
+      if (
+        assetWarmReadyRef.current
+        && !bootReady
+        && freeSlotIndex >= 0
+        && activeTokenCount < getRewardMaxActiveTokens(qualityProfile)
+        && nowMs >= nextSpawnAtMsRef.current
+      ) {
+        const nextTokenId = tokenSequenceRef.current + 1;
+        tokenSequenceRef.current = nextTokenId;
+        const nextToken = createRewardToken(nextTokenId, nowMs, qualityProfile !== 'full');
+        tokensRef.current[freeSlotIndex] = nextToken;
+        applyTokenPresentation(freeSlotIndex, nextToken, nowMs, qualityProfile);
+        activeTokenCount += 1;
+        const [minDelayMs, maxDelayMs] = getRewardSpawnDelayRangeMs(qualityProfile);
+        nextSpawnAtMsRef.current = nowMs + randomBetween(minDelayMs, maxDelayMs);
+      }
+
+      if (!assetWarmReadyRef.current || bootReady || activeTokenCount === 0) {
+        slowFrameStreakRef.current = 0;
+      } else if (!prefersReducedMotion && adaptiveQualityRef.current === 'full') {
+        rollingFrameMsRef.current = lerp(rollingFrameMsRef.current, deltaMs, 0.18);
+        slowFrameStreakRef.current = deltaMs > REWARD_TOKEN_FRAME_SPIKE_MS
+          ? slowFrameStreakRef.current + 1
+          : 0;
+        if (
+          rollingFrameMsRef.current > REWARD_TOKEN_FRAME_BUDGET_MS
+          || slowFrameStreakRef.current >= 2
+        ) {
+          downgradeToLite();
+        }
+      }
+
+      notifyOpeningHoldChange(hasOpening);
+      animationFrameId = window.requestAnimationFrame(step);
+    };
+
+    animationFrameId = window.requestAnimationFrame(step);
+    return () => {
+      active = false;
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [
+    applyInactiveTokenSlot,
+    applyTokenPresentation,
+    bootReady,
+    downgradeToLite,
+    notifyOpeningHoldChange,
+    prefersReducedMotion,
+  ]);
+
+  useEffect(() => () => {
+    notifyOpeningHoldChange(false);
+  }, [notifyOpeningHoldChange]);
+
+  const resolveSlotIndex = (element: HTMLButtonElement): number => {
+    const parsed = Number(element.dataset.slotIndex ?? '-1');
+    return Number.isInteger(parsed) ? parsed : -1;
+  };
+
+  const releaseRewardTokenBackToFlight = useCallback((slotIndex: number, pointerId: number) => {
+    if (slotIndex < 0) {
+      return;
+    }
+
+    const token = tokensRef.current[slotIndex];
+    if (!token || token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== pointerId)) {
+      return;
+    }
+
+    const nextToken: RewardToken = {
+      ...token,
+      phase: 'flying',
+      phaseStartedAtMs: getAnimationClockNow(),
+      pointerId: null,
+      freezeX: null,
+      freezeY: null,
+      freezeRotation: null,
+    };
+    tokensRef.current[slotIndex] = nextToken;
+    applyTokenPresentation(
+      slotIndex,
+      nextToken,
+      animationNowRef.current || getAnimationClockNow(),
+      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
+    );
+  }, [applyTokenPresentation, prefersReducedMotion]);
+
+  const handleRewardTokenPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 && event.pointerType !== 'touch') {
+      return;
+    }
+
+    const slotIndex = resolveSlotIndex(event.currentTarget);
+    const token = slotIndex >= 0 ? tokensRef.current[slotIndex] : null;
+    if (!token || token.phase !== 'flying') {
+      return;
+    }
+
+    event.preventDefault();
+    const nowMs = getAnimationClockNow();
+    const pose = resolveRewardFlightPose(token, nowMs);
+    const nextToken: RewardToken = {
+      ...token,
+      phase: 'pressed',
+      phaseStartedAtMs: nowMs,
+      pointerId: event.pointerId,
+      freezeX: pose.x,
+      freezeY: pose.y,
+      freezeRotation: pose.rotation,
+    };
+
+    tokensRef.current[slotIndex] = nextToken;
+    applyTokenPresentation(
+      slotIndex,
+      nextToken,
+      nowMs,
+      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
+    );
+  }, [applyTokenPresentation, prefersReducedMotion]);
+
+  const handleRewardTokenPointerLeave = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.buttons === 0) {
+      return;
+    }
+
+    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
+  }, [releaseRewardTokenBackToFlight]);
+
+  const handleRewardTokenPointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
+  }, [releaseRewardTokenBackToFlight]);
+
+  const handleRewardTokenPointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+
+    const slotIndex = resolveSlotIndex(event.currentTarget);
+    const token = slotIndex >= 0 ? tokensRef.current[slotIndex] : null;
+    if (!token || token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== event.pointerId)) {
+      return;
+    }
+
+    const nowMs = getAnimationClockNow();
+    const nextToken: RewardToken = {
+      ...token,
+      phase: 'opening',
+      phaseStartedAtMs: nowMs,
+      pointerId: null,
+    };
+    tokensRef.current[slotIndex] = nextToken;
+    applyTokenPresentation(
+      slotIndex,
+      nextToken,
+      nowMs,
+      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
+    );
+
+    const collectPayload: InteractiveRewardCollectPayload = {
+      tokenId: nextToken.id,
+      variant: nextToken.variant,
+      occurredAt: new Date().toISOString(),
+    };
+
+    const collectResult = onCollect?.(collectPayload);
+    if (!onCollect) {
+      setCaughtRewardPoints((current) => current + rewardPoints);
+      return;
+    }
+
+    void Promise.resolve(collectResult)
+      .then((accepted) => {
+        if (accepted === false) {
+          return;
+        }
+        setCaughtRewardPoints((current) => current + rewardPoints);
+      })
+      .catch(() => {
+        // Keep the local boot bonus in sync with accepted awards only.
+      });
+  }, [applyTokenPresentation, onCollect, prefersReducedMotion, rewardPoints]);
+
+  const rewardHudCopy = caughtRewardPoints > 0
+    ? `Boot bonus +${caughtRewardPoints}`
+    : `Catch PTS for +${rewardPoints}`;
+  const rewardLayerClassName = [
+    'cinematic-loading-screen__reward-layer',
+    rewardQualityProfile === 'lite' ? 'is-reward-lite' : '',
+    rewardQualityProfile === 'reduced-motion' ? 'is-reward-reduced-motion' : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <div className={rewardLayerClassName} aria-live="polite" data-collect-window-active={collectWindowActive ? 'true' : 'false'}>
+      <div className="cinematic-loading-screen__reward-hud">
+        <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--total">
+          Total PTS {totalPoints}
+        </span>
+        <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--hint">
+          {rewardHudCopy}
+        </span>
+      </div>
+      {Array.from({ length: REWARD_TOKEN_POOL_SIZE }, (_, slotIndex) => (
+        <button
+          key={`reward-slot-${slotIndex}`}
+          ref={(node) => {
+            buttonRefs.current[slotIndex] = node;
+          }}
+          type="button"
+          className="cinematic-loading-screen__reward-token is-inactive"
+          style={{
+            visibility: 'hidden',
+            opacity: 0,
+          }}
+          data-slot-index={slotIndex}
+          onPointerDown={handleRewardTokenPointerDown}
+          onPointerLeave={handleRewardTokenPointerLeave}
+          onPointerCancel={handleRewardTokenPointerCancel}
+          onPointerUp={handleRewardTokenPointerUp}
+          onDragStart={(event) => event.preventDefault()}
+          aria-label={`Collect ${rewardPoints} points`}
+          data-no-click-sound="true"
+          disabled
+        >
+          <span
+            ref={(node) => {
+              shellRefs.current[slotIndex] = node;
+            }}
+            className="cinematic-loading-screen__reward-token-shell"
+          >
+            <span
+              ref={(node) => {
+                glowRefs.current[slotIndex] = node;
+              }}
+              className="cinematic-loading-screen__reward-token-glow"
+              aria-hidden="true"
+            />
+            {rewardBurstShards.map((shard, shardIndex) => (
+              <span
+                key={shard.id}
+                ref={(node) => {
+                  shardRefs.current[slotIndex][shardIndex] = node;
+                }}
+                className="cinematic-loading-screen__reward-token-shard"
+                aria-hidden="true"
+                style={{
+                  backgroundImage: `url("${assetSrc}")`,
+                  clipPath: shard.clipPath,
+                  opacity: 0,
+                  transform: 'translate(0rem, 0rem) scale(0.2)',
+                }}
+              />
+            ))}
+            <img
+              ref={(node) => {
+                imageRefs.current[slotIndex] = node;
+              }}
+              className="cinematic-loading-screen__reward-token-image"
+              src={assetSrc}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+              style={{ opacity: 0 }}
+            />
+          </span>
+          <span
+            ref={(node) => {
+              pointsRefs.current[slotIndex] = node;
+            }}
+            className="cinematic-loading-screen__reward-points-pop"
+            aria-hidden="true"
+            style={{
+              opacity: 0,
+              transform: 'translate(-50%, -10%) scale(0.94)',
+            }}
+          >
+            +{rewardPoints}pts
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+LoaderRewardLayer.displayName = 'LoaderRewardLayer';
+
 export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   mode,
   ready,
   onFinish,
   progressOverride,
+  minimumBootDurationMs: minimumBootDurationOverrideMs,
   surface = 'page',
   className,
   interactiveRewards,
@@ -437,32 +1133,36 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   const [timeMs, setTimeMs] = useState(0);
   const [internalBootProgress, setInternalBootProgress] = useState(INITIAL_BOOT_PROGRESS);
   const [displayBootProgress, setDisplayBootProgress] = useState(INITIAL_BOOT_PROGRESS);
-  const [rewardTokens, setRewardTokens] = useState<RewardToken[]>([]);
-  const [bootCaughtRewardPoints, setBootCaughtRewardPoints] = useState(0);
+  const [rewardAnimationExitHoldActive, setRewardAnimationExitHoldActive] = useState(false);
   const [bootStartedAtMs] = useState(() => getAnimationClockNow());
   const finishTriggeredRef = useRef(false);
   const finishTimerRef = useRef<number | null>(null);
-  const rewardTokenSequenceRef = useRef(0);
 
   const rewardPoints = interactiveRewards?.rewardPoints ?? 10;
   const minimumCollectWindowMs = Math.max(
     0,
     interactiveRewards?.minimumCollectWindowMs ?? REWARD_TOKEN_MIN_COLLECT_WINDOW_MS,
   );
+  const minimumBootDurationMs = mode === 'boot'
+    ? Math.max(0, minimumBootDurationOverrideMs ?? minimumCollectWindowMs)
+    : 0;
   const interactiveRewardsEnabled = Boolean(
     interactiveRewards?.enabled
     && interactiveRewards.assetSrc
     && mode === 'boot',
   );
+  const interactiveRewardConfig = interactiveRewardsEnabled && interactiveRewards
+    ? interactiveRewards
+    : null;
   const bootElapsedMs = mode === 'boot'
     ? Math.max(0, timeMs - bootStartedAtMs)
     : 0;
+  const minimumBootDurationActive = mode === 'boot'
+    && bootElapsedMs < minimumBootDurationMs;
   const rewardCollectWindowActive = interactiveRewardsEnabled
-    && bootElapsedMs < minimumCollectWindowMs;
-  const bootReady = ready && !rewardCollectWindowActive;
-  const maxActiveRewardTokens = prefersReducedMotion
-    ? REWARD_TOKEN_MAX_ACTIVE_REDUCED
-    : REWARD_TOKEN_MAX_ACTIVE;
+    && bootElapsedMs < Math.max(minimumCollectWindowMs, minimumBootDurationMs);
+  const bootReady = ready && !minimumBootDurationActive;
+  const loaderExitHoldActive = minimumBootDurationActive || rewardAnimationExitHoldActive;
 
   useEffect(() => {
     let animationFrameId = 0;
@@ -520,13 +1220,13 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
       const bootProgressTarget = clamp(
         typeof progressOverride === 'number' ? progressOverride : internalBootProgress,
       );
-      return rewardCollectWindowActive
+      return minimumBootDurationActive
         ? Math.min(bootProgressTarget, REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP)
         : bootProgressTarget;
     }
 
     return resolveIndeterminateTravelProgress(timeMs);
-  }, [internalBootProgress, mode, progressOverride, rewardCollectWindowActive, timeMs]);
+  }, [internalBootProgress, minimumBootDurationActive, mode, progressOverride, timeMs]);
 
   useEffect(() => {
     if (mode !== 'boot') {
@@ -575,112 +1275,6 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   const visualProgress = mode === 'boot' ? displayBootProgress : targetVisualProgress;
 
   const impactActive = mode === 'boot' && bootReady && visualProgress >= 0.999;
-
-  useEffect(() => {
-    if (!interactiveRewardsEnabled || bootReady) {
-      return undefined;
-    }
-
-    let active = true;
-    let timeoutId = 0;
-
-    const scheduleNextSpawn = () => {
-      if (!active) {
-        return;
-      }
-
-      const delayMs = prefersReducedMotion
-        ? randomBetween(640, 1040)
-        : randomBetween(450, 900);
-
-      timeoutId = window.setTimeout(() => {
-        if (!active) {
-          return;
-        }
-
-        setRewardTokens((current) => {
-          if (current.length >= maxActiveRewardTokens) {
-            return current;
-          }
-          const nextTokenId = rewardTokenSequenceRef.current + 1;
-          rewardTokenSequenceRef.current = nextTokenId;
-          return [
-            ...current,
-            createRewardToken(nextTokenId, getAnimationClockNow(), prefersReducedMotion),
-          ];
-        });
-        scheduleNextSpawn();
-      }, delayMs);
-    };
-
-    scheduleNextSpawn();
-
-    return () => {
-      active = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [bootReady, interactiveRewardsEnabled, maxActiveRewardTokens, prefersReducedMotion]);
-
-  useEffect(() => {
-    if (!interactiveRewardsEnabled || rewardTokens.length === 0) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      const nowMs = getAnimationClockNow();
-      setRewardTokens((current) => {
-        let changed = false;
-        const nextTokens: RewardToken[] = [];
-
-        current.forEach((token) => {
-          if (token.phase === 'flying' && nowMs >= token.expiresAtMs) {
-            changed = true;
-            return;
-          }
-
-          if (token.phase === 'pressed' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_PRESSED_STALE_MS) {
-            changed = true;
-            nextTokens.push({
-              ...token,
-              phase: 'flying',
-              phaseStartedAtMs: nowMs,
-              pointerId: null,
-              freezeX: null,
-              freezeY: null,
-              freezeRotation: null,
-            });
-            return;
-          }
-
-          if (token.phase === 'opening' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_OPEN_DURATION_MS) {
-            changed = true;
-            nextTokens.push({
-              ...token,
-              phase: 'collected',
-              phaseStartedAtMs: nowMs,
-              pointerId: null,
-            });
-            return;
-          }
-
-          if (token.phase === 'collected' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_COLLECTED_CLEANUP_MS) {
-            changed = true;
-            return;
-          }
-
-          nextTokens.push(token);
-        });
-
-        return changed ? nextTokens : current;
-      });
-    }, 80);
-
-    return () => window.clearInterval(intervalId);
-  }, [interactiveRewardsEnabled, rewardTokens.length]);
-
-  const rewardExitHoldActive = interactiveRewardsEnabled
-    && rewardTokens.some((token) => token.phase === 'opening');
-  const loaderExitHoldActive = rewardCollectWindowActive || rewardExitHoldActive;
 
   useEffect(() => {
     interactiveRewards?.onExitHoldChange?.(loaderExitHoldActive);
@@ -771,7 +1365,7 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
       statusBody: mode === 'boot'
         ? (bootReady
           ? 'XiO touched the Mystery scroll. Opening your homepage...'
-          : 'Loading completes the moment XiO reaches the Mystery scroll.')
+          : 'Loading completes once XiO reaches the Mystery scroll and your homepage is ready.')
         : 'XiO is drifting toward the Mystery scroll while the app starts.',
       statusTitle: mode === 'boot' ? 'XiO Is Approaching The Mystery Scroll' : 'Preparing La\'s Homeschool',
       trailCoreOpacity,
@@ -783,241 +1377,6 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
       xioPosition,
     };
   }, [bootReady, impactActive, mode, prefersReducedMotion, timeMs, visualProgress]);
-
-  const handleRewardTokenPointerDown = useCallback((
-    event: React.PointerEvent<HTMLButtonElement>,
-    tokenId: string,
-  ) => {
-    if (!interactiveRewardsEnabled || (event.button !== 0 && event.pointerType !== 'touch')) {
-      return;
-    }
-
-    event.preventDefault();
-    const nowMs = getAnimationClockNow();
-
-    setRewardTokens((current) => {
-      const tokenIndex = current.findIndex((token) => token.id === tokenId);
-      if (tokenIndex < 0) {
-        return current;
-      }
-
-      const token = current[tokenIndex];
-      if (token.phase !== 'flying') {
-        return current;
-      }
-
-      const pose = resolveRewardFlightPose(token, nowMs);
-
-      const nextTokens = [...current];
-      nextTokens[tokenIndex] = {
-        ...token,
-        phase: 'pressed',
-        phaseStartedAtMs: nowMs,
-        pointerId: event.pointerId,
-        freezeX: pose.x,
-        freezeY: pose.y,
-        freezeRotation: pose.rotation,
-      };
-      return nextTokens;
-    });
-  }, [interactiveRewardsEnabled]);
-
-  const releaseRewardTokenBackToFlight = useCallback((
-    tokenId: string,
-    pointerId: number,
-  ) => {
-    setRewardTokens((current) => {
-      const tokenIndex = current.findIndex((token) => token.id === tokenId);
-      if (tokenIndex < 0) {
-        return current;
-      }
-
-      const token = current[tokenIndex];
-      if (token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== pointerId)) {
-        return current;
-      }
-
-      const nextTokens = [...current];
-      nextTokens[tokenIndex] = {
-        ...token,
-        phase: 'flying',
-        phaseStartedAtMs: getAnimationClockNow(),
-        pointerId: null,
-        freezeX: null,
-        freezeY: null,
-        freezeRotation: null,
-      };
-      return nextTokens;
-    });
-  }, []);
-
-  const handleRewardTokenPointerLeave = useCallback((
-    event: React.PointerEvent<HTMLButtonElement>,
-    tokenId: string,
-  ) => {
-    if (event.buttons === 0) {
-      return;
-    }
-    releaseRewardTokenBackToFlight(tokenId, event.pointerId);
-  }, [releaseRewardTokenBackToFlight]);
-
-  const handleRewardTokenPointerCancel = useCallback((
-    event: React.PointerEvent<HTMLButtonElement>,
-    tokenId: string,
-  ) => {
-    releaseRewardTokenBackToFlight(tokenId, event.pointerId);
-  }, [releaseRewardTokenBackToFlight]);
-
-  const handleRewardTokenPointerUp = useCallback((
-    event: React.PointerEvent<HTMLButtonElement>,
-    tokenId: string,
-  ) => {
-    if (!interactiveRewardsEnabled) {
-      return;
-    }
-
-    event.preventDefault();
-    const nowMs = getAnimationClockNow();
-    let collectPayload: InteractiveRewardCollectPayload | null = null;
-
-    setRewardTokens((current) => {
-      const tokenIndex = current.findIndex((token) => token.id === tokenId);
-      if (tokenIndex < 0) {
-        return current;
-      }
-
-      const token = current[tokenIndex];
-      if (token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== event.pointerId)) {
-        return current;
-      }
-
-      collectPayload = {
-        tokenId: token.id,
-        variant: token.variant,
-        occurredAt: new Date().toISOString(),
-      };
-
-      const nextTokens = [...current];
-      nextTokens[tokenIndex] = {
-        ...token,
-        phase: 'opening',
-        phaseStartedAtMs: nowMs,
-        pointerId: null,
-      };
-      return nextTokens;
-    });
-
-    if (!collectPayload) {
-      return;
-    }
-
-    const collectResult = interactiveRewards?.onCollect?.(collectPayload);
-    if (!interactiveRewards?.onCollect) {
-      setBootCaughtRewardPoints((current) => current + rewardPoints);
-      return;
-    }
-
-    void Promise.resolve(collectResult)
-      .then((accepted) => {
-        if (accepted === false) {
-          return;
-        }
-        setBootCaughtRewardPoints((current) => current + rewardPoints);
-      })
-      .catch(() => {
-        // Keep the local boot bonus in sync with accepted awards only.
-      });
-  }, [interactiveRewards, interactiveRewardsEnabled, rewardPoints]);
-
-  const renderedRewardTokens = useMemo(() => {
-    if (!interactiveRewardsEnabled) {
-      return [];
-    }
-
-    const nowMs = timeMs || getAnimationClockNow();
-    return rewardTokens.map((token) => {
-      const frozenPose = (
-        typeof token.freezeX === 'number'
-        && typeof token.freezeY === 'number'
-        && typeof token.freezeRotation === 'number'
-      )
-        ? {
-          x: token.freezeX,
-          y: token.freezeY,
-          rotation: token.freezeRotation,
-        }
-        : null;
-      const flightPose = resolveRewardFlightPose(token, nowMs);
-      const anchorPose = frozenPose ?? {
-        x: flightPose.x,
-        y: flightPose.y,
-        rotation: flightPose.rotation,
-      };
-
-      let shellTransform = `rotate(${flightPose.rotation.toFixed(2)}deg) scale(${flightPose.scale.toFixed(3)})`;
-      let shellOpacity = flightPose.opacity;
-      let shellFilter = `drop-shadow(0 0.35rem 0.8rem rgba(7, 15, 41, 0.34)) blur(${flightPose.blur.toFixed(2)}px)`;
-      let tokenOpacity = 1;
-      let pointsOpacity = 0;
-      let pointsTransform = 'translate(-50%, -10%) scale(0.96)';
-      let pointsFilter = 'blur(0px)';
-      let shardsVisible = false;
-      let openProgress = 0;
-
-      if (token.phase === 'pressed') {
-        const pressedScaleX = 1 + REWARD_TOKEN_PRESS_SQUEEZE_XZ;
-        const pressedScaleY = 1 - REWARD_TOKEN_PRESS_SQUEEZE_Y;
-        const pressedSinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK;
-        shellTransform = `translate3d(0, ${pressedSinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - REWARD_TOKEN_PRESS_TILT_DEG).toFixed(2)}deg) scale(${pressedScaleX.toFixed(3)}, ${pressedScaleY.toFixed(3)})`;
-        shellOpacity = 1;
-        shellFilter = 'drop-shadow(0 0.45rem 0.9rem rgba(6, 14, 40, 0.4))';
-      } else if (token.phase === 'opening') {
-        const openAgeMs = Math.max(0, nowMs - token.phaseStartedAtMs);
-        openProgress = clamp(openAgeMs / REWARD_TOKEN_OPEN_DURATION_MS);
-        const openEase = easeOutCubic(openProgress);
-        const releaseBlend = 1 - Math.exp(-(openAgeMs / 1000) * REWARD_TOKEN_PRESS_RELEASE_RECOVER);
-        const residual = 1 - clamp(releaseBlend);
-        const rebound = Math.sin(openProgress * Math.PI) * REWARD_TOKEN_PRESS_RELEASE_REBOUND;
-        const scaleY = 1 - (REWARD_TOKEN_PRESS_SQUEEZE_Y * residual) + (rebound * 0.25);
-        const scaleXZ = 1 + (REWARD_TOKEN_PRESS_SQUEEZE_XZ * residual) + rebound;
-        const sinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK * residual;
-        shellTransform = `translate3d(0, ${sinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - (REWARD_TOKEN_PRESS_TILT_DEG * residual)).toFixed(2)}deg) scale(${scaleXZ.toFixed(3)}, ${scaleY.toFixed(3)})`;
-        shellOpacity = Math.max(0, 1 - (openEase * 1.06));
-        shellFilter = `drop-shadow(0 0.6rem 1rem rgba(7, 15, 41, ${lerp(0.4, 0.18, openEase).toFixed(3)}))`;
-        tokenOpacity = Math.max(0, 1 - (openEase * 1.06));
-        shardsVisible = token.phase === 'opening';
-        const labelProgress = clamp(openAgeMs / REWARD_TOKEN_LABEL_DURATION_MS);
-        pointsOpacity = 1 - smoothstep(labelProgress);
-        const pointsRiseRem = 0.35 + (labelProgress * 2.4);
-        const pointsScale = 0.96 + (labelProgress * 0.16);
-        pointsTransform = `translate(-50%, calc(-50% - ${pointsRiseRem.toFixed(3)}rem)) scale(${pointsScale.toFixed(3)})`;
-        pointsFilter = `blur(${(labelProgress * 7.5).toFixed(2)}px)`;
-      } else if (token.phase === 'collected') {
-        shellTransform = `rotate(${anchorPose.rotation.toFixed(2)}deg) scale(0.18)`;
-        shellOpacity = 0;
-        shellFilter = 'none';
-        tokenOpacity = 0;
-      }
-
-      return {
-        anchorPose,
-        openProgress,
-        pointsFilter,
-        pointsOpacity,
-        pointsTransform,
-        shellFilter,
-        shellOpacity,
-        shellTransform,
-        shardsVisible,
-        token,
-        tokenOpacity,
-      };
-    });
-  }, [interactiveRewardsEnabled, rewardTokens, timeMs]);
-
-  const rewardHudCopy = bootCaughtRewardPoints > 0
-    ? `Boot bonus +${bootCaughtRewardPoints}`
-    : `Catch PTS for +${rewardPoints}`;
 
   const rootClassName = [
     'cinematic-loading-screen',
@@ -1132,94 +1491,18 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
           </div>
         </div>
       </div>
-      {interactiveRewardsEnabled ? (
-        <div className="cinematic-loading-screen__reward-layer" aria-live="polite">
-          <div className="cinematic-loading-screen__reward-hud">
-            <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--total">
-              Total PTS {interactiveRewards?.totalPoints ?? 0}
-            </span>
-            <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--hint">
-              {rewardHudCopy}
-            </span>
-          </div>
-          {renderedRewardTokens.map((renderedToken) => {
-            const { anchorPose, openProgress, pointsFilter, pointsOpacity, pointsTransform, shellFilter, shellOpacity, shellTransform, shardsVisible, token, tokenOpacity } = renderedToken;
-            const burstDistanceRem = REWARD_TOKEN_OPEN_BURST_DISTANCE
-              * openProgress
-              * (prefersReducedMotion ? 0.72 : 1);
-            const burstLiftRem = REWARD_TOKEN_OPEN_BURST_LIFT
-              * openProgress
-              * (prefersReducedMotion ? 0.68 : 1);
-            const burstPieceScale = Math.max(0.16, 1 - (openProgress * 0.84));
-            const burstOpacity = Math.max(0, 1 - (easeOutCubic(openProgress) * 1.06));
-
-            return (
-              <button
-                key={token.id}
-                type="button"
-                className={`cinematic-loading-screen__reward-token cinematic-loading-screen__reward-token--${token.variant} is-${token.phase}`}
-                style={{
-                  left: `${anchorPose.x}%`,
-                  top: `${anchorPose.y}%`,
-                  zIndex: token.zIndex,
-                  width: `${token.sizeRem.toFixed(3)}rem`,
-                  height: `${token.sizeRem.toFixed(3)}rem`,
-                }}
-                onPointerDown={(event) => handleRewardTokenPointerDown(event, token.id)}
-                onPointerLeave={(event) => handleRewardTokenPointerLeave(event, token.id)}
-                onPointerCancel={(event) => handleRewardTokenPointerCancel(event, token.id)}
-                onPointerUp={(event) => handleRewardTokenPointerUp(event, token.id)}
-                onDragStart={(event) => event.preventDefault()}
-                aria-label={`Collect ${rewardPoints} points`}
-                data-no-click-sound="true"
-                disabled={token.phase !== 'flying' && token.phase !== 'pressed'}
-              >
-                <span
-                  className="cinematic-loading-screen__reward-token-shell"
-                  style={{
-                    transform: shellTransform,
-                    opacity: shellOpacity,
-                    filter: shellFilter,
-                  }}
-                >
-                  <span className="cinematic-loading-screen__reward-token-glow" aria-hidden="true" />
-                  {shardsVisible ? rewardBurstShards.map((shard) => (
-                    <span
-                      key={shard.id}
-                      className="cinematic-loading-screen__reward-token-shard"
-                      aria-hidden="true"
-                      style={{
-                        backgroundImage: `url("${interactiveRewards?.assetSrc ?? ''}")`,
-                        clipPath: shard.clipPath,
-                        opacity: burstOpacity,
-                        transform: `translate(${(shard.dx * burstDistanceRem).toFixed(3)}rem, ${((shard.dy * burstDistanceRem) - burstLiftRem).toFixed(3)}rem) rotate(${(shard.rotationOffsetDeg + (REWARD_TOKEN_OPEN_BURST_SPIN_DEG * shard.spinMultiplier * openProgress)).toFixed(2)}deg) scale(${burstPieceScale.toFixed(3)})`,
-                      }}
-                    />
-                  )) : null}
-                  <img
-                    className="cinematic-loading-screen__reward-token-image"
-                    src={interactiveRewards?.assetSrc}
-                    alt=""
-                    aria-hidden="true"
-                    draggable="false"
-                    style={{ opacity: tokenOpacity }}
-                  />
-                </span>
-                <span
-                  className="cinematic-loading-screen__reward-points-pop"
-                  aria-hidden="true"
-                  style={{
-                    opacity: pointsOpacity,
-                    transform: pointsTransform,
-                    filter: pointsFilter,
-                  }}
-                >
-                  +{rewardPoints}pts
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      {interactiveRewardConfig ? (
+        <LoaderRewardLayer
+          key={`reward-layer:${interactiveRewardConfig.assetSrc}`}
+          assetSrc={interactiveRewardConfig.assetSrc}
+          totalPoints={interactiveRewardConfig.totalPoints}
+          rewardPoints={rewardPoints}
+          collectWindowActive={rewardCollectWindowActive}
+          bootReady={bootReady}
+          prefersReducedMotion={prefersReducedMotion}
+          onCollect={interactiveRewardConfig.onCollect}
+          onOpeningHoldChange={setRewardAnimationExitHoldActive}
+        />
       ) : null}
       <span className="cinematic-loading-screen__sr-only">{scene.statusTitle}. {scene.statusBody}</span>
     </div>

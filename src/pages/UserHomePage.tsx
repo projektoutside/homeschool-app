@@ -62,12 +62,12 @@ const HOME_PAGE_DAILY_LUNCHBOX_REFRESH_MS = 10 * 1000;
 const HOME_PAGE_MYSTERY_PULL_COST_POINTS = 100;
 const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
-const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 1200;
-const HOME_PAGE_HOST_LOAD_TIMEOUT_MS = 10 * 1000;
+const HOME_PAGE_BOOT_SIGNAL_GRACE_MS = 4000;
 const HOME_PAGE_HOST_INITIAL_PROGRESS = 0.06;
 const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
 const HOME_PAGE_LOADER_POINTS_REWARD = 10;
-const HOME_PAGE_LOADER_MIN_COLLECT_WINDOW_MS = 5000;
+const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 7000;
+const HOME_PAGE_LOADER_REWARD_WINDOW_MS = HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS;
 
 const clampNumber = (value: number, min: number, max: number): number => {
   if (value < min) return min;
@@ -183,7 +183,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [bootReadyReceived, setBootReadyReceived] = useState(false);
   const [bootFallbackReady, setBootFallbackReady] = useState(false);
-  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [bootProgress, setBootProgress] = useState(HOME_PAGE_HOST_INITIAL_PROGRESS);
   const [pendingMysteryLaunch, setPendingMysteryLaunch] = useState<PendingMysteryLaunchState | null>(initialPendingMysteryLaunch);
   const [pendingSummonRecovery, setPendingSummonRecovery] = useState<HomepagePendingSummonRecoveryPayload | null>(null);
@@ -251,12 +250,12 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       : 0,
   );
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
+  const iframeRuntimeActive = isActive && !loaderVisible;
   const iframeLoadedState = iframeLoaded;
   const bootReadyReceivedState = bootReadyReceived;
   const bootFallbackReadyState = bootFallbackReady;
-  const loadTimedOutState = loadTimedOut;
   const bootProgressValue = bootProgress;
-  const bootCompletionRequested = bootReadyReceivedState || bootFallbackReadyState || loadTimedOutState;
+  const bootCompletionRequested = iframeLoadedState && (bootReadyReceivedState || bootFallbackReadyState);
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
     listening: boolean;
@@ -266,6 +265,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     listening: false,
     handler: null,
   });
+  const lastIframeLifecyclePhaseRef = useRef<'pause' | 'resume' | null>(null);
   useEffect(() => {
     loaderPointsSessionIdRef.current = createGamePointsSessionId(HOME_PAGE_LOADER_POINTS_GAME_ID);
     acceptedLoaderRewardIdsRef.current.clear();
@@ -333,6 +333,23 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     } catch {
       return;
     }
+  }, []);
+
+  const syncHomepageIframeLifecyclePhase = useCallback((
+    phase: 'pause' | 'resume',
+    reason: string,
+  ) => {
+    const iframe = iframeRef.current;
+    if (!iframe) {
+      return;
+    }
+
+    if (lastIframeLifecyclePhaseRef.current === phase) {
+      return;
+    }
+
+    postIframeLifecyclePhase(iframe, phase, { reason });
+    lastIframeLifecyclePhaseRef.current = phase;
   }, []);
 
   const persistPendingSummonRecoveryState = useCallback((payload: HomepagePendingSummonRecoveryPayload | null) => {
@@ -481,7 +498,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [bootCompletionRequested, loaderVisible]);
 
   useEffect(() => {
-    if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState || loadTimedOutState) {
+    if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState) {
       return;
     }
 
@@ -490,7 +507,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     }, HOME_PAGE_BOOT_SIGNAL_GRACE_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [bootReadyReceivedState, iframeLoadedState, loaderVisible, loadTimedOutState]);
+  }, [bootReadyReceivedState, iframeLoadedState, loaderVisible]);
 
   useEffect(() => {
     if (!isActive) {
@@ -517,8 +534,8 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [initialLaunchState.storedSnapshot, isActive, storedSnapshot]);
 
   useEffect(() => {
-    syncIframeSoundSettings(iframeRef.current, soundSettings, { homePageActive: isActive });
-  }, [isActive, soundSettings]);
+    syncIframeSoundSettings(iframeRef.current, soundSettings, { homePageActive: iframeRuntimeActive });
+  }, [iframeRuntimeActive, soundSettings]);
 
   useEffect(() => {
     syncHomepagePointsToIframe();
@@ -977,23 +994,35 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [effectiveSnapshot, isCatalogLoading]);
 
   useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) {
+    if (!iframeLoadedState) {
       return;
     }
 
-    postIframeLifecyclePhase(iframe, isActive ? 'resume' : 'pause', {
-      reason: isActive ? 'homepage-active' : 'homepage-inactive',
-    });
-  }, [iframeLoadedState, isActive]);
+    syncHomepageIframeLifecyclePhase(
+      iframeRuntimeActive ? 'resume' : 'pause',
+      iframeRuntimeActive
+        ? 'homepage-active'
+        : (loaderVisible ? 'homepage-loader-visible' : 'homepage-inactive'),
+    );
+  }, [iframeLoadedState, iframeRuntimeActive, loaderVisible, syncHomepageIframeLifecyclePhase]);
 
   const handleLoad = () => {
     setIframeLoaded(true);
-    resumeIframeRuntime(iframeRef.current, {
-      reason: 'homepage-load',
-      soundSettings,
-      soundOptions: { homePageActive: isActive },
-    });
+    lastIframeLifecyclePhaseRef.current = null;
+    if (iframeRuntimeActive) {
+      resumeIframeRuntime(iframeRef.current, {
+        reason: 'homepage-load',
+        soundSettings,
+        soundOptions: { homePageActive: true },
+      });
+      lastIframeLifecyclePhaseRef.current = 'resume';
+    } else {
+      syncHomepageIframeLifecyclePhase(
+        'pause',
+        loaderVisible ? 'homepage-load-loader-visible' : 'homepage-load-inactive',
+      );
+      syncIframeSoundSettings(iframeRef.current, soundSettings, { homePageActive: false });
+    }
     syncHomepagePointsToIframe();
     syncTiltBridgeStateToIframe();
     syncPendingSummonRecoveryToIframe();
@@ -1015,18 +1044,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   };
 
   useEffect(() => {
-    if (!loaderVisible) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setLoadTimedOut(true);
-    }, HOME_PAGE_HOST_LOAD_TIMEOUT_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [loaderVisible]);
-
-  useEffect(() => {
     if (typeof document === 'undefined') {
       return undefined;
     }
@@ -1040,11 +1057,19 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [isActive, loaderVisible]);
 
   const handleLoaderFinish = useCallback(() => {
+    if (iframeLoadedState) {
+      resumeIframeRuntime(iframeRef.current, {
+        reason: 'homepage-loader-finish',
+        soundSettings,
+        soundOptions: { homePageActive: isActive },
+      });
+      lastIframeLifecyclePhaseRef.current = 'resume';
+    }
     setIsLoading(false);
     setHasCompletedInitialBoot(true);
     onBootStable?.();
     window.dispatchEvent(new CustomEvent(HOMEPAGE_BOOT_STABLE_EVENT));
-  }, [onBootStable]);
+  }, [iframeLoadedState, isActive, onBootStable, soundSettings]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -1070,13 +1095,14 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
                 ready={bootCompletionRequested}
                 onFinish={handleLoaderFinish}
                 progressOverride={bootProgressValue}
+                minimumBootDurationMs={HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS}
                 surface="panel"
                 interactiveRewards={{
                   enabled: true,
                   assetSrc: loaderRewardAssetPath,
                   totalPoints: loaderRewardDisplayTotalPoints,
                   rewardPoints: HOME_PAGE_LOADER_POINTS_REWARD,
-                  minimumCollectWindowMs: HOME_PAGE_LOADER_MIN_COLLECT_WINDOW_MS,
+                  minimumCollectWindowMs: HOME_PAGE_LOADER_REWARD_WINDOW_MS,
                   onCollect: handleLoaderRewardCollect,
                   onExitHoldChange: setLoaderRewardExitHoldActive,
                 }}
