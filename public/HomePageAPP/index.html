@@ -14908,8 +14908,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             }
             window.requestAnimationFrame(() => {
                 window.requestAnimationFrame(() => {
-                    applyResponsiveLayout();
-                    updateDailyLunchboxLayout();
+                    applyResponsiveLayout({ skipSecondaryLayout: true });
                     renderHostBootReadyPreviewFrame();
                     postHostBootReadySignal();
                 });
@@ -29509,7 +29508,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
             window.requestAnimationFrame(runLayout);
         }
 
-        function applyResponsiveLayout() {
+        function applyResponsiveLayout({ skipSecondaryLayout = homepageHostLoaderEnabled && !homePageRouteAudioState.isActive } = {}) {
             const { width: w, height: h, aspect } = getViewportDimensions();
             syncFullscreenViewportCssVars();
             const viewTarget = computeResponsiveViewTargets(w, h);
@@ -29539,8 +29538,12 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
                 resizePropViewport();
             }
 
-            layoutMysteryHangingSign();
             resizeMysteryScroll3D();
+            if (skipSecondaryLayout) {
+                return;
+            }
+
+            layoutMysteryHangingSign();
             inventoryPanelAnchorState.initialized = false;
             scheduleInventoryPanelAnchorUpdate({ afterPaint: true });
             scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
@@ -30056,9 +30059,13 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         }
 
         initMysteryScroll3D();
-        layoutMysteryHangingSign(true);
-        applyResponsiveLayout();
-        scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
+        if (!homepageHostLoaderEnabled) {
+            layoutMysteryHangingSign(true);
+        }
+        applyResponsiveLayout({ skipSecondaryLayout: homepageHostLoaderEnabled });
+        if (!homepageHostLoaderEnabled) {
+            scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
+        }
         installMysteryRevealDebugHooks();
         void ensureMysteryDeviceTiltPermission();
         initHomePageMusicController();
@@ -30068,7 +30075,7 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         } else {
             scheduleStartupFadeDismiss();
         }
-        if (mysteryHangingSign.enabled && mysteryHangingSignLayer) {
+        if (!homepageHostLoaderEnabled && mysteryHangingSign.enabled && mysteryHangingSignLayer) {
             mysterySignLayerRevealFallbackTimer = window.setTimeout(() => {
                 revealMysterySignLayer();
             }, 1200);

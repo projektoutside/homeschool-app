@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import backgroundImage from '../../MainLoadingScreen.png';
 import './CinematicLoadingScreen.css';
 
@@ -50,8 +58,8 @@ type Curve = {
 };
 
 type InteractiveRewardVariant = 'drift' | 'drop' | 'burst';
-
 type InteractiveRewardPhase = 'flying' | 'pressed' | 'opening' | 'collected';
+type RewardQualityProfile = 'full' | 'lite' | 'reduced-motion';
 
 type RewardFlightPose = {
   x: number;
@@ -59,7 +67,19 @@ type RewardFlightPose = {
   rotation: number;
   scale: number;
   opacity: number;
-  blur: number;
+};
+
+type RewardFrozenPose = {
+  x: number;
+  y: number;
+  rotation: number;
+};
+
+type RewardVisualSnapshot = {
+  xPx: number;
+  yPx: number;
+  radiusPx: number;
+  zIndex: number;
 };
 
 type RewardToken = {
@@ -70,7 +90,7 @@ type RewardToken = {
   phaseStartedAtMs: number;
   expiresAtMs: number;
   pointerId: number | null;
-  sizeRem: number;
+  sizePx: number;
   originX: number;
   originY: number;
   targetX: number;
@@ -80,19 +100,59 @@ type RewardToken = {
   wavePhase: number;
   rotationBase: number;
   rotationVelocity: number;
-  freezeX: number | null;
-  freezeY: number | null;
-  freezeRotation: number | null;
+  freezePose: RewardFrozenPose | null;
   zIndex: number;
+  visual: RewardVisualSnapshot | null;
 };
 
-type RewardBurstShard = {
-  id: string;
-  clipPath: string;
-  dx: number;
-  dy: number;
-  spinMultiplier: number;
-  rotationOffsetDeg: number;
+type RewardBounds = {
+  width: number;
+  height: number;
+  dpr: number;
+};
+
+type RewardSpriteBundle = {
+  coin: CanvasImageSource;
+  glow: HTMLCanvasElement | null;
+  burst: HTMLCanvasElement | null;
+};
+
+type RewardSpriteSet = {
+  full: RewardSpriteBundle;
+  lite: RewardSpriteBundle;
+  reducedMotion: RewardSpriteBundle;
+};
+
+type LoaderRewardFrameArgs = {
+  nowMs: number;
+  frameDeltaMs: number;
+  collectWindowActive: boolean;
+  bootReady: boolean;
+};
+
+type LoaderRewardLayerHandle = {
+  step: (args: LoaderRewardFrameArgs) => void;
+  reset: () => void;
+};
+
+type StageSceneRefs = {
+  root: HTMLDivElement | null;
+  flightBar: HTMLDivElement | null;
+  trailHalo: HTMLSpanElement | null;
+  trailCore: HTMLSpanElement | null;
+  ambientXio: HTMLDivElement | null;
+  ambientScroll: HTMLDivElement | null;
+  scrollAnchor: HTMLDivElement | null;
+  xio: HTMLDivElement | null;
+};
+
+type StageRuntimeState = {
+  startedAtMs: number;
+  previousFrameMs: number;
+  internalBootProgress: number;
+  displayBootProgress: number;
+  finishAtMs: number | null;
+  lastReportedExitHold: boolean | null;
 };
 
 const cubicBezierPoint = (t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point => {
@@ -171,84 +231,20 @@ const REWARD_TOKEN_OPEN_DURATION_MS = 560;
 const REWARD_TOKEN_LABEL_DURATION_MS = 420;
 const REWARD_TOKEN_COLLECTED_CLEANUP_MS = 48;
 const REWARD_TOKEN_PRESSED_STALE_MS = 1200;
-const REWARD_TOKEN_MAX_ACTIVE = 5;
-const REWARD_TOKEN_MAX_ACTIVE_REDUCED = 3;
+const REWARD_TOKEN_MAX_ACTIVE_FULL = 4;
+const REWARD_TOKEN_MAX_ACTIVE_LITE = 2;
+const REWARD_TOKEN_MAX_ACTIVE_REDUCED = 2;
 const REWARD_TOKEN_PRESS_SQUEEZE_Y = 0.14;
 const REWARD_TOKEN_PRESS_SQUEEZE_XZ = 0.10;
-const REWARD_TOKEN_PRESS_SINK = 0.042;
+const REWARD_TOKEN_PRESS_SINK_RATIO = 0.05;
 const REWARD_TOKEN_PRESS_TILT_DEG = 0.032 * (180 / Math.PI);
 const REWARD_TOKEN_PRESS_RELEASE_RECOVER = 1.85;
 const REWARD_TOKEN_PRESS_RELEASE_REBOUND = 0.055;
-const REWARD_TOKEN_OPEN_BURST_DISTANCE = 2.7;
-const REWARD_TOKEN_OPEN_BURST_LIFT = 1.9;
-const REWARD_TOKEN_OPEN_BURST_SPIN_DEG = 2.2 * (180 / Math.PI);
 const REWARD_TOKEN_MIN_COLLECT_WINDOW_MS = 5000;
 const REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP = 0.92;
 const REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS = 700;
 const REWARD_TOKEN_FRAME_BUDGET_MS = 18;
 const REWARD_TOKEN_FRAME_SPIKE_MS = 22;
-const REWARD_TOKEN_POOL_SIZE = REWARD_TOKEN_MAX_ACTIVE;
-
-const rewardBurstShards: RewardBurstShard[] = [
-  {
-    id: 'one',
-    clipPath: 'polygon(0 0, 56% 0, 45% 42%, 0 48%)',
-    dx: -0.78,
-    dy: -0.36,
-    spinMultiplier: -1.05,
-    rotationOffsetDeg: -18,
-  },
-  {
-    id: 'two',
-    clipPath: 'polygon(54% 0, 100% 0, 100% 46%, 63% 36%)',
-    dx: 0.82,
-    dy: -0.42,
-    spinMultiplier: 0.92,
-    rotationOffsetDeg: 22,
-  },
-  {
-    id: 'three',
-    clipPath: 'polygon(0 46%, 44% 40%, 45% 72%, 0 100%)',
-    dx: -1.02,
-    dy: 0.28,
-    spinMultiplier: -0.72,
-    rotationOffsetDeg: -14,
-  },
-  {
-    id: 'four',
-    clipPath: 'polygon(54% 38%, 100% 48%, 100% 100%, 58% 72%)',
-    dx: 1.04,
-    dy: 0.24,
-    spinMultiplier: 0.78,
-    rotationOffsetDeg: 16,
-  },
-  {
-    id: 'five',
-    clipPath: 'polygon(16% 68%, 52% 54%, 62% 100%, 12% 100%)',
-    dx: -0.28,
-    dy: 0.98,
-    spinMultiplier: -0.54,
-    rotationOffsetDeg: -10,
-  },
-  {
-    id: 'six',
-    clipPath: 'polygon(48% 56%, 88% 68%, 100% 100%, 44% 100%)',
-    dx: 0.34,
-    dy: 1.04,
-    spinMultiplier: 0.48,
-    rotationOffsetDeg: 12,
-  },
-];
-
-const LoaderXioCharacter: React.FC = () => (
-  <img
-    className="cinematic-loading-screen__xio-image"
-    src={xioLoadingImageSrc}
-    alt=""
-    aria-hidden="true"
-    draggable="false"
-  />
-);
 
 const BOOT_SCROLL_POINT = Object.freeze({ x: 87.2, y: 50.2 });
 const REDUCED_SCROLL_POINT = Object.freeze({ x: 86.8, y: 50.4 });
@@ -270,18 +266,231 @@ const REDUCED_CURVE: Curve = Object.freeze({
 const INITIAL_BOOT_PROGRESS = 0.06;
 const BOOT_WAITING_TRAVEL_END = 0.886;
 
-const createRewardToken = (id: number, nowMs: number, prefersReducedMotion: boolean): RewardToken => {
-  const lifetimeMs = prefersReducedMotion
-    ? randomBetween(2200, 2800)
-    : randomBetween(2300, 3600);
+const resolveBootTravelProgress = (visualProgress: number, ready: boolean): number => {
+  const normalizedProgress = clamp(visualProgress);
+
+  if (!ready) {
+    const waitingPhase = clamp(normalizedProgress / 0.9);
+    return lerp(0.08, BOOT_WAITING_TRAVEL_END, easeOutCubic(waitingPhase));
+  }
+
+  const completionPhase = smoothstep((normalizedProgress - 0.9) / 0.1);
+  return lerp(BOOT_WAITING_TRAVEL_END, 1, completionPhase);
+};
+
+const resolveIndeterminateTravelProgress = (timeMs: number): number => {
+  const loop = (timeMs / 5600) % 1;
+  return lerp(0.08, 0.78, easeOutCubic(loop));
+};
+
+const getRewardMaxActiveTokens = (profile: RewardQualityProfile): number => {
+  if (profile === 'full') {
+    return REWARD_TOKEN_MAX_ACTIVE_FULL;
+  }
+  if (profile === 'lite') {
+    return REWARD_TOKEN_MAX_ACTIVE_LITE;
+  }
+  return REWARD_TOKEN_MAX_ACTIVE_REDUCED;
+};
+
+const getRewardSpawnDelayRangeMs = (profile: RewardQualityProfile): [number, number] => {
+  if (profile === 'full') {
+    return [680, 1150];
+  }
+  if (profile === 'lite') {
+    return [940, 1460];
+  }
+  return [1080, 1620];
+};
+
+const createCanvas = (width: number, height: number): HTMLCanvasElement => {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+};
+
+const createGradientSprite = (
+  sizePx: number,
+  renderer: (ctx: CanvasRenderingContext2D, size: number) => void,
+): HTMLCanvasElement => {
+  const canvas = createCanvas(sizePx, sizePx);
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return canvas;
+  }
+  renderer(context, sizePx);
+  return canvas;
+};
+
+const createGlowSprite = (sizePx: number, peakAlpha: number): HTMLCanvasElement => {
+  return createGradientSprite(sizePx, (ctx, size) => {
+    const radius = size / 2;
+    const gradient = ctx.createRadialGradient(radius, radius, size * 0.08, radius, radius, radius);
+    gradient.addColorStop(0, `rgba(220, 247, 255, ${peakAlpha})`);
+    gradient.addColorStop(0.42, `rgba(126, 221, 255, ${peakAlpha * 0.55})`);
+    gradient.addColorStop(0.72, `rgba(126, 221, 255, ${peakAlpha * 0.16})`);
+    gradient.addColorStop(1, 'rgba(126, 221, 255, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  });
+};
+
+const createBurstSprite = (sizePx: number): HTMLCanvasElement => {
+  return createGradientSprite(sizePx, (ctx, size) => {
+    const center = size / 2;
+    const innerRadius = size * 0.12;
+    const outerRadius = size * 0.44;
+    for (let index = 0; index < 9; index += 1) {
+      const angle = (Math.PI * 2 * index) / 9;
+      const x1 = center + (Math.cos(angle) * innerRadius);
+      const y1 = center + (Math.sin(angle) * innerRadius);
+      const x2 = center + (Math.cos(angle) * outerRadius);
+      const y2 = center + (Math.sin(angle) * outerRadius);
+      const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+      gradient.addColorStop(1, 'rgba(255, 214, 104, 0)');
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = size * 0.024;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    const ring = ctx.createRadialGradient(center, center, size * 0.08, center, center, size * 0.32);
+    ring.addColorStop(0, 'rgba(255, 251, 196, 0.84)');
+    ring.addColorStop(0.72, 'rgba(255, 222, 128, 0.2)');
+    ring.addColorStop(1, 'rgba(255, 222, 128, 0)');
+    ctx.fillStyle = ring;
+    ctx.fillRect(0, 0, size, size);
+  });
+};
+
+const createFallbackCoinSprite = (sizePx: number): HTMLCanvasElement => {
+  return createGradientSprite(sizePx, (ctx, size) => {
+    const radius = size / 2;
+    const outer = ctx.createRadialGradient(radius, radius, size * 0.1, radius, radius, radius);
+    outer.addColorStop(0, '#fff7d7');
+    outer.addColorStop(0.5, '#f3b842');
+    outer.addColorStop(1, '#a8580d');
+    ctx.fillStyle = outer;
+    ctx.beginPath();
+    ctx.arc(radius, radius, size * 0.44, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineWidth = size * 0.06;
+    ctx.strokeStyle = 'rgba(255, 248, 197, 0.72)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff9df';
+    ctx.font = `900 ${Math.round(size * 0.28)}px "Trebuchet MS", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PTS', radius, radius + (size * 0.02));
+  });
+};
+
+const createRasterizedCoinSource = async (
+  image: HTMLImageElement,
+  sizePx: number,
+): Promise<CanvasImageSource> => {
+  if (typeof window !== 'undefined' && typeof window.createImageBitmap === 'function') {
+    try {
+      return await window.createImageBitmap(
+        image as ImageBitmapSource,
+        {
+          resizeWidth: sizePx,
+          resizeHeight: sizePx,
+          resizeQuality: 'high',
+        } as ImageBitmapOptions,
+      );
+    } catch {
+      // Fall back to a plain canvas on browsers without resize support.
+    }
+  }
+
+  const canvas = createCanvas(sizePx, sizePx);
+  const context = canvas.getContext('2d');
+  if (context) {
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, sizePx, sizePx);
+  }
+  return canvas;
+};
+
+const closeCanvasImageSource = (source: CanvasImageSource): void => {
+  if (typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) {
+    source.close();
+  }
+};
+
+const buildRewardSpriteSet = async (image: HTMLImageElement | null): Promise<RewardSpriteSet> => {
+  const fullCoin = image ? await createRasterizedCoinSource(image, 176) : createFallbackCoinSprite(176);
+  const liteCoin = image ? await createRasterizedCoinSource(image, 148) : createFallbackCoinSprite(148);
+  const reducedCoin = image ? await createRasterizedCoinSource(image, 136) : createFallbackCoinSprite(136);
+
+  return {
+    full: {
+      coin: fullCoin,
+      glow: createGlowSprite(244, 0.9),
+      burst: createBurstSprite(212),
+    },
+    lite: {
+      coin: liteCoin,
+      glow: createGlowSprite(192, 0.5),
+      burst: null,
+    },
+    reducedMotion: {
+      coin: reducedCoin,
+      glow: createGlowSprite(180, 0.42),
+      burst: null,
+    },
+  };
+};
+
+const resolveRewardSpriteBundle = (
+  spriteSet: RewardSpriteSet,
+  profile: RewardQualityProfile,
+): RewardSpriteBundle => {
+  if (profile === 'full') {
+    return spriteSet.full;
+  }
+  if (profile === 'lite') {
+    return spriteSet.lite;
+  }
+  return spriteSet.reducedMotion;
+};
+
+const resolveTokenBaseSizePx = (
+  bounds: RewardBounds,
+  profile: RewardQualityProfile,
+): number => {
+  const minDimension = Math.max(1, Math.min(bounds.width, bounds.height));
+  const ratio = profile === 'full'
+    ? randomBetween(0.075, 0.102)
+    : randomBetween(0.072, 0.092);
+  const maxSize = profile === 'full' ? 86 : 74;
+  return clamp(minDimension * ratio, 52, maxSize);
+};
+
+const createRewardToken = (
+  id: number,
+  nowMs: number,
+  profile: RewardQualityProfile,
+  bounds: RewardBounds,
+): RewardToken => {
+  const reducedMotion = profile === 'reduced-motion';
+  const lifetimeMs = reducedMotion
+    ? randomBetween(2200, 2850)
+    : randomBetween(2400, 3550);
   const variantRoll = Math.random();
-  const variant: InteractiveRewardVariant = variantRoll < 0.38
+  const variant: InteractiveRewardVariant = variantRoll < 0.42
     ? 'drift'
-    : (variantRoll < 0.72 ? 'drop' : 'burst');
-  const sizeRem = randomBetween(
-    prefersReducedMotion ? 3.05 : 3.15,
-    prefersReducedMotion ? 3.85 : 4.45,
-  );
+    : (variantRoll < 0.74 ? 'drop' : 'burst');
+  const sizePx = resolveTokenBaseSizePx(bounds, profile);
 
   if (variant === 'drift') {
     const leftToRight = Math.random() < 0.5;
@@ -293,20 +502,19 @@ const createRewardToken = (id: number, nowMs: number, prefersReducedMotion: bool
       phaseStartedAtMs: nowMs,
       expiresAtMs: nowMs + lifetimeMs,
       pointerId: null,
-      sizeRem,
+      sizePx,
       originX: leftToRight ? -12 : 112,
       originY: randomBetween(18, 64),
       targetX: leftToRight ? 112 : -12,
       targetY: randomBetween(20, 76),
-      waveAmplitude: randomBetween(1.8, 4.2),
-      waveFrequency: randomBetween(1.1, 2.1),
+      waveAmplitude: randomBetween(1.8, reducedMotion ? 2.8 : 4.0),
+      waveFrequency: randomBetween(1.05, reducedMotion ? 1.6 : 2.05),
       wavePhase: randomBetween(0, Math.PI * 2),
       rotationBase: randomBetween(-18, 18),
-      rotationVelocity: randomBetween(120, 240) * (leftToRight ? 1 : -1),
-      freezeX: null,
-      freezeY: null,
-      freezeRotation: null,
+      rotationVelocity: randomBetween(84, reducedMotion ? 130 : 220) * (leftToRight ? 1 : -1),
+      freezePose: null,
       zIndex: 4 + Math.round(randomBetween(0, 5)),
+      visual: null,
     };
   }
 
@@ -320,20 +528,19 @@ const createRewardToken = (id: number, nowMs: number, prefersReducedMotion: bool
       phaseStartedAtMs: nowMs,
       expiresAtMs: nowMs + lifetimeMs,
       pointerId: null,
-      sizeRem,
+      sizePx,
       originX: horizontalStart,
       originY: -14,
       targetX: clamp(horizontalStart + randomBetween(-8, 8), 8, 92),
       targetY: randomBetween(50, 78),
-      waveAmplitude: randomBetween(0.6, 2.3),
-      waveFrequency: randomBetween(2.2, 3.8),
+      waveAmplitude: randomBetween(0.6, 2.1),
+      waveFrequency: randomBetween(2.0, 3.5),
       wavePhase: randomBetween(0, Math.PI * 2),
       rotationBase: randomBetween(-12, 12),
-      rotationVelocity: randomBetween(-42, 42),
-      freezeX: null,
-      freezeY: null,
-      freezeRotation: null,
+      rotationVelocity: randomBetween(-36, 36),
+      freezePose: null,
       zIndex: 4 + Math.round(randomBetween(0, 4)),
+      visual: null,
     };
   }
 
@@ -345,20 +552,19 @@ const createRewardToken = (id: number, nowMs: number, prefersReducedMotion: bool
     phaseStartedAtMs: nowMs,
     expiresAtMs: nowMs + lifetimeMs,
     pointerId: null,
-    sizeRem,
+    sizePx,
     originX: randomBetween(34, 68),
     originY: randomBetween(34, 58),
     targetX: clamp(randomBetween(18, 86), 8, 92),
     targetY: clamp(randomBetween(18, 76), 10, 88),
-    waveAmplitude: randomBetween(1.6, 3.8),
-    waveFrequency: randomBetween(1.8, 3.2),
+    waveAmplitude: randomBetween(1.4, reducedMotion ? 2.2 : 3.6),
+    waveFrequency: randomBetween(1.6, reducedMotion ? 2.2 : 3.0),
     wavePhase: randomBetween(0, Math.PI * 2),
     rotationBase: randomBetween(-24, 24),
-    rotationVelocity: randomBetween(-160, 160),
-    freezeX: null,
-    freezeY: null,
-    freezeRotation: null,
+    rotationVelocity: randomBetween(-120, 120),
+    freezePose: null,
     zIndex: 4 + Math.round(randomBetween(0, 6)),
+    visual: null,
   };
 };
 
@@ -377,9 +583,8 @@ const resolveRewardFlightPose = (token: RewardToken, nowMs: number): RewardFligh
       y: lerp(token.originY, token.targetY, travel)
         + (Math.sin((progress * Math.PI * 2 * token.waveFrequency) + token.wavePhase) * token.waveAmplitude),
       rotation,
-      scale: 0.86 + (fadeIn * 0.18),
+      scale: 0.88 + (fadeIn * 0.16),
       opacity,
-      blur: (1 - opacity) * 1.5,
     };
   }
 
@@ -394,9 +599,8 @@ const resolveRewardFlightPose = (token: RewardToken, nowMs: number): RewardFligh
         + (Math.sin((progress * Math.PI * token.waveFrequency) + token.wavePhase) * token.waveAmplitude),
       y: lerp(token.originY, token.targetY, dropEase) + bounceLift,
       rotation,
-      scale: 0.82 + (fadeIn * 0.2),
+      scale: 0.84 + (fadeIn * 0.18),
       opacity,
-      blur: (1 - opacity) * 1.8,
     };
   }
 
@@ -404,194 +608,67 @@ const resolveRewardFlightPose = (token: RewardToken, nowMs: number): RewardFligh
   return {
     x: lerp(token.originX, token.targetX, burstEase),
     y: lerp(token.originY, token.targetY, burstEase)
-      - (Math.sin(progress * Math.PI) * token.waveAmplitude * 1.1),
+      - (Math.sin(progress * Math.PI) * token.waveAmplitude * 1.08),
     rotation,
-    scale: 0.78 + (fadeIn * 0.24),
+    scale: 0.8 + (fadeIn * 0.22),
     opacity,
-    blur: (1 - opacity) * 1.3,
   };
 };
 
-const resolveBootTravelProgress = (visualProgress: number, ready: boolean): number => {
-  const normalizedProgress = clamp(visualProgress);
-
-  if (!ready) {
-    const waitingPhase = clamp(normalizedProgress / 0.9);
-    return lerp(0.08, BOOT_WAITING_TRAVEL_END, easeOutCubic(waitingPhase));
+const resolveTokenAnchorPose = (token: RewardToken, nowMs: number): RewardFrozenPose => {
+  if (token.freezePose) {
+    return token.freezePose;
   }
-
-  const completionPhase = smoothstep((normalizedProgress - 0.9) / 0.1);
-  return lerp(BOOT_WAITING_TRAVEL_END, 1, completionPhase);
+  const flightPose = resolveRewardFlightPose(token, nowMs);
+  return {
+    x: flightPose.x,
+    y: flightPose.y,
+    rotation: flightPose.rotation,
+  };
 };
 
-const resolveIndeterminateTravelProgress = (timeMs: number): number => {
-  const loop = (timeMs / 5600) % 1;
-  return lerp(0.08, 0.78, easeOutCubic(loop));
+const clearCanvas = (context: CanvasRenderingContext2D, bounds: RewardBounds): void => {
+  context.clearRect(0, 0, bounds.width, bounds.height);
 };
-
-type RewardQualityProfile = 'full' | 'lite' | 'reduced-motion';
 
 type LoaderRewardLayerProps = {
   assetSrc: string;
   totalPoints: number;
   rewardPoints: number;
-  collectWindowActive: boolean;
-  bootReady: boolean;
   prefersReducedMotion: boolean;
   onCollect?: (payload: InteractiveRewardCollectPayload) => boolean | void | Promise<boolean | void>;
   onOpeningHoldChange?: (holding: boolean) => void;
 };
 
-const getRewardMaxActiveTokens = (profile: RewardQualityProfile): number => (
-  profile === 'full' ? REWARD_TOKEN_MAX_ACTIVE : REWARD_TOKEN_MAX_ACTIVE_REDUCED
-);
-
-const getRewardSpawnDelayRangeMs = (profile: RewardQualityProfile): [number, number] => {
-  if (profile === 'full') {
-    return [520, 980];
-  }
-  if (profile === 'lite') {
-    return [720, 1180];
-  }
-  return [780, 1240];
-};
-
-const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
+const LoaderRewardLayer = React.memo(forwardRef<LoaderRewardLayerHandle, LoaderRewardLayerProps>(function LoaderRewardLayer({
   assetSrc,
   totalPoints,
   rewardPoints,
-  collectWindowActive,
-  bootReady,
   prefersReducedMotion,
   onCollect,
   onOpeningHoldChange,
-}) => {
+}, ref) {
   const [caughtRewardPoints, setCaughtRewardPoints] = useState(0);
-  const [adaptiveQuality, setAdaptiveQuality] = useState<'full' | 'lite'>('full');
-  const rewardQualityProfile: RewardQualityProfile = prefersReducedMotion
-    ? 'reduced-motion'
-    : adaptiveQuality;
-  const rewardLayerRef = useRef<HTMLDivElement | null>(null);
-  const rewardLayerBoundsRef = useRef({ width: 0, height: 0 });
-  const buttonRefs = useRef<Array<HTMLButtonElement | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
+  const [qualityProfileState, setQualityProfileState] = useState<RewardQualityProfile>(
+    prefersReducedMotion ? 'reduced-motion' : 'full',
   );
-  const shellRefs = useRef<Array<HTMLSpanElement | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
-  );
-  const glowRefs = useRef<Array<HTMLSpanElement | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
-  );
-  const imageRefs = useRef<Array<HTMLImageElement | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
-  );
-  const pointsRefs = useRef<Array<HTMLSpanElement | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
-  );
-  const shardRefs = useRef<Array<Array<HTMLSpanElement | null>>>(
-    Array.from(
-      { length: REWARD_TOKEN_POOL_SIZE },
-      () => Array.from({ length: rewardBurstShards.length }, () => null),
-    ),
-  );
-  const tokensRef = useRef<Array<RewardToken | null>>(
-    Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null),
-  );
+  const layerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const boundsRef = useRef<RewardBounds>({ width: 0, height: 0, dpr: 1 });
+  const tokensRef = useRef<RewardToken[]>([]);
   const tokenSequenceRef = useRef(0);
   const nextSpawnAtMsRef = useRef(0);
-  const animationNowRef = useRef(getAnimationClockNow());
-  const adaptiveQualityRef = useRef<'full' | 'lite'>('full');
-  const assetWarmReadyRef = useRef(false);
+  const lastFrameNowMsRef = useRef(getAnimationClockNow());
+  const collectWindowActiveRef = useRef(false);
+  const bootReadyRef = useRef(false);
   const openingHoldActiveRef = useRef(false);
   const rollingFrameMsRef = useRef(16.67);
   const slowFrameStreakRef = useRef(0);
-
-  useEffect(() => {
-    const layer = rewardLayerRef.current;
-    if (!layer) {
-      return undefined;
-    }
-
-    let pendingFrameId = 0;
-    const updateBounds = () => {
-      pendingFrameId = 0;
-      const rect = layer.getBoundingClientRect();
-      rewardLayerBoundsRef.current = {
-        width: rect.width,
-        height: rect.height,
-      };
-    };
-
-    const scheduleUpdate = () => {
-      if (pendingFrameId !== 0) {
-        return;
-      }
-      pendingFrameId = window.requestAnimationFrame(updateBounds);
-    };
-
-    updateBounds();
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(scheduleUpdate)
-      : null;
-    resizeObserver?.observe(layer);
-    window.addEventListener('resize', scheduleUpdate, { passive: true });
-
-    return () => {
-      if (pendingFrameId !== 0) {
-        window.cancelAnimationFrame(pendingFrameId);
-      }
-      resizeObserver?.disconnect();
-      window.removeEventListener('resize', scheduleUpdate);
-    };
-  }, []);
-
-  const applyInactiveTokenSlot = useCallback((slotIndex: number) => {
-    const button = buttonRefs.current[slotIndex];
-    const shell = shellRefs.current[slotIndex];
-    const glow = glowRefs.current[slotIndex];
-    const image = imageRefs.current[slotIndex];
-    const points = pointsRefs.current[slotIndex];
-
-    if (button) {
-      button.className = 'cinematic-loading-screen__reward-token is-inactive';
-      button.style.visibility = 'hidden';
-      button.style.opacity = '0';
-      button.style.pointerEvents = 'none';
-      button.style.transform = 'translate3d(-240px, -240px, 0)';
-      button.style.width = '0px';
-      button.style.height = '0px';
-      button.style.zIndex = '0';
-      button.disabled = true;
-      button.tabIndex = -1;
-    }
-
-    if (shell) {
-      shell.style.transform = 'scale(0.82)';
-      shell.style.opacity = '0';
-    }
-
-    if (glow) {
-      glow.style.opacity = '0';
-      glow.style.transform = 'scale(0.92)';
-    }
-
-    if (image) {
-      image.style.opacity = '0';
-    }
-
-    if (points) {
-      points.style.opacity = '0';
-      points.style.transform = 'translate(-50%, -10%) scale(0.94)';
-    }
-
-    shardRefs.current[slotIndex]?.forEach((shard) => {
-      if (!shard) {
-        return;
-      }
-      shard.style.opacity = '0';
-      shard.style.transform = 'translate(0rem, 0rem) scale(0.2)';
-    });
-  }, []);
+  const spriteSetRef = useRef<RewardSpriteSet | null>(null);
+  const assetWarmReadyRef = useRef(false);
+  const qualityProfileRef = useRef<RewardQualityProfile>(prefersReducedMotion ? 'reduced-motion' : 'full');
+  const pendingBitmapSourcesRef = useRef<CanvasImageSource[]>([]);
 
   const notifyOpeningHoldChange = useCallback((holding: boolean) => {
     if (openingHoldActiveRef.current === holding) {
@@ -601,516 +678,568 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
     onOpeningHoldChange?.(holding);
   }, [onOpeningHoldChange]);
 
-  const downgradeToLite = useCallback(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
-    setAdaptiveQuality((current) => {
-      if (current === 'lite') {
-        return current;
-      }
-      adaptiveQualityRef.current = 'lite';
-      return 'lite';
+  const disposeSpriteSources = useCallback(() => {
+    pendingBitmapSourcesRef.current.forEach((source) => {
+      closeCanvasImageSource(source);
     });
-  }, [prefersReducedMotion]);
+    pendingBitmapSourcesRef.current = [];
+  }, []);
 
-  useEffect(() => {
-    adaptiveQualityRef.current = adaptiveQuality;
-  }, [adaptiveQuality]);
-
-  const applyTokenPresentation = useCallback((
-    slotIndex: number,
-    token: RewardToken,
-    nowMs: number,
-    qualityProfile: RewardQualityProfile,
-  ) => {
-    const button = buttonRefs.current[slotIndex];
-    const shell = shellRefs.current[slotIndex];
-    const glow = glowRefs.current[slotIndex];
-    const image = imageRefs.current[slotIndex];
-    const points = pointsRefs.current[slotIndex];
-    const shards = shardRefs.current[slotIndex];
-
-    if (!button || !shell || !glow || !image || !points) {
-      return;
-    }
-
-    const frozenPose = (
-      typeof token.freezeX === 'number'
-      && typeof token.freezeY === 'number'
-      && typeof token.freezeRotation === 'number'
-    )
-      ? {
-        x: token.freezeX,
-        y: token.freezeY,
-        rotation: token.freezeRotation,
-      }
-      : null;
-    const flightPose = resolveRewardFlightPose(token, nowMs);
-    const anchorPose = frozenPose ?? {
-      x: flightPose.x,
-      y: flightPose.y,
-      rotation: flightPose.rotation,
-    };
-
-    let shellTransform = `rotate(${flightPose.rotation.toFixed(2)}deg) scale(${flightPose.scale.toFixed(3)})`;
-    let shellOpacity = flightPose.opacity;
-    let tokenOpacity = 1;
-    let pointsOpacity = 0;
-    let pointsTransform = 'translate(-50%, -10%) scale(0.96)';
-    let openProgress = 0;
-    let shardsVisible = qualityProfile === 'full' && !prefersReducedMotion;
-
-    if (token.phase === 'pressed') {
-      const pressedScaleX = 1 + REWARD_TOKEN_PRESS_SQUEEZE_XZ;
-      const pressedScaleY = 1 - REWARD_TOKEN_PRESS_SQUEEZE_Y;
-      const pressedSinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK;
-      shellTransform = `translate3d(0, ${pressedSinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - REWARD_TOKEN_PRESS_TILT_DEG).toFixed(2)}deg) scale(${pressedScaleX.toFixed(3)}, ${pressedScaleY.toFixed(3)})`;
-      shellOpacity = 1;
-    } else if (token.phase === 'opening') {
-      const openAgeMs = Math.max(0, nowMs - token.phaseStartedAtMs);
-      openProgress = clamp(openAgeMs / REWARD_TOKEN_OPEN_DURATION_MS);
-      const openEase = easeOutCubic(openProgress);
-      const releaseBlend = 1 - Math.exp(-(openAgeMs / 1000) * REWARD_TOKEN_PRESS_RELEASE_RECOVER);
-      const residual = 1 - clamp(releaseBlend);
-      const rebound = Math.sin(openProgress * Math.PI) * REWARD_TOKEN_PRESS_RELEASE_REBOUND;
-      const scaleY = 1 - (REWARD_TOKEN_PRESS_SQUEEZE_Y * residual) + (rebound * 0.25);
-      const scaleXZ = 1 + (REWARD_TOKEN_PRESS_SQUEEZE_XZ * residual) + rebound;
-      const sinkRem = token.sizeRem * REWARD_TOKEN_PRESS_SINK * residual;
-      shellTransform = `translate3d(0, ${sinkRem.toFixed(3)}rem, 0) rotate(${(anchorPose.rotation - (REWARD_TOKEN_PRESS_TILT_DEG * residual)).toFixed(2)}deg) scale(${scaleXZ.toFixed(3)}, ${scaleY.toFixed(3)})`;
-      shellOpacity = Math.max(0, 1 - (openEase * 1.06));
-      tokenOpacity = Math.max(0, 1 - (openEase * 1.06));
-      shardsVisible = shardsVisible && openProgress > 0;
-      const labelProgress = clamp(openAgeMs / REWARD_TOKEN_LABEL_DURATION_MS);
-      pointsOpacity = 1 - smoothstep(labelProgress);
-      const pointsRiseRem = 0.35 + (labelProgress * 2.4);
-      const pointsScale = 0.96 + (labelProgress * 0.16);
-      pointsTransform = `translate(-50%, calc(-50% - ${pointsRiseRem.toFixed(3)}rem)) scale(${pointsScale.toFixed(3)})`;
-    } else if (token.phase === 'collected') {
-      shellTransform = `rotate(${anchorPose.rotation.toFixed(2)}deg) scale(0.18)`;
-      shellOpacity = 0;
-      tokenOpacity = 0;
-      shardsVisible = false;
-    } else {
-      shardsVisible = false;
-    }
-
-    const nextClassName = `cinematic-loading-screen__reward-token cinematic-loading-screen__reward-token--${token.variant} is-${token.phase}`;
-    if (button.className !== nextClassName) {
-      button.className = nextClassName;
-    }
-
-    const layerBounds = rewardLayerBoundsRef.current;
-    const layerWidth = Math.max(layerBounds.width, 1);
-    const layerHeight = Math.max(layerBounds.height, 1);
-    const anchorX = (anchorPose.x / 100) * layerWidth;
-    const anchorY = (anchorPose.y / 100) * layerHeight;
-    const buttonTransform = `translate3d(${anchorX.toFixed(2)}px, ${anchorY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`;
-    const buttonSize = `${token.sizeRem.toFixed(3)}rem`;
-    const buttonZIndex = String(token.zIndex);
-
-    button.style.visibility = 'visible';
-    button.style.opacity = '1';
-    button.style.pointerEvents = 'auto';
-    if (button.style.transform !== buttonTransform) {
-      button.style.transform = buttonTransform;
-    }
-    if (button.style.width !== buttonSize) {
-      button.style.width = buttonSize;
-      button.style.height = buttonSize;
-    }
-    if (button.style.zIndex !== buttonZIndex) {
-      button.style.zIndex = buttonZIndex;
-    }
-    button.disabled = token.phase !== 'flying' && token.phase !== 'pressed';
-    button.tabIndex = button.disabled ? -1 : 0;
-
-    shell.style.transform = shellTransform;
-    shell.style.opacity = shellOpacity.toFixed(3);
-    glow.style.opacity = qualityProfile === 'full' ? '0.88' : '0';
-    glow.style.transform = qualityProfile === 'full' ? 'scale(1)' : 'scale(0.92)';
-    image.style.opacity = tokenOpacity.toFixed(3);
-    points.style.opacity = pointsOpacity.toFixed(3);
-    points.style.transform = pointsTransform;
-
-    const burstDistanceRem = REWARD_TOKEN_OPEN_BURST_DISTANCE * openProgress;
-    const burstLiftRem = REWARD_TOKEN_OPEN_BURST_LIFT * openProgress;
-    const burstPieceScale = Math.max(0.16, 1 - (openProgress * 0.84));
-    const burstOpacity = Math.max(0, 1 - (easeOutCubic(openProgress) * 1.06));
-
-    shards?.forEach((shardNode, shardIndex) => {
-      if (!shardNode) {
-        return;
-      }
-      if (!shardsVisible) {
-        shardNode.style.opacity = '0';
-        shardNode.style.transform = 'translate(0rem, 0rem) scale(0.2)';
-        return;
-      }
-
-      const shard = rewardBurstShards[shardIndex];
-      shardNode.style.opacity = burstOpacity.toFixed(3);
-      shardNode.style.transform = `translate(${(shard.dx * burstDistanceRem).toFixed(3)}rem, ${((shard.dy * burstDistanceRem) - burstLiftRem).toFixed(3)}rem) rotate(${(shard.rotationOffsetDeg + (REWARD_TOKEN_OPEN_BURST_SPIN_DEG * shard.spinMultiplier * openProgress)).toFixed(2)}deg) scale(${burstPieceScale.toFixed(3)})`;
-    });
-  }, [prefersReducedMotion]);
-
-  useEffect(() => {
-    adaptiveQualityRef.current = 'full';
-    assetWarmReadyRef.current = false;
-    openingHoldActiveRef.current = false;
+  const resetLayerState = useCallback(() => {
+    tokensRef.current = [];
     tokenSequenceRef.current = 0;
     nextSpawnAtMsRef.current = 0;
     rollingFrameMsRef.current = 16.67;
     slowFrameStreakRef.current = 0;
-    tokensRef.current = Array.from({ length: REWARD_TOKEN_POOL_SIZE }, () => null);
-    for (let index = 0; index < REWARD_TOKEN_POOL_SIZE; index += 1) {
-      applyInactiveTokenSlot(index);
+    collectWindowActiveRef.current = false;
+    bootReadyRef.current = false;
+    notifyOpeningHoldChange(false);
+    const context = contextRef.current;
+    if (context) {
+      clearCanvas(context, boundsRef.current);
     }
-    onOpeningHoldChange?.(false);
-  }, [applyInactiveTokenSlot, assetSrc, onOpeningHoldChange]);
+  }, [notifyOpeningHoldChange]);
 
-  useEffect(() => {
-    let disposed = false;
-    let settled = false;
-    const warmImage = new Image();
+  const downgradeToLite = useCallback(() => {
+    if (prefersReducedMotion || qualityProfileRef.current !== 'full') {
+      return;
+    }
+    qualityProfileRef.current = 'lite';
+    setQualityProfileState('lite');
+  }, [prefersReducedMotion]);
 
-    const finalize = (fallbackToLite: boolean) => {
-      if (disposed || settled) {
-        return;
+  const resolveInteractiveToken = useCallback((clientX: number, clientY: number): RewardToken | null => {
+    const layer = layerRef.current;
+    if (!layer) {
+      return null;
+    }
+    const rect = layer.getBoundingClientRect();
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    const candidates = [...tokensRef.current]
+      .filter((token) => token.phase === 'flying' && token.visual)
+      .sort((left, right) => right.zIndex - left.zIndex);
+
+    for (const token of candidates) {
+      const visual = token.visual;
+      if (!visual) {
+        continue;
       }
-      settled = true;
-      assetWarmReadyRef.current = true;
-      if (fallbackToLite) {
-        downgradeToLite();
+      const distance = Math.hypot(localX - visual.xPx, localY - visual.yPx);
+      if (distance <= visual.radiusPx) {
+        return token;
       }
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      finalize(true);
-    }, REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS);
-
-    warmImage.onload = () => finalize(false);
-    warmImage.onerror = () => finalize(true);
-    warmImage.decoding = 'async';
-    warmImage.src = assetSrc;
-
-    if (typeof warmImage.decode === 'function') {
-      warmImage.decode().then(
-        () => finalize(false),
-        () => finalize(true),
-      );
     }
 
-    return () => {
-      disposed = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [assetSrc, downgradeToLite]);
+    return null;
+  }, []);
 
-  useEffect(() => {
-    let animationFrameId = 0;
-    let active = true;
-    let previousTimestamp = 0;
+  const releasePressedToken = useCallback((pointerId: number) => {
+    const nowMs = lastFrameNowMsRef.current;
+    tokensRef.current = tokensRef.current.map((token) => {
+      if (token.phase !== 'pressed' || token.pointerId !== pointerId) {
+        return token;
+      }
+      return {
+        ...token,
+        phase: 'flying',
+        phaseStartedAtMs: nowMs,
+        pointerId: null,
+        freezePose: null,
+      };
+    });
+  }, []);
 
-    const step = (timestamp: number) => {
-      if (!active) {
-        return;
+  const drawRewardTokens = useCallback((
+    nowMs: number,
+    frameDeltaMs: number,
+    collectWindowActive: boolean,
+    bootReady: boolean,
+  ) => {
+    lastFrameNowMsRef.current = nowMs;
+    collectWindowActiveRef.current = collectWindowActive;
+    bootReadyRef.current = bootReady;
+
+    const context = contextRef.current;
+    const spriteSet = spriteSetRef.current;
+    const bounds = boundsRef.current;
+    if (!context || !spriteSet || bounds.width < 1 || bounds.height < 1) {
+      return;
+    }
+
+    const profile = prefersReducedMotion ? 'reduced-motion' : qualityProfileRef.current;
+    const spriteBundle = resolveRewardSpriteBundle(spriteSet, profile);
+    const activeTokenLimit = getRewardMaxActiveTokens(profile);
+
+    if (collectWindowActive && assetWarmReadyRef.current && !bootReady && tokensRef.current.length < activeTokenLimit) {
+      if (nextSpawnAtMsRef.current <= 0) {
+        nextSpawnAtMsRef.current = nowMs + randomBetween(...getRewardSpawnDelayRangeMs(profile));
+      } else if (nowMs >= nextSpawnAtMsRef.current) {
+        tokensRef.current = [
+          ...tokensRef.current,
+          createRewardToken(tokenSequenceRef.current, nowMs, profile, bounds),
+        ];
+        tokenSequenceRef.current += 1;
+        nextSpawnAtMsRef.current = nowMs + randomBetween(...getRewardSpawnDelayRangeMs(profile));
+      }
+    }
+
+    const drawStartMs = getAnimationClockNow();
+    clearCanvas(context, bounds);
+    context.save();
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+
+    const nextTokens: RewardToken[] = [];
+    let openingTokens = 0;
+    const tokens = [...tokensRef.current].sort((left, right) => left.zIndex - right.zIndex);
+
+    for (const token of tokens) {
+      let nextToken = token;
+      if (bootReady && token.phase === 'flying') {
+        nextToken = {
+          ...nextToken,
+          expiresAtMs: Math.min(nextToken.expiresAtMs, nowMs + 180),
+        };
       }
 
-      const nowMs = Number.isFinite(timestamp) ? timestamp : getAnimationClockNow();
-      animationNowRef.current = nowMs;
-      const deltaMs = previousTimestamp > 0
-        ? Math.min(48, Math.max(8, nowMs - previousTimestamp))
-        : 16.67;
-      previousTimestamp = nowMs;
-      const qualityProfile: RewardQualityProfile = prefersReducedMotion
-        ? 'reduced-motion'
-        : adaptiveQualityRef.current;
-      let activeTokenCount = 0;
-      let freeSlotIndex = -1;
-      let hasOpening = false;
+      if (nextToken.phase === 'pressed' && (nowMs - nextToken.phaseStartedAtMs) >= REWARD_TOKEN_PRESSED_STALE_MS) {
+        nextToken = {
+          ...nextToken,
+          phase: 'flying',
+          phaseStartedAtMs: nowMs,
+          pointerId: null,
+          freezePose: null,
+        };
+      }
 
-      for (let slotIndex = 0; slotIndex < REWARD_TOKEN_POOL_SIZE; slotIndex += 1) {
-        let token = tokensRef.current[slotIndex];
-        if (!token) {
-          if (freeSlotIndex < 0) {
-            freeSlotIndex = slotIndex;
-          }
-          applyInactiveTokenSlot(slotIndex);
-          continue;
-        }
-
-        if (token.phase === 'flying' && nowMs >= token.expiresAtMs) {
-          tokensRef.current[slotIndex] = null;
-          if (freeSlotIndex < 0) {
-            freeSlotIndex = slotIndex;
-          }
-          applyInactiveTokenSlot(slotIndex);
-          continue;
-        }
-
-        if (token.phase === 'pressed' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_PRESSED_STALE_MS) {
-          token = {
-            ...token,
-            phase: 'flying',
-            phaseStartedAtMs: nowMs,
-            pointerId: null,
-            freezeX: null,
-            freezeY: null,
-            freezeRotation: null,
-          };
-          tokensRef.current[slotIndex] = token;
-        }
-
-        if (token.phase === 'opening' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_OPEN_DURATION_MS) {
-          token = {
-            ...token,
+      if (nextToken.phase === 'opening') {
+        openingTokens += 1;
+        const openingAgeMs = Math.max(0, nowMs - nextToken.phaseStartedAtMs);
+        if (openingAgeMs >= REWARD_TOKEN_OPEN_DURATION_MS + REWARD_TOKEN_LABEL_DURATION_MS) {
+          nextToken = {
+            ...nextToken,
             phase: 'collected',
             phaseStartedAtMs: nowMs,
             pointerId: null,
           };
-          tokensRef.current[slotIndex] = token;
         }
-
-        if (token.phase === 'collected' && (nowMs - token.phaseStartedAtMs) >= REWARD_TOKEN_COLLECTED_CLEANUP_MS) {
-          tokensRef.current[slotIndex] = null;
-          if (freeSlotIndex < 0) {
-            freeSlotIndex = slotIndex;
-          }
-          applyInactiveTokenSlot(slotIndex);
+      } else if (nextToken.phase === 'collected') {
+        if ((nowMs - nextToken.phaseStartedAtMs) >= REWARD_TOKEN_COLLECTED_CLEANUP_MS) {
           continue;
         }
+      } else if (nextToken.phase === 'flying' && nowMs >= nextToken.expiresAtMs) {
+        continue;
+      }
 
-        if (token.phase === 'opening') {
-          hasOpening = true;
+      const anchorPose = resolveTokenAnchorPose(nextToken, nowMs);
+      const flightPose = resolveRewardFlightPose(nextToken, nowMs);
+      const pose = nextToken.phase === 'pressed'
+        ? {
+          rotation: anchorPose.rotation - REWARD_TOKEN_PRESS_TILT_DEG,
+          scaleX: 1 + REWARD_TOKEN_PRESS_SQUEEZE_XZ,
+          scaleY: 1 - REWARD_TOKEN_PRESS_SQUEEZE_Y,
+          yOffsetPx: nextToken.sizePx * REWARD_TOKEN_PRESS_SINK_RATIO,
+          opacity: 1,
+          labelOpacity: 0,
+          labelY: 0,
+          labelScale: 1,
+          burstOpacity: 0,
+          burstScale: 0,
         }
+        : nextToken.phase === 'opening'
+          ? (() => {
+            const openingAgeMs = Math.max(0, nowMs - nextToken.phaseStartedAtMs);
+            const openProgress = clamp(openingAgeMs / REWARD_TOKEN_OPEN_DURATION_MS);
+            const openEase = easeOutCubic(openProgress);
+            const releaseBlend = 1 - Math.exp(-(openingAgeMs / 1000) * REWARD_TOKEN_PRESS_RELEASE_RECOVER);
+            const residual = 1 - clamp(releaseBlend);
+            const rebound = Math.sin(openProgress * Math.PI) * REWARD_TOKEN_PRESS_RELEASE_REBOUND;
+            const labelProgress = clamp(openingAgeMs / REWARD_TOKEN_LABEL_DURATION_MS);
+            return {
+              rotation: anchorPose.rotation - (REWARD_TOKEN_PRESS_TILT_DEG * residual),
+              scaleX: 1 + (REWARD_TOKEN_PRESS_SQUEEZE_XZ * residual) + rebound,
+              scaleY: 1 - (REWARD_TOKEN_PRESS_SQUEEZE_Y * residual) + (rebound * 0.22),
+              yOffsetPx: nextToken.sizePx * REWARD_TOKEN_PRESS_SINK_RATIO * residual,
+              opacity: Math.max(0, 1 - (openEase * 1.06)),
+              labelOpacity: 1 - smoothstep(labelProgress),
+              labelY: (nextToken.sizePx * 0.34) + (labelProgress * nextToken.sizePx * 0.96),
+              labelScale: 0.96 + (labelProgress * 0.16),
+              burstOpacity: profile === 'full' && spriteBundle.burst ? Math.max(0, 1 - (openEase * 1.08)) : 0,
+              burstScale: 0.72 + (openProgress * 0.86),
+            };
+          })()
+          : {
+            rotation: flightPose.rotation,
+            scaleX: flightPose.scale,
+            scaleY: flightPose.scale,
+            yOffsetPx: 0,
+            opacity: flightPose.opacity,
+            labelOpacity: 0,
+            labelY: 0,
+            labelScale: 1,
+            burstOpacity: 0,
+            burstScale: 0,
+          };
 
-        activeTokenCount += 1;
-        applyTokenPresentation(slotIndex, token, nowMs, qualityProfile);
+      const xPx = (anchorPose.x / 100) * bounds.width;
+      const yPx = ((anchorPose.y / 100) * bounds.height) + pose.yOffsetPx;
+      const radiusPx = nextToken.sizePx * 0.46;
+      nextToken = {
+        ...nextToken,
+        visual: {
+          xPx,
+          yPx,
+          radiusPx,
+          zIndex: nextToken.zIndex,
+        },
+      };
+
+      const glowAlpha = profile === 'full' ? Math.min(0.96, pose.opacity * 0.9) : Math.min(0.52, pose.opacity * 0.55);
+      if (spriteBundle.glow && glowAlpha > 0.02) {
+        context.save();
+        context.globalAlpha = glowAlpha;
+        const glowSizePx = nextToken.sizePx * (profile === 'full' ? 1.74 : 1.52);
+        context.drawImage(
+          spriteBundle.glow,
+          xPx - (glowSizePx / 2),
+          yPx - (glowSizePx / 2),
+          glowSizePx,
+          glowSizePx,
+        );
+        context.restore();
       }
 
-      if (
-        assetWarmReadyRef.current
-        && !bootReady
-        && freeSlotIndex >= 0
-        && activeTokenCount < getRewardMaxActiveTokens(qualityProfile)
-        && nowMs >= nextSpawnAtMsRef.current
-      ) {
-        const nextTokenId = tokenSequenceRef.current + 1;
-        tokenSequenceRef.current = nextTokenId;
-        const nextToken = createRewardToken(nextTokenId, nowMs, qualityProfile !== 'full');
-        tokensRef.current[freeSlotIndex] = nextToken;
-        applyTokenPresentation(freeSlotIndex, nextToken, nowMs, qualityProfile);
-        activeTokenCount += 1;
-        const [minDelayMs, maxDelayMs] = getRewardSpawnDelayRangeMs(qualityProfile);
-        nextSpawnAtMsRef.current = nowMs + randomBetween(minDelayMs, maxDelayMs);
+      if (spriteBundle.burst && pose.burstOpacity > 0.01) {
+        context.save();
+        context.globalAlpha = pose.burstOpacity;
+        context.translate(xPx, yPx - (nextToken.sizePx * 0.16));
+        context.rotate((anchorPose.rotation + (Math.sin(nowMs * 0.006) * 6)) * (Math.PI / 180));
+        const burstSizePx = nextToken.sizePx * pose.burstScale * 1.72;
+        context.drawImage(spriteBundle.burst, -burstSizePx / 2, -burstSizePx / 2, burstSizePx, burstSizePx);
+        context.restore();
       }
 
-      if (!assetWarmReadyRef.current || bootReady || activeTokenCount === 0) {
-        slowFrameStreakRef.current = 0;
-      } else if (!prefersReducedMotion && adaptiveQualityRef.current === 'full') {
-        rollingFrameMsRef.current = lerp(rollingFrameMsRef.current, deltaMs, 0.18);
-        slowFrameStreakRef.current = deltaMs > REWARD_TOKEN_FRAME_SPIKE_MS
-          ? slowFrameStreakRef.current + 1
-          : 0;
-        if (
-          rollingFrameMsRef.current > REWARD_TOKEN_FRAME_BUDGET_MS
-          || slowFrameStreakRef.current >= 2
-        ) {
-          downgradeToLite();
-        }
+      if (pose.opacity > 0.01) {
+        context.save();
+        context.globalAlpha = pose.opacity;
+        context.translate(xPx, yPx);
+        context.rotate(pose.rotation * (Math.PI / 180));
+        context.scale(pose.scaleX, pose.scaleY);
+        context.drawImage(
+          spriteBundle.coin,
+          -nextToken.sizePx / 2,
+          -nextToken.sizePx / 2,
+          nextToken.sizePx,
+          nextToken.sizePx,
+        );
+        context.restore();
       }
 
-      notifyOpeningHoldChange(hasOpening);
-      animationFrameId = window.requestAnimationFrame(step);
+      if (pose.labelOpacity > 0.01) {
+        context.save();
+        context.globalAlpha = pose.labelOpacity;
+        context.translate(xPx, yPx - pose.labelY);
+        context.scale(pose.labelScale, pose.labelScale);
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.lineJoin = 'round';
+        context.lineWidth = Math.max(3, nextToken.sizePx * 0.08);
+        context.strokeStyle = 'rgba(4, 12, 28, 0.82)';
+        context.fillStyle = '#fff5bf';
+        context.font = `900 ${Math.max(16, nextToken.sizePx * 0.31)}px "Trebuchet MS", sans-serif`;
+        const label = `+${rewardPoints}pts`;
+        context.strokeText(label, 0, 0);
+        context.fillText(label, 0, 0);
+        context.restore();
+      }
+
+      nextTokens.push(nextToken);
+    }
+
+    context.restore();
+    tokensRef.current = nextTokens;
+    notifyOpeningHoldChange(openingTokens > 0);
+
+    const drawDurationMs = getAnimationClockNow() - drawStartMs;
+    const observedFrameMs = Math.max(frameDeltaMs, drawDurationMs + 8);
+    rollingFrameMsRef.current = lerp(rollingFrameMsRef.current, observedFrameMs, 0.16);
+    if (observedFrameMs > REWARD_TOKEN_FRAME_SPIKE_MS || drawDurationMs > 6) {
+      slowFrameStreakRef.current += 1;
+    } else {
+      slowFrameStreakRef.current = 0;
+    }
+
+    if (
+      profile === 'full'
+      && nextTokens.length > 0
+      && (
+        rollingFrameMsRef.current > REWARD_TOKEN_FRAME_BUDGET_MS
+        || slowFrameStreakRef.current >= 2
+      )
+    ) {
+      downgradeToLite();
+    }
+  }, [downgradeToLite, notifyOpeningHoldChange, prefersReducedMotion, rewardPoints]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    const canvas = canvasRef.current;
+    if (!layer || !canvas) {
+      return undefined;
+    }
+
+    const updateBounds = () => {
+      const rect = layer.getBoundingClientRect();
+      const nextDpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+      boundsRef.current = {
+        width: rect.width,
+        height: rect.height,
+        dpr: nextDpr,
+      };
+
+      const nextWidth = Math.max(1, Math.round(rect.width * nextDpr));
+      const nextHeight = Math.max(1, Math.round(rect.height * nextDpr));
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+      }
+
+      const context = canvas.getContext('2d', { alpha: true });
+      if (!context) {
+        contextRef.current = null;
+        return;
+      }
+
+      context.setTransform(nextDpr, 0, 0, nextDpr, 0, 0);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      contextRef.current = context;
+      clearCanvas(context, boundsRef.current);
     };
 
-    animationFrameId = window.requestAnimationFrame(step);
+    updateBounds();
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateBounds)
+      : null;
+    resizeObserver?.observe(layer);
+    window.addEventListener('resize', updateBounds, { passive: true });
+
     return () => {
-      active = false;
-      window.cancelAnimationFrame(animationFrameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateBounds);
     };
-  }, [
-    applyInactiveTokenSlot,
-    applyTokenPresentation,
-    bootReady,
-    downgradeToLite,
-    notifyOpeningHoldChange,
-    prefersReducedMotion,
-  ]);
-
-  useEffect(() => () => {
-    notifyOpeningHoldChange(false);
-  }, [notifyOpeningHoldChange]);
-
-  const resolveSlotIndex = (element: HTMLButtonElement): number => {
-    const parsed = Number(element.dataset.slotIndex ?? '-1');
-    return Number.isInteger(parsed) ? parsed : -1;
-  };
-
-  const releasePointerCaptureSafely = useCallback((element: HTMLButtonElement, pointerId: number) => {
-    if (typeof element.hasPointerCapture !== 'function' || !element.hasPointerCapture(pointerId)) {
-      return;
-    }
-
-    try {
-      element.releasePointerCapture(pointerId);
-    } catch {
-      // Ignore browsers that reject release after implicit cancel/up.
-    }
   }, []);
 
-  const releaseRewardTokenBackToFlight = useCallback((slotIndex: number, pointerId: number) => {
-    if (slotIndex < 0) {
-      return;
-    }
+  useEffect(() => {
+    qualityProfileRef.current = prefersReducedMotion ? 'reduced-motion' : 'full';
+    assetWarmReadyRef.current = false;
+    disposeSpriteSources();
+    resetLayerState();
 
-    const token = tokensRef.current[slotIndex];
-    if (!token || token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== pointerId)) {
-      return;
-    }
+    let disposed = false;
+    let settled = false;
+    const warmImage = new Image();
+    warmImage.decoding = 'async';
 
-    const nextToken: RewardToken = {
-      ...token,
-      phase: 'flying',
-      phaseStartedAtMs: getAnimationClockNow(),
-      pointerId: null,
-      freezeX: null,
-      freezeY: null,
-      freezeRotation: null,
+    const finalize = async (useFallback: boolean) => {
+      if (disposed || settled) {
+        return;
+      }
+      settled = true;
+      if (useFallback && !prefersReducedMotion) {
+        qualityProfileRef.current = 'lite';
+        setQualityProfileState('lite');
+      }
+      const spriteSet = await buildRewardSpriteSet(useFallback ? null : warmImage);
+      if (disposed) {
+        Object.values(spriteSet).forEach((bundle) => {
+          closeCanvasImageSource(bundle.coin);
+        });
+        return;
+      }
+      spriteSetRef.current = spriteSet;
+      pendingBitmapSourcesRef.current = [spriteSet.full.coin, spriteSet.lite.coin, spriteSet.reducedMotion.coin];
+      assetWarmReadyRef.current = true;
     };
-    tokensRef.current[slotIndex] = nextToken;
-    applyTokenPresentation(
-      slotIndex,
-      nextToken,
-      animationNowRef.current || getAnimationClockNow(),
-      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
-    );
-  }, [applyTokenPresentation, prefersReducedMotion]);
 
-  const handleRewardTokenPointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 && event.pointerType !== 'touch') {
+    const timeoutId = window.setTimeout(() => {
+      void finalize(true);
+    }, REWARD_TOKEN_ASSET_WARMUP_TIMEOUT_MS);
+
+    const handleLoad = async () => {
+      try {
+        if (typeof warmImage.decode === 'function') {
+          await warmImage.decode();
+        }
+      } catch {
+        // Ignore decode failures and keep the loaded source.
+      }
+      window.clearTimeout(timeoutId);
+      void finalize(false);
+    };
+
+    const handleError = () => {
+      window.clearTimeout(timeoutId);
+      void finalize(true);
+    };
+
+    warmImage.addEventListener('load', handleLoad, { once: true });
+    warmImage.addEventListener('error', handleError, { once: true });
+    warmImage.src = assetSrc;
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timeoutId);
+      warmImage.removeEventListener('load', handleLoad);
+      warmImage.removeEventListener('error', handleError);
+      disposeSpriteSources();
+      spriteSetRef.current = null;
+      assetWarmReadyRef.current = false;
+      notifyOpeningHoldChange(false);
+    };
+  }, [assetSrc, disposeSpriteSources, notifyOpeningHoldChange, prefersReducedMotion, resetLayerState]);
+
+  useImperativeHandle(ref, () => ({
+    step: (args) => {
+      drawRewardTokens(args.nowMs, args.frameDeltaMs, args.collectWindowActive, args.bootReady);
+    },
+    reset: () => {
+      resetLayerState();
+    },
+  }), [drawRewardTokens, resetLayerState]);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!collectWindowActiveRef.current || bootReadyRef.current) {
       return;
     }
 
-    const slotIndex = resolveSlotIndex(event.currentTarget);
-    const token = slotIndex >= 0 ? tokensRef.current[slotIndex] : null;
-    if (!token || token.phase !== 'flying') {
+    const token = resolveInteractiveToken(event.clientX, event.clientY);
+    if (!token) {
       return;
     }
 
+    const anchorPose = resolveTokenAnchorPose(token, lastFrameNowMsRef.current);
     event.preventDefault();
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Some browsers may reject capture during rapid teardown; keep the press flow alive.
-    }
-    const nowMs = getAnimationClockNow();
-    const pose = resolveRewardFlightPose(token, nowMs);
-    const nextToken: RewardToken = {
-      ...token,
-      phase: 'pressed',
-      phaseStartedAtMs: nowMs,
-      pointerId: event.pointerId,
-      freezeX: pose.x,
-      freezeY: pose.y,
-      freezeRotation: pose.rotation,
-    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    tokensRef.current = tokensRef.current.map((candidate) => {
+      if (candidate.id !== token.id) {
+        return candidate;
+      }
+      return {
+        ...candidate,
+        phase: 'pressed',
+        phaseStartedAtMs: lastFrameNowMsRef.current,
+        pointerId: event.pointerId,
+        freezePose: anchorPose,
+      };
+    });
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
+  };
 
-    tokensRef.current[slotIndex] = nextToken;
-    applyTokenPresentation(
-      slotIndex,
-      nextToken,
-      nowMs,
-      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const token = tokensRef.current.find(
+      (candidate) => candidate.phase === 'pressed' && candidate.pointerId === event.pointerId,
     );
-  }, [applyTokenPresentation, prefersReducedMotion]);
-
-  const handleRewardTokenPointerLeave = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (
-      event.buttons === 0
-      || (typeof event.currentTarget.hasPointerCapture === 'function' && event.currentTarget.hasPointerCapture(event.pointerId))
-    ) {
+    if (!token || !token.visual) {
       return;
     }
 
-    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
-  }, [releaseRewardTokenBackToFlight]);
-
-  const handleRewardTokenPointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    releasePointerCaptureSafely(event.currentTarget, event.pointerId);
-    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
-  }, [releasePointerCaptureSafely, releaseRewardTokenBackToFlight]);
-
-  const handleRewardTokenPointerUp = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    releasePointerCaptureSafely(event.currentTarget, event.pointerId);
-
-    const slotIndex = resolveSlotIndex(event.currentTarget);
-    const token = slotIndex >= 0 ? tokensRef.current[slotIndex] : null;
-    if (!token || token.phase !== 'pressed' || (token.pointerId !== null && token.pointerId !== event.pointerId)) {
+    const layer = layerRef.current;
+    if (!layer) {
+      return;
+    }
+    const rect = layer.getBoundingClientRect();
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
+    const distance = Math.hypot(localX - token.visual.xPx, localY - token.visual.yPx);
+    if (distance <= token.visual.radiusPx * 1.28) {
       return;
     }
 
-    const nowMs = getAnimationClockNow();
-    const nextToken: RewardToken = {
-      ...token,
-      phase: 'opening',
-      phaseStartedAtMs: nowMs,
-      pointerId: null,
-    };
-    tokensRef.current[slotIndex] = nextToken;
-    applyTokenPresentation(
-      slotIndex,
-      nextToken,
-      nowMs,
-      prefersReducedMotion ? 'reduced-motion' : adaptiveQualityRef.current,
+    releasePressedToken(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
+  };
+
+  const handlePointerCancel = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    releasePressedToken(event.pointerId);
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
+  };
+
+  const handleLostPointerCapture = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    releasePressedToken(event.pointerId);
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const token = tokensRef.current.find(
+      (candidate) => candidate.phase === 'pressed' && candidate.pointerId === event.pointerId,
     );
+    if (!token) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const nowMs = lastFrameNowMsRef.current;
+    tokensRef.current = tokensRef.current.map((candidate) => {
+      if (candidate.id !== token.id) {
+        return candidate;
+      }
+      return {
+        ...candidate,
+        phase: 'opening',
+        phaseStartedAtMs: nowMs,
+        pointerId: null,
+      };
+    });
 
     const collectPayload: InteractiveRewardCollectPayload = {
-      tokenId: nextToken.id,
-      variant: nextToken.variant,
+      tokenId: token.id,
+      variant: token.variant,
       occurredAt: new Date().toISOString(),
     };
 
     const collectResult = onCollect?.(collectPayload);
     if (!onCollect) {
       setCaughtRewardPoints((current) => current + rewardPoints);
-      return;
+    } else {
+      void Promise.resolve(collectResult)
+        .then((accepted) => {
+          if (accepted === false) {
+            return;
+          }
+          setCaughtRewardPoints((current) => current + rewardPoints);
+        })
+        .catch(() => {
+          // Keep the local boot bonus aligned with accepted rewards only.
+        });
     }
 
-    void Promise.resolve(collectResult)
-      .then((accepted) => {
-        if (accepted === false) {
-          return;
-        }
-        setCaughtRewardPoints((current) => current + rewardPoints);
-      })
-      .catch(() => {
-        // Keep the local boot bonus in sync with accepted awards only.
-      });
-  }, [applyTokenPresentation, onCollect, prefersReducedMotion, releasePointerCaptureSafely, rewardPoints]);
-
-  const handleRewardTokenLostPointerCapture = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    releaseRewardTokenBackToFlight(resolveSlotIndex(event.currentTarget), event.pointerId);
-  }, [releaseRewardTokenBackToFlight]);
+    drawRewardTokens(lastFrameNowMsRef.current, 0, collectWindowActiveRef.current, bootReadyRef.current);
+  };
 
   const rewardHudCopy = caughtRewardPoints > 0
     ? `Boot bonus +${caughtRewardPoints}`
     : `Catch PTS for +${rewardPoints}`;
   const rewardLayerClassName = [
     'cinematic-loading-screen__reward-layer',
-    rewardQualityProfile === 'lite' ? 'is-reward-lite' : '',
-    rewardQualityProfile === 'reduced-motion' ? 'is-reward-reduced-motion' : '',
+    qualityProfileState === 'lite' ? 'is-reward-lite' : '',
+    qualityProfileState === 'reduced-motion' ? 'is-reward-reduced-motion' : '',
   ].filter(Boolean).join(' ');
 
   return (
     <div
-      ref={rewardLayerRef}
+      ref={layerRef}
       className={rewardLayerClassName}
       aria-live="polite"
-      data-collect-window-active={collectWindowActive ? 'true' : 'false'}
     >
       <div className="cinematic-loading-screen__reward-hud">
         <span className="cinematic-loading-screen__reward-chip cinematic-loading-screen__reward-chip--total">
@@ -1120,90 +1249,136 @@ const LoaderRewardLayer: React.FC<LoaderRewardLayerProps> = React.memo(({
           {rewardHudCopy}
         </span>
       </div>
-      {Array.from({ length: REWARD_TOKEN_POOL_SIZE }, (_, slotIndex) => (
-        <button
-          key={`reward-slot-${slotIndex}`}
-          ref={(node) => {
-            buttonRefs.current[slotIndex] = node;
-          }}
-          type="button"
-          className="cinematic-loading-screen__reward-token is-inactive"
-          style={{
-            visibility: 'hidden',
-            opacity: 0,
-          }}
-          data-slot-index={slotIndex}
-          onPointerDown={handleRewardTokenPointerDown}
-          onPointerLeave={handleRewardTokenPointerLeave}
-          onPointerCancel={handleRewardTokenPointerCancel}
-          onPointerUp={handleRewardTokenPointerUp}
-          onLostPointerCapture={handleRewardTokenLostPointerCapture}
-          onDragStart={(event) => event.preventDefault()}
-          aria-label={`Collect ${rewardPoints} points`}
-          data-no-click-sound="true"
-          disabled
-        >
-          <span
-            ref={(node) => {
-              shellRefs.current[slotIndex] = node;
-            }}
-            className="cinematic-loading-screen__reward-token-shell"
-          >
-            <span
-              ref={(node) => {
-                glowRefs.current[slotIndex] = node;
-              }}
-              className="cinematic-loading-screen__reward-token-glow"
-              aria-hidden="true"
-            />
-            {rewardBurstShards.map((shard, shardIndex) => (
-              <span
-                key={shard.id}
-                ref={(node) => {
-                  shardRefs.current[slotIndex][shardIndex] = node;
-                }}
-                className="cinematic-loading-screen__reward-token-shard"
-                aria-hidden="true"
-                style={{
-                  backgroundImage: `url("${assetSrc}")`,
-                  clipPath: shard.clipPath,
-                  opacity: 0,
-                  transform: 'translate(0rem, 0rem) scale(0.2)',
-                }}
-              />
-            ))}
-            <img
-              ref={(node) => {
-                imageRefs.current[slotIndex] = node;
-              }}
-              className="cinematic-loading-screen__reward-token-image"
-              src={assetSrc}
-              alt=""
-              aria-hidden="true"
-              draggable="false"
-              style={{ opacity: 0 }}
-            />
-          </span>
-          <span
-            ref={(node) => {
-              pointsRefs.current[slotIndex] = node;
-            }}
-            className="cinematic-loading-screen__reward-points-pop"
-            aria-hidden="true"
-            style={{
-              opacity: 0,
-              transform: 'translate(-50%, -10%) scale(0.94)',
-            }}
-          >
-            +{rewardPoints}pts
-          </span>
-        </button>
-      ))}
+      <canvas
+        ref={canvasRef}
+        className="cinematic-loading-screen__reward-canvas"
+        aria-hidden="true"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handleLostPointerCapture}
+      />
     </div>
   );
-});
+}));
 
 LoaderRewardLayer.displayName = 'LoaderRewardLayer';
+
+const updateStageElementTransform = (element: HTMLElement | null, transform: string): void => {
+  if (!element) {
+    return;
+  }
+  element.style.transform = transform;
+};
+
+const renderLoaderScene = (
+  refs: StageSceneRefs,
+  dimensions: RewardBounds,
+  mode: 'indeterminate' | 'boot',
+  visualProgress: number,
+  bootReady: boolean,
+  prefersReducedMotion: boolean,
+  timeMs: number,
+): void => {
+  const { width, height } = dimensions;
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  const curve = prefersReducedMotion ? REDUCED_CURVE : BOOT_CURVE;
+  const scrollPoint = prefersReducedMotion ? REDUCED_SCROLL_POINT : BOOT_SCROLL_POINT;
+  const travelProgress = mode === 'boot'
+    ? resolveBootTravelProgress(visualProgress, bootReady)
+    : visualProgress;
+  const flightPoint = cubicBezierPoint(
+    travelProgress,
+    curve.start,
+    curve.controlOne,
+    curve.controlTwo,
+    curve.end,
+  );
+  const flightTangent = cubicBezierTangent(
+    travelProgress,
+    curve.start,
+    curve.controlOne,
+    curve.controlTwo,
+    curve.end,
+  );
+
+  const directionAngle = Math.atan2(flightTangent.y, flightTangent.x) * (180 / Math.PI);
+  const bobbing = prefersReducedMotion
+    ? Math.sin((timeMs * 0.0012) + (travelProgress * 3.2)) * 0.05
+    : Math.sin((timeMs * 0.0028) + (travelProgress * 4.3)) * 0.12;
+  const xioPosition = {
+    x: flightPoint.x,
+    y: flightPoint.y + bobbing,
+  };
+  const trailStartX = prefersReducedMotion ? 10.8 : 9.8;
+  const trailWidth = Math.max(0, xioPosition.x - trailStartX + 2.6);
+  const trailScale = clamp(trailWidth / 100, 0, 1);
+  const impactActive = mode === 'boot' && bootReady && visualProgress >= 0.999;
+  const scrollGlow = clamp(0.24 + (visualProgress * 0.46) + (impactActive ? 0.34 : 0));
+  const xioGlowOpacity = clamp(0.24 + (visualProgress * 0.36));
+
+  const xioX = (xioPosition.x / 100) * width;
+  const xioY = (xioPosition.y / 100) * height;
+  const scrollX = (scrollPoint.x / 100) * width;
+  const scrollY = (scrollPoint.y / 100) * height;
+  const trailX = (trailStartX / 100) * width;
+  const scrollScale = bootReady
+    ? lerp(1, prefersReducedMotion ? 1.05 : 1.12, smoothstep((visualProgress - 0.92) / 0.08))
+    : 1;
+  const trailHaloOpacity = clamp(0.54 + (visualProgress * 0.28) + (impactActive ? 0.08 : 0));
+  const trailCoreOpacity = clamp(0.7 + (visualProgress * 0.18));
+
+  if (refs.root) {
+    refs.root.style.setProperty('--cinematic-scroll-glow', scrollGlow.toFixed(4));
+    refs.root.style.setProperty('--cinematic-xio-glow-opacity', xioGlowOpacity.toFixed(4));
+  }
+
+  if (refs.flightBar) {
+    refs.flightBar.style.setProperty('--cinematic-flight-bar-px-width', `${width}px`);
+  }
+
+  if (refs.trailHalo) {
+    refs.trailHalo.style.opacity = trailHaloOpacity.toFixed(3);
+    updateStageElementTransform(
+      refs.trailHalo,
+      `translate3d(${trailX.toFixed(2)}px, ${xioY.toFixed(2)}px, 0) translate3d(0, -50%, 0) scaleX(${trailScale.toFixed(4)})`,
+    );
+  }
+
+  if (refs.trailCore) {
+    refs.trailCore.style.opacity = trailCoreOpacity.toFixed(3);
+    updateStageElementTransform(
+      refs.trailCore,
+      `translate3d(${trailX.toFixed(2)}px, ${xioY.toFixed(2)}px, 0) translate3d(0, -50%, 0) scaleX(${trailScale.toFixed(4)})`,
+    );
+  }
+
+  updateStageElementTransform(
+    refs.ambientXio,
+    `translate3d(${xioX.toFixed(2)}px, ${xioY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`,
+  );
+  updateStageElementTransform(
+    refs.ambientScroll,
+    `translate3d(${scrollX.toFixed(2)}px, ${scrollY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`,
+  );
+
+  if (refs.scrollAnchor) {
+    refs.scrollAnchor.style.setProperty('--scroll-scale', scrollScale.toFixed(4));
+    updateStageElementTransform(
+      refs.scrollAnchor,
+      `translate3d(${scrollX.toFixed(2)}px, ${scrollY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0)`,
+    );
+  }
+
+  updateStageElementTransform(
+    refs.xio,
+    `translate3d(${xioX.toFixed(2)}px, ${xioY.toFixed(2)}px, 0) translate3d(-50%, -50%, 0) rotate(${directionAngle.toFixed(2)}deg)`,
+  );
+};
 
 export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   mode,
@@ -1216,13 +1391,38 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   interactiveRewards,
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [timeMs, setTimeMs] = useState(0);
-  const [internalBootProgress, setInternalBootProgress] = useState(INITIAL_BOOT_PROGRESS);
-  const [displayBootProgress, setDisplayBootProgress] = useState(INITIAL_BOOT_PROGRESS);
+  const [bootReadyState, setBootReadyState] = useState(false);
+  const [impactActive, setImpactActive] = useState(false);
   const [rewardAnimationExitHoldActive, setRewardAnimationExitHoldActive] = useState(false);
-  const [bootStartedAtMs] = useState(() => getAnimationClockNow());
-  const finishTriggeredRef = useRef(false);
-  const finishTimerRef = useRef<number | null>(null);
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const flightBarRef = useRef<HTMLDivElement | null>(null);
+  const rewardLayerRef = useRef<LoaderRewardLayerHandle | null>(null);
+  const stageRefs = useRef<StageSceneRefs>({
+    root: null,
+    flightBar: null,
+    trailHalo: null,
+    trailCore: null,
+    ambientXio: null,
+    ambientScroll: null,
+    scrollAnchor: null,
+    xio: null,
+  });
+  const sceneBoundsRef = useRef<RewardBounds>({ width: 0, height: 0, dpr: 1 });
+  const runtimeRef = useRef<StageRuntimeState>({
+    startedAtMs: getAnimationClockNow(),
+    previousFrameMs: 0,
+    internalBootProgress: INITIAL_BOOT_PROGRESS,
+    displayBootProgress: INITIAL_BOOT_PROGRESS,
+    finishAtMs: null,
+    lastReportedExitHold: null,
+  });
+  const onFinishRef = useRef(onFinish);
+  const rewardAnimationExitHoldActiveRef = useRef(rewardAnimationExitHoldActive);
+  const readyRef = useRef(ready);
+  const progressOverrideRef = useRef(progressOverride);
+  const minimumBootDurationMsRef = useRef(minimumBootDurationOverrideMs ?? 0);
+  const externalExitHoldChangeRef = useRef(interactiveRewards?.onExitHoldChange);
 
   const rewardPoints = interactiveRewards?.rewardPoints ?? 10;
   const minimumCollectWindowMs = Math.max(
@@ -1232,237 +1432,197 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
   const minimumBootDurationMs = mode === 'boot'
     ? Math.max(0, minimumBootDurationOverrideMs ?? minimumCollectWindowMs)
     : 0;
-  const interactiveRewardsEnabled = Boolean(
-    interactiveRewards?.enabled
+  const interactiveRewardConfig = (
+    mode === 'boot'
+    && interactiveRewards?.enabled
     && interactiveRewards.assetSrc
-    && mode === 'boot',
-  );
-  const interactiveRewardConfig = interactiveRewardsEnabled && interactiveRewards
-    ? interactiveRewards
-    : null;
-  const bootElapsedMs = mode === 'boot'
-    ? Math.max(0, timeMs - bootStartedAtMs)
-    : 0;
-  const minimumBootDurationActive = mode === 'boot'
-    && bootElapsedMs < minimumBootDurationMs;
-  const rewardCollectWindowActive = interactiveRewardsEnabled
-    && bootElapsedMs < Math.max(minimumCollectWindowMs, minimumBootDurationMs);
-  const bootReady = ready && !minimumBootDurationActive;
-  const loaderExitHoldActive = minimumBootDurationActive || rewardAnimationExitHoldActive;
+  ) ? interactiveRewards : null;
+  const interactiveRewardsEnabled = Boolean(interactiveRewardConfig);
 
   useEffect(() => {
-    let animationFrameId = 0;
-    let active = true;
+    stageRefs.current.root = rootRef.current;
+    stageRefs.current.flightBar = flightBarRef.current;
+  });
 
-    const tick = (timestamp: number) => {
-      if (!active) {
-        return;
-      }
+  useEffect(() => {
+    readyRef.current = ready;
+    progressOverrideRef.current = progressOverride;
+    minimumBootDurationMsRef.current = minimumBootDurationMs;
+    onFinishRef.current = onFinish;
+    rewardAnimationExitHoldActiveRef.current = rewardAnimationExitHoldActive;
+    externalExitHoldChangeRef.current = interactiveRewards?.onExitHoldChange;
+  }, [
+    interactiveRewards?.onExitHoldChange,
+    minimumBootDurationMs,
+    onFinish,
+    progressOverride,
+    ready,
+    rewardAnimationExitHoldActive,
+  ]);
 
-      setTimeMs(timestamp);
-      animationFrameId = window.requestAnimationFrame(tick);
+  useEffect(() => {
+    const flightBar = flightBarRef.current;
+    if (!flightBar) {
+      return undefined;
+    }
+
+    const updateBounds = () => {
+      const rect = flightBar.getBoundingClientRect();
+      sceneBoundsRef.current = {
+        width: rect.width,
+        height: rect.height,
+        dpr: typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2),
+      };
+      flightBar.style.setProperty('--cinematic-flight-bar-px-width', `${rect.width}px`);
     };
 
-    animationFrameId = window.requestAnimationFrame(tick);
+    updateBounds();
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateBounds)
+      : null;
+    resizeObserver?.observe(flightBar);
+    window.addEventListener('resize', updateBounds, { passive: true });
+
     return () => {
-      active = false;
-      window.cancelAnimationFrame(animationFrameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateBounds);
     };
   }, []);
 
   useEffect(() => {
-    if (mode !== 'boot' || typeof progressOverride === 'number') {
-      return undefined;
-    }
+    runtimeRef.current = {
+      startedAtMs: getAnimationClockNow(),
+      previousFrameMs: 0,
+      internalBootProgress: INITIAL_BOOT_PROGRESS,
+      displayBootProgress: INITIAL_BOOT_PROGRESS,
+      finishAtMs: null,
+      lastReportedExitHold: null,
+    };
+    rewardLayerRef.current?.reset();
 
+    let cancelled = false;
     let animationFrameId = 0;
-    let active = true;
 
-    const step = () => {
-      if (!active) {
+    const step = (timestamp: number) => {
+      if (cancelled) {
         return;
       }
 
-      setInternalBootProgress((current) => {
-        const target = bootReady ? 1 : 0.9;
-        const easing = bootReady ? 0.18 : 0.028;
-        const drift = bootReady ? 0 : (prefersReducedMotion ? 0.0011 : 0.0021);
-        const next = current + ((target - current) * easing);
-        return clamp(Math.max(next, Math.min(target, current + drift)));
+      const runtime = runtimeRef.current;
+      const deltaMs = runtime.previousFrameMs > 0
+        ? Math.min(48, Math.max(8, timestamp - runtime.previousFrameMs))
+        : 16.67;
+      runtime.previousFrameMs = timestamp;
+
+      const currentMinimumBootDurationMs = mode === 'boot'
+        ? Math.max(0, minimumBootDurationMsRef.current)
+        : 0;
+      const bootElapsedMs = mode === 'boot'
+        ? Math.max(0, timestamp - runtime.startedAtMs)
+        : 0;
+      const minimumBootDurationActive = mode === 'boot'
+        && bootElapsedMs < currentMinimumBootDurationMs;
+      const collectWindowActive = interactiveRewardsEnabled
+        && bootElapsedMs < Math.max(minimumCollectWindowMs, currentMinimumBootDurationMs);
+      const nextBootReady = readyRef.current && !minimumBootDurationActive;
+
+      if (typeof progressOverrideRef.current !== 'number' && mode === 'boot') {
+        const target = nextBootReady ? 1 : 0.9;
+        const easing = nextBootReady ? 0.18 : 0.028;
+        const drift = nextBootReady ? 0 : (prefersReducedMotion ? 0.0011 : 0.0021);
+        const next = runtime.internalBootProgress + ((target - runtime.internalBootProgress) * easing);
+        runtime.internalBootProgress = clamp(Math.max(next, Math.min(target, runtime.internalBootProgress + drift)));
+      }
+
+      const rawTargetProgress = mode === 'boot'
+        ? clamp(typeof progressOverrideRef.current === 'number' ? progressOverrideRef.current : runtime.internalBootProgress)
+        : resolveIndeterminateTravelProgress(timestamp);
+      const targetProgress = mode === 'boot' && minimumBootDurationActive
+        ? Math.min(rawTargetProgress, REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP)
+        : rawTargetProgress;
+
+      if (mode === 'boot') {
+        const delta = targetProgress - runtime.displayBootProgress;
+        if (Math.abs(delta) < 0.0008) {
+          runtime.displayBootProgress = targetProgress;
+        } else {
+          const response = 1 - Math.exp(-(nextBootReady ? 0.0085 : 0.0065) * deltaMs);
+          const minimumStep = deltaMs * (nextBootReady ? 0.00009 : 0.000045);
+          const maximumStep = deltaMs * (nextBootReady ? 0.0003 : 0.00018);
+          const desiredStep = Math.abs(delta) * response;
+          const stepMagnitude = Math.min(maximumStep, Math.max(desiredStep, minimumStep));
+          runtime.displayBootProgress = clamp(runtime.displayBootProgress + (Math.sign(delta) * stepMagnitude));
+        }
+      } else {
+        runtime.displayBootProgress = targetProgress;
+      }
+
+      const visualProgress = runtime.displayBootProgress;
+      const nextImpactActive = mode === 'boot' && nextBootReady && visualProgress >= 0.999;
+      const loaderExitHoldActive = minimumBootDurationActive || rewardAnimationExitHoldActiveRef.current;
+
+      if (runtime.lastReportedExitHold !== loaderExitHoldActive) {
+        runtime.lastReportedExitHold = loaderExitHoldActive;
+        externalExitHoldChangeRef.current?.(loaderExitHoldActive);
+      }
+
+      renderLoaderScene(
+        stageRefs.current,
+        sceneBoundsRef.current,
+        mode,
+        visualProgress,
+        nextBootReady,
+        prefersReducedMotion,
+        timestamp,
+      );
+
+      rewardLayerRef.current?.step({
+        nowMs: timestamp,
+        frameDeltaMs: deltaMs,
+        collectWindowActive,
+        bootReady: nextBootReady,
       });
+
+      setBootReadyState((current) => (current === nextBootReady ? current : nextBootReady));
+      setImpactActive((current) => (current === nextImpactActive ? current : nextImpactActive));
+
+      if (nextImpactActive && !loaderExitHoldActive) {
+        const finishDelayMs = prefersReducedMotion ? 150 : 320;
+        if (runtime.finishAtMs === null) {
+          runtime.finishAtMs = timestamp + finishDelayMs;
+        } else if (timestamp >= runtime.finishAtMs) {
+          runtime.finishAtMs = Number.POSITIVE_INFINITY;
+          onFinishRef.current?.();
+        }
+      } else {
+        runtime.finishAtMs = null;
+      }
 
       animationFrameId = window.requestAnimationFrame(step);
     };
 
     animationFrameId = window.requestAnimationFrame(step);
+
     return () => {
-      active = false;
+      cancelled = true;
       window.cancelAnimationFrame(animationFrameId);
+      externalExitHoldChangeRef.current?.(false);
     };
-  }, [bootReady, mode, prefersReducedMotion, progressOverride]);
+  }, [
+    interactiveRewardsEnabled,
+    minimumCollectWindowMs,
+    mode,
+    prefersReducedMotion,
+  ]);
 
-  const targetVisualProgress = useMemo(() => {
-    if (mode === 'boot') {
-      const bootProgressTarget = clamp(
-        typeof progressOverride === 'number' ? progressOverride : internalBootProgress,
-      );
-      return minimumBootDurationActive
-        ? Math.min(bootProgressTarget, REWARD_TOKEN_COLLECT_WINDOW_PROGRESS_CAP)
-        : bootProgressTarget;
-    }
-
-    return resolveIndeterminateTravelProgress(timeMs);
-  }, [internalBootProgress, minimumBootDurationActive, mode, progressOverride, timeMs]);
-
-  useEffect(() => {
-    if (mode !== 'boot') {
-      return undefined;
-    }
-
-    let animationFrameId = 0;
-    let active = true;
-    let previousTimestamp = 0;
-
-    const animate = (timestamp: number) => {
-      if (!active) {
-        return;
-      }
-
-      const deltaMs = previousTimestamp > 0
-        ? Math.min(48, Math.max(8, timestamp - previousTimestamp))
-        : 16.67;
-      previousTimestamp = timestamp;
-
-      setDisplayBootProgress((current) => {
-        const delta = targetVisualProgress - current;
-        if (Math.abs(delta) < 0.0008) {
-          return targetVisualProgress;
-        }
-
-        const response = 1 - Math.exp(-(bootReady ? 0.0085 : 0.0065) * deltaMs);
-        const minimumStep = deltaMs * (bootReady ? 0.00009 : 0.000045);
-        const maximumStep = deltaMs * (bootReady ? 0.0003 : 0.00018);
-        const desiredStep = Math.abs(delta) * response;
-        const stepMagnitude = Math.min(maximumStep, Math.max(desiredStep, minimumStep));
-        const step = Math.sign(delta) * stepMagnitude;
-        return clamp(current + step);
-      });
-
-      animationFrameId = window.requestAnimationFrame(animate);
-    };
-
-    animationFrameId = window.requestAnimationFrame(animate);
-    return () => {
-      active = false;
-      window.cancelAnimationFrame(animationFrameId);
-    };
-  }, [bootReady, mode, targetVisualProgress]);
-
-  const visualProgress = mode === 'boot' ? displayBootProgress : targetVisualProgress;
-
-  const impactActive = mode === 'boot' && bootReady && visualProgress >= 0.999;
-
-  useEffect(() => {
-    interactiveRewards?.onExitHoldChange?.(loaderExitHoldActive);
-  }, [interactiveRewards, loaderExitHoldActive]);
-
-  useEffect(() => {
-    if (finishTimerRef.current !== null) {
-      window.clearTimeout(finishTimerRef.current);
-      finishTimerRef.current = null;
-    }
-
-    if (!impactActive) {
-      finishTriggeredRef.current = false;
-      return undefined;
-    }
-
-    if (finishTriggeredRef.current || loaderExitHoldActive) {
-      return undefined;
-    }
-
-    finishTimerRef.current = window.setTimeout(() => {
-      finishTimerRef.current = null;
-      finishTriggeredRef.current = true;
-      onFinish?.();
-    }, prefersReducedMotion ? 150 : 320);
-
-    return () => {
-      if (finishTimerRef.current !== null) {
-        window.clearTimeout(finishTimerRef.current);
-        finishTimerRef.current = null;
-      }
-    };
-  }, [impactActive, loaderExitHoldActive, onFinish, prefersReducedMotion]);
-
-  const scene = useMemo(() => {
-    const curve = prefersReducedMotion ? REDUCED_CURVE : BOOT_CURVE;
-    const scrollPoint = prefersReducedMotion ? REDUCED_SCROLL_POINT : BOOT_SCROLL_POINT;
-    const travelProgress = mode === 'boot'
-      ? resolveBootTravelProgress(visualProgress, bootReady)
-      : visualProgress;
-    const flightPoint = cubicBezierPoint(
-      travelProgress,
-      curve.start,
-      curve.controlOne,
-      curve.controlTwo,
-      curve.end,
-    );
-    const flightTangent = cubicBezierTangent(
-      travelProgress,
-      curve.start,
-      curve.controlOne,
-      curve.controlTwo,
-      curve.end,
-    );
-    const directionAngle = Math.atan2(flightTangent.y, flightTangent.x) * (180 / Math.PI);
-    const bobbing = prefersReducedMotion
-      ? Math.sin((timeMs * 0.0012) + (travelProgress * 3.2)) * 0.05
-      : Math.sin((timeMs * 0.0028) + (travelProgress * 4.3)) * 0.12;
-    const xioPosition = {
-      x: flightPoint.x,
-      y: flightPoint.y + bobbing,
-    };
-    const scrollGlow = clamp(0.24 + (visualProgress * 0.46) + (impactActive ? 0.34 : 0));
-    const wingFlap = prefersReducedMotion
-      ? (4.6 + (Math.sin((timeMs * 0.0042) + (visualProgress * 3.2)) * 1.8))
-      : (8.2 + (Math.sin((timeMs * 0.012) + (visualProgress * 4.4)) * 6.6));
-    const trailStartX = prefersReducedMotion ? 10.8 : 9.8;
-    const trailWidth = Math.max(0, xioPosition.x - trailStartX + 2.6);
-    const trailHaloOpacity = clamp(0.54 + (visualProgress * 0.28) + (impactActive ? 0.08 : 0));
-    const trailCoreOpacity = clamp(0.7 + (visualProgress * 0.18));
-    const sparkleStrength = impactActive
-      ? clamp(0.58 + (Math.sin(timeMs * 0.03) * 0.12))
-      : clamp((visualProgress - 0.72) / 0.28);
-    const scrollScale = bootReady
-      ? lerp(1, prefersReducedMotion ? 1.05 : 1.12, smoothstep((visualProgress - 0.92) / 0.08))
-      : 1;
-    const scrollShiverX = impactActive ? 0 : (prefersReducedMotion ? 1.2 : 2.5);
-    const scrollShiverY = impactActive ? 0 : (prefersReducedMotion ? 0.5 : 1.1);
-
-    return {
-      directionAngle,
-      scrollGlow,
-      scrollPoint,
-      scrollScale,
-      scrollShiverX,
-      scrollShiverY,
-      sparkleStrength,
-      statusBody: mode === 'boot'
-        ? (bootReady
-          ? 'XiO touched the Mystery scroll. Opening your homepage...'
-          : 'Loading completes once XiO reaches the Mystery scroll and your homepage is ready.')
-        : 'XiO is drifting toward the Mystery scroll while the app starts.',
-      statusTitle: mode === 'boot' ? 'XiO Is Approaching The Mystery Scroll' : 'Preparing La\'s Homeschool',
-      trailCoreOpacity,
-      trailHaloOpacity,
-      trailStartX,
-      trailWidth,
-      wingFlap,
-      xioGlowOpacity: clamp(0.24 + (visualProgress * 0.36)),
-      xioPosition,
-    };
-  }, [bootReady, impactActive, mode, prefersReducedMotion, timeMs, visualProgress]);
+  const statusTitle = mode === 'boot'
+    ? 'XiO Is Approaching The Mystery Scroll'
+    : 'Preparing La\'s Homeschool';
+  const statusBody = mode === 'boot'
+    ? (bootReadyState
+      ? 'XiO touched the Mystery scroll. Opening your homepage...'
+      : 'Loading completes once XiO reaches the Mystery scroll and your homepage is ready.')
+    : 'XiO is drifting toward the Mystery scroll while the app starts.';
 
   const rootClassName = [
     'cinematic-loading-screen',
@@ -1473,63 +1633,59 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
     className ?? '',
   ].filter(Boolean).join(' ');
 
-  const rootStyle = {
+  const rootStyle = useMemo(() => ({
     '--cinematic-loader-background': `url("${backgroundImage}")`,
-    '--cinematic-progress': visualProgress.toFixed(4),
-    '--cinematic-scroll-glow': scene.scrollGlow.toFixed(4),
-    '--cinematic-scroll-shiver-x': `${scene.scrollShiverX}px`,
-    '--cinematic-scroll-shiver-y': `${scene.scrollShiverY}px`,
-    '--cinematic-xio-glow-opacity': scene.xioGlowOpacity.toFixed(4),
-  } as React.CSSProperties;
+    '--cinematic-scroll-shiver-x': `${impactActive ? 0 : (prefersReducedMotion ? 1.2 : 2.5)}px`,
+    '--cinematic-scroll-shiver-y': `${impactActive ? 0 : (prefersReducedMotion ? 0.5 : 1.1)}px`,
+  }) as React.CSSProperties, [impactActive, prefersReducedMotion]);
 
   return (
-    <div className={rootClassName} style={rootStyle} role="status" aria-live="polite">
+    <div
+      ref={rootRef}
+      className={rootClassName}
+      style={rootStyle}
+      role="status"
+      aria-live="polite"
+    >
       <div className="cinematic-loading-screen__backdrop" aria-hidden="true" />
       <div className="cinematic-loading-screen__stage">
         <div className="cinematic-loading-screen__flight-bar-dim" aria-hidden="true" />
-        <div className="cinematic-loading-screen__flight-bar" aria-hidden="true">
+        <div
+          ref={flightBarRef}
+          className="cinematic-loading-screen__flight-bar"
+          aria-hidden="true"
+        >
           <span className="cinematic-loading-screen__flight-bar-sheen" />
           <span
-            className="cinematic-loading-screen__trail-beam cinematic-loading-screen__trail-beam--halo"
-            style={{
-              left: `${scene.trailStartX}%`,
-              top: `${scene.xioPosition.y}%`,
-              width: `${scene.trailWidth}%`,
-              opacity: scene.trailHaloOpacity,
+            ref={(node) => {
+              stageRefs.current.trailHalo = node;
             }}
+            className="cinematic-loading-screen__trail-beam cinematic-loading-screen__trail-beam--halo"
           />
           <span
+            ref={(node) => {
+              stageRefs.current.trailCore = node;
+            }}
             className="cinematic-loading-screen__trail-beam cinematic-loading-screen__trail-beam--core"
-            style={{
-              left: `${scene.trailStartX}%`,
-              top: `${scene.xioPosition.y}%`,
-              width: `${scene.trailWidth}%`,
-              opacity: scene.trailCoreOpacity,
-            }}
           />
-
           <div
+            ref={(node) => {
+              stageRefs.current.ambientXio = node;
+            }}
             className="cinematic-loading-screen__ambient-orb cinematic-loading-screen__ambient-orb--xio"
-            style={{
-              left: `${scene.xioPosition.x}%`,
-              top: `${scene.xioPosition.y}%`,
-            }}
           />
           <div
-            className="cinematic-loading-screen__ambient-orb cinematic-loading-screen__ambient-orb--scroll"
-            style={{
-              left: `${scene.scrollPoint.x}%`,
-              top: `${scene.scrollPoint.y}%`,
+            ref={(node) => {
+              stageRefs.current.ambientScroll = node;
             }}
+            className="cinematic-loading-screen__ambient-orb cinematic-loading-screen__ambient-orb--scroll"
           />
 
           <div
+            ref={(node) => {
+              stageRefs.current.scrollAnchor = node;
+            }}
             className="cinematic-loading-screen__scroll-anchor"
-            style={{
-              left: `${scene.scrollPoint.x}%`,
-              top: `${scene.scrollPoint.y}%`,
-              '--scroll-scale': scene.scrollScale.toFixed(4),
-            } as React.CSSProperties}
           >
             <span className="cinematic-loading-screen__scroll-glow" />
             <span className="cinematic-loading-screen__scroll-shiver">
@@ -1563,34 +1719,34 @@ export const CinematicLoadingScreen: React.FC<CinematicLoadingScreenProps> = ({
           </div>
 
           <div
+            ref={(node) => {
+              stageRefs.current.xio = node;
+            }}
             className="cinematic-loading-screen__xio"
-            style={{
-              left: `${scene.xioPosition.x}%`,
-              top: `${scene.xioPosition.y}%`,
-              transform: `translate(-50%, -50%) rotate(${scene.directionAngle}deg)`,
-              '--wing-flap': `${scene.wingFlap.toFixed(2)}deg`,
-              '--body-tilt': `${(scene.directionAngle * 0.12).toFixed(2)}deg`,
-              '--sparkle-strength': scene.sparkleStrength.toFixed(4),
-            } as React.CSSProperties}
           >
-            <LoaderXioCharacter />
+            <img
+              className="cinematic-loading-screen__xio-image"
+              src={xioLoadingImageSrc}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+            />
           </div>
         </div>
       </div>
       {interactiveRewardConfig ? (
         <LoaderRewardLayer
-          key={`reward-layer:${interactiveRewardConfig.assetSrc}`}
+          key={`reward-layer:${interactiveRewardConfig.assetSrc}:${prefersReducedMotion ? 'reduced' : 'motion'}`}
+          ref={rewardLayerRef}
           assetSrc={interactiveRewardConfig.assetSrc}
           totalPoints={interactiveRewardConfig.totalPoints}
           rewardPoints={rewardPoints}
-          collectWindowActive={rewardCollectWindowActive}
-          bootReady={bootReady}
           prefersReducedMotion={prefersReducedMotion}
           onCollect={interactiveRewardConfig.onCollect}
           onOpeningHoldChange={setRewardAnimationExitHoldActive}
         />
       ) : null}
-      <span className="cinematic-loading-screen__sr-only">{scene.statusTitle}. {scene.statusBody}</span>
+      <span className="cinematic-loading-screen__sr-only">{statusTitle}. {statusBody}</span>
     </div>
   );
 };
