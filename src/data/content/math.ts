@@ -58,6 +58,17 @@ const mathEntries: ContentItem[] = [
         dateAdded: '2026-03-10'
     },
     {
+        id: 'many-birds-one-stone',
+        title: 'Many Birds One Stone',
+        description: 'Draw elegant runway lines, release one stone, and clear every moving bird in a single physics puzzle drop.',
+        type: 'game',
+        category: 'puzzles',
+        subjects: ['Physics', 'Problem Solving', 'Trajectory Planning'],
+        gradeLevels: ['All'],
+        customHtmlPath: '/Games/Many Birds One Stone/index.html',
+        dateAdded: '2026-03-28'
+    },
+    {
         id: 'word-puzzle-game',
         title: 'Word Puzzle',
         description: 'Unscramble themed words using clues and category hints.',

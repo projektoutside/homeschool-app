@@ -13,6 +13,7 @@ export const SINGLE_PLAYER_POINTS_GAME_IDS = new Set<string>([
   'math-analog-clock-game-v2',
   'math-farmers-market-frenzy',
   'states-champion',
+  'many-birds-one-stone',
 ]);
 
 export interface GamePointsContextMessage {

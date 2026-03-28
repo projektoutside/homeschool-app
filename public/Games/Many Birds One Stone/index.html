@@ -1,0 +1,2769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#f7efe4">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23f0d8b6'/%3E%3Ccircle cx='24' cy='25' r='12' fill='%23c98a55'/%3E%3Ccircle cx='37' cy='35' r='15' fill='%23f6eddc'/%3E%3Ccircle cx='42' cy='25' r='4' fill='%232b241d'/%3E%3Cpath d='M46 26l10 3-10 4z' fill='%236e5a4a'/%3E%3C/svg%3E">
+  <title>Many Birds One Stone</title>
+  <style>
+    :root {
+      --bg-top: #f7efe4;
+      --bg-mid: #eef5fb;
+      --bg-bottom: #d7eadf;
+      --panel: rgba(255, 251, 245, 0.82);
+      --panel-strong: rgba(255, 249, 240, 0.96);
+      --stroke: #2b241d;
+      --shadow: rgba(56, 41, 29, 0.16);
+      --deep-shadow: rgba(56, 41, 29, 0.26);
+      --font-ui: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+      --font-display: "Gill Sans", "Avenir Next", "Trebuchet MS", sans-serif;
+      --stage-reserve: 9.95rem;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 38%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-mid) 52%, var(--bg-bottom));
+      color: var(--stroke);
+      font-family: var(--font-ui);
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      padding:
+        calc(env(safe-area-inset-top, 0px) + 8px)
+        calc(env(safe-area-inset-right, 0px) + 10px)
+        calc(env(safe-area-inset-bottom, 0px) + 10px)
+        calc(env(safe-area-inset-left, 0px) + 10px);
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgba(123, 166, 202, 0.55);
+      outline-offset: 2px;
+    }
+
+    #app {
+      height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 18px);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      position: relative;
+    }
+
+    #shell {
+      width: min(100%, 30rem);
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.58rem;
+      position: relative;
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .hud-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+
+    .hud-card,
+    .hud-button,
+    .control-button,
+    .status-card,
+    .overlay-card {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 0.35rem 1rem rgba(255, 255, 255, 0.24) inset,
+        0 0.7rem 1.6rem var(--shadow);
+    }
+
+    .hud-button,
+    .control-button {
+      min-height: 2.65rem;
+      border-radius: 999px;
+      padding: 0 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .hud-button:active,
+    .control-button:active {
+      transform: translateY(1px) scale(0.985);
+    }
+
+    .hud-button[disabled],
+    .control-button[disabled] {
+      opacity: 0.46;
+      cursor: default;
+      transform: none;
+    }
+
+    .hud-button {
+      min-width: 2.95rem;
+      padding: 0 0.88rem;
+    }
+
+    .hud-card {
+      min-height: 2.7rem;
+      border-radius: 1.1rem;
+      padding: 0.42rem 0.66rem;
+      display: grid;
+      align-items: center;
+    }
+
+    .level-card {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.42rem;
+      min-width: 0;
+    }
+
+    .level-main {
+      display: grid;
+      gap: 0.1rem;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .level-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(43, 36, 29, 0.62);
+    }
+
+    .level-value {
+      font-family: var(--font-display);
+      font-size: 1.03rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-button {
+      width: 2rem;
+      height: 2rem;
+      min-height: 2rem;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .meter-card {
+      min-width: 6.25rem;
+      gap: 0.3rem;
+    }
+
+    .meter-label-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .meter-track {
+      position: relative;
+      height: 0.6rem;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(44, 34, 27, 0.1);
+      box-shadow: inset 0 0.08rem 0.22rem rgba(0, 0, 0, 0.12);
+    }
+
+    .meter-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #88bb9f, #ebc786, #da8c73);
+      transform-origin: left center;
+      transition: transform 0.2s ease;
+    }
+
+    .stage-panel {
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.05rem 0;
+    }
+
+    .stage-frame {
+      position: relative;
+      width: min(100%, calc((100vh - var(--stage-reserve)) * 0.5625));
+      max-height: min(100%, calc(100vh - var(--stage-reserve)));
+      aspect-ratio: 9 / 16;
+      border-radius: 2rem;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12)),
+        linear-gradient(180deg, rgba(245, 237, 228, 0.8), rgba(226, 240, 234, 0.75));
+      box-shadow:
+        0 1rem 2.4rem var(--deep-shadow),
+        0 0.25rem 0.8rem rgba(255, 255, 255, 0.7) inset;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      isolation: isolate;
+    }
+
+    .stage-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 34%),
+        radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: relative;
+      z-index: 0;
+      touch-action: none;
+    }
+
+    .canvas-shine {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 30%),
+        linear-gradient(315deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 28%);
+      mix-blend-mode: screen;
+    }
+
+    .controls {
+      display: grid;
+      gap: 0.58rem;
+    }
+
+    .status-card {
+      border-radius: 1.35rem;
+      padding: 0.68rem 0.88rem;
+      display: grid;
+      gap: 0.22rem;
+    }
+
+    .status-title {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(43, 36, 29, 0.64);
+    }
+
+    .status-copy {
+      font-size: 0.93rem;
+      line-height: 1.32;
+      min-height: 2.2em;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .control-button {
+      min-height: 2.95rem;
+      background: var(--panel-strong);
+    }
+
+    .control-button--primary {
+      background:
+        linear-gradient(180deg, rgba(255, 239, 215, 0.98), rgba(244, 206, 155, 0.98));
+      box-shadow:
+        0 0.35rem 1rem rgba(255, 250, 240, 0.28) inset,
+        0 0.8rem 1.4rem rgba(176, 126, 76, 0.18);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+      background: rgba(232, 242, 240, 0.18);
+      backdrop-filter: blur(6px);
+    }
+
+    .overlay.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay-card {
+      width: min(100%, 20rem);
+      border-radius: 1.7rem;
+      padding: 1rem 1rem 0.95rem;
+      display: grid;
+      gap: 0.68rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .overlay-eyebrow {
+      font-size: 0.74rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(43, 36, 29, 0.58);
+    }
+
+    .overlay-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      line-height: 1.04;
+      margin: 0;
+    }
+
+    .overlay-body {
+      margin: 0;
+      font-size: 0.97rem;
+      line-height: 1.46;
+      color: rgba(43, 36, 29, 0.92);
+    }
+
+    .overlay-stats {
+      display: grid;
+      gap: 0.42rem;
+      padding: 0.65rem 0.8rem;
+      border-radius: 1.1rem;
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid rgba(255, 255, 255, 0.68);
+    }
+
+    .overlay-stats:empty {
+      display: none;
+    }
+
+    .overlay-stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      font-size: 0.88rem;
+    }
+
+    .overlay-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+
+    .overlay-button {
+      min-height: 3rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      font-weight: 700;
+    }
+
+    .overlay-button--primary {
+      background: linear-gradient(180deg, #fff4df, #efc685);
+    }
+
+    .rotate-notice {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      background: rgba(237, 244, 245, 0.9);
+      backdrop-filter: blur(14px);
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .rotate-notice.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .rotate-card {
+      width: min(100%, 22rem);
+      border-radius: 1.8rem;
+      padding: 1.2rem 1.25rem;
+      background: rgba(255, 250, 244, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      box-shadow:
+        0 0.4rem 1rem rgba(255, 255, 255, 0.24) inset,
+        0 0.8rem 2rem rgba(56, 41, 29, 0.16);
+      text-align: center;
+    }
+
+    .rotate-card h2 {
+      margin: 0 0 0.45rem;
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+    }
+
+    .rotate-card p {
+      margin: 0;
+      line-height: 1.5;
+      font-size: 0.96rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 420px) {
+      :root {
+        --stage-reserve: 9.1rem;
+      }
+
+      #shell {
+        width: 100%;
+      }
+
+      .hud {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .hud-cluster {
+        justify-content: space-between;
+      }
+
+      .hud-card.meter-card {
+        min-width: 0;
+      }
+    }
+
+    @media (max-height: 760px) {
+      :root {
+        --stage-reserve: 8.7rem;
+      }
+
+      body {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+      }
+
+      #shell {
+        gap: 0.46rem;
+      }
+
+      .controls {
+        gap: 0.44rem;
+      }
+
+      .status-card {
+        padding-block: 0.56rem;
+      }
+
+      .status-copy {
+        min-height: 1.95em;
+        font-size: 0.88rem;
+      }
+
+      .control-button {
+        min-height: 2.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="shell">
+      <header class="hud">
+        <div class="hud-cluster">
+          <button class="hud-button" id="homeButton" type="button" aria-label="Back to Games">Home</button>
+          <button class="hud-button" id="restartButton" type="button" aria-label="Restart level">Retry</button>
+        </div>
+        <div class="hud-card level-card">
+          <button class="mini-button" id="prevLevelButton" type="button" aria-label="Previous level">‹</button>
+          <div class="level-main">
+            <div class="level-label">Level</div>
+            <div class="level-value" id="levelValue">1. Breeze Bowl</div>
+          </div>
+          <button class="mini-button" id="nextLevelButton" type="button" aria-label="Next level">›</button>
+        </div>
+        <div class="hud-card meter-card">
+          <div class="meter-label-row">
+            <span>Ink</span>
+            <span id="inkLabel">100%</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="inkFill"></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="stage-panel">
+        <div class="stage-frame">
+          <canvas id="gameCanvas" width="360" height="640" aria-label="Many Birds One Stone playfield"></canvas>
+          <div class="canvas-shine"></div>
+          <div class="overlay" id="overlay" aria-live="polite" aria-hidden="true">
+            <div class="overlay-card">
+              <div class="overlay-eyebrow" id="overlayEyebrow">Draw. Drop. Clear.</div>
+              <h1 class="overlay-title" id="overlayTitle">Many Birds One Stone</h1>
+              <p class="overlay-body" id="overlayBody"></p>
+              <div class="overlay-stats" id="overlayStats"></div>
+              <div class="overlay-actions">
+                <button class="overlay-button" id="overlaySecondary" type="button">Games</button>
+                <button class="overlay-button overlay-button--primary" id="overlayPrimary" type="button">Begin</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="controls">
+        <div class="status-card">
+          <div class="status-title">Flight Plan</div>
+          <div class="status-copy" id="statusCopy"></div>
+        </div>
+        <div class="action-row">
+          <button class="control-button" id="hintButton" type="button">Hint</button>
+          <button class="control-button" id="clearButton" type="button">Clear Lines</button>
+          <button class="control-button control-button--primary" id="dropButton" type="button">Drop</button>
+        </div>
+      </footer>
+    </div>
+
+    <div class="rotate-notice" id="rotateNotice" aria-hidden="true">
+      <div class="rotate-card">
+        <h2>Rotate back to portrait</h2>
+        <p>Many Birds One Stone is tuned for a tall playfield. Turn the device upright to keep the claw, drawing band, and bird lanes aligned.</p>
+      </div>
+    </div>
+
+    <div class="sr-only" id="srStatus" aria-live="polite"></div>
+  </div>
+  <script src="../shared/lahsPointsBridge.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const GAME_ID = 'many-birds-one-stone';
+      const STORAGE_KEY = 'lahs-many-birds-one-stone-v1';
+      const HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
+      const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
+      const SOUND_SETTINGS_MESSAGE = 'APP_SOUND_SETTINGS_UPDATE';
+      const WORLD_W = 360;
+      const WORLD_H = 640;
+      const DRAW_TOP = 110;
+      const DRAW_BOTTOM = 522;
+      const DRAW_LEFT = 22;
+      const DRAW_RIGHT = WORLD_W - 22;
+      const STONE_RADIUS = 12;
+      const STONE_DROP_TAP_RADIUS = STONE_RADIUS + 18;
+      const CLAW_CONTROL_RADIUS = STONE_DROP_TAP_RADIUS + 10;
+      const CLAW_MIN_X = 54;
+      const CLAW_MAX_X = WORLD_W - 54;
+      const CLAW_DRAG_THRESHOLD = 8;
+      const PLAYFIELD_SHIFT_Y = 36;
+      const DRAWN_LINE_WIDTH = 11;
+      const STATIC_LINE_WIDTH = 14;
+      const GRAVITY = 980;
+      const STEP = 1 / 60;
+      const HINT_DISPLAY_MS = 2900;
+      const FAIL_SLEEP_SPEED = 22;
+      const FAIL_SLEEP_MS = 1050;
+      const FAIL_MAX_TIME_MS = 16500;
+      const CLEAR_BASE_POINTS = 100;
+      const CLEAR_NO_HINT_BONUS = 25;
+      const CLEAR_INK_BONUS = 25;
+      const COLLISION_SUBSTEPS = 3;
+      const TOUCH_ROTATE_BREAKPOINT = 1024;
+      const DEFAULT_SOUND = { muted: false, sfxVolume: 0.75 };
+      const TARGET_ORIGIN = window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')
+        ? window.location.origin
+        : '*';
+
+      const dom = {
+        canvas: document.getElementById('gameCanvas'),
+        levelValue: document.getElementById('levelValue'),
+        prevLevelButton: document.getElementById('prevLevelButton'),
+        nextLevelButton: document.getElementById('nextLevelButton'),
+        restartButton: document.getElementById('restartButton'),
+        homeButton: document.getElementById('homeButton'),
+        hintButton: document.getElementById('hintButton'),
+        clearButton: document.getElementById('clearButton'),
+        dropButton: document.getElementById('dropButton'),
+        inkLabel: document.getElementById('inkLabel'),
+        inkFill: document.getElementById('inkFill'),
+        statusCopy: document.getElementById('statusCopy'),
+        overlay: document.getElementById('overlay'),
+        overlayEyebrow: document.getElementById('overlayEyebrow'),
+        overlayTitle: document.getElementById('overlayTitle'),
+        overlayBody: document.getElementById('overlayBody'),
+        overlayStats: document.getElementById('overlayStats'),
+        overlayPrimary: document.getElementById('overlayPrimary'),
+        overlaySecondary: document.getElementById('overlaySecondary'),
+        rotateNotice: document.getElementById('rotateNotice'),
+        srStatus: document.getElementById('srStatus'),
+      };
+
+      const ctx = dom.canvas.getContext('2d');
+      const assets = {
+        birdStrip: {
+          image: new Image(),
+          src: './assets/birds/EnemyBird16-strip.png',
+          loaded: false,
+          frameWidth: 198,
+          frameHeight: 148,
+          frameRate: 13,
+          cycle: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        },
+      };
+      assets.birdStrip.image.decoding = 'async';
+      assets.birdStrip.image.addEventListener('load', () => {
+        assets.birdStrip.loaded = true;
+      });
+      assets.birdStrip.image.addEventListener('error', () => {
+        assets.birdStrip.loaded = false;
+      });
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(start, end, amount) {
+        return start + (end - start) * amount;
+      }
+
+      function distance(a, b) {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        return Math.hypot(dx, dy);
+      }
+
+      function point(x, y) {
+        return { x, y };
+      }
+
+      function seg(x1, y1, x2, y2, kind, radius) {
+        return {
+          x1,
+          y1,
+          x2,
+          y2,
+          kind: kind || 'blocker',
+          radius: radius || STATIC_LINE_WIDTH / 2,
+        };
+      }
+
+      function shiftPointY(rawPoint, amount) {
+        return point(rawPoint.x, clamp(rawPoint.y + amount, 0, WORLD_H - 12));
+      }
+
+      function shiftSegmentY(rawSegment, amount) {
+        return seg(
+          rawSegment.x1,
+          clamp(rawSegment.y1 + amount, 0, WORLD_H - 4),
+          rawSegment.x2,
+          clamp(rawSegment.y2 + amount, 0, WORLD_H - 4),
+          rawSegment.kind,
+          rawSegment.radius
+        );
+      }
+
+      function makePocket(cx, topY, width, depth) {
+        const half = width / 2;
+        return [
+          seg(cx - half - 16, topY + 13, cx - half, topY, 'pocket', 5),
+          seg(cx - half, topY, cx - half, topY + depth, 'pocket', 7),
+          seg(cx - half, topY + depth, cx + half, topY + depth, 'pocket', 8),
+          seg(cx + half, topY + depth, cx + half, topY, 'pocket', 7),
+          seg(cx + half, topY, cx + half + 16, topY + 13, 'pocket', 5),
+        ];
+      }
+
+      const LEVELS = [
+        {
+          title: 'Breeze Bowl',
+          note: 'Sketch a soft runway into the right nest.',
+          inkBudget: 280,
+          pocket: { x: 266, topY: 392, width: 82, depth: 148 },
+          blockers: [seg(214, 206, 312, 234), seg(300, 260, 330, 342)],
+          hint: [[point(180, 118), point(236, 176), point(284, 286), point(298, 392)]],
+          birdRanges: [44, 54, 40],
+          birdSpeeds: [1.06, 0.88, 1.14],
+          birdPhases: [0.2, 1.8, 3.7],
+        },
+        {
+          title: 'Quiet Left Turn',
+          note: 'Use one long branch to drift toward the left nest.',
+          inkBudget: 290,
+          pocket: { x: 96, topY: 396, width: 84, depth: 148 },
+          blockers: [seg(48, 258, 60, 344), seg(52, 220, 150, 238)],
+          hint: [[point(180, 118), point(128, 182), point(82, 284), point(68, 394)]],
+          birdRanges: [42, 54, 40],
+          birdSpeeds: [1.1, 0.84, 1.18],
+          birdPhases: [0.8, 2.3, 4.2],
+        },
+        {
+          title: 'Lantern Pocket',
+          note: 'A center nest waits below the hanging lantern rail.',
+          inkBudget: 260,
+          pocket: { x: 180, topY: 406, width: 86, depth: 144 },
+          blockers: [seg(110, 210, 248, 228), seg(156, 228, 146, 332), seg(214, 230, 224, 336)],
+          hint: [[point(180, 118), point(116, 190), point(120, 292), point(146, 390), point(174, 406)]],
+          birdRanges: [34, 44, 32],
+          birdSpeeds: [0.96, 0.82, 1.06],
+          birdPhases: [0.1, 2.0, 3.5],
+        },
+        {
+          title: 'Wallflower',
+          note: 'Bounce wide, then tuck the stone into the right pocket.',
+          inkBudget: 320,
+          pocket: { x: 274, topY: 404, width: 78, depth: 146 },
+          blockers: [seg(114, 170, 226, 188), seg(116, 188, 94, 314), seg(250, 232, 338, 250)],
+          hint: [
+            [point(180, 118), point(122, 164), point(94, 266), point(150, 362)],
+            [point(150, 362), point(244, 376), point(294, 406)],
+          ],
+          birdRanges: [34, 48, 34],
+          birdSpeeds: [1.04, 0.92, 1.1],
+          birdPhases: [0.5, 2.7, 4.4],
+        },
+        {
+          title: 'Petal Drift',
+          note: 'A gentle slide left clears the blossom rails.',
+          inkBudget: 300,
+          pocket: { x: 86, topY: 408, width: 82, depth: 146 },
+          blockers: [seg(210, 180, 300, 214), seg(268, 214, 294, 324), seg(38, 250, 126, 266)],
+          hint: [[point(180, 118), point(130, 202), point(88, 314), point(70, 408)]],
+          birdRanges: [36, 46, 34],
+          birdSpeeds: [1.02, 0.78, 1.08],
+          birdPhases: [0.4, 1.9, 3.4],
+        },
+        {
+          title: 'Twin Perches',
+          note: 'Thread the stone between two center rails.',
+          inkBudget: 260,
+          pocket: { x: 184, topY: 418, width: 78, depth: 136 },
+          blockers: [
+            seg(102, 186, 258, 202),
+            seg(140, 202, 128, 340),
+            seg(228, 204, 240, 340),
+            seg(64, 328, 124, 346),
+            seg(238, 328, 298, 346),
+          ],
+          hint: [[point(180, 118), point(228, 186), point(232, 286), point(214, 392), point(188, 418)]],
+          birdRanges: [28, 38, 28],
+          birdSpeeds: [1.12, 0.92, 1.18],
+          birdPhases: [0.2, 2.1, 4.1],
+        },
+        {
+          title: 'High Swoop',
+          note: 'Use two short lines to vault the stone into the right nest.',
+          inkBudget: 255,
+          pocket: { x: 268, topY: 414, width: 76, depth: 138 },
+          blockers: [
+            seg(104, 184, 206, 198),
+            seg(200, 198, 176, 298),
+            seg(224, 230, 322, 246),
+            seg(232, 246, 250, 358),
+          ],
+          hint: [
+            [point(180, 118), point(138, 168), point(134, 260), point(176, 334)],
+            [point(176, 334), point(244, 352), point(288, 414)],
+          ],
+          birdRanges: [28, 42, 28],
+          birdSpeeds: [1.16, 0.94, 1.2],
+          birdPhases: [0.6, 2.5, 4.6],
+        },
+        {
+          title: 'Moss Switchback',
+          note: 'Guide the stone left after the center ramp turns it away.',
+          inkBudget: 260,
+          pocket: { x: 92, topY: 418, width: 76, depth: 138 },
+          blockers: [
+            seg(154, 180, 256, 196),
+            seg(188, 196, 210, 314),
+            seg(42, 228, 138, 244),
+            seg(106, 244, 88, 356),
+          ],
+          hint: [
+            [point(180, 118), point(232, 180), point(240, 284), point(194, 352)],
+            [point(194, 352), point(126, 370), point(72, 418)],
+          ],
+          birdRanges: [28, 42, 28],
+          birdSpeeds: [1.14, 0.88, 1.22],
+          birdPhases: [0.3, 2.3, 4.1],
+        },
+        {
+          title: 'Hourglass Nest',
+          note: 'Split the fall into a center squeeze with very little ink.',
+          inkBudget: 220,
+          pocket: { x: 180, topY: 430, width: 74, depth: 128 },
+          blockers: [
+            seg(92, 184, 270, 198),
+            seg(128, 198, 104, 310),
+            seg(232, 198, 256, 310),
+            seg(118, 316, 170, 338),
+            seg(242, 316, 190, 338),
+          ],
+          hint: [[point(180, 118), point(130, 192), point(132, 278), point(170, 358), point(180, 430)]],
+          birdRanges: [24, 32, 22],
+          birdSpeeds: [1.18, 0.98, 1.2],
+          birdPhases: [0.1, 2.2, 4.0],
+        },
+        {
+          title: 'Needle Branch',
+          note: 'A tiny right lane rewards careful ink use.',
+          inkBudget: 210,
+          pocket: { x: 274, topY: 428, width: 70, depth: 126 },
+          blockers: [
+            seg(88, 174, 196, 194),
+            seg(190, 194, 166, 322),
+            seg(214, 214, 320, 232),
+            seg(214, 232, 214, 362),
+            seg(310, 232, 326, 350),
+          ],
+          hint: [
+            [point(180, 118), point(126, 166), point(118, 262), point(168, 348)],
+            [point(168, 348), point(242, 362), point(290, 428)],
+          ],
+          birdRanges: [22, 30, 22],
+          birdSpeeds: [1.22, 1.02, 1.28],
+          birdPhases: [0.5, 2.6, 4.4],
+        },
+        {
+          title: 'Moon Gate',
+          note: 'The left pocket stays open only if the stone bends low.',
+          inkBudget: 215,
+          pocket: { x: 88, topY: 428, width: 70, depth: 126 },
+          blockers: [
+            seg(164, 176, 274, 194),
+            seg(194, 194, 218, 322),
+            seg(40, 214, 146, 232),
+            seg(146, 232, 146, 364),
+            seg(34, 232, 18, 350),
+          ],
+          hint: [
+            [point(180, 118), point(236, 166), point(248, 264), point(198, 350)],
+            [point(198, 350), point(124, 364), point(68, 428)],
+          ],
+          birdRanges: [22, 30, 22],
+          birdSpeeds: [1.2, 0.98, 1.3],
+          birdPhases: [0.2, 2.3, 4.2],
+        },
+        {
+          title: 'Crown Pocket',
+          note: 'Final flight. Save ink, then let the birds come to you.',
+          inkBudget: 200,
+          pocket: { x: 180, topY: 438, width: 68, depth: 118 },
+          blockers: [
+            seg(90, 170, 270, 186),
+            seg(128, 186, 110, 304),
+            seg(232, 186, 250, 304),
+            seg(118, 316, 162, 338),
+            seg(242, 316, 198, 338),
+            seg(164, 344, 146, 420),
+            seg(196, 344, 214, 420),
+          ],
+          hint: [[point(180, 118), point(132, 184), point(140, 280), point(174, 350), point(180, 438)]],
+          birdRanges: [20, 28, 20],
+          birdSpeeds: [1.26, 1.04, 1.32],
+          birdPhases: [0.1, 2.0, 4.1],
+        },
+      ];
+
+      const WORLD_COLLIDERS = [
+        createStaticCollider(seg(10, 96, 10, WORLD_H + 24, 'wall', 10)),
+        createStaticCollider(seg(WORLD_W - 10, 96, WORLD_W - 10, WORLD_H + 24, 'wall', 10)),
+      ];
+
+      function createStone() {
+        return {
+          x: WORLD_W / 2,
+          y: 92,
+          vx: 0,
+          vy: 0,
+          radius: STONE_RADIUS,
+          attached: true,
+          active: false,
+          sleepMs: 0,
+          hitPulse: 0,
+        };
+      }
+
+      function defaultProgress() {
+        return {
+          highestUnlocked: 1,
+          selectedLevel: 1,
+          bestStats: {},
+          onboarded: false,
+        };
+      }
+
+      function loadProgress() {
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (!raw) return defaultProgress();
+          const parsed = JSON.parse(raw);
+          return {
+            highestUnlocked: clamp(Number(parsed.highestUnlocked) || 1, 1, LEVELS.length),
+            selectedLevel: clamp(Number(parsed.selectedLevel) || 1, 1, LEVELS.length),
+            bestStats: parsed.bestStats && typeof parsed.bestStats === 'object' ? parsed.bestStats : {},
+            onboarded: Boolean(parsed.onboarded),
+          };
+        } catch (_error) {
+          return defaultProgress();
+        }
+      }
+
+      const storedProgress = loadProgress();
+      const state = {
+        levelIndex: clamp(storedProgress.selectedLevel - 1, 0, LEVELS.length - 1),
+        highestUnlocked: clamp(storedProgress.highestUnlocked || 1, 1, LEVELS.length),
+        bestStats: storedProgress.bestStats || {},
+        onboardingPending: !storedProgress.onboarded,
+        overlayVisible: false,
+        overlayPrimaryAction: 'begin',
+        overlaySecondaryAction: 'home',
+        level: null,
+        staticColliders: [],
+        drawnStrokes: [],
+        drawnColliders: [],
+        particles: [],
+        pointer: {
+          active: false,
+          pointerId: null,
+          points: [],
+          inkUsedDuringStroke: 0,
+        },
+        inkUsed: 0,
+        hintUsed: false,
+        hintVisibleUntil: 0,
+        autoDropAt: null,
+        runStartAt: performance.now(),
+        runReleasedAt: null,
+        runEnded: false,
+        outcome: 'ready',
+        currentAttemptId: 0,
+        awardedForAttempt: false,
+        statusText: '',
+        linePreviewPulse: 0,
+        elapsed: 0,
+        lastFrame: performance.now(),
+        accumulator: 0,
+        hostPaused: false,
+        hiddenPause: false,
+        rotatePaused: false,
+        clawBaseX: WORLD_W / 2,
+        clawControl: {
+          active: false,
+          pointerId: null,
+          startPoint: null,
+          startBaseX: WORLD_W / 2,
+          moved: false,
+          tapEligible: false,
+        },
+        stone: createStone(),
+        audio: {
+          muted: DEFAULT_SOUND.muted,
+          sfxVolume: DEFAULT_SOUND.sfxVolume,
+          context: null,
+        },
+        pointsContext: null,
+      };
+
+      function saveProgress() {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            highestUnlocked: state.highestUnlocked,
+            selectedLevel: state.levelIndex + 1,
+            bestStats: state.bestStats,
+            onboarded: !state.onboardingPending,
+          }));
+        } catch (_error) {
+          // Ignore storage failures in standalone/offline contexts.
+        }
+      }
+
+      function resetClawControl() {
+        state.clawControl.active = false;
+        state.clawControl.pointerId = null;
+        state.clawControl.startPoint = null;
+        state.clawControl.startBaseX = state.clawBaseX;
+        state.clawControl.moved = false;
+        state.clawControl.tapEligible = false;
+      }
+
+      function setClawBaseX(nextX) {
+        state.clawBaseX = clamp(nextX, CLAW_MIN_X, CLAW_MAX_X);
+        if (state.stone.attached) {
+          const clawPose = getClawPose(state.elapsed);
+          state.stone.x = clawPose.x;
+          state.stone.y = clawPose.stoneY;
+        }
+      }
+
+      function announce(text) {
+        dom.srStatus.textContent = '';
+        window.requestAnimationFrame(() => {
+          dom.srStatus.textContent = text;
+        });
+      }
+
+      function setStatus(text) {
+        state.statusText = text;
+        dom.statusCopy.textContent = text;
+      }
+
+      function fmtPercent(value) {
+        return `${Math.round(value * 100)}%`;
+      }
+
+      function fmtSeconds(ms) {
+        return `${(ms / 1000).toFixed(1)}s`;
+      }
+
+      function isTouchLandscape() {
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        if (!coarse) return false;
+        return window.innerWidth > window.innerHeight;
+      }
+
+      function shouldForcePortrait() {
+        return isTouchLandscape() && Math.max(window.innerWidth, window.innerHeight) <= TOUCH_ROTATE_BREAKPOINT * 1.5;
+      }
+
+      function syncPauseState() {
+        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused;
+        if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
+          state.audio.context.resume().catch(() => {});
+        }
+        if (paused && state.audio.context && state.audio.context.state === 'running') {
+          state.audio.context.suspend().catch(() => {});
+        }
+      }
+
+      function updateRotateNotice() {
+        const shouldRotate = shouldForcePortrait();
+        state.rotatePaused = shouldRotate;
+        dom.rotateNotice.classList.toggle('is-visible', shouldRotate);
+        dom.rotateNotice.setAttribute('aria-hidden', String(!shouldRotate));
+        syncPauseState();
+        refreshButtons();
+      }
+
+      function setAudioMuted(muted) {
+        state.audio.muted = Boolean(muted);
+        syncPauseState();
+      }
+
+      function setSfxVolume(volume) {
+        state.audio.sfxVolume = clamp(Number(volume) || 0, 0, 1);
+      }
+
+      function ensureAudioContext() {
+        if (state.audio.muted) return null;
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return null;
+        if (!state.audio.context) {
+          state.audio.context = new AudioCtor();
+        }
+        if (state.audio.context.state === 'suspended' && !state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
+          state.audio.context.resume().catch(() => {});
+        }
+        return state.audio.context;
+      }
+
+      function playTone(kind) {
+        const audioContext = ensureAudioContext();
+        if (!audioContext) return;
+
+        const presets = {
+          tap: [520, 0.06, 'triangle', 0.07],
+          drop: [240, 0.12, 'sine', 0.08],
+          bird: [720, 0.14, 'triangle', 0.09],
+          win: [840, 0.24, 'sine', 0.12],
+          lose: [180, 0.22, 'sawtooth', 0.07],
+        };
+        const [frequency, duration, wave, gainValue] = presets[kind] || presets.tap;
+        const now = audioContext.currentTime;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = wave;
+        oscillator.frequency.setValueAtTime(frequency, now);
+        if (kind === 'win') {
+          oscillator.frequency.linearRampToValueAtTime(frequency * 1.22, now + duration * 0.7);
+        } else if (kind === 'lose') {
+          oscillator.frequency.linearRampToValueAtTime(frequency * 0.65, now + duration);
+        } else if (kind === 'bird') {
+          oscillator.frequency.linearRampToValueAtTime(frequency * 0.88, now + duration);
+        }
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, gainValue * state.audio.sfxVolume), now + 0.016);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration + 0.03);
+      }
+
+      function showOverlay(config) {
+        state.overlayVisible = true;
+        state.overlayPrimaryAction = config.primaryAction || 'begin';
+        state.overlaySecondaryAction = config.secondaryAction || 'home';
+        dom.overlayEyebrow.textContent = config.eyebrow || '';
+        dom.overlayTitle.textContent = config.title || '';
+        dom.overlayBody.textContent = config.body || '';
+        dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
+        if (config.secondaryLabel) {
+          dom.overlaySecondary.hidden = false;
+          dom.overlaySecondary.textContent = config.secondaryLabel;
+        } else {
+          dom.overlaySecondary.hidden = true;
+        }
+        if (config.stats && config.stats.length) {
+          dom.overlayStats.innerHTML = config.stats
+            .map((item) => `<div class="overlay-stat-row"><span>${item.label}</span><strong>${item.value}</strong></div>`)
+            .join('');
+        } else {
+          dom.overlayStats.innerHTML = '';
+        }
+        dom.overlay.classList.add('is-visible');
+        dom.overlay.setAttribute('aria-hidden', 'false');
+        refreshButtons();
+      }
+
+      function hideOverlay() {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && dom.overlay.contains(active)) {
+          active.blur();
+        }
+        state.overlayVisible = false;
+        dom.overlay.classList.remove('is-visible');
+        dom.overlay.setAttribute('aria-hidden', 'true');
+        const nextFocusTarget = !dom.dropButton.disabled ? dom.dropButton : dom.homeButton;
+        nextFocusTarget.focus({ preventScroll: true });
+        refreshButtons();
+      }
+
+      function createStaticCollider(raw) {
+        return {
+          ax: raw.x1,
+          ay: raw.y1,
+          bx: raw.x2,
+          by: raw.y2,
+          radius: raw.radius || STATIC_LINE_WIDTH / 2,
+          kind: raw.kind || 'blocker',
+        };
+      }
+
+      function sampleHintX(hintSegments, targetY, fallbackX) {
+        let candidate = null;
+        hintSegments.forEach((stroke) => {
+          for (let i = 1; i < stroke.length; i += 1) {
+            const a = stroke[i - 1];
+            const b = stroke[i];
+            if ((targetY >= a.y && targetY <= b.y) || (targetY >= b.y && targetY <= a.y)) {
+              if (Math.abs(b.y - a.y) < 0.001) {
+                candidate = { x: a.x, diff: 0 };
+                return;
+              }
+              const t = (targetY - a.y) / (b.y - a.y);
+              candidate = { x: lerp(a.x, b.x, t), diff: 0 };
+              return;
+            }
+            const midpointY = (a.y + b.y) * 0.5;
+            const diff = Math.abs(midpointY - targetY);
+            if (!candidate || diff < candidate.diff) {
+              candidate = { x: lerp(a.x, b.x, 0.5), diff };
+            }
+          }
+        });
+        return candidate ? candidate.x : fallbackX;
+      }
+
+      function hydrateLevel(levelIndex) {
+        const base = LEVELS[levelIndex];
+        const pocket = {
+          ...base.pocket,
+          topY: clamp(base.pocket.topY + PLAYFIELD_SHIFT_Y, 364, WORLD_H - base.pocket.depth - 18),
+        };
+        const hintSegments = base.hint.map((stroke) => stroke.map((hintPoint) => shiftPointY(hintPoint, PLAYFIELD_SHIFT_Y)));
+        const blockers = base.blockers.map((line) => shiftSegmentY(line, PLAYFIELD_SHIFT_Y));
+        const staticLines = [...blockers, ...makePocket(pocket.x, pocket.topY, pocket.width, pocket.depth)];
+        const laneYs = [
+          clamp(pocket.topY - 136, DRAW_TOP + 150, DRAW_BOTTOM - 166),
+          clamp(pocket.topY - 74, DRAW_TOP + 214, DRAW_BOTTOM - 92),
+          clamp(pocket.topY - 14, DRAW_TOP + 278, DRAW_BOTTOM - 18),
+        ];
+
+        const birds = laneYs.map((laneY, index) => {
+          const range = base.birdRanges[index];
+          const sampledX = sampleHintX(hintSegments, laneY, pocket.x);
+          const baseX = clamp(sampledX, 56 + range, WORLD_W - 56 - range);
+          return {
+            index,
+            baseX,
+            x: baseX,
+            prevX: baseX,
+            y: laneY,
+            laneY,
+            range,
+            speed: base.birdSpeeds[index],
+            phase: base.birdPhases[index],
+            bobAmp: 8 + index * 1.5,
+            bodyRadius: 11,
+            alive: true,
+            tint: index === 0 ? ['#c96f5e', '#7f3d35'] : index === 1 ? ['#8c6b86', '#56394e'] : ['#ad815e', '#6a4732'],
+            filter: index === 0
+              ? 'saturate(0.96) brightness(0.96) contrast(1.08)'
+              : index === 1
+                ? 'hue-rotate(-10deg) saturate(0.88) brightness(0.92) contrast(1.12)'
+                : 'hue-rotate(6deg) saturate(0.8) brightness(0.9) contrast(1.08)',
+            flapOffset: index * 2.75,
+            facing: Math.cos(base.birdPhases[index]) >= 0 ? 1 : -1,
+            renderHeight: 60,
+          };
+        });
+
+        return {
+          id: levelIndex + 1,
+          title: base.title,
+          note: base.note,
+          inkBudget: base.inkBudget,
+          pocket,
+          hintSegments,
+          staticLines,
+          birds,
+        };
+      }
+
+      function updateBirdPositions(level, elapsed) {
+        level.birds.forEach((bird) => {
+          if (!bird.alive) return;
+          const nextX = clamp(
+            bird.baseX + Math.sin(elapsed * bird.speed + bird.phase) * bird.range,
+            42,
+            WORLD_W - 42
+          );
+          const drift = nextX - bird.x;
+          bird.prevX = bird.x;
+          bird.x = nextX;
+          if (Math.abs(drift) > 0.08) {
+            bird.facing = drift >= 0 ? 1 : -1;
+          }
+          bird.y = bird.laneY + Math.sin(elapsed * bird.speed * 1.42 + bird.phase * 1.8) * bird.bobAmp;
+        });
+      }
+
+      function remainingInkRatio() {
+        return clamp((state.level.inkBudget - state.inkUsed) / state.level.inkBudget, 0, 1);
+      }
+
+      function refreshHud() {
+        dom.levelValue.textContent = `${state.level.id}. ${state.level.title}`;
+        dom.inkLabel.textContent = fmtPercent(remainingInkRatio());
+        dom.inkFill.style.transform = `scaleX(${remainingInkRatio().toFixed(3)})`;
+      }
+
+      function refreshButtons() {
+        const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
+        const attached = state.stone.attached;
+        dom.prevLevelButton.disabled = state.levelIndex <= 0 || state.overlayVisible;
+        dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || state.overlayVisible;
+        dom.hintButton.disabled = state.overlayVisible || state.rotatePaused || state.hintUsed || !attached;
+        dom.clearButton.disabled = state.overlayVisible || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
+        dom.dropButton.disabled = state.overlayVisible || state.rotatePaused || !attached;
+      }
+
+      function resetStone() {
+        state.stone = createStone();
+        const clawPose = getClawPose(state.elapsed);
+        state.stone.x = clawPose.x;
+        state.stone.y = clawPose.stoneY;
+      }
+
+      function rebuildDrawnColliders() {
+        const colliders = [];
+        state.drawnStrokes.forEach((stroke) => {
+          for (let i = 1; i < stroke.points.length; i += 1) {
+            const a = stroke.points[i - 1];
+            const b = stroke.points[i];
+            if (distance(a, b) < 1) continue;
+            colliders.push({
+              ax: a.x,
+              ay: a.y,
+              bx: b.x,
+              by: b.y,
+              radius: DRAWN_LINE_WIDTH / 2,
+              kind: 'drawn',
+            });
+          }
+        });
+        state.drawnColliders = colliders;
+      }
+
+      function beginAttempt(clearLines, preserveHintState) {
+        if (clearLines) {
+          state.drawnStrokes = [];
+          state.drawnColliders = [];
+          state.inkUsed = 0;
+          state.pointer.points = [];
+          state.pointer.inkUsedDuringStroke = 0;
+          if (!preserveHintState) {
+            state.hintUsed = false;
+            state.hintVisibleUntil = 0;
+          }
+        }
+        state.level = hydrateLevel(state.levelIndex);
+        state.staticColliders = state.level.staticLines.map(createStaticCollider);
+        resetClawControl();
+        setClawBaseX(WORLD_W / 2);
+        resetStone();
+        state.pointer.active = false;
+        state.pointer.pointerId = null;
+        state.pointer.points = [];
+        state.pointer.inkUsedDuringStroke = 0;
+        state.autoDropAt = null;
+        state.runStartAt = performance.now();
+        state.runReleasedAt = null;
+        state.runEnded = false;
+        state.outcome = 'ready';
+        state.currentAttemptId += 1;
+        state.awardedForAttempt = false;
+        state.linePreviewPulse = 0;
+        state.particles = [];
+        updateBirdPositions(state.level, state.elapsed);
+        refreshHud();
+        refreshButtons();
+        setStatus(state.level.note);
+      }
+
+      function goToLevel(levelIndex) {
+        const target = clamp(levelIndex, 0, LEVELS.length - 1);
+        if (target > state.highestUnlocked - 1) return;
+        state.levelIndex = target;
+        saveProgress();
+        hideOverlay();
+        beginAttempt(true, false);
+        announce(`Level ${target + 1}. ${state.level.title}.`);
+      }
+
+      function unlockAudio() {
+        ensureAudioContext();
+      }
+
+      function pointAllowed(p) {
+        return p.x >= DRAW_LEFT && p.x <= DRAW_RIGHT && p.y >= DRAW_TOP && p.y <= DRAW_BOTTOM;
+      }
+
+      function clampPointToDrawZone(p) {
+        return {
+          x: clamp(p.x, DRAW_LEFT, DRAW_RIGHT),
+          y: clamp(p.y, DRAW_TOP, DRAW_BOTTOM),
+        };
+      }
+
+      function pointerToWorld(event) {
+        const rect = dom.canvas.getBoundingClientRect();
+        return {
+          x: ((event.clientX - rect.left) / rect.width) * WORLD_W,
+          y: ((event.clientY - rect.top) / rect.height) * WORLD_H,
+        };
+      }
+
+      function pointHitsStoneDropTarget(point) {
+        if (!state.stone.attached) return false;
+        return distance(point, state.stone) <= STONE_DROP_TAP_RADIUS;
+      }
+
+      function pointHitsClawControl(point) {
+        if (!state.stone.attached) return false;
+        const clawPose = getClawPose(state.elapsed);
+        const inStoneZone = distance(point, state.stone) <= CLAW_CONTROL_RADIUS;
+        const inCarriageZone = Math.abs(point.x - clawPose.x) <= 40
+          && point.y >= clawPose.y - 28
+          && point.y <= clawPose.stoneY + 18;
+        return inStoneZone || inCarriageZone;
+      }
+
+      function beginClawControl(event, rawPoint) {
+        if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.pointer.active) return;
+        state.clawControl.active = true;
+        state.clawControl.pointerId = event.pointerId;
+        state.clawControl.startPoint = rawPoint;
+        state.clawControl.startBaseX = state.clawBaseX;
+        state.clawControl.moved = false;
+        state.clawControl.tapEligible = pointHitsStoneDropTarget(rawPoint);
+        dom.canvas.setPointerCapture(event.pointerId);
+        setStatus(state.drawnStrokes.length
+          ? 'Slide the claw for a better angle, then tap the stone or Drop.'
+          : 'Slide the claw left or right, sketch your route, then tap the stone or Drop.');
+        refreshButtons();
+      }
+
+      function updateClawControl(event) {
+        if (!state.clawControl.active || state.clawControl.pointerId !== event.pointerId) return false;
+        const rawPoint = pointerToWorld(event);
+        const dx = rawPoint.x - state.clawControl.startPoint.x;
+        if (Math.abs(dx) > CLAW_DRAG_THRESHOLD) {
+          state.clawControl.moved = true;
+        }
+        setClawBaseX(state.clawControl.startBaseX + dx);
+        state.linePreviewPulse = 1;
+        return true;
+      }
+
+      function endClawControl(event) {
+        if (!state.clawControl.active) return false;
+        if (event && event.pointerId != null && state.clawControl.pointerId !== event.pointerId) return false;
+        const shouldDrop = state.clawControl.tapEligible
+          && !state.clawControl.moved
+          && state.stone.attached
+          && !state.overlayVisible
+          && !state.rotatePaused
+          && !state.runEnded;
+        resetClawControl();
+        refreshButtons();
+        if (shouldDrop) {
+          releaseStone();
+        } else if (state.stone.attached) {
+          setStatus(state.drawnStrokes.length
+            ? 'Angle set. Add another line or tap the stone or Drop.'
+            : 'Angle set. Draw your route, then tap the stone or Drop.');
+        }
+        return true;
+      }
+
+      function startStroke(event, rawPoint = pointerToWorld(event)) {
+        if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.clawControl.active) return;
+        if (!pointAllowed(rawPoint)) return;
+        state.pointer.active = true;
+        state.pointer.pointerId = event.pointerId;
+        state.pointer.points = [clampPointToDrawZone(rawPoint)];
+        state.pointer.inkUsedDuringStroke = 0;
+        state.autoDropAt = null;
+        state.linePreviewPulse = 1;
+        dom.canvas.setPointerCapture(event.pointerId);
+        refreshButtons();
+      }
+
+      function extendStroke(event) {
+        if (!state.pointer.active || state.pointer.pointerId !== event.pointerId) return;
+        const next = clampPointToDrawZone(pointerToWorld(event));
+        const points = state.pointer.points;
+        const last = points[points.length - 1];
+        const segmentLength = distance(last, next);
+        if (segmentLength < 4) return;
+        const remainingInk = Math.max(0, state.level.inkBudget - state.inkUsed);
+        if (remainingInk <= 0) {
+          finishStroke();
+          return;
+        }
+        let endPoint = next;
+        let usedLength = segmentLength;
+        if (segmentLength > remainingInk) {
+          const t = remainingInk / segmentLength;
+          endPoint = {
+            x: lerp(last.x, next.x, t),
+            y: lerp(last.y, next.y, t),
+          };
+          usedLength = remainingInk;
+        }
+        points.push(endPoint);
+        state.inkUsed = clamp(state.inkUsed + usedLength, 0, state.level.inkBudget);
+        state.pointer.inkUsedDuringStroke += usedLength;
+        state.linePreviewPulse = 1;
+        refreshHud();
+        if (state.inkUsed >= state.level.inkBudget - 0.5) {
+          setStatus('Ink spent. Tap the stone or Drop, or clear a line.');
+          finishStroke();
+        }
+      }
+
+      function finishStroke(event) {
+        if (!state.pointer.active) return;
+        if (event && event.pointerId != null && state.pointer.pointerId !== event.pointerId) return;
+        if (state.pointer.points.length >= 2) {
+          state.drawnStrokes.push({
+            points: state.pointer.points.slice(),
+            width: DRAWN_LINE_WIDTH,
+          });
+          rebuildDrawnColliders();
+          if (state.stone.attached) {
+            setStatus('Path set. Add another line, slide the claw, then tap the stone or Drop.');
+          }
+        } else {
+          state.inkUsed = clamp(state.inkUsed - state.pointer.inkUsedDuringStroke, 0, state.level.inkBudget);
+          refreshHud();
+        }
+        state.pointer.active = false;
+        state.pointer.pointerId = null;
+        state.pointer.points = [];
+        state.pointer.inkUsedDuringStroke = 0;
+        refreshButtons();
+      }
+
+      function handleCanvasPointerDown(event) {
+        if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded) return;
+        unlockAudio();
+        const rawPoint = pointerToWorld(event);
+        const shouldGrabClaw = pointHitsStoneDropTarget(rawPoint)
+          || (rawPoint.y < DRAW_TOP && pointHitsClawControl(rawPoint));
+        if (shouldGrabClaw) {
+          beginClawControl(event, rawPoint);
+          return;
+        }
+        startStroke(event, rawPoint);
+      }
+
+      function handleCanvasPointerMove(event) {
+        if (updateClawControl(event)) return;
+        extendStroke(event);
+      }
+
+      function handleCanvasPointerFinish(event) {
+        if (endClawControl(event)) return;
+        finishStroke(event);
+      }
+
+      function clearLines() {
+        if (!state.stone.attached || state.overlayVisible) return;
+        state.drawnStrokes = [];
+        state.drawnColliders = [];
+        state.pointer.active = false;
+        state.pointer.points = [];
+        state.pointer.pointerId = null;
+        state.pointer.inkUsedDuringStroke = 0;
+        resetClawControl();
+        state.inkUsed = 0;
+        state.autoDropAt = null;
+        refreshHud();
+        refreshButtons();
+        setStatus('Lines cleared. Slide the claw for a fresh angle and try a cleaner route.');
+        playTone('tap');
+      }
+
+      function releaseStone() {
+        if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
+        resetClawControl();
+        state.stone.attached = false;
+        state.stone.active = true;
+        state.stone.vx = 0;
+        state.stone.vy = 14;
+        state.stone.sleepMs = 0;
+        state.runReleasedAt = performance.now();
+        state.outcome = 'running';
+        state.autoDropAt = null;
+        refreshButtons();
+        setStatus('One stone only. Let the runway do the work.');
+        playTone('drop');
+        announce('Stone released.');
+      }
+
+      function nearestPointOnCollider(collider, x, y) {
+        const abx = collider.bx - collider.ax;
+        const aby = collider.by - collider.ay;
+        const abLenSq = abx * abx + aby * aby;
+        if (abLenSq <= 0.0001) {
+          return { x: collider.ax, y: collider.ay, tx: 1, ty: 0 };
+        }
+        const apx = x - collider.ax;
+        const apy = y - collider.ay;
+        const t = clamp((apx * abx + apy * aby) / abLenSq, 0, 1);
+        const px = collider.ax + abx * t;
+        const py = collider.ay + aby * t;
+        const len = Math.sqrt(abLenSq);
+        return { x: px, y: py, tx: abx / len, ty: aby / len };
+      }
+
+      function resolveStoneCollision(collider) {
+        const nearest = nearestPointOnCollider(collider, state.stone.x, state.stone.y);
+        let dx = state.stone.x - nearest.x;
+        let dy = state.stone.y - nearest.y;
+        let dist = Math.hypot(dx, dy);
+        const minDist = state.stone.radius + collider.radius;
+        if (dist >= minDist) {
+          return false;
+        }
+
+        if (dist < 0.0001) {
+          dx = -nearest.ty;
+          dy = nearest.tx;
+          dist = 1;
+        }
+
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const push = minDist - dist + 0.01;
+        state.stone.x += nx * push;
+        state.stone.y += ny * push;
+
+        const tx = nearest.tx;
+        const ty = nearest.ty;
+        const normalVelocity = state.stone.vx * nx + state.stone.vy * ny;
+        const tangentVelocity = state.stone.vx * tx + state.stone.vy * ty;
+        if (normalVelocity < 0) {
+          const restitution = collider.kind === 'drawn' ? 0.32 : collider.kind === 'pocket' ? 0.18 : 0.24;
+          const friction = collider.kind === 'drawn' ? 0.97 : collider.kind === 'pocket' ? 0.9 : 0.94;
+          const nextNormalVelocity = -normalVelocity * restitution;
+          const nextTangentVelocity = tangentVelocity * friction;
+          state.stone.vx = tx * nextTangentVelocity + nx * nextNormalVelocity;
+          state.stone.vy = ty * nextTangentVelocity + ny * nextNormalVelocity;
+          state.stone.hitPulse = 1;
+        }
+
+        return true;
+      }
+
+      function resolveStoneAgainstWorld() {
+        let collided = false;
+        WORLD_COLLIDERS.forEach((collider) => {
+          collided = resolveStoneCollision(collider) || collided;
+        });
+        state.staticColliders.forEach((collider) => {
+          collided = resolveStoneCollision(collider) || collided;
+        });
+        state.drawnColliders.forEach((collider) => {
+          collided = resolveStoneCollision(collider) || collided;
+        });
+        return collided;
+      }
+
+      function createParticles(x, y, count, colors) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 22 + Math.random() * 70;
+          const tone = colors[i % colors.length];
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 20,
+            life: 0,
+            maxLife: 0.45 + Math.random() * 0.38,
+            size: 2 + Math.random() * 5,
+            color: tone,
+          });
+        }
+      }
+
+      function withAlpha(hexColor, alpha) {
+        const hex = hexColor.replace('#', '');
+        const value = hex.length === 3
+          ? hex.split('').map((char) => parseInt(char + char, 16))
+          : [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+        return `rgba(${value[0]}, ${value[1]}, ${value[2]}, ${alpha})`;
+      }
+
+      function updateParticles(dt) {
+        state.particles = state.particles.filter((particle) => {
+          particle.life += dt;
+          particle.x += particle.vx * dt;
+          particle.y += particle.vy * dt;
+          particle.vy += 140 * dt;
+          particle.vx *= 0.99;
+          return particle.life < particle.maxLife;
+        });
+      }
+
+      function getClawPose(elapsed) {
+        const sway = state.clawControl.active ? 0 : Math.sin(elapsed * 1.3) * 4.5;
+        const bob = Math.sin(elapsed * 2.3) * 1.6;
+        const x = clamp(state.clawBaseX + sway, CLAW_MIN_X, CLAW_MAX_X);
+        return {
+          x,
+          railY: 18,
+          y: 38 + bob,
+          stoneY: 92 + bob,
+          sway,
+        };
+      }
+
+      function awardPointsForClear(summary) {
+        if (state.awardedForAttempt) return;
+        const bridge = window.LAHSPointsBridge;
+        if (!bridge || typeof bridge.awardPoints !== 'function') {
+          state.awardedForAttempt = true;
+          return;
+        }
+        const remainingInk = remainingInkRatio();
+        const points = CLEAR_BASE_POINTS
+          + (state.hintUsed ? 0 : CLEAR_NO_HINT_BONUS)
+          + (remainingInk >= 0.4 ? CLEAR_INK_BONUS : 0);
+        bridge.awardPoints(points, {
+          eventId: `clear:l${state.level.id}:${state.currentAttemptId}`,
+          label: 'Level Clear',
+          meta: {
+            level: state.level.id,
+            birdsHit: 3,
+            hintUsed: state.hintUsed,
+            remainingInkRatio: Number(remainingInk.toFixed(3)),
+            clearTimeMs: Math.round(summary.clearTimeMs),
+          },
+        });
+        state.awardedForAttempt = true;
+      }
+
+      function saveBestStats(summary) {
+        const key = String(state.level.id);
+        const previous = state.bestStats[key];
+        if (!previous || summary.points > previous.points || (summary.points === previous.points && summary.clearTimeMs < previous.clearTimeMs)) {
+          state.bestStats[key] = summary;
+          saveProgress();
+        }
+      }
+
+      function handleWin() {
+        if (state.runEnded) return;
+        state.runEnded = true;
+        state.outcome = 'win';
+        const clearTimeMs = Math.round(performance.now() - state.runStartAt);
+        const remainingInk = remainingInkRatio();
+        const points = CLEAR_BASE_POINTS
+          + (state.hintUsed ? 0 : CLEAR_NO_HINT_BONUS)
+          + (remainingInk >= 0.4 ? CLEAR_INK_BONUS : 0);
+        const summary = {
+          points,
+          clearTimeMs,
+          remainingInkRatio: Number(remainingInk.toFixed(3)),
+        };
+        saveBestStats(summary);
+        awardPointsForClear(summary);
+        if (state.levelIndex + 1 < LEVELS.length) {
+          state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
+        }
+        saveProgress();
+        setStatus('All three birds cleared with one stone.');
+        playTone('win');
+        announce(`Level ${state.level.id} cleared.`);
+
+        const stats = [
+          { label: 'Level time', value: fmtSeconds(clearTimeMs) },
+          { label: 'Ink left', value: fmtPercent(remainingInk) },
+          { label: 'Points', value: String(points) },
+        ];
+
+        showOverlay({
+          eyebrow: state.levelIndex === LEVELS.length - 1 ? 'Campaign Complete' : 'Level Cleared',
+          title: state.levelIndex === LEVELS.length - 1 ? 'Every bird fell in one run' : `Level ${state.level.id} complete`,
+          body: state.levelIndex === LEVELS.length - 1
+            ? 'The last flock folded into the trap. Replay any stage to refine your linework or head back to the Games shelf.'
+            : 'The stone found every target before it ran out of motion. Move on or replay for a tighter ink bonus.',
+          primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
+          primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
+          secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Games' : 'Retry',
+          secondaryAction: state.levelIndex === LEVELS.length - 1 ? 'home' : 'retry-level',
+          stats,
+        });
+      }
+
+      function handleLose(reason) {
+        if (state.runEnded) return;
+        state.runEnded = true;
+        state.outcome = 'lose';
+        setStatus(reason);
+        playTone('lose');
+        announce(reason);
+        showOverlay({
+          eyebrow: 'Attempt Lost',
+          title: 'One stone fell short',
+          body: `${reason} Adjust the linework, then try the same drop again.`,
+          primaryLabel: 'Retry',
+          primaryAction: 'retry-level',
+          secondaryLabel: 'Edit Lines',
+          secondaryAction: 'edit-lines',
+          stats: [
+            { label: 'Birds cleared', value: `${state.level.birds.filter((bird) => !bird.alive).length}/3` },
+            { label: 'Ink used', value: fmtPercent(1 - remainingInkRatio()) },
+          ],
+        });
+      }
+
+      function hitBird(bird) {
+        if (!bird.alive) return;
+        bird.alive = false;
+        createParticles(bird.x, bird.y, 16, [bird.tint[0], bird.tint[1], '#ffffff']);
+        state.stone.vx *= 0.95;
+        state.stone.vy = Math.min(state.stone.vy, 180);
+        playTone('bird');
+        if (state.level.birds.every((candidate) => !candidate.alive)) {
+          handleWin();
+        } else {
+          setStatus(`${state.level.birds.filter((candidate) => !candidate.alive).length} of 3 birds cleared. Keep the stone moving.`);
+        }
+      }
+
+      function updateStone(dt) {
+        const clawPose = getClawPose(state.elapsed);
+        if (state.stone.attached) {
+          state.stone.x = clawPose.x;
+          state.stone.y = clawPose.stoneY;
+          state.stone.vx = 0;
+          state.stone.vy = 0;
+          return;
+        }
+
+        if (state.runEnded) {
+          return;
+        }
+
+        const subDt = dt / COLLISION_SUBSTEPS;
+        for (let i = 0; i < COLLISION_SUBSTEPS; i += 1) {
+          state.stone.vy += GRAVITY * subDt;
+          state.stone.vx = clamp(state.stone.vx, -540, 540);
+          state.stone.vy = clamp(state.stone.vy, -200, 780);
+          state.stone.x += state.stone.vx * subDt;
+          state.stone.y += state.stone.vy * subDt;
+          resolveStoneAgainstWorld();
+
+          state.level.birds.forEach((bird) => {
+            if (!bird.alive) return;
+            if (Math.hypot(state.stone.x - bird.x, state.stone.y - bird.y) <= state.stone.radius + bird.bodyRadius + 3) {
+              hitBird(bird);
+            }
+          });
+
+          if (state.stone.y > WORLD_H + 56 || state.stone.x < -50 || state.stone.x > WORLD_W + 50) {
+            handleLose('The stone drifted away before the flock was cleared.');
+            return;
+          }
+        }
+
+        const speed = Math.hypot(state.stone.vx, state.stone.vy);
+        if (speed < FAIL_SLEEP_SPEED && state.stone.y > 220) {
+          state.stone.sleepMs += dt * 1000;
+        } else {
+          state.stone.sleepMs = 0;
+        }
+        if (state.stone.sleepMs >= FAIL_SLEEP_MS) {
+          handleLose('The stone settled before the last birds crossed its path.');
+          return;
+        }
+        if (performance.now() - state.runStartAt >= FAIL_MAX_TIME_MS) {
+          handleLose('The run lasted too long. Try a shorter route.');
+        }
+      }
+
+      function drawRoundedPolyline(points, width, strokeStyle, shadowColor, shadowBlur, dash) {
+        if (!points || points.length < 2) return;
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = width;
+        ctx.strokeStyle = strokeStyle;
+        if (shadowColor) ctx.shadowColor = shadowColor;
+        if (shadowBlur) ctx.shadowBlur = shadowBlur;
+        if (dash) ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i += 1) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+        sky.addColorStop(0, '#f7efe4');
+        sky.addColorStop(0.46, '#edf4fb');
+        sky.addColorStop(1, '#d7eadf');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+        const sunGlow = ctx.createRadialGradient(290, 88, 10, 290, 88, 160);
+        sunGlow.addColorStop(0, 'rgba(255, 245, 219, 0.82)');
+        sunGlow.addColorStop(0.45, 'rgba(255, 245, 219, 0.22)');
+        sunGlow.addColorStop(1, 'rgba(255, 245, 219, 0)');
+        ctx.fillStyle = sunGlow;
+        ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+        const cloudSets = [
+          [58, 94, 30],
+          [118, 76, 20],
+          [230, 108, 25],
+          [280, 152, 19],
+        ];
+        cloudSets.forEach(([x, y, r]) => {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.46)';
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.arc(x + r * 0.8, y + 6, r * 0.78, 0, Math.PI * 2);
+          ctx.arc(x - r * 0.8, y + 8, r * 0.65, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.fillRect(18, DRAW_TOP - 16, WORLD_W - 36, DRAW_BOTTOM - DRAW_TOP + 28);
+
+        ctx.strokeStyle = 'rgba(84, 109, 103, 0.18)';
+        ctx.setLineDash([8, 8]);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(DRAW_LEFT, DRAW_TOP, DRAW_RIGHT - DRAW_LEFT, DRAW_BOTTOM - DRAW_TOP);
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = 'rgba(223, 235, 225, 0.72)';
+        ctx.fillRect(0, DRAW_BOTTOM, WORLD_W, WORLD_H - DRAW_BOTTOM);
+
+        ctx.beginPath();
+        ctx.moveTo(0, WORLD_H);
+        ctx.quadraticCurveTo(84, 474, 178, WORLD_H);
+        ctx.quadraticCurveTo(286, 476, WORLD_W, WORLD_H);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(158, 196, 170, 0.32)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, WORLD_H);
+        ctx.quadraticCurveTo(122, 520, 236, WORLD_H);
+        ctx.quadraticCurveTo(308, 524, WORLD_W, WORLD_H);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(112, 166, 127, 0.2)';
+        ctx.fill();
+      }
+
+      function drawPlayBandLabels() {
+        ctx.save();
+        ctx.fillStyle = 'rgba(43, 36, 29, 0.32)';
+        ctx.font = '600 12px "Avenir Next", "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('DRAW HERE', WORLD_W / 2, DRAW_TOP + 18);
+        ctx.fillText('BIRD FLIGHT', WORLD_W / 2, DRAW_BOTTOM + 24);
+        ctx.restore();
+      }
+
+      function drawClaw() {
+        const clawPose = getClawPose(state.elapsed);
+        const hangerBottom = clawPose.stoneY - STONE_RADIUS - 8;
+        const controlGlow = state.clawControl.active ? 0.92 : 0.56;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(70, 54, 40, 0.12)';
+        ctx.shadowBlur = 18;
+        const railGradient = ctx.createLinearGradient(30, 0, WORLD_W - 30, 0);
+        railGradient.addColorStop(0, '#8f7967');
+        railGradient.addColorStop(0.48, '#f1dfc6');
+        railGradient.addColorStop(1, '#947b67');
+        ctx.fillStyle = railGradient;
+        ctx.beginPath();
+        ctx.roundRect(34, clawPose.railY - 6, WORLD_W - 68, 12, 7);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(104, 82, 64, 0.56)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(44, clawPose.railY - 0.5);
+        ctx.lineTo(WORLD_W - 44, clawPose.railY - 0.5);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
+        for (let x = 52; x <= WORLD_W - 52; x += 16) {
+          ctx.fillRect(x, clawPose.railY - 2, 6, 4);
+        }
+
+        [[50, 12], [WORLD_W - 50, 12]].forEach(([x, y]) => {
+          ctx.fillStyle = '#d4bfaa';
+          ctx.beginPath();
+          ctx.roundRect(x - 8, y, 16, 15, 5);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(94, 73, 57, 0.4)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        });
+
+        ctx.save();
+        ctx.translate(clawPose.x, clawPose.y);
+
+        ctx.fillStyle = 'rgba(62, 47, 34, 0.12)';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 34, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(116, 96, 78, 0.8)';
+        ctx.lineWidth = 3.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-4, clawPose.railY - clawPose.y + 7);
+        ctx.lineTo(-4, hangerBottom - clawPose.y);
+        ctx.moveTo(4, clawPose.railY - clawPose.y + 7);
+        ctx.lineTo(4, hangerBottom - clawPose.y);
+        ctx.stroke();
+
+        const carriageGradient = ctx.createLinearGradient(0, -14, 0, 18);
+        carriageGradient.addColorStop(0, '#fbf1de');
+        carriageGradient.addColorStop(0.55, '#ddc8b0');
+        carriageGradient.addColorStop(1, '#a78669');
+        ctx.fillStyle = carriageGradient;
+        ctx.beginPath();
+        ctx.roundRect(-32, -14, 64, 28, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(101, 79, 61, 0.48)';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
+        ctx.beginPath();
+        ctx.roundRect(-22, -9, 44, 8, 5);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(229, 184, 108, ${controlGlow})`;
+        ctx.beginPath();
+        ctx.arc(0, 1, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f0e0ca';
+        [-18, 18].forEach((x) => {
+          ctx.beginPath();
+          ctx.arc(x, 8, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.strokeStyle = '#725b48';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(-19, 10);
+        ctx.quadraticCurveTo(-31, 24, -21, 40);
+        ctx.quadraticCurveTo(-16, 49, -10, hangerBottom - clawPose.y + 6);
+        ctx.moveTo(19, 10);
+        ctx.quadraticCurveTo(31, 24, 21, 40);
+        ctx.quadraticCurveTo(16, 49, 10, hangerBottom - clawPose.y + 6);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(248, 240, 228, 0.54)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-15, 12);
+        ctx.quadraticCurveTo(-22, 22, -16, 34);
+        ctx.moveTo(15, 12);
+        ctx.quadraticCurveTo(22, 22, 16, 34);
+        ctx.stroke();
+
+        ctx.restore();
+        ctx.restore();
+      }
+
+      function drawNestGlow() {
+        const { pocket } = state.level;
+        const glow = ctx.createRadialGradient(pocket.x, pocket.topY + 86, 10, pocket.x, pocket.topY + 86, 90);
+        glow.addColorStop(0, 'rgba(255, 243, 214, 0.5)');
+        glow.addColorStop(0.55, 'rgba(255, 243, 214, 0.2)');
+        glow.addColorStop(1, 'rgba(255, 243, 214, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(pocket.x - 100, pocket.topY - 30, 200, 210);
+      }
+
+      function drawStaticLines() {
+        state.level.staticLines.forEach((line) => {
+          const width = (line.radius || STATIC_LINE_WIDTH / 2) * 2;
+          const isPocket = line.kind === 'pocket';
+          if (isPocket) {
+            return;
+          }
+          drawRoundedPolyline(
+            [point(line.x1, line.y1), point(line.x2, line.y2)],
+            width + 4,
+            isPocket ? 'rgba(255, 255, 255, 0.3)' : 'rgba(66, 49, 37, 0.12)',
+            null,
+            0,
+            null
+          );
+          drawRoundedPolyline(
+            [point(line.x1, line.y1), point(line.x2, line.y2)],
+            width,
+            isPocket ? '#8fa676' : '#5f4c3d',
+            isPocket ? 'rgba(143, 166, 118, 0.22)' : 'rgba(43, 36, 29, 0.12)',
+            isPocket ? 8 : 4,
+            null
+          );
+        });
+      }
+
+      function drawHint() {
+        if (!state.hintVisibleUntil || performance.now() > state.hintVisibleUntil) return;
+        const alpha = 0.42 + Math.sin(state.elapsed * 8) * 0.1;
+        state.level.hintSegments.forEach((stroke) => {
+          drawRoundedPolyline(
+            stroke,
+            DRAWN_LINE_WIDTH + 5,
+            `rgba(255, 255, 255, ${alpha * 0.34})`,
+            null,
+            0,
+            [10, 8]
+          );
+          drawRoundedPolyline(
+            stroke,
+            DRAWN_LINE_WIDTH - 1,
+            `rgba(73, 106, 109, ${alpha})`,
+            `rgba(255, 255, 255, ${alpha * 0.48})`,
+            10,
+            [10, 8]
+          );
+        });
+      }
+
+      function drawDrawnStrokes() {
+        state.drawnStrokes.forEach((stroke) => {
+          drawRoundedPolyline(stroke.points, stroke.width + 5, 'rgba(255, 255, 255, 0.38)', null, 0, null);
+          drawRoundedPolyline(stroke.points, stroke.width, '#26201a', 'rgba(255, 255, 255, 0.34)', 10, null);
+        });
+        if (state.pointer.active && state.pointer.points.length >= 2) {
+          const pulse = 0.22 + state.linePreviewPulse * 0.22;
+          drawRoundedPolyline(
+            state.pointer.points,
+            DRAWN_LINE_WIDTH + 4,
+            `rgba(255, 255, 255, ${0.28 + pulse})`,
+            null,
+            0,
+            null
+          );
+          drawRoundedPolyline(
+            state.pointer.points,
+            DRAWN_LINE_WIDTH,
+            '#26201a',
+            `rgba(255, 255, 255, ${0.25 + pulse})`,
+            14,
+            null
+          );
+        }
+      }
+
+      function drawGuides() {
+        if (!state.stone.attached) return;
+        const clawPose = getClawPose(state.elapsed);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(43, 36, 29, 0.18)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 8]);
+        ctx.beginPath();
+        ctx.moveTo(state.stone.x, state.stone.y + 18);
+        if (state.drawnStrokes.length > 0 && state.drawnStrokes[0].points.length) {
+          const target = state.drawnStrokes[0].points[0];
+          ctx.lineTo(target.x, target.y);
+        } else {
+          ctx.lineTo(clawPose.x, DRAW_TOP + 32);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBirdFallback(bird) {
+        if (!bird.alive) return;
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(Math.sin(state.elapsed * bird.speed + bird.phase) * 0.06);
+        if (bird.facing < 0) {
+          ctx.scale(-1, 1);
+        }
+
+        ctx.fillStyle = 'rgba(43, 36, 29, 0.12)';
+        ctx.beginPath();
+        ctx.ellipse(0, 19, 16, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = bird.tint[1];
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = bird.tint[0];
+        ctx.beginPath();
+        ctx.ellipse(-4, -4, 9, 8, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = bird.tint[1];
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-3, -2);
+        ctx.quadraticCurveTo(-16, -14, -22, -2);
+        ctx.moveTo(3, -2);
+        ctx.quadraticCurveTo(16, -14, 22, -2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f7e4a2';
+        ctx.beginPath();
+        ctx.moveTo(13, 1);
+        ctx.lineTo(22, 4);
+        ctx.lineTo(13, 8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#2a241c';
+        ctx.beginPath();
+        ctx.arc(-5, -2, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-6, -6);
+        ctx.quadraticCurveTo(-1, -10, 4, -7);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawBird(bird) {
+        if (!bird.alive) return;
+        if (!assets.birdStrip.loaded) {
+          drawBirdFallback(bird);
+          return;
+        }
+
+        const cycle = assets.birdStrip.cycle;
+        const frameIndex = cycle[Math.floor((state.elapsed * assets.birdStrip.frameRate + bird.flapOffset) % cycle.length)];
+        const drawHeight = bird.renderHeight;
+        const drawWidth = drawHeight * (assets.birdStrip.frameWidth / assets.birdStrip.frameHeight);
+        const top = -drawHeight * 0.76;
+        const left = -drawWidth * 0.52;
+
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(Math.sin(state.elapsed * bird.speed + bird.phase) * 0.035);
+        if (bird.facing < 0) {
+          ctx.scale(-1, 1);
+        }
+
+        ctx.fillStyle = 'rgba(43, 36, 29, 0.11)';
+        ctx.beginPath();
+        ctx.ellipse(0, 22, 18, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.filter = bird.filter;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.16)';
+        ctx.shadowBlur = 10;
+        ctx.drawImage(
+          assets.birdStrip.image,
+          frameIndex * assets.birdStrip.frameWidth,
+          0,
+          assets.birdStrip.frameWidth,
+          assets.birdStrip.frameHeight,
+          left,
+          top,
+          drawWidth,
+          drawHeight
+        );
+        ctx.filter = 'none';
+
+        const accent = bird.tint[0];
+        ctx.globalCompositeOperation = 'screen';
+        ctx.fillStyle = withAlpha(accent, 0.18);
+        ctx.beginPath();
+        ctx.ellipse(-8, -2, 12, 9, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+
+        ctx.restore();
+      }
+
+      function drawStone() {
+        ctx.save();
+        ctx.translate(state.stone.x, state.stone.y);
+        ctx.fillStyle = 'rgba(43, 36, 29, 0.14)';
+        ctx.beginPath();
+        ctx.ellipse(0, 16, 13, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const stoneGradient = ctx.createRadialGradient(-5, -7, 4, 2, 2, 22);
+        stoneGradient.addColorStop(0, '#f9f4ef');
+        stoneGradient.addColorStop(0.45, '#d6cec5');
+        stoneGradient.addColorStop(1, '#9f9589');
+        ctx.fillStyle = stoneGradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, state.stone.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(112, 97, 84, 0.44)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(-1, -1, state.stone.radius - 2, -2.5, 0.6);
+        ctx.stroke();
+
+        if (state.stone.attached) {
+          const pulse = 0.5 + Math.sin(state.elapsed * 4.4) * 0.5;
+          ctx.strokeStyle = `rgba(218, 176, 116, ${0.22 + pulse * 0.18})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, STONE_DROP_TAP_RADIUS - 7 + pulse * 2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        if (state.stone.hitPulse > 0.01) {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${state.stone.hitPulse * 0.42})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, state.stone.radius + 6 + (1 - state.stone.hitPulse) * 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        state.particles.forEach((particle) => {
+          const alpha = 1 - particle.life / particle.maxLife;
+          ctx.fillStyle = withAlpha(particle.color, alpha);
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawBirdLanes() {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 10]);
+        state.level.birds.forEach((bird) => {
+          ctx.beginPath();
+          ctx.moveTo(28, bird.laneY);
+          ctx.lineTo(WORLD_W - 28, bird.laneY);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+        drawBackground();
+        drawPlayBandLabels();
+        drawBirdLanes();
+        drawClaw();
+        drawStaticLines();
+        drawHint();
+        drawDrawnStrokes();
+        drawGuides();
+        state.level.birds.forEach(drawBird);
+        drawStone();
+        drawParticles();
+      }
+
+      function useHint() {
+        if (state.hintUsed || state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
+        state.hintUsed = true;
+        state.hintVisibleUntil = performance.now() + HINT_DISPLAY_MS;
+        refreshButtons();
+        setStatus('Ghost guide revealed. Following it forfeits the no-hint bonus.');
+        announce('Hint shown.');
+        playTone('tap');
+      }
+
+      function exitToGames() {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: GAME_EXIT_TO_HOME_MESSAGE, tab: 'games' }, TARGET_ORIGIN);
+            return;
+          }
+        } catch (_error) {
+          // Fall through to history navigation.
+        }
+        window.history.back();
+      }
+
+      function handleOverlayPrimary() {
+        hideOverlay();
+        switch (state.overlayPrimaryAction) {
+          case 'begin':
+            state.onboardingPending = false;
+            saveProgress();
+            setStatus(state.level.note);
+            return;
+          case 'next-level':
+            goToLevel(Math.min(state.levelIndex + 1, state.highestUnlocked - 1));
+            return;
+          case 'retry-level':
+            beginAttempt(true, false);
+            return;
+          case 'restart-campaign':
+            state.highestUnlocked = LEVELS.length;
+            goToLevel(0);
+            return;
+          default:
+            return;
+        }
+      }
+
+      function handleOverlaySecondary() {
+        hideOverlay();
+        switch (state.overlaySecondaryAction) {
+          case 'home':
+            exitToGames();
+            return;
+          case 'retry-level':
+            beginAttempt(true, false);
+            return;
+          case 'edit-lines':
+            beginAttempt(false, true);
+            setStatus('Edit your lines, then drop the stone again.');
+            return;
+          default:
+            return;
+        }
+      }
+
+      function handleHostMessage(event) {
+        const data = event && event.data;
+        if (!data || typeof data !== 'object') return;
+
+        if (data.type === SOUND_SETTINGS_MESSAGE) {
+          const payload = data.payload || {};
+          if (typeof payload.muted === 'boolean') setAudioMuted(payload.muted);
+          if (typeof payload.sfxVolume === 'number') setSfxVolume(payload.sfxVolume);
+          return;
+        }
+
+        if (data.type === HOST_LIFECYCLE_MESSAGE) {
+          if (data.phase === 'pause' || data.phase === 'prepare-unload') {
+            state.hostPaused = true;
+            syncPauseState();
+          } else if (data.phase === 'resume') {
+            state.hostPaused = false;
+            state.lastFrame = performance.now();
+            state.accumulator = 0;
+            syncPauseState();
+          }
+        }
+      }
+
+      function handleKeyboard(event) {
+        if (event.key === ' ' || event.key === 'Enter') {
+          if (!state.overlayVisible && state.stone.attached) {
+            event.preventDefault();
+            releaseStone();
+          }
+          return;
+        }
+        if (event.key === 'r' || event.key === 'R') {
+          beginAttempt(true, false);
+          return;
+        }
+        if (event.key === 'h' || event.key === 'H') {
+          useHint();
+          return;
+        }
+        if ((event.key === 'a' || event.key === 'A' || event.key === 'd' || event.key === 'D') && state.stone.attached && !state.overlayVisible) {
+          event.preventDefault();
+          setClawBaseX(state.clawBaseX + ((event.key === 'a' || event.key === 'A') ? -18 : 18));
+          setStatus('Angle adjusted. Draw your route, then tap the stone or Drop.');
+          playTone('tap');
+          return;
+        }
+        if (event.key === 'ArrowLeft') {
+          goToLevel(state.levelIndex - 1);
+          return;
+        }
+        if (event.key === 'ArrowRight') {
+          goToLevel(state.levelIndex + 1);
+        }
+      }
+
+      function update(dt) {
+        if (!state.level) return;
+        if (!state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
+          state.elapsed += dt;
+        }
+        state.linePreviewPulse = Math.max(0, state.linePreviewPulse - dt * 1.4);
+        state.stone.hitPulse = Math.max(0, state.stone.hitPulse - dt * 2.8);
+        updateBirdPositions(state.level, state.elapsed);
+        updateParticles(dt);
+
+        if (state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused) {
+          return;
+        }
+
+        updateStone(dt);
+      }
+
+      function frame(now) {
+        const delta = Math.min(0.05, (now - state.lastFrame) / 1000 || 0);
+        state.lastFrame = now;
+        state.accumulator += delta;
+        while (state.accumulator >= STEP) {
+          update(STEP);
+          state.accumulator -= STEP;
+        }
+        draw();
+        window.requestAnimationFrame(frame);
+      }
+
+      function bindEvents() {
+        dom.canvas.addEventListener('pointerdown', handleCanvasPointerDown);
+        dom.canvas.addEventListener('pointermove', handleCanvasPointerMove);
+        dom.canvas.addEventListener('pointerup', handleCanvasPointerFinish);
+        dom.canvas.addEventListener('pointercancel', handleCanvasPointerFinish);
+        dom.canvas.addEventListener('lostpointercapture', handleCanvasPointerFinish);
+
+        dom.homeButton.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          exitToGames();
+        });
+        dom.restartButton.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          hideOverlay();
+          beginAttempt(true, false);
+        });
+        dom.prevLevelButton.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          goToLevel(state.levelIndex - 1);
+        });
+        dom.nextLevelButton.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          goToLevel(state.levelIndex + 1);
+        });
+        dom.hintButton.addEventListener('click', () => {
+          unlockAudio();
+          useHint();
+        });
+        dom.clearButton.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          clearLines();
+        });
+        dom.dropButton.addEventListener('click', () => {
+          unlockAudio();
+          releaseStone();
+        });
+        dom.overlayPrimary.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          handleOverlayPrimary();
+        });
+        dom.overlaySecondary.addEventListener('click', () => {
+          unlockAudio();
+          playTone('tap');
+          handleOverlaySecondary();
+        });
+
+        window.addEventListener('resize', updateRotateNotice, { passive: true });
+        window.addEventListener('orientationchange', updateRotateNotice, { passive: true });
+        window.addEventListener('keydown', handleKeyboard);
+        window.addEventListener('message', handleHostMessage);
+        document.addEventListener('visibilitychange', () => {
+          state.hiddenPause = document.hidden;
+          if (!document.hidden) {
+            state.lastFrame = performance.now();
+            state.accumulator = 0;
+          }
+          syncPauseState();
+        });
+
+        ['pointerdown', 'touchstart', 'keydown'].forEach((eventName) => {
+          window.addEventListener(eventName, unlockAudio, { passive: true });
+        });
+      }
+
+      function exposeHooks() {
+        window.setAudioMuted = setAudioMuted;
+        window.setSfxVolume = setSfxVolume;
+        window.render_game_to_text = () => JSON.stringify({
+          level: state.level ? state.level.id : null,
+          title: state.level ? state.level.title : null,
+          overlayVisible: state.overlayVisible,
+          outcome: state.outcome,
+          attached: state.stone.attached,
+          clawX: Number(state.clawBaseX.toFixed(1)),
+          clawDragging: state.clawControl.active,
+          inkLeftRatio: state.level ? Number(remainingInkRatio().toFixed(3)) : null,
+          hintUsed: state.hintUsed,
+          birds: state.level
+            ? state.level.birds.map((bird) => ({
+              index: bird.index,
+              alive: bird.alive,
+              facing: bird.facing,
+              x: Number(bird.x.toFixed(1)),
+              y: Number(bird.y.toFixed(1)),
+            }))
+            : [],
+          lines: state.drawnStrokes.map((stroke) => stroke.points.length),
+          status: state.statusText,
+        });
+        window.advanceTime = (ms) => {
+          const total = Math.max(0, Number(ms) || 0);
+          let remaining = total / 1000;
+          while (remaining > 0) {
+            const slice = Math.min(STEP, remaining);
+            update(slice);
+            remaining -= slice;
+          }
+          draw();
+        };
+        window.__manyBirdsDebug = {
+          reset(clearLines = true) {
+            beginAttempt(Boolean(clearLines), false);
+            return JSON.parse(window.render_game_to_text());
+          },
+          setLevel(index) {
+            goToLevel(Number(index) || 0);
+            return JSON.parse(window.render_game_to_text());
+          },
+          applyStroke(rawPoints) {
+            if (!Array.isArray(rawPoints) || rawPoints.length < 2 || !state.stone.attached) {
+              return JSON.parse(window.render_game_to_text());
+            }
+            const points = [];
+            let nextInkUsed = state.inkUsed;
+            for (let i = 0; i < rawPoints.length; i += 1) {
+              const source = rawPoints[i] || {};
+              const nextPoint = clampPointToDrawZone({
+                x: Number(source.x) || 0,
+                y: Number(source.y) || 0,
+              });
+              if (points.length === 0) {
+                if (!pointAllowed(nextPoint)) return JSON.parse(window.render_game_to_text());
+                points.push(nextPoint);
+                continue;
+              }
+              const previousPoint = points[points.length - 1];
+              const segmentLength = distance(previousPoint, nextPoint);
+              if (segmentLength < 2) continue;
+              const remainingInk = Math.max(0, state.level.inkBudget - nextInkUsed);
+              if (remainingInk <= 0) break;
+              let finalPoint = nextPoint;
+              let usedLength = segmentLength;
+              if (segmentLength > remainingInk) {
+                const t = remainingInk / segmentLength;
+                finalPoint = {
+                  x: lerp(previousPoint.x, nextPoint.x, t),
+                  y: lerp(previousPoint.y, nextPoint.y, t),
+                };
+                usedLength = remainingInk;
+              }
+              points.push(finalPoint);
+              nextInkUsed += usedLength;
+            }
+            if (points.length >= 2) {
+              state.drawnStrokes.push({ points, width: DRAWN_LINE_WIDTH });
+              state.inkUsed = clamp(nextInkUsed, 0, state.level.inkBudget);
+              rebuildDrawnColliders();
+              refreshHud();
+              refreshButtons();
+            }
+            return JSON.parse(window.render_game_to_text());
+          },
+          drop() {
+            releaseStone();
+            return JSON.parse(window.render_game_to_text());
+          },
+          moveClaw(x) {
+            setClawBaseX(Number(x) || state.clawBaseX);
+            return JSON.parse(window.render_game_to_text());
+          },
+          tapStone() {
+            releaseStone();
+            return JSON.parse(window.render_game_to_text());
+          },
+          forceWin() {
+            state.level.birds.forEach((bird) => {
+              if (bird.alive) {
+                bird.alive = false;
+              }
+            });
+            handleWin();
+            return JSON.parse(window.render_game_to_text());
+          },
+          snapshot() {
+            return JSON.parse(window.render_game_to_text());
+          },
+        };
+      }
+
+      function initBridge() {
+        if (!window.LAHSPointsBridge) return;
+        const snapshot = window.LAHSPointsBridge.init({ gameId: GAME_ID });
+        state.pointsContext = snapshot;
+        if (typeof window.LAHSPointsBridge.onContextChange === 'function') {
+          window.LAHSPointsBridge.onContextChange((nextSnapshot) => {
+            state.pointsContext = nextSnapshot;
+          });
+        }
+      }
+
+      function loadAssets() {
+        assets.birdStrip.image.src = assets.birdStrip.src;
+      }
+
+      function init() {
+        loadAssets();
+        exposeHooks();
+        bindEvents();
+        initBridge();
+        state.levelIndex = clamp(state.levelIndex, 0, Math.min(state.highestUnlocked - 1, LEVELS.length - 1));
+        beginAttempt(true, false);
+        updateRotateNotice();
+        if (state.onboardingPending) {
+          showOverlay({
+            eyebrow: 'Draw. Drop. Clear.',
+            title: 'Many Birds One Stone',
+            body: 'Drag to draw dark branches inside the center band. You can place as many separate lines as the ink budget allows, then slide the claw left or right for a better angle and tap the stone or use Drop to release a single stone.',
+            primaryLabel: 'Begin',
+            primaryAction: 'begin',
+            secondaryLabel: 'Games',
+            secondaryAction: 'home',
+            stats: [
+              { label: 'Goal', value: '3 birds, 1 stone' },
+              { label: 'Controls', value: 'Draw • Slide Claw • Drop' },
+            ],
+          });
+        } else {
+          setStatus(state.level.note);
+        }
+        state.lastFrame = performance.now();
+        window.requestAnimationFrame(frame);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
