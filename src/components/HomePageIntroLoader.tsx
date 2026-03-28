@@ -173,10 +173,10 @@ type RuntimeState = {
 };
 
 const INTRO_CURVE: CubicCurve = Object.freeze({
-  start: { x: 0.1, y: 0.58 },
-  controlOne: { x: 0.32, y: 0.58 },
-  controlTwo: { x: 0.62, y: 0.58 },
-  end: { x: 0.84, y: 0.58 },
+  start: { x: 0.1, y: 0.935 },
+  controlOne: { x: 0.32, y: 0.935 },
+  controlTwo: { x: 0.62, y: 0.935 },
+  end: { x: 0.84, y: 0.935 },
 });
 
 const getProfileMaxActiveTokens = (profile: RewardQualityProfile): number => (
