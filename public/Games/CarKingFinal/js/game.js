@@ -3,6 +3,8 @@ const CAR_KING_MIC_PREF_SYNC = 'LAHS_CAR_KING_MIC_PREF_SYNC';
 const CAR_KING_MIC_PREF_REQUEST = 'LAHS_CAR_KING_MIC_PREF_REQUEST';
 const CAR_KING_MIC_PREF_SAVE = 'LAHS_CAR_KING_MIC_PREF_SAVE';
 const CAR_KING_MIC_PREF_SAVE_RESULT = 'LAHS_CAR_KING_MIC_PREF_SAVE_RESULT';
+const CAR_KING_SPEECH_CONTROL = 'LAHS_CAR_KING_SPEECH_CONTROL';
+const CAR_KING_SPEECH_EVENT = 'LAHS_CAR_KING_SPEECH_EVENT';
 const CAR_KING_VALID_MIC_PREFERENCES = new Set(['ask', 'session', 'always']);
 const CAR_KING_CORRECT_POINTS = 10;
 
@@ -73,6 +75,13 @@ class CarGuessingGame {
         this.hostBridgeInitialized = false;
         this.hostMicPreference = 'ask';
         this.hostUserId = null;
+        this.hostSpeechAvailable = false;
+        this.hostSpeechEngine = 'unsupported';
+        this.hostSpeechRoundId = null;
+        this.hostSpeechLastOptions = null;
+        this.hostSpeechSupportsLocalProcessing = false;
+        this.hostSpeechOnDevice = false;
+        this.hostSpeechLevel = 0;
         this.micPermissionDialogInitialized = false;
         this.startClipPath = 'assets/audio/voice/Start.mp3';
         this.startSequenceLeadInMs = 120;
@@ -161,6 +170,65 @@ class CarGuessingGame {
         return window.location.origin && window.location.origin !== 'null'
             ? window.location.origin
             : '*';
+    }
+
+    isHostSpeechEnabled() {
+        return Boolean(this.hostSpeechAvailable && window.parent && window.parent !== window);
+    }
+
+    buildSpeechContextualPhrasesForCar(car = this.currentCar) {
+        if (!car) return [];
+
+        const candidates = [
+            car.name,
+            ...(car.actualWords || []),
+            ...(car.speechAliases || []),
+            ...(car.contextualPhrases || []),
+            ...(car.keywords || [])
+        ];
+
+        const seen = new Set();
+        return candidates.filter((value) => {
+            const normalized = `${value || ''}`.trim();
+            if (!normalized) return false;
+
+            const key = normalized.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, 24);
+    }
+
+    buildHostedSpeechSessionOptions() {
+        const roundId = `${this.currentQuestionToken}:${this.currentCar?.name || 'car'}`;
+        return {
+            roundId,
+            language: 'en-US',
+            partialResults: true,
+            silenceMs: 1100,
+            prewarmLeadMs: this.questionPreArmLeadMs,
+            contextualPhrases: this.buildSpeechContextualPhrasesForCar()
+        };
+    }
+
+    postSpeechControlToHost(command, options = undefined) {
+        if (!window.parent || window.parent === window) return;
+
+        const payload = {
+            type: CAR_KING_SPEECH_CONTROL,
+            gameId: 'math-car-king',
+            command
+        };
+
+        if (options) {
+            payload.options = options;
+        }
+
+        try {
+            window.parent.postMessage(payload, this.getHostTargetOrigin());
+        } catch (err) {
+            console.warn('Unable to post speech control to host app:', err);
+        }
     }
 
     loadMicAccessPreference() {
@@ -274,6 +342,11 @@ class CarGuessingGame {
             if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') return;
 
             const message = event.data;
+
+            if (message.type === CAR_KING_SPEECH_EVENT) {
+                this.handleHostedSpeechEvent(message);
+                return;
+            }
 
             if (message.type === CAR_KING_MIC_PREF_SYNC) {
                 const preference = this.sanitizeMicAccessPreference(message.preference);
@@ -506,6 +579,9 @@ class CarGuessingGame {
 
     async prepareMicrophoneForAction(action = 'mic-settings') {
         if (this.inputMode !== 'voice' && action !== 'preference-only') return true;
+        if (this.isHostSpeechEnabled() && (action === 'start-game' || action === 'manual-mic')) {
+            return true;
+        }
 
         if (!navigator.mediaDevices?.getUserMedia) {
             const unsupportedError = new Error('getUserMedia-not-supported');
@@ -601,6 +677,14 @@ class CarGuessingGame {
         this.visibilityRecoveryHandlerBound = true;
 
         const tryRecoverMic = (reason) => {
+            if (this.isHostSpeechEnabled() && this.isListeningForAnswer && this.hostSpeechLastOptions) {
+                this.postSpeechControlToHost(
+                    this.isAnswerAcceptanceOpen ? 'start' : 'prewarm',
+                    this.hostSpeechLastOptions
+                );
+                return;
+            }
+
             if (!this.shouldAutoRecoverRecognition()) return;
             this.restartRecognitionEngine(reason, { forceHardReset: true });
         };
@@ -730,6 +814,7 @@ class CarGuessingGame {
     }
 
     shouldAutoRecoverRecognition() {
+        if (this.isHostSpeechEnabled()) return false;
         if (this.inputMode !== 'voice') return false;
         if (!this.recognition && !this.recognitionUiRefs) return false;
         if (!(this.isGameRunning || this.isMicWarm)) return false;
@@ -888,7 +973,99 @@ class CarGuessingGame {
         }
     }
 
+    handleHostedSpeechEvent(message) {
+        if (!message || message.gameId && message.gameId !== 'math-car-king') {
+            return;
+        }
+
+        if (message.event === 'availability') {
+            this.hostSpeechAvailable = Boolean(message.available);
+            this.hostSpeechEngine = typeof message.engine === 'string' ? message.engine : 'unsupported';
+            this.hostSpeechSupportsLocalProcessing = Boolean(message.processLocally);
+            this.hostSpeechOnDevice = Boolean(message.onDevice);
+            this.supportsContinuousRecognition = this.hostSpeechAvailable || this.supportsContinuousRecognition;
+            return;
+        }
+
+        if (message.roundId && message.roundId !== this.hostSpeechRoundId) {
+            return;
+        }
+
+        if (message.event === 'state') {
+            if (message.state) {
+                this.setMicState(message.state === 'prewarming' ? 'starting' : message.state);
+            }
+            if (message.message && this.isListeningForAnswer) {
+                this.updateMicStatusMessage(message.message);
+            }
+            return;
+        }
+
+        if (message.event === 'level') {
+            this.hostSpeechLevel = Number(message.level) || 0;
+            return;
+        }
+
+        if (message.event === 'partial' || message.event === 'final') {
+            this.consumeHostedSpeechSnapshot({
+                candidates: Array.isArray(message.matches) ? message.matches : [],
+                displayText: message.text || (Array.isArray(message.matches) ? message.matches[0] : '') || '',
+                buffered: Boolean(message.buffered),
+                isFinal: message.event === 'final'
+            });
+            return;
+        }
+
+        if (message.event === 'error') {
+            this.setMicState('error');
+            this.updateMicStatusMessage(message.message || 'Microphone needs attention.');
+        }
+    }
+
+    consumeHostedSpeechSnapshot(snapshot) {
+        if (!this.isListeningForAnswer) return;
+
+        const displayedSpeech = snapshot.displayText || snapshot.candidates[0] || '';
+        const formatted = this.formatTranscriptForDisplay(displayedSpeech);
+        const input = document.getElementById('guessInput');
+
+        if (formatted && input) {
+            input.value = formatted;
+            input.classList.add('listening-active');
+        }
+
+        if (!this.isAnswerAcceptanceOpen) {
+            return;
+        }
+
+        const now = Date.now();
+        this.lastSpeechResultAt = now;
+        this.lastRecognitionSpeechAt = now;
+
+        if (formatted) {
+            this.updateListeningTranscript(`I heard "${formatted}".${snapshot.buffered ? ' You started early, nice job!' : snapshot.isFinal ? '' : ' Keep going!'}`);
+        }
+
+        const match = this.getGuessMatchResult(snapshot.candidates);
+        if (match.matched) {
+            if (input) {
+                input.value = this.currentCar.name;
+            }
+            this.updateListeningTranscript(`I heard "${this.currentCar.name}"!`);
+            this.submitGuess();
+            return;
+        }
+
+        if (!formatted) {
+            this.updateListeningTranscript('Listening... say the car name when you are ready.');
+        }
+    }
+
     startMicHealthMonitor() {
+        if (this.isHostSpeechEnabled()) {
+            return;
+        }
+
         this.stopMicHealthMonitor();
         this.micHealthMonitorTimer = setInterval(() => {
             if (!this.isListeningForAnswer || !this.isGameRunning) return;
@@ -1028,6 +1205,12 @@ class CarGuessingGame {
                 if (this.isTestingMic) {
                     this.stopMicTest();
                 }
+                if (this.isHostSpeechEnabled()) {
+                    await this.warmStartRecognition();
+                    settingsOverlay.classList.remove('visible');
+                    return;
+                }
+
                 const permissionReady = await this.ensureMicrophonePermissionForGame(false, {
                     allowPrompt: false,
                     reason: 'settings-close',
@@ -1189,14 +1372,18 @@ class CarGuessingGame {
             this.stopMicTest();
         }
         if (this.inputMode === 'voice') {
-            const micReady = await this.prepareMicrophoneForAction('start-game');
-            if (!micReady) {
-                this.isStartingGame = false;
-                return;
-            }
+            if (!this.isHostSpeechEnabled()) {
+                const micReady = await this.prepareMicrophoneForAction('start-game');
+                if (!micReady) {
+                    this.isStartingGame = false;
+                    return;
+                }
 
-            await this.refreshMicrophones(false);
-            await this.warmStartRecognition();
+                await this.refreshMicrophones(false);
+                await this.warmStartRecognition();
+            } else {
+                this.setMicState('ready');
+            }
         }
         if (this.voiceSystem?.preloadClip) {
             try {
@@ -1334,19 +1521,15 @@ class CarGuessingGame {
     }
 
     setupSpeechRecognition(micBtn, guessInput) {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            micBtn.style.display = 'none';
-            this.supportsContinuousRecognition = false;
-            return;
-        }
+        const localSpeechSupported = ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
 
         this.recognitionUiRefs = { micBtn, guessInput };
 
         // SINGLETON PATTERN: Only create if doesn't exist
-        if (!this.recognition) {
+        if (!this.recognition && localSpeechSupported) {
             this.createSpeechRecognitionInstance(micBtn, guessInput);
-            this.supportsContinuousRecognition = true;
         }
+        this.supportsContinuousRecognition = localSpeechSupported || this.isHostSpeechEnabled();
 
         // Manual toggle
         // Ensure we do not stack duplicate click listeners across re-inits.
@@ -1358,6 +1541,12 @@ class CarGuessingGame {
                 this.stopListening();
                 document.getElementById('guessInput').placeholder = "Mic Paused";
             } else {
+                if (this.isHostSpeechEnabled()) {
+                    this.resetRecognitionRecoveryState();
+                    this.startListening({ reason: 'manual-mic' });
+                    return;
+                }
+
                 this.prepareMicrophoneForAction('manual-mic').then((granted) => {
                     if (!granted) return;
                     this.resetRecognitionRecoveryState();
@@ -1677,6 +1866,11 @@ class CarGuessingGame {
 
     async warmStartRecognition() {
         if (this.inputMode !== 'voice') return;
+        if (this.isHostSpeechEnabled()) {
+            this.isMicWarm = true;
+            this.setMicState('warming');
+            return;
+        }
         if (!this.recognition) return;
         if (this.isRecognitionActive) return;
 
@@ -2067,6 +2261,11 @@ class CarGuessingGame {
     // Called once when game flow needs the recognition engine active.
     async activateMicrophoneEngine(reason = 'manual-start') {
         if (this.inputMode !== 'voice') return;
+        if (this.isHostSpeechEnabled()) {
+            this.isMicWarm = true;
+            this.setMicState(this.isAnswerAcceptanceOpen ? 'listening' : 'starting');
+            return;
+        }
         if (!this.recognition && this.recognitionUiRefs) {
             this.createSpeechRecognitionInstance(this.recognitionUiRefs.micBtn, this.recognitionUiRefs.guessInput);
         }
@@ -2156,6 +2355,10 @@ class CarGuessingGame {
             guessInput.focus();
         }
 
+        if (this.isHostSpeechEnabled() && this.hostSpeechLastOptions) {
+            this.postSpeechControlToHost('start', this.hostSpeechLastOptions);
+        }
+
         this.beginAnswerWindow();
     }
 
@@ -2167,12 +2370,15 @@ class CarGuessingGame {
             deferAcceptance = false,
             reason = 'manual-start'
         } = options;
+        const hostedSpeech = this.isHostSpeechEnabled();
 
         this.isListeningForAnswer = true;
         this.isAnswerAcceptanceOpen = !deferAcceptance;
         this.clearPendingRecognitionRestart();
         this.setMicState(deferAcceptance ? 'starting' : 'listening');
         this.toggleMicVisuals(true);
+        this.hostSpeechLastOptions = this.buildHostedSpeechSessionOptions();
+        this.hostSpeechRoundId = this.hostSpeechLastOptions.roundId;
 
         const guessInput = document.getElementById('guessInput');
 
@@ -2186,6 +2392,18 @@ class CarGuessingGame {
 
         if (this.voiceSystem?.setListeningMode) {
             this.voiceSystem.setListeningMode(true);
+        }
+
+        if (hostedSpeech) {
+            this.isMicWarm = true;
+            this.postSpeechControlToHost(
+                deferAcceptance ? 'prewarm' : 'start',
+                this.hostSpeechLastOptions
+            );
+            if (this.isAnswerAcceptanceOpen) {
+                this.beginAnswerWindow();
+            }
+            return;
         }
 
         this.startMicHealthMonitor();
@@ -2216,6 +2434,12 @@ class CarGuessingGame {
         if (this.silenceTimer) {
             clearTimeout(this.silenceTimer);
             this.silenceTimer = null;
+        }
+
+        if (this.isHostSpeechEnabled()) {
+            this.postSpeechControlToHost('abort', this.hostSpeechLastOptions);
+            this.hostSpeechRoundId = null;
+            this.hostSpeechLastOptions = null;
         }
 
         if (this.recognition) {

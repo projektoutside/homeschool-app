@@ -13,6 +13,7 @@ window.CAR_DATABASE = [
         name: "Audi R8",
         images: ["assets/cars/AudiR8/AudiR8.png"],
         voice: "assets/cars/AudiR8/AudiR8.mp3",
+        contextualPhrases: ["Audi R8", "Audi", "R8", "Audi sports car"],
         speechAliases: ["audi are eight", "audi r eight", "aldi r8", "aldi are eight"],
         keywords: ["audi", "r8", "are-eight", "aldi"],
         funFact: "The Audi R8 shares many parts with a Lamborghini!"
@@ -21,6 +22,7 @@ window.CAR_DATABASE = [
         name: "BMW",
         images: ["assets/cars/BMW/BMW.jpg"],
         voice: "assets/cars/BMW/BMW.mp3",
+        contextualPhrases: ["BMW", "B M W", "BMW car"],
         speechAliases: ["b m w", "bee em w", "bee em double u"],
         keywords: ["bmw", "bimmer", "beamer", "bee em", "bee em double u"],
         funFact: "BMW started by making airplane engines before cars!"
@@ -81,6 +83,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/HondaCivic/HondaCivic.png"],
         voice: "assets/cars/HondaCivic/HondaCivic.mp3",
         actualWords: ["Honda Civic", "Civic"],
+        contextualPhrases: ["Honda Civic", "Civic", "Honda car"],
         speechAliases: ["honda sivic", "civick", "see vic"],
         keywords: ["honda", "civic", "ho-n-da", "si-vic"],
         funFact: "The Honda Civic is one of the most popular cars ever!"
@@ -90,6 +93,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/HondaPilot/HondaPilot.png"],
         voice: "assets/cars/HondaPilot/HondaPilot.mp3",
         actualWords: ["Honda Pilot", "Pilot"],
+        contextualPhrases: ["Honda Pilot", "Pilot", "Honda SUV"],
         speechAliases: ["honda pie lot", "pie lot"],
         keywords: ["honda", "pilot", "ho-n-da", "pi-lot"],
         funFact: "The Pilot is perfect for big family road trips!"
@@ -154,6 +158,7 @@ window.CAR_DATABASE = [
         name: "Porsche",
         images: ["assets/cars/Porshe/Porshe.png"],
         voice: "assets/cars/Porshe/Porshe.mp3",
+        contextualPhrases: ["Porsche", "Porsche car", "911 Porsche"],
         speechAliases: ["por sha", "por she", "porsha"],
         keywords: ["porsche", "911", "turbo", "por-she", "por-sha"],
         funFact: "Porsche keys go on the left side of the steering wheel!"
@@ -163,6 +168,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/SKylinGTR/SKylinGTR.png", "assets/cars/SKylinGTR/SKylinGTR1.jpg"],
         voice: "assets/cars/SKylinGTR/SKylinGTR.mp3",
         actualWords: ["Nissan GT-R", "GT-R", "Skyline", "Godzilla"],
+        contextualPhrases: ["Nissan GT-R", "GT-R", "Skyline GT-R", "Godzilla car"],
         speechAliases: ["nissan g t r", "g t r", "sky line", "godzilla car"],
         keywords: ["skyline", "gtr", "nissan", "sky-line", "g-t-r", "ni-ssan"],
         funFact: "The GT-R is nicknamed 'Godzilla' because it's a monster!"
@@ -195,6 +201,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/ToyotaCamry/ToyotaCamry.png"],
         voice: "assets/cars/ToyotaCamry/ToyotaCamry.mp3",
         actualWords: ["Toyota Camry", "Camry"],
+        contextualPhrases: ["Toyota Camry", "Camry", "Toyota car"],
         speechAliases: ["toyo ta camry", "cam ree"],
         keywords: ["camry", "toyota", "ca-m-ry", "to-yo-ta"],
         funFact: "The Camry is one of the most reliable cars ever made!"
@@ -204,6 +211,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/ToyotaTacoma/ToyotaTacoma.png"],
         voice: "assets/cars/ToyotaTacoma/ToyotaTacoma.mp3",
         actualWords: ["Toyota Tacoma", "Tacoma"],
+        contextualPhrases: ["Toyota Tacoma", "Tacoma", "Toyota truck"],
         speechAliases: ["toyo ta tacoma", "ta coma"],
         keywords: ["toyota", "tacoma", "to-yo-ta", "ta-co-ma"],
         funFact: "The Tacoma is so tough it can drive over volcanoes!"
@@ -213,6 +221,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/ToyotaTundra/ToyotaTundra.png"],
         voice: "assets/cars/ToyotaTundra/ToyotaTundra.mp3",
         actualWords: ["Toyota Tundra", "Tundra"],
+        contextualPhrases: ["Toyota Tundra", "Tundra", "Toyota truck"],
         speechAliases: ["toyo ta tundra", "tun dra", "tondra"],
         keywords: ["tundra", "toyota", "tun-dra", "to-yo-ta"],
         funFact: "The Tundra once pulled a giant space shuttle!"
@@ -250,6 +259,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/FordExplorer/FordExplorer1.avif", "assets/cars/FordExplorer/FordExplorer2.avif", "assets/cars/FordExplorer/FordExplorer3.avif", "assets/cars/FordExplorer/FordExplorer4.avif"],
         voice: "assets/cars/FordExplorer/FordExplorer.mp3",
         actualWords: ["Ford Explorer", "Explorer"],
+        contextualPhrases: ["Ford Explorer", "Explorer", "Ford SUV"],
         speechAliases: ["ford explora", "explora"],
         keywords: ["explorer", "ford", "ex-plor-er", "f-o-r-d"],
         funFact: "The Ford Explorer is one of the most popular SUVs ever!"
@@ -259,6 +269,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/FordF150/FordF1501.webp", "assets/cars/FordF150/FordF1502.jpg", "assets/cars/FordF150/FordF1503.webp", "assets/cars/FordF150/FordF1504.avif", "assets/cars/FordF150/FordF1505.jpg"],
         voice: "assets/cars/FordF150/FordF150.mp3",
         actualWords: ["Ford F-150", "F-150", "F One Fifty"],
+        contextualPhrases: ["Ford F-150", "F-150", "Ford truck"],
         speechAliases: ["ford f one fifty", "f one fifty", "eff one fifty", "f one five zero"],
         keywords: ["f150", "ford", "f one fifty", "eff one fifty", "one fifty"],
         funFact: "The Ford F-150 has been the best-selling truck for over 40 years!"
@@ -303,6 +314,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/Nissan370z/Nissan370z1.avif", "assets/cars/Nissan370z/Nissan370z2.avif", "assets/cars/Nissan370z/Nissan370z3.avif", "assets/cars/Nissan370z/Nissan370z4.avif"],
         voice: "assets/cars/Nissan370z/Nissan370z.mp3",
         actualWords: ["Nissan 370Z", "370Z", "Three Seventy Z"],
+        contextualPhrases: ["Nissan 370Z", "370Z", "Nissan Z car"],
         speechAliases: ["nissan three seventy z", "three seventy zee", "370 z"],
         keywords: ["370z", "nissan", "three seventy z", "370 z", "ni-ssan", "ni-ssan three seventy z"],
         funFact: "The Nissan Z cars have been famous sports cars for 50 years!"
@@ -312,6 +324,7 @@ window.CAR_DATABASE = [
         images: ["assets/cars/ToyotaCelica/ToyotaCelica1.avif", "assets/cars/ToyotaCelica/ToyotaCelica2.webp", "assets/cars/ToyotaCelica/ToyotaCelica3.jpg", "assets/cars/ToyotaCelica/ToyotaCelica4.jpeg"],
         voice: "assets/cars/ToyotaCelica/ToyotaCelica.mp3",
         actualWords: ["Toyota Celica", "Celica"],
+        contextualPhrases: ["Toyota Celica", "Celica", "Toyota sports car"],
         keywords: ["celica", "toyota", "to-yo-ta", "ce-li-ca"],
         funFact: "The Toyota Celica was a champion inside rally racing!"
     }

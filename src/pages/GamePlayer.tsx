@@ -27,6 +27,12 @@ import {
     isSinglePlayerPointsGameId,
     sanitizePointValue,
 } from '../utils/gamePoints';
+import {
+    CAR_KING_SPEECH_CONTROL,
+    createCarKingSpeechEvent,
+    isCarKingSpeechControlMessage,
+} from '../features/speech/speechBridge';
+import { CarKingNativeFirstSpeechController } from '../features/speech/nativeSpeechController';
 import './GamePlayer.css';
 
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
@@ -132,6 +138,7 @@ const GamePlayer: React.FC = () => {
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const carKingSpeechControllerRef = useRef<CarKingNativeFirstSpeechController | null>(null);
     const zoomLockIframes = useMemo(() => [iframeRef], []);
     const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
     const [wordPuzzleBootstrapStamp, setWordPuzzleBootstrapStamp] = useState<string | null>(null);
@@ -275,6 +282,31 @@ const GamePlayer: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if (!isCarKingGame) {
+            const activeController = carKingSpeechControllerRef.current;
+            carKingSpeechControllerRef.current = null;
+            void activeController?.dispose();
+            return;
+        }
+
+        const controller = new CarKingNativeFirstSpeechController((message) => {
+            postMessageToGame(createCarKingSpeechEvent(message));
+        });
+
+        carKingSpeechControllerRef.current = controller;
+        void controller.initialize().catch(() => {
+            // The controller reports availability and errors back to the iframe when possible.
+        });
+
+        return () => {
+            if (carKingSpeechControllerRef.current === controller) {
+                carKingSpeechControllerRef.current = null;
+            }
+            void controller.dispose();
+        };
+    }, [isCarKingGame, postMessageToGame]);
+
+    useEffect(() => {
         processedPointEventsRef.current.clear();
     }, [pointsSessionId]);
 
@@ -302,6 +334,15 @@ const GamePlayer: React.FC = () => {
     useEffect(() => {
         syncCarKingMicPreference();
     }, [syncCarKingMicPreference]);
+
+    const syncCarKingSpeechAvailability = useCallback(() => {
+        if (!isCarKingGame) return;
+        void carKingSpeechControllerRef.current?.syncAvailability();
+    }, [isCarKingGame]);
+
+    useEffect(() => {
+        syncCarKingSpeechAvailability();
+    }, [syncCarKingSpeechAvailability]);
 
     useEffect(() => {
         const nextBootstrapStamp = !isWordPuzzleGame ? WORD_PUZZLE_GAME_ID : wordPuzzleBootstrapKey;
@@ -422,6 +463,34 @@ const GamePlayer: React.FC = () => {
                 label?: unknown;
                 meta?: unknown;
             } | null;
+
+            if (isCarKingGame && isCarKingSpeechControlMessage(message)) {
+                const controller = carKingSpeechControllerRef.current;
+                if (!controller) {
+                    return;
+                }
+
+                if (message.type !== CAR_KING_SPEECH_CONTROL) {
+                    return;
+                }
+
+                switch (message.command) {
+                    case 'prewarm':
+                        void controller.prewarm(message.options);
+                        return;
+                    case 'start':
+                        void controller.start(message.options);
+                        return;
+                    case 'stop':
+                        void controller.stop();
+                        return;
+                    case 'abort':
+                        void controller.abort();
+                        return;
+                    default:
+                        return;
+                }
+            }
 
             if (
                 isSinglePlayerPointsGame &&
@@ -778,6 +847,7 @@ const GamePlayer: React.FC = () => {
                             soundSettings,
                         });
                         syncCarKingMicPreference();
+                        syncCarKingSpeechAvailability();
                         syncWordPuzzleUserContext();
                         syncGamePointsContext();
                         window.setTimeout(() => {

@@ -24,6 +24,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Car King listens for your child to say the car name so the game can answer smoothly and early.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Car King uses speech recognition to understand kids' car guesses during each round.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

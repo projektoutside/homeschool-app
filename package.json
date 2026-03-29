@@ -33,6 +33,8 @@
     "@capacitor/core": "^8.2.0",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
+    "@capgo/capacitor-speech-recognition": "^8.1.0",
+    "@huggingface/transformers": "^3.8.1",
     "@supabase/supabase-js": "^2.95.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
