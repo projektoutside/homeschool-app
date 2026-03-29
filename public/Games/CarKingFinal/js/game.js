@@ -38,21 +38,34 @@ class CarGuessingGame {
         this.isMicWarm = false;
         this.isRecognitionActive = false;
         this.isListeningForAnswer = false;
+        this.isAnswerAcceptanceOpen = false;
         this.micState = 'idle';
         this.recognitionRestartAttempts = 0;
-        this.maxRecognitionRestarts = 4;
+        this.maxRecognitionRestarts = 3;
+        this.recognitionHardResetAttempts = 0;
+        this.maxRecognitionHardResets = 2;
+        this.recognitionRecoveryWindowStartedAt = 0;
+        this.recognitionRecoveryWindowMs = 9000;
         this.recognitionRestartCooldownMs = 650;
         this.pendingRecognitionRestartTimer = null;
         this.pendingRecognitionRestartReason = null;
         this.recognitionStartInFlight = false;
         this.recognitionStartTimeout = null;
+        this.recognitionAbortRequested = false;
+        this.recognitionHardResetInFlight = false;
+        this.recognitionUiRefs = null;
         this.micBtnClickHandler = null;
         this.micTestBtnHandler = null;
         this.micDeviceChangeHandler = null;
         this.visibilityRecoveryHandlerBound = false;
         this.lastSpeechResultAt = 0;
+        this.lastRecognitionStartAt = 0;
+        this.lastRecognitionAudioAt = 0;
+        this.lastRecognitionSpeechAt = 0;
+        this.lastRecognitionAudioEndAt = 0;
         this.micHealthMonitorTimer = null;
         this.micNoSpeechTimeoutMs = 5500;
+        this.micDeafGraceMs = 4200;
         this.selectedMicId = this.loadSelectedMicId();
         this.supportsContinuousRecognition = true;
         this.micAccessPreference = this.loadMicAccessPreference();
@@ -65,6 +78,9 @@ class CarGuessingGame {
         this.startSequenceLeadInMs = 120;
         this.startSequenceCountdownMs = 4000;
         this.startSequenceGoHoldMs = 500;
+        this.currentQuestionToken = 0;
+        this.questionPreArmLeadMs = 350;
+        this.answerWindowMs = 15000;
         this.startSequence = {
             token: 0,
             isActive: false,
@@ -575,8 +591,8 @@ class CarGuessingGame {
         } else if (pendingAction === 'mic-settings') {
             await this.refreshMicrophones(false);
         } else if (pendingAction === 'manual-mic') {
-            this.recognitionRestartAttempts = 0;
-            this.startListening();
+            this.resetRecognitionRecoveryState();
+            this.startListening({ reason: 'manual-mic' });
         }
     }
 
@@ -585,12 +601,8 @@ class CarGuessingGame {
         this.visibilityRecoveryHandlerBound = true;
 
         const tryRecoverMic = (reason) => {
-            if (this.inputMode !== 'voice') return;
-            if (!this.recognition) return;
-            if (!(this.isGameRunning || this.isMicWarm)) return;
-            if (!(this.isListeningForAnswer || this.isMicWarm)) return;
-            this.recognitionRestartAttempts = 0;
-            this.restartRecognitionEngine(reason);
+            if (!this.shouldAutoRecoverRecognition()) return;
+            this.restartRecognitionEngine(reason, { forceHardReset: true });
         };
 
         document.addEventListener('visibilitychange', () => {
@@ -711,17 +723,208 @@ class CarGuessingGame {
         this.pendingRecognitionRestartReason = null;
     }
 
+    resetRecognitionRecoveryState() {
+        this.recognitionRestartAttempts = 0;
+        this.recognitionHardResetAttempts = 0;
+        this.recognitionRecoveryWindowStartedAt = 0;
+    }
+
+    shouldAutoRecoverRecognition() {
+        if (this.inputMode !== 'voice') return false;
+        if (!this.recognition && !this.recognitionUiRefs) return false;
+        if (!(this.isGameRunning || this.isMicWarm)) return false;
+        if (!(this.isListeningForAnswer || this.isMicWarm)) return false;
+        if (document.visibilityState === 'hidden') return false;
+        return true;
+    }
+
+    getRecognitionRecoveryStrategy(forceHardReset = false) {
+        if (forceHardReset) {
+            if (this.recognitionHardResetAttempts < this.maxRecognitionHardResets) {
+                this.recognitionHardResetAttempts += 1;
+                return 'hard';
+            }
+            return 'blocked';
+        }
+
+        const now = Date.now();
+        if (
+            !this.recognitionRecoveryWindowStartedAt ||
+            (now - this.recognitionRecoveryWindowStartedAt) > this.recognitionRecoveryWindowMs
+        ) {
+            this.recognitionRecoveryWindowStartedAt = now;
+            this.recognitionRestartAttempts = 0;
+            this.recognitionHardResetAttempts = 0;
+        }
+
+        if (this.recognitionRestartAttempts < this.maxRecognitionRestarts) {
+            this.recognitionRestartAttempts += 1;
+            return 'soft';
+        }
+
+        if (this.recognitionHardResetAttempts < this.maxRecognitionHardResets) {
+            this.recognitionHardResetAttempts += 1;
+            return 'hard';
+        }
+
+        return 'blocked';
+    }
+
+    async rebuildSpeechRecognition(reason = 'hard-reset') {
+        if (!this.recognitionUiRefs) return false;
+
+        const { micBtn, guessInput } = this.recognitionUiRefs;
+        const currentRecognition = this.recognition;
+
+        this.recognitionHardResetInFlight = true;
+        this.clearPendingRecognitionRestart();
+        this.releaseRecognitionStartLock();
+        this.recognitionAbortRequested = true;
+
+        if (currentRecognition) {
+            currentRecognition.onstart = null;
+            currentRecognition.onend = null;
+            currentRecognition.onresult = null;
+            currentRecognition.onerror = null;
+            currentRecognition.onaudiostart = null;
+            currentRecognition.onaudioend = null;
+            currentRecognition.onspeechstart = null;
+            currentRecognition.onspeechend = null;
+
+            try {
+                currentRecognition.abort();
+            } catch (err) {
+                console.warn('Recognition abort during rebuild failed:', err);
+            }
+        }
+
+        this.recognition = null;
+        this.isRecognitionActive = false;
+
+        const permissionReady = await this.ensureMicrophonePermissionForGame(true, {
+            allowPrompt: true,
+            reason: 'game',
+            showDiagnostics: false
+        });
+
+        if (!permissionReady) {
+            this.recognitionHardResetInFlight = false;
+            this.recognitionAbortRequested = false;
+            this.setMicState('error');
+            this.updateMicStatusMessage('Microphone permission needed. Tap the mic to try again.');
+            return false;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            this.recognitionHardResetInFlight = false;
+            this.recognitionAbortRequested = false;
+            return false;
+        }
+
+        this.createSpeechRecognitionInstance(micBtn, guessInput);
+        this.recognitionHardResetInFlight = false;
+        this.recognitionAbortRequested = false;
+
+        if (this.shouldAutoRecoverRecognition()) {
+            this.updateMicStatusMessage('Listening... mic refreshed.');
+            this.activateMicrophoneEngine(`hard-reset-${reason}`);
+        }
+
+        return true;
+    }
+
+    restartRecognitionEngine(reason = 'unknown', options = {}) {
+        const { forceHardReset = false } = options;
+
+        if (!this.shouldAutoRecoverRecognition()) return;
+        if (this.pendingRecognitionRestartTimer || this.recognitionHardResetInFlight) return;
+        if (this.recognitionStartInFlight && !forceHardReset) return;
+
+        const strategy = this.getRecognitionRecoveryStrategy(forceHardReset);
+        if (strategy === 'blocked') {
+            console.warn('🛑 Recognition recovery exhausted. Waiting for manual retry.');
+            this.setMicState('error');
+            this.updateMicStatusMessage('Microphone needs a quick reset. Tap the mic to try again.');
+            return;
+        }
+
+        this.pendingRecognitionRestartReason = reason;
+        const recoveryLabel = strategy === 'hard'
+            ? `hard reset ${this.recognitionHardResetAttempts}/${this.maxRecognitionHardResets}`
+            : `restart ${this.recognitionRestartAttempts}/${this.maxRecognitionRestarts}`;
+        console.log(`🔄 Scheduling recognition ${recoveryLabel} due to: ${reason}`);
+
+        this.pendingRecognitionRestartTimer = setTimeout(async () => {
+            const scheduledReason = this.pendingRecognitionRestartReason || reason;
+            this.pendingRecognitionRestartTimer = null;
+            this.pendingRecognitionRestartReason = null;
+
+            if (!this.shouldAutoRecoverRecognition()) return;
+
+            if (strategy === 'hard') {
+                this.updateMicStatusMessage('Try again, you still have time.');
+                const rebuilt = await this.rebuildSpeechRecognition(scheduledReason);
+                if (!rebuilt) {
+                    this.setMicState('error');
+                    this.updateMicStatusMessage('Microphone needs a quick reset. Tap the mic to try again.');
+                }
+                return;
+            }
+
+            this.updateMicStatusMessage('Listening... reconnecting mic.');
+            this.activateMicrophoneEngine(`restart-${scheduledReason}`);
+        }, this.recognitionRestartCooldownMs);
+    }
+
+    clearAnswerTimers() {
+        if (this.answerTimer) {
+            clearTimeout(this.answerTimer);
+            this.answerTimer = null;
+        }
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    }
+
     startMicHealthMonitor() {
         this.stopMicHealthMonitor();
         this.micHealthMonitorTimer = setInterval(() => {
             if (!this.isListeningForAnswer || !this.isGameRunning) return;
             if (document.visibilityState === 'hidden') return;
-            if (this.isRecognitionActive) return;
-            if (this.recognitionStartInFlight) return;
+            if (this.recognitionHardResetInFlight) return;
             if (this.pendingRecognitionRestartTimer) return;
 
-            console.warn('🎤 Recognition became inactive while listening was expected. Restarting recognition engine.');
-            this.restartRecognitionEngine('health-check-inactive');
+            if (!this.isRecognitionActive) {
+                if (!this.recognitionStartInFlight) {
+                    console.warn('🎤 Recognition became inactive while listening was expected. Restarting recognition engine.');
+                    this.restartRecognitionEngine('health-check-inactive');
+                }
+                return;
+            }
+
+            if (!this.isAnswerAcceptanceOpen) return;
+
+            const now = Date.now();
+            const hasCaptureStarted = this.lastRecognitionAudioAt >= this.lastRecognitionStartAt;
+            const sinceGateOpened = now - this.lastSpeechResultAt;
+            const sinceRecognitionStart = now - this.lastRecognitionStartAt;
+
+            if (!hasCaptureStarted && sinceRecognitionStart > this.micDeafGraceMs) {
+                console.warn('🎤 Recognition stayed active without audio capture. Forcing hard reset.');
+                this.restartRecognitionEngine('health-check-deaf', { forceHardReset: true });
+                return;
+            }
+
+            if (
+                hasCaptureStarted &&
+                this.lastRecognitionAudioEndAt > this.lastRecognitionAudioAt &&
+                sinceGateOpened > this.micNoSpeechTimeoutMs
+            ) {
+                console.warn('🎤 Recognition lost audio capture while the round was still active. Forcing hard reset.');
+                this.restartRecognitionEngine('health-check-audio-ended', { forceHardReset: true });
+            }
         }, 1500);
     }
 
@@ -730,37 +933,6 @@ class CarGuessingGame {
             clearInterval(this.micHealthMonitorTimer);
             this.micHealthMonitorTimer = null;
         }
-    }
-
-    canRestartRecognition() {
-        return this.recognitionRestartAttempts < this.maxRecognitionRestarts;
-    }
-
-    restartRecognitionEngine(reason = 'unknown') {
-        if (!this.recognition) return;
-        if (!this.isGameRunning && !this.isMicWarm) return;
-        if (document.visibilityState === 'hidden') return;
-        if (this.recognitionStartInFlight) return;
-        if (this.isRecognitionActive) return;
-        if (this.pendingRecognitionRestartTimer) {
-            return;
-        }
-        if (!this.canRestartRecognition()) {
-            console.warn('🛑 Mic restart limit reached. Falling back to text/choice mode messaging.');
-            this.updateMicStatusMessage('Microphone unstable. Tap mic button to retry.');
-            return;
-        }
-
-        this.recognitionRestartAttempts += 1;
-        this.pendingRecognitionRestartReason = reason;
-        console.log(`🔄 Restarting recognition (${this.recognitionRestartAttempts}/${this.maxRecognitionRestarts}) due to: ${reason}`);
-
-        this.pendingRecognitionRestartTimer = setTimeout(() => {
-            const scheduledReason = this.pendingRecognitionRestartReason || reason;
-            this.pendingRecognitionRestartTimer = null;
-            this.pendingRecognitionRestartReason = null;
-            this.activateMicrophoneEngine(`restart-${scheduledReason}`);
-        }, this.recognitionRestartCooldownMs);
     }
 
     async getMicrophoneStream(deviceId = null) {
@@ -1140,6 +1312,27 @@ class CarGuessingGame {
         }, 550);
     }
 
+    createSpeechRecognitionInstance(micBtn, guessInput) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            return null;
+        }
+
+        const recognition = new SpeechRecognition();
+        const isIOS = !!window.deviceIntelligence?.device?.isIOS;
+
+        recognition.continuous = !isIOS;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 3;
+        recognition.lang = 'en-US';
+
+        this.recognition = recognition;
+        this.recognitionUiRefs = { micBtn, guessInput };
+        this.setupRecognitionHandlers(micBtn, guessInput);
+
+        return recognition;
+    }
+
     setupSpeechRecognition(micBtn, guessInput) {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             micBtn.style.display = 'none';
@@ -1147,20 +1340,12 @@ class CarGuessingGame {
             return;
         }
 
+        this.recognitionUiRefs = { micBtn, guessInput };
+
         // SINGLETON PATTERN: Only create if doesn't exist
         if (!this.recognition) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
+            this.createSpeechRecognitionInstance(micBtn, guessInput);
             this.supportsContinuousRecognition = true;
-
-            // 1. ROBUST SETTINGS (adaptive per platform)
-            const isIOS = !!window.deviceIntelligence?.device?.isIOS;
-            this.recognition.continuous = !isIOS;
-            this.recognition.interimResults = true;
-            this.recognition.maxAlternatives = 1;
-            this.recognition.lang = 'en-US';
-
-            this.setupRecognitionHandlers(micBtn, guessInput);
         }
 
         // Manual toggle
@@ -1175,8 +1360,8 @@ class CarGuessingGame {
             } else {
                 this.prepareMicrophoneForAction('manual-mic').then((granted) => {
                     if (!granted) return;
-                    this.recognitionRestartAttempts = 0;
-                    this.startListening();
+                    this.resetRecognitionRecoveryState();
+                    this.startListening({ reason: 'manual-mic' });
                 });
             }
         };
@@ -1189,11 +1374,19 @@ class CarGuessingGame {
     setupRecognitionHandlers(micBtn, guessInput) {
         this.recognition.onstart = () => {
             console.log("🎤 Mic started");
+            this.recognitionAbortRequested = false;
             this.isRecognitionActive = true;
             this.clearPendingRecognitionRestart();
             this.releaseRecognitionStartLock();
             this.setMicState('listening');
-            this.recognitionRestartAttempts = 0;
+            this.resetRecognitionRecoveryState();
+            this.lastRecognitionStartAt = Date.now();
+            this.lastRecognitionAudioAt = 0;
+            this.lastRecognitionAudioEndAt = 0;
+            this.lastRecognitionSpeechAt = this.lastRecognitionStartAt;
+            if (this.isAnswerAcceptanceOpen) {
+                this.lastSpeechResultAt = this.lastRecognitionStartAt;
+            }
             if (this.isGameRunning || this.isListeningForAnswer) {
                 this.toggleMicVisuals(true);
             }
@@ -1210,8 +1403,30 @@ class CarGuessingGame {
             }
         };
 
+        this.recognition.onaudiostart = () => {
+            this.lastRecognitionAudioAt = Date.now();
+        };
+
+        this.recognition.onaudioend = () => {
+            this.lastRecognitionAudioEndAt = Date.now();
+        };
+
+        this.recognition.onspeechstart = () => {
+            const now = Date.now();
+            this.lastRecognitionSpeechAt = now;
+            if (this.isAnswerAcceptanceOpen) {
+                this.lastSpeechResultAt = now;
+            }
+        };
+
+        this.recognition.onspeechend = () => {
+            this.lastRecognitionSpeechAt = Date.now();
+        };
+
         this.recognition.onend = () => {
             console.log("🎤 Mic stopped");
+            const intentionalAbort = this.recognitionAbortRequested;
+            this.recognitionAbortRequested = false;
             this.isRecognitionActive = false;
             this.releaseRecognitionStartLock();
             if (!this.isListeningForAnswer) {
@@ -1226,72 +1441,50 @@ class CarGuessingGame {
                 return;
             }
 
-            if ((this.isGameRunning || this.isMicWarm) && (this.isListeningForAnswer || this.isMicWarm)) {
+            if (!intentionalAbort && this.shouldAutoRecoverRecognition()) {
                 this.restartRecognitionEngine('onend');
             }
         };
 
         this.recognition.onresult = (event) => {
             if (!this.isListeningForAnswer) return;
-            this.lastSpeechResultAt = Date.now();
-
-            // Clear any previous "Silence" timer because user is talking
-            if (this.silenceTimer) clearTimeout(this.silenceTimer);
-
-            let interimString = '';
-            let finalString = '';
-
-            // Combine all available results
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalString += event.results[i][0].transcript;
-                } else {
-                    interimString += event.results[i][0].transcript;
-                }
-            }
-
-            // Normalization
-            const fullSpeech = (finalString + interimString).trim();
+            const speechSnapshot = this.buildSpeechCandidatesFromEvent(event);
+            const displayedSpeech = speechSnapshot.displayText || speechSnapshot.candidates[0] || '';
+            const formatted = this.formatTranscriptForDisplay(displayedSpeech);
             const input = document.getElementById('guessInput');
-            const transcriptEl = document.getElementById('liveTranscript');
 
-            // LIVE FEEDBACK: Show what is being said (briefly)
-            if (fullSpeech) {
-                // Formatting: Capitalize first letter
-                const formatted = fullSpeech.charAt(0).toUpperCase() + fullSpeech.slice(1).replace(/[.,!?]$/, "");
-
+            if (formatted && input) {
                 input.value = formatted;
                 input.classList.add('listening-active');
-
-                if (transcriptEl) {
-                    transcriptEl.textContent = `"${formatted}"`;
-                    transcriptEl.classList.remove('hidden');
-                    transcriptEl.classList.add('active');
-                }
             }
 
-            const isWinner = this.isGuessCorrect(fullSpeech);
+            if (!this.isAnswerAcceptanceOpen) {
+                return;
+            }
 
-            // 1. SMART KEYWORD CHECK (Instant Win)
-            // if they say "Bug" and it matches "Bugatti", SNAP the text to "Bugatti" and submit.
-            if (isWinner) {
+            const now = Date.now();
+            this.lastSpeechResultAt = now;
+            this.lastRecognitionSpeechAt = now;
+
+            if (formatted) {
+                this.updateListeningTranscript(`I heard "${formatted}".`);
+            }
+
+            const match = this.getGuessMatchResult(speechSnapshot.candidates);
+            if (match.matched) {
                 console.log("✅ Keyword Detected! Immediate Submit.");
-
-                // FORCE UI TO SHOW CLEAN CORRECT ANSWER
-                // This prevents "Bug" from showing when it should be "Bugatti"
-                input.value = this.currentCar.name;
-                if (transcriptEl) {
-                    transcriptEl.textContent = `"${this.currentCar.name}"`;
+                if (input) {
+                    input.value = this.currentCar.name;
                 }
+                this.updateListeningTranscript(`I heard "${this.currentCar.name}"!`);
+                this.submitGuess();
+                return;
+            }
 
-                this.submitGuess(); // Wins immediately
-                return; // Stop processing
+            if (formatted) {
+                this.updateListeningTranscript(`I heard "${formatted}". Keep going!`);
             } else {
-                console.log("❌ Incorrect guess. Ignoring submission. Waiting for correct answer...");
-                // Visual feedback for wrong guess (optional, but requested to just show transcript)
-                // The transcriptEl is already updated above with what they said.
-                // We simply DO NOT call submitGuess() and do NOT set a timer.
-                // The user must keep speaking until they say the right name or time runs out.
+                this.updateListeningTranscript('Listening... say the car name when you are ready.');
             }
         };
 
@@ -1299,6 +1492,12 @@ class CarGuessingGame {
             this.releaseRecognitionStartLock();
             if (event.error !== 'no-speech') {
                 console.warn("Mic Error:", event.error);
+            }
+
+            const intentionalAbort = this.recognitionAbortRequested && event.error === 'aborted';
+            if (intentionalAbort) {
+                this.recognitionAbortRequested = false;
+                return;
             }
 
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
@@ -1311,6 +1510,8 @@ class CarGuessingGame {
             if (event.error === 'audio-capture') {
                 this.setMicState('error');
                 this.updateMicStatusMessage('No audio capture detected. Try selecting another microphone.');
+                this.stopListening();
+                return;
             }
 
             if (document.visibilityState === 'hidden') {
@@ -1319,7 +1520,10 @@ class CarGuessingGame {
 
             if (event.error === 'aborted' || event.error === 'network' || event.error === 'no-speech') {
                 this.restartRecognitionEngine(`error-${event.error}`);
+                return;
             }
+
+            this.restartRecognitionEngine(`error-${event.error}`, { forceHardReset: true });
         };
     }
 
@@ -1863,10 +2067,13 @@ class CarGuessingGame {
     // Called once when game flow needs the recognition engine active.
     async activateMicrophoneEngine(reason = 'manual-start') {
         if (this.inputMode !== 'voice') return;
+        if (!this.recognition && this.recognitionUiRefs) {
+            this.createSpeechRecognitionInstance(this.recognitionUiRefs.micBtn, this.recognitionUiRefs.guessInput);
+        }
         if (!this.recognition) return;
         if (this.isRecognitionActive) return;
         if (document.visibilityState === 'hidden') return;
-        if (this.recognitionStartInFlight) return;
+        if (this.recognitionStartInFlight || this.recognitionHardResetInFlight) return;
 
         this.recognitionStartInFlight = true;
         if (this.recognitionStartTimeout) {
@@ -1886,56 +2093,118 @@ class CarGuessingGame {
         }
 
         this.setMicState('starting');
+        this.recognitionAbortRequested = false;
 
         try {
             this.recognition.start();
             console.log(`🎤 Microphone Engine Activated (${reason})`);
         } catch (e) {
             this.releaseRecognitionStartLock();
-            if (e?.name !== 'InvalidStateError' && e?.error !== 'not-allowed' && e?.error !== 'service-not-allowed') {
+            if (e?.name === 'InvalidStateError') {
+                return;
+            }
+            if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+                this.setMicState('error');
+                this.updateMicStatusMessage('Microphone permission blocked. Check browser settings.');
+                return;
+            }
+            if (this.shouldAutoRecoverRecognition()) {
+                this.restartRecognitionEngine(`start-failed-${reason}`, { forceHardReset: true });
+            } else if (e?.name !== 'InvalidStateError' && e?.error !== 'not-allowed' && e?.error !== 'service-not-allowed') {
                 console.log("Mic already active or error:", e);
             }
         }
     }
 
-    // "Open Gate" - Show Visuals
-    startListening() {
+    updateListeningTranscript(message) {
+        const transcriptEl = document.getElementById('liveTranscript');
+        if (!transcriptEl) return;
+        transcriptEl.textContent = message;
+        transcriptEl.classList.remove('hidden');
+        transcriptEl.classList.add('active');
+    }
+
+    beginAnswerWindow() {
+        this.clearAnswerTimers();
+        this.lastSpeechResultAt = Date.now();
+        this.startTimer();
+        this.answerTimer = setTimeout(() => {
+            if (!this.isProcessingGuess) {
+                this.revealAnswer();
+            }
+        }, this.answerWindowMs);
+    }
+
+    openListeningGate(reason = 'question-ended') {
         if (this.inputMode !== 'voice') return;
-        this.isListeningForAnswer = true;
+
+        if (!this.isListeningForAnswer) {
+            this.startListening({ deferAcceptance: false, reason });
+            return;
+        }
+
+        if (this.isAnswerAcceptanceOpen) return;
+
+        this.isAnswerAcceptanceOpen = true;
         this.lastSpeechResultAt = Date.now();
         this.setMicState('listening');
+        this.updateListeningTranscript('Listening... say the car name.');
+
+        const guessInput = document.getElementById('guessInput');
+        if (guessInput) {
+            guessInput.placeholder = "Say the car name...";
+            guessInput.focus();
+        }
+
+        this.beginAnswerWindow();
+    }
+
+    // "Open Gate" - Show Visuals
+    startListening(options = {}) {
+        if (this.inputMode !== 'voice') return;
+
+        const {
+            deferAcceptance = false,
+            reason = 'manual-start'
+        } = options;
+
+        this.isListeningForAnswer = true;
+        this.isAnswerAcceptanceOpen = !deferAcceptance;
         this.clearPendingRecognitionRestart();
+        this.setMicState(deferAcceptance ? 'starting' : 'listening');
         this.toggleMicVisuals(true);
 
         const guessInput = document.getElementById('guessInput');
-        const transcriptEl = document.getElementById('liveTranscript');
 
         if (guessInput) {
-            guessInput.placeholder = "Say the car name...";
+            guessInput.placeholder = deferAcceptance ? "Get ready to answer..." : "Say the car name...";
             guessInput.value = "";
             guessInput.focus();
         }
 
-        if (transcriptEl) {
-            transcriptEl.textContent = "Listening...";
-            transcriptEl.classList.remove('hidden');
-            transcriptEl.classList.add('active');
-        }
+        this.updateListeningTranscript(deferAcceptance ? 'Get ready... the mic is opening early for you.' : 'Listening... say the car name.');
 
         if (this.voiceSystem?.setListeningMode) {
             this.voiceSystem.setListeningMode(true);
         }
 
         this.startMicHealthMonitor();
+        if (this.isAnswerAcceptanceOpen) {
+            this.beginAnswerWindow();
+        }
 
         // Ensure engine is running
-        this.activateMicrophoneEngine();
+        this.activateMicrophoneEngine(reason);
     }
 
     // "Close Gate" - Hide Visuals
     stopListening() {
         this.isListeningForAnswer = false;
+        this.isAnswerAcceptanceOpen = false;
+        this.currentQuestionToken += 1;
         this.clearPendingRecognitionRestart();
+        this.clearAnswerTimers();
+        this.releaseRecognitionStartLock();
         this.setMicState('ready');
         this.toggleMicVisuals(false);
         this.stopMicHealthMonitor();
@@ -1944,9 +2213,23 @@ class CarGuessingGame {
             this.voiceSystem.setListeningMode(false);
         }
 
+        if (this.silenceTimer) {
+            clearTimeout(this.silenceTimer);
+            this.silenceTimer = null;
+        }
+
+        if (this.recognition) {
+            this.recognitionAbortRequested = true;
+            try {
+                this.recognition.abort();
+            } catch (err) {
+                console.warn('Recognition abort failed during stopListening:', err);
+            }
+        }
+
         const transcriptEl = document.getElementById('liveTranscript');
         if (transcriptEl) {
-            transcriptEl.textContent = "";
+            transcriptEl.textContent = '';
             transcriptEl.classList.add('hidden');
             transcriptEl.classList.remove('active');
         }
@@ -2144,9 +2427,6 @@ class CarGuessingGame {
         this.isMicWarm = false;
         this.switchScreen('gameScreen');
 
-        // One-time activation of the continuous mic engine
-        this.activateMicrophoneEngine();
-
         this.loadNextCar();
     }
 
@@ -2280,36 +2560,58 @@ class CarGuessingGame {
         // RESET FLAGS
         this.isProcessingGuess = false; // Reset lock
         document.getElementById('guessInput').disabled = false;
+        this.clearAnswerTimers();
+        this.isAnswerAcceptanceOpen = false;
+
+        const questionToken = ++this.currentQuestionToken;
+
+        const beginVoiceWindow = () => {
+            if (questionToken !== this.currentQuestionToken) return;
+            if (this.inputMode !== 'voice') return;
+            this.openListeningGate('question-ended');
+        };
 
         // Speak the question with natural variation
-        if (this.voiceSystem) {
+        if (this.inputMode === 'voice' && this.voiceSystem) {
             this.voiceSystem.setListeningMode(false);
-            this.voiceSystem.sayQuestion().then(() => {
-                // Safety delay helps avoid prompt bleed into speech recognition on phones/tablets.
-                setTimeout(() => {
-                    this.startListening();
-                }, 1200);
+            this.voiceSystem.sayQuestion({
+                readyLeadMs: this.questionPreArmLeadMs,
+                onPlaybackReady: () => {
+                    if (questionToken !== this.currentQuestionToken) return;
+                    this.startListening({
+                        deferAcceptance: true,
+                        reason: 'question-prearm'
+                    });
+                },
+                onPlaybackEnd: () => {
+                    beginVoiceWindow();
+                }
+            }).then(() => {
+                beginVoiceWindow();
+            }).catch(() => {
+                beginVoiceWindow();
             });
+            return;
         }
 
-        // Start timer for auto-reveal
-        this.startTimer();
+        if (this.inputMode === 'voice') {
+            this.startListening({ reason: 'question-fallback' });
+            return;
+        }
 
-        // Auto-reveal answer after 15 seconds
-        this.answerTimer = setTimeout(() => {
-            if (!this.isProcessingGuess) {
-                this.revealAnswer();
-            }
-        }, 15000);
+        this.beginAnswerWindow();
     }
 
     startTimer() {
         const timerFill = document.getElementById('timerFill');
+        if (!timerFill) {
+            return;
+        }
+
         let width = 100;
 
-        // 15 seconds * 10 steps/sec = 150 steps
-        // 100% / 150 steps = ~0.66% per step
-        const decrement = 100 / 150;
+        const totalSteps = Math.max(Math.round(this.answerWindowMs / 100), 1);
+        const decrement = 100 / totalSteps;
 
         const timerInterval = setInterval(() => {
             width -= decrement;
@@ -2361,212 +2663,319 @@ class CarGuessingGame {
         }
     }
 
-    isGuessCorrect(guess) {
-        const car = this.currentCar;
-        // 1. Clean and tokenize the guess
-        const cleanGuess = guess.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-        const guessWords = cleanGuess.split(/\s+/).filter(w => w.length > 0);
+    buildSpeechCandidatesFromEvent(event) {
+        const candidates = new Set();
+        const displayParts = [];
 
-        // 2. Identify Brand vs Model
-        // Assumption: First word of name is Brand, rest is Model
-        const nameParts = car.name.toLowerCase().split(/\s+/);
-        const brand = nameParts[0];
-        const modelParts = nameParts.slice(1); // can be empty for simple names like "BMW"
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const result = event.results[i];
+            if (!result || result.length === 0) continue;
 
-        // 3. Classify Targets
-        let strongTargets = new Set();
-        let weakTargets = new Set();
+            const topTranscript = (result[0]?.transcript || '').trim();
+            if (topTranscript) {
+                displayParts.push(topTranscript);
+                candidates.add(topTranscript);
+            }
 
-        // SMART CHECK: Is this the ONLY car of this brand in the database?
-        // If so, saying just the brand should count as a win (Strong Match).
-        const carsWithBrand = this.carDatabase.filter(c =>
-            c.name.toLowerCase().split(/\s+/)[0] === brand
-        );
-        const isBrandUnique = carsWithBrand.length === 1;
-
-        // Brand is always weak if there's a model AND other cars share this brand
-        if (modelParts.length > 0 && !isBrandUnique) {
-            weakTargets.add(brand);
-            modelParts.forEach(p => strongTargets.add(p));
-        } else {
-            // If name is single word (BMW) OR brand is unique (Jeep), treat brand as Strong
-            strongTargets.add(brand);
-            modelParts.forEach(p => strongTargets.add(p)); // Add model parts too
+            const alternativeCount = Math.min(result.length, 3);
+            for (let altIndex = 0; altIndex < alternativeCount; altIndex += 1) {
+                const transcript = (result[altIndex]?.transcript || '').trim();
+                if (transcript) {
+                    candidates.add(transcript);
+                }
+            }
         }
 
-        // Process keywords
-        car.keywords.forEach(k => {
-            const kLower = k.toLowerCase();
-            // If keyword is matching the brand...
-            if (kLower === brand) {
-                // Only demote to weak if we have a model AND brand is NOT unique
-                if (modelParts.length > 0 && !isBrandUnique) {
-                    weakTargets.add(kLower);
-                } else {
-                    strongTargets.add(kLower);
-                }
+        const displayText = displayParts.join(' ').trim();
+        if (displayText) {
+            candidates.add(displayText);
+        }
+
+        return {
+            displayText,
+            candidates: [...candidates]
+        };
+    }
+
+    formatTranscriptForDisplay(text) {
+        const trimmed = `${text || ''}`.trim().replace(/[.,!?]$/, '');
+        if (!trimmed) return '';
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }
+
+    collapseSpeechTokens(tokens) {
+        const collapsed = [];
+        let run = [];
+
+        const flushRun = () => {
+            if (run.length === 0) return;
+
+            const canCollapse = run.length > 1 && run.length <= 5 && run.every(token => /^[a-z0-9]+$/.test(token) && token.length <= 3);
+            if (canCollapse) {
+                collapsed.push(run.join(''));
             } else {
-                strongTargets.add(kLower);
-                // Also add parts of multi-word keywords as strong? 
-                // Careful: "James Bond" -> "Bond" is strong.
-                kLower.split(/\s+/).forEach(sub => {
-                    if (sub !== brand) strongTargets.add(sub);
-                });
+                collapsed.push(...run);
             }
+
+            run = [];
+        };
+
+        tokens.forEach((token) => {
+            if ((/^[a-z]$/.test(token) || /^\d+$/.test(token)) && token.length <= 3) {
+                run.push(token);
+                return;
+            }
+
+            flushRun();
+            collapsed.push(token);
         });
 
-        // Helper: Levenshtein Distance
-        const getDistance = (a, b) => {
-            if (a.length === 0) return b.length;
-            if (b.length === 0) return a.length;
-            const matrix = [];
-            for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
-            for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
-            for (let i = 1; i <= b.length; i++) {
-                for (let j = 1; j <= a.length; j++) {
-                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                        matrix[i][j] = matrix[i - 1][j - 1];
-                    } else {
-                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+        flushRun();
+        return collapsed;
+    }
+
+    normalizeSpeechText(text, options = {}) {
+        const { removeFillers = true } = options;
+        const fillerWords = new Set([
+            'a', 'an', 'and', 'are', 'car', 'guess', 'i', 'is', 'it', 'its',
+            'know', 'like', 'looks', 'maybe', 'my', 'see', 'that', 'the',
+            'this', 'think', 'uh', 'um', 'you'
+        ]);
+
+        const phraseReplacements = [
+            [/\baldi\b/g, 'audi'],
+            [/\baudii\b/g, 'audi'],
+            [/\bbee em double u\b/g, 'bmw'],
+            [/\bbee em w\b/g, 'bmw'],
+            [/\bpor sha\b/g, 'porsche'],
+            [/\bpor she\b/g, 'porsche'],
+            [/\bporsha\b/g, 'porsche'],
+            [/\bsky line\b/g, 'skyline'],
+            [/\bf one fifty\b/g, 'f150'],
+            [/\beff one fifty\b/g, 'f150'],
+            [/\bf one five zero\b/g, 'f150'],
+            [/\bthree seventy zee\b/g, '370z'],
+            [/\bthree seventy z\b/g, '370z'],
+            [/\bare eight\b/g, 'r8'],
+            [/\br eight\b/g, 'r8'],
+            [/\bto yo ta\b/g, 'toyota'],
+            [/\bni ssan\b/g, 'nissan'],
+            [/\bcam ree\b/g, 'camry'],
+            [/\bta coma\b/g, 'tacoma'],
+            [/\btun dra\b/g, 'tundra'],
+            [/\btondra\b/g, 'tundra'],
+            [/\bsivic\b/g, 'civic'],
+            [/\bexplora\b/g, 'explorer'],
+            [/\bgod zilla\b/g, 'godzilla']
+        ];
+
+        let normalized = `${text || ''}`.toLowerCase();
+        normalized = normalized.replace(/['’]/g, '');
+        normalized = normalized.replace(/&/g, ' and ');
+        normalized = normalized.replace(/[-/]/g, ' ');
+        normalized = normalized.replace(/[.,!?;:()[\]{}"\\]/g, ' ');
+
+        phraseReplacements.forEach(([pattern, value]) => {
+            normalized = normalized.replace(pattern, value);
+        });
+
+        let tokens = normalized.split(/\s+/).filter(Boolean);
+        tokens = this.collapseSpeechTokens(tokens);
+        tokens = tokens.filter((token, index) => token && token !== tokens[index - 1]);
+
+        if (removeFillers) {
+            tokens = tokens.filter(token => !fillerWords.has(token));
+        }
+
+        return {
+            text: tokens.join(' ').trim(),
+            compact: tokens.join(''),
+            tokens
+        };
+    }
+
+    getLevenshteinDistance(a, b) {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+
+        const matrix = [];
+        for (let i = 0; i <= b.length; i += 1) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= a.length; j += 1) {
+            matrix[0][j] = j;
+        }
+
+        for (let i = 1; i <= b.length; i += 1) {
+            for (let j = 1; j <= a.length; j += 1) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+                }
+            }
+        }
+
+        return matrix[b.length][a.length];
+    }
+
+    isFuzzySpeechMatch(value, target, strictShort = false) {
+        if (!value || !target) return false;
+        if (value === target) return true;
+
+        const maxLen = Math.max(value.length, target.length);
+        let maxEdits = 1;
+        if (maxLen >= 6) maxEdits = 2;
+        if (maxLen >= 10) maxEdits = 3;
+        if (strictShort && maxLen <= 4) maxEdits = 1;
+        if (maxLen <= 3) maxEdits = 0;
+
+        return this.getLevenshteinDistance(value, target) <= maxEdits;
+    }
+
+    buildCurrentCarSpeechProfile() {
+        const car = this.currentCar;
+        if (!car) return null;
+
+        const nameParts = car.name.split(/\s+/);
+        const brand = this.normalizeSpeechText(nameParts[0], { removeFillers: false });
+        const model = this.normalizeSpeechText(nameParts.slice(1).join(' '), { removeFillers: false });
+        const phraseMap = new Map();
+
+        const addPhrase = (value, source) => {
+            const normalized = this.normalizeSpeechText(value);
+            if (!normalized.text) return;
+
+            const priority = source === 'official' || source === 'actual'
+                ? 4
+                : source === 'alias'
+                    ? 3
+                    : 2;
+
+            const key = normalized.compact || normalized.text;
+            const existing = phraseMap.get(key);
+            const containsModelToken = model.tokens.length === 0
+                ? normalized.compact === brand.compact
+                : model.tokens.some(token => normalized.tokens.includes(token));
+
+            if (existing) {
+                existing.priority = Math.max(existing.priority, priority);
+                existing.isBrandOnly = existing.isBrandOnly && normalized.compact === brand.compact;
+                existing.hasModelEvidence = existing.hasModelEvidence || containsModelToken;
+                existing.sources.add(source);
+                return;
+            }
+
+            phraseMap.set(key, {
+                text: normalized.text,
+                compact: normalized.compact,
+                tokens: normalized.tokens,
+                priority,
+                isBrandOnly: normalized.compact === brand.compact,
+                hasModelEvidence: containsModelToken,
+                sources: new Set([source])
+            });
+        };
+
+        addPhrase(car.name, 'official');
+        (car.actualWords || []).forEach(word => addPhrase(word, 'actual'));
+        (car.speechAliases || []).forEach(alias => addPhrase(alias, 'alias'));
+        (car.keywords || []).forEach(keyword => addPhrase(keyword, 'keyword'));
+
+        const carsWithBrand = this.carDatabase.filter((entry) => {
+            const entryBrand = this.normalizeSpeechText(entry.name.split(/\s+/)[0], { removeFillers: false });
+            return entryBrand.compact === brand.compact;
+        });
+
+        const phrases = [...phraseMap.values()].sort((a, b) => {
+            if (b.priority !== a.priority) return b.priority - a.priority;
+            return b.text.length - a.text.length;
+        });
+
+        return {
+            brand,
+            model,
+            isBrandUnique: carsWithBrand.length === 1,
+            phrases,
+            modelPhrases: phrases.filter(phrase => !phrase.isBrandOnly)
+        };
+    }
+
+    getGuessMatchResult(candidates) {
+        const profile = this.buildCurrentCarSpeechProfile();
+        if (!profile) {
+            return { matched: false };
+        }
+
+        const uniqueCandidates = [...new Set((Array.isArray(candidates) ? candidates : [candidates]).filter(Boolean))];
+
+        for (const candidate of uniqueCandidates) {
+            const normalized = this.normalizeSpeechText(candidate);
+            if (!normalized.text) continue;
+
+            const brandMatched = normalized.tokens.some(token => this.isFuzzySpeechMatch(token, profile.brand.compact, true))
+                || this.isFuzzySpeechMatch(normalized.compact, profile.brand.compact, true);
+            const hasNonBrandToken = normalized.tokens.some(
+                token => !this.isFuzzySpeechMatch(token, profile.brand.compact, true)
+            );
+
+            for (const target of profile.phrases) {
+                if (target.isBrandOnly && !profile.isBrandUnique) {
+                    continue;
+                }
+
+                const phraseContainsTarget = normalized.text.includes(target.text);
+                const targetContainsGuess = hasNonBrandToken && target.text.includes(normalized.text);
+                const fuzzyPhraseMatch = this.isFuzzySpeechMatch(normalized.compact, target.compact);
+                const tokenCoverage = target.tokens.every(targetToken =>
+                    normalized.tokens.some(guessToken => this.isFuzzySpeechMatch(guessToken, targetToken, true))
+                );
+
+                if (phraseContainsTarget || targetContainsGuess || fuzzyPhraseMatch || tokenCoverage) {
+                    if (!target.isBrandOnly) {
+                        return { matched: true, guess: normalized.text, target: target.text };
+                    }
+
+                    if (profile.isBrandUnique) {
+                        return { matched: true, guess: normalized.text, target: target.text };
                     }
                 }
             }
-            return matrix[b.length][a.length];
-        };
 
-        const isMatch = (word, target) => {
-            // Adaptive limit
-            let maxEdits = 1;
-            if (target.length > 4) maxEdits = 2;
-            if (target.length > 8) maxEdits = 3;
-            if (target.length < 3) return word === target;
-            return getDistance(word, target) <= maxEdits;
-        };
-
-        // --- ACTUAL KEY WORD DETECTION SECTION ---
-        if (car.actualWords && car.actualWords.length > 0) {
-            console.log(`🔒 Rigid Check Mode for: ${car.name}`);
-            const guessNorm = cleanGuess.trim();
-
-            for (let word of car.actualWords) {
-                const target = word.toLowerCase();
-
-                // 1. Direct Include Check (Handles "It is a Toyota Tundra")
-                if (guessNorm.includes(target)) {
-                    console.log(`✅ Actual Word Match (Exact Inclusion): "${target}"`);
-                    return true;
-                }
-
-                // 2. Fuzzy Match on the full phrase
-                if (isMatch(guessNorm, target)) {
-                    console.log(`✅ Actual Word Match (Fuzzy Full): "${target}"`);
-                    return true;
-                }
-            }
-            console.log("❌ Strict Mode: No match found.");
-            return false;
-        }
-        // -----------------------------------------
-
-        // 4. Evaluate Guess
-        let hasStrongMatch = false;
-        let hasWeakMatch = false;
-        let unmatchedWordCount = 0;
-
-        for (let gWord of guessWords) {
-            if (gWord.length < 2) continue; // Skip noise
-
-            let matched = false;
-
-            // Check Strong
-            for (let target of strongTargets) {
-                if (isMatch(gWord, target)) {
-                    hasStrongMatch = true;
-                    matched = true;
-                    console.log(`✅ Strong Match: "${gWord}" ~ "${target}"`);
-                    break;
-                }
+            if (brandMatched && profile.isBrandUnique) {
+                return { matched: true, guess: normalized.text, target: profile.brand.text };
             }
 
-            if (matched) continue;
+            if (brandMatched && !profile.isBrandUnique) {
+                const hasModelEvidence = profile.modelPhrases.some(target => {
+                    if (target.tokens.every(targetToken =>
+                        normalized.tokens.some(guessToken => this.isFuzzySpeechMatch(guessToken, targetToken, true))
+                    )) {
+                        return true;
+                    }
 
-            // Check Weak
-            for (let target of weakTargets) {
-                if (isMatch(gWord, target)) {
-                    hasWeakMatch = true;
-                    matched = true;
-                    console.log(`⚠️ Weak Match (Brand): "${gWord}" ~ "${target}"`);
-                    break;
-                }
-            }
+                    if (normalized.text.includes(target.text)) {
+                        return true;
+                    }
 
-            if (!matched) {
-                // If it's a common filler word, ignore it
-                const fillers = ['the', 'is', 'it', 'its', 'a', 'an', 'car', 'this', 'guess', 'know', 'think', 'maybe'];
-                if (!fillers.includes(gWord)) {
-                    unmatchedWordCount++;
+                    return this.isFuzzySpeechMatch(normalized.compact, target.compact);
+                });
+
+                if (hasModelEvidence) {
+                    return { matched: true, guess: normalized.text, target: profile.model.text || profile.brand.text };
                 }
             }
         }
 
-        // 5. Decision Logic
+        return { matched: false };
+    }
 
-        // CASE A: Strong Match Found -> WIN
-        // e.g. "Tacoma", "Toyota Tacoma", "Red Tacoma"
-        if (hasStrongMatch) {
-            return true;
-        }
-
-        // CASE B: Concatenated Match (Strong) -> WIN
-        // e.g. "Supercar"
-        const guessNoSpaces = cleanGuess.replace(/\s+/g, '');
-        for (let target of strongTargets) {
-            const targetNoSpaces = target.replace(/\s+/g, '');
-            if (targetNoSpaces.length < 4) continue;
-
-            let maxEdits = 2;
-            if (targetNoSpaces.length > 8) maxEdits = 3;
-
-            if (getDistance(guessNoSpaces, targetNoSpaces) <= maxEdits) {
-                console.log(`✅ Concatenated Strong Match: "${guessNoSpaces}" ~ "${targetNoSpaces}"`);
-                return true;
-            }
-        }
-
-        // CASE C: Only Weak Match Found
-        // e.g. "Toyota" -> WIN (if simple)
-        // e.g. "Toyota Tundra" -> FAIL (because "Tundra" is unmatched)
-        if (hasWeakMatch) {
-            // If the guess is just the brand (e.g. "Toyota"), we might want to prompt "Which Toyota?" 
-            // But traditionally in this game, it might count as correct or just ignored. 
-            // To prevent "Toyota Tundra" -> Correct, we MUST enforce no conflicts.
-
-            if (unmatchedWordCount === 0) {
-                // Pure Brand match ("It matches Toyota")
-                // OPTIONAL: Return false to force them to say the model?
-                // The user said "Please lets not make these mistakes".
-                // If I say "Toyota", and it's a Tacoma, is that a mistake?
-                // Usually yes. "Toyota" is too vague.
-                // But for "Ferrari", it's distinct enough.
-
-                // Heuristic: If there are OTHER cars with the same brand in the DB, "Toyota" is definitely insufficient.
-                // Since we can't easily check the whole DB here, let's be strict:
-                // If the car has a Model Name (modelParts.length > 0), then just "Brand" is NOT enough.
-
-                if (modelParts.length > 0) {
-                    console.log("❌ Brand match only, but Model required.");
-                    return false;
-                }
-
-                console.log("✅ Brand Match Accepted (Single-word brand name)");
-                return true;
-            } else {
-                console.log("❌ Weak/Brand Match REJECTED (Conflicting words found)");
-                return false;
-            }
-        }
-
-        return false;
+    isGuessCorrect(guess) {
+        return this.getGuessMatchResult([guess]).matched;
     }
 
     handleCorrectGuess() {
@@ -2715,7 +3124,7 @@ class CarGuessingGame {
         this.stopMicHealthMonitor();
         this.stopListening();
         this.setMicState('idle');
-        this.recognitionRestartAttempts = 0;
+        this.resetRecognitionRecoveryState();
 
         if (this.isTestingMic) {
             this.stopMicTest();

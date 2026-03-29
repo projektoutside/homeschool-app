@@ -371,7 +371,10 @@ class AdvancedVoiceSystem {
             protectFromCancel = false,
             forceCancelExisting = false,
             reusePreloaded = true,
-            onPlaybackStart = null
+            onPlaybackStart = null,
+            onPlaybackReady = null,
+            onPlaybackEnd = null,
+            readyLeadMs = 0
         } = options;
 
         this.cancel({ force: !!forceCancelExisting }); // Stop any currently playing audio
@@ -401,10 +404,19 @@ class AdvancedVoiceSystem {
             this.currentSourceNode = this.currentAudio.__sourceNode || null;
 
             let playbackStarted = false;
+            let playbackReady = false;
+            let readyTimer = null;
 
             const clearProtectionIfOwned = () => {
                 if (this.protectedPlaybackToken === playbackToken) {
                     this.protectedPlaybackToken = null;
+                }
+            };
+
+            const clearReadyTimer = () => {
+                if (readyTimer) {
+                    clearTimeout(readyTimer);
+                    readyTimer = null;
                 }
             };
 
@@ -418,24 +430,75 @@ class AdvancedVoiceSystem {
                         console.warn('onPlaybackStart callback failed:', e);
                     }
                 }
+                schedulePlaybackReady();
+            };
+
+            const markPlaybackReady = () => {
+                if (playbackReady) return;
+                playbackReady = true;
+                clearReadyTimer();
+                if (typeof onPlaybackReady === 'function') {
+                    try {
+                        onPlaybackReady({
+                            at: performance.now(),
+                            path: normalizedPath,
+                            duration: this.currentAudio?.duration || 0,
+                            currentTime: this.currentAudio?.currentTime || 0
+                        });
+                    } catch (e) {
+                        console.warn('onPlaybackReady callback failed:', e);
+                    }
+                }
+            };
+
+            const schedulePlaybackReady = () => {
+                if (playbackReady || typeof onPlaybackReady !== 'function') return;
+
+                const audio = this.currentAudio;
+                const duration = audio?.duration;
+                if (!Number.isFinite(duration) || duration <= 0) return;
+
+                const remainingMs = Math.max(((duration - (audio.currentTime || 0)) * 1000) - readyLeadMs, 0);
+                clearReadyTimer();
+                readyTimer = setTimeout(() => {
+                    if (!this.currentAudio || this.currentAudio !== audio) return;
+                    markPlaybackReady();
+                }, remainingMs);
             };
 
             this.currentAudio.onplaying = () => {
                 markPlaybackStarted();
             };
 
+            this.currentAudio.onloadedmetadata = () => {
+                schedulePlaybackReady();
+            };
+
+            this.currentAudio.ondurationchange = () => {
+                schedulePlaybackReady();
+            };
+
             // Handle completion
             this.currentAudio.onended = () => {
+                clearReadyTimer();
                 this.currentAudio = null;
                 this.currentAudioElement = null;
                 this.currentSourceNode = null;
                 clearProtectionIfOwned();
+                if (typeof onPlaybackEnd === 'function') {
+                    try {
+                        onPlaybackEnd({ at: performance.now(), path: normalizedPath });
+                    } catch (e) {
+                        console.warn('onPlaybackEnd callback failed:', e);
+                    }
+                }
                 resolve();
             };
 
             // Handle errors
             this.currentAudio.onerror = (e) => {
                 console.warn(`⚠️ Failed to play audio file: ${path}`, e);
+                clearReadyTimer();
                 this.currentAudio = null;
                 this.currentAudioElement = null;
                 this.currentSourceNode = null;
@@ -451,6 +514,7 @@ class AdvancedVoiceSystem {
             if (playPromise !== undefined) {
                 playPromise.catch(e => {
                     console.warn(`⚠️ Audio playback interrupted or failed: ${path}`, e);
+                    clearReadyTimer();
                     this.currentAudio = null;
                     this.currentAudioElement = null;
                     this.currentSourceNode = null;
@@ -488,7 +552,7 @@ class AdvancedVoiceSystem {
     // GAME PLAYBACK METHODS
     // ═══════════════════════════════════════════════════════════════════════════
 
-    sayQuestion() {
+    sayQuestion(options = {}) {
         if (this.askingClips.length === 0) {
             console.warn("⚠️ No asking clips available");
             return Promise.resolve();
@@ -515,7 +579,7 @@ class AdvancedVoiceSystem {
         const path = `assets/audio/voice/asking/${randomClip}`;
 
         console.log(`🎤 Attempting to play question: ${randomClip}`);
-        return this.playClip(path);
+        return this.playClip(path, options);
     }
 
     // Methods below are intentionally empty to remove AI voice generation.
