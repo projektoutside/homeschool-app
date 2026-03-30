@@ -88,6 +88,10 @@ class NativeSpeechEngine implements SpeechEngineController {
     private lastSnapshot: SpeechTranscriptSnapshot | null = null;
     private initialized = false;
     private pendingStop = false;
+    private nativeReady = true;
+    private readyForNextSessionPromise: Promise<void> | null = null;
+    private resolveReadyForNextSession: (() => void) | null = null;
+    private pendingIdleFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     async initialize() {
         if (this.initialized) {
@@ -123,9 +127,12 @@ class NativeSpeechEngine implements SpeechEngineController {
             throw new Error(this.availability.message || 'Native speech recognition unavailable.');
         }
 
+        await this.waitForReadyForNextSession();
+
         this.events = events;
         this.lastSnapshot = null;
         this.pendingStop = false;
+        this.clearPendingIdleFallback();
 
         const permission = await SpeechRecognition.requestPermissions()
             .catch(() => SpeechRecognition.checkPermissions())
@@ -136,7 +143,6 @@ class NativeSpeechEngine implements SpeechEngineController {
             throw new Error('permission-denied');
         }
 
-        await SpeechRecognition.forceStop({ timeout: 450 }).catch(() => undefined);
         events.onStateChange('prewarming', 'native-prewarm');
 
         await SpeechRecognition.start({
@@ -152,7 +158,7 @@ class NativeSpeechEngine implements SpeechEngineController {
     }
 
     async stopSession() {
-        this.pendingStop = true;
+        this.beginPendingStop();
         const snapshot = await SpeechRecognition.getLastPartialResult().catch(() => null);
         if (snapshot?.available) {
             const nextSnapshot = createTranscriptSnapshot(snapshot.matches || [], snapshot.text || '', true, false);
@@ -161,11 +167,13 @@ class NativeSpeechEngine implements SpeechEngineController {
         }
 
         await SpeechRecognition.stop().catch(() => SpeechRecognition.forceStop({ timeout: 550 }).catch(() => undefined));
+        await this.waitForReadyForNextSession(2200);
     }
 
     async abortSession() {
-        this.pendingStop = true;
+        this.beginPendingStop();
         await SpeechRecognition.forceStop({ timeout: 250 }).catch(() => undefined);
+        await this.waitForReadyForNextSession(1800);
     }
 
     async dispose() {
@@ -174,6 +182,11 @@ class NativeSpeechEngine implements SpeechEngineController {
         this.listenerHandles = [];
         this.events = null;
         this.initialized = false;
+        this.lastSnapshot = null;
+        this.pendingStop = false;
+        this.nativeReady = true;
+        this.clearPendingIdleFallback();
+        this.resolvePendingReady();
     }
 
     private async attachListeners() {
@@ -207,17 +220,21 @@ class NativeSpeechEngine implements SpeechEngineController {
                 }
 
                 const reason = event.reason || event.errorCode || 'native-state';
-                this.events?.onStateChange(nextState, reason);
-                if (nextState === 'idle' && this.pendingStop) {
-                    this.pendingStop = false;
-                    this.events?.onLevel?.(0);
+                if (nextState === 'idle') {
+                    this.beginPendingStop();
+                    this.schedulePendingIdleFallback();
                 }
+                this.events?.onStateChange(nextState, reason);
             }),
             SpeechRecognition.addListener('error', (event) => {
                 this.events?.onError(event.code || 'native-error', event.message || 'Native speech recognition failed.');
                 this.events?.onStateChange('error', event.code || 'native-error');
+                if (this.pendingStop) {
+                    this.schedulePendingIdleFallback();
+                }
             }),
             SpeechRecognition.addListener('readyForNextSession', () => {
+                this.completePendingStop();
                 this.events?.onStateChange('idle', 'native-ready');
                 this.events?.onLevel?.(0);
             }),
@@ -242,6 +259,99 @@ class NativeSpeechEngine implements SpeechEngineController {
                 return 'idle';
             default:
                 return null;
+        }
+    }
+
+    private ensureReadyForNextSessionPromise() {
+        if (!this.readyForNextSessionPromise) {
+            this.readyForNextSessionPromise = new Promise<void>((resolve) => {
+                this.resolveReadyForNextSession = resolve;
+            });
+        }
+
+        return this.readyForNextSessionPromise;
+    }
+
+    private beginPendingStop() {
+        this.pendingStop = true;
+        this.nativeReady = false;
+        this.ensureReadyForNextSessionPromise();
+    }
+
+    private completePendingStop() {
+        this.pendingStop = false;
+        this.nativeReady = true;
+        this.clearPendingIdleFallback();
+        this.resolvePendingReady();
+        this.events?.onLevel?.(0);
+    }
+
+    private resolvePendingReady() {
+        const resolve = this.resolveReadyForNextSession;
+        this.resolveReadyForNextSession = null;
+        this.readyForNextSessionPromise = null;
+        resolve?.();
+    }
+
+    private clearPendingIdleFallback() {
+        if (this.pendingIdleFallbackTimer) {
+            clearTimeout(this.pendingIdleFallbackTimer);
+            this.pendingIdleFallbackTimer = null;
+        }
+    }
+
+    private schedulePendingIdleFallback() {
+        if (!this.pendingStop || this.pendingIdleFallbackTimer) {
+            return;
+        }
+
+        this.pendingIdleFallbackTimer = setTimeout(() => {
+            this.pendingIdleFallbackTimer = null;
+            this.completePendingStop();
+        }, 280);
+    }
+
+    private async waitForReadyForNextSession(timeoutMs = 1800) {
+        if (this.nativeReady) {
+            return;
+        }
+
+        const waitForReady = this.ensureReadyForNextSessionPromise();
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+        await Promise.race([
+            waitForReady,
+            new Promise<void>((resolve) => {
+                timeoutHandle = setTimeout(resolve, timeoutMs);
+            }),
+        ]);
+
+        if (timeoutHandle) {
+            clearTimeout(timeoutHandle);
+        }
+
+        if (this.nativeReady) {
+            return;
+        }
+
+        await SpeechRecognition.forceStop({ timeout: 450 }).catch(() => undefined);
+
+        const retryReady = this.ensureReadyForNextSessionPromise();
+        let retryTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+        await Promise.race([
+            retryReady,
+            new Promise<void>((resolve) => {
+                retryTimeoutHandle = setTimeout(resolve, 700);
+            }),
+        ]);
+
+        if (retryTimeoutHandle) {
+            clearTimeout(retryTimeoutHandle);
+        }
+
+        if (!this.nativeReady) {
+            this.completePendingStop();
         }
     }
 }
@@ -536,6 +646,9 @@ export class CarKingNativeFirstSpeechController {
         message: 'Speech controller has not been initialized.',
     };
     private initialized = false;
+    private activeSessionOptions: SpeechSessionOptions | null = null;
+    private operationChain: Promise<void> = Promise.resolve();
+    private rearmInFlightRoundId: string | null = null;
 
     constructor(postEvent: PostEvent) {
         this.postEvent = postEvent;
@@ -587,6 +700,30 @@ export class CarKingNativeFirstSpeechController {
     }
 
     async prewarm(options?: SpeechSessionOptions) {
+        return this.enqueueOperation(() => this.prewarmInternal(options));
+    }
+
+    async start(options?: SpeechSessionOptions) {
+        return this.enqueueOperation(() => this.startInternal(options));
+    }
+
+    async stop() {
+        return this.enqueueOperation(() => this.stopInternal());
+    }
+
+    async abort() {
+        return this.enqueueOperation(() => this.abortInternal());
+    }
+
+    async dispose() {
+        await this.enqueueOperation(async () => {
+            await this.abortInternal();
+            await this.engine.dispose().catch(() => undefined);
+            this.initialized = false;
+        });
+    }
+
+    private async prewarmInternal(options?: SpeechSessionOptions) {
         const sessionOptions = this.requireOptions(options);
         await this.ensureReady();
 
@@ -596,14 +733,16 @@ export class CarKingNativeFirstSpeechController {
         }
 
         if (this.activeRoundId && this.activeRoundId !== sessionOptions.roundId) {
-            await this.abort();
+            await this.abortInternal();
         }
 
         if (this.activeRoundId === sessionOptions.roundId && this.currentState !== 'idle' && this.currentState !== 'error') {
+            this.activeSessionOptions = sessionOptions;
             return true;
         }
 
         this.activeRoundId = sessionOptions.roundId;
+        this.activeSessionOptions = sessionOptions;
         this.gateOpen = false;
         this.bufferedSnapshots = [];
         this.setState('prewarming', 'prewarm');
@@ -618,7 +757,7 @@ export class CarKingNativeFirstSpeechController {
         }
     }
 
-    async start(options?: SpeechSessionOptions) {
+    private async startInternal(options?: SpeechSessionOptions) {
         const sessionOptions = this.requireOptions(options);
         await this.ensureReady();
 
@@ -628,11 +767,13 @@ export class CarKingNativeFirstSpeechController {
         }
 
         if (!this.activeRoundId || this.activeRoundId !== sessionOptions.roundId) {
-            const warmed = await this.prewarm(sessionOptions);
+            const warmed = await this.prewarmInternal(sessionOptions);
             if (!warmed) {
                 return;
             }
         }
+
+        this.activeSessionOptions = sessionOptions;
 
         if (this.gateOpen && this.activeRoundId === sessionOptions.roundId) {
             return;
@@ -644,37 +785,35 @@ export class CarKingNativeFirstSpeechController {
         this.flushBufferedSnapshots();
     }
 
-    async stop() {
+    private async stopInternal() {
         if (!this.initialized || !this.activeRoundId) {
             return;
         }
 
         this.gateOpen = false;
+        this.rearmInFlightRoundId = null;
         this.setState('stopping', 'user-stop');
         await this.engine.stopSession().catch((error) => {
             this.emitError('speech-stop-failed', error instanceof Error ? error.message : 'Speech stop failed.');
         });
         this.activeRoundId = null;
+        this.activeSessionOptions = null;
         this.bufferedSnapshots = [];
         this.setState('idle', 'user-stop');
     }
 
-    async abort() {
+    private async abortInternal() {
         if (!this.initialized) {
             return;
         }
 
         this.gateOpen = false;
+        this.rearmInFlightRoundId = null;
         this.bufferedSnapshots = [];
         await this.engine.abortSession().catch(() => undefined);
         this.activeRoundId = null;
+        this.activeSessionOptions = null;
         this.setState('idle', 'user-abort');
-    }
-
-    async dispose() {
-        await this.abort();
-        await this.engine.dispose().catch(() => undefined);
-        this.initialized = false;
     }
 
     private requireOptions(options?: SpeechSessionOptions) {
@@ -687,8 +826,8 @@ export class CarKingNativeFirstSpeechController {
         return {
             language: 'en-US',
             partialResults: true,
-            silenceMs: 1100,
-            prewarmLeadMs: 350,
+            silenceMs: 1800,
+            prewarmLeadMs: 700,
             ...options,
             contextualPhrases,
         };
@@ -708,7 +847,8 @@ export class CarKingNativeFirstSpeechController {
                 }
 
                 if (state === 'idle' && this.gateOpen) {
-                    this.setState('idle', reason || 'engine-idle');
+                    this.setState('prewarming', reason || 'engine-idle');
+                    this.scheduleRoundRearm(roundId, reason || 'engine-idle');
                     return;
                 }
 
@@ -735,6 +875,12 @@ export class CarKingNativeFirstSpeechController {
             },
             onError: (code, message) => {
                 if (roundId !== this.activeRoundId) {
+                    return;
+                }
+
+                if (this.gateOpen && code !== 'permission-denied') {
+                    this.setState('prewarming', code);
+                    this.scheduleRoundRearm(roundId, code);
                     return;
                 }
 
@@ -831,6 +977,53 @@ export class CarKingNativeFirstSpeechController {
                         : state === 'error'
                             ? 'Microphone needs attention.'
                             : 'Microphone ready.',
+        });
+    }
+
+    private enqueueOperation<T>(operation: () => Promise<T>) {
+        const queuedOperation = this.operationChain.then(operation, operation);
+        this.operationChain = queuedOperation.then(
+            () => undefined,
+            () => undefined,
+        );
+
+        return queuedOperation;
+    }
+
+    private scheduleRoundRearm(roundId: string, reason: string) {
+        if (!this.gateOpen || this.activeRoundId !== roundId || !this.activeSessionOptions) {
+            return;
+        }
+
+        if (this.rearmInFlightRoundId === roundId) {
+            return;
+        }
+
+        this.rearmInFlightRoundId = roundId;
+        void this.enqueueOperation(async () => {
+            try {
+                if (!this.gateOpen || this.activeRoundId !== roundId || !this.activeSessionOptions) {
+                    return;
+                }
+
+                this.setState('prewarming', `${reason}-rearm`);
+                await this.engine.startSession(this.activeSessionOptions, this.createEngineEvents(roundId));
+
+                if (this.gateOpen && this.activeRoundId === roundId) {
+                    this.setState('listening', `${reason}-rearmed`);
+                    this.flushBufferedSnapshots();
+                }
+            } catch (error) {
+                this.emitError(
+                    'speech-rearm-failed',
+                    error instanceof Error ? error.message : 'Speech session failed to rearm.',
+                );
+                this.setState('error', 'speech-rearm-failed');
+            } finally {
+                if (this.rearmInFlightRoundId === roundId) {
+                    this.rearmInFlightRoundId = null;
+                }
+            }
         });
     }
 }

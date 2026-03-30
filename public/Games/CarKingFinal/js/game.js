@@ -88,7 +88,7 @@ class CarGuessingGame {
         this.startSequenceCountdownMs = 4000;
         this.startSequenceGoHoldMs = 500;
         this.currentQuestionToken = 0;
-        this.questionPreArmLeadMs = 350;
+        this.questionPreArmLeadMs = 700;
         this.answerWindowMs = 15000;
         this.startSequence = {
             token: 0,
@@ -205,7 +205,7 @@ class CarGuessingGame {
             roundId,
             language: 'en-US',
             partialResults: true,
-            silenceMs: 1100,
+            silenceMs: 1800,
             prewarmLeadMs: this.questionPreArmLeadMs,
             contextualPhrases: this.buildSpeechContextualPhrasesForCar()
         };
