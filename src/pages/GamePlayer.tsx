@@ -485,7 +485,7 @@ const GamePlayer: React.FC = () => {
                         void controller.stop();
                         return;
                     case 'abort':
-                        void controller.abort();
+                        void controller.abort(message.options);
                         return;
                     default:
                         return;

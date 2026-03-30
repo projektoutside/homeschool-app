@@ -92,6 +92,7 @@ class NativeSpeechEngine implements SpeechEngineController {
     private readyForNextSessionPromise: Promise<void> | null = null;
     private resolveReadyForNextSession: (() => void) | null = null;
     private pendingIdleFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    private continuousHotMic = false;
 
     async initialize() {
         if (this.initialized) {
@@ -133,6 +134,7 @@ class NativeSpeechEngine implements SpeechEngineController {
         this.lastSnapshot = null;
         this.pendingStop = false;
         this.clearPendingIdleFallback();
+        this.continuousHotMic = Boolean(options.continuousHotMic);
 
         const permission = await SpeechRecognition.requestPermissions()
             .catch(() => SpeechRecognition.checkPermissions())
@@ -145,6 +147,10 @@ class NativeSpeechEngine implements SpeechEngineController {
 
         events.onStateChange('prewarming', 'native-prewarm');
 
+        if (this.continuousHotMic) {
+            await SpeechRecognition.setPTTState({ held: true }).catch(() => undefined);
+        }
+
         await SpeechRecognition.start({
             language: options.language || 'en-US',
             maxResults: 5,
@@ -152,13 +158,16 @@ class NativeSpeechEngine implements SpeechEngineController {
             allowForSilence: Math.max(options.silenceMs ?? 1100, 300),
             useOnDeviceRecognition: Boolean(this.availability.onDevice),
             addPunctuation: true,
-            continuousPTT: false,
+            continuousPTT: this.continuousHotMic,
             popup: false,
         });
     }
 
     async stopSession() {
         this.beginPendingStop();
+        if (this.continuousHotMic) {
+            await SpeechRecognition.setPTTState({ held: false }).catch(() => undefined);
+        }
         const snapshot = await SpeechRecognition.getLastPartialResult().catch(() => null);
         if (snapshot?.available) {
             const nextSnapshot = createTranscriptSnapshot(snapshot.matches || [], snapshot.text || '', true, false);
@@ -168,12 +177,17 @@ class NativeSpeechEngine implements SpeechEngineController {
 
         await SpeechRecognition.stop().catch(() => SpeechRecognition.forceStop({ timeout: 550 }).catch(() => undefined));
         await this.waitForReadyForNextSession(2200);
+        this.continuousHotMic = false;
     }
 
     async abortSession() {
         this.beginPendingStop();
+        if (this.continuousHotMic) {
+            await SpeechRecognition.setPTTState({ held: false }).catch(() => undefined);
+        }
         await SpeechRecognition.forceStop({ timeout: 250 }).catch(() => undefined);
         await this.waitForReadyForNextSession(1800);
+        this.continuousHotMic = false;
     }
 
     async dispose() {
@@ -187,6 +201,7 @@ class NativeSpeechEngine implements SpeechEngineController {
         this.nativeReady = true;
         this.clearPendingIdleFallback();
         this.resolvePendingReady();
+        this.continuousHotMic = false;
     }
 
     private async attachListeners() {
@@ -196,9 +211,11 @@ class NativeSpeechEngine implements SpeechEngineController {
 
         this.listenerHandles = await Promise.all([
             SpeechRecognition.addListener('partialResults', (event) => {
+                const latestMatch = event.matches?.[0] || '';
+                const accumulatedText = event.accumulatedText || event.accumulated || '';
                 const nextSnapshot = createTranscriptSnapshot(
-                    [...(event.matches || []), event.accumulatedText || event.accumulated || ''],
-                    event.accumulatedText || event.accumulated || event.matches?.[0] || '',
+                    [latestMatch, ...(event.matches || []), accumulatedText],
+                    latestMatch || accumulatedText,
                     false,
                     Boolean(event.forced),
                 );
@@ -649,6 +666,7 @@ export class CarKingNativeFirstSpeechController {
     private activeSessionOptions: SpeechSessionOptions | null = null;
     private operationChain: Promise<void> = Promise.resolve();
     private rearmInFlightRoundId: string | null = null;
+    private engineSessionActive = false;
 
     constructor(postEvent: PostEvent) {
         this.postEvent = postEvent;
@@ -711,21 +729,22 @@ export class CarKingNativeFirstSpeechController {
         return this.enqueueOperation(() => this.stopInternal());
     }
 
-    async abort() {
-        return this.enqueueOperation(() => this.abortInternal());
+    async abort(options?: SpeechSessionOptions) {
+        return this.enqueueOperation(() => this.abortInternal(options));
     }
 
     async dispose() {
         await this.enqueueOperation(async () => {
-            await this.abortInternal();
+            await this.abortInternal({ keepAlive: false });
             await this.engine.dispose().catch(() => undefined);
             this.initialized = false;
+            this.engineSessionActive = false;
         });
     }
 
     private async prewarmInternal(options?: SpeechSessionOptions) {
-        const sessionOptions = this.requireOptions(options);
         await this.ensureReady();
+        const sessionOptions = this.requireOptions(options);
 
         if (!this.currentAvailability.available) {
             this.emitError('speech-unavailable', this.currentAvailability.message || 'Speech recognition is unavailable.');
@@ -734,6 +753,14 @@ export class CarKingNativeFirstSpeechController {
 
         if (this.activeRoundId && this.activeRoundId !== sessionOptions.roundId) {
             await this.abortInternal();
+        }
+
+        if (sessionOptions.continuousHotMic && this.engineSessionActive && this.activeRoundId === sessionOptions.roundId) {
+            this.activeSessionOptions = sessionOptions;
+            this.gateOpen = false;
+            this.bufferedSnapshots = [];
+            this.setState('prewarming', 'prewarm-hot-mic');
+            return true;
         }
 
         if (this.activeRoundId === sessionOptions.roundId && this.currentState !== 'idle' && this.currentState !== 'error') {
@@ -749,6 +776,7 @@ export class CarKingNativeFirstSpeechController {
 
         try {
             await this.engine.startSession(sessionOptions, this.createEngineEvents(sessionOptions.roundId));
+            this.engineSessionActive = true;
             return true;
         } catch (error) {
             this.emitError('speech-prewarm-failed', error instanceof Error ? error.message : 'Speech prewarm failed.');
@@ -758,8 +786,8 @@ export class CarKingNativeFirstSpeechController {
     }
 
     private async startInternal(options?: SpeechSessionOptions) {
-        const sessionOptions = this.requireOptions(options);
         await this.ensureReady();
+        const sessionOptions = this.requireOptions(options);
 
         if (!this.currentAvailability.available) {
             this.emitError('speech-unavailable', this.currentAvailability.message || 'Speech recognition is unavailable.');
@@ -799,11 +827,20 @@ export class CarKingNativeFirstSpeechController {
         this.activeRoundId = null;
         this.activeSessionOptions = null;
         this.bufferedSnapshots = [];
+        this.engineSessionActive = false;
         this.setState('idle', 'user-stop');
     }
 
-    private async abortInternal() {
+    private async abortInternal(options?: Partial<SpeechSessionOptions>) {
         if (!this.initialized) {
+            return;
+        }
+
+        if (options?.keepAlive && this.engineSessionActive && this.activeSessionOptions?.continuousHotMic) {
+            this.gateOpen = false;
+            this.bufferedSnapshots = [];
+            this.rearmInFlightRoundId = null;
+            this.setState('idle', 'round-paused');
             return;
         }
 
@@ -813,6 +850,7 @@ export class CarKingNativeFirstSpeechController {
         await this.engine.abortSession().catch(() => undefined);
         this.activeRoundId = null;
         this.activeSessionOptions = null;
+        this.engineSessionActive = false;
         this.setState('idle', 'user-abort');
     }
 
@@ -828,6 +866,7 @@ export class CarKingNativeFirstSpeechController {
             partialResults: true,
             silenceMs: 1800,
             prewarmLeadMs: 700,
+            continuousHotMic: this.currentAvailability.kind === 'native',
             ...options,
             contextualPhrases,
         };
@@ -844,6 +883,17 @@ export class CarKingNativeFirstSpeechController {
             onStateChange: (state, reason) => {
                 if (roundId !== this.activeRoundId) {
                     return;
+                }
+
+                if (this.activeSessionOptions?.continuousHotMic) {
+                    if (state === 'idle' && this.gateOpen) {
+                        return;
+                    }
+
+                    if (state === 'prewarming' && this.gateOpen) {
+                        this.setState('listening', reason || 'engine-ready');
+                        return;
+                    }
                 }
 
                 if (state === 'idle' && this.gateOpen) {
@@ -876,6 +926,13 @@ export class CarKingNativeFirstSpeechController {
             onError: (code, message) => {
                 if (roundId !== this.activeRoundId) {
                     return;
+                }
+
+                if (this.activeSessionOptions?.continuousHotMic) {
+                    const recoverableCodes = new Set(['NO_MATCH', 'SPEECH_TIMEOUT']);
+                    if (recoverableCodes.has(code)) {
+                        return;
+                    }
                 }
 
                 if (this.gateOpen && code !== 'permission-denied') {
@@ -913,6 +970,11 @@ export class CarKingNativeFirstSpeechController {
 
     private flushBufferedSnapshots() {
         if (!this.gateOpen || !this.bufferedSnapshots.length) {
+            return;
+        }
+
+        if (this.activeSessionOptions?.continuousHotMic) {
+            this.bufferedSnapshots = [];
             return;
         }
 

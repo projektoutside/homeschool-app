@@ -13,6 +13,8 @@ export interface SpeechSessionOptions {
     partialResults?: boolean;
     silenceMs?: number;
     prewarmLeadMs?: number;
+    continuousHotMic?: boolean;
+    keepAlive?: boolean;
 }
 
 export interface CarKingSpeechControlMessage {

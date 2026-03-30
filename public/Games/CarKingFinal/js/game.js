@@ -77,6 +77,7 @@ class CarGuessingGame {
         this.hostUserId = null;
         this.hostSpeechAvailable = false;
         this.hostSpeechEngine = 'unsupported';
+        this.hostSpeechSessionId = null;
         this.hostSpeechRoundId = null;
         this.hostSpeechLastOptions = null;
         this.hostSpeechSupportsLocalProcessing = false;
@@ -200,15 +201,28 @@ class CarGuessingGame {
     }
 
     buildHostedSpeechSessionOptions() {
-        const roundId = `${this.currentQuestionToken}:${this.currentCar?.name || 'car'}`;
+        const roundId = this.getHostedSpeechSessionId();
         return {
             roundId,
             language: 'en-US',
             partialResults: true,
             silenceMs: 1800,
             prewarmLeadMs: this.questionPreArmLeadMs,
+            continuousHotMic: this.hostSpeechEngine === 'native',
             contextualPhrases: this.buildSpeechContextualPhrasesForCar()
         };
+    }
+
+    getHostedSpeechSessionId() {
+        if (!this.hostSpeechSessionId) {
+            this.hostSpeechSessionId = `host-session:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        return this.hostSpeechSessionId;
+    }
+
+    clearHostedSpeechSessionId() {
+        this.hostSpeechSessionId = null;
     }
 
     postSpeechControlToHost(command, options = undefined) {
@@ -1382,6 +1396,7 @@ class CarGuessingGame {
                 await this.refreshMicrophones(false);
                 await this.warmStartRecognition();
             } else {
+                this.getHostedSpeechSessionId();
                 this.setMicState('ready');
             }
         }
@@ -2416,7 +2431,11 @@ class CarGuessingGame {
     }
 
     // "Close Gate" - Hide Visuals
-    stopListening() {
+    stopListening(options = {}) {
+        const {
+            preserveHostSession = this.isHostSpeechEnabled() && this.isGameRunning
+        } = options;
+
         this.isListeningForAnswer = false;
         this.isAnswerAcceptanceOpen = false;
         this.currentQuestionToken += 1;
@@ -2437,9 +2456,20 @@ class CarGuessingGame {
         }
 
         if (this.isHostSpeechEnabled()) {
-            this.postSpeechControlToHost('abort', this.hostSpeechLastOptions);
+            const hostControlOptions = this.hostSpeechSessionId
+                ? {
+                    ...(this.hostSpeechLastOptions || this.buildHostedSpeechSessionOptions()),
+                    roundId: this.hostSpeechSessionId,
+                    keepAlive: preserveHostSession
+                }
+                : this.hostSpeechLastOptions;
+
+            this.postSpeechControlToHost(preserveHostSession ? 'abort' : 'stop', hostControlOptions);
             this.hostSpeechRoundId = null;
             this.hostSpeechLastOptions = null;
+            if (!preserveHostSession) {
+                this.clearHostedSpeechSessionId();
+            }
         }
 
         if (this.recognition) {
