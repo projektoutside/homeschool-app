@@ -30067,8 +30067,10 @@ const MYSTERY_REVEAL_PROFILE_VERSION = '2026-03-21-41';
         if (!homepageHostLoaderEnabled) {
             scheduleDailyLunchboxLayoutUpdate({ afterPaint: true });
         }
-        installMysteryRevealDebugHooks();
-        void ensureMysteryDeviceTiltPermission();
+        if (!homepageHostLoaderEnabled) {
+            installMysteryRevealDebugHooks();
+            void ensureMysteryDeviceTiltPermission();
+        }
         initHomePageMusicController();
         initBackgroundMediaController();
         if (homepageHostLoaderEnabled) {

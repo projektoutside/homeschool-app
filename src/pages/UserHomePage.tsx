@@ -65,7 +65,6 @@ const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
 const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
 const HOME_PAGE_LOADER_POINTS_REWARD = 10;
 const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 7000;
-const HOME_PAGE_BOOT_FALLBACK_TARGET_MS = HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS;
 
 let activeHomePageBootStartedAtMs: number | null = null;
 
@@ -208,7 +207,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [dailyLunchboxClaimExpiresAtByUser, setDailyLunchboxClaimExpiresAtByUser] = useState<Record<string, number | null>>({});
   const [dailyLunchboxClaimPendingByUser, setDailyLunchboxClaimPendingByUser] = useState<Record<string, boolean>>({});
   const [dailyLunchboxClockTick, setDailyLunchboxClockTick] = useState(() => Date.now());
-  const [loaderRewardExitHoldActive, setLoaderRewardExitHoldActive] = useState(false);
   const [loaderRewardAwardState, setLoaderRewardAwardState] = useState(() => ({
     userId: currentUserId,
     confirmedTotalPoints: 0,
@@ -254,10 +252,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       ? loaderRewardAwardState.confirmedTotalPoints
       : 0,
   );
-  const [loaderMinimumDurationMs] = useState(() => {
-    const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
-    return Math.max(0, HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS - elapsedMs);
-  });
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
   const iframeRuntimeActive = isActive && !loaderVisible;
   const iframeLoadedState = iframeLoaded;
@@ -324,14 +318,14 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [onSummonNavigationLockChange, onSummonSkipVisibilityChange]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !iframeRuntimeActive) {
       return undefined;
     }
     const intervalId = window.setInterval(() => {
       setDailyLunchboxClockTick(Date.now());
     }, 1000);
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [iframeRuntimeActive]);
 
   const postTiltBridgeMessage = useCallback((payload: Record<string, unknown>) => {
     const target = iframeRef.current?.contentWindow;
@@ -436,7 +430,9 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
             result.totalPoints,
           ),
         }));
-        syncHomepagePointsSnapshotToIframe(result.totalPoints, result.stars);
+        if (iframeRuntimeActive) {
+          syncHomepagePointsSnapshotToIframe(result.totalPoints, result.stars);
+        }
         return true;
       }
 
@@ -460,7 +456,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     } catch {
       return false;
     }
-  }, [awardPoints, currentUserId, syncHomepagePointsSnapshotToIframe]);
+  }, [awardPoints, currentUserId, iframeRuntimeActive, syncHomepagePointsSnapshotToIframe]);
 
   const syncTiltBridgeStateToIframe = useCallback(() => {
     const bridgeState = tiltBridgeStateRef.current;
@@ -479,8 +475,11 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [user?.id]);
 
   useEffect(() => {
+    if (!iframeLoadedState || loaderVisible) {
+      return;
+    }
     syncPendingSummonRecoveryToIframe();
-  }, [syncPendingSummonRecoveryToIframe]);
+  }, [iframeLoadedState, loaderVisible, syncPendingSummonRecoveryToIframe]);
 
   useEffect(() => {
     if (!loaderVisible || !iframeLoadedState || bootReadyReceivedState || bootFallbackReadyState) {
@@ -488,7 +487,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     }
 
     const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
-    const remainingMs = Math.max(0, HOME_PAGE_BOOT_FALLBACK_TARGET_MS - elapsedMs);
+    const remainingMs = Math.max(0, HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS - elapsedMs);
     const timeoutId = window.setTimeout(() => {
       setBootFallbackReady(true);
     }, remainingMs);
@@ -525,8 +524,11 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [iframeRuntimeActive, soundSettings]);
 
   useEffect(() => {
+    if (loaderVisible) {
+      return;
+    }
     syncHomepagePointsToIframe();
-  }, [syncHomepagePointsToIframe]);
+  }, [loaderVisible, syncHomepagePointsToIframe]);
 
   useEffect(() => {
     const bridgeState = tiltBridgeStateRef.current;
@@ -616,6 +618,9 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       const type = (event.data as { type?: string }).type;
       if (type === HOME_PAGE_BOOT_READY_MESSAGE) {
         setBootReadyReceived(true);
+        return;
+      }
+      if (loaderVisible && type !== HOME_PAGE_POINTS_SYNC_REQUEST_MESSAGE) {
         return;
       }
       if (type === HOME_PAGE_SUMMON_NAV_LOCK_MESSAGE) {
@@ -893,6 +898,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     syncTiltBridgeStateToIframe,
     totalPoints,
     isActive,
+    loaderVisible,
     onSummonNavigationLockChange,
     onSummonSkipVisibilityChange,
     user?.id,
@@ -916,13 +922,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       return;
     }
     if (shouldHoldStoredSnapshot) {
-      console.info('[HomepageHost] Holding fresher local catalog snapshot until the live query contains the pending mystery-test prop.', {
-        pendingPropKey: pendingMysteryLaunch?.propKey ?? null,
-        requiredCatalogRevision: pendingMysteryLaunch?.requiredCatalogRevision ?? null,
-        fetchedSnapshotUpdatedAt: snapshot.updatedAt || null,
-        fetchedSnapshotEmpty: snapshot.categories.length === 0 && snapshot.props.length === 0,
-        storedSnapshotUpdatedAt: storedSnapshot?.updatedAt || null,
-      });
       return;
     }
     persistHomepageCatalogSnapshot(snapshot);
@@ -950,10 +949,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     if (!snapshotContainsPropKey(snapshot, pendingPropKey)) {
       return;
     }
-    console.info('[HomepageHost] Live catalog query now contains the pending mystery-test prop.', {
-      pendingPropKey,
-      snapshotUpdatedAt: snapshot.updatedAt || null,
-    });
     const frameId = window.requestAnimationFrame(() => {
       setPendingMysteryLaunch(null);
     });
@@ -1072,10 +1067,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   return (
     <div className="os-desktop-shell">
       <section className="os-icon-area user-home-os-area" aria-label="Homepage app">
-        <div
-          className="user-home-app-shell"
-          data-loader-exit-hold={loaderRewardExitHoldActive ? 'true' : 'false'}
-        >
+        <div className="user-home-app-shell">
           {loaderVisible && (
             <div className="user-home-app-loading">
               <HomePageIntroLoader
@@ -1084,9 +1076,9 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
                 assetSrc={loaderRewardAssetPath}
                 totalPoints={loaderRewardDisplayTotalPoints}
                 rewardPoints={HOME_PAGE_LOADER_POINTS_REWARD}
-                minimumDurationMs={loaderMinimumDurationMs}
+                bootStartedAtMs={bootSessionStartedAtMs}
+                bootTargetDurationMs={HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS}
                 onCollect={handleLoaderRewardCollect}
-                onExitHoldChange={setLoaderRewardExitHoldActive}
               />
             </div>
           )}
