@@ -3,19 +3,6 @@ export const GAME_POINTS_EARNED_MESSAGE = 'LAHS_POINTS_EARNED';
 export const GAME_POINTS_ACK_MESSAGE = 'LAHS_POINTS_ACK';
 export const RESERVED_STARS_TOTAL = 0;
 
-export const SINGLE_PLAYER_POINTS_GAME_IDS = new Set<string>([
-  'MathPuzzle',
-  'preschool-fun-game',
-  'word-puzzle-game',
-  'math-1768955732393-game',
-  'math-quiz-it-polygon',
-  'math-car-king',
-  'math-analog-clock-game-v2',
-  'math-farmers-market-frenzy',
-  'states-champion',
-  'many-birds-one-stone',
-]);
-
 export interface GamePointsContextMessage {
   type: typeof GAME_POINTS_CONTEXT_MESSAGE;
   gameId: string;
@@ -64,10 +51,6 @@ export interface PointsAwardResult {
   stars: number;
   reason?: string | null;
 }
-
-export const isSinglePlayerPointsGameId = (value: string | null | undefined): value is string => {
-  return Boolean(value && SINGLE_PLAYER_POINTS_GAME_IDS.has(value));
-};
 
 export const sanitizePointValue = (value: unknown): number => {
   const numeric = Number(value);
