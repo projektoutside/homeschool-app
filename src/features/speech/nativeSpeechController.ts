@@ -667,6 +667,7 @@ export class CarKingNativeFirstSpeechController {
     private operationChain: Promise<void> = Promise.resolve();
     private rearmInFlightRoundId: string | null = null;
     private engineSessionActive = false;
+    private captureHeld = false;
 
     constructor(postEvent: PostEvent) {
         this.postEvent = postEvent;
@@ -739,6 +740,7 @@ export class CarKingNativeFirstSpeechController {
             await this.engine.dispose().catch(() => undefined);
             this.initialized = false;
             this.engineSessionActive = false;
+            this.captureHeld = false;
         });
     }
 
@@ -755,34 +757,19 @@ export class CarKingNativeFirstSpeechController {
             await this.abortInternal();
         }
 
-        if (sessionOptions.continuousHotMic && this.engineSessionActive && this.activeRoundId === sessionOptions.roundId) {
-            this.activeSessionOptions = sessionOptions;
-            this.gateOpen = false;
-            this.bufferedSnapshots = [];
-            this.setState('prewarming', 'prewarm-hot-mic');
-            return true;
-        }
-
-        if (this.activeRoundId === sessionOptions.roundId && this.currentState !== 'idle' && this.currentState !== 'error') {
-            this.activeSessionOptions = sessionOptions;
-            return true;
+        if (this.engineSessionActive) {
+            await this.engine.abortSession().catch(() => undefined);
+            this.engineSessionActive = false;
         }
 
         this.activeRoundId = sessionOptions.roundId;
         this.activeSessionOptions = sessionOptions;
         this.gateOpen = false;
         this.bufferedSnapshots = [];
+        this.captureHeld = false;
+        this.rearmInFlightRoundId = null;
         this.setState('prewarming', 'prewarm');
-
-        try {
-            await this.engine.startSession(sessionOptions, this.createEngineEvents(sessionOptions.roundId));
-            this.engineSessionActive = true;
-            return true;
-        } catch (error) {
-            this.emitError('speech-prewarm-failed', error instanceof Error ? error.message : 'Speech prewarm failed.');
-            this.setState('error', 'prewarm-failed');
-            return false;
-        }
+        return true;
     }
 
     private async startInternal(options?: SpeechSessionOptions) {
@@ -803,12 +790,27 @@ export class CarKingNativeFirstSpeechController {
 
         this.activeSessionOptions = sessionOptions;
 
-        if (this.gateOpen && this.activeRoundId === sessionOptions.roundId) {
+        if (this.gateOpen && this.activeRoundId === sessionOptions.roundId && this.captureHeld) {
             return;
         }
 
         this.activeRoundId = sessionOptions.roundId;
         this.gateOpen = true;
+        this.captureHeld = true;
+
+        if (!this.engineSessionActive) {
+            try {
+                await this.engine.startSession(sessionOptions, this.createEngineEvents(sessionOptions.roundId));
+                this.engineSessionActive = true;
+            } catch (error) {
+                this.captureHeld = false;
+                this.gateOpen = false;
+                this.emitError('speech-start-failed', error instanceof Error ? error.message : 'Speech start failed.');
+                this.setState('error', 'speech-start-failed');
+                return;
+            }
+        }
+
         this.setState('listening', 'gate-open');
         this.flushBufferedSnapshots();
     }
@@ -820,6 +822,7 @@ export class CarKingNativeFirstSpeechController {
 
         this.gateOpen = false;
         this.rearmInFlightRoundId = null;
+        this.captureHeld = false;
         this.setState('stopping', 'user-stop');
         await this.engine.stopSession().catch((error) => {
             this.emitError('speech-stop-failed', error instanceof Error ? error.message : 'Speech stop failed.');
@@ -836,10 +839,15 @@ export class CarKingNativeFirstSpeechController {
             return;
         }
 
-        if (options?.keepAlive && this.engineSessionActive && this.activeSessionOptions?.continuousHotMic) {
+        if (options?.keepAlive) {
             this.gateOpen = false;
             this.bufferedSnapshots = [];
             this.rearmInFlightRoundId = null;
+            this.captureHeld = false;
+            if (this.engineSessionActive) {
+                await this.engine.abortSession().catch(() => undefined);
+                this.engineSessionActive = false;
+            }
             this.setState('idle', 'round-paused');
             return;
         }
@@ -847,6 +855,7 @@ export class CarKingNativeFirstSpeechController {
         this.gateOpen = false;
         this.rearmInFlightRoundId = null;
         this.bufferedSnapshots = [];
+        this.captureHeld = false;
         await this.engine.abortSession().catch(() => undefined);
         this.activeRoundId = null;
         this.activeSessionOptions = null;
@@ -883,6 +892,15 @@ export class CarKingNativeFirstSpeechController {
             onStateChange: (state, reason) => {
                 if (roundId !== this.activeRoundId) {
                     return;
+                }
+
+                if (state === 'idle') {
+                    this.captureHeld = false;
+                    if (!this.gateOpen) {
+                        this.engineSessionActive = false;
+                    }
+                } else if (state === 'listening') {
+                    this.captureHeld = true;
                 }
 
                 if (this.activeSessionOptions?.continuousHotMic) {
@@ -1033,7 +1051,7 @@ export class CarKingNativeFirstSpeechController {
             message: state === 'listening'
                 ? 'Listening... say the car name.'
                 : state === 'prewarming'
-                    ? 'Get ready... the microphone is opening early.'
+                    ? 'Get ready... listening starts right after the question.'
                     : state === 'stopping'
                         ? 'Wrapping up your answer.'
                         : state === 'error'
@@ -1070,12 +1088,16 @@ export class CarKingNativeFirstSpeechController {
 
                 this.setState('prewarming', `${reason}-rearm`);
                 await this.engine.startSession(this.activeSessionOptions, this.createEngineEvents(roundId));
+                this.engineSessionActive = true;
+                this.captureHeld = true;
 
                 if (this.gateOpen && this.activeRoundId === roundId) {
                     this.setState('listening', `${reason}-rearmed`);
                     this.flushBufferedSnapshots();
                 }
             } catch (error) {
+                this.engineSessionActive = false;
+                this.captureHeld = false;
                 this.emitError(
                     'speech-rearm-failed',
                     error instanceof Error ? error.message : 'Speech session failed to rearm.',

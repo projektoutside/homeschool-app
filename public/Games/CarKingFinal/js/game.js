@@ -90,6 +90,10 @@ class CarGuessingGame {
         this.startSequenceGoHoldMs = 500;
         this.currentQuestionToken = 0;
         this.questionPreArmLeadMs = 700;
+        this.questionPromptTailGuardMs = 150;
+        this.questionPromptTailGuardTimer = null;
+        this.questionSpeechPhase = 'idle';
+        this.debugSpeechTiming = /[?&]debugSpeech=1(?:&|$)/i.test(window.location.search);
         this.answerWindowMs = 15000;
         this.startSequence = {
             token: 0,
@@ -223,6 +227,61 @@ class CarGuessingGame {
 
     clearHostedSpeechSessionId() {
         this.hostSpeechSessionId = null;
+    }
+
+    logSpeechTiming(event, details = {}) {
+        if (!this.debugSpeechTiming) return;
+
+        console.debug(`[CarKingSpeechTiming] ${event}`, {
+            at: Math.round(performance.now()),
+            phase: this.questionSpeechPhase,
+            ...details
+        });
+    }
+
+    clearQuestionPromptTailGuard() {
+        if (this.questionPromptTailGuardTimer) {
+            clearTimeout(this.questionPromptTailGuardTimer);
+            this.questionPromptTailGuardTimer = null;
+        }
+    }
+
+    setQuestionSpeechPhase(phase) {
+        this.questionSpeechPhase = phase;
+        this.logSpeechTiming('phase', { nextPhase: phase });
+    }
+
+    prepareSpeechForAnswer(reason = 'question-prearm') {
+        if (this.inputMode !== 'voice') return;
+
+        this.clearQuestionPromptTailGuard();
+        this.setQuestionSpeechPhase('speech-prepared');
+
+        if (!this.isHostSpeechEnabled()) {
+            return;
+        }
+
+        this.hostSpeechLastOptions = this.buildHostedSpeechSessionOptions();
+        this.hostSpeechRoundId = this.hostSpeechLastOptions.roundId;
+        this.postSpeechControlToHost('prewarm', this.hostSpeechLastOptions);
+        this.logSpeechTiming('prewarm-posted', {
+            reason,
+            roundId: this.hostSpeechLastOptions.roundId,
+            engine: this.hostSpeechEngine
+        });
+    }
+
+    scheduleListeningGateOpen(questionToken, reason = 'question-ended', delayMs = this.questionPromptTailGuardMs) {
+        if (this.inputMode !== 'voice') return;
+
+        this.clearQuestionPromptTailGuard();
+        this.logSpeechTiming('gate-scheduled', { questionToken, reason, delayMs });
+        this.questionPromptTailGuardTimer = setTimeout(() => {
+            this.questionPromptTailGuardTimer = null;
+            if (questionToken !== this.currentQuestionToken) return;
+            if (this.inputMode !== 'voice') return;
+            this.openListeningGate(reason);
+        }, Math.max(delayMs, 0));
     }
 
     postSpeechControlToHost(command, options = undefined) {
@@ -1062,6 +1121,10 @@ class CarGuessingGame {
 
         const match = this.getGuessMatchResult(snapshot.candidates);
         if (match.matched) {
+            this.logSpeechTiming('accepted-transcript', {
+                source: 'host',
+                transcript: formatted || this.currentCar.name
+            });
             if (input) {
                 input.value = this.currentCar.name;
             }
@@ -1677,6 +1740,10 @@ class CarGuessingGame {
             const match = this.getGuessMatchResult(speechSnapshot.candidates);
             if (match.matched) {
                 console.log("✅ Keyword Detected! Immediate Submit.");
+                this.logSpeechTiming('accepted-transcript', {
+                    source: 'browser',
+                    transcript: formatted || this.currentCar.name
+                });
                 if (input) {
                     input.value = this.currentCar.name;
                 }
@@ -2351,6 +2418,8 @@ class CarGuessingGame {
 
     openListeningGate(reason = 'question-ended') {
         if (this.inputMode !== 'voice') return;
+        this.clearQuestionPromptTailGuard();
+        this.logSpeechTiming('gate-open', { reason });
 
         if (!this.isListeningForAnswer) {
             this.startListening({ deferAcceptance: false, reason });
@@ -2360,6 +2429,7 @@ class CarGuessingGame {
         if (this.isAnswerAcceptanceOpen) return;
 
         this.isAnswerAcceptanceOpen = true;
+        this.setQuestionSpeechPhase('speech-live');
         this.lastSpeechResultAt = Date.now();
         this.setMicState('listening');
         this.updateListeningTranscript('Listening... say the car name.');
@@ -2390,23 +2460,29 @@ class CarGuessingGame {
         this.isListeningForAnswer = true;
         this.isAnswerAcceptanceOpen = !deferAcceptance;
         this.clearPendingRecognitionRestart();
+        this.clearQuestionPromptTailGuard();
+        this.setQuestionSpeechPhase(this.isAnswerAcceptanceOpen ? 'speech-live' : 'speech-prepared');
         this.setMicState(deferAcceptance ? 'starting' : 'listening');
-        this.toggleMicVisuals(true);
-        this.hostSpeechLastOptions = this.buildHostedSpeechSessionOptions();
+        this.toggleMicVisuals(this.isAnswerAcceptanceOpen);
+        this.hostSpeechLastOptions = this.hostSpeechLastOptions || this.buildHostedSpeechSessionOptions();
         this.hostSpeechRoundId = this.hostSpeechLastOptions.roundId;
 
         const guessInput = document.getElementById('guessInput');
 
         if (guessInput) {
-            guessInput.placeholder = deferAcceptance ? "Get ready to answer..." : "Say the car name...";
             guessInput.value = "";
-            guessInput.focus();
+            if (this.isAnswerAcceptanceOpen) {
+                guessInput.placeholder = "Say the car name...";
+                guessInput.focus();
+            }
         }
 
-        this.updateListeningTranscript(deferAcceptance ? 'Get ready... the mic is opening early for you.' : 'Listening... say the car name.');
+        if (this.isAnswerAcceptanceOpen) {
+            this.updateListeningTranscript('Listening... say the car name.');
+        }
 
         if (this.voiceSystem?.setListeningMode) {
-            this.voiceSystem.setListeningMode(true);
+            this.voiceSystem.setListeningMode(this.isAnswerAcceptanceOpen);
         }
 
         if (hostedSpeech) {
@@ -2441,7 +2517,9 @@ class CarGuessingGame {
         this.currentQuestionToken += 1;
         this.clearPendingRecognitionRestart();
         this.clearAnswerTimers();
+        this.clearQuestionPromptTailGuard();
         this.releaseRecognitionStartLock();
+        this.setQuestionSpeechPhase('idle');
         this.setMicState('ready');
         this.toggleMicVisuals(false);
         this.stopMicHealthMonitor();
@@ -2815,14 +2893,16 @@ class CarGuessingGame {
         this.isProcessingGuess = false; // Reset lock
         document.getElementById('guessInput').disabled = false;
         this.clearAnswerTimers();
+        this.clearQuestionPromptTailGuard();
         this.isAnswerAcceptanceOpen = false;
+        this.setQuestionSpeechPhase('prompt-playing');
 
         const questionToken = ++this.currentQuestionToken;
 
         const beginVoiceWindow = () => {
             if (questionToken !== this.currentQuestionToken) return;
             if (this.inputMode !== 'voice') return;
-            this.openListeningGate('question-ended');
+            this.scheduleListeningGateOpen(questionToken, 'question-ended');
         };
 
         // Speak the question with natural variation
@@ -2830,20 +2910,22 @@ class CarGuessingGame {
             this.voiceSystem.setListeningMode(false);
             this.voiceSystem.sayQuestion({
                 readyLeadMs: this.questionPreArmLeadMs,
+                onPlaybackStart: () => {
+                    this.logSpeechTiming('playback-start', { questionToken });
+                },
                 onPlaybackReady: () => {
                     if (questionToken !== this.currentQuestionToken) return;
-                    this.startListening({
-                        deferAcceptance: true,
-                        reason: 'question-prearm'
-                    });
+                    this.logSpeechTiming('playback-ready', { questionToken });
+                    this.prepareSpeechForAnswer('question-prearm');
                 },
                 onPlaybackEnd: () => {
+                    this.logSpeechTiming('playback-end', { questionToken });
                     beginVoiceWindow();
                 }
             }).then(() => {
                 beginVoiceWindow();
             }).catch(() => {
-                beginVoiceWindow();
+                this.scheduleListeningGateOpen(questionToken, 'question-playback-failed', 0);
             });
             return;
         }
