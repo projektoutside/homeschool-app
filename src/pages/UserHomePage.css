@@ -26,7 +26,8 @@
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(2, 6, 23, 0.7);
+  background:
+    linear-gradient(180deg, #2f8df4 0%, #76c6ff 42%, #9fd957 64%, #28723a 100%);
 }
 
 @media (orientation: portrait) {
@@ -51,7 +52,7 @@
   width: 100%;
   height: 100%;
   border: 0;
-  background: #020617;
+  background: #77c7ff;
   opacity: 1;
   transition: opacity 180ms ease;
 }

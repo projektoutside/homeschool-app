@@ -5,7 +5,8 @@
   min-block-size: 100%;
   overflow: hidden;
   isolation: isolate;
-  background: #081225;
+  background:
+    linear-gradient(180deg, #2f8df4 0%, #76c6ff 42%, #9fd957 64%, #28723a 100%);
   color: #f8fbff;
   pointer-events: auto;
   touch-action: none;
@@ -23,10 +24,14 @@
 }
 
 .home-page-intro-loader__backdrop {
-  background-image: var(--home-page-intro-loader-background);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background-color: #77c7ff;
+  background-image:
+    var(--home-page-intro-loader-background, none),
+    linear-gradient(180deg, #2c8df4 0%, #78c9ff 44%, #a8db56 64%, #257238 100%),
+    linear-gradient(90deg, rgba(13, 78, 37, 0.34) 0%, rgba(13, 78, 37, 0) 24%, rgba(13, 78, 37, 0) 76%, rgba(13, 78, 37, 0.34) 100%);
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: cover, cover, cover;
   transform: scale(1.02);
 }
 
@@ -49,6 +54,7 @@
   inline-size: 100%;
   block-size: 100%;
   display: block;
+  background: transparent;
   cursor: pointer;
   touch-action: none;
   outline: none;

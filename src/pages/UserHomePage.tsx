@@ -64,7 +64,8 @@ const HOME_PAGE_MYSTERY_PULL_GAME_ID = 'homepage-mystery-box';
 const HOME_PAGE_MYSTERY_PULL_SESSION_PREFIX = 'homepage-mystery-box';
 const HOME_PAGE_LOADER_POINTS_GAME_ID = 'homepage-loader-coins';
 const HOME_PAGE_LOADER_POINTS_REWARD = 10;
-const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 7000;
+const HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS = 4000;
+const HOME_PAGE_IFRAME_BOOT_READY_FALLBACK_MS = 3000;
 
 let activeHomePageBootStartedAtMs: number | null = null;
 
@@ -185,6 +186,9 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const [bootSessionStartedAtMs] = useState(getActiveHomePageBootStartedAtMs);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedInitialBoot, setHasCompletedInitialBoot] = useState(false);
+  const [protectedLoaderWindowElapsed, setProtectedLoaderWindowElapsed] = useState(() => (
+    Math.max(0, Date.now() - bootSessionStartedAtMs) >= HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS
+  ));
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [bootReadyReceived, setBootReadyReceived] = useState(false);
   const [bootFallbackReady, setBootFallbackReady] = useState(false);
@@ -214,7 +218,6 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   const lastHandledSummonSkipRequestIdRef = useRef(0);
   const loaderPointsSessionIdRef = useRef(createGamePointsSessionId(HOME_PAGE_LOADER_POINTS_GAME_ID));
   const acceptedLoaderRewardIdsRef = useRef<Set<string>>(new Set());
-  const zoomLockIframes = useMemo(() => [iframeRef], []);
   const shouldHoldStoredSnapshot = useMemo(() => {
     if (isCatalogLoading) {
       return false;
@@ -253,11 +256,18 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       : 0,
   );
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
+  const shouldLoadHomepageIframe = hasCompletedInitialBoot || protectedLoaderWindowElapsed;
   const iframeRuntimeActive = isActive && !loaderVisible;
   const iframeLoadedState = iframeLoaded;
   const bootReadyReceivedState = bootReadyReceived;
   const bootFallbackReadyState = bootFallbackReady;
-  const bootCompletionRequested = iframeLoadedState && (bootReadyReceivedState || bootFallbackReadyState);
+  const bootCompletionRequested = protectedLoaderWindowElapsed
+    && iframeLoadedState
+    && (bootReadyReceivedState || bootFallbackReadyState);
+  const zoomLockIframes = useMemo(
+    () => (shouldLoadHomepageIframe ? [iframeRef] : []),
+    [shouldLoadHomepageIframe],
+  );
   const tiltBridgeStateRef = useRef<{
     permission: HomePageTiltPermissionState;
     listening: boolean;
@@ -272,6 +282,20 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
     loaderPointsSessionIdRef.current = createGamePointsSessionId(HOME_PAGE_LOADER_POINTS_GAME_ID);
     acceptedLoaderRewardIdsRef.current.clear();
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (protectedLoaderWindowElapsed) {
+      return;
+    }
+
+    const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
+    const remainingMs = Math.max(0, HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS - elapsedMs);
+    const timeoutId = window.setTimeout(() => {
+      setProtectedLoaderWindowElapsed(true);
+    }, remainingMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [bootSessionStartedAtMs, protectedLoaderWindowElapsed]);
 
   const dailyLunchboxClaimExpiresAt = useMemo(() => {
     if (!currentUserId) {
@@ -486,14 +510,12 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       return;
     }
 
-    const elapsedMs = Math.max(0, Date.now() - bootSessionStartedAtMs);
-    const remainingMs = Math.max(0, HOME_PAGE_LOADER_MIN_BOOT_DURATION_MS - elapsedMs);
     const timeoutId = window.setTimeout(() => {
       setBootFallbackReady(true);
-    }, remainingMs);
+    }, HOME_PAGE_IFRAME_BOOT_READY_FALLBACK_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [bootFallbackReadyState, bootReadyReceivedState, bootSessionStartedAtMs, iframeLoadedState, loaderVisible]);
+  }, [bootFallbackReadyState, bootReadyReceivedState, iframeLoadedState, loaderVisible]);
 
   useEffect(() => {
     if (!isActive) {
@@ -1055,8 +1077,8 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
   }, [iframeLoadedState, isActive, onBootStable, soundSettings]);
 
   useEffect(() => {
-    const iframe = iframeRef.current;
     return () => {
+      const iframe = iframeRef.current;
       teardownIframeElementWhenDisconnected(iframe, { reason: 'homepage-host-unmount' });
       if (iframeRef.current === iframe) {
         iframeRef.current = null;
@@ -1082,16 +1104,18 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
               />
             </div>
           )}
-          <iframe
-            ref={iframeRef}
-            src={launchPath}
-            title="Homepage App"
-            className={`user-home-app-frame ${loaderVisible ? 'is-loading' : ''}`}
-            allow="fullscreen; autoplay; microphone; camera; accelerometer; gyroscope"
-            allowFullScreen
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
-            onLoad={handleLoad}
-          />
+          {shouldLoadHomepageIframe && (
+            <iframe
+              ref={iframeRef}
+              src={launchPath}
+              title="Homepage App"
+              className={`user-home-app-frame ${loaderVisible ? 'is-loading' : ''}`}
+              allow="fullscreen; autoplay; microphone; camera; accelerometer; gyroscope"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
+              onLoad={handleLoad}
+            />
+          )}
         </div>
       </section>
     </div>

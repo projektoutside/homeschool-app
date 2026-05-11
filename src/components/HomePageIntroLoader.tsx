@@ -85,6 +85,7 @@ const HomePageIntroLoader: React.FC<HomePageIntroLoaderProps> = ({
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const boundsRef = useRef<StageBounds>({ width: 0, height: 0, dpr: 1, left: 0, top: 0 });
   const staticLayerRef = useRef<HTMLCanvasElement | null>(null);
+  const staticLayerMetricsRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
   const spriteSetRef = useRef<SpriteSet | null>(null);
   const xioImageRef = useRef<HTMLImageElement | null>(null);
   const tokensRef = useRef<RewardToken[]>([]);
@@ -140,7 +141,16 @@ const HomePageIntroLoader: React.FC<HomePageIntroLoaderProps> = ({
     };
 
     boundsRef.current = nextBounds;
-    staticLayerRef.current = buildStaticStageLayer(nextBounds);
+    const previousStaticLayerMetrics = staticLayerMetricsRef.current;
+    if (
+      !previousStaticLayerMetrics
+      || previousStaticLayerMetrics.width !== width
+      || previousStaticLayerMetrics.height !== height
+      || previousStaticLayerMetrics.dpr !== dpr
+    ) {
+      staticLayerRef.current = buildStaticStageLayer(nextBounds);
+      staticLayerMetricsRef.current = { width, height, dpr };
+    }
   }, []);
 
   const notifyTokenCollected = useCallback((token: RewardToken) => {
@@ -363,6 +373,7 @@ const HomePageIntroLoader: React.FC<HomePageIntroLoaderProps> = ({
       spriteSetRef.current = null;
       xioImageRef.current = null;
       staticLayerRef.current = null;
+      staticLayerMetricsRef.current = null;
     };
   }, []);
 
