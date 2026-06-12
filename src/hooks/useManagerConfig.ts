@@ -34,6 +34,22 @@ const buildScopedStorageKey = (baseKey: string, userId: string | null | undefine
   return userId ? `${baseKey}_${userId}` : baseKey;
 };
 
+const readLocalStorageValue = (key: string): string | null => {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeLocalStorageValue = (key: string, value: string): void => {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Ignore unavailable local storage; remote hydration still works for signed-in users.
+  }
+};
+
 const readStringArray = (value: unknown): string[] => {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim()).filter(Boolean)
@@ -299,12 +315,12 @@ export const useManagerConfig = ({ hydrateRemote = true }: UseManagerConfigOptio
 
     let nextConfig = buildDefaultConfig();
     for (const key of candidateKeys) {
-      const saved = window.localStorage.getItem(key);
+      const saved = readLocalStorageValue(key);
       if (!saved) continue;
 
       nextConfig = parseConfig(saved);
       if (key !== userScopedStorageKey) {
-        window.localStorage.setItem(userScopedStorageKey, JSON.stringify(nextConfig));
+        writeLocalStorageValue(userScopedStorageKey, JSON.stringify(nextConfig));
       }
       break;
     }
@@ -319,7 +335,7 @@ export const useManagerConfig = ({ hydrateRemote = true }: UseManagerConfigOptio
 
   useEffect(() => {
     if (!isHydratedFromStorage) return;
-    window.localStorage.setItem(userScopedStorageKey, JSON.stringify(config));
+    writeLocalStorageValue(userScopedStorageKey, JSON.stringify(config));
   }, [config, isHydratedFromStorage, userScopedStorageKey]);
 
   useEffect(() => {

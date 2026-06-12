@@ -105,20 +105,18 @@ returns boolean
 language sql
 stable
 as $$
+  -- Manager grants must come from app_metadata; user_metadata can be changed by clients.
   select (
     lower(
       coalesce(
         auth.jwt() -> 'app_metadata' ->> 'role',
-        auth.jwt() -> 'user_metadata' ->> 'role',
         ''
       )
     ) in ('manager', 'admin', 'owner')
     or lower(
       coalesce(
         auth.jwt() -> 'app_metadata' ->> 'is_manager',
-        auth.jwt() -> 'user_metadata' ->> 'is_manager',
         auth.jwt() -> 'app_metadata' ->> 'manager',
-        auth.jwt() -> 'user_metadata' ->> 'manager',
         'false'
       )
     ) in ('1', 'true', 'yes', 'on')

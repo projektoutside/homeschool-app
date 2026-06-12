@@ -5,6 +5,7 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 
 const CLASSROOM_EMBEDDED_STATE_START = '<!-- CLASSROOM_EMBEDDED_STATE_START -->';
 const CLASSROOM_EMBEDDED_STATE_END = '<!-- CLASSROOM_EMBEDDED_STATE_END -->';
+const MAX_JSON_BODY_BYTES = 256 * 1024;
 
 type ClassroomLayoutEntry = {
   left: number;
@@ -84,12 +85,93 @@ ${JSON.stringify(state, null, 2)}
   return indexHtml.replace(markerPattern, replacementBlock);
 };
 
-const readJsonBody = (req: Connect.IncomingMessage, onComplete: (body: string) => void) => {
+const isLoopbackHostname = (hostname: string): boolean => {
+  const normalized = hostname.toLowerCase();
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '[::1]' || normalized === '::1';
+};
+
+const getRequestHost = (req: Connect.IncomingMessage): string => {
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const host = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost;
+  return (host || req.headers.host || '').trim().toLowerCase();
+};
+
+const getRequestProtocol = (req: Connect.IncomingMessage): string => {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+  return (protocol || 'http').split(',')[0].trim().toLowerCase();
+};
+
+const isTrustedDevWriteRequest = (req: Connect.IncomingMessage): boolean => {
+  const host = getRequestHost(req);
+  if (!host) {
+    return false;
+  }
+
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      const expectedProtocol = getRequestProtocol(req);
+      return originUrl.protocol.replace(':', '') === expectedProtocol && originUrl.host.toLowerCase() === host;
+    } catch {
+      return false;
+    }
+  }
+
+  const fetchSite = typeof req.headers['sec-fetch-site'] === 'string' ? req.headers['sec-fetch-site'].toLowerCase() : '';
+  if (fetchSite === 'cross-site') {
+    return false;
+  }
+
+  try {
+    return isLoopbackHostname(new URL(`http://${host}`).hostname);
+  } catch {
+    return false;
+  }
+};
+
+const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(payload));
+};
+
+const readJsonBody = (
+  req: Connect.IncomingMessage,
+  res: ServerResponse,
+  onComplete: (body: string) => void,
+) => {
+  const contentType = typeof req.headers['content-type'] === 'string' ? req.headers['content-type'].toLowerCase() : '';
+  if (!contentType.includes('application/json')) {
+    sendJson(res, 415, { error: 'Expected an application/json request body.' });
+    return;
+  }
+
   let body = '';
+  let byteLength = 0;
+  let didReject = false;
+
   req.on('data', (chunk: Buffer | string) => {
-    body += chunk.toString();
+    if (didReject) {
+      return;
+    }
+
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    byteLength += buffer.byteLength;
+    if (byteLength > MAX_JSON_BODY_BYTES) {
+      didReject = true;
+      sendJson(res, 413, { error: 'Request body is too large.' });
+      return;
+    }
+
+    body += buffer.toString();
   });
   req.on('end', () => {
+    if (didReject || res.writableEnded) {
+      return;
+    }
+
     onComplete(body);
   });
 };
@@ -106,19 +188,22 @@ export const createContentManagerPlugin = (rootDir: string): Plugin => {
           return;
         }
 
-        readJsonBody(req, (body) => {
+        if (!isTrustedDevWriteRequest(req)) {
+          sendJson(res, 403, { error: 'Untrusted classroom state write request.' });
+          return;
+        }
+
+        readJsonBody(req, res, (body) => {
           try {
             if (!fs.existsSync(classroomIndexFile)) {
-              res.statusCode = 500;
-              res.end(JSON.stringify({ error: 'Classroom index file was not found.' }));
+              sendJson(res, 500, { error: 'Classroom index file was not found.' });
               return;
             }
 
             const payload = body ? JSON.parse(body) : {};
             const nextState = sanitizeClassroomEmbeddedState(payload?.state);
             if (!nextState) {
-              res.statusCode = 400;
-              res.end(JSON.stringify({ error: 'Invalid classroom state payload.' }));
+              sendJson(res, 400, { error: 'Invalid classroom state payload.' });
               return;
             }
 
@@ -126,13 +211,10 @@ export const createContentManagerPlugin = (rootDir: string): Plugin => {
             const updatedHtml = injectClassroomStateIntoIndex(currentHtml, nextState);
             fs.writeFileSync(classroomIndexFile, updatedHtml, 'utf-8');
 
-            res.statusCode = 200;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: true, state: nextState }));
+            sendJson(res, 200, { success: true, state: nextState });
           } catch (error) {
             console.error(error);
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Failed to persist classroom state to index.html.' }));
+            sendJson(res, 500, { error: 'Failed to persist classroom state to index.html.' });
           }
         });
       });
@@ -143,12 +225,10 @@ export const createContentManagerPlugin = (rootDir: string): Plugin => {
           return;
         }
 
-        readJsonBody(req, () => {
-          res.statusCode = 410;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({
+        readJsonBody(req, res, () => {
+          sendJson(res, 410, {
             error: 'The legacy category-based content writer is disabled. Update modules through the fixed Games/Classroom registry instead.',
-          }));
+          });
         });
       });
 
@@ -158,12 +238,10 @@ export const createContentManagerPlugin = (rootDir: string): Plugin => {
           return;
         }
 
-        readJsonBody(req, () => {
-          res.statusCode = 410;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({
+        readJsonBody(req, res, () => {
+          sendJson(res, 410, {
             error: 'The legacy bulk worksheet uploader is disabled. Publish classroom modules through the new registry-managed flow instead.',
-          }));
+          });
         });
       });
     },

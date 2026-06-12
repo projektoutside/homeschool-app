@@ -19,6 +19,7 @@ export const downloadFile = async (url: string, filename: string): Promise<void>
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = filename;
+        link.rel = 'noopener noreferrer';
 
         // Append to body, click, and remove
         document.body.appendChild(link);
@@ -30,6 +31,6 @@ export const downloadFile = async (url: string, filename: string): Promise<void>
     } catch (error) {
         console.error('Download failed:', error);
         // Fallback: open in new tab if blob download fails
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 };

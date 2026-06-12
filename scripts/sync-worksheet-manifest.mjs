@@ -34,6 +34,18 @@ const readHtmlTitle = async (filePath) => {
 
 const toPublicPath = (...segments) => `/${segments.map((segment) => segment.replace(/\\/g, '/')).join('/')}`;
 
+const readExistingManifest = async () => {
+  try {
+    const raw = await fs.readFile(manifestPath, 'utf8');
+    return {
+      raw,
+      parsed: JSON.parse(raw),
+    };
+  } catch {
+    return null;
+  }
+};
+
 const buildFileEntry = async (subjectSlug, subjectLabel, fileName) => {
   const filePath = path.join(worksheetsDir, subjectSlug, fileName);
   const title = await readHtmlTitle(filePath);
@@ -122,13 +134,29 @@ const main = async () => {
     .sort(byNameCaseInsensitive);
 
   const subjects = await Promise.all(subjectDirs.map((subjectDir) => readSubjectEntries(subjectDir)));
+  const existingManifest = await readExistingManifest();
+  const existingSubjects = existingManifest?.parsed?.subjects;
+  const generatedAt = (
+    Array.isArray(existingSubjects)
+    && JSON.stringify(existingSubjects) === JSON.stringify(subjects)
+    && typeof existingManifest.parsed.generatedAt === 'string'
+    && existingManifest.parsed.generatedAt.trim()
+  )
+    ? existingManifest.parsed.generatedAt
+    : new Date().toISOString();
 
   const manifest = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     subjects,
   };
+  const nextContent = `${JSON.stringify(manifest, null, 2)}\n`;
 
-  await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  if (existingManifest?.raw === nextContent) {
+    console.log(`Worksheet manifest already current: ${subjects.length} subject folder(s).`);
+    return;
+  }
+
+  await fs.writeFile(manifestPath, nextContent, 'utf8');
   console.log(`Worksheet manifest synced: ${subjects.length} subject folder(s).`);
 };
 

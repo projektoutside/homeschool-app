@@ -256,7 +256,7 @@ const UserHomePage: React.FC<UserHomePageProps> = ({
       : 0,
   );
   const loaderVisible = !hasCompletedInitialBoot && isLoading;
-  const shouldLoadHomepageIframe = hasCompletedInitialBoot || protectedLoaderWindowElapsed;
+  const shouldLoadHomepageIframe = isActive || hasCompletedInitialBoot;
   const iframeRuntimeActive = isActive && !loaderVisible;
   const iframeLoadedState = iframeLoaded;
   const bootReadyReceivedState = bootReadyReceived;

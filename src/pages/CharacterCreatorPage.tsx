@@ -243,6 +243,7 @@ const CharacterCreatorPage: React.FC = () => {
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
+      if (!iframeRef.current?.contentWindow || event.source !== iframeRef.current.contentWindow) return;
       if (!event.data || typeof event.data !== 'object') return;
 
       const message = event.data as CreatorMessage;
@@ -502,7 +503,7 @@ const CharacterCreatorPage: React.FC = () => {
         <div className="character-creator-host__actions">
           <Link className="character-creator-host__link" to="/">Back to Homepage</Link>
           <Link className="character-creator-host__link" to="/manager">Back to Manager</Link>
-          <a className="character-creator-host__link" href={launchPath} target="_blank" rel="noreferrer">
+          <a className="character-creator-host__link" href={launchPath} target="_blank" rel="noopener noreferrer">
             Open Standalone
           </a>
         </div>
