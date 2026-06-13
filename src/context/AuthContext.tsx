@@ -1,15 +1,32 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import {
+  AUTH_BOOT_TIMEOUT_MS,
+  AUTH_REFRESH_TIMEOUT_MS,
+  AuthBootTimeoutError,
+  getSessionAfterRefreshFailure,
+  isUsableSupabaseSession,
+  withAuthTimeout,
+} from './authBoot';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { usernameOrEmailToSupabaseEmail } from '../utils/authIdentity';
+import {
+  clearGuestSession,
+  isGuestUser,
+  readActiveGuestUser,
+  startGuestSession,
+  updateGuestProfile,
+} from '../utils/guestSession';
 
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isConfigured: boolean;
+  isGuest: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<void>;
   signUp: (usernameOrEmail: string, password: string) => Promise<void>;
+  signInAsGuest: () => Promise<void>;
   updateUsername: (username: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   updateHomeLabel: (label: string) => Promise<void>;
@@ -28,52 +45,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const client = supabase;
 
     if (!client || !isSupabaseConfigured) {
-      return;
+      void Promise.resolve().then(() => {
+        if (!isMounted) return;
+
+        const guestUser = readActiveGuestUser();
+        if (guestUser) {
+          setSession(null);
+          setUser(guestUser);
+        }
+        setLoading(false);
+      });
+
+      return () => {
+        isMounted = false;
+      };
     }
+
+    const showLocalFallback = () => {
+      setSession(null);
+      setUser(readActiveGuestUser());
+      setLoading(false);
+    };
+
+    const applySupabaseSession = (nextSession: Session) => {
+      clearGuestSession();
+      setSession(nextSession);
+      setUser(nextSession.user);
+      setLoading(false);
+    };
 
     const initializeSession = async () => {
       try {
-        const { data } = await client.auth.getSession();
+        const { data } = await withAuthTimeout(
+          client.auth.getSession(),
+          AUTH_BOOT_TIMEOUT_MS,
+          'getSession',
+        );
         if (!isMounted) return;
 
-        const currentSession = data.session ?? null;
+        const currentSession = isUsableSupabaseSession(data.session) ? data.session : null;
         if (!currentSession) {
-          setSession(null);
-          setUser(null);
-          setLoading(false);
+          showLocalFallback();
           return;
         }
 
         try {
-          const { data: refreshedData } = await client.auth.refreshSession();
+          const { data: refreshedData } = await withAuthTimeout(
+            client.auth.refreshSession(),
+            AUTH_REFRESH_TIMEOUT_MS,
+            'refreshSession',
+          );
           if (!isMounted) return;
 
-          const nextSession = refreshedData.session ?? currentSession;
-          setSession(nextSession);
-          setUser(nextSession?.user ?? null);
+          const nextSession = isUsableSupabaseSession(refreshedData.session)
+            ? refreshedData.session
+            : currentSession;
+          applySupabaseSession(nextSession);
         } catch (error) {
           if (!isMounted) return;
 
-          console.warn('[AuthProvider] Session refresh failed, using cached session.', error);
-          setSession(currentSession);
-          setUser(currentSession.user ?? null);
+          const fallbackSession = getSessionAfterRefreshFailure(currentSession, error);
+          if (fallbackSession) {
+            console.warn('[AuthProvider] Session refresh timed out, using cached session.', error);
+            applySupabaseSession(fallbackSession);
+            return;
+          }
+
+          console.warn('[AuthProvider] Session refresh failed; showing login fallback.', error);
+          showLocalFallback();
         }
       } catch (error) {
         if (!isMounted) return;
 
-        console.error('[AuthProvider] Failed to initialize auth session.', error);
-        setSession(null);
-        setUser(null);
+        if (error instanceof AuthBootTimeoutError) {
+          console.warn('[AuthProvider] Failed to initialize auth session; showing login fallback.', error);
+        } else {
+          console.error('[AuthProvider] Failed to initialize auth session; showing login fallback.', error);
+        }
+        showLocalFallback();
       }
-      setLoading(false);
     };
 
     void initializeSession();
 
     const { data: authListener } = client.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
+      if (isUsableSupabaseSession(nextSession)) {
+        applySupabaseSession(nextSession);
+        return;
+      }
+
+      showLocalFallback();
     });
 
     return () => {
@@ -82,14 +143,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const isGuest = isGuestUser(user);
+
   const value = useMemo<AuthContextValue>(() => ({
     user,
     session,
     loading,
     isConfigured: isSupabaseConfigured,
+    isGuest,
     signIn: async (usernameOrEmail: string, password: string) => {
       if (!supabase) throw new Error('Supabase is not configured.');
       const email = usernameOrEmailToSupabaseEmail(usernameOrEmail);
+      clearGuestSession();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     },
@@ -97,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!supabase) throw new Error('Supabase is not configured.');
       const email = usernameOrEmailToSupabaseEmail(usernameOrEmail);
       const username = usernameOrEmail.trim();
+      clearGuestSession();
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -108,7 +174,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
     },
+    signInAsGuest: async () => {
+      const guestUser = startGuestSession();
+      setSession(null);
+      setUser(guestUser);
+      setLoading(false);
+    },
     updateUsername: async (username: string) => {
+      if (isGuestUser(user)) {
+        const cleaned = username.trim();
+        if (!cleaned) throw new Error('Username cannot be empty.');
+        setUser(updateGuestProfile({ username: cleaned }));
+        return;
+      }
+
       if (!supabase) throw new Error('Supabase is not configured.');
       const cleaned = username.trim();
       if (!cleaned) throw new Error('Username cannot be empty.');
@@ -121,12 +200,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
     },
     updatePassword: async (password: string) => {
+      if (isGuestUser(user)) {
+        throw new Error('Guest mode does not use a password. Create an account when you are ready to sync across devices.');
+      }
+
       if (!supabase) throw new Error('Supabase is not configured.');
       if (password.length < 6) throw new Error('Password must be at least 6 characters.');
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
     },
     updateHomeLabel: async (label: string) => {
+      if (isGuestUser(user)) {
+        const cleaned = label.trim();
+        if (!cleaned) throw new Error('Home label cannot be empty.');
+        setUser(updateGuestProfile({ homeLabel: cleaned }));
+        return;
+      }
+
       if (!supabase) throw new Error('Supabase is not configured.');
       const cleaned = label.trim();
       if (!cleaned) throw new Error('Home label cannot be empty.');
@@ -139,11 +229,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
     },
     signOut: async () => {
+      if (isGuestUser(user)) {
+        clearGuestSession();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       if (!supabase) return;
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     },
-  }), [loading, session, user]);
+  }), [isGuest, loading, session, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

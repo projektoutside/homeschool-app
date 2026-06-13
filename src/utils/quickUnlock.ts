@@ -57,11 +57,19 @@ const deriveAesKey = async (pin: string, salt: Uint8Array, iterations = ITERATIO
 };
 
 export const hasQuickUnlock = (): boolean => {
-  return Boolean(localStorage.getItem(QUICK_UNLOCK_KEY));
+  try {
+    return Boolean(localStorage.getItem(QUICK_UNLOCK_KEY));
+  } catch {
+    return false;
+  }
 };
 
 export const clearQuickUnlock = (): void => {
-  localStorage.removeItem(QUICK_UNLOCK_KEY);
+  try {
+    localStorage.removeItem(QUICK_UNLOCK_KEY);
+  } catch {
+    // Ignore unavailable local storage.
+  }
 };
 
 export const saveQuickUnlock = async (usernameOrEmail: string, password: string, pin: string): Promise<void> => {
@@ -87,10 +95,10 @@ export const saveQuickUnlock = async (usernameOrEmail: string, password: string,
 };
 
 export const readQuickUnlockUsername = (): string | null => {
-  const raw = localStorage.getItem(QUICK_UNLOCK_KEY);
-  if (!raw) return null;
-
   try {
+    const raw = localStorage.getItem(QUICK_UNLOCK_KEY);
+    if (!raw) return null;
+
     const parsed = JSON.parse(raw) as Partial<StoredQuickUnlock>;
     return typeof parsed.usernameOrEmail === 'string' ? parsed.usernameOrEmail : null;
   } catch {

@@ -266,7 +266,7 @@ const buildPointsResult = (
 });
 
 export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { isGuest, user } = useAuth();
   const [serverTotalPoints, setServerTotalPoints] = useState(0);
   const [pendingEvents, setPendingEvents] = useState<PendingPointEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -316,6 +316,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             flushInProgressRef.current
             || pointsSyncUnavailableRef.current
             || !REMOTE_POINTS_SYNC_ENABLED
+            || isGuest
             || !user?.id
             || !client
             || !isSupabaseConfigured
@@ -370,7 +371,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       flushInProgressRef.current = false;
     }
-    }, [commitState, disablePointsSync, user?.id]);
+    }, [commitState, disablePointsSync, isGuest, user?.id]);
 
     useEffect(() => {
         const client = supabase;
@@ -389,7 +390,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
     commitState(cachedState.serverTotalPoints, cachedState.pendingEvents);
 
-        if (!REMOTE_POINTS_SYNC_ENABLED || !client || !isSupabaseConfigured || pointsSyncUnavailableRef.current) {
+        if (isGuest || !REMOTE_POINTS_SYNC_ENABLED || !client || !isSupabaseConfigured || pointsSyncUnavailableRef.current) {
             setLoading(false);
             return;
         }
@@ -432,11 +433,11 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       cancelled = true;
     };
-  }, [commitState, disablePointsSync, flushPendingEvents, user?.id]);
+  }, [commitState, disablePointsSync, flushPendingEvents, isGuest, user?.id]);
 
     useEffect(() => {
         const client = supabase;
-        if (!REMOTE_POINTS_SYNC_ENABLED || !user?.id || !client || !isSupabaseConfigured) {
+        if (isGuest || !REMOTE_POINTS_SYNC_ENABLED || !user?.id || !client || !isSupabaseConfigured) {
             return;
         }
 
@@ -457,7 +458,7 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [flushPendingEvents, user?.id]);
+  }, [flushPendingEvents, isGuest, user?.id]);
 
     const awardPoints = useCallback(async (input: PointsAwardInput): Promise<PointsAwardResult> => {
     const gameId = typeof input.gameId === 'string' ? input.gameId.trim() : '';

@@ -18,6 +18,7 @@
     "assets:animals:optimize": "python ./scripts/optimize-animal-champion-images.py",
     "assets:glb:audit": "node ./scripts/optimize-glb-assets.mjs --check",
     "assets:glb:optimize": "node ./scripts/optimize-glb-assets.mjs",
+    "test:auth-boot": "node --test scripts/authBoot.test.mjs",
     "lint": "eslint .",
     "preview": "npm run sync:install-metadata && npm run sync:worksheet-manifest && vite preview",
     "cap:add:android": "npx cap add android",

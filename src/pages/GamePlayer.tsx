@@ -12,6 +12,7 @@ import { usePWA } from '../hooks/usePWA';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
+import { isGuestUser } from '../utils/guestSession';
 import { teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
@@ -120,7 +121,7 @@ const buildWordPuzzleUserContext = (user: User | null): WordPuzzleUserContext =>
         userId,
         username,
         isAuthenticated: Boolean(userId),
-        storageScope: userId ? `supabase-user:${userId}` : 'anonymous-test',
+        storageScope: userId ? `${isGuestUser(user) ? 'local-guest' : 'supabase-user'}:${userId}` : 'anonymous-test',
     };
 };
 
@@ -148,7 +149,7 @@ const GamePlayer: React.FC = () => {
     });
     const [staminaAttemptNonce, setStaminaAttemptNonce] = useState(0);
     const [staminaCountdownNowMs, setStaminaCountdownNowMs] = useState(() => Date.now());
-    const { user } = useAuth();
+    const { isGuest, user } = useAuth();
     const { resolvedItems } = useManagerConfig();
     const { totalPoints, stars, awardPoints } = usePoints();
     const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
@@ -615,7 +616,7 @@ const GamePlayer: React.FC = () => {
                     });
                 };
 
-                if (!supabase || !user) {
+                if (!supabase || !user || isGuest) {
                     postSaveResult(true, 'local');
                     return;
                 }
@@ -660,7 +661,7 @@ const GamePlayer: React.FC = () => {
 
         window.addEventListener('message', handleGameMessage);
         return () => window.removeEventListener('message', handleGameMessage);
-    }, [awardPoints, currentGameId, isCarKingGame, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
+    }, [awardPoints, currentGameId, isCarKingGame, isGuest, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
 
     const attemptGameFullscreen = useCallback(async (force = false): Promise<boolean> => {
         if (!requiresRouteFullscreen || typeof document === 'undefined') {

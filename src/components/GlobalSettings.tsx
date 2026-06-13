@@ -16,7 +16,7 @@ type SoundExitIntent = 'close-sound-panel' | 'close-all-settings';
 
 export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose, externalCloseRequestId = 0 }) => {
     const navigate = useNavigate();
-    const { user, signOut, updateHomeLabel, updatePassword, updateUsername } = useAuth();
+    const { isGuest, user, signOut, updateHomeLabel, updatePassword, updateUsername } = useAuth();
     const {
         settings,
         setMuted,
@@ -467,6 +467,12 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose,
                             <button type="button" onClick={() => setIsAccountSettingsOpen(false)} aria-label="Close account settings">✕</button>
                         </header>
 
+                        {isGuest && (
+                            <p className="settings-helper-text">
+                                Guest profile changes are saved locally on this device.
+                            </p>
+                        )}
+
                         <div className="settings-group">
                             <label htmlFor="homeLabel">Home button label</label>
                             <input
@@ -489,53 +495,59 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose,
                             <button type="button" onClick={handleSaveUsername} disabled={isSaving}>Save Username</button>
                         </div>
 
-                        <div className="settings-group">
-                            <label htmlFor="newPassword">Change password</label>
-                            <input
-                                id="newPassword"
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="New password"
-                            />
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Confirm new password"
-                            />
-                            <button type="button" onClick={handleSavePassword} disabled={isSaving}>Update Password</button>
-                        </div>
+                        {!isGuest && (
+                            <>
+                                <div className="settings-group">
+                                    <label htmlFor="newPassword">Change password</label>
+                                    <input
+                                        id="newPassword"
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="New password"
+                                    />
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Confirm new password"
+                                    />
+                                    <button type="button" onClick={handleSavePassword} disabled={isSaving}>Update Password</button>
+                                </div>
 
-                        <div className="settings-group">
-                            <label htmlFor="oldPasskey">Change passkey</label>
-                            <input
-                                id="oldPasskey"
-                                type="password"
-                                value={oldPasskey}
-                                onChange={(e) => setOldPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                                placeholder="Current passkey"
-                                inputMode="numeric"
-                            />
-                            <input
-                                type="password"
-                                value={newPasskey}
-                                onChange={(e) => setNewPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                                placeholder="New passkey (4-8 digits)"
-                                inputMode="numeric"
-                            />
-                            <input
-                                type="password"
-                                value={confirmPasskey}
-                                onChange={(e) => setConfirmPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                                placeholder="Confirm new passkey"
-                                inputMode="numeric"
-                            />
-                            <button type="button" onClick={handleSavePasskey} disabled={isSaving}>Update Passkey</button>
-                        </div>
+                                <div className="settings-group">
+                                    <label htmlFor="oldPasskey">Change passkey</label>
+                                    <input
+                                        id="oldPasskey"
+                                        type="password"
+                                        value={oldPasskey}
+                                        onChange={(e) => setOldPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                        placeholder="Current passkey"
+                                        inputMode="numeric"
+                                    />
+                                    <input
+                                        type="password"
+                                        value={newPasskey}
+                                        onChange={(e) => setNewPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                        placeholder="New passkey (4-8 digits)"
+                                        inputMode="numeric"
+                                    />
+                                    <input
+                                        type="password"
+                                        value={confirmPasskey}
+                                        onChange={(e) => setConfirmPasskey(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                        placeholder="Confirm new passkey"
+                                        inputMode="numeric"
+                                    />
+                                    <button type="button" onClick={handleSavePasskey} disabled={isSaving}>Update Passkey</button>
+                                </div>
+                            </>
+                        )}
 
                         <div className="settings-group danger-zone">
-                            <button type="button" onClick={handleSignOut} disabled={isSaving}>Sign out</button>
+                            <button type="button" onClick={handleSignOut} disabled={isSaving}>
+                                {isGuest ? 'Exit Guest Session' : 'Sign out'}
+                            </button>
                         </div>
 
                         {statusMessage && <p className="settings-status success">{statusMessage}</p>}

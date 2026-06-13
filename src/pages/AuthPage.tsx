@@ -51,9 +51,26 @@ const actionBtnStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
+const dividerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  margin: '14px 0',
+  color: 'rgba(248,250,252,0.72)',
+  fontSize: '0.82rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+};
+
+const dividerLineStyle: React.CSSProperties = {
+  flex: 1,
+  height: 1,
+  background: 'rgba(255,255,255,0.18)',
+};
+
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, isConfigured } = useAuth();
+  const { signIn, signInAsGuest, signUp, isConfigured } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -175,6 +192,22 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  const handleGuestLogin = async () => {
+    setError('');
+    setMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await signInAsGuest();
+      setMessage('Guest mode ready on this device.');
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Guest login failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const quickUnlockUser = readQuickUnlockUsername();
 
   return (
@@ -191,8 +224,8 @@ const AuthPage: React.FC = () => {
         </p>
 
         {!isConfigured && (
-          <p style={{ color: '#b91c1c', marginBottom: 12 }}>
-            Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+          <p style={{ color: '#fecaca', marginBottom: 12 }}>
+            Supabase is not configured. Account login is unavailable, but guest mode can still save locally on this device.
           </p>
         )}
 
@@ -260,6 +293,25 @@ const AuthPage: React.FC = () => {
         >
           {isSubmitting ? 'Please wait...' : mode === 'signin' ? '🚀 Sign in' : '✨ Create account'}
         </button>
+
+        <div style={dividerStyle} aria-hidden="true">
+          <span style={dividerLineStyle} />
+          <span>or</span>
+          <span style={dividerLineStyle} />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGuestLogin}
+          disabled={isSubmitting}
+          style={{ ...actionBtnStyle, background: '#34d399', color: '#042f2e' }}
+        >
+          {isSubmitting ? 'Please wait...' : 'Log in as Guest'}
+        </button>
+
+        <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.88rem', color: 'rgba(248,250,252,0.82)' }}>
+          Guest progress stays on this device until browser storage is cleared.
+        </p>
 
         <button
           type="button"

@@ -242,10 +242,12 @@ export const useHomepageCatalog = ({
   enabled?: boolean;
   liveUpdates?: boolean;
 } = {}) => {
-  const { user } = useAuth();
+  const { isGuest, user } = useAuth();
+  const shouldUseRemoteCatalog = enabled && !isGuest;
+  const shouldUseLiveUpdates = liveUpdates && !isGuest;
   const [categories, setCategories] = useState<HomepageCategoryRecord[]>([]);
   const [props, setProps] = useState<HomepagePropRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(() => enabled && Boolean(supabase && isSupabaseConfigured));
+  const [isLoading, setIsLoading] = useState(() => shouldUseRemoteCatalog && Boolean(supabase && isSupabaseConfigured));
   const [error, setError] = useState<string | null>(null);
   const categoriesRef = useRef<HomepageCategoryRecord[]>([]);
   const propsRef = useRef<HomepagePropRecord[]>([]);
@@ -289,7 +291,7 @@ export const useHomepageCatalog = ({
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!enabled) {
+    if (!shouldUseRemoteCatalog) {
       return buildHomepageCatalogSnapshot({
         categories: categoriesRef.current,
         props: propsRef.current,
@@ -362,10 +364,10 @@ export const useHomepageCatalog = ({
     setProps(nextProps);
     setIsLoading(false);
     return buildHomepageCatalogSnapshot({ categories: nextCategories, props: nextProps });
-  }, [enabled, includeInactive]);
+  }, [includeInactive, shouldUseRemoteCatalog]);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!shouldUseRemoteCatalog) {
       return;
     }
 
@@ -385,10 +387,10 @@ export const useHomepageCatalog = ({
     return () => {
       active = false;
     };
-  }, [enabled, refresh]);
+  }, [refresh, shouldUseRemoteCatalog]);
 
   useEffect(() => {
-    if (!liveUpdates) {
+    if (!shouldUseLiveUpdates) {
       return;
     }
 
@@ -410,7 +412,7 @@ export const useHomepageCatalog = ({
     return () => {
       void client.removeChannel(channel);
     };
-  }, [includeInactive, liveUpdates, refresh]);
+  }, [includeInactive, refresh, shouldUseLiveUpdates]);
 
   const uploadPropAsset = useCallback(async (file: File) => {
     if (!supabase || !isSupabaseConfigured) {
@@ -602,8 +604,8 @@ export const useHomepageCatalog = ({
     props,
     snapshot,
     canManage,
-    isLoading: enabled ? isLoading : false,
-    error: enabled ? error : null,
+    isLoading: shouldUseRemoteCatalog ? isLoading : false,
+    error: shouldUseRemoteCatalog ? error : null,
     refresh,
     uploadPropAsset,
     deleteCategory,
