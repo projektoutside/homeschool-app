@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
 import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 
+const LIVE_UPDATE_POLL_INTERVAL_MS = 5 * 60 * 1000;
+
 // Type definitions
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -57,7 +59,6 @@ interface UsePWAReturn {
  * Handles installation, fullscreen mode, auto-updates, and offline support
  */
 export function usePWA(): UsePWAReturn {
-  const SW_SCRIPT_VERSION = '2026-03-23-worksheet-fix-1';
   // Install state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -76,6 +77,7 @@ export function usePWA(): UsePWAReturn {
   const hasReloadedForUpdateRef = useRef(false);
   const hasAutoAppliedUpdateRef = useRef(false);
   const hasScheduledInitialUpdateCheckRef = useRef(false);
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   
   const checkForUpdatesFromSWRef = useRef<() => void>(() => {});
 
@@ -316,7 +318,9 @@ export function usePWA(): UsePWAReturn {
     }
 
     {
-      const swUrl = `${import.meta.env.BASE_URL}service-worker.js?v=${encodeURIComponent(SW_SCRIPT_VERSION)}`;
+      const swUrl = `${import.meta.env.BASE_URL}service-worker.js`;
+      let deferredUpdateListenersCleanup: (() => void) | null = null;
+      let liveUpdatePollIntervalId: number | null = null;
 
       const onControllerChange = () => {
         // Auto-refresh once when a new SW takes control.
@@ -327,8 +331,9 @@ export function usePWA(): UsePWAReturn {
 
       const onServiceWorkerMessage = (event: MessageEvent) => {
         if (event.data?.type === 'UPDATE_CHECK_RESULT') {
+          const hasUpdate = Boolean(event.data.hasUpdate);
           setUpdateInfo({
-            hasUpdate: event.data.hasUpdate,
+            hasUpdate,
             currentCommit: event.data.currentCommit,
             latestCommit: event.data.latestCommit,
             commitDate: event.data.commitDate,
@@ -336,6 +341,12 @@ export function usePWA(): UsePWAReturn {
             repoUrl: event.data.repoUrl
           });
           setIsCheckingForUpdates(false);
+
+          if (hasUpdate) {
+            void swRegistrationRef.current?.update().catch(() => {
+              // Ignore update polling failures; the next poll/launch will retry.
+            });
+          }
         } else if (event.data?.type === 'UPDATE_CHECK_ERROR') {
           console.error('[PWA] Update check failed:', event.data.error);
           setIsCheckingForUpdates(false);
@@ -349,6 +360,7 @@ export function usePWA(): UsePWAReturn {
         .register(swUrl)
         .then((registration) => {
           console.log('[PWA] Service Worker registered:', registration.scope);
+          swRegistrationRef.current = registration;
           setSwRegistration(registration);
           setIsOfflineReady(true);
 
@@ -390,7 +402,14 @@ export function usePWA(): UsePWAReturn {
             cancelIdleCallback?: (handle: number) => void;
           };
 
-          const cleanupDeferredUpdateListeners = () => {
+          const runUpdateCheck = () => {
+            registration.update().catch(() => {
+              // Ignore update polling failures
+            });
+            checkForUpdatesFromSWRef.current();
+          };
+
+          deferredUpdateListenersCleanup = () => {
             window.removeEventListener(HOMEPAGE_BOOT_STABLE_EVENT, scheduleInitialUpdateCheck);
             window.removeEventListener('pointerdown', scheduleInitialUpdateCheck);
             window.removeEventListener('keydown', scheduleInitialUpdateCheck);
@@ -409,12 +428,8 @@ export function usePWA(): UsePWAReturn {
           };
 
           const runInitialUpdateCheck = () => {
-            cleanupDeferredUpdateListeners();
-
-            registration.update().catch(() => {
-              // Ignore update polling failures
-            });
-            checkForUpdatesFromSWRef.current();
+            deferredUpdateListenersCleanup?.();
+            runUpdateCheck();
           };
 
           const scheduleIdleCheck = () => {
@@ -452,6 +467,12 @@ export function usePWA(): UsePWAReturn {
           window.addEventListener('keydown', scheduleInitialUpdateCheck);
           window.addEventListener('touchstart', scheduleInitialUpdateCheck);
           document.addEventListener('visibilitychange', handleVisibilityRecovery);
+
+          liveUpdatePollIntervalId = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+              runUpdateCheck();
+            }
+          }, LIVE_UPDATE_POLL_INTERVAL_MS);
         })
         .catch((error) => {
           console.error('[PWA] Service Worker registration failed:', error);
@@ -460,6 +481,12 @@ export function usePWA(): UsePWAReturn {
       return () => {
         navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
         navigator.serviceWorker.removeEventListener('message', onServiceWorkerMessage);
+        swRegistrationRef.current = null;
+        deferredUpdateListenersCleanup?.();
+
+        if (liveUpdatePollIntervalId !== null) {
+          window.clearInterval(liveUpdatePollIntervalId);
+        }
       };
     }
   }, []);
