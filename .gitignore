@@ -68,3 +68,6 @@ public/HomePageAPP/debug-glb-viewer.html
 .codex-artifacts/
 scripts/__pycache__/
 public/Games/Animal Champion/profile-check.txt
+android/game_assets/src/main/assets/*
+!android/game_assets/src/main/assets/.gitkeep
+android/**/build/

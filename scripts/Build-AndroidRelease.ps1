@@ -33,6 +33,9 @@ try {
         npx cap sync android
         if ($LASTEXITCODE -ne 0) { throw 'Capacitor Android sync failed.' }
 
+        & (Join-Path $PSScriptRoot 'Stage-AndroidAssetPack.ps1')
+        if ($LASTEXITCODE -ne 0) { throw 'Android asset-pack staging failed.' }
+
         Push-Location (Join-Path $repoRoot 'android')
         try {
             .\gradlew.bat bundleRelease
@@ -59,5 +62,8 @@ finally {
 if (-not (Test-Path -LiteralPath $bundlePath)) {
     throw "Android bundle was not created at $bundlePath"
 }
+
+& (Join-Path $PSScriptRoot 'Inspect-AndroidBundle.ps1') -BundlePath $bundlePath
+if ($LASTEXITCODE -ne 0) { throw 'Android bundle inspection failed.' }
 
 Write-Host "Android App Bundle ready: $bundlePath"
