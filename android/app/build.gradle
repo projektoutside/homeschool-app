@@ -16,8 +16,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    def uploadStoreFile = System.getenv('LAHS_UPLOAD_STORE_FILE')
+    def uploadStorePassword = System.getenv('LAHS_UPLOAD_STORE_PASSWORD')
+    def uploadKeyAlias = System.getenv('LAHS_UPLOAD_KEY_ALIAS')
+    def uploadKeyPassword = System.getenv('LAHS_UPLOAD_KEY_PASSWORD')
+    signingConfigs {
+        if (uploadStoreFile && uploadStorePassword && uploadKeyAlias && uploadKeyPassword) {
+            release {
+                storeFile file(uploadStoreFile)
+                storePassword uploadStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (signingConfigs.findByName('release')) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
