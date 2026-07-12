@@ -225,7 +225,7 @@ const AuthPage: React.FC = () => {
 
         {!isConfigured && (
           <p style={{ color: '#fecaca', marginBottom: 12 }}>
-            Supabase is not configured. Account login is unavailable, but guest mode can still save locally on this device.
+            Supabase is not configured. Account login is unavailable, but temporary guest play is still available.
           </p>
         )}
 
@@ -306,11 +306,11 @@ const AuthPage: React.FC = () => {
           disabled={isSubmitting}
           style={{ ...actionBtnStyle, background: '#34d399', color: '#042f2e' }}
         >
-          {isSubmitting ? 'Please wait...' : 'Log in as Guest'}
+          {isSubmitting ? 'Please wait...' : 'Play as Guest'}
         </button>
 
         <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.88rem', color: 'rgba(248,250,252,0.82)' }}>
-          Guest progress stays on this device until browser storage is cleared.
+          Guest progress resets when you sign out or close the browser or app.
         </p>
 
         <button

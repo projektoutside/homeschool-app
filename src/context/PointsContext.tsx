@@ -10,6 +10,7 @@ import {
   sanitizePointDeltaValue,
   sanitizePointValue,
 } from '../utils/gamePoints';
+import { GUEST_USER_ID } from '../utils/guestSession';
 
 const USER_POINTS_TOTALS_TABLE = 'user_points_totals';
 const APPLY_GAME_POINTS_RPC = 'apply_game_points_event';
@@ -102,13 +103,16 @@ const buildPointsSyncDisabledKey = (userId: string): string => {
   return `lahs.user-points-sync-disabled.v${POINTS_CACHE_VERSION}:${userId}`;
 };
 
+const isGuestUserId = (userId: string): boolean => userId === GUEST_USER_ID;
+
 const readCachedPointsState = (userId: string): CachedPointsState => {
   if (typeof window === 'undefined') {
     return { version: POINTS_CACHE_VERSION, serverTotalPoints: 0, pendingEvents: [] };
   }
 
   try {
-    const raw = window.localStorage.getItem(buildPointsCacheKey(userId));
+    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
+    const raw = storage.getItem(buildPointsCacheKey(userId));
     if (!raw) {
       return { version: POINTS_CACHE_VERSION, serverTotalPoints: 0, pendingEvents: [] };
     }
@@ -132,7 +136,8 @@ const writeCachedPointsState = (userId: string, state: CachedPointsState): void 
   if (typeof window === 'undefined') return;
 
   try {
-    window.localStorage.setItem(buildPointsCacheKey(userId), JSON.stringify(state));
+    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
+    storage.setItem(buildPointsCacheKey(userId), JSON.stringify(state));
   } catch {
     // Ignore local cache failures and continue with in-memory state.
   }

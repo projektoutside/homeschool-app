@@ -32,10 +32,10 @@ const assertBrowserStorageAvailable = (): void => {
   }
 
   try {
-    window.localStorage.setItem(STORAGE_TEST_KEY, '1');
-    window.localStorage.removeItem(STORAGE_TEST_KEY);
+    window.sessionStorage.setItem(STORAGE_TEST_KEY, '1');
+    window.sessionStorage.removeItem(STORAGE_TEST_KEY);
   } catch {
-    throw new Error('This browser is blocking local storage, so guest progress cannot be saved on this device.');
+    throw new Error('This browser is blocking temporary storage, so guest play cannot start.');
   }
 };
 
@@ -43,7 +43,7 @@ const readJson = <T,>(key: string): T | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = window.sessionStorage.getItem(key);
     return raw ? JSON.parse(raw) as T : null;
   } catch {
     return null;
@@ -51,7 +51,7 @@ const readJson = <T,>(key: string): T | null => {
 };
 
 const writeJson = (key: string, value: unknown): void => {
-  window.localStorage.setItem(key, JSON.stringify(value));
+  window.sessionStorage.setItem(key, JSON.stringify(value));
 };
 
 const sanitizeProfile = (value: unknown): GuestProfile | null => {
@@ -148,6 +148,8 @@ export const readActiveGuestUser = (): User | null => {
 
 export const startGuestSession = (): User => {
   assertBrowserStorageAvailable();
+  window.localStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+  window.localStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
   const profile = getOrCreateGuestProfile();
   writeJson(GUEST_SESSION_STORAGE_KEY, {
     active: true,
@@ -161,7 +163,10 @@ export const clearGuestSession = (): void => {
   if (typeof window === 'undefined') return;
 
   try {
+    window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+    window.sessionStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
     window.localStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+    window.localStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
   } catch {
     // Ignore sign-out storage failures; route guards will fall back to no guest session.
   }

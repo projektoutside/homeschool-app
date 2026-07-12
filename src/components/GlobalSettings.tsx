@@ -469,7 +469,7 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose,
 
                         {isGuest && (
                             <p className="settings-helper-text">
-                                Guest profile changes are saved locally on this device.
+                                Guest profile changes last only for this play session.
                             </p>
                         )}
 

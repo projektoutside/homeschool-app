@@ -11,6 +11,7 @@ import {
   sanitizeTimestampMs,
   type StoredStaminaState,
 } from '../utils/stamina';
+import { GUEST_USER_ID } from '../utils/guestSession';
 
 const STAMINA_SESSION_CACHE_VERSION = 1;
 
@@ -43,6 +44,8 @@ const buildStaminaStorageKey = (userId: string): string => {
   return `lahs.user-stamina.v${STAMINA_STORAGE_VERSION}:${userId}`;
 };
 
+const isGuestUserId = (userId: string): boolean => userId === GUEST_USER_ID;
+
 const buildStaminaSessionKey = (userId: string): string => {
   return `lahs.user-stamina-session.v${STAMINA_SESSION_CACHE_VERSION}:${userId}`;
 };
@@ -53,7 +56,8 @@ const readStoredStaminaState = (userId: string): StoredStaminaState => {
   }
 
   try {
-    const raw = window.localStorage.getItem(buildStaminaStorageKey(userId));
+    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
+    const raw = storage.getItem(buildStaminaStorageKey(userId));
     if (!raw) {
       return createDefaultStaminaState();
     }
@@ -75,7 +79,8 @@ const writeStoredStaminaState = (userId: string, state: StoredStaminaState): voi
   }
 
   try {
-    window.localStorage.setItem(buildStaminaStorageKey(userId), JSON.stringify(state));
+    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
+    storage.setItem(buildStaminaStorageKey(userId), JSON.stringify(state));
   } catch {
     // Ignore storage failures and continue with in-memory stamina state.
   }
