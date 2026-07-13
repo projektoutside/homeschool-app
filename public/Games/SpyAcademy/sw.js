@@ -83,7 +83,11 @@ self.addEventListener('activate', (event) => {
             caches.keys().then((cacheNames) => {
                 return Promise.all(
                     cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME && cacheName !== OFFLINE_CACHE) {
+                        if (
+                            cacheName !== CACHE_NAME &&
+                            cacheName !== OFFLINE_CACHE &&
+                            cacheName.startsWith('spy-academy-')
+                        ) {
                             console.log('🗑️ Deleting old cache:', cacheName);
                             return caches.delete(cacheName);
                         }

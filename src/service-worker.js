@@ -43,7 +43,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((cacheNames) => Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name !== CACHE_NAME && name.startsWith('homeschool-hub-'))
           .map((name) => caches.delete(name)),
       ))
       .then(() => self.clients.claim()),

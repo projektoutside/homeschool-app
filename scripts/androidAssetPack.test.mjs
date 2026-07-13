@@ -31,6 +31,18 @@ test('Android waits for and serves the downloaded game asset pack', async () => 
   assert.match(client, /WebResourceResponse/);
   assert.match(client, /normalizeGameAssetPath/);
   assert.match(client, /path\.indexOf\(marker\)/);
+  assert.match(client, /isTrustedLocalRequest/);
+  assert.match(client, /"localhost"\.equals\(host\)/);
+});
+
+test('Android recovers when a memory-heavy game loses the WebView renderer', async () => {
+  const client = await readSource('android/app/src/main/java/com/lashomeschool/hub/GameAssetWebViewClient.java');
+
+  assert.match(client, /onRenderProcessGone/);
+  assert.match(client, /detail\.didCrash\(\)/);
+  assert.match(client, /activity == null/);
+  assert.match(client, /return true/);
+  assert.match(client, /activity\.recreate\(\)/);
 });
 
 test('web shell exposes a native game download progress overlay', async () => {
@@ -51,8 +63,8 @@ test('Android relative base path does not become a React Router basename', async
 test('Android release uses a new version after the initial Play upload', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.match(appBuild, /versionCode\s+3/);
-  assert.match(appBuild, /versionName\s+"1\.0\.2"/);
+  assert.match(appBuild, /versionCode\s+4/);
+  assert.match(appBuild, /versionName\s+"1\.0\.3"/);
 });
 
 test('Android release disables the unavailable paid cloud backend', async () => {

@@ -99,17 +99,13 @@ class NativeSpeechEngine implements SpeechEngineController {
             return this.availability;
         }
 
-        const permission = await SpeechRecognition.requestPermissions()
-            .catch(() => SpeechRecognition.checkPermissions())
-            .catch(() => null);
+        const permission = await SpeechRecognition.checkPermissions().catch(() => null);
         const availability = await SpeechRecognition.available().catch(() => ({ available: false }));
-        const onDeviceAvailability = await SpeechRecognition.isOnDeviceRecognitionAvailable({ language: 'en-US' })
-            .catch(() => ({ available: false }));
 
         this.availability = {
             available: Boolean(availability.available),
             kind: 'native',
-            onDevice: Boolean(onDeviceAvailability.available),
+            onDevice: false,
             message: permission?.speechRecognition === 'denied'
                 ? 'Speech permission is blocked at the OS level.'
                 : availability.available
@@ -156,7 +152,7 @@ class NativeSpeechEngine implements SpeechEngineController {
             maxResults: 5,
             partialResults: options.partialResults ?? true,
             allowForSilence: Math.max(options.silenceMs ?? 1100, 300),
-            useOnDeviceRecognition: Boolean(this.availability.onDevice),
+            useOnDeviceRecognition: false,
             addPunctuation: true,
             continuousPTT: this.continuousHotMic,
             popup: false,
@@ -663,6 +659,7 @@ export class CarKingNativeFirstSpeechController {
         message: 'Speech controller has not been initialized.',
     };
     private initialized = false;
+    private initializationPromise: Promise<SpeechEngineAvailability> | null = null;
     private activeSessionOptions: SpeechSessionOptions | null = null;
     private operationChain: Promise<void> = Promise.resolve();
     private rearmInFlightRoundId: string | null = null;
@@ -678,6 +675,19 @@ export class CarKingNativeFirstSpeechController {
             return this.currentAvailability;
         }
 
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+
+        this.initializationPromise = this.initializeEngine();
+        try {
+            return await this.initializationPromise;
+        } finally {
+            this.initializationPromise = null;
+        }
+    }
+
+    private async initializeEngine() {
         const candidates: SpeechEngineController[] = [];
         if (Capacitor.isNativePlatform()) {
             candidates.push(new NativeSpeechEngine());
@@ -739,6 +749,7 @@ export class CarKingNativeFirstSpeechController {
             await this.abortInternal({ keepAlive: false });
             await this.engine.dispose().catch(() => undefined);
             this.initialized = false;
+            this.initializationPromise = null;
             this.engineSessionActive = false;
             this.captureHeld = false;
         });

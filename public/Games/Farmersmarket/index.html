@@ -1213,7 +1213,11 @@
             window.addEventListener('load', async () => {
                 try {
                     const registrations = await navigator.serviceWorker.getRegistrations();
-                    await Promise.all(registrations.map(registration => registration.unregister()));
+                    await Promise.all(
+                        registrations
+                            .filter(registration => registration.scope.includes('/Games/Farmersmarket/'))
+                            .map(registration => registration.unregister())
+                    );
                 } catch (error) {
                     console.warn('Service worker cleanup skipped:', error);
                 }
@@ -1224,7 +1228,11 @@
             window.addEventListener('load', async () => {
                 try {
                     const cacheKeys = await caches.keys();
-                    await Promise.all(cacheKeys.map(cacheKey => caches.delete(cacheKey)));
+                    await Promise.all(
+                        cacheKeys
+                            .filter(cacheKey => cacheKey.startsWith('farmers-market-'))
+                            .map(cacheKey => caches.delete(cacheKey))
+                    );
                 } catch (error) {
                     console.warn('Cache cleanup skipped:', error);
                 }

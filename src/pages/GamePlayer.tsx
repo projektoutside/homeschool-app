@@ -295,9 +295,6 @@ const GamePlayer: React.FC = () => {
         });
 
         carKingSpeechControllerRef.current = controller;
-        void controller.initialize().catch(() => {
-            // The controller reports availability and errors back to the iframe when possible.
-        });
 
         return () => {
             if (carKingSpeechControllerRef.current === controller) {

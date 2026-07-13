@@ -15,6 +15,7 @@
     "audit:games": "node ./scripts/audit-games.mjs",
     "audit:registry": "node ./scripts/audit-games.mjs",
     "audit:assets": "node ./scripts/audit-nonhome-assets.mjs",
+    "audit:car-king-assets": "python ./scripts/optimize-car-king-images.py",
     "assets:animals:optimize": "python ./scripts/optimize-animal-champion-images.py",
     "assets:glb:audit": "node ./scripts/optimize-glb-assets.mjs --check",
     "assets:glb:optimize": "node ./scripts/optimize-glb-assets.mjs",
