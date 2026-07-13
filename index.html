@@ -32,37 +32,7 @@
       background-image: linear-gradient(180deg, #2f8df4 0%, #76c6ff 42%, #9fd957 64%, #28723a 100%);
     }
 
-    #game-download-progress {
-      position: fixed;
-      inset: 0;
-      z-index: 100000;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      color: white;
-      font-family: Nunito, sans-serif;
-      text-align: center;
-      background: linear-gradient(180deg, #236fce, #77c7ff);
-    }
-
-    #game-download-progress[hidden] { display: none; }
-
-    #game-download-progress progress { width: min(360px, 80vw); }
   </style>
-  <script>
-    window.__showGameDownload = function (message, percent) {
-      var overlay = document.getElementById('game-download-progress');
-      if (!overlay) return;
-      overlay.hidden = false;
-      overlay.querySelector('p').textContent = message;
-      overlay.querySelector('progress').value = percent;
-      overlay.querySelector('strong').textContent = percent + '%';
-    };
-    window.__hideGameDownload = function () {
-      var overlay = document.getElementById('game-download-progress');
-      if (overlay) overlay.hidden = true;
-    };
-  </script>
   <title>La's Homeschool Hub</title>
   <!-- Base tag will be set dynamically by Vite based on base config -->
   <!-- Start Single Page Apps for GitHub Pages -->
@@ -92,14 +62,44 @@
 </head>
 
 <body>
-  <div id="game-download-progress" hidden>
-    <div>
-      <h1>Getting your games ready</h1>
-      <p>Preparing the game library…</p>
-      <progress max="100" value="0"></progress>
-      <div><strong>0%</strong></div>
+  <section
+    id="game-asset-gate"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="game-asset-gate-title"
+    aria-describedby="game-asset-gate-message"
+  >
+    <div class="game-asset-gate__coins" aria-label="Tap coins while the learning library downloads">
+      <button class="game-asset-gate__coin game-asset-gate__coin--one" type="button" aria-label="Collect waiting coin">🪙</button>
+      <button class="game-asset-gate__coin game-asset-gate__coin--two" type="button" aria-label="Collect waiting coin">🪙</button>
+      <button class="game-asset-gate__coin game-asset-gate__coin--three" type="button" aria-label="Collect waiting coin">🪙</button>
     </div>
-  </div>
+    <div class="game-asset-gate__card">
+      <p class="game-asset-gate__eyebrow">Your learning adventure is ready to grow</p>
+      <h1 id="game-asset-gate-title">Welcome to La's Homeschool Hub!</h1>
+      <p id="game-asset-gate-message">
+        To unlock every lesson, activity, and game, download the complete learning library. You can start exploring as soon as it is ready.
+      </p>
+      <p id="game-asset-gate-size" class="game-asset-gate__size"></p>
+      <div id="game-asset-gate-progress" class="game-asset-gate__progress" hidden>
+        <progress id="game-asset-gate-progress-bar" max="100" value="0"></progress>
+        <p>
+          <strong id="game-asset-gate-percent">0%</strong>
+          <span id="game-asset-gate-bytes"></span>
+        </p>
+      </div>
+      <div class="game-asset-gate__actions">
+        <button id="game-asset-download" type="button">Download Full Library</button>
+        <button id="game-asset-later" class="game-asset-gate__secondary" type="button">Not Now</button>
+        <button id="game-asset-retry" type="button" hidden>Try Again</button>
+      </div>
+      <p class="game-asset-gate__hint">Wi-Fi recommended. Your library stays ready for future learning.</p>
+      <p class="game-asset-gate__counter" aria-live="polite">
+        Coins collected while waiting: <strong id="game-asset-coin-count">0</strong>
+      </p>
+    </div>
+  </section>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

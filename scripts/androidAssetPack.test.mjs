@@ -27,8 +27,8 @@ test('Android waits for explicit consent before fetching game assets', async () 
   assert.match(plugin, /@CapacitorPlugin\(name = "GameAssetDelivery"\)/);
   assert.match(plugin, /void getStatus\(PluginCall call\)/);
   assert.match(plugin, /void startDownload\(PluginCall call\)/);
-  assert.match(plugin, /assetPackManager\.getPackStates/);
-  assert.match(plugin, /assetPackManager\.fetch/);
+  assert.match(plugin, /assetPackManager\s*\.\s*getPackStates/);
+  assert.match(plugin, /assetPackManager\s*\.\s*fetch/);
   assert.match(plugin, /notifyListeners\("downloadStateChanged"/);
   assert.match(plugin, /showConfirmationDialog/);
 });
