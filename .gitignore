@@ -66,6 +66,7 @@ public/HomePageAPP/_workspace/
 public/HomePageAPP/debug-glb-viewer.html
 .codex-runtime/
 .codex-artifacts/
+.worktrees/
 scripts/__pycache__/
 public/Games/Animal Champion/profile-check.txt
 android/game_assets/src/main/assets/*
