@@ -294,6 +294,28 @@ export function usePWA(): UsePWAReturn {
       return;
     }
 
+    if (isNativeApp) {
+      const reloadKey = 'native-sw-cleanup-reload';
+      void Promise.all([
+        navigator.serviceWorker.getRegistrations().then((registrations) =>
+          Promise.all(registrations.map((registration) => registration.unregister()))
+        ),
+        'caches' in window
+          ? caches.keys().then((cacheKeys) => Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey))))
+          : Promise.resolve([]),
+      ]).then(() => {
+        setSwRegistration(null);
+        setIsOfflineReady(false);
+        if (navigator.serviceWorker.controller && sessionStorage.getItem(reloadKey) !== '1') {
+          sessionStorage.setItem(reloadKey, '1');
+          window.location.reload();
+          return;
+        }
+        sessionStorage.removeItem(reloadKey);
+      });
+      return;
+    }
+
     // Avoid stale-cached game/assets while developing with Vite dev server.
     if (import.meta.env.DEV) {
       void navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -489,7 +511,7 @@ export function usePWA(): UsePWAReturn {
         }
       };
     }
-  }, []);
+  }, [isNativeApp]);
 
   // Fullscreen change listener
   useEffect(() => {

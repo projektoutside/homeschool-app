@@ -2,6 +2,7 @@ package com.lashomeschool.hub;
 
 import android.os.Bundle;
 import android.webkit.WebView;
+import android.util.Log;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.play.core.assetpacks.AssetPackManager;
 import com.google.android.play.core.assetpacks.AssetPackManagerFactory;
@@ -11,6 +12,7 @@ import com.google.android.play.core.assetpacks.model.AssetPackStatus;
 import java.util.Collections;
 
 public class MainActivity extends BridgeActivity {
+    private static final String TAG = "GameAssetDelivery";
     private static final String PACK_NAME = "game_assets";
     private AssetPackManager assetPackManager;
     private AssetPackStateUpdateListener assetPackListener;
@@ -38,6 +40,7 @@ public class MainActivity extends BridgeActivity {
         int percent = (int) Math.min(100, state.bytesDownloaded() * 100 / total);
 
         if (state.status() == AssetPackStatus.COMPLETED) {
+            Log.i(TAG, "Pack completed; location=" + assetPackManager.getPackLocation(PACK_NAME));
             hideDownloadOverlay();
         } else if (state.status() == AssetPackStatus.WAITING_FOR_WIFI) {
             showDownloadOverlay("Connect to Wi-Fi to download the game library.", percent);

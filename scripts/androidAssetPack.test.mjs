@@ -29,6 +29,8 @@ test('Android waits for and serves the downloaded game asset pack', async () => 
   assert.match(client, /assetsPath\(\)/);
   assert.match(client, /getCanonicalPath\(\)/);
   assert.match(client, /WebResourceResponse/);
+  assert.match(client, /normalizeGameAssetPath/);
+  assert.match(client, /path\.indexOf\(marker\)/);
 });
 
 test('web shell exposes a native game download progress overlay', async () => {
@@ -49,8 +51,16 @@ test('Android relative base path does not become a React Router basename', async
 test('Android release uses a new version after the initial Play upload', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.match(appBuild, /versionCode\s+2/);
-  assert.match(appBuild, /versionName\s+"1\.0\.1"/);
+  assert.match(appBuild, /versionCode\s+3/);
+  assert.match(appBuild, /versionName\s+"1\.0\.2"/);
+});
+
+test('Android release disables the unavailable paid cloud backend', async () => {
+  const releaseScript = await readFile(new URL('./Build-AndroidRelease.ps1', import.meta.url), 'utf8');
+  const supabaseClient = await readFile(new URL('../src/lib/supabase.ts', import.meta.url), 'utf8');
+
+  assert.match(releaseScript, /VITE_SUPABASE_DISABLED\s*=\s*'true'/);
+  assert.match(supabaseClient, /VITE_SUPABASE_DISABLED/);
 });
 
 test('generated asset-pack payload is ignored while its marker remains tracked', async () => {
