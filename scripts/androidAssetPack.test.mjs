@@ -141,5 +141,7 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /'base'/);
   assert.match(inspector, /'game_assets'/);
   assert.match(inspector, /500MB/);
+  assert.match(inspector, /bundletool-all-\*\.jar/);
+  assert.match(inspector, /dist:on-demand/);
   assert.match(release, /Inspect-AndroidBundle\.ps1/);
 });
