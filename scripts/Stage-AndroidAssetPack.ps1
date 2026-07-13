@@ -45,4 +45,4 @@ foreach ($directory in $assetDirectories) {
     directories = $sizes
 } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $manifestPath -Encoding utf8
 
-Write-Host "Install-time asset pack staged: $manifestPath"
+Write-Host "Play Asset Delivery pack staged: $manifestPath"

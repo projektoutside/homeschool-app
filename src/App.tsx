@@ -275,7 +275,7 @@ const App: React.FC = () => {
     // BASE_URL from Vite includes the trailing slash, but React Router basename shouldn't
     const baseUrl = import.meta.env.BASE_URL || '/';
     // Remove trailing slash for React Router basename
-    const basename = baseUrl === '/' ? '' : baseUrl.replace(/\/$/, '');
+    const basename = baseUrl === '/' || baseUrl === './' ? '' : baseUrl.replace(/\/$/, '');
     const renderProtectedPage = (node: React.ReactNode) => (
         <RequireAuth user={user} loading={loading}>
             <RequireInstalledShell pwa={pwa}>{node}</RequireInstalledShell>

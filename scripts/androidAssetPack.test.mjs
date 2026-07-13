@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Android registers an install-time game_assets pack', async () => {
+test('Android registers a fast-follow game_assets pack', async () => {
   const settings = await readSource('android/settings.gradle');
   const appBuild = await readSource('android/app/build.gradle');
   const packBuild = await readSource('android/game_assets/build.gradle');
@@ -13,7 +13,44 @@ test('Android registers an install-time game_assets pack', async () => {
   assert.match(appBuild, /assetPacks\s*=\s*\[":game_assets"\]/);
   assert.match(packBuild, /id 'com\.android\.asset-pack'/);
   assert.match(packBuild, /packName\s*=\s*"game_assets"/);
-  assert.match(packBuild, /deliveryType\s*=\s*"install-time"/);
+  assert.match(packBuild, /deliveryType\s*=\s*"fast-follow"/);
+  assert.match(appBuild, /com\.google\.android\.play:asset-delivery:2\.3\.0/);
+});
+
+test('Android waits for and serves the downloaded game asset pack', async () => {
+  const activity = await readSource('android/app/src/main/java/com/lashomeschool/hub/MainActivity.java');
+  const client = await readSource('android/app/src/main/java/com/lashomeschool/hub/GameAssetWebViewClient.java');
+
+  assert.match(activity, /AssetPackManagerFactory\.getInstance/);
+  assert.match(activity, /assetPackManager\.fetch/);
+  assert.match(activity, /WAITING_FOR_WIFI/);
+  assert.match(activity, /setWebViewClient\(new GameAssetWebViewClient/);
+  assert.match(client, /getPackLocation\("game_assets"\)/);
+  assert.match(client, /assetsPath\(\)/);
+  assert.match(client, /getCanonicalPath\(\)/);
+  assert.match(client, /WebResourceResponse/);
+});
+
+test('web shell exposes a native game download progress overlay', async () => {
+  const index = await readSource('index.html');
+
+  assert.match(index, /window\.__showGameDownload/);
+  assert.match(index, /window\.__hideGameDownload/);
+  assert.match(index, /game-download-progress/);
+});
+
+test('Android relative base path does not become a React Router basename', async () => {
+  const app = await readSource('src/App.tsx');
+
+  assert.match(app, /baseUrl === '\.\/'/);
+  assert.match(app, /\? '' : baseUrl\.replace/);
+});
+
+test('Android release uses a new version after the initial Play upload', async () => {
+  const appBuild = await readSource('android/app/build.gradle');
+
+  assert.match(appBuild, /versionCode\s+2/);
+  assert.match(appBuild, /versionName\s+"1\.0\.1"/);
 });
 
 test('generated asset-pack payload is ignored while its marker remains tracked', async () => {
@@ -47,6 +84,7 @@ test('release staging moves every large content directory out of the base module
   assert.match(staging, /Remove-Item -LiteralPath \$_\.FullName -Recurse -Force/);
   assert.match(staging, /Move-Item -LiteralPath \$sourcePath -Destination \$packAssetsRoot/);
   assert.match(staging, /asset-pack-sizes\.json/);
+  assert.match(release, /\$env:BASE_PATH\s*=\s*'\.\/'/);
   assert.match(release, /Stage-AndroidAssetPack\.ps1/);
 });
 

@@ -24,6 +24,7 @@ try {
     $env:LAHS_UPLOAD_STORE_PASSWORD = $plainPassword
     $env:LAHS_UPLOAD_KEY_ALIAS = 'las-homeschool-upload'
     $env:LAHS_UPLOAD_KEY_PASSWORD = $plainPassword
+    $env:BASE_PATH = './'
 
     Push-Location $repoRoot
     try {
@@ -57,6 +58,7 @@ finally {
     Remove-Item Env:LAHS_UPLOAD_STORE_PASSWORD -ErrorAction SilentlyContinue
     Remove-Item Env:LAHS_UPLOAD_KEY_ALIAS -ErrorAction SilentlyContinue
     Remove-Item Env:LAHS_UPLOAD_KEY_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:BASE_PATH -ErrorAction SilentlyContinue
 }
 
 if (-not (Test-Path -LiteralPath $bundlePath)) {
