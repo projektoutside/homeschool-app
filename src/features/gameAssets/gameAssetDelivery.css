@@ -216,7 +216,9 @@
     z-index: 1;
   }
 
-  .game-asset-gate__coin--one { inset-block-start: 2%; }
+  .game-asset-gate__coin--one {
+    inset-block-start: max(4.5rem, calc(env(safe-area-inset-top, 0px) + 1rem));
+  }
   .game-asset-gate__coin--two { inset-block-start: auto; inset-block-end: 3%; }
   .game-asset-gate__coin--three { display: none; }
 }

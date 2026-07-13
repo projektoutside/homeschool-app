@@ -126,6 +126,16 @@ const renderProgress = (elements: GateElements, state: GameAssetState) => {
   elements.bytes.textContent = downloaded && total ? `${downloaded} of ${total}` : total
 }
 
+const renderStarting = (elements: GateElements, state: GameAssetState | undefined) => {
+  elements.message.textContent = 'Google Play is preparing your complete learning library. Tap the floating coins while it gets ready…'
+  if (state) renderSize(elements, state)
+  elements.progress.hidden = false
+  elements.progressBar.removeAttribute('value')
+  elements.percent.textContent = 'Preparing…'
+  elements.bytes.textContent = state ? formatBytes(state.totalBytes) : ''
+  setActions(elements, {})
+}
+
 const renderWelcome = (elements: GateElements, state: GameAssetState) => {
   elements.message.textContent = 'To unlock every lesson, activity, and game, download the complete learning library. You can start exploring as soon as it is ready.'
   renderSize(elements, state)
@@ -264,12 +274,18 @@ export async function initializeGameAssetGate(): Promise<void> {
     if (downloadRequestInFlight || finished) return
     downloadRequestInFlight = true
     setBusy(elements, true)
-    elements.message.textContent = 'Asking Google Play to prepare your complete learning library…'
+    renderStarting(elements, currentState)
+    const statusPollingTimer = window.setInterval(() => {
+      void GameAssetDelivery.getStatus().then(applyState).catch(() => {
+        // The active fetch remains authoritative when a transient status poll fails.
+      })
+    }, 750)
     try {
       applyState(await GameAssetDelivery.startDownload())
     } catch (error) {
       renderFailure(elements, errorMessage(error))
     } finally {
+      window.clearInterval(statusPollingTimer)
       downloadRequestInFlight = false
       setBusy(elements, false)
     }

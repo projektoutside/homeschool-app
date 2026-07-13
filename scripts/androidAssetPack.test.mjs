@@ -75,6 +75,7 @@ test('web shell blocks Android boot until the on-demand library is ready', async
   assert.match(gate, /downloadStateChanged/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
   assert.match(styles, /env\(safe-area-inset-bottom/);
+  assert.match(styles, /max\(4\.5rem, calc\(env\(safe-area-inset-top/);
 });
 
 test('Android relative base path does not become a React Router basename', async () => {
