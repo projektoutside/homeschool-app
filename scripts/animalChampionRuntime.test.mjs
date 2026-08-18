@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const controllerUrl = new URL('../public/Games/Animal Champion/js/game.js', import.meta.url);
 
 const REQUIRED_IDS = [
   'menuReveal',
@@ -85,6 +86,29 @@ function mediaBlock(css, header) {
   assert.fail(`unclosed ${marker}`);
 }
 
+function controllerMethod(source, name) {
+  const declaration = new RegExp(`^  (?:async )?${escapeRegExp(name)}\\([^\\n]*\\) \\{`, 'm');
+  const match = declaration.exec(source);
+  assert.ok(match, `expected controller method ${name}`);
+  const bodyStart = match.index + match[0].length;
+  const nextMethod = /^  (?:async )?[a-z][\w]*\([^\n]*\) \{/m.exec(source.slice(bodyStart));
+  return source.slice(match.index, nextMethod ? bodyStart + nextMethod.index : source.length);
+}
+
+function assertEveryAwaitIsTokenGuarded(source, methodName) {
+  const method = controllerMethod(source, methodName);
+  const awaits = [...method.matchAll(/await\s+[^;]+;/g)];
+  assert.ok(awaits.length > 0, `expected ${methodName} to have an async boundary`);
+  for (const match of awaits) {
+    const continuation = method.slice((match.index ?? 0) + match[0].length);
+    assert.match(
+      continuation,
+      /^\s*if \(!this\.isCurrent\(runToken, roundToken\)\) return(?: null)?;/,
+      `${methodName} must check both tokens immediately after ${match[0]}`,
+    );
+  }
+}
+
 test('Animal Champion shell has the exact stable semantic contract', async () => {
   const html = await read('public/Games/Animal Champion/index.html');
 
@@ -110,8 +134,13 @@ test('Animal Champion shell has the exact stable semantic contract', async () =>
   assert.match(openingTagById(html, 'timerRegion').source, /\brole="progressbar"/i);
 
   const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)].map((match) => match[1]);
-  assert.equal(scripts.length, 1, 'expected one script dependency');
-  assert.deepEqual(scripts.map((tag) => attribute(tag, 'src')), ['../shared/lahsPointsBridge.js']);
+  assert.equal(scripts.length, 2, 'expected the bridge followed by the module controller');
+  assert.deepEqual(scripts.map((tag) => attribute(tag, 'src')), [
+    '../shared/lahsPointsBridge.js',
+    './js/game.js',
+  ]);
+  assert.equal(attribute(scripts[0], 'type'), null, 'expected the shared bridge to load as a classic script');
+  assert.equal(attribute(scripts[1], 'type'), 'module', 'expected the controller to load as a module');
 
   const links = [...html.matchAll(/<link\b([^>]*)>/gi)].map((match) => match[1]);
   assert.equal(links.length, 1, 'expected one link dependency');
@@ -121,6 +150,104 @@ test('Animal Champion shell has the exact stable semantic contract', async () =>
   assert.doesNotMatch(html, /<(?:audio|input|textarea)\b/i);
   assert.doesNotMatch(html, /\b(?:microphone|speech|fullscreen|requestFullscreen|webkitRequestFullscreen|settings?)\b/i);
   assert.doesNotMatch(html, /\b(?:src|href)="https?:\/\//i);
+});
+
+test('Animal Champion controller exposes the playable runtime contract', async () => {
+  const game = await read('public/Games/Animal Champion/js/game.js');
+  const controllerModule = await import(`${controllerUrl.href}?contract=${Date.now()}`);
+
+  assert.equal(typeof controllerModule.AnimalChampionController, 'function');
+  const methods = Object.getOwnPropertyNames(controllerModule.AnimalChampionController.prototype).sort();
+  assert.deepEqual(methods, [
+    'acceptChoice',
+    'beginRound',
+    'beginFreshRun',
+    'constructor',
+    'delay',
+    'finishFeedback',
+    'handleTimeout',
+    'invalidateRun',
+    'isCurrent',
+    'lockChoices',
+    'loadImageCandidate',
+    'mainMenu',
+    'playAgain',
+    'readLeaderboard',
+    'renderChoices',
+    'renderFeedback',
+    'renderLeaderboard',
+    'resetRoundView',
+    'retry',
+    'saveLeaderboard',
+    'revealMenu',
+    'selectMode',
+    'showScreen',
+    'showFatalError',
+    'showGameOver',
+    'start',
+    'startCountdown',
+    'startRun',
+    'teardown',
+    'updateHud',
+    'updateTimer',
+  ].sort());
+
+  const imports = [...game.matchAll(/^import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"];?$/gm)]
+    .map(([, bindings, source]) => ({ bindings: bindings.replace(/\s+/g, ' ').trim(), source }));
+  assert.deepEqual(imports, [
+    { bindings: '{ ANIMAL_DATABASE }', source: './animal-data.js' },
+    {
+      bindings: '{ ANSWER_WINDOW_MS, FEEDBACK_DELAY_MS, MODES, OUTCOMES, POINTS_PER_CORRECT, AnimalChampionEngine, createPausableDeadline, normalizeLeaderboard, recordLeaderboardScore, }',
+      source: './game-engine.js',
+    },
+  ]);
+
+  assert.match(game, /LAHSPointsBridge\?\.init\(\{\s*gameId:\s*['"]animal-champion['"]\s*\}\)/);
+  assert.match(game, /LAHSPointsBridge\?\.awardPoints\(POINTS_PER_CORRECT,\s*\{/);
+  assert.doesNotMatch(game, /await\s+(?:this\.)?window\.LAHSPointsBridge|await\s+window\.LAHSPointsBridge/);
+  assert.match(game, /eventId:\s*result\.eventId/);
+  assert.match(game, /visibilitychange/);
+  assert.match(game, /pagehide/);
+  assert.match(game, /animalChampionLeaderboard/);
+  assert.equal((game.match(/animalChampionLeaderboard/g) ?? []).length, 1, 'expected one isolated storage-key declaration');
+  assert.deepEqual(
+    [...new Set([...game.matchAll(/this\.phase\s*=\s*['"]([^'"]+)['"]/g)].map((match) => match[1]))],
+    ['menu-locked', 'menu-ready', 'countdown', 'loading-round', 'answering', 'feedback', 'game-over', 'error'],
+    'expected every explicit controller state',
+  );
+  assert.doesNotMatch(game, /AudioContext|new\s+Audio\b|microphone|SpeechRecognition|getUserMedia|requestFullscreen|webkitRequestFullscreen|<input|settings/i);
+});
+
+test('Animal Champion controller guards async work and centralizes run invalidation', async () => {
+  const game = await read('public/Games/Animal Champion/js/game.js');
+
+  assert.match(controllerMethod(game, 'invalidateRun'), /this\.runToken\s*\+=\s*1;[\s\S]*?this\.roundToken\s*\+=\s*1;[\s\S]*?this\.deadline\?\.stop\(\);[\s\S]*?cancelAnimationFrame\(this\.countdownFrame\);[\s\S]*?this\.pendingTimeouts\.clear\(\);/);
+  assert.match(controllerMethod(game, 'delay'), /runToken\s*===\s*this\.runToken\s*&&\s*roundToken\s*===\s*this\.roundToken/);
+  assertEveryAwaitIsTokenGuarded(game, 'beginRound');
+  assertEveryAwaitIsTokenGuarded(game, 'loadImageCandidate');
+  assert.match(
+    controllerMethod(game, 'beginRound'),
+    /this\.deadline\.start\(\);\s*if \(this\.document\.hidden\) this\.deadline\.pause\(\);/,
+    'an image that decodes while hidden must not start consuming answer time',
+  );
+
+  for (const method of ['startRun', 'mainMenu', 'playAgain', 'retry', 'showFatalError', 'teardown']) {
+    assert.match(
+      controllerMethod(game, method),
+      /this\.invalidateRun\(\);/,
+      `${method} must invalidate the active run`,
+    );
+  }
+
+  const start = controllerMethod(game, 'start');
+  for (const id of ['menuReveal', 'modeChallenger', 'modeContinuous', 'startButton', 'newGameButton', 'playAgainButton', 'mainMenuButton', 'retryButton', 'errorMenuButton']) {
+    assert.match(start, new RegExp(`this\\.elements\\.${id}\\.addEventListener\\(\\s*['"]click['"]`));
+  }
+  assert.match(start, /this\.document\.addEventListener\(['"]visibilitychange['"]/);
+  assert.match(start, /this\.window\.addEventListener\(['"]pagehide['"]/);
+
+  assert.match(controllerMethod(game, 'readLeaderboard'), /try \{[\s\S]*localStorage\.getItem\(LEADERBOARD_STORAGE_KEY\)[\s\S]*JSON\.parse\(raw\)[\s\S]*\} catch \{/);
+  assert.match(controllerMethod(game, 'saveLeaderboard'), /try \{[\s\S]*localStorage\.setItem\(LEADERBOARD_STORAGE_KEY,[\s\S]*\} catch \{/);
 });
 
 test('Animal Champion theme locks safe areas, media treatment, and responsive geometry', async () => {
