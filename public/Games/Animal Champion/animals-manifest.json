@@ -3,6 +3,7 @@
     "name": "Bat",
     "folder": "Animals/Bat",
     "images": [
+      "Animals/Bat/animal-champion-secondary.webp",
       "Animals/Bat/chatgpt-anime.webp",
       "Animals/Bat/chatgpt-fourth.webp",
       "Animals/Bat/chatgpt-generated.webp"
@@ -43,6 +44,7 @@
     "folder": "Animals/Cheetah",
     "images": [
       "Animals/Cheetah/93ff7ae1-90a0-428d-8db7-fd4b3a9f54b0.webp",
+      "Animals/Cheetah/animal-champion-secondary.webp",
       "Animals/Cheetah/chatgpt-anime.webp",
       "Animals/Cheetah/chatgpt-fourth.webp",
       "Animals/Cheetah/chatgpt-third.webp"
@@ -82,6 +84,8 @@
     "name": "Crocodile",
     "folder": "Animals/Crocodile",
     "images": [
+      "Animals/Crocodile/animal-champion-primary.webp",
+      "Animals/Crocodile/animal-champion-secondary.webp",
       "Animals/Crocodile/chatgpt-fourth.webp",
       "Animals/Crocodile/chatgpt-generated.webp",
       "Animals/Crocodile/chatgpt-third.webp"
@@ -191,6 +195,7 @@
     "name": "Giraffe",
     "folder": "Animals/Giraffe",
     "images": [
+      "Animals/Giraffe/animal-champion-secondary.webp",
       "Animals/Giraffe/chatgpt-anime.webp",
       "Animals/Giraffe/chatgpt-fourth.webp",
       "Animals/Giraffe/chatgpt-generated.webp",
@@ -201,6 +206,7 @@
     "name": "Goat",
     "folder": "Animals/Goat",
     "images": [
+      "Animals/Goat/animal-champion-secondary.webp",
       "Animals/Goat/chatgpt-anime.webp",
       "Animals/Goat/chatgpt-fourth.webp",
       "Animals/Goat/chatgpt-generated.webp",
@@ -211,6 +217,7 @@
     "name": "Gorilla",
     "folder": "Animals/Gorilla",
     "images": [
+      "Animals/Gorilla/animal-champion-secondary.webp",
       "Animals/Gorilla/chatgpt-anime.webp",
       "Animals/Gorilla/chatgpt-fourth.webp",
       "Animals/Gorilla/chatgpt-generated.webp"
@@ -230,6 +237,7 @@
     "name": "Hippopotamus",
     "folder": "Animals/Hippopotamus",
     "images": [
+      "Animals/Hippopotamus/animal-champion-secondary.webp",
       "Animals/Hippopotamus/chatgpt-fourth.webp",
       "Animals/Hippopotamus/chatgpt-generated.webp",
       "Animals/Hippopotamus/chatgpt-third.webp"
@@ -298,6 +306,8 @@
     "name": "Octopus",
     "folder": "Animals/Octopus",
     "images": [
+      "Animals/Octopus/animal-champion-primary.webp",
+      "Animals/Octopus/animal-champion-secondary.webp",
       "Animals/Octopus/chatgpt-anime.webp",
       "Animals/Octopus/chatgpt-fourth.webp",
       "Animals/Octopus/chatgpt-generated.webp",
@@ -358,6 +368,7 @@
     "name": "Pig",
     "folder": "Animals/Pig",
     "images": [
+      "Animals/Pig/animal-champion-secondary.webp",
       "Animals/Pig/chatgpt-anime.webp",
       "Animals/Pig/chatgpt-fourth.webp",
       "Animals/Pig/chatgpt-generated.webp",
@@ -378,6 +389,7 @@
     "name": "Rabbit",
     "folder": "Animals/Rabbit",
     "images": [
+      "Animals/Rabbit/animal-champion-secondary.webp",
       "Animals/Rabbit/chatgpt-anime.webp",
       "Animals/Rabbit/chatgpt-fourth.webp",
       "Animals/Rabbit/chatgpt-generated.webp",
@@ -408,6 +420,7 @@
     "name": "Shark",
     "folder": "Animals/Shark",
     "images": [
+      "Animals/Shark/animal-champion-secondary.webp",
       "Animals/Shark/chatgpt-anime.webp",
       "Animals/Shark/chatgpt-fourth.webp",
       "Animals/Shark/chatgpt-generated.webp"
@@ -427,6 +440,7 @@
     "name": "Snake",
     "folder": "Animals/Snake",
     "images": [
+      "Animals/Snake/animal-champion-secondary.webp",
       "Animals/Snake/chatgpt-anime.webp",
       "Animals/Snake/chatgpt-fourth.webp",
       "Animals/Snake/chatgpt-generated.webp"
@@ -446,6 +460,7 @@
     "name": "Tiger",
     "folder": "Animals/Tiger",
     "images": [
+      "Animals/Tiger/animal-champion-secondary.webp",
       "Animals/Tiger/chatgpt-fourth.webp",
       "Animals/Tiger/chatgpt-generated.webp",
       "Animals/Tiger/chatgpt-third.webp"
@@ -485,6 +500,7 @@
     "name": "Zebra",
     "folder": "Animals/Zebra",
     "images": [
+      "Animals/Zebra/animal-champion-secondary.webp",
       "Animals/Zebra/chatgpt-fourth.webp",
       "Animals/Zebra/chatgpt-generated.webp",
       "Animals/Zebra/chatgpt-third.webp"

@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "bat-secondary",
+      "kind": "gameplay",
+      "animal": "Bat",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nA calm fruit bat gliding with two complete wings, both ears, both eyes, feet, and wing membranes fully visible; friendly rather than fanged or threatening.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Bat/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "cheetah-secondary",
+      "kind": "gameplay",
+      "animal": "Cheetah",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nA cheetah in a natural side three-quarter run, slender build, solid black spots, black tear lines, long tail, and four coherent legs; unmistakably not a leopard.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Cheetah/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "crocodile-primary",
+      "kind": "gameplay",
+      "animal": "Crocodile",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nPhotoreal natural-history view of one crocodile resting beside water, one coherent head, narrow V-shaped snout, visible fourth lower tooth, long armored body and tail, mouth mostly closed.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Crocodile/animal-champion-primary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "crocodile-secondary",
+      "kind": "gameplay",
+      "animal": "Crocodile",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nBright premium wildlife illustration of one crocodile swimming calmly, one coherent head, narrow V-shaped snout, long armored body and tail, mouth closed.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Crocodile/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "giraffe-secondary",
+      "kind": "gameplay",
+      "animal": "Giraffe",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne full-body giraffe standing calmly on savanna, ossicones, ears, long neck, complete torso, four coherent legs, hooves, and tail all inside frame.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Giraffe/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "goat-secondary",
+      "kind": "gameplay",
+      "animal": "Goat",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne friendly domestic farm goat with modest curved horns, beard, cloven hooves, and full body; not an ibex, markhor, or mountain goat.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Goat/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "gorilla-secondary",
+      "kind": "gameplay",
+      "animal": "Gorilla",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne calm western lowland gorilla knuckle-walking in forest, natural proportions, complete hands and feet, closed mouth, no chest beating or King Kong pose.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side. Use a clear three-quarter angle in which both hands and both feet are fully visible and not hidden by the body.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Gorilla/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "hippopotamus-secondary",
+      "kind": "gameplay",
+      "animal": "Hippopotamus",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne calm full-body hippopotamus at a river edge, rounded barrel body, short legs, small ears, broad muzzle, closed mouth, no charge.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Hippopotamus/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "octopus-primary",
+      "kind": "gameplay",
+      "animal": "Octopus",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nPhotoreal natural-history view of one common octopus underwater with exactly two visible eyes and exactly eight individually traceable anatomically plausible arms, no knots or extra arms.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side. Arrange the eight arms as eight clearly separated radial limbs with visible uninterrupted paths from body to tip so a child can count exactly eight.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Octopus/animal-champion-primary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "octopus-secondary",
+      "kind": "gameplay",
+      "animal": "Octopus",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nBright premium underwater wildlife illustration of one octopus with exactly two eyes and exactly eight individually traceable anatomically plausible arms, friendly natural posture, no monster styling.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side. Arrange the eight arms as eight clearly separated radial limbs with visible uninterrupted paths from body to tip so a child can count exactly eight.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Octopus/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "pig-secondary",
+      "kind": "gameplay",
+      "animal": "Pig",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne friendly domestic farm pig in a meadow, exactly two ears, four coherent legs and cloven hooves, curly tail, natural snout, no duplicated anatomy.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Pig/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "rabbit-secondary",
+      "kind": "gameplay",
+      "animal": "Rabbit",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne alert cottontail rabbit in grass, exactly two natural eyes, two ears, four coherent paws, complete body and small tail, no smeared or humanlike features.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side. Use a gentle front three-quarter angle so both natural eyes, all four paws, and the small tail are visibly distinct.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Rabbit/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "shark-secondary",
+      "kind": "gameplay",
+      "animal": "Shark",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne calm great white shark swimming in side three-quarter profile, complete dorsal and pectoral fins and tail, closed mouth, no exposed teeth, attack, diver, or prey.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Shark/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "snake-secondary",
+      "kind": "gameplay",
+      "animal": "Snake",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne calm nonvenomous green tree python coiled naturally on a branch, one coherent head and continuous body fully traceable inside frame, closed mouth, no strike pose.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side. Keep the final tail tip visible and make the continuous body path visually traceable through the coils.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Snake/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "tiger-secondary",
+      "kind": "gameplay",
+      "animal": "Tiger",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne calm Bengal tiger walking in grass, complete full body, four coherent paws, long tail, clear orange-and-black stripes, closed mouth, no charge or attack.\n\nUse a deliberately pulled-back camera: the entire animal including every extremity must stay centered inside the middle 70 percent of the canvas width and middle 76 percent of the canvas height, leaving clearly visible empty habitat borders on every side.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Tiger/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "zebra-secondary",
+      "kind": "gameplay",
+      "animal": "Zebra",
+      "prompt": "Create a premium scientific-educational wildlife game illustration in 2:3 portrait composition. Show exactly one unmistakable animal species in a clean natural habitat, with the full animal and every defining feature visible inside a 12 percent safe margin. Child-safe confident posture, believable anatomy, clear eyes, clean silhouette, cinematic natural light, rich but realistic color, no humans, handlers, cages, prey, attack, gore, text, letters, numbers, labels, logos, signatures, or watermarks. The finished image must remain readable as a mobile multiple-choice game card.\n\nOne full-body plains zebra standing on savanna, two ears, mane, four coherent legs and hooves, complete striped torso and tail inside frame.",
+      "generator": "openai-imagegen",
+      "finalPath": "Animals/Zebra/animal-champion-secondary.webp",
+      "width": 853,
+      "height": 1280,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "menu-wallpaper",
+      "kind": "ui",
+      "animal": null,
+      "prompt": "Create a text-free premium cinematic wildlife championship menu background in 3:2 landscape composition. Deep emerald jungle and midnight navy atmosphere, warm amber rim light, soft mist, subtle firefly-like particles, and elegant leaf-shaped light streaks. Arrange a realistic lion, elephant, giraffe, zebra, panda, eagle, dolphin, and tiger as one balanced wildlife ensemble with believable anatomy and scale; keep the central upper-middle area calm and dark enough for a large DOM title, and keep the main lion/elephant focal group safe when the sides are cropped for a phone portrait viewport. No crown text, words, letters, numbers, logos, signatures, watermarks, gore, prey, attack, cages, or humans.\n\nCompose for both landscape and a centered phone-portrait crop: keep the complete lion and elephant together in the central 35 percent of the canvas, below the calm dark title area. Place the other six complete animals around them without overlaps, malformed anatomy, duplicates, or any animal touching an edge.",
+      "generator": "openai-imagegen",
+      "finalPath": "assets/images/ui/menu-wallpaper.webp",
+      "width": 1536,
+      "height": 1024,
+      "qa": "approved-full-resolution"
+    },
+    {
+      "id": "thumb",
+      "kind": "ui",
+      "animal": null,
+      "prompt": "Create a text-free square premium wildlife champion emblem for a family educational game. A calm noble lion portrait at the center, framed by a tasteful gold crown-and-leaf crest, with small accurate silhouettes of an elephant, giraffe, eagle, dolphin, tiger, panda, and zebra around it. Deep emerald and midnight navy background, polished amber-gold rim light, high contrast at thumbnail size, symmetrical readable composition, believable anatomy, no words, letters, numbers, logos, signatures, watermarks, gore, prey, attack, cages, or humans.",
+      "generator": "openai-imagegen",
+      "finalPath": "assets/images/ui/thumb.webp",
+      "width": 1024,
+      "height": 1024,
+      "qa": "approved-full-resolution"
+    }
+  ]
+}
