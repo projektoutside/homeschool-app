@@ -3,6 +3,14 @@ import test from 'node:test';
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
+import {
+  advanceSimulation,
+  createSimulation,
+  issueCommand,
+  runStrategyFixture,
+  summarizeSimulation,
+} from '../public/Games/DefenderChampion/src/core/simulation.js';
+import { selectTarget } from '../public/Games/DefenderChampion/src/core/targeting.js';
 
 test('reference command fixtures are legal deterministic inputs for every level', () => {
   for (const level of LEVELS) {
@@ -40,4 +48,130 @@ test('reference command fixtures are legal deterministic inputs for every level'
       assert.equal(tickZeroSpend <= level.startingCoins, true);
     }
   }
+});
+
+test('build commands accept a legal defender and reject occupied pads without changing coins', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 7 });
+
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  }), { accepted: true, reason: null });
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
+  }), { accepted: false, reason: 'pad-occupied' });
+
+  const summary = summarizeSimulation(simulation);
+  assert.equal(summary.coins, 100);
+  assert.deepEqual(summary.towers, [{
+    id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+  }]);
+});
+
+test('invalid economy commands reject without mutating the public summary', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 7 });
+  const expectRejectedWithoutMutation = (command, reason) => {
+    const before = summarizeSimulation(simulation);
+    assert.deepEqual(issueCommand(simulation, command), { accepted: false, reason });
+    assert.deepEqual(summarizeSimulation(simulation), before);
+  };
+
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'missing', padId: 'l1-pad-a' }, 'invalid-defender');
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'missing-pad' }, 'invalid-pad');
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'ironwarden', padId: 'l1-pad-a',
+  }), { accepted: true, reason: null });
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-b' }, 'insufficient-coins');
+  expectRejectedWithoutMutation({ type: 'upgrade', towerId: 'missing-tower' }, 'missing-tower');
+  expectRejectedWithoutMutation({ type: 'sell', towerId: 'missing-tower' }, 'missing-tower');
+
+  assert.deepEqual(issueCommand(simulation, { type: 'sell', towerId: 'tower-1' }), { accepted: true, reason: null });
+  expectRejectedWithoutMutation({ type: 'sell', towerId: 'tower-1' }, 'missing-tower');
+
+  const maxTierSimulation = createSimulation('level-1', { qa: true });
+  maxTierSimulation.coins = 500;
+  assert.deepEqual(issueCommand(maxTierSimulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-b',
+  }), { accepted: true, reason: null });
+  assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
+  assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
+  const maxTierBefore = summarizeSimulation(maxTierSimulation);
+  assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), {
+    accepted: false, reason: 'max-tier',
+  });
+  assert.deepEqual(summarizeSimulation(maxTierSimulation), maxTierBefore);
+});
+
+test('sell refunds seventy percent of all invested costs without changing score', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
+  issueCommand(simulation, { type: 'upgrade', towerId: 'tower-1' });
+  const beforeSell = summarizeSimulation(simulation);
+  assert.deepEqual(issueCommand(simulation, { type: 'sell', towerId: 'tower-1' }), { accepted: true, reason: null });
+  const afterSell = summarizeSimulation(simulation);
+
+  assert.equal(afterSell.coins, beforeSell.coins + 77);
+  assert.equal(afterSell.score, beforeSell.score);
+  assert.deepEqual(afterSell.towers, []);
+});
+
+test('pause reasons compose and speed remains a fixed-step request multiplier', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+
+  assert.deepEqual(issueCommand(simulation, { type: 'set-speed', value: 2 }), { accepted: true, reason: null });
+  assert.deepEqual(issueCommand(simulation, { type: 'set-pause-reason', reason: 'menu', active: true }), { accepted: true, reason: null });
+  assert.deepEqual(issueCommand(simulation, { type: 'set-pause-reason', reason: 'modal', active: true }), { accepted: true, reason: null });
+  advanceSimulation(simulation, 10);
+  assert.equal(summarizeSimulation(simulation).tick, 0);
+
+  issueCommand(simulation, { type: 'set-pause-reason', reason: 'menu', active: false });
+  advanceSimulation(simulation, 10);
+  assert.equal(summarizeSimulation(simulation).tick, 0);
+  issueCommand(simulation, { type: 'set-pause-reason', reason: 'modal', active: false });
+  advanceSimulation(simulation, 2);
+  const summary = summarizeSimulation(simulation);
+  assert.equal(summary.tick, 2);
+  assert.equal(summary.timeScale, 2);
+  assert.deepEqual(summary.pauseReasons, []);
+});
+
+test('authored waves use integer ticks and snapshots are detached and deterministic', () => {
+  const first = createSimulation('level-1', { qa: true, seed: 7 });
+  const second = createSimulation('level-1', { qa: true, seed: 7 });
+
+  advanceSimulation(first, 85);
+  advanceSimulation(second, 85);
+  const firstSummary = summarizeSimulation(first);
+  const secondSummary = summarizeSimulation(second);
+  assert.deepEqual(firstSummary, secondSummary);
+  assert.deepEqual(firstSummary.enemies.map((enemy) => enemy.spawnTick), [0, 84]);
+  firstSummary.enemies[0].health = 0;
+  assert.notEqual(summarizeSimulation(first).enemies[0].health, 0);
+});
+
+test('targeting resolves role metrics then path progress, spawn tick, and entity id', () => {
+  const candidates = [
+    { id: 'enemy-4', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 10, spawnTick: 8 },
+    { id: 'enemy-3', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 12, spawnTick: 9 },
+    { id: 'enemy-2', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 12, spawnTick: 7 },
+    { id: 'enemy-1', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 12, spawnTick: 7 },
+  ];
+
+  assert.equal(selectTarget(candidates, 'fastest').id, 'enemy-1');
+  assert.equal(selectTarget([...candidates, {
+    id: 'armored', speed: 20, armor: 0.8, clusterSize: 1, pathProgress: 1, spawnTick: 1,
+  }], 'highest-armor').id, 'armored');
+});
+
+test('strategy fixtures apply exact command ticks and reject unknown or cross-level strategies', () => {
+  const first = runStrategyFixture('level-1', 'level-1-balanced');
+  const second = runStrategyFixture('level-1', 'level-1-balanced');
+
+  assert.deepEqual(first, second);
+  assert.deepEqual(first.towers, [
+    { id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-a', tier: 0, totalInvested: 70 },
+    { id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-b', tier: 0, totalInvested: 50 },
+  ]);
+  assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
+  assert.throws(() => runStrategyFixture('level-1', 'level-2-balanced'), /does not belong to level-1/);
 });
