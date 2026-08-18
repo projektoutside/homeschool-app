@@ -57,6 +57,30 @@ export const createFixedStepClock = ({
   });
 };
 
+export const resolveBattlefieldFocusMove = ({
+  currentIndex = 0,
+  key,
+  shiftKey = false,
+  targetCount = 0,
+} = {}) => {
+  const count = Number.isInteger(targetCount) && targetCount > 0 ? targetCount : 0;
+  const current = count > 0 && Number.isInteger(currentIndex)
+    ? Math.min(count - 1, Math.max(0, currentIndex))
+    : 0;
+  const direction = shiftKey || key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 1;
+
+  if (key === 'Tab') {
+    const nextIndex = current + direction;
+    const shouldExit = count === 0 || nextIndex < 0 || nextIndex >= count;
+    return { nextIndex: shouldExit ? current : nextIndex, shouldExit };
+  }
+
+  return {
+    nextIndex: count > 0 ? (current + direction + count) % count : 0,
+    shouldExit: false,
+  };
+};
+
 export const installQaRuntimeHooks = ({
   windowRef = globalThis.window,
   enabled = false,

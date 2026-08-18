@@ -147536,6 +147536,25 @@
       }
     });
   };
+  var resolveBattlefieldFocusMove = ({
+    currentIndex = 0,
+    key,
+    shiftKey = false,
+    targetCount = 0
+  } = {}) => {
+    const count = Number.isInteger(targetCount) && targetCount > 0 ? targetCount : 0;
+    const current = count > 0 && Number.isInteger(currentIndex) ? Math.min(count - 1, Math.max(0, currentIndex)) : 0;
+    const direction = shiftKey || key === "ArrowLeft" || key === "ArrowUp" ? -1 : 1;
+    if (key === "Tab") {
+      const nextIndex = current + direction;
+      const shouldExit = count === 0 || nextIndex < 0 || nextIndex >= count;
+      return { nextIndex: shouldExit ? current : nextIndex, shouldExit };
+    }
+    return {
+      nextIndex: count > 0 ? (current + direction + count) % count : 0,
+      shouldExit: false
+    };
+  };
   var installQaRuntimeHooks = ({
     windowRef: windowRef2 = globalThis.window,
     enabled = false,
@@ -148304,6 +148323,7 @@
       this.selectedDefenderId = null;
       this.selectedTowerId = null;
       this.focusIndex = 0;
+      this.battlefieldHasFocus = false;
       this.lastSnapshot = summarizeSimulation(this.simulation);
       this.terminalHandled = false;
       this.destroyed = false;
@@ -148412,7 +148432,7 @@
       this.particlePool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.particle).setDepth(7));
     }
     createFocusViews() {
-      this.focusRing = this.add.graphics().setDepth(9);
+      this.focusRing = this.add.graphics().setDepth(9).setVisible(false);
       this.rangeRing = this.add.graphics().setDepth(1);
     }
     bindDomInput() {
@@ -148427,6 +148447,20 @@
       on("pointerup", (event) => this.releasePointer(event, battlefield));
       on("pointercancel", (event) => this.releasePointer(event, battlefield));
       on("keydown", (event) => this.handleKeyDown(event));
+      on("focus", () => this.handleBattlefieldFocus(true));
+      on("blur", () => this.handleBattlefieldFocus(false));
+    }
+    handleBattlefieldFocus(active) {
+      this.battlefieldHasFocus = active;
+      if (!active) {
+        this.updateFocusViews();
+        return;
+      }
+      if (!Number.isInteger(this.focusIndex) || this.focusIndex < 0 || this.focusIndex >= this.level.pads.length) {
+        this.focusIndex = 0;
+      }
+      this.updateFocusViews();
+      this.announceFocusedTarget();
     }
     pointerToWorld(event, battlefield) {
       const bounds = battlefield.getBoundingClientRect();
@@ -148485,10 +148519,27 @@
         });
         return;
       }
-      if (event.key === "Tab" || event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      if (event.key === "Tab") {
+        const focusMove = resolveBattlefieldFocusMove({
+          currentIndex: this.focusIndex,
+          key: event.key,
+          shiftKey: event.shiftKey,
+          targetCount: this.level.pads.length
+        });
+        if (focusMove.shouldExit) return;
         event.preventDefault();
-        const direction = event.shiftKey || event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
-        this.focusIndex = (this.focusIndex + direction + this.level.pads.length) % this.level.pads.length;
+        this.focusIndex = focusMove.nextIndex;
+        this.announceFocusedTarget();
+        this.updateFocusViews();
+        return;
+      }
+      if (event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        event.preventDefault();
+        this.focusIndex = resolveBattlefieldFocusMove({
+          currentIndex: this.focusIndex,
+          key: event.key,
+          targetCount: this.level.pads.length
+        }).nextIndex;
         this.announceFocusedTarget();
         this.updateFocusViews();
         return;
@@ -148697,8 +148748,13 @@
       const position = toWorldPoint(pad);
       const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
       this.focusRing.clear();
-      this.focusRing.lineStyle(6, 16777215, 1);
-      this.focusRing.strokeCircle(position.x, position.y, 39);
+      if (!this.battlefieldHasFocus) {
+        this.focusRing.setVisible(false);
+      } else {
+        this.focusRing.setVisible(true);
+        this.focusRing.lineStyle(6, 16777215, 1);
+        this.focusRing.strokeCircle(position.x, position.y, 39);
+      }
       this.rangeRing.clear();
       if (tower) {
         const range = DEFENDERS[tower.defenderId].range[tower.tier] * PATH_X_SCALE;

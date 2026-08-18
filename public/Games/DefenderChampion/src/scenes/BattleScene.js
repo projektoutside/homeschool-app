@@ -7,7 +7,7 @@ import {
   issueCommand,
   summarizeSimulation,
 } from '../core/simulation.js';
-import { createFixedStepClock } from '../ui/hud-controller.js';
+import { createFixedStepClock, resolveBattlefieldFocusMove } from '../ui/hud-controller.js';
 
 const WORLD_WIDTH = 720;
 const PATH_X_SCALE = WORLD_WIDTH / 640;
@@ -142,6 +142,7 @@ export class BattleScene extends Phaser.Scene {
     this.selectedDefenderId = null;
     this.selectedTowerId = null;
     this.focusIndex = 0;
+    this.battlefieldHasFocus = false;
     this.lastSnapshot = summarizeSimulation(this.simulation);
     this.terminalHandled = false;
     this.destroyed = false;
@@ -264,7 +265,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   createFocusViews() {
-    this.focusRing = this.add.graphics().setDepth(9);
+    this.focusRing = this.add.graphics().setDepth(9).setVisible(false);
     this.rangeRing = this.add.graphics().setDepth(1);
   }
 
@@ -279,6 +280,21 @@ export class BattleScene extends Phaser.Scene {
     on('pointerup', (event) => this.releasePointer(event, battlefield));
     on('pointercancel', (event) => this.releasePointer(event, battlefield));
     on('keydown', (event) => this.handleKeyDown(event));
+    on('focus', () => this.handleBattlefieldFocus(true));
+    on('blur', () => this.handleBattlefieldFocus(false));
+  }
+
+  handleBattlefieldFocus(active) {
+    this.battlefieldHasFocus = active;
+    if (!active) {
+      this.updateFocusViews();
+      return;
+    }
+    if (!Number.isInteger(this.focusIndex) || this.focusIndex < 0 || this.focusIndex >= this.level.pads.length) {
+      this.focusIndex = 0;
+    }
+    this.updateFocusViews();
+    this.announceFocusedTarget();
   }
 
   pointerToWorld(event, battlefield) {
@@ -344,11 +360,28 @@ export class BattleScene extends Phaser.Scene {
       });
       return;
     }
-    if (event.key === 'Tab' || event.key === 'ArrowRight' || event.key === 'ArrowDown'
+    if (event.key === 'Tab') {
+      const focusMove = resolveBattlefieldFocusMove({
+        currentIndex: this.focusIndex,
+        key: event.key,
+        shiftKey: event.shiftKey,
+        targetCount: this.level.pads.length,
+      });
+      if (focusMove.shouldExit) return;
+      event.preventDefault();
+      this.focusIndex = focusMove.nextIndex;
+      this.announceFocusedTarget();
+      this.updateFocusViews();
+      return;
+    }
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown'
       || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
-      const direction = event.shiftKey || event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
-      this.focusIndex = (this.focusIndex + direction + this.level.pads.length) % this.level.pads.length;
+      this.focusIndex = resolveBattlefieldFocusMove({
+        currentIndex: this.focusIndex,
+        key: event.key,
+        targetCount: this.level.pads.length,
+      }).nextIndex;
       this.announceFocusedTarget();
       this.updateFocusViews();
       return;
@@ -574,8 +607,13 @@ export class BattleScene extends Phaser.Scene {
     const position = toWorldPoint(pad);
     const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
     this.focusRing.clear();
-    this.focusRing.lineStyle(6, 0xffffff, 1);
-    this.focusRing.strokeCircle(position.x, position.y, 39);
+    if (!this.battlefieldHasFocus) {
+      this.focusRing.setVisible(false);
+    } else {
+      this.focusRing.setVisible(true);
+      this.focusRing.lineStyle(6, 0xffffff, 1);
+      this.focusRing.strokeCircle(position.x, position.y, 39);
+    }
     this.rangeRing.clear();
     if (tower) {
       const range = DEFENDERS[tower.defenderId].range[tower.tier] * PATH_X_SCALE;

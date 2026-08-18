@@ -269,6 +269,43 @@ test('the fixed-step clock caps wall-clock catch-up, doubles simulation steps at
   assert.deepEqual(advances, [1, 5, 2]);
 });
 
+test('battlefield focus wraps with arrows but releases Tab at the forward and reverse boundaries', async () => {
+  const hudModule = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
+  assert.equal(typeof hudModule.resolveBattlefieldFocusMove, 'function');
+
+  const move = hudModule.resolveBattlefieldFocusMove;
+  assert.deepEqual(move({ currentIndex: 2, key: 'ArrowRight', targetCount: 3 }), {
+    nextIndex: 0,
+    shouldExit: false,
+  });
+  assert.deepEqual(move({ currentIndex: 0, key: 'ArrowLeft', targetCount: 3 }), {
+    nextIndex: 2,
+    shouldExit: false,
+  });
+  assert.deepEqual(move({ currentIndex: 0, key: 'Tab', shiftKey: false, targetCount: 3 }), {
+    nextIndex: 1,
+    shouldExit: false,
+  });
+  assert.deepEqual(move({ currentIndex: 2, key: 'Tab', shiftKey: false, targetCount: 3 }), {
+    nextIndex: 2,
+    shouldExit: true,
+  });
+  assert.deepEqual(move({ currentIndex: 0, key: 'Tab', shiftKey: true, targetCount: 3 }), {
+    nextIndex: 0,
+    shouldExit: true,
+  });
+});
+
+test('battlefield focus entry restores visible internal feedback without trapping semantic controls', async () => {
+  const battleScene = await readGameFile('src/scenes/BattleScene.js');
+
+  assert.match(battleScene, /on\(['"]focus['"],\s*\(\)\s*=>\s*this\.handleBattlefieldFocus\(true\)\)/);
+  assert.match(battleScene, /on\(['"]blur['"],\s*\(\)\s*=>\s*this\.handleBattlefieldFocus\(false\)\)/);
+  assert.match(battleScene, /const focusMove = resolveBattlefieldFocusMove/);
+  assert.match(battleScene, /if \(focusMove\.shouldExit\) return;/);
+  assert.match(battleScene, /if \(!this\.battlefieldHasFocus\)\s*{[^}]*this\.focusRing\.setVisible\(false\)/s);
+});
+
 test('the browser entry resets the battle accumulator after a BFCache resume', async () => {
   const main = await readGameFile('src/main.js');
 
