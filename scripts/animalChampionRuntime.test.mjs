@@ -332,6 +332,11 @@ test('Animal Champion shell has the exact stable semantic contract', async () =>
 
   assert.match(openingTagById(html, 'feedback').source, /\baria-live="polite"/i);
   assert.match(openingTagById(html, 'timerRegion').source, /\brole="progressbar"/i);
+  assert.equal(
+    attribute(openingTagById(html, 'countdownScreen').source, 'tabindex'),
+    '-1',
+    'expected the countdown screen to accept programmatic focus',
+  );
 
   const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)].map((match) => match[1]);
   assert.equal(scripts.length, 2, 'expected the bridge followed by the module controller');
@@ -519,6 +524,34 @@ test('controller countdown announces each label once and invalidates a rapid res
   assert.equal(restartHarness.frames.size, 1);
   restartHarness.stepAnimationFrame(4_500);
   assert.equal(restartRounds, 1);
+});
+
+test('controller hands focus from Start to the countdown and first ready answer', async () => {
+  const harness = await createControllerHarness();
+  harness.controller.engine = {
+    startRun: () => ({ phase: 'ready', mode: 'challenger', score: 0, streak: 0 }),
+    beginRound: () => structuredClone(FIXED_ROUND),
+    activateRound: () => true,
+    getState: () => ({ phase: 'ready', mode: 'challenger', score: 0, streak: 0 }),
+  };
+  harness.controller.start();
+  harness.controller.revealMenu();
+
+  const startButton = harness.document.getElementById('startButton');
+  startButton.focus();
+  startButton.dispatch('click');
+
+  assert.equal(harness.document.getElementById('menuScreen').hidden, true);
+  assert.equal(harness.document.getElementById('countdownScreen').hidden, false);
+  assert.equal(harness.document.activeElement?.id, 'countdownScreen');
+
+  harness.stepAnimationFrame(4_500);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const choices = harness.document.getElementById('choiceGrid').children;
+  assert.equal(choices.length, 4);
+  assert.equal(harness.document.activeElement, choices[0]);
+  assert.equal(choices[0].dataset.animalId, 'bat');
 });
 
 test('controller falls back after one decode failure and starts choices and timer only after success', async () => {

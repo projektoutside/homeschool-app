@@ -179,6 +179,7 @@ export class AnimalChampionController {
     this.updateHud();
     this.resetRoundView();
     this.showScreen('countdown');
+    this.elements.countdownScreen.focus({ preventScroll: true });
     this.startCountdown();
   }
 
@@ -259,6 +260,7 @@ export class AnimalChampionController {
     this.elements.animalImage.alt = correctAnimal.alt;
     this.phase = 'answering';
     this.renderChoices(round);
+    this.elements.choiceGrid.querySelectorAll('button')[0]?.focus({ preventScroll: true });
     this.updateHud();
     this.deadline = createPausableDeadline({
       durationMs: ANSWER_WINDOW_MS,
