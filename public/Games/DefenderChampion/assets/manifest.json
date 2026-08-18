@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "environment-grass",
+      "path": "assets/environment/grass.webp",
+      "role": "seamless-terrain",
+      "width": 1254,
+      "height": 1254,
+      "alpha": false
+    },
+    {
+      "id": "environment-path-atlas",
+      "path": "assets/environment/path-atlas.webp",
+      "role": "path-atlas",
+      "width": 1256,
+      "height": 1256,
+      "alpha": true,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16
+    },
+    {
+      "id": "environment-props-atlas",
+      "path": "assets/environment/props-atlas.webp",
+      "role": "prop-atlas",
+      "width": 1256,
+      "height": 1256,
+      "alpha": true,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16
+    },
+    {
+      "id": "environment-gameplay-atlas",
+      "path": "assets/environment/gameplay-atlas.webp",
+      "role": "gameplay-atlas",
+      "width": 1256,
+      "height": 1256,
+      "alpha": true,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16
+    },
+    {
+      "id": "environment-title-emblem",
+      "path": "assets/environment/title-emblem.webp",
+      "role": "title-emblem",
+      "width": 1254,
+      "height": 1254,
+      "alpha": true
+    },
+    {
+      "id": "castle-states",
+      "path": "assets/castle/castle-states.webp",
+      "role": "castle-state-strip",
+      "width": 2172,
+      "height": 724,
+      "alpha": true,
+      "animated": true,
+      "frameWidth": 543,
+      "frameHeight": 724,
+      "frameCount": 4
+    },
+    {
+      "id": "catalog-thumbnail",
+      "path": "thumb.webp",
+      "role": "catalog-thumbnail",
+      "width": 1254,
+      "height": 1254,
+      "alpha": false
+    }
+  ]
+}

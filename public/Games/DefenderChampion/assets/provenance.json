@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "reference": {
+    "sourceRole": "Visual direction for palette, brightness, and friendly top-down storybook composition only",
+    "shipped": false,
+    "copiedPixels": false
+  },
+  "assets": [
+    {
+      "id": "environment-grass",
+      "finalPath": "assets/environment/grass.webp",
+      "finalPrompt": "Use case: stylized-concept\nAsset type: seamless top-down game terrain\nPrimary request: original bright storybook fantasy meadow grass texture\nStyle/medium: polished hand-painted 2D game art with clean inked micro-details\nComposition: seamless square tile, uniform top-down camera, no focal object\nPalette: fresh lime and spring greens with restrained yellow highlights\nConstraints: no path, trees, rocks, characters, castle, text, logo, border, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.\nTargeted correction: reserve a completely plain grass-only perimeter around all four edges, at least eight percent of the canvas wide; place every flower, leaf, and tuft fully inside that inset area; no motif may touch or cross an edge; keep the edge colors and brush texture uniform so opposite edges repeat cleanly; avoid any dominant cluster.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:02:49.3770634Z",
+      "optimization": "Pillow WebP quality 90, method 6",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "environment-path-atlas",
+      "finalPath": "assets/environment/path-atlas.webp",
+      "finalPrompt": "Use case: precise-object-edit\nAsset type: transparent 4x4 top-down path tile atlas cleanup\nInput images: Image 1 is the generated path atlas edit target.\nPrimary request: remove every detached yellow, green, red, and gray speckle or particle outside the sixteen connected warm-sand path silhouettes\nConstraints: change only detached stray pixels and fringe artifacts; preserve all sixteen path silhouettes, their exact 4x4 placement, warm sand palette, painted texture, scale, connector geometry, and genuine transparent alpha background; do not add a backdrop, grid, grass, props, characters, text, labels, signature, or watermark.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original built-in generated atlas with a built-in targeted cleanup edit; supplied image used only as visual direction for the original",
+      "generatedAt": "2026-08-18T22:22:16.6371761Z",
+      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "environment-props-atlas",
+      "finalPath": "assets/environment/props-atlas.webp",
+      "finalPrompt": "Use case: stylized-concept\nAsset type: transparent 4x4 environment prop atlas\nPrimary request: sixteen separate top-down meadow props: four trees, four bushes, two rocks, two white flowers, two grass clusters, and two small banners\nStyle/medium: polished storybook 2D game art with clean outlines and soft painted texture\nComposition: exact 4x4 equal grid, one centered prop per cell, consistent scale and light\nConstraints: transparent background, no overlap, text, labels, path, castle, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:08:22.4099427Z",
+      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "environment-gameplay-atlas",
+      "finalPath": "assets/environment/gameplay-atlas.webp",
+      "finalPrompt": "Use case: stylized-concept\nAsset type: transparent 4x4 gameplay icon atlas\nPrimary request: build pad, selected build pad, range marker, gold coin, full heart, empty heart, arrow, rune bolt, shield bash, explosion, stun stars, slow rune, heal sparkle, boss warning, victory burst, defeat crack\nStyle/medium: polished readable fantasy strategy-game icons with clean outlines\nComposition: exact 4x4 equal grid, one centered object per cell\nConstraints: transparent background, no words, letters, numbers, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:10:09.4320183Z",
+      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "environment-title-emblem",
+      "finalPath": "assets/environment/title-emblem.webp",
+      "finalPrompt": "Use case: logo-brand\nAsset type: transparent game title emblem without typography\nPrimary request: original blue shield protecting a small white castle beneath a gold champion crown, framed by two green leaves\nStyle/medium: premium storybook fantasy game emblem, crisp silhouette, polished painted finish\nComposition: centered square emblem with safe transparent margin\nConstraints: no text, letters, initials, characters, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:11:25.2284961Z",
+      "optimization": "Pillow lossless WebP, method 6",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "castle-states",
+      "finalPath": "assets/castle/castle-states.webp",
+      "finalPrompt": "Use case: stylized-concept\nAsset type: transparent horizontal four-frame castle state strip\nPrimary request: the same friendly white stone castle with blue roof and gold shield shown as pristine idle, impact recoil, visibly damaged, and defeated but non-gory\nStyle/medium: polished storybook 2D game sprite, clean outline, soft painted texture\nComposition: exact four equal horizontal slots, fixed bottom-center anchor and identical scale\nConstraints: transparent background, no scenery, smoke covering silhouette, text, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.\nTargeted correction: same castle design and footprint in every slot, all four bases on one shared baseline, no bushes or ground dressing, actual alpha channel outside the sprites.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:14:26.5033145Z",
+      "optimization": "Pillow lossless WebP, method 6",
+      "qaStatus": "approved"
+    },
+    {
+      "id": "catalog-thumbnail",
+      "finalPath": "thumb.webp",
+      "finalPrompt": "Use case: stylized-concept\nAsset type: square game catalog thumbnail\nPrimary request: original blue-and-gold castle shield defended by four tiny fantasy champion silhouettes against a winding meadow path\nStyle/medium: premium bright storybook strategy-game key art\nComposition: centered readable square icon with safe crop margin\nConstraints: no text, letters, numbers, copied characters, signature, or watermark\nInput images: Image 1 is a reference image for palette, brightness, and friendly top-down storybook composition only; do not copy pixels, characters, interface elements, or exact layout from it.\nTargeted correction: make the central subject a large blue-and-gold shield bearing a simple white castle symbol, not a full-size castle building; arrange exactly four tiny original dark champion silhouettes as secondary guardians around it; use unique generic helmet, bow, staff, and shield silhouettes with no faces or copied costume details; no enemies, health bars, UI, or portrait-like characters; keep all important shapes inside a generous ten-percent safe crop margin and use a new path layout.",
+      "toolMode": "built-in imagegen",
+      "sourceRole": "Original generated project asset; supplied image used only as visual direction",
+      "generatedAt": "2026-08-18T22:16:06.3676602Z",
+      "optimization": "Pillow WebP quality 90, method 6",
+      "qaStatus": "approved"
+    }
+  ]
+}

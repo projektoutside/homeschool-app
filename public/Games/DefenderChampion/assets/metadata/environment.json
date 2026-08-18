@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "terrain": {
+    "assetId": "environment-grass",
+    "tileWidth": 1254,
+    "tileHeight": 1254,
+    "seamless": true
+  },
+  "atlases": {
+    "path": {
+      "assetId": "environment-path-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "order": [
+        "path-01", "path-02", "path-03", "path-04",
+        "path-05", "path-06", "path-07", "path-08",
+        "path-09", "path-10", "path-11", "path-12",
+        "path-13", "path-14", "path-15", "path-16"
+      ]
+    },
+    "props": {
+      "assetId": "environment-props-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "order": [
+        "tree-broad", "tree-round", "tree-leafy", "tree-pine",
+        "bush-leafy", "bush-flowered", "bush-spiky", "bush-berry",
+        "rock-large", "rock-small", "white-flower-single", "white-flower-pair",
+        "grass-cluster-small", "grass-cluster-large", "banner-blue", "banner-shield"
+      ]
+    },
+    "gameplay": {
+      "assetId": "environment-gameplay-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "order": [
+        "build-pad", "selected-build-pad", "range-marker", "gold-coin",
+        "full-heart", "empty-heart", "arrow", "rune-bolt",
+        "shield-bash", "explosion", "stun-stars", "slow-rune",
+        "heal-sparkle", "boss-warning", "victory-burst", "defeat-crack"
+      ]
+    }
+  },
+  "titleEmblem": {
+    "assetId": "environment-title-emblem",
+    "width": 1254,
+    "height": 1254,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    }
+  }
+}

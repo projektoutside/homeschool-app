@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "castle-states",
+  "columns": 4,
+  "rows": 1,
+  "frameWidth": 543,
+  "frameHeight": 724,
+  "frameCount": 4,
+  "anchor": {
+    "x": 0.5,
+    "y": 1
+  },
+  "frames": [
+    { "id": "idle", "index": 0, "x": 0, "y": 0, "width": 543, "height": 724 },
+    { "id": "impact", "index": 1, "x": 543, "y": 0, "width": 543, "height": 724 },
+    { "id": "damaged", "index": 2, "x": 1086, "y": 0, "width": 543, "height": 724 },
+    { "id": "defeated", "index": 3, "x": 1629, "y": 0, "width": 543, "height": 724 }
+  ]
+}
