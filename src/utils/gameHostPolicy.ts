@@ -5,6 +5,7 @@ export type GameHostPolicy = Readonly<{
     requiresNativeFullscreen: boolean;
     iframeAllow: string | undefined;
     allowFullScreen: boolean;
+    iframeSandbox: string;
 }>;
 
 const DEFAULT_POLICY: GameHostPolicy = Object.freeze({
@@ -12,6 +13,7 @@ const DEFAULT_POLICY: GameHostPolicy = Object.freeze({
     requiresNativeFullscreen: true,
     iframeAllow: 'autoplay; fullscreen; camera; microphone; geolocation',
     allowFullScreen: true,
+    iframeSandbox: 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation',
 });
 
 const ANIMAL_CHAMPION_POLICY: GameHostPolicy = Object.freeze({
@@ -19,6 +21,7 @@ const ANIMAL_CHAMPION_POLICY: GameHostPolicy = Object.freeze({
     requiresNativeFullscreen: false,
     iframeAllow: undefined,
     allowFullScreen: false,
+    iframeSandbox: 'allow-same-origin allow-scripts',
 });
 
 export const getGameHostPolicy = (gameId: string | null | undefined): GameHostPolicy =>

@@ -8,6 +8,8 @@ import {
 } from '../src/utils/gameHostPolicy.ts';
 
 const LEGACY_IFRAME_ALLOW = 'autoplay; fullscreen; camera; microphone; geolocation';
+const LEGACY_IFRAME_SANDBOX = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation';
+const ANIMAL_CHAMPION_IFRAME_SANDBOX = 'allow-same-origin allow-scripts';
 const appSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const mainLayoutSource = readFileSync(new URL('../src/layouts/MainLayout.tsx', import.meta.url), 'utf8');
 const gamePlayerSource = readFileSync(new URL('../src/pages/GamePlayer.tsx', import.meta.url), 'utf8');
@@ -21,6 +23,7 @@ test('Animal Champion receives the frozen least-privilege host policy', () => {
     requiresNativeFullscreen: false,
     iframeAllow: undefined,
     allowFullScreen: false,
+    iframeSandbox: ANIMAL_CHAMPION_IFRAME_SANDBOX,
   });
   assert.equal(Object.isFrozen(policy), true);
 });
@@ -34,6 +37,7 @@ test('other and near-match games retain frozen legacy host behavior', () => {
       requiresNativeFullscreen: true,
       iframeAllow: LEGACY_IFRAME_ALLOW,
       allowFullScreen: true,
+      iframeSandbox: LEGACY_IFRAME_SANDBOX,
     });
     assert.equal(Object.isFrozen(policy), true);
   }
@@ -136,6 +140,7 @@ test('GamePlayer derives one policy before its unconditional zoom hook and enfor
   assert.match(gamePlayerSource, /requiresRouteFullscreen\s*=\s*Boolean\([\s\S]*?gameHostPolicy\.requiresNativeFullscreen/);
   assert.match(gamePlayerSource, /allow=\{gameHostPolicy\.iframeAllow\}/);
   assert.match(gamePlayerSource, /allowFullScreen=\{gameHostPolicy\.allowFullScreen\}/);
+  assert.match(gamePlayerSource, /sandbox=\{gameHostPolicy\.iframeSandbox\}/);
 
   const currentGameIdIndex = gamePlayerSource.indexOf('const currentGameId =');
   const gameHostPolicyIndex = gamePlayerSource.indexOf('const gameHostPolicy =');
@@ -146,5 +151,7 @@ test('GamePlayer derives one policy before its unconditional zoom hook and enfor
 
 test('legacy iframe permissions are centralized in the default policy', () => {
   assert.equal(policySource.includes(LEGACY_IFRAME_ALLOW), true);
+  assert.equal(policySource.includes(LEGACY_IFRAME_SANDBOX), true);
   assert.equal(gamePlayerSource.includes(LEGACY_IFRAME_ALLOW), false);
+  assert.equal(gamePlayerSource.includes(LEGACY_IFRAME_SANDBOX), false);
 });

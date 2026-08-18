@@ -840,7 +840,7 @@ const GamePlayer: React.FC = () => {
                     className={`game-player-frame ${isFrameLoading ? 'is-loading' : ''}`}
                     allow={gameHostPolicy.iframeAllow}
                     allowFullScreen={gameHostPolicy.allowFullScreen}
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
+                    sandbox={gameHostPolicy.iframeSandbox}
                     onLoad={() => {
                         setLoadedLaunchPath(launchPath);
                         resumeIframeRuntime(iframeRef.current, {
