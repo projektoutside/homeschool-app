@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06110f">
+  <title>Animal Champion</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="animalChampionApp" class="app-shell">
+    <section id="menuScreen" class="screen screen--menu" aria-labelledby="gameTitle">
+      <div class="menu-atmosphere" aria-hidden="true">
+        <span class="leaf leaf--one"></span>
+        <span class="leaf leaf--two"></span>
+        <span class="leaf leaf--three"></span>
+      </div>
+      <div class="menu-hero">
+        <span class="eyebrow">The wild challenge begins</span>
+        <h1 id="gameTitle"><span>Animal</span> <span>Champion</span></h1>
+        <p class="menu-hero__intro">Trust your instincts. Name the wildlife. Claim the crown.</p>
+      </div>
+      <button id="menuReveal" class="menu-reveal" type="button" aria-expanded="false" aria-controls="menuPanel">
+        <span class="menu-reveal__prompt">Click anywhere to begin</span>
+      </button>
+      <div id="menuPanel" class="menu-panel" hidden>
+        <p class="menu-panel__label">Choose your expedition</p>
+        <div class="mode-toggle" role="group" aria-label="Game mode">
+          <button id="modeChallenger" type="button" aria-pressed="true">
+            <span>Challenger</span>
+            <small>One miss ends the run</small>
+          </button>
+          <button id="modeContinuous" type="button" aria-pressed="false">
+            <span>Continuous</span>
+            <small>Keep exploring</small>
+          </button>
+        </div>
+        <button id="startButton" class="primary-action" type="button">Start Game</button>
+      </div>
+    </section>
+
+    <section id="countdownScreen" class="screen screen--centered" aria-live="assertive" hidden>
+      <div class="countdown-card">
+        <span class="eyebrow">Eyes on the wild</span>
+        <p id="countdownValue">3</p>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen screen--game" aria-labelledby="questionText" hidden>
+      <header class="game-hud">
+        <div class="hud-stat">
+          <span>Score</span>
+          <strong id="scoreValue">0</strong>
+        </div>
+        <div class="hud-stat">
+          <span>Streak</span>
+          <strong id="streakValue">0</strong>
+        </div>
+        <button id="newGameButton" class="quiet-action" type="button">New Game</button>
+      </header>
+
+      <figure class="animal-stage">
+        <img id="animalBackdrop" alt="" aria-hidden="true">
+        <img id="animalImage" alt="" decoding="async">
+        <span class="animal-stage__frame" aria-hidden="true"></span>
+      </figure>
+
+      <div class="question-block">
+        <span class="eyebrow">Wildlife identification</span>
+        <h2 id="questionText">Which animal is this?</h2>
+      </div>
+      <div id="timerRegion" class="timer-track" role="progressbar" aria-label="Time remaining" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15">
+        <span id="timerBar"></span>
+      </div>
+      <div id="choiceGrid" class="choice-grid" aria-label="Animal choices"></div>
+      <p id="feedback" class="feedback" aria-live="polite"></p>
+    </section>
+
+    <section id="gameOverScreen" class="screen screen--centered" aria-labelledby="gameOverTitle" hidden>
+      <div class="game-over-card result-card">
+        <p class="eyebrow">Wildlife results</p>
+        <h2 id="gameOverTitle">Challenge Complete</h2>
+        <p class="final-score">Final score <strong id="finalScore">0</strong></p>
+        <section class="leaderboard-card" aria-labelledby="leaderboardTitle">
+          <h3 id="leaderboardTitle">Top Scores</h3>
+          <ol id="leaderboard"></ol>
+        </section>
+        <div class="action-row">
+          <button id="playAgainButton" class="primary-action" type="button">Play Again</button>
+          <button id="mainMenuButton" class="secondary-action" type="button">Main Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="errorScreen" class="screen screen--centered" aria-labelledby="errorTitle" hidden>
+      <div class="error-card result-card">
+        <span class="trail-mark" aria-hidden="true">!</span>
+        <p class="eyebrow">Expedition paused</p>
+        <h2 id="errorTitle">We lost the animal trail</h2>
+        <p id="errorMessage">The animal images could not be loaded. Try again or return to the menu.</p>
+        <div class="action-row">
+          <button id="retryButton" class="primary-action" type="button">Try Again</button>
+          <button id="errorMenuButton" class="secondary-action" type="button">Main Menu</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../shared/lahsPointsBridge.js"></script>
+</body>
+</html>
