@@ -14,11 +14,32 @@
       "frameWidth": 314,
       "frameHeight": 314,
       "frameCount": 16,
+      "laneWidth": 128,
+      "edgeCenter": 156.5,
+      "safeInset": 24,
       "order": [
-        "path-01", "path-02", "path-03", "path-04",
-        "path-05", "path-06", "path-07", "path-08",
-        "path-09", "path-10", "path-11", "path-12",
-        "path-13", "path-14", "path-15", "path-16"
+        "isolated", "straight-horizontal", "straight-vertical", "cross-north-east-south-west",
+        "corner-north-east", "corner-east-south", "corner-south-west", "corner-west-north",
+        "tee-north-east-south", "tee-east-south-west", "tee-south-west-north", "tee-west-north-east",
+        "cap-north", "cap-east", "cap-south", "cap-west"
+      ],
+      "tiles": [
+        { "id": "isolated", "connects": [], "index": 0 },
+        { "id": "straight-horizontal", "connects": ["east", "west"], "index": 1 },
+        { "id": "straight-vertical", "connects": ["north", "south"], "index": 2 },
+        { "id": "cross-north-east-south-west", "connects": ["north", "east", "south", "west"], "index": 3 },
+        { "id": "corner-north-east", "connects": ["north", "east"], "index": 4 },
+        { "id": "corner-east-south", "connects": ["east", "south"], "index": 5 },
+        { "id": "corner-south-west", "connects": ["south", "west"], "index": 6 },
+        { "id": "corner-west-north", "connects": ["west", "north"], "index": 7 },
+        { "id": "tee-north-east-south", "connects": ["north", "east", "south"], "index": 8 },
+        { "id": "tee-east-south-west", "connects": ["east", "south", "west"], "index": 9 },
+        { "id": "tee-south-west-north", "connects": ["south", "west", "north"], "index": 10 },
+        { "id": "tee-west-north-east", "connects": ["west", "north", "east"], "index": 11 },
+        { "id": "cap-north", "connects": ["north"], "index": 12 },
+        { "id": "cap-east", "connects": ["east"], "index": 13 },
+        { "id": "cap-south", "connects": ["south"], "index": 14 },
+        { "id": "cap-west", "connects": ["west"], "index": 15 }
       ]
     },
     "props": {
@@ -28,6 +49,7 @@
       "frameWidth": 314,
       "frameHeight": 314,
       "frameCount": 16,
+      "safeInset": 16,
       "order": [
         "tree-broad", "tree-round", "tree-leafy", "tree-pine",
         "bush-leafy", "bush-flowered", "bush-spiky", "bush-berry",
@@ -42,6 +64,7 @@
       "frameWidth": 314,
       "frameHeight": 314,
       "frameCount": 16,
+      "safeInset": 16,
       "order": [
         "build-pad", "selected-build-pad", "range-marker", "gold-coin",
         "full-heart", "empty-heart", "arrow", "rune-bolt",
@@ -54,6 +77,7 @@
     "assetId": "environment-title-emblem",
     "width": 1254,
     "height": 1254,
+    "safePerimeter": 48,
     "anchor": {
       "x": 0.5,
       "y": 0.5

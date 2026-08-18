@@ -20,8 +20,176 @@ const defaultPythonPath = existsSync(bundledPythonPath) ? bundledPythonPath : sy
 const pythonPath = process.env.DEFENDER_CHAMPION_ASSET_PYTHON ?? defaultPythonPath;
 const perAssetLimit = 1_500_000;
 const manifestTotalLimit = 15_000_000;
+const atlasFrameSize = 314;
+const pathLaneWidth = 128;
+const pathSafeInset = 24;
+const spriteSafeInset = 16;
+const expectedManifestAssets = [
+  ['environment-grass', 'assets/environment/grass.webp'],
+  ['environment-path-atlas', 'assets/environment/path-atlas.webp'],
+  ['environment-props-atlas', 'assets/environment/props-atlas.webp'],
+  ['environment-gameplay-atlas', 'assets/environment/gameplay-atlas.webp'],
+  ['environment-title-emblem', 'assets/environment/title-emblem.webp'],
+  ['castle-states', 'assets/castle/castle-states.webp'],
+  ['catalog-thumbnail', 'thumb.webp'],
+];
+const expectedPathTiles = [
+  { id: 'isolated', connects: [] },
+  { id: 'straight-horizontal', connects: ['east', 'west'] },
+  { id: 'straight-vertical', connects: ['north', 'south'] },
+  { id: 'cross-north-east-south-west', connects: ['north', 'east', 'south', 'west'] },
+  { id: 'corner-north-east', connects: ['north', 'east'] },
+  { id: 'corner-east-south', connects: ['east', 'south'] },
+  { id: 'corner-south-west', connects: ['south', 'west'] },
+  { id: 'corner-west-north', connects: ['west', 'north'] },
+  { id: 'tee-north-east-south', connects: ['north', 'east', 'south'] },
+  { id: 'tee-east-south-west', connects: ['east', 'south', 'west'] },
+  { id: 'tee-south-west-north', connects: ['south', 'west', 'north'] },
+  { id: 'tee-west-north-east', connects: ['west', 'north', 'east'] },
+  { id: 'cap-north', connects: ['north'] },
+  { id: 'cap-east', connects: ['east'] },
+  { id: 'cap-south', connects: ['south'] },
+  { id: 'cap-west', connects: ['west'] },
+];
+const expectedPropsOrder = [
+  'tree-broad', 'tree-round', 'tree-leafy', 'tree-pine',
+  'bush-leafy', 'bush-flowered', 'bush-spiky', 'bush-berry',
+  'rock-large', 'rock-small', 'white-flower-single', 'white-flower-pair',
+  'grass-cluster-small', 'grass-cluster-large', 'banner-blue', 'banner-shield',
+];
+const expectedGameplayOrder = [
+  'build-pad', 'selected-build-pad', 'range-marker', 'gold-coin',
+  'full-heart', 'empty-heart', 'arrow', 'rune-bolt',
+  'shield-bash', 'explosion', 'stun-stars', 'slow-rune',
+  'heal-sparkle', 'boss-warning', 'victory-burst', 'defeat-crack',
+];
+
+const alphaInspectorScript = String.raw`
+import json
+import sys
+from PIL import Image
+
+source, frame_width, frame_height, threshold = sys.argv[1:]
+frame_width = int(frame_width)
+frame_height = int(frame_height)
+threshold = int(threshold)
+
+with Image.open(source) as opened:
+    image = opened.convert('RGBA')
+
+def bbox(alpha, cutoff):
+    found = alpha.point(lambda value: 255 if value > cutoff else 0).getbbox()
+    return None if found is None else list(found)
+
+def component_sizes(alpha, cutoff):
+    width, height = alpha.size
+    pixels = bytearray(alpha.tobytes())
+    visited = bytearray(width * height)
+    sizes = []
+    for start, value in enumerate(pixels):
+        if value <= cutoff or visited[start]:
+            continue
+        visited[start] = 1
+        stack = [start]
+        size = 0
+        while stack:
+            point = stack.pop()
+            size += 1
+            x = point % width
+            y = point // width
+            for neighbor in (
+                point - 1 if x else -1,
+                point + 1 if x + 1 < width else -1,
+                point - width if y else -1,
+                point + width if y + 1 < height else -1,
+            ):
+                if neighbor >= 0 and not visited[neighbor] and pixels[neighbor] > cutoff:
+                    visited[neighbor] = 1
+                    stack.append(neighbor)
+        sizes.append(size)
+    return sorted(sizes, reverse=True)
+
+def longest_run(values):
+    longest = 0
+    current = 0
+    for value in values:
+        current = current + 1 if value else 0
+        longest = max(longest, current)
+    return longest
+
+frames = []
+for top in range(0, image.height, frame_height):
+    for left in range(0, image.width, frame_width):
+        alpha = image.crop((left, top, left + frame_width, top + frame_height)).getchannel('A')
+        pixels = alpha.load()
+        meaningful_bbox = bbox(alpha, threshold)
+        bbox_edge_runs = None
+        if meaningful_bbox is not None:
+            box_left, box_top, box_right, box_bottom = meaningful_bbox
+            bbox_edge_runs = {
+                'north': longest_run(pixels[x, box_top] > threshold for x in range(box_left, box_right)),
+                'east': longest_run(pixels[box_right - 1, y] > threshold for y in range(box_top, box_bottom)),
+                'south': longest_run(pixels[x, box_bottom - 1] > threshold for x in range(box_left, box_right)),
+                'west': longest_run(pixels[box_left, y] > threshold for y in range(box_top, box_bottom)),
+            }
+        frames.append({
+            'bbox0': bbox(alpha, 0),
+            'bbox': meaningful_bbox,
+            'bboxEdgeRuns': bbox_edge_runs,
+            'components0': component_sizes(alpha, 0),
+            'components': component_sizes(alpha, threshold),
+            'edges': {
+                'north': [x for x in range(frame_width) if pixels[x, 0] > threshold],
+                'east': [y for y in range(frame_height) if pixels[frame_width - 1, y] > threshold],
+                'south': [x for x in range(frame_width) if pixels[x, frame_height - 1] > threshold],
+                'west': [y for y in range(frame_height) if pixels[0, y] > threshold],
+            },
+        })
+
+print(json.dumps(frames, separators=(',', ':')))
+`;
 
 const readJson = async (filePath) => JSON.parse(await readFile(filePath, 'utf8'));
+
+const inspectAlphaFrames = (filePath, frameWidth, frameHeight, threshold = 64) => {
+  const inspection = spawnSync(
+    pythonPath,
+    ['-c', alphaInspectorScript, filePath, String(frameWidth), String(frameHeight), String(threshold)],
+    { cwd: repoRoot, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+  );
+  assert.equal(inspection.status, 0, inspection.stderr);
+  return JSON.parse(inspection.stdout);
+};
+
+const assertCenteredSafeSprite = (frame, label, safeInset) => {
+  assert.ok(frame.bbox0, `${label} must contain visible alpha`);
+  const [left, top, right, bottom] = frame.bbox0;
+  assert.ok(left >= safeInset, `${label} crosses its left safe inset (${left} < ${safeInset})`);
+  assert.ok(top >= safeInset, `${label} crosses its top safe inset (${top} < ${safeInset})`);
+  assert.ok(
+    atlasFrameSize - right >= safeInset,
+    `${label} crosses its right safe inset (${atlasFrameSize - right} < ${safeInset})`,
+  );
+  assert.ok(
+    atlasFrameSize - bottom >= safeInset,
+    `${label} crosses its bottom safe inset (${atlasFrameSize - bottom} < ${safeInset})`,
+  );
+  assert.ok(Math.abs((left + right - 1) / 2 - (atlasFrameSize - 1) / 2) <= 1,
+    `${label} is not horizontally centered`);
+  assert.ok(Math.abs((top + bottom - 1) / 2 - (atlasFrameSize - 1) / 2) <= 1,
+    `${label} is not vertically centered`);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(frame.edges).map(([side, positions]) => [side, positions.length])),
+    { north: 0, east: 0, south: 0, west: 0 },
+    `${label} bleeds across a shared cell border`,
+  );
+  for (const [side, runLength] of Object.entries(frame.bboxEdgeRuns)) {
+    assert.ok(
+      runLength <= 24,
+      `${label} has a ${runLength}px flat ${side} alpha cutoff inherited from a source grid boundary`,
+    );
+  }
+};
 
 const assertCaseCorrectRelativePath = async (relativePath) => {
   assert.equal(typeof relativePath, 'string');
@@ -175,7 +343,11 @@ test('Defender Champion manifest assets satisfy the production raster contract',
 
   assert.equal(manifest.schemaVersion, 1);
   assert.ok(Array.isArray(manifest.assets));
-  assert.ok(manifest.assets.length > 0, 'manifest must register at least one asset');
+  assert.deepEqual(
+    manifest.assets.map(({ id, path: assetPath }) => [id, assetPath]),
+    expectedManifestAssets,
+    'manifest must register exactly the seven Task 8 raster assets in contract order',
+  );
   assert.equal(provenance.schemaVersion, 1);
   assert.ok(Array.isArray(provenance.assets));
 
@@ -240,6 +412,17 @@ test('Defender Champion frame metadata exactly maps every atlas and castle state
   ]);
   const assetsById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
 
+  assert.deepEqual(Object.keys(environment.atlases), ['path', 'props', 'gameplay']);
+  assert.deepEqual(environment.atlases.path.order, expectedPathTiles.map(({ id }) => id));
+  assert.deepEqual(environment.atlases.path.tiles, expectedPathTiles.map((tile, index) => ({
+    ...tile,
+    index,
+  })));
+  assert.equal(environment.atlases.path.laneWidth, pathLaneWidth);
+  assert.equal(environment.atlases.path.safeInset, pathSafeInset);
+  assert.deepEqual(environment.atlases.props.order, expectedPropsOrder);
+  assert.deepEqual(environment.atlases.gameplay.order, expectedGameplayOrder);
+
   for (const atlas of Object.values(environment.atlases)) {
     const asset = assetsById.get(atlas.assetId);
     assert.ok(asset, `missing manifest asset ${atlas.assetId}`);
@@ -271,6 +454,109 @@ test('Defender Champion frame metadata exactly maps every atlas and castle state
       y: 0,
       width: castle.frameWidth,
       height: castle.frameHeight,
+      anchorX: castle.anchorX,
+      groundContactY: castle.groundContactY,
+      scale: castle.scale,
     });
   }
+});
+
+test('Defender Champion path topology has clean, centered, edge-connected lanes', async () => {
+  const environment = await readJson(environmentMetadataPath);
+  const atlas = environment.atlases.path;
+  const frames = inspectAlphaFrames(
+    path.join(gameRoot, 'assets', 'environment', 'path-atlas.webp'),
+    atlas.frameWidth,
+    atlas.frameHeight,
+  );
+  assert.equal(frames.length, expectedPathTiles.length);
+
+  const expectedEdgeRun = Array.from(
+    { length: pathLaneWidth },
+    (_, index) => ((atlasFrameSize - pathLaneWidth) / 2) + index,
+  );
+  for (const [index, expected] of expectedPathTiles.entries()) {
+    const frame = frames[index];
+    assert.ok(frame.bbox, `${expected.id} must contain meaningful path alpha`);
+    assert.deepEqual(frame.components0.length, 1, `${expected.id} has detached alpha fringe components`);
+    assert.deepEqual(frame.components.length, 1, `${expected.id} must be one connected path silhouette`);
+    for (const side of ['north', 'east', 'south', 'west']) {
+      if (expected.connects.includes(side)) {
+        assert.deepEqual(
+          frame.edges[side],
+          expectedEdgeRun,
+          `${expected.id} ${side} connector must be a centered ${pathLaneWidth}px lane`,
+        );
+      } else {
+        assert.deepEqual(frame.edges[side], [], `${expected.id} must not connect ${side}`);
+        const [left, top, right, bottom] = frame.bbox;
+        const inset = { north: top, east: atlasFrameSize - right, south: atlasFrameSize - bottom, west: left }[side];
+        assert.ok(inset >= pathSafeInset, `${expected.id} must terminate inside its ${side} safe inset`);
+      }
+    }
+  }
+});
+
+test('Defender Champion prop and gameplay cells isolate one centered sprite group', async () => {
+  const environment = await readJson(environmentMetadataPath);
+  for (const [atlasName, expectedOrder] of [
+    ['props', expectedPropsOrder],
+    ['gameplay', expectedGameplayOrder],
+  ]) {
+    const atlas = environment.atlases[atlasName];
+    const frames = inspectAlphaFrames(
+      path.join(gameRoot, 'assets', 'environment', `${atlasName}-atlas.webp`),
+      atlas.frameWidth,
+      atlas.frameHeight,
+    );
+    assert.equal(frames.length, expectedOrder.length);
+    for (const [index, id] of expectedOrder.entries()) {
+      assertCenteredSafeSprite(frames[index], `${atlasName}:${id}`, spriteSafeInset);
+    }
+  }
+});
+
+test('Defender Champion castle states share a decoded ground baseline and anchor', async () => {
+  const castle = await readJson(castleMetadataPath);
+  assert.equal(castle.anchorX, 271);
+  assert.equal(castle.groundContactY, 672);
+  assert.equal(castle.scale, 1);
+
+  const frames = inspectAlphaFrames(
+    path.join(gameRoot, 'assets', 'castle', 'castle-states.webp'),
+    castle.frameWidth,
+    castle.frameHeight,
+  );
+  const widths = [];
+  for (const [index, id] of ['idle', 'impact', 'damaged', 'defeated'].entries()) {
+    const frame = frames[index];
+    assert.ok(frame.bbox, `${id} castle state must contain meaningful alpha`);
+    const [left, , right, bottom] = frame.bbox;
+    assert.equal(bottom - 1, castle.groundContactY, `${id} castle ground baseline drifted`);
+    assert.ok(Math.abs((left + right - 1) / 2 - castle.anchorX) <= 1,
+      `${id} castle horizontal anchor drifted`);
+    widths.push(right - left);
+  }
+  assert.ok(Math.max(...widths) - Math.min(...widths) <= 60, 'castle state scale/footprint drifted');
+});
+
+test('Defender Champion title emblem has a clean transparent safe perimeter', () => {
+  const [frame] = inspectAlphaFrames(
+    path.join(gameRoot, 'assets', 'environment', 'title-emblem.webp'),
+    1254,
+    1254,
+  );
+  assert.ok(frame.bbox0, 'title emblem must contain visible alpha');
+  const [left, top, right, bottom] = frame.bbox0;
+  for (const [side, inset] of Object.entries({
+    left,
+    top,
+    right: 1254 - right,
+    bottom: 1254 - bottom,
+  })) {
+    assert.ok(inset >= 48, `title emblem ${side} safe perimeter is only ${inset}px`);
+  }
+  assert.equal(frame.components0.length, 1, 'title emblem has detached alpha specks');
+  assert.ok(Math.abs((left + right - 1) / 2 - 626.5) <= 1, 'title emblem is not horizontally centered');
+  assert.ok(Math.abs((top + bottom - 1) / 2 - 626.5) <= 1, 'title emblem is not vertically centered');
 });

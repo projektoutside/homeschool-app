@@ -19,11 +19,11 @@
     {
       "id": "environment-path-atlas",
       "finalPath": "assets/environment/path-atlas.webp",
-      "finalPrompt": "Use case: precise-object-edit\nAsset type: transparent 4x4 top-down path tile atlas cleanup\nInput images: Image 1 is the generated path atlas edit target.\nPrimary request: remove every detached yellow, green, red, and gray speckle or particle outside the sixteen connected warm-sand path silhouettes\nConstraints: change only detached stray pixels and fringe artifacts; preserve all sixteen path silhouettes, their exact 4x4 placement, warm sand palette, painted texture, scale, connector geometry, and genuine transparent alpha background; do not add a backdrop, grid, grass, props, characters, text, labels, signature, or watermark.",
+      "finalPrompt": "Use case: precise-object-edit\nAsset type: transparent 4x4 top-down path tile atlas replacement\nInput images: Image 1 is the generated path atlas edit target and style source.\nPrimary request: replace the sixteen silhouettes with one complete semantic path topology set while preserving the warm golden-sand material, soft painted highlights, rounded storybook edging, top-down camera, and friendly polished fantasy-game finish.\nComposition: exact 4x4 equal cells in this strict row-major order: row 1 isolated tile, straight horizontal, straight vertical, four-way cross; row 2 corner north-to-east, corner east-to-south, corner south-to-west, corner west-to-north; row 3 T junction north-east-south, T junction east-south-west, T junction south-west-north, T junction west-north-east; row 4 north cap, east cap, south cap, west cap.\nConnector contract: every connected lane has one identical width, is centered on the corresponding cell edge, and visibly continues all the way through that edge; only the four cap tiles have a rounded path end inside the cell; the isolated tile stays centered and inset.\nStyle/medium: polished hand-painted 2D game atlas matching Image 1's warm sand palette and texture.\nConstraints: genuine transparent alpha background; no painted checkerboard, backdrop, grass, grid lines, gutters, shadows crossing cells, detached colored fringe, loose particles, props, characters, text, letters, numbers, labels, signature, or watermark; exactly one connected sand silhouette per cell; keep every silhouette isolated to its own cell except its intentional centered edge connectors.",
       "toolMode": "built-in imagegen",
-      "sourceRole": "Original built-in generated atlas with a built-in targeted cleanup edit; supplied image used only as visual direction for the original",
-      "generatedAt": "2026-08-18T22:22:16.6371761Z",
-      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "sourceRole": "Original built-in generated replacement using the prior generated atlas only as an edit target and style source; deterministic canonical topology normalization preserves generated sand texture",
+      "generatedAt": "2026-08-18T23:19:39.6277694Z",
+      "optimization": "Pillow deterministic 4x4 canonical topology normalization over built-in generated sand texture; one 128px centered connector lane; largest alpha component retained per cell; lossless WebP, method 6",
       "qaStatus": "approved"
     },
     {
@@ -33,7 +33,7 @@
       "toolMode": "built-in imagegen",
       "sourceRole": "Original generated project asset; supplied image used only as visual direction",
       "generatedAt": "2026-08-18T22:08:22.4099427Z",
-      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "optimization": "Pillow deterministic full-atlas connected-component ownership recovers each complete silhouette across source grid lines, then contains it in a 266px safe box centered in its 314px frame; lossless WebP, method 6",
       "qaStatus": "approved"
     },
     {
@@ -43,7 +43,7 @@
       "toolMode": "built-in imagegen",
       "sourceRole": "Original generated project asset; supplied image used only as visual direction",
       "generatedAt": "2026-08-18T22:10:09.4320183Z",
-      "optimization": "Pillow lossless WebP, method 6; transparent two-pixel canvas padding for exact 4x4 frame divisibility",
+      "optimization": "Pillow deterministic full-atlas connected-component ownership recovers each complete silhouette across source grid lines, then contains it in a 266px safe box centered in its 314px frame; lossless WebP, method 6",
       "qaStatus": "approved"
     },
     {
@@ -53,7 +53,7 @@
       "toolMode": "built-in imagegen",
       "sourceRole": "Original generated project asset; supplied image used only as visual direction",
       "generatedAt": "2026-08-18T22:11:25.2284961Z",
-      "optimization": "Pillow lossless WebP, method 6",
+      "optimization": "Pillow deterministic largest-alpha-component cleanup and centered contain to a 1080px safe box; lossless WebP, method 6",
       "qaStatus": "approved"
     },
     {
@@ -63,7 +63,7 @@
       "toolMode": "built-in imagegen",
       "sourceRole": "Original generated project asset; supplied image used only as visual direction",
       "generatedAt": "2026-08-18T22:14:26.5033145Z",
-      "optimization": "Pillow lossless WebP, method 6",
+      "optimization": "Pillow deterministic four-frame translation to decoded alpha anchor x=271 and shared ground-contact baseline y=672 at source scale 1; lossless WebP, method 6",
       "qaStatus": "approved"
     },
     {
