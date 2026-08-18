@@ -31,14 +31,14 @@ export const createAudioController = ({ windowRef = globalThis.window } = {}) =>
     if (sfxGain?.gain) sfxGain.gain.value = sfxVolume;
   };
 
-  const syncContextState = () => {
+  const syncContextState = (allowResume = false) => {
     if (!context || destroyed) return;
     try {
       if (shouldSuspend()) {
         if (context.state !== 'suspended' && context.state !== 'closed') {
           safelyAwait(context.suspend?.());
         }
-      } else if (unlocked && context.state !== 'running' && context.state !== 'closed') {
+      } else if (allowResume && unlocked && context.state !== 'running' && context.state !== 'closed') {
         safelyAwait(context.resume?.());
       }
     } catch {
@@ -75,7 +75,7 @@ export const createAudioController = ({ windowRef = globalThis.window } = {}) =>
   const unlock = () => {
     if (destroyed) return;
     if (unlocked) {
-      syncContextState();
+      syncContextState(true);
       return;
     }
     const AudioContextConstructor = windowRef?.AudioContext ?? windowRef?.webkitAudioContext;
@@ -85,7 +85,7 @@ export const createAudioController = ({ windowRef = globalThis.window } = {}) =>
       unlocked = true;
       createAudioGraph();
       startMusic();
-      syncContextState();
+      syncContextState(true);
     } catch {
       context = null;
       unlocked = false;

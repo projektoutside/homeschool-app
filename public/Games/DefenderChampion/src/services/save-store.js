@@ -7,6 +7,24 @@ const VALID_LEVEL_ID = /^level-(?:[1-9]|10)$/;
 
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
+const isTrustedPersistedState = (candidate) => {
+  if (!isRecord(candidate) || candidate.version !== SAVE_VERSION) return false;
+  if (!Number.isInteger(candidate.highestUnlockedLevel)
+    || candidate.highestUnlockedLevel < 1
+    || candidate.highestUnlockedLevel > MAX_LEVEL) return false;
+  if (!isRecord(candidate.levels) || !isRecord(candidate.tutorialHints)) return false;
+  if (candidate.reducedMotionOverride !== null
+    && typeof candidate.reducedMotionOverride !== 'boolean') return false;
+
+  for (const [levelId, levelValue] of Object.entries(candidate.levels)) {
+    if (!VALID_LEVEL_ID.test(levelId) || !isRecord(levelValue)) return false;
+    if (!Number.isFinite(levelValue.bestScore) || levelValue.bestScore < 0) return false;
+    if (!VALID_MEDALS.has(levelValue.medal)) return false;
+  }
+  return Object.entries(candidate.tutorialHints)
+    .every(([hintId, completed]) => hintId !== '__proto__' && typeof completed === 'boolean');
+};
+
 const notify = (onNotice, notice) => {
   try {
     onNotice?.(notice);
@@ -78,6 +96,7 @@ const resolveStorage = (providedStorage) => {
 export const createSaveStore = ({ storage: providedStorage, onNotice } = {}) => {
   const storage = resolveStorage(providedStorage);
   let durable = Boolean(storage);
+  let rewardHistoryTrusted = true;
   let storageNoticeSent = false;
   let state = createDefaultSaveState();
 
@@ -95,11 +114,13 @@ export const createSaveStore = ({ storage: providedStorage, onNotice } = {}) => 
       if (serialized !== null) {
         try {
           const parsed = JSON.parse(serialized);
-          if (!isRecord(parsed) || parsed.version !== SAVE_VERSION) {
+          if (!isTrustedPersistedState(parsed)) {
+            rewardHistoryTrusted = false;
             notify(onNotice, { type: 'save-reset', reason: 'invalid-schema' });
           }
           state = sanitizeSaveState(parsed);
         } catch {
+          rewardHistoryTrusted = false;
           state = createDefaultSaveState();
           notify(onNotice, { type: 'save-reset', reason: 'corrupt' });
         }
@@ -121,7 +142,7 @@ export const createSaveStore = ({ storage: providedStorage, onNotice } = {}) => 
 
     try {
       storage.setItem(SAVE_KEY, JSON.stringify(state));
-      return { state: getState(), persisted: true, rewardsDisabled: false };
+      return { state: getState(), persisted: true, rewardsDisabled: !rewardHistoryTrusted };
     } catch {
       markStorageUnavailable();
       return { state: getState(), persisted: false, rewardsDisabled: true };
@@ -131,7 +152,7 @@ export const createSaveStore = ({ storage: providedStorage, onNotice } = {}) => 
   return Object.freeze({
     getState,
     isDurable: () => durable,
-    rewardsDisabled: () => !durable,
+    rewardsDisabled: () => !durable || !rewardHistoryTrusted,
     save,
   });
 };

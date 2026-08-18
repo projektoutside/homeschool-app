@@ -51,6 +51,8 @@ export const createHostBridge = ({
   const qaMode = isQaMode(windowRef?.location);
   const pauseReasons = new Set();
   let destroyed = false;
+  let rewardsBridgeHealthy = typeof pointsBridge?.init === 'function'
+    && typeof pointsBridge?.awardPoints === 'function';
   let lastPaused = false;
 
   const getPauseState = () => ({
@@ -163,22 +165,30 @@ export const createHostBridge = ({
     };
     const saveResult = saveStore.save(nextState);
     const crossedMedalRanks = getCrossedMedalRanks(previousMedal, bestMedal);
-    const rewardsDisabled = qaMode
+    let rewardsDisabled = qaMode
       || !saveResult.persisted
-      || typeof pointsBridge?.awardPoints !== 'function';
+      || saveResult.rewardsDisabled
+      || !rewardsBridgeHealthy;
 
     if (!rewardsDisabled) {
       for (const crossedMedal of crossedMedalRanks) {
         try {
-          pointsBridge.awardPoints(5, {
+          const awardResult = pointsBridge.awardPoints(5, {
             eventId: `${GAME_ID}:${levelId}:medal-${crossedMedal}`,
             label: `${crossedMedal[0].toUpperCase()}${crossedMedal.slice(1)} Medal`,
             meta: { levelId, medal: crossedMedal },
           });
+          if (!awardResult || typeof awardResult.then === 'function') {
+            awardResult?.catch?.(() => {});
+            rewardsBridgeHealthy = false;
+            break;
+          }
         } catch {
-          // A rejected host reward is never retried automatically.
+          rewardsBridgeHealthy = false;
+          break;
         }
       }
+      rewardsDisabled = !rewardsBridgeHealthy;
     }
 
     return {
@@ -223,7 +233,7 @@ export const createHostBridge = ({
   try {
     pointsBridge?.init?.({ gameId: GAME_ID });
   } catch {
-    // Platform initialization failure leaves local play intact.
+    rewardsBridgeHealthy = false;
   }
   syncPause();
 
@@ -235,7 +245,10 @@ export const createHostBridge = ({
       destroyed,
       embedded: Boolean(parentRef),
       qaMode,
-      rewardsDisabled: destroyed || qaMode || Boolean(saveStore?.rewardsDisabled?.()),
+      rewardsDisabled: destroyed
+        || qaMode
+        || !rewardsBridgeHealthy
+        || Boolean(saveStore?.rewardsDisabled?.()),
       ...getPauseState(),
     }),
     recordBattleResult,

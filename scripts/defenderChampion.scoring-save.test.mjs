@@ -103,8 +103,14 @@ test('unknown save versions and corrupt JSON recover to defaults with a notice',
 
   assert.deepEqual(store.getState(), createDefaultSaveState());
   assert.equal(store.isDurable(), true);
-  assert.equal(store.rewardsDisabled(), false);
+  assert.equal(store.rewardsDisabled(), true);
   assert.deepEqual(notices, [{ type: 'save-reset', reason: 'corrupt' }]);
+
+  const saveResult = store.save({
+    levels: { 'level-1': { bestScore: 500, medal: 'gold' } },
+  });
+  assert.equal(saveResult.persisted, true);
+  assert.equal(saveResult.rewardsDisabled, true);
 });
 
 test('invalid save schemas reset with a non-blocking notice', () => {
@@ -113,6 +119,7 @@ test('invalid save schemas reset with a non-blocking notice', () => {
   const store = createSaveStore({ storage, onNotice: (notice) => notices.push(notice) });
 
   assert.deepEqual(store.getState(), createDefaultSaveState());
+  assert.equal(store.rewardsDisabled(), true);
   assert.deepEqual(notices, [{ type: 'save-reset', reason: 'invalid-schema' }]);
 });
 

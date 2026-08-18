@@ -29,8 +29,8 @@ class EventTargetDouble {
   }
 }
 
-const createStorage = ({ deny = false, operations = [] } = {}) => {
-  let value = null;
+const createStorage = ({ deny = false, initialValue = null, operations = [] } = {}) => {
+  let value = initialValue;
   return {
     getItem() {
       if (deny) throw new Error('SecurityError');
@@ -162,6 +162,117 @@ test('storage denial disables rewards while preserving temporary results', () =>
   assert.equal(result.rewardsDisabled, true);
   assert.equal(pointsBridge.awardCalls.length, 0);
   assert.equal(saveStore.getState().levels['level-1'].medal, 'gold');
+});
+
+test('corrupt persisted medal history disables rewards for the session', () => {
+  const browser = createBrowserDoubles({ embedded: true });
+  const pointsBridge = createPointsBridge();
+  const saveStore = createSaveStore({ storage: createStorage({ initialValue: '{not-json' }) });
+  const bridge = createHostBridge({ ...browser, saveStore, pointsBridge });
+
+  const result = bridge.recordBattleResult({ levelId: 'level-1', score: 500, medal: 'gold' });
+
+  assert.equal(result.persisted, true);
+  assert.equal(result.rewardsDisabled, true);
+  assert.equal(pointsBridge.awardCalls.length, 0);
+  assert.equal(bridge.getState().rewardsDisabled, true);
+});
+
+test('invalid persisted medal entries disable rewards for the session', () => {
+  const browser = createBrowserDoubles({ embedded: true });
+  const pointsBridge = createPointsBridge();
+  const invalidSnapshot = JSON.stringify({
+    version: 1,
+    highestUnlockedLevel: 1,
+    levels: { 'level-1': { bestScore: 500, medal: 'platinum' } },
+    tutorialHints: {},
+    reducedMotionOverride: null,
+  });
+  const saveStore = createSaveStore({ storage: createStorage({ initialValue: invalidSnapshot }) });
+  const bridge = createHostBridge({ ...browser, saveStore, pointsBridge });
+
+  const result = bridge.recordBattleResult({ levelId: 'level-1', score: 500, medal: 'gold' });
+
+  assert.equal(result.persisted, true);
+  assert.equal(result.rewardsDisabled, true);
+  assert.equal(pointsBridge.awardCalls.length, 0);
+});
+
+test('points initialization failure disables this and later reward attempts', () => {
+  const browser = createBrowserDoubles({ embedded: true });
+  let awardCalls = 0;
+  const pointsBridge = {
+    init() {
+      throw new Error('bridge unavailable');
+    },
+    awardPoints() {
+      awardCalls += 1;
+      return {};
+    },
+  };
+  const bridge = createHostBridge({
+    ...browser,
+    saveStore: createSaveStore({ storage: createStorage() }),
+    pointsBridge,
+  });
+
+  const first = bridge.recordBattleResult({ levelId: 'level-1', score: 500, medal: 'gold' });
+  const later = bridge.recordBattleResult({ levelId: 'level-2', score: 500, medal: 'bronze' });
+
+  assert.equal(first.rewardsDisabled, true);
+  assert.equal(later.rewardsDisabled, true);
+  assert.equal(awardCalls, 0);
+});
+
+test('the first synchronous award failure stops the rank loop and later rewards', () => {
+  const browser = createBrowserDoubles({ embedded: true });
+  let awardCalls = 0;
+  const pointsBridge = {
+    init() {},
+    awardPoints() {
+      awardCalls += 1;
+      throw new Error('postMessage failed');
+    },
+  };
+  const bridge = createHostBridge({
+    ...browser,
+    saveStore: createSaveStore({ storage: createStorage() }),
+    pointsBridge,
+  });
+
+  const first = bridge.recordBattleResult({ levelId: 'level-1', score: 500, medal: 'gold' });
+  const later = bridge.recordBattleResult({ levelId: 'level-2', score: 500, medal: 'bronze' });
+
+  assert.equal(first.rewardsDisabled, true);
+  assert.equal(later.rewardsDisabled, true);
+  assert.equal(awardCalls, 1);
+});
+
+test('an asynchronous award result disables the bridge without later rank calls', async () => {
+  const browser = createBrowserDoubles({ embedded: true });
+  let awardCalls = 0;
+  const rejection = Promise.reject(new Error('async bridge rejection'));
+  rejection.catch(() => {});
+  const pointsBridge = {
+    init() {},
+    awardPoints() {
+      awardCalls += 1;
+      return rejection;
+    },
+  };
+  const bridge = createHostBridge({
+    ...browser,
+    saveStore: createSaveStore({ storage: createStorage() }),
+    pointsBridge,
+  });
+
+  const first = bridge.recordBattleResult({ levelId: 'level-1', score: 500, medal: 'gold' });
+  await rejection.catch(() => {});
+  const later = bridge.recordBattleResult({ levelId: 'level-2', score: 500, medal: 'bronze' });
+
+  assert.equal(first.rewardsDisabled, true);
+  assert.equal(later.rewardsDisabled, true);
+  assert.equal(awardCalls, 1);
 });
 
 test('embedded exit posts the exact home request to the same-origin parent', () => {
@@ -388,7 +499,12 @@ test('audio is gesture-gated, clamps exposed settings, and composes pause reason
   assert.equal(contexts[0].state, 'suspended');
   controller.setPauseReason('modal', false);
   await Promise.resolve();
+  assert.equal(contexts[0].state, 'suspended');
+  assert.equal(contexts[0].resumeCalls, 1);
+  windowRef.dispatch('keydown', { key: 'Enter' });
+  await Promise.resolve();
   assert.equal(contexts[0].state, 'running');
+  assert.equal(contexts[0].resumeCalls, 2);
 
   controller.destroy();
   assert.equal(windowRef.listenerCount('pointerdown'), 0);
@@ -406,7 +522,52 @@ test('unsupported audio stays silent and playable', () => {
   assert.doesNotThrow(() => controller.destroy());
 });
 
-test('a later gesture retries an audio resume blocked outside a gesture', async () => {
+test('unmute waits for a later gesture before resuming audio', async () => {
+  const windowRef = new EventTargetDouble();
+  const contexts = [];
+  class AudioContextDouble {
+    state = 'suspended';
+    destination = {};
+    resumeCalls = 0;
+
+    constructor() {
+      contexts.push(this);
+    }
+
+    resume() {
+      this.resumeCalls += 1;
+      this.state = 'running';
+      return Promise.resolve();
+    }
+
+    suspend() {
+      this.state = 'suspended';
+      return Promise.resolve();
+    }
+
+    close() {
+      this.state = 'closed';
+      return Promise.resolve();
+    }
+  }
+  windowRef.AudioContext = AudioContextDouble;
+  const controller = createAudioController({ windowRef, documentRef: new EventTargetDouble() });
+  controller.setAudioMuted(true);
+  windowRef.dispatch('pointerdown');
+  controller.setAudioMuted(false);
+  await Promise.resolve();
+  assert.equal(contexts[0].resumeCalls, 0);
+  assert.equal(contexts[0].state, 'suspended');
+  windowRef.dispatch('pointerdown');
+  await Promise.resolve();
+
+  assert.equal(controller.isUnlocked(), true);
+  assert.equal(contexts[0].resumeCalls, 1);
+  assert.equal(contexts[0].state, 'running');
+  controller.destroy();
+});
+
+test('a rejected gesture resume is retried only by another gesture', async () => {
   const windowRef = new EventTargetDouble();
   const contexts = [];
   class GestureSensitiveAudioContext {
@@ -437,14 +598,18 @@ test('a later gesture retries an audio resume blocked outside a gesture', async 
   }
   windowRef.AudioContext = GestureSensitiveAudioContext;
   const controller = createAudioController({ windowRef, documentRef: new EventTargetDouble() });
-  controller.setAudioMuted(true);
   windowRef.dispatch('pointerdown');
-  controller.setAudioMuted(false);
   await Promise.resolve();
-  windowRef.dispatch('pointerdown');
+  assert.equal(contexts[0].resumeCalls, 1);
+  assert.equal(contexts[0].state, 'suspended');
+
+  controller.setMusicVolume(0.5);
+  controller.setPauseReason('visibility', false);
+  await Promise.resolve();
+  assert.equal(contexts[0].resumeCalls, 1);
+  windowRef.dispatch('keydown', { key: 'Enter' });
   await Promise.resolve();
 
-  assert.equal(controller.isUnlocked(), true);
   assert.equal(contexts[0].resumeCalls, 2);
   assert.equal(contexts[0].state, 'running');
   controller.destroy();
