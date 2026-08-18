@@ -178,6 +178,8 @@ const createEnemy = (simulation, enemyId, pathProgress, waveIndex, isSummon = fa
     clusterSize: 1,
     castleDamage: config.castleDamage,
     nextAbilityTick: simulation.tick + config.cooldownTicks,
+    abilityActiveTicks: 0,
+    nextAbilityActiveTick: config.cooldownTicks,
     thresholdFlags: {},
     isSummon,
   };
@@ -189,6 +191,8 @@ const initializeSpawnedEnemy = (simulation, enemy) => {
   enemy.waveIndex = simulation.waveIndex;
   enemy.maxHealth = enemy.health;
   enemy.nextAbilityTick = enemy.spawnTick + config.cooldownTicks;
+  enemy.abilityActiveTicks = 0;
+  enemy.nextAbilityActiveTick = config.cooldownTicks;
   enemy.thresholdFlags = {};
 };
 
@@ -231,6 +235,8 @@ const updateBossThresholds = (simulation, enemy) => {
     const phase = getDreadColossusPhase(ratio);
     if (phase === 3 && !enemy.thresholdFlags.phase3Started) {
       enemy.thresholdFlags.phase3Started = true;
+      enemy.abilityActiveTicks = 0;
+      enemy.nextAbilityActiveTick = ENEMIES[enemy.enemyId].cooldownTicks;
       enemy.nextAbilityTick = simulation.tick + ENEMIES[enemy.enemyId].cooldownTicks;
     }
   }
@@ -285,7 +291,11 @@ const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => addEf
 
 const updateEnemyAbilities = (simulation, enemy) => {
   const config = ENEMIES[enemy.enemyId];
-  if (config.cooldownTicks <= 0 || simulation.tick < enemy.nextAbilityTick) return;
+  if (config.cooldownTicks <= 0 || (enemy.stunnedUntilTick ?? 0) > simulation.tick) return;
+  enemy.abilityActiveTicks += 1;
+  const remainingActiveTicks = enemy.nextAbilityActiveTick - enemy.abilityActiveTicks;
+  enemy.nextAbilityTick = simulation.tick + Math.max(0, remainingActiveTicks);
+  if (enemy.abilityActiveTicks < enemy.nextAbilityActiveTick) return;
   if (enemy.enemyId === 'hexcaller') applyHexcallerSupport(simulation, enemy);
   if (enemy.enemyId === 'ironhide-warlord') applyWarlordRally(simulation, enemy);
   if (enemy.enemyId === 'mossback-brute') {
@@ -295,7 +305,8 @@ const updateEnemyAbilities = (simulation, enemy) => {
     && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3) {
     telegraphBossAbility(simulation, enemy, 'dread-pulse-telegraph', config.pulseTelegraphTicks);
   }
-  enemy.nextAbilityTick += config.cooldownTicks;
+  enemy.nextAbilityActiveTick += config.cooldownTicks;
+  enemy.nextAbilityTick = simulation.tick + config.cooldownTicks;
 };
 
 const triggerTelegraphs = (simulation) => {
@@ -359,7 +370,13 @@ const fireTower = (simulation, tower, targets) => {
       }
     }
   } else if (mastery && tower.defenderId === 'ranger') {
-    const distinctTargets = [...targets].sort((first, second) => first.id.localeCompare(second.id)).slice(0, 3);
+    const distinctTargets = [];
+    const remainingTargets = [...targets];
+    while (distinctTargets.length < config.masteryTargetCount && remainingTargets.length > 0) {
+      const target = selectTarget(remainingTargets, config.targetPriority);
+      distinctTargets.push(target);
+      remainingTargets.splice(remainingTargets.indexOf(target), 1);
+    }
     for (const target of distinctTargets) {
       addProjectile(simulation, tower, target, Math.round(damage * config.masteryMultiplier));
     }
@@ -367,7 +384,7 @@ const fireTower = (simulation, tower, targets) => {
     addProjectile(simulation, tower, primary, damage, {
       armorPierce: config.armorPierce,
       splashRadius: config.splashRadius,
-      stunSeconds: tower.defenderId === 'ironwarden' ? config.stunSeconds : 0,
+      stunSeconds: mastery && tower.defenderId === 'ironwarden' ? config.stunSeconds : 0,
     });
     if (mastery && tower.defenderId === 'rune-artificer') {
       addProjectile(simulation, tower, primary, damage, {
@@ -449,8 +466,9 @@ const applyIronwardenAuras = (simulation) => {
 
 const moveEnemies = (simulation) => {
   for (const enemy of simulation.enemies) {
-    if (enemy.health <= 0 || (enemy.stunnedUntilTick ?? 0) > simulation.tick) continue;
+    if (enemy.health <= 0) continue;
     const support = applySupportEffects(simulation, enemy);
+    if ((enemy.stunnedUntilTick ?? 0) > simulation.tick) continue;
     const phaseSpeed = enemy.enemyId === 'dread-colossus'
       && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3
       ? ENEMIES[enemy.enemyId].phase3Speed

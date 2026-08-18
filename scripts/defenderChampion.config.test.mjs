@@ -17,6 +17,22 @@ test('defender economy matches the approved contract', () => {
   );
 });
 
+test('all nested combat config is immutable and Ranger mastery target count is authored', () => {
+  for (const defender of Object.values(DEFENDERS)) {
+    for (const key of ['costs', 'damage', 'range', 'cooldownTicks']) {
+      assert.equal(Object.isFrozen(defender[key]), true, `${defender.id}.${key} should be frozen`);
+    }
+  }
+  assert.equal(DEFENDERS.ranger.masteryTargetCount, 3);
+  assert.throws(() => {
+    DEFENDERS.ranger.damage[0] = 999;
+  }, TypeError);
+
+  assert.equal(Object.isFrozen(ENEMIES['ironhide-warlord'].plateThresholds), true);
+  assert.equal(Object.isFrozen(ENEMIES['ironhide-warlord'].plateArmorBonuses), true);
+  assert.equal(Object.isFrozen(ENEMIES['dread-colossus'].summonThresholds), true);
+});
+
 test('campaign and effect ceilings are exact', () => {
   assert.equal(LEVELS.length, 10);
   assert.deepEqual(LEVELS.map((level) => level.waveCount), [3, 4, 4, 5, 5, 5, 6, 6, 7, 8]);

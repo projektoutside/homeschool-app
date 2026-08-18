@@ -20,7 +20,15 @@ export const COMBAT_RULES = Object.freeze({
   supportArmorMax: 0.15,
 });
 
-const freezeEnemy = (enemy) => Object.freeze({ ...enemy });
+const freezeNested = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freezeNested(child);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+const freezeEnemy = (enemy) => freezeNested({ ...enemy });
 
 export const ENEMIES = Object.freeze({
   'blight-walker': freezeEnemy({
@@ -47,7 +55,7 @@ export const ENEMIES = Object.freeze({
     telegraphTicks: 60, stunSeconds: 1.5, abilityRadius: 150,
   }),
   'ironhide-warlord': freezeEnemy({
-    id: 'ironhide-warlord', health: 2300, speed: 36, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
+    id: 'ironhide-warlord', health: 12000, speed: 36, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
     rallyRadius: 165, rallyDurationTicks: 180, rallySpeed: 0.20, rallyArmor: 0.15,
     plateThresholds: Object.freeze([0.75, 0.50, 0.25]),
     plateArmorBonuses: Object.freeze([0.15, 0.10, 0.05]), vulnerableTicks: 180,

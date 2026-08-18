@@ -39,6 +39,7 @@ export const createSimulation = (levelId, options = {}) => {
     waveCompletionFlags: {},
     pathMetrics: null,
     medal: null,
+    purchaseHistory: [],
   };
 };
 
@@ -53,7 +54,7 @@ const buildTower = (simulation, command) => {
   if (simulation.coins < cost) return rejected('insufficient-coins');
 
   simulation.coins -= cost;
-  simulation.towers.push({
+  const tower = {
     id: `tower-${simulation.nextEntityId++}`,
     defenderId: defender.id,
     padId: command.padId,
@@ -61,6 +62,15 @@ const buildTower = (simulation, command) => {
     totalInvested: cost,
     nextAttackTick: simulation.tick,
     attackCount: 0,
+  };
+  simulation.towers.push(tower);
+  simulation.purchaseHistory.push({
+    tick: simulation.tick,
+    type: 'build',
+    towerId: tower.id,
+    defenderId: tower.defenderId,
+    padId: tower.padId,
+    cost,
   });
   return accepted();
 };
@@ -75,6 +85,15 @@ const upgradeTower = (simulation, towerId) => {
   simulation.coins -= cost;
   tower.tier += 1;
   tower.totalInvested += cost;
+  simulation.purchaseHistory.push({
+    tick: simulation.tick,
+    type: 'upgrade',
+    towerId: tower.id,
+    defenderId: tower.defenderId,
+    padId: tower.padId,
+    tier: tower.tier,
+    cost,
+  });
   return accepted();
 };
 
@@ -125,6 +144,7 @@ export const advanceSimulation = (simulation, steps) => {
       simulation.medal = result.medal;
       simulation.projectiles = [];
       simulation.effects = [];
+      simulation.activeEffectValues = new Map();
     } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
       const result = calculateBattleResult(simulation);
       simulation.terminal = true;
@@ -132,6 +152,7 @@ export const advanceSimulation = (simulation, steps) => {
       simulation.score = result.score;
       simulation.medal = result.medal;
       simulation.effects = [];
+      simulation.activeEffectValues = new Map();
     }
     simulation.tick += 1;
   }
@@ -159,6 +180,8 @@ const snapshotEnemy = (enemy) => ({
   maxHealth: enemy.maxHealth,
   waveIndex: enemy.waveIndex,
   nextAbilityTick: enemy.nextAbilityTick,
+  abilityActiveTicks: enemy.abilityActiveTicks,
+  nextAbilityActiveTick: enemy.nextAbilityActiveTick,
   thresholdFlags: enemy.thresholdFlags ? { ...enemy.thresholdFlags } : {},
   ...(enemy.stunnedUntilTick !== undefined && { stunnedUntilTick: enemy.stunnedUntilTick }),
   ...(enemy.stunImmuneUntilTick !== undefined && { stunImmuneUntilTick: enemy.stunImmuneUntilTick }),
@@ -168,7 +191,27 @@ const snapshotEnemy = (enemy) => ({
 
 const sortById = (first, second) => compareEntityIds(first.id, second.id);
 
+const getStrategyMetrics = (simulation) => {
+  const spendByDefender = {};
+  const occupiedPadIds = new Set();
+  for (const purchase of simulation.purchaseHistory) {
+    spendByDefender[purchase.defenderId] = (spendByDefender[purchase.defenderId] ?? 0) + purchase.cost;
+    if (purchase.type === 'build') occupiedPadIds.add(purchase.padId);
+  }
+  const highestSpendDefenderId = Object.entries(spendByDefender)
+    .sort(([firstId, firstSpend], [secondId, secondSpend]) => (
+      secondSpend - firstSpend || firstId.localeCompare(secondId)
+    ))[0]?.[0] ?? null;
+  return {
+    purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
+    spendByDefender,
+    highestSpendDefenderId,
+    occupiedPadIds: [...occupiedPadIds].sort(),
+  };
+};
+
 export const summarizeSimulation = (simulation) => ({
+  ...getStrategyMetrics(simulation),
   version: simulation.version,
   levelId: simulation.levelId,
   tick: simulation.tick,

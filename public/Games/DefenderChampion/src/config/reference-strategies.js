@@ -16,12 +16,14 @@ const primaryStrategy = (levelNumber, primary, pads) => freezeCommands([
   build(levelNumber, 6000, 'ranger', pads[5]),
   build(levelNumber, 7500, 'bladeguard', pads[6]),
   build(levelNumber, 9000, 'ranger', pads[7]),
+  build(levelNumber, 10500, primary, pads[2]),
 ]);
 
 const artilleryStrategy = (levelNumber, support, pads) => freezeCommands([
   build(levelNumber, 0, 'rune-artificer', pads[0]),
   build(levelNumber, 9000, 'rune-artificer', pads[2]),
-  build(levelNumber, 12000, 'bladeguard', pads[7]),
+  build(levelNumber, 10500, 'ironwarden', pads[5]),
+  build(levelNumber, 12000, 'ironwarden', pads[7]),
   build(levelNumber, 13500, support, pads[3]),
   build(levelNumber, 15000, 'bladeguard', pads[4]),
   build(levelNumber, 18000, 'rune-artificer', pads[5]),
@@ -49,4 +51,15 @@ export const REFERENCE_STRATEGIES = Object.freeze({
   ...pairedStrategies(8, 'ironwarden', 'bladeguard'),
   ...pairedStrategies(9, 'ranger', 'ironwarden'),
   ...pairedStrategies(10, 'ironwarden', 'ranger'),
+  'level-2-balanced': freezeCommands([
+    build(2, 0, 'bladeguard', 'c'),
+    build(2, 0, 'bladeguard', 'g'),
+    build(2, 0, 'bladeguard', 'd'),
+  ]),
+  'level-5-balanced': freezeCommands([
+    build(5, 0, 'rune-artificer', 'c'),
+    build(5, 3600, 'ranger', 'g'),
+    build(5, 4800, 'ranger', 'd'),
+    build(5, 5100, 'ranger', 'b'),
+  ]),
 });

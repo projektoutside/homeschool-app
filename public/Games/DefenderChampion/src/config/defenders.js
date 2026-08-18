@@ -1,7 +1,12 @@
-const freezeDefender = (defender) => Object.freeze({
-  ...defender,
-  costs: Object.freeze([...defender.costs]),
-});
+const freezeNested = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freezeNested(child);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+const freezeDefender = (defender) => freezeNested({ ...defender });
 
 export const DEFENDERS = Object.freeze({
   bladeguard: freezeDefender({
@@ -9,7 +14,7 @@ export const DEFENDERS = Object.freeze({
     costs: [50, 60, 90],
     targetPriority: 'closest-to-castle',
     mastery: 'whirlwind',
-    damage: [60, 82, 112],
+    damage: [60, 65, 70],
     range: [80, 88, 96],
     cooldownTicks: [30, 28, 26],
     projectileTicks: 1,
@@ -21,19 +26,20 @@ export const DEFENDERS = Object.freeze({
     costs: [70, 85, 120],
     targetPriority: 'fastest',
     mastery: 'critical-volley',
-    damage: [110, 142, 188],
+    damage: [110, 115, 120],
     range: [190, 202, 216],
     cooldownTicks: [46, 42, 38],
     projectileTicks: 3,
     masteryAttackCount: 5,
     masteryMultiplier: 1.8,
+    masteryTargetCount: 3,
   }),
   ironwarden: freezeDefender({
     id: 'ironwarden',
     costs: [120, 145, 205],
     targetPriority: 'highest-armor',
     mastery: 'rally-bash',
-    damage: [120, 162, 218],
+    damage: [120, 125, 130],
     range: [132, 142, 154],
     cooldownTicks: [66, 60, 54],
     projectileTicks: 2,
@@ -47,7 +53,7 @@ export const DEFENDERS = Object.freeze({
     costs: [150, 180, 255],
     targetPriority: 'densest-cluster',
     mastery: 'double-detonation',
-    damage: [28, 46, 76],
+    damage: [28, 32, 36],
     range: [166, 178, 192],
     cooldownTicks: [84, 76, 68],
     projectileTicks: 4,

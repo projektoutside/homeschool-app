@@ -156,6 +156,7 @@ export const LEVELS = freeze([
         spawn('ironhide-warlord', 1, 0, 0),
         spawn('shellguard', 8, 72, 180),
         spawn('skitter', 4, 40, 240),
+        spawn('crusher', 3, 120, 300),
       ],
     ],
     silverScore: 1050, goldScore: 1360, parSeconds: 360,
