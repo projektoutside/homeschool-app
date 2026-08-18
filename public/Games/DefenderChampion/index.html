@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f35">
+  <title>Defender Champion</title>
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+  <main id="game-shell" data-screen="loading">
+    <section id="menu-screen" aria-labelledby="game-title">
+      <div class="storybook-card hero-card">
+        <p class="eyebrow">The woodland is calling</p>
+        <h1 id="game-title">Defender Champion</h1>
+        <p class="hero-copy">Gather brave defenders and guard the greenheart castle.</p>
+        <div class="menu-actions" aria-label="Main menu">
+          <button id="play-button" class="button button-primary" type="button">Play</button>
+          <button id="continue-button" class="button button-secondary" type="button" hidden>Continue</button>
+          <button id="how-to-button" class="button button-quiet" type="button">How to Play</button>
+          <button id="settings-button" class="button button-quiet" type="button">Settings</button>
+          <button id="exit-button" class="button button-quiet" type="button">Exit Game</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="level-select-screen" aria-label="Level selection" hidden>
+      <header class="screen-header storybook-card">
+        <button id="levels-back-button" class="button icon-button" type="button" aria-label="Back to main menu">←</button>
+        <div>
+          <p class="eyebrow">Choose your watch</p>
+          <h2>Woodland Chapters</h2>
+        </div>
+      </header>
+      <div id="level-grid" class="level-grid"></div>
+    </section>
+
+    <section id="battle-screen" aria-label="Defender Champion battlefield" hidden>
+      <header id="battle-hud" class="battle-hud storybook-card">
+        <button id="battle-back-button" class="button icon-button" type="button" aria-label="Leave battle and return to level selection">←</button>
+        <div class="battle-heading">
+          <p class="eyebrow">Now defending</p>
+          <h2 id="battle-level-name">Meadow Watch</h2>
+        </div>
+        <dl class="battle-stats" aria-label="Battle status">
+          <div><dt>Hearts</dt><dd id="hud-hearts">3</dd></div>
+          <div><dt>Coins</dt><dd id="hud-coins">150</dd></div>
+          <div><dt>Wave</dt><dd id="hud-wave">Ready</dd></div>
+        </dl>
+        <div class="battle-controls" aria-label="Battle controls">
+          <button id="pause-button" class="button icon-button" type="button" aria-pressed="false" aria-label="Pause battle">Ⅱ</button>
+          <button id="speed-button" class="button speed-button" type="button" aria-pressed="false" aria-label="Set battle speed to two times">1×</button>
+        </div>
+      </header>
+      <div id="battlefield" tabindex="0" aria-label="Defense map"></div>
+      <nav id="defender-dock" aria-label="Defenders">
+        <p class="dock-title">Defender guild</p>
+        <div class="dock-list">
+          <button class="defender-card" type="button" disabled><span>Acorn Guard</span><small>Coming next</small></button>
+          <button class="defender-card" type="button" disabled><span>Lantern Archer</span><small>Coming next</small></button>
+          <button class="defender-card" type="button" disabled><span>Moss Mage</span><small>Coming next</small></button>
+        </div>
+      </nav>
+    </section>
+
+    <section id="result-screen" aria-live="polite" hidden>
+      <div class="storybook-card result-card">
+        <p class="eyebrow">Battle report</p>
+        <h2 id="result-title">The woodland waits</h2>
+        <p id="result-summary">Your result will appear here.</p>
+        <button id="result-levels-button" class="button button-primary" type="button">Choose a Level</button>
+        <button id="result-menu-button" class="button button-quiet" type="button">Main Menu</button>
+      </div>
+    </section>
+
+    <section id="how-to-screen" class="overlay-screen" role="dialog" aria-modal="true" aria-labelledby="how-to-title" hidden>
+      <div class="storybook-card guide-card">
+        <header class="panel-heading">
+          <div>
+            <p class="eyebrow">Field guide</p>
+            <h2 id="how-to-title">How to Play</h2>
+          </div>
+          <button id="how-to-close-button" class="button icon-button" type="button" aria-label="Close how to play">×</button>
+        </header>
+        <ol class="guide-list">
+          <li><strong>Build:</strong> choose a defender, then choose an open stone pad.</li>
+          <li><strong>Upgrade:</strong> select a placed defender to strengthen its skills.</li>
+          <li><strong>Sell:</strong> reclaim coins from a selected defender and change your plan.</li>
+          <li><strong>Protect hearts:</strong> each enemy that reaches the castle costs one heart.</li>
+          <li><strong>Pause:</strong> use the pause control whenever you need time to think.</li>
+          <li><strong>Speed:</strong> switch between 1× and 2× once your defense is ready.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="settings-screen" class="overlay-screen" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+      <div class="storybook-card settings-card">
+        <header class="panel-heading">
+          <div>
+            <p class="eyebrow">Traveling kit</p>
+            <h2 id="settings-title">Settings</h2>
+          </div>
+          <button id="settings-close-button" class="button icon-button" type="button" aria-label="Close settings">×</button>
+        </header>
+        <p id="host-sound-note" class="settings-note" hidden>Sound is managed by the homeschool app.</p>
+        <label class="setting-row" for="music-volume">
+          <span>Music <output id="music-volume-output" for="music-volume">30%</output></span>
+          <input id="music-volume" type="range" min="0" max="100" step="5" value="30">
+        </label>
+        <label class="setting-row" for="sfx-volume">
+          <span>Sound effects <output id="sfx-volume-output" for="sfx-volume">70%</output></span>
+          <input id="sfx-volume" type="range" min="0" max="100" step="5" value="70">
+        </label>
+        <label class="setting-row" for="reduced-motion">
+          <span>Motion</span>
+          <select id="reduced-motion">
+            <option value="system">Use device setting</option>
+            <option value="reduce">Reduce motion</option>
+            <option value="full">Full motion</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <div id="status-announcer" class="sr-only" aria-live="polite"></div>
+  </main>
+
+  <script src="../shared/lahsPointsBridge.js"></script>
+  <script src="./js/app.bundle.js"></script>
+</body>
+</html>
