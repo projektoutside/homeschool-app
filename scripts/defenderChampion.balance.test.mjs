@@ -23,17 +23,21 @@ const runMonoRosterFixture = (levelId, defenderId) => {
   const simulation = createSimulation(levelId, { qa: true });
   const defender = DEFENDERS[defenderId];
   for (let requestedTick = 0; requestedTick < 60 * 720 && !simulation.terminal; requestedTick += 1) {
-    for (const tower of simulation.towers) {
-      const nextCost = defender.costs[tower.tier + 1];
-      if (nextCost !== undefined && simulation.coins >= nextCost) {
-        issueCommand(simulation, { type: 'upgrade', towerId: tower.id });
+    while (true) {
+      const upgradeableTower = simulation.towers.find((tower) => {
+        const nextCost = defender.costs[tower.tier + 1];
+        return nextCost !== undefined && simulation.coins >= nextCost;
+      });
+      if (upgradeableTower) {
+        issueCommand(simulation, { type: 'upgrade', towerId: upgradeableTower.id });
+        continue;
       }
-    }
-    for (const pad of simulation.level.pads) {
-      if (simulation.towers.length >= 1) break;
-      if (simulation.towers.some((tower) => tower.padId === pad.id)) continue;
-      if (simulation.coins < defender.costs[0]) break;
-      issueCommand(simulation, { type: 'build', defenderId, padId: pad.id });
+
+      const openPad = simulation.level.pads.find((pad) => (
+        !simulation.towers.some((tower) => tower.padId === pad.id)
+      ));
+      if (!openPad || simulation.coins < defender.costs[0]) break;
+      issueCommand(simulation, { type: 'build', defenderId, padId: openPad.id });
     }
     advanceSimulation(simulation, 1);
   }
@@ -81,10 +85,13 @@ test('reinvesting mono-roster fixtures cannot clear Levels 7 or 10', () => {
       const summary = runMonoRosterFixture(levelId, defenderId);
       assert.equal(summary.terminal, true, `${levelId}:${defenderId} should terminate`);
       assert.equal(summary.outcome, 'defeat', `${levelId}:${defenderId} should not clear`);
-      assert.equal(
-        summary.purchaseHistory.some((purchase) => purchase.type === 'upgrade' && purchase.tick > 0),
-        true,
-        `${levelId}:${defenderId} should reinvest earned coins into upgrades`,
+      assert.ok(
+        summary.purchaseHistory.filter((purchase) => purchase.type === 'build').length >= 2,
+        `${levelId}:${defenderId} should build multiple towers when economics permit`,
+      );
+      assert.ok(
+        summary.purchaseHistory.filter((purchase) => purchase.tick > 0).length >= 2,
+        `${levelId}:${defenderId} should make multiple bounty-funded purchases`,
       );
     }
   }

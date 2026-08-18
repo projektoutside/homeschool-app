@@ -34,13 +34,46 @@ const pairedStrategies = (levelNumber, primary, support) => ({
   [`level-${levelNumber}-artillery`]: artilleryStrategy(levelNumber, support, ['f', 'b', 'd', 'h', 'e', 'a', 'c', 'g']),
 });
 
+const earlyDiverseStrategies = (levelNumber) => ({
+  [`level-${levelNumber}-balanced`]: freezeCommands([
+    build(levelNumber, 0, 'bladeguard', 'a'),
+    build(levelNumber, 0, 'bladeguard', 'd'),
+    build(levelNumber, 0, 'bladeguard', 'g'),
+  ]),
+  [`level-${levelNumber}-artillery`]: freezeCommands([
+    build(levelNumber, 0, 'ranger', 'b'),
+    build(levelNumber, 0, 'ranger', 'g'),
+  ]),
+});
+
+const lateDiverseStrategies = (levelNumber) => ({
+  [`level-${levelNumber}-balanced`]: freezeCommands([
+    build(levelNumber, 0, 'bladeguard', 'a'),
+    build(levelNumber, 0, 'bladeguard', 'd'),
+    build(levelNumber, 0, 'bladeguard', 'g'),
+    build(levelNumber, 3600, 'ironwarden', 'c'),
+    build(levelNumber, 4800, 'ironwarden', 'e'),
+    build(levelNumber, 6000, 'ranger', 'b'),
+    build(levelNumber, 7200, 'ironwarden', 'h'),
+  ]),
+  [`level-${levelNumber}-artillery`]: freezeCommands([
+    build(levelNumber, 0, 'ranger', 'b'),
+    build(levelNumber, 0, 'ranger', 'g'),
+    build(levelNumber, 3600, 'rune-artificer', 'f'),
+    build(levelNumber, 4800, 'rune-artificer', 'd'),
+    build(levelNumber, 6000, 'rune-artificer', 'e'),
+  ]),
+});
+
 export const REFERENCE_STRATEGIES = Object.freeze({
   'level-1-balanced': freezeCommands([
     build(1, 0, 'ranger', 'a'),
     build(1, 0, 'bladeguard', 'b'),
   ]),
   'level-1-artillery': freezeCommands([
-    build(1, 0, 'rune-artificer', 'f'),
+    build(1, 0, 'bladeguard', 'a'),
+    build(1, 0, 'bladeguard', 'd'),
+    build(1, 0, 'bladeguard', 'g'),
   ]),
   ...pairedStrategies(2, 'bladeguard', 'ranger'),
   ...pairedStrategies(3, 'ironwarden', 'bladeguard'),
@@ -51,15 +84,28 @@ export const REFERENCE_STRATEGIES = Object.freeze({
   ...pairedStrategies(8, 'ironwarden', 'bladeguard'),
   ...pairedStrategies(9, 'ranger', 'ironwarden'),
   ...pairedStrategies(10, 'ironwarden', 'ranger'),
-  'level-2-balanced': freezeCommands([
-    build(2, 0, 'bladeguard', 'c'),
-    build(2, 0, 'bladeguard', 'g'),
-    build(2, 0, 'bladeguard', 'd'),
+  ...earlyDiverseStrategies(2),
+  ...earlyDiverseStrategies(3),
+  ...earlyDiverseStrategies(4),
+  ...earlyDiverseStrategies(5),
+  ...earlyDiverseStrategies(6),
+  'level-7-balanced': freezeCommands([
+    build(7, 0, 'rune-artificer', 'f'),
+    build(7, 5400, 'ranger', 'b'),
+    build(7, 6000, 'ironwarden', 'h'),
+    build(7, 6600, 'ironwarden', 'c'),
+    build(7, 7200, 'ironwarden', 'e'),
+    build(7, 7500, 'bladeguard', 'd'),
   ]),
-  'level-5-balanced': freezeCommands([
-    build(5, 0, 'rune-artificer', 'c'),
-    build(5, 3600, 'ranger', 'g'),
-    build(5, 4800, 'ranger', 'd'),
-    build(5, 5100, 'ranger', 'b'),
+  ...lateDiverseStrategies(8),
+  ...lateDiverseStrategies(9),
+  'level-10-artillery': freezeCommands([
+    build(10, 0, 'rune-artificer', 'f'),
+    build(10, 5400, 'rune-artificer', 'd'),
+    build(10, 6000, 'ironwarden', 'a'),
+    build(10, 6600, 'ironwarden', 'g'),
+    build(10, 7200, 'ranger', 'b'),
+    build(10, 7800, 'ranger', 'h'),
+    build(10, 8400, 'bladeguard', 'e'),
   ]),
 });

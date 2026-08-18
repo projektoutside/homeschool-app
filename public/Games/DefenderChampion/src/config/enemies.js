@@ -48,7 +48,7 @@ export const ENEMIES = Object.freeze({
     supportRadius: 145, supportDurationTicks: 180, supportSpeed: 0.20, supportHealingPerSecond: 0.03,
   }),
   crusher: freezeEnemy({
-    id: 'crusher', health: 1000, speed: 24, bounty: 120, armor: 0.30, cooldownTicks: 0, castleDamage: 2,
+    id: 'crusher', health: 800, speed: 24, bounty: 120, armor: 0.30, cooldownTicks: 0, castleDamage: 2,
   }),
   'mossback-brute': freezeEnemy({
     id: 'mossback-brute', health: 1100, speed: 25, bounty: 190, armor: 0.20, cooldownTicks: 600, castleDamage: 2,
@@ -61,7 +61,7 @@ export const ENEMIES = Object.freeze({
     plateArmorBonuses: Object.freeze([0.15, 0.10, 0.05]), vulnerableTicks: 180,
   }),
   'dread-colossus': freezeEnemy({
-    id: 'dread-colossus', health: 5000, speed: 26, bounty: 900, armor: 0.25, cooldownTicks: 720, castleDamage: 3,
+    id: 'dread-colossus', health: 1530, speed: 26, bounty: 900, armor: 0.25, cooldownTicks: 720, castleDamage: 3,
     phaseThresholds: Object.freeze({ phase2: 0.75, phase3: 0.40 }),
     phase2Armor: 0.20, phase3Speed: 0.20,
     summonThresholds: Object.freeze([0.75, 0.50, 0.25]), summonCount: 6,

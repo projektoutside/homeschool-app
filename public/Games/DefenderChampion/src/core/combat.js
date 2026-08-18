@@ -139,7 +139,12 @@ const defeatEnemy = (simulation, enemy) => {
   if (enemy.defeated) return;
   enemy.defeated = true;
   const config = ENEMIES[enemy.enemyId];
-  simulation.coins += config.bounty;
+  const remainingBountyCoins = simulation.level.bountyCoinCap === null
+    ? config.bounty
+    : Math.max(0, simulation.level.bountyCoinCap - simulation.bountyCoinsEarned);
+  const bountyCoins = Math.min(config.bounty, remainingBountyCoins);
+  simulation.bountyCoinsEarned += bountyCoins;
+  simulation.coins += bountyCoins;
   simulation.score += config.bounty;
 };
 
@@ -292,21 +297,21 @@ const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => addEf
 const updateEnemyAbilities = (simulation, enemy) => {
   const config = ENEMIES[enemy.enemyId];
   if (config.cooldownTicks <= 0 || (enemy.stunnedUntilTick ?? 0) > simulation.tick) return;
+  if (enemy.abilityActiveTicks >= enemy.nextAbilityActiveTick) {
+    if (enemy.enemyId === 'hexcaller') applyHexcallerSupport(simulation, enemy);
+    if (enemy.enemyId === 'ironhide-warlord') applyWarlordRally(simulation, enemy);
+    if (enemy.enemyId === 'mossback-brute') {
+      telegraphBossAbility(simulation, enemy, 'mossback-telegraph', config.telegraphTicks);
+    }
+    if (enemy.enemyId === 'dread-colossus'
+      && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3) {
+      telegraphBossAbility(simulation, enemy, 'dread-pulse-telegraph', config.pulseTelegraphTicks);
+    }
+    enemy.nextAbilityActiveTick += config.cooldownTicks;
+  }
   enemy.abilityActiveTicks += 1;
   const remainingActiveTicks = enemy.nextAbilityActiveTick - enemy.abilityActiveTicks;
-  enemy.nextAbilityTick = simulation.tick + Math.max(0, remainingActiveTicks);
-  if (enemy.abilityActiveTicks < enemy.nextAbilityActiveTick) return;
-  if (enemy.enemyId === 'hexcaller') applyHexcallerSupport(simulation, enemy);
-  if (enemy.enemyId === 'ironhide-warlord') applyWarlordRally(simulation, enemy);
-  if (enemy.enemyId === 'mossback-brute') {
-    telegraphBossAbility(simulation, enemy, 'mossback-telegraph', config.telegraphTicks);
-  }
-  if (enemy.enemyId === 'dread-colossus'
-    && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3) {
-    telegraphBossAbility(simulation, enemy, 'dread-pulse-telegraph', config.pulseTelegraphTicks);
-  }
-  enemy.nextAbilityActiveTick += config.cooldownTicks;
-  enemy.nextAbilityTick = simulation.tick + config.cooldownTicks;
+  enemy.nextAbilityTick = simulation.tick + Math.max(1, remainingActiveTicks + 1);
 };
 
 const triggerTelegraphs = (simulation) => {

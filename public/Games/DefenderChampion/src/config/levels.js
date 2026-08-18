@@ -15,11 +15,15 @@ const spawn = (enemyId, count, intervalTicks, delayTicks = 0) => ({
   delayTicks,
 });
 
-const level = ({ id, name, waveCount, healthScale, threatIndex, path, pads, waves, silverScore, goldScore, parSeconds }) => freeze({
+const level = ({
+  id, name, waveCount, healthScale, bountyCoinCap = null, threatIndex,
+  path, pads, waves, silverScore, goldScore, parSeconds,
+}) => freeze({
   id,
   name,
   waveCount,
   healthScale,
+  bountyCoinCap,
   threatIndex,
   castleHearts: 3,
   startingCoins: 150,
@@ -138,7 +142,7 @@ export const LEVELS = freeze([
     silverScore: 850, goldScore: 1100, parSeconds: 330,
   }),
   level({
-    id: 'level-7', name: "Warlord's March", waveCount: 6, healthScale: 1.92, threatIndex: 430,
+    id: 'level-7', name: "Warlord's March", waveCount: 6, healthScale: 1.92, bountyCoinCap: 550, threatIndex: 430,
     path: [{ x: 34, y: 166 }, { x: 148, y: 220 }, { x: 266, y: 166 }, { x: 356, y: 300 }, { x: 504, y: 304 }, { x: 610, y: 204 }],
     pads: [
       { id: 'l7-pad-a', x: 86, y: 260 }, { id: 'l7-pad-b', x: 160, y: 108 },
@@ -156,7 +160,9 @@ export const LEVELS = freeze([
         spawn('ironhide-warlord', 1, 0, 0),
         spawn('shellguard', 8, 72, 180),
         spawn('skitter', 4, 40, 240),
-        spawn('crusher', 3, 120, 300),
+        spawn('crusher', 4, 90, 300),
+        spawn('skitter', 30, 30, 240),
+        spawn('shellguard', 30, 15, 180),
       ],
     ],
     silverScore: 1050, goldScore: 1360, parSeconds: 360,
@@ -201,7 +207,7 @@ export const LEVELS = freeze([
     silverScore: 1540, goldScore: 1980, parSeconds: 420,
   }),
   level({
-    id: 'level-10', name: "Champion's Stand", waveCount: 8, healthScale: 2.65, threatIndex: 800,
+    id: 'level-10', name: "Champion's Stand", waveCount: 8, healthScale: 2.65, bountyCoinCap: 580, threatIndex: 800,
     path: [{ x: 34, y: 388 }, { x: 142, y: 332 }, { x: 238, y: 214 }, { x: 376, y: 246 }, { x: 486, y: 364 }, { x: 610, y: 286 }],
     pads: [
       { id: 'l10-pad-a', x: 88, y: 300 }, { id: 'l10-pad-b', x: 150, y: 414 },
@@ -217,7 +223,12 @@ export const LEVELS = freeze([
       [spawn('skitter', 24, 32, 0), spawn('crusher', 6, 102, 90)],
       [spawn('shellguard', 14, 54, 0), spawn('hexcaller', 6, 78, 108)],
       [spawn('swarmkin', 42, 18, 0), spawn('crusher', 5, 102, 90)],
-      [spawn('dread-colossus', 1, 0, 0), spawn('swarmkin', 20, 22, 180)],
+      [
+        spawn('dread-colossus', 1, 0, 0),
+        spawn('swarmkin', 20, 22, 180),
+        spawn('shellguard', 50, 5, 120),
+        spawn('swarmkin', 100, 3, 120),
+      ],
     ],
     silverScore: 1850, goldScore: 2400, parSeconds: 480,
   }),

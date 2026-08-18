@@ -122,7 +122,7 @@ test('Ranger mastery selects configured distinct targets by fastest priority and
   );
 });
 
-test('boss ability cadence counts active unstunned ticks and cannot cast while stunned', () => {
+test('boss ability waits for 600 completed active ticks including a stunned interval', () => {
   const boss = createCombatEnemy('enemy-1', 'mossback-brute', {
     speed: 0,
     stunnedUntilTick: 120,
@@ -130,16 +130,21 @@ test('boss ability cadence counts active unstunned ticks and cannot cast while s
   const simulation = createTowerCombat('bladeguard', 0, 0, [boss]);
   simulation.towers = [];
 
-  for (let tick = 0; tick <= 600; tick += 1) {
+  for (let tick = 0; tick <= 718; tick += 1) {
     simulation.tick = tick;
     stepCombat(simulation);
   }
+  assert.equal(boss.abilityActiveTicks, 599);
   assert.equal(simulation.effects.some((effect) => effect.kind === 'mossback-telegraph'), false);
 
-  for (let tick = 601; tick <= 719; tick += 1) {
-    simulation.tick = tick;
-    stepCombat(simulation);
-  }
+  simulation.tick = 719;
+  stepCombat(simulation);
+  assert.equal(boss.abilityActiveTicks, 600);
+  assert.equal(boss.nextAbilityTick, 720);
+  assert.equal(simulation.effects.some((effect) => effect.kind === 'mossback-telegraph'), false);
+
+  simulation.tick = 720;
+  stepCombat(simulation);
   assert.equal(simulation.effects.some((effect) => effect.kind === 'mossback-telegraph'), true);
 });
 

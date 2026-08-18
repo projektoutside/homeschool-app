@@ -21,6 +21,7 @@ export const createSimulation = (levelId, options = {}) => {
     timeScale: 1,
     pauseReasons: new Set(),
     coins: level.startingCoins,
+    bountyCoinsEarned: 0,
     score: 0,
     castleHearts: level.castleHearts,
     nextEntityId: 1,
