@@ -25,5 +25,17 @@ export const scienceContent: ContentItem[] = [
     customHtmlPath: '/FinalGraph/index.html',
     thumbnail: '/assets/thumbnails/optimized/final-graph-128.webp',
     dateAdded: '2026-01-24'
+  },
+  {
+    id: 'animal-champion',
+    title: 'Animal Champion',
+    description: 'Identify 50 animals in fast visual challenge rounds.',
+    type: 'game',
+    category: 'science',
+    subjects: ['Animals', 'Wildlife', 'Visual Recognition'],
+    gradeLevels: ['All'],
+    customHtmlPath: '/Games/Animal Champion/index.html',
+    thumbnail: '/assets/thumbnails/optimized/animal-champion-128.webp',
+    dateAdded: '2026-08-18'
   }
 ];
