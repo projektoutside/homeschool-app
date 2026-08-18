@@ -325,6 +325,20 @@ test('leaderboard normalization rejects corruption and keeps valid positive inte
   assert.deepEqual(normalizeLeaderboard({ score: 10 }), []);
 });
 
+test('leaderboard normalization preserves supported ISO timestamp forms verbatim', () => {
+  assert.deepEqual(normalizeLeaderboard([
+    { score: 10, date: '2026-08-18T10:00Z' },
+    { score: 30, date: '2026-08-18T10:00:00.123456Z' },
+    { score: 20, date: '2026-08-18T10:00:00+05:30' },
+  ]), [
+    { score: 30, date: '2026-08-18T10:00:00.123456Z' },
+    { score: 20, date: '2026-08-18T10:00:00+05:30' },
+    { score: 10, date: '2026-08-18T10:00Z' },
+  ]);
+  assert.deepEqual(normalizeLeaderboard([{ score: 10, date: '2026-08-18T24:00:00Z' }]), []);
+  assert.deepEqual(normalizeLeaderboard([{ score: 10, date: '2026-08-18T10:00:00+24:00' }]), []);
+});
+
 test('recording a leaderboard score ignores zero and returns a normalized top three', () => {
   const raw = [
     { score: 30, date: '2026-08-15T00:00:00.000Z' },
@@ -415,4 +429,37 @@ test('pausable deadline stop cancels work and a later start uses the full durati
   currentTime = 1_100;
   callback(currentTime);
   assert.equal(expirations, 1);
+});
+
+test('pausable deadline stop consumes unframed running time and freezes the remainder', () => {
+  let currentTime = 0;
+  let nextFrameId = 0;
+  const frames = new Map();
+  const ticks = [];
+  let expirations = 0;
+  const deadline = createPausableDeadline({
+    durationMs: 100,
+    now: () => currentTime,
+    requestFrame: (callback) => {
+      const id = ++nextFrameId;
+      frames.set(id, callback);
+      return id;
+    },
+    cancelFrame: (id) => frames.delete(id),
+    onTick: (remainingMs) => ticks.push(remainingMs),
+    onExpire: () => { expirations += 1; },
+  });
+
+  deadline.start();
+  currentTime = 40;
+  assert.equal(deadline.getRemainingMs(), 60);
+  deadline.stop();
+  assert.equal(deadline.getRemainingMs(), 60);
+  assert.equal(frames.size, 0);
+  assert.deepEqual(ticks, [100]);
+  assert.equal(expirations, 0);
+  currentTime = 1_000;
+  assert.equal(deadline.getRemainingMs(), 60);
+  assert.deepEqual(ticks, [100]);
+  assert.equal(expirations, 0);
 });

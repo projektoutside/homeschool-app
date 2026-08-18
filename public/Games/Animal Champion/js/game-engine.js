@@ -8,13 +8,22 @@ const clone = (value) => structuredClone(value);
 
 const isValidMode = (mode) => Object.values(MODES).includes(mode);
 
+const ISO_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|([+-])(\d{2}):(\d{2})))?$/;
+
 const isValidIsoDate = (value) => {
   if (typeof value !== 'string') return false;
-  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2}))?$/.exec(value);
+  const match = ISO_DATE_TIME_PATTERN.exec(value);
   if (!match || !Number.isFinite(Date.parse(value))) return false;
-  const [, year, month, day] = match.map(Number);
+  const [, year, month, day, hour, minute, second, , offset, , offsetHour, offsetMinute] = match;
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth;
+  if (Number(month) < 1 || Number(month) > 12 || Number(day) < 1 || Number(day) > daysInMonth) {
+    return false;
+  }
+  if (hour === undefined) return true;
+  if (Number(hour) > 23 || Number(minute) > 59 || (second !== undefined && Number(second) > 59)) {
+    return false;
+  }
+  return offset === 'Z' || (Number(offsetHour) <= 23 && Number(offsetMinute) <= 59);
 };
 
 export const normalizeLeaderboard = (raw) => {
@@ -321,6 +330,7 @@ export const createPausableDeadline = ({
   };
 
   const stop = () => {
+    if (status === 'running') consumeElapsed();
     generation += 1;
     cancelScheduledFrame();
     status = 'stopped';
