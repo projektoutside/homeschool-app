@@ -33,6 +33,11 @@ test('campaign and effect ceilings are exact', () => {
     bossStunImmunitySeconds: 4,
   });
   assert.equal(ENEMIES['dread-colossus'].castleDamage, 3);
+  assert.deepEqual(ENEMIES['dread-colossus'].phaseThresholds, {
+    phase2: 0.75,
+    phase3: 0.40,
+  });
+  assert.equal(Object.isFrozen(ENEMIES['dread-colossus'].phaseThresholds), true);
 });
 
 test('levels are immutable authored shells with valid strategy fixtures', () => {

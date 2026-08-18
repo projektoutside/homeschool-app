@@ -9,7 +9,12 @@ export const EFFECT_LIMITS = Object.freeze({
   bossStunImmunitySeconds: 4,
 });
 
-const freezeEnemy = (enemy) => Object.freeze({ ...enemy });
+const freezeEnemy = (enemy) => Object.freeze({
+  ...enemy,
+  ...(enemy.phaseThresholds && {
+    phaseThresholds: Object.freeze({ ...enemy.phaseThresholds }),
+  }),
+});
 
 export const ENEMIES = Object.freeze({
   'blight-walker': freezeEnemy({
@@ -38,5 +43,6 @@ export const ENEMIES = Object.freeze({
   }),
   'dread-colossus': freezeEnemy({
     id: 'dread-colossus', health: 5000, speed: 26, bounty: 900, armor: 0.25, cooldownTicks: 720, castleDamage: 3,
+    phaseThresholds: { phase2: 0.75, phase3: 0.40 },
   }),
 });
