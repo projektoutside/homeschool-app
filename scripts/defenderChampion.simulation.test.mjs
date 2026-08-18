@@ -163,6 +163,26 @@ test('targeting resolves role metrics then path progress, spawn tick, and entity
   }], 'highest-armor').id, 'armored');
 });
 
+test('targeting orders matching entity ID prefixes by numeric suffix', () => {
+  const candidates = [
+    { id: 'enemy-10', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 12, spawnTick: 7 },
+    { id: 'enemy-2', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 12, spawnTick: 7 },
+  ];
+
+  assert.equal(selectTarget(candidates, 'fastest').id, 'enemy-2');
+});
+
+test('public snapshots order matching entity ID prefixes by numeric suffix', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 7 });
+
+  advanceSimulation(simulation, 817);
+
+  assert.deepEqual(
+    summarizeSimulation(simulation).enemies.map((enemy) => enemy.id),
+    ['enemy-1', 'enemy-2', 'enemy-3', 'enemy-4', 'enemy-5', 'enemy-6', 'enemy-7', 'enemy-8', 'enemy-9', 'enemy-10'],
+  );
+});
+
 test('strategy fixtures apply exact command ticks and reject unknown or cross-level strategies', () => {
   const first = runStrategyFixture('level-1', 'level-1-balanced');
   const second = runStrategyFixture('level-1', 'level-1-balanced');

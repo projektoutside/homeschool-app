@@ -2,6 +2,7 @@ import { DEFENDERS } from '../config/defenders.js';
 import { getLevel } from '../config/levels.js';
 import { REFERENCE_STRATEGIES } from '../config/reference-strategies.js';
 import { getBuildCost, getSellRefund, getUpgradeCost } from './economy.js';
+import { compareEntityIds } from './entity-id.js';
 import { createWaveController, spawnScheduledEnemies } from './wave-controller.js';
 
 const MAX_STRATEGY_TICKS = 60 * 720;
@@ -133,7 +134,7 @@ const snapshotEnemy = (enemy) => ({
   castleDamage: enemy.castleDamage,
 });
 
-const sortById = (first, second) => (first.id < second.id ? -1 : first.id > second.id ? 1 : 0);
+const sortById = (first, second) => compareEntityIds(first.id, second.id);
 
 export const summarizeSimulation = (simulation) => ({
   version: simulation.version,

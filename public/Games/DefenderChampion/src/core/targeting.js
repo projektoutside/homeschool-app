@@ -1,3 +1,5 @@
+import { compareEntityIds } from './entity-id.js';
+
 const roleMetric = (candidate, priority) => {
   switch (priority) {
     case 'fastest':
@@ -16,5 +18,5 @@ export const selectTarget = (candidates, priority) => [...candidates].sort((firs
   roleMetric(second, priority) - roleMetric(first, priority)
   || second.pathProgress - first.pathProgress
   || first.spawnTick - second.spawnTick
-  || (first.id < second.id ? -1 : first.id > second.id ? 1 : 0)
+  || compareEntityIds(first.id, second.id)
 ))[0] ?? null;
