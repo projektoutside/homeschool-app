@@ -9,12 +9,18 @@ export const EFFECT_LIMITS = Object.freeze({
   bossStunImmunitySeconds: 4,
 });
 
-const freezeEnemy = (enemy) => Object.freeze({
-  ...enemy,
-  ...(enemy.phaseThresholds && {
-    phaseThresholds: Object.freeze({ ...enemy.phaseThresholds }),
-  }),
+export const COMBAT_RULES = Object.freeze({
+  ticksPerSecond: 60,
+  movementScale: 0.09,
+  waveCompletionScore: 35,
+  castleHeartScore: 100,
+  parTimeScore: 180,
+  unspentCoinScoreCap: 120,
+  enemySpeedMultiplierMax: 1.20,
+  supportArmorMax: 0.15,
 });
+
+const freezeEnemy = (enemy) => Object.freeze({ ...enemy });
 
 export const ENEMIES = Object.freeze({
   'blight-walker': freezeEnemy({
@@ -31,18 +37,26 @@ export const ENEMIES = Object.freeze({
   }),
   hexcaller: freezeEnemy({
     id: 'hexcaller', health: 110, speed: 34, bounty: 30, armor: 0.15, cooldownTicks: 180, castleDamage: 1,
+    supportRadius: 145, supportDurationTicks: 180, supportSpeed: 0.20, supportHealingPerSecond: 0.03,
   }),
   crusher: freezeEnemy({
-    id: 'crusher', health: 420, speed: 24, bounty: 72, armor: 0.30, cooldownTicks: 0, castleDamage: 2,
+    id: 'crusher', health: 1000, speed: 24, bounty: 120, armor: 0.30, cooldownTicks: 0, castleDamage: 2,
   }),
   'mossback-brute': freezeEnemy({
     id: 'mossback-brute', health: 1100, speed: 25, bounty: 190, armor: 0.20, cooldownTicks: 600, castleDamage: 2,
+    telegraphTicks: 60, stunSeconds: 1.5, abilityRadius: 150,
   }),
   'ironhide-warlord': freezeEnemy({
-    id: 'ironhide-warlord', health: 2300, speed: 28, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
+    id: 'ironhide-warlord', health: 2300, speed: 36, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
+    rallyRadius: 165, rallyDurationTicks: 180, rallySpeed: 0.20, rallyArmor: 0.15,
+    plateThresholds: Object.freeze([0.75, 0.50, 0.25]),
+    plateArmorBonuses: Object.freeze([0.15, 0.10, 0.05]), vulnerableTicks: 180,
   }),
   'dread-colossus': freezeEnemy({
     id: 'dread-colossus', health: 5000, speed: 26, bounty: 900, armor: 0.25, cooldownTicks: 720, castleDamage: 3,
-    phaseThresholds: { phase2: 0.75, phase3: 0.40 },
+    phaseThresholds: Object.freeze({ phase2: 0.75, phase3: 0.40 }),
+    phase2Armor: 0.20, phase3Speed: 0.20,
+    summonThresholds: Object.freeze([0.75, 0.50, 0.25]), summonCount: 6,
+    pulseTelegraphTicks: 75, pulseDurationTicks: 180, pulseSlow: 0.25, pulseRadius: 190,
   }),
 });

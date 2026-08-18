@@ -4,6 +4,8 @@ import { REFERENCE_STRATEGIES } from '../config/reference-strategies.js';
 import { getBuildCost, getSellRefund, getUpgradeCost } from './economy.js';
 import { compareEntityIds } from './entity-id.js';
 import { createWaveController, spawnScheduledEnemies } from './wave-controller.js';
+import { stepCombat } from './combat.js';
+import { calculateBattleResult } from './scoring.js';
 
 const MAX_STRATEGY_TICKS = 60 * 720;
 const accepted = () => ({ accepted: true, reason: null });
@@ -34,6 +36,9 @@ export const createSimulation = (levelId, options = {}) => {
     seed: options.seed ?? 0,
     waveSchedule: createWaveController(level),
     nextSpawnIndex: 0,
+    waveCompletionFlags: {},
+    pathMetrics: null,
+    medal: null,
   };
 };
 
@@ -54,6 +59,8 @@ const buildTower = (simulation, command) => {
     padId: command.padId,
     tier: 0,
     totalInvested: cost,
+    nextAttackTick: simulation.tick,
+    attackCount: 0,
   });
   return accepted();
 };
@@ -109,6 +116,23 @@ export const advanceSimulation = (simulation, steps) => {
   for (let step = 0; step < count; step += 1) {
     if (simulation.terminal || simulation.pauseReasons.size > 0) break;
     spawnScheduledEnemies(simulation);
+    stepCombat(simulation);
+    if (simulation.castleHearts <= 0) {
+      const result = calculateBattleResult(simulation);
+      simulation.terminal = true;
+      simulation.outcome = result.outcome;
+      simulation.score = result.score;
+      simulation.medal = result.medal;
+      simulation.projectiles = [];
+      simulation.effects = [];
+    } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
+      const result = calculateBattleResult(simulation);
+      simulation.terminal = true;
+      simulation.outcome = result.outcome;
+      simulation.score = result.score;
+      simulation.medal = result.medal;
+      simulation.effects = [];
+    }
     simulation.tick += 1;
   }
   return simulation;
@@ -132,6 +156,14 @@ const snapshotEnemy = (enemy) => ({
   armor: enemy.armor,
   clusterSize: enemy.clusterSize,
   castleDamage: enemy.castleDamage,
+  maxHealth: enemy.maxHealth,
+  waveIndex: enemy.waveIndex,
+  nextAbilityTick: enemy.nextAbilityTick,
+  thresholdFlags: enemy.thresholdFlags ? { ...enemy.thresholdFlags } : {},
+  ...(enemy.stunnedUntilTick !== undefined && { stunnedUntilTick: enemy.stunnedUntilTick }),
+  ...(enemy.stunImmuneUntilTick !== undefined && { stunImmuneUntilTick: enemy.stunImmuneUntilTick }),
+  ...(enemy.vulnerableUntilTick !== undefined && { vulnerableUntilTick: enemy.vulnerableUntilTick }),
+  ...(enemy.isSummon !== undefined && { isSummon: enemy.isSummon }),
 });
 
 const sortById = (first, second) => compareEntityIds(first.id, second.id);
@@ -150,10 +182,11 @@ export const summarizeSimulation = (simulation) => ({
   spawnedAllWaves: simulation.spawnedAllWaves,
   enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
   towers: simulation.towers.map(snapshotTower).sort(sortById),
-  projectiles: simulation.projectiles.map((projectile) => ({ ...projectile })).sort(sortById),
-  effects: simulation.effects.map((effect) => ({ ...effect })).sort(sortById),
+  projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
+  effects: simulation.effects.map((effect) => structuredClone(effect)).sort(sortById),
   terminal: simulation.terminal,
   outcome: simulation.outcome,
+  medal: simulation.medal,
   qa: simulation.qa,
   seed: simulation.seed,
 });
