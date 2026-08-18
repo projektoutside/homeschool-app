@@ -117,5 +117,11 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /'base'/);
   assert.match(inspector, /'game_assets'/);
   assert.match(inspector, /500MB/);
+  assert.match(inspector, /Animal Champion/);
+  assert.match(inspector, /animal-data\.js/);
+  assert.match(inspector, /animal-champion-128\.webp/);
+  assert.match(inspector, /shared\/lahsPointsBridge\.js/);
+  assert.match(inspector, /expectedAnimalImageCount\s*=\s*100/);
+  assert.match(inspector, /StringComparer.*Ordinal/);
   assert.match(release, /Inspect-AndroidBundle\.ps1/);
 });
