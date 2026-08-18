@@ -887,14 +887,14 @@
     /***/
     76332(module, __unused_webpack_exports, __webpack_require__2) {
       var MathRotateAroundDistance = __webpack_require__2(1163);
-      var RotateAroundDistance = function(items, point, angle, distance) {
+      var RotateAroundDistance = function(items, point, angle, distance2) {
         var x = point.x;
         var y = point.y;
-        if (distance === 0) {
+        if (distance2 === 0) {
           return items;
         }
         for (var i = 0; i < items.length; i++) {
-          MathRotateAroundDistance(items[i], x, y, angle, distance);
+          MathRotateAroundDistance(items[i], x, y, angle, distance2);
         }
         return items;
       };
@@ -7196,9 +7196,9 @@
           this._onUpdate = callback;
           this._onUpdateScope = context;
           if (this.shortestPath) {
-            var distance = WrapAngle(this.destination - this.source);
-            this.destination = this.source + distance;
-            this.clockwise = distance >= 0;
+            var distance2 = WrapAngle(this.destination - this.source);
+            this.destination = this.source + distance2;
+            this.clockwise = distance2 >= 0;
           } else {
             this.clockwise = this.destination >= this.source;
           }
@@ -9552,9 +9552,9 @@
          *
          * @return {Phaser.Math.Vector2[]} An Array of Vector2 objects.
          */
-        getDistancePoints: function(distance) {
+        getDistancePoints: function(distance2) {
           var len = this.getLength();
-          var spaced = Math.max(1, len / distance);
+          var spaced = Math.max(1, len / distance2);
           return this.getSpacedPoints(spaced);
         },
         /**
@@ -9814,11 +9814,11 @@
          *
          * @return {number} The t value (between 0 and 1) at the given distance along the curve.
          */
-        getTFromDistance: function(distance, divisions) {
-          if (distance <= 0) {
+        getTFromDistance: function(distance2, divisions) {
+          if (distance2 <= 0) {
             return 0;
           }
-          return this.getUtoTmapping(0, distance, divisions);
+          return this.getUtoTmapping(0, distance2, divisions);
         },
         /**
          * Maps a uniform parameter u (0 to 1, distributed evenly by arc length) to the raw curve parameter t. This mapping ensures that points sampled at regular intervals of u will be equidistant along the curve, unlike the raw t parameter which may produce uneven spacing.
@@ -9832,13 +9832,13 @@
          *
          * @return {number} The equidistant value.
          */
-        getUtoTmapping: function(u, distance, divisions) {
+        getUtoTmapping: function(u, distance2, divisions) {
           var arcLengths = this.getLengths(divisions);
           var i = 0;
           var il = arcLengths.length;
           var targetArcLength;
-          if (distance) {
-            targetArcLength = Math.min(distance, arcLengths[il - 1]);
+          if (distance2) {
+            targetArcLength = Math.min(distance2, arcLengths[il - 1]);
           } else {
             targetArcLength = u * arcLengths[il - 1];
           }
@@ -10436,12 +10436,12 @@
          *
          * @return {number} The equidistant value.
          */
-        getUtoTmapping: function(u, distance, divisions) {
+        getUtoTmapping: function(u, distance2, divisions) {
           var t;
-          if (distance) {
+          if (distance2) {
             var arcLengths = this.getLengths(divisions);
             var lineLength = arcLengths[arcLengths.length - 1];
-            var targetLineLength = Math.min(distance, lineLength);
+            var targetLineLength = Math.min(distance2, lineLength);
             t = targetLineLength / lineLength;
           } else {
             t = u;
@@ -16988,7 +16988,7 @@
       var Controller = __webpack_require__2(13045);
       var Glow = new Class2({
         Extends: Controller,
-        initialize: function Glow2(camera, color, outerStrength, innerStrength, scale, knockout, quality, distance) {
+        initialize: function Glow2(camera, color, outerStrength, innerStrength, scale, knockout, quality, distance2) {
           if (outerStrength === void 0) {
             outerStrength = 4;
           }
@@ -17004,8 +17004,8 @@
           if (quality === void 0) {
             quality = camera.scene.sys.game.config.glowQuality;
           }
-          if (distance === void 0) {
-            distance = camera.scene.sys.game.config.glowDistance;
+          if (distance2 === void 0) {
+            distance2 = camera.scene.sys.game.config.glowDistance;
           }
           Controller.call(this, camera, "FilterGlow");
           this.outerStrength = outerStrength;
@@ -17013,7 +17013,7 @@
           this.scale = scale;
           this.knockout = knockout;
           this._quality = Math.max(Math.round(quality), 1);
-          this._distance = Math.max(Math.round(distance), 1);
+          this._distance = Math.max(Math.round(distance2), 1);
           this.glcolor = [1, 1, 1, 1];
           if (color !== void 0) {
             this.color = color;
@@ -17091,11 +17091,11 @@
             return override;
           }
           var padding = this.currentPadding;
-          var distance = Math.ceil(this.distance * this.scale);
-          padding.left = -distance;
-          padding.top = -distance;
-          padding.right = distance;
-          padding.bottom = distance;
+          var distance2 = Math.ceil(this.distance * this.scale);
+          padding.left = -distance2;
+          padding.top = -distance2;
+          padding.right = distance2;
+          padding.bottom = distance2;
           return padding;
         }
       });
@@ -23503,7 +23503,7 @@
          *
          * @return {Phaser.Filters.Glow} The new Glow filter controller.
          */
-        addGlow: function(color, outerStrength, innerStrength, scale, knockout, quality, distance) {
+        addGlow: function(color, outerStrength, innerStrength, scale, knockout, quality, distance2) {
           return this.add(new Glow(
             this.camera,
             color,
@@ -23512,7 +23512,7 @@
             scale,
             knockout,
             quality,
-            distance
+            distance2
           ));
         },
         /**
@@ -33553,8 +33553,8 @@
          *
          * @return {this} This Group object.
          */
-        rotateAroundDistance: function(point, angle, distance) {
-          Actions2.RotateAroundDistance(Array.from(this.children), point, angle, distance);
+        rotateAroundDistance: function(point, angle, distance2) {
+          Actions2.RotateAroundDistance(Array.from(this.children), point, angle, distance2);
           return this;
         },
         /**
@@ -72451,8 +72451,8 @@
     },
     /***/
     38265(module) {
-      var GetSpeed = function(distance, time) {
-        return distance / time / 1e3;
+      var GetSpeed = function(distance2, time) {
+        return distance2 / time / 1e3;
       };
       module.exports = GetSpeed;
     },
@@ -76095,19 +76095,19 @@
     },
     /***/
     1163(module) {
-      var RotateAroundDistance = function(point, x, y, angle, distance) {
+      var RotateAroundDistance = function(point, x, y, angle, distance2) {
         var t = angle + Math.atan2(point.y - y, point.x - x);
-        point.x = x + distance * Math.cos(t);
-        point.y = y + distance * Math.sin(t);
+        point.x = x + distance2 * Math.cos(t);
+        point.y = y + distance2 * Math.sin(t);
         return point;
       };
       module.exports = RotateAroundDistance;
     },
     /***/
     70336(module) {
-      var RotateTo = function(point, x, y, angle, distance) {
-        point.x = x + distance * Math.cos(angle);
-        point.y = y + distance * Math.sin(angle);
+      var RotateTo = function(point, x, y, angle, distance2) {
+        point.x = x + distance2 * Math.cos(angle);
+        point.y = y + distance2 * Math.sin(angle);
         return point;
       };
       module.exports = RotateTo;
@@ -78076,11 +78076,11 @@
       var NormalizeAngle = __webpack_require__2(12407);
       var TAU = MATH_CONST.TAU;
       var GetCounterClockwiseDistance = function(angle1, angle2) {
-        var distance = NormalizeAngle(angle2 - angle1);
-        if (distance > 0) {
-          distance -= TAU;
+        var distance2 = NormalizeAngle(angle2 - angle1);
+        if (distance2 > 0) {
+          distance2 -= TAU;
         }
-        return distance;
+        return distance2;
       };
       module.exports = GetCounterClockwiseDistance;
     },
@@ -79983,10 +79983,10 @@
             if (source === target || source === body || source === body.gameObject || source === body.center) {
               continue;
             }
-            var distance = DistanceSquared(x, y, body.center.x, body.center.y);
-            if (distance < min) {
+            var distance2 = DistanceSquared(x, y, body.center.x, body.center.y);
+            if (distance2 < min) {
               closest = target;
-              min = distance;
+              min = distance2;
             }
           }
           return closest;
@@ -80025,10 +80025,10 @@
             if (source === target || source === body || source === body.gameObject || source === body.center) {
               continue;
             }
-            var distance = DistanceSquared(x, y, body.center.x, body.center.y);
-            if (distance > max) {
+            var distance2 = DistanceSquared(x, y, body.center.x, body.center.y);
+            if (distance2 > max) {
               farthest = target;
-              max = distance;
+              max = distance2;
             }
           }
           return farthest;
@@ -93162,12 +93162,12 @@
           result.overlap = overlapMin;
         };
         Collision._findSupports = function(bodyA, bodyB, normal, direction) {
-          var vertices = bodyB.vertices, verticesLength = vertices.length, bodyAPositionX = bodyA.position.x, bodyAPositionY = bodyA.position.y, normalX = normal.x * direction, normalY = normal.y * direction, vertexA = vertices[0], vertexB = vertexA, nearestDistance = normalX * (bodyAPositionX - vertexB.x) + normalY * (bodyAPositionY - vertexB.y), vertexC, distance, j;
+          var vertices = bodyB.vertices, verticesLength = vertices.length, bodyAPositionX = bodyA.position.x, bodyAPositionY = bodyA.position.y, normalX = normal.x * direction, normalY = normal.y * direction, vertexA = vertices[0], vertexB = vertexA, nearestDistance = normalX * (bodyAPositionX - vertexB.x) + normalY * (bodyAPositionY - vertexB.y), vertexC, distance2, j;
           for (j = 1; j < verticesLength; j += 1) {
             vertexB = vertices[j];
-            distance = normalX * (bodyAPositionX - vertexB.x) + normalY * (bodyAPositionY - vertexB.y);
-            if (distance < nearestDistance) {
-              nearestDistance = distance;
+            distance2 = normalX * (bodyAPositionX - vertexB.x) + normalY * (bodyAPositionY - vertexB.y);
+            if (distance2 < nearestDistance) {
+              nearestDistance = distance2;
               vertexA = vertexB;
             }
           }
@@ -106595,10 +106595,10 @@
          */
         updateShaderConfig: function(controller, drawingContext) {
           var programManager = this.programManager;
-          var distance = controller.distance.toFixed(0) + ".0";
+          var distance2 = controller.distance.toFixed(0) + ".0";
           var distanceAddition = programManager.getAdditionsByTag("distance")[0];
-          distanceAddition.name = "distance_" + distance;
-          distanceAddition.additions.fragmentDefine = "#undef DISTANCE\n#define DISTANCE " + distance;
+          distanceAddition.name = "distance_" + distance2;
+          distanceAddition.additions.fragmentDefine = "#undef DISTANCE\n#define DISTANCE " + distance2;
           var quality = controller.quality.toFixed(0) + ".0";
           var qualityAddition = programManager.getAdditionsByTag("quality")[0];
           qualityAddition.name = "quality_" + quality;
@@ -146012,6 +146012,71 @@
     }
   };
 
+  // public/Games/DefenderChampion/src/config/defenders.js
+  var freezeNested = (value) => {
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {
+      for (const child of Object.values(value)) freezeNested(child);
+      Object.freeze(value);
+    }
+    return value;
+  };
+  var freezeDefender = (defender) => freezeNested({ ...defender });
+  var DEFENDERS = Object.freeze({
+    bladeguard: freezeDefender({
+      id: "bladeguard",
+      costs: [50, 60, 90],
+      targetPriority: "closest-to-castle",
+      mastery: "whirlwind",
+      damage: [60, 65, 70],
+      range: [80, 88, 96],
+      cooldownTicks: [30, 28, 26],
+      projectileTicks: 1,
+      masteryAttackCount: 6,
+      masteryRadius: 72
+    }),
+    ranger: freezeDefender({
+      id: "ranger",
+      costs: [70, 85, 120],
+      targetPriority: "fastest",
+      mastery: "critical-volley",
+      damage: [50, 55, 60],
+      range: [190, 202, 216],
+      cooldownTicks: [46, 42, 38],
+      projectileTicks: 3,
+      masteryAttackCount: 5,
+      masteryMultiplier: 1.8,
+      masteryTargetCount: 3
+    }),
+    ironwarden: freezeDefender({
+      id: "ironwarden",
+      costs: [120, 145, 205],
+      targetPriority: "highest-armor",
+      mastery: "rally-bash",
+      damage: [180, 185, 190],
+      range: [132, 142, 154],
+      cooldownTicks: [66, 60, 54],
+      projectileTicks: 2,
+      masteryAttackCount: 4,
+      stunSeconds: 0.75,
+      rallySpeed: 0.18,
+      rallyRadius: 150
+    }),
+    "rune-artificer": freezeDefender({
+      id: "rune-artificer",
+      costs: [150, 180, 255],
+      targetPriority: "densest-cluster",
+      mastery: "double-detonation",
+      damage: [28, 32, 36],
+      range: [70, 80, 90],
+      cooldownTicks: [84, 76, 68],
+      projectileTicks: 4,
+      splashRadius: 60,
+      armorPierce: 0.35,
+      masteryAttackCount: 4,
+      masteryDelayTicks: 8
+    })
+  });
+
   // public/Games/DefenderChampion/src/config/levels.js
   var freeze = (value) => {
     if (value && typeof value === "object" && !Object.isFrozen(value)) {
@@ -146365,7 +146430,1861 @@
     return matchedLevel;
   };
 
+  // public/Games/DefenderChampion/src/config/reference-strategies.js
+  var freezeCommands = (commands) => Object.freeze(
+    commands.map((command) => Object.freeze({ ...command }))
+  );
+  var build = (levelNumber, tick, defenderId, pad) => ({
+    tick,
+    type: "build",
+    defenderId,
+    padId: `l${levelNumber}-pad-${pad}`
+  });
+  var primaryStrategy = (levelNumber, primary, pads) => freezeCommands([
+    build(levelNumber, 0, "rune-artificer", pads[0]),
+    build(levelNumber, 3600, primary, pads[3]),
+    build(levelNumber, 4800, primary, pads[4]),
+    build(levelNumber, 6e3, "ranger", pads[5]),
+    build(levelNumber, 7500, "bladeguard", pads[6]),
+    build(levelNumber, 9e3, "ranger", pads[7]),
+    build(levelNumber, 10500, primary, pads[2])
+  ]);
+  var artilleryStrategy = (levelNumber, support, pads) => freezeCommands([
+    build(levelNumber, 0, "rune-artificer", pads[0]),
+    build(levelNumber, 9e3, "rune-artificer", pads[2]),
+    build(levelNumber, 10500, "ironwarden", pads[5]),
+    build(levelNumber, 12e3, "ironwarden", pads[7]),
+    build(levelNumber, 13500, support, pads[3]),
+    build(levelNumber, 15e3, "bladeguard", pads[4]),
+    build(levelNumber, 18e3, "rune-artificer", pads[5])
+  ]);
+  var pairedStrategies = (levelNumber, primary, support) => ({
+    [`level-${levelNumber}-balanced`]: primaryStrategy(levelNumber, primary, ["c", "a", "e", "g", "d", "b", "f", "h"]),
+    [`level-${levelNumber}-artillery`]: artilleryStrategy(levelNumber, support, ["f", "b", "d", "h", "e", "a", "c", "g"])
+  });
+  var earlyDiverseStrategies = (levelNumber) => ({
+    [`level-${levelNumber}-balanced`]: freezeCommands([
+      build(levelNumber, 0, "bladeguard", "a"),
+      build(levelNumber, 0, "bladeguard", "d"),
+      build(levelNumber, 0, "bladeguard", "g")
+    ]),
+    [`level-${levelNumber}-artillery`]: freezeCommands([
+      build(levelNumber, 0, "ranger", "b"),
+      build(levelNumber, 0, "ranger", "g")
+    ])
+  });
+  var lateDiverseStrategies = (levelNumber) => ({
+    [`level-${levelNumber}-balanced`]: freezeCommands([
+      build(levelNumber, 0, "bladeguard", "a"),
+      build(levelNumber, 0, "bladeguard", "d"),
+      build(levelNumber, 0, "bladeguard", "g"),
+      build(levelNumber, 3600, "ironwarden", "c"),
+      build(levelNumber, 4800, "ironwarden", "e"),
+      build(levelNumber, 6e3, "ranger", "b"),
+      build(levelNumber, 7200, "ironwarden", "h")
+    ]),
+    [`level-${levelNumber}-artillery`]: freezeCommands([
+      build(levelNumber, 0, "ranger", "b"),
+      build(levelNumber, 0, "ranger", "g"),
+      build(levelNumber, 3600, "rune-artificer", "f"),
+      build(levelNumber, 4800, "rune-artificer", "d"),
+      build(levelNumber, 6e3, "rune-artificer", "e")
+    ])
+  });
+  var REFERENCE_STRATEGIES = Object.freeze({
+    "level-1-balanced": freezeCommands([
+      build(1, 0, "ranger", "a"),
+      build(1, 0, "bladeguard", "b")
+    ]),
+    "level-1-artillery": freezeCommands([
+      build(1, 0, "bladeguard", "a"),
+      build(1, 0, "bladeguard", "d"),
+      build(1, 0, "bladeguard", "g")
+    ]),
+    ...pairedStrategies(2, "bladeguard", "ranger"),
+    ...pairedStrategies(3, "ironwarden", "bladeguard"),
+    ...pairedStrategies(4, "ironwarden", "ranger"),
+    ...pairedStrategies(5, "ranger", "bladeguard"),
+    ...pairedStrategies(6, "ranger", "ironwarden"),
+    ...pairedStrategies(7, "ironwarden", "ranger"),
+    ...pairedStrategies(8, "ironwarden", "bladeguard"),
+    ...pairedStrategies(9, "ranger", "ironwarden"),
+    ...pairedStrategies(10, "ironwarden", "ranger"),
+    ...earlyDiverseStrategies(2),
+    ...earlyDiverseStrategies(3),
+    ...earlyDiverseStrategies(4),
+    ...earlyDiverseStrategies(5),
+    ...earlyDiverseStrategies(6),
+    "level-7-balanced": freezeCommands([
+      build(7, 0, "rune-artificer", "f"),
+      build(7, 5400, "ranger", "b"),
+      build(7, 6e3, "ironwarden", "h"),
+      build(7, 6600, "ironwarden", "c"),
+      build(7, 7200, "ironwarden", "e"),
+      build(7, 7500, "bladeguard", "d")
+    ]),
+    ...lateDiverseStrategies(8),
+    ...lateDiverseStrategies(9),
+    "level-10-artillery": freezeCommands([
+      build(10, 0, "rune-artificer", "f"),
+      build(10, 5400, "rune-artificer", "d"),
+      build(10, 6e3, "ironwarden", "a"),
+      build(10, 6600, "ironwarden", "g"),
+      build(10, 7200, "ranger", "b"),
+      build(10, 7800, "ranger", "h"),
+      build(10, 8400, "bladeguard", "e")
+    ])
+  });
+
+  // public/Games/DefenderChampion/src/core/economy.js
+  var getBuildCost = (defender) => defender.costs[0];
+  var getUpgradeCost = (tower, defender) => {
+    var _a;
+    return (_a = defender.costs[tower.tier + 1]) != null ? _a : null;
+  };
+  var getSellRefund = (tower) => Math.floor(tower.totalInvested * 0.7);
+
+  // public/Games/DefenderChampion/src/core/entity-id.js
+  var numericEntityId = /^(.*)-(\d+)$/;
+  var compareText = (first, second) => first < second ? -1 : first > second ? 1 : 0;
+  var parseEntityId = (id) => {
+    const text = String(id);
+    const match = text.match(numericEntityId);
+    if (!match) return { text, prefix: null, suffix: null };
+    return {
+      text,
+      prefix: match[1],
+      suffix: match[2].replace(/^0+(?=\d)/, "")
+    };
+  };
+  var compareEntityIds = (firstId, secondId) => {
+    const first = parseEntityId(firstId);
+    const second = parseEntityId(secondId);
+    if (first.prefix !== null && first.prefix === second.prefix) {
+      const numericComparison = first.suffix.length - second.suffix.length || compareText(first.suffix, second.suffix);
+      if (numericComparison !== 0) return numericComparison;
+    }
+    return compareText(first.text, second.text);
+  };
+
+  // public/Games/DefenderChampion/src/config/enemies.js
+  var EFFECT_LIMITS = Object.freeze({
+    armorReductionMax: 0.65,
+    slowMax: 0.4,
+    supportSpeedMax: 0.25,
+    supportHealingPerSecondMax: 0.03,
+    standardStunSecondsMax: 1.5,
+    standardStunImmunitySeconds: 2,
+    bossStunSecondsMax: 0.5,
+    bossStunImmunitySeconds: 4
+  });
+  var COMBAT_RULES = Object.freeze({
+    ticksPerSecond: 60,
+    movementScale: 0.09,
+    waveCompletionScore: 35,
+    castleHeartScore: 100,
+    parTimeScore: 180,
+    unspentCoinScoreCap: 120,
+    enemySpeedMultiplierMax: 1.2,
+    supportArmorMax: 0.15
+  });
+  var freezeNested2 = (value) => {
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {
+      for (const child of Object.values(value)) freezeNested2(child);
+      Object.freeze(value);
+    }
+    return value;
+  };
+  var freezeEnemy = (enemy) => freezeNested2({ ...enemy });
+  var ENEMIES = Object.freeze({
+    "blight-walker": freezeEnemy({
+      id: "blight-walker",
+      health: 58,
+      speed: 42,
+      bounty: 12,
+      armor: 0,
+      cooldownTicks: 0,
+      castleDamage: 1
+    }),
+    skitter: freezeEnemy({
+      id: "skitter",
+      health: 38,
+      speed: 66,
+      bounty: 13,
+      armor: 0,
+      cooldownTicks: 0,
+      castleDamage: 1
+    }),
+    swarmkin: freezeEnemy({
+      id: "swarmkin",
+      health: 27,
+      speed: 50,
+      bounty: 7,
+      armor: 0,
+      cooldownTicks: 0,
+      castleDamage: 1
+    }),
+    shellguard: freezeEnemy({
+      id: "shellguard",
+      health: 160,
+      speed: 29,
+      bounty: 27,
+      armor: 0.55,
+      cooldownTicks: 0,
+      castleDamage: 1
+    }),
+    hexcaller: freezeEnemy({
+      id: "hexcaller",
+      health: 110,
+      speed: 34,
+      bounty: 30,
+      armor: 0.15,
+      cooldownTicks: 180,
+      castleDamage: 1,
+      supportRadius: 145,
+      supportDurationTicks: 180,
+      supportSpeed: 0.2,
+      supportHealingPerSecond: 0.03
+    }),
+    crusher: freezeEnemy({
+      id: "crusher",
+      health: 800,
+      speed: 24,
+      bounty: 120,
+      armor: 0.3,
+      cooldownTicks: 0,
+      castleDamage: 2
+    }),
+    "mossback-brute": freezeEnemy({
+      id: "mossback-brute",
+      health: 1100,
+      speed: 25,
+      bounty: 190,
+      armor: 0.2,
+      cooldownTicks: 600,
+      castleDamage: 2,
+      telegraphTicks: 60,
+      stunSeconds: 1.5,
+      abilityRadius: 150
+    }),
+    "ironhide-warlord": freezeEnemy({
+      id: "ironhide-warlord",
+      health: 12e3,
+      speed: 36,
+      bounty: 370,
+      armor: 0.35,
+      cooldownTicks: 480,
+      castleDamage: 2,
+      rallyRadius: 165,
+      rallyDurationTicks: 180,
+      rallySpeed: 0.2,
+      rallyArmor: 0.15,
+      plateThresholds: Object.freeze([0.75, 0.5, 0.25]),
+      plateArmorBonuses: Object.freeze([0.15, 0.1, 0.05]),
+      vulnerableTicks: 180
+    }),
+    "dread-colossus": freezeEnemy({
+      id: "dread-colossus",
+      health: 1530,
+      speed: 26,
+      bounty: 900,
+      armor: 0.25,
+      cooldownTicks: 720,
+      castleDamage: 3,
+      phaseThresholds: Object.freeze({ phase2: 0.75, phase3: 0.4 }),
+      phase2Armor: 0.2,
+      phase3Speed: 0.2,
+      summonThresholds: Object.freeze([0.75, 0.5, 0.25]),
+      summonCount: 6,
+      pulseTelegraphTicks: 75,
+      pulseDurationTicks: 180,
+      pulseSlow: 0.25,
+      pulseRadius: 190
+    })
+  });
+
+  // public/Games/DefenderChampion/src/core/wave-controller.js
+  var WAVE_GAP_TICKS = 180;
+  var createWaveController = (level2) => {
+    let waveStartTick = 0;
+    const schedule = [];
+    level2.waves.forEach((wave, waveIndex) => {
+      let finalSpawnTick = waveStartTick;
+      wave.forEach((group) => {
+        for (let index = 0; index < group.count; index += 1) {
+          const spawnTick = waveStartTick + group.delayTicks + group.intervalTicks * index;
+          schedule.push({ waveIndex, enemyId: group.enemyId, spawnTick });
+          finalSpawnTick = Math.max(finalSpawnTick, spawnTick);
+        }
+      });
+      waveStartTick = finalSpawnTick + WAVE_GAP_TICKS;
+    });
+    return schedule.sort((first, second) => first.spawnTick - second.spawnTick || first.waveIndex - second.waveIndex || first.enemyId.localeCompare(second.enemyId));
+  };
+  var spawnScheduledEnemies = (simulation) => {
+    while (simulation.nextSpawnIndex < simulation.waveSchedule.length && simulation.waveSchedule[simulation.nextSpawnIndex].spawnTick === simulation.tick) {
+      const entry = simulation.waveSchedule[simulation.nextSpawnIndex];
+      const enemy = ENEMIES[entry.enemyId];
+      simulation.enemies.push({
+        id: `enemy-${simulation.nextEntityId++}`,
+        enemyId: enemy.id,
+        spawnTick: entry.spawnTick,
+        pathProgress: 0,
+        health: Math.round(enemy.health * simulation.level.healthScale),
+        speed: enemy.speed,
+        armor: enemy.armor,
+        clusterSize: 1,
+        castleDamage: enemy.castleDamage
+      });
+      simulation.waveIndex = entry.waveIndex;
+      simulation.nextSpawnIndex += 1;
+    }
+    simulation.spawnedAllWaves = simulation.nextSpawnIndex === simulation.waveSchedule.length;
+  };
+
+  // public/Games/DefenderChampion/src/core/targeting.js
+  var roleMetric = (candidate, priority) => {
+    var _a;
+    switch (priority) {
+      case "fastest":
+        return candidate.speed;
+      case "highest-armor":
+        return candidate.armor;
+      case "densest-cluster":
+        return (_a = candidate.clusterSize) != null ? _a : 1;
+      case "closest-to-castle":
+      default:
+        return candidate.pathProgress;
+    }
+  };
+  var selectTarget = (candidates, priority) => {
+    var _a;
+    return (_a = [...candidates].sort((first, second) => roleMetric(second, priority) - roleMetric(first, priority) || second.pathProgress - first.pathProgress || first.spawnTick - second.spawnTick || compareEntityIds(first.id, second.id))[0]) != null ? _a : null;
+  };
+
+  // public/Games/DefenderChampion/src/core/combat.js
+  var clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  var isBoss = (enemy) => enemy.enemyId === "mossback-brute" || enemy.enemyId === "ironhide-warlord" || enemy.enemyId === "dread-colossus";
+  var applyArmor = (damage, armor, armorPierce = 0) => {
+    if (!(damage > 0)) return 0;
+    const effectiveArmor = clamp((armor != null ? armor : 0) - Math.max(0, armorPierce), 0, EFFECT_LIMITS.armorReductionMax);
+    return Math.max(1, Math.round(damage * (1 - effectiveArmor)));
+  };
+  var clampControlEffect = (enemyKind, effect) => {
+    var _a, _b;
+    return {
+      stunSeconds: clamp(
+        (_a = effect.stunSeconds) != null ? _a : 0,
+        0,
+        enemyKind === "boss" ? EFFECT_LIMITS.bossStunSecondsMax : EFFECT_LIMITS.standardStunSecondsMax
+      ),
+      slow: clamp((_b = effect.slow) != null ? _b : 0, 0, EFFECT_LIMITS.slowMax)
+    };
+  };
+  var getDreadColossusPhase = (healthRatio) => {
+    if (healthRatio > 0.75) return 1;
+    if (healthRatio > 0.4) return 2;
+    return 3;
+  };
+  var distance = (first, second) => Math.hypot(first.x - second.x, first.y - second.y);
+  var getPathMetrics = (path) => {
+    const segments = [];
+    let total = 0;
+    for (let index = 1; index < path.length; index += 1) {
+      const start = path[index - 1];
+      const end = path[index];
+      const length = distance(start, end);
+      segments.push({ start, end, length, offset: total });
+      total += length;
+    }
+    return { segments, total };
+  };
+  var getEnemyPosition = (simulation, enemy) => {
+    var _a;
+    const metrics = simulation.pathMetrics;
+    const progress = clamp(enemy.pathProgress, 0, metrics.total);
+    const segment = (_a = metrics.segments.find((entry) => progress <= entry.offset + entry.length)) != null ? _a : metrics.segments.at(-1);
+    const ratio = segment.length === 0 ? 1 : (progress - segment.offset) / segment.length;
+    return {
+      x: segment.start.x + (segment.end.x - segment.start.x) * ratio,
+      y: segment.start.y + (segment.end.y - segment.start.y) * ratio
+    };
+  };
+  var getTowerPosition = (simulation, tower) => simulation.level.pads.find((pad) => pad.id === tower.padId);
+  var effectKey = (targetId, kind) => `${targetId}\0${kind}`;
+  var rebuildEffectIndex = (simulation) => {
+    var _a;
+    simulation.activeEffectValues = /* @__PURE__ */ new Map();
+    for (const effect of simulation.effects) {
+      const key = effectKey(effect.targetId, effect.kind);
+      simulation.activeEffectValues.set(key, Math.max((_a = simulation.activeEffectValues.get(key)) != null ? _a : 0, effect.value));
+    }
+  };
+  var strongestEffect = (simulation, targetId, kind, maximum) => {
+    var _a, _b;
+    return Math.min(
+      maximum,
+      (_b = (_a = simulation.activeEffectValues) == null ? void 0 : _a.get(effectKey(targetId, kind))) != null ? _b : 0
+    );
+  };
+  var addEffect = (simulation, effect) => {
+    var _a, _b, _c, _d;
+    const duplicate = simulation.effects.find((candidate) => candidate.sourceId === effect.sourceId && candidate.targetId === effect.targetId && candidate.kind === effect.kind);
+    if (duplicate) {
+      duplicate.value = Math.max(duplicate.value, effect.value);
+      duplicate.expiresAtTick = Math.max(duplicate.expiresAtTick, Math.trunc(effect.expiresAtTick));
+      const key2 = effectKey(effect.targetId, effect.kind);
+      (_b = simulation.activeEffectValues) == null ? void 0 : _b.set(key2, Math.max((_a = simulation.activeEffectValues.get(key2)) != null ? _a : 0, effect.value));
+      return;
+    }
+    simulation.effects.push({
+      id: `effect-${simulation.nextEntityId++}`,
+      ...effect,
+      expiresAtTick: Math.trunc(effect.expiresAtTick)
+    });
+    const key = effectKey(effect.targetId, effect.kind);
+    (_d = simulation.activeEffectValues) == null ? void 0 : _d.set(key, Math.max((_c = simulation.activeEffectValues.get(key)) != null ? _c : 0, effect.value));
+  };
+  var applySupportEffects = (simulation, enemy) => {
+    var _a;
+    const speedBonus = strongestEffect(simulation, enemy.id, "enemy-speed", EFFECT_LIMITS.supportSpeedMax);
+    const armorBonus = strongestEffect(simulation, enemy.id, "enemy-armor", COMBAT_RULES.supportArmorMax);
+    const healingRate = strongestEffect(
+      simulation,
+      enemy.id,
+      "enemy-healing",
+      EFFECT_LIMITS.supportHealingPerSecondMax
+    );
+    if (healingRate > 0 && enemy.health > 0 && enemy.health < enemy.maxHealth && enemy.lastHealingTick !== simulation.tick) {
+      enemy.lastHealingTick = simulation.tick;
+      enemy.healingRemainder = ((_a = enemy.healingRemainder) != null ? _a : 0) + enemy.maxHealth * healingRate;
+      const wholeHealing = Math.floor(enemy.healingRemainder / COMBAT_RULES.ticksPerSecond);
+      if (wholeHealing > 0) {
+        enemy.health = Math.min(enemy.maxHealth, enemy.health + wholeHealing);
+        enemy.healingRemainder -= wholeHealing * COMBAT_RULES.ticksPerSecond;
+      }
+    }
+    return { speedBonus, armorBonus };
+  };
+  var getEnemyArmor = (simulation, enemy, supportArmor) => {
+    let armor = enemy.armor;
+    if (enemy.enemyId === "ironhide-warlord") {
+      const config = ENEMIES[enemy.enemyId];
+      const ratio = enemy.health / enemy.maxHealth;
+      if (enemy.vulnerableUntilTick > simulation.tick) armor = 0;
+      else {
+        const activePlateIndex = config.plateThresholds.findIndex((threshold) => ratio > threshold);
+        if (activePlateIndex >= 0) armor += config.plateArmorBonuses[activePlateIndex];
+      }
+    }
+    if (enemy.enemyId === "dread-colossus" && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 2) {
+      armor += ENEMIES["dread-colossus"].phase2Armor;
+    }
+    return armor + supportArmor;
+  };
+  var defeatEnemy = (simulation, enemy) => {
+    if (enemy.defeated) return;
+    enemy.defeated = true;
+    const config = ENEMIES[enemy.enemyId];
+    const remainingBountyCoins = simulation.level.bountyCoinCap === null ? config.bounty : Math.max(0, simulation.level.bountyCoinCap - simulation.bountyCoinsEarned);
+    const bountyCoins = Math.min(config.bounty, remainingBountyCoins);
+    simulation.bountyCoinsEarned += bountyCoins;
+    simulation.coins += bountyCoins;
+    simulation.score += config.bounty;
+  };
+  var applyHit = (simulation, enemy, hit) => {
+    var _a;
+    if (!enemy || enemy.health <= 0) return 0;
+    const { armorBonus } = applySupportEffects(simulation, enemy);
+    const dealt = applyArmor(hit.damage, getEnemyArmor(simulation, enemy, armorBonus), hit.armorPierce);
+    enemy.health = Math.max(0, enemy.health - dealt);
+    if (hit.stunSeconds > 0 && ((_a = enemy.stunImmuneUntilTick) != null ? _a : 0) <= simulation.tick) {
+      const control = clampControlEffect(isBoss(enemy) ? "boss" : "standard", hit);
+      const stunTicks = Math.round(control.stunSeconds * COMBAT_RULES.ticksPerSecond);
+      const immunitySeconds = isBoss(enemy) ? EFFECT_LIMITS.bossStunImmunitySeconds : EFFECT_LIMITS.standardStunImmunitySeconds;
+      enemy.stunnedUntilTick = simulation.tick + stunTicks;
+      enemy.stunImmuneUntilTick = enemy.stunnedUntilTick + immunitySeconds * COMBAT_RULES.ticksPerSecond;
+    }
+    if (enemy.health === 0) defeatEnemy(simulation, enemy);
+    return dealt;
+  };
+  var createEnemy = (simulation, enemyId, pathProgress, waveIndex, isSummon = false) => {
+    const config = ENEMIES[enemyId];
+    const maxHealth = Math.round(config.health * simulation.level.healthScale);
+    return {
+      id: `enemy-${simulation.nextEntityId++}`,
+      enemyId,
+      waveIndex,
+      spawnTick: simulation.tick,
+      pathProgress,
+      health: maxHealth,
+      maxHealth,
+      speed: config.speed,
+      armor: config.armor,
+      clusterSize: 1,
+      castleDamage: config.castleDamage,
+      nextAbilityTick: simulation.tick + config.cooldownTicks,
+      abilityActiveTicks: 0,
+      nextAbilityActiveTick: config.cooldownTicks,
+      thresholdFlags: {},
+      isSummon
+    };
+  };
+  var initializeSpawnedEnemy = (simulation, enemy) => {
+    if (enemy.maxHealth !== void 0) return;
+    const config = ENEMIES[enemy.enemyId];
+    enemy.waveIndex = simulation.waveIndex;
+    enemy.maxHealth = enemy.health;
+    enemy.nextAbilityTick = enemy.spawnTick + config.cooldownTicks;
+    enemy.abilityActiveTicks = 0;
+    enemy.nextAbilityActiveTick = config.cooldownTicks;
+    enemy.thresholdFlags = {};
+  };
+  var summonDreadPack = (simulation, boss, threshold) => {
+    const config = ENEMIES["dread-colossus"];
+    for (let index = 0; index < config.summonCount; index += 1) {
+      simulation.enemies.push(createEnemy(
+        simulation,
+        "swarmkin",
+        Math.max(0, boss.pathProgress - index * 8),
+        boss.waveIndex,
+        true
+      ));
+    }
+    boss.thresholdFlags[`summon${threshold}`] = true;
+  };
+  var updateBossThresholds = (simulation, enemy) => {
+    const ratio = enemy.health / enemy.maxHealth;
+    if (enemy.enemyId === "ironhide-warlord") {
+      const config = ENEMIES[enemy.enemyId];
+      for (const threshold of config.plateThresholds) {
+        const thresholdPercent = Math.round(threshold * 100);
+        if (ratio <= threshold && !enemy.thresholdFlags[`plate${thresholdPercent}`]) {
+          enemy.thresholdFlags[`plate${thresholdPercent}`] = true;
+          if (threshold === config.plateThresholds.at(-1)) {
+            enemy.vulnerableUntilTick = simulation.tick + config.vulnerableTicks;
+          }
+        }
+      }
+    }
+    if (enemy.enemyId === "dread-colossus") {
+      const config = ENEMIES[enemy.enemyId];
+      for (const threshold of config.summonThresholds) {
+        const thresholdPercent = Math.round(threshold * 100);
+        if (ratio <= threshold && !enemy.thresholdFlags[`summon${thresholdPercent}`]) {
+          summonDreadPack(simulation, enemy, thresholdPercent);
+        }
+      }
+      const phase = getDreadColossusPhase(ratio);
+      if (phase === 3 && !enemy.thresholdFlags.phase3Started) {
+        enemy.thresholdFlags.phase3Started = true;
+        enemy.abilityActiveTicks = 0;
+        enemy.nextAbilityActiveTick = ENEMIES[enemy.enemyId].cooldownTicks;
+        enemy.nextAbilityTick = simulation.tick + ENEMIES[enemy.enemyId].cooldownTicks;
+      }
+    }
+  };
+  var applyHexcallerSupport = (simulation, source) => {
+    const config = ENEMIES.hexcaller;
+    const sourcePosition = getEnemyPosition(simulation, source);
+    const allies = simulation.enemies.filter((enemy) => enemy.health > 0 && enemy.id !== source.id && distance(sourcePosition, getEnemyPosition(simulation, enemy)) <= config.supportRadius);
+    const useHealing = allies.some((enemy) => enemy.health < enemy.maxHealth);
+    for (const ally of allies) {
+      addEffect(simulation, {
+        sourceId: source.id,
+        targetId: ally.id,
+        kind: useHealing ? "enemy-healing" : "enemy-speed",
+        value: useHealing ? config.supportHealingPerSecond : config.supportSpeed,
+        expiresAtTick: simulation.tick + config.supportDurationTicks
+      });
+    }
+  };
+  var applyWarlordRally = (simulation, source) => {
+    const config = ENEMIES["ironhide-warlord"];
+    const sourcePosition = getEnemyPosition(simulation, source);
+    for (const ally of simulation.enemies) {
+      if (ally.id === source.id || ally.health <= 0) continue;
+      if (distance(sourcePosition, getEnemyPosition(simulation, ally)) > config.rallyRadius) continue;
+      for (const [kind, value] of [["enemy-speed", config.rallySpeed], ["enemy-armor", config.rallyArmor]]) {
+        addEffect(simulation, {
+          sourceId: source.id,
+          targetId: ally.id,
+          kind,
+          value,
+          expiresAtTick: simulation.tick + config.rallyDurationTicks
+        });
+      }
+    }
+  };
+  var telegraphBossAbility = (simulation, source, kind, telegraphTicks) => addEffect(simulation, {
+    sourceId: source.id,
+    targetId: source.id,
+    kind,
+    value: 1,
+    triggerTick: simulation.tick + telegraphTicks,
+    expiresAtTick: simulation.tick + telegraphTicks + 1,
+    triggered: false
+  });
+  var updateEnemyAbilities = (simulation, enemy) => {
+    var _a;
+    const config = ENEMIES[enemy.enemyId];
+    if (config.cooldownTicks <= 0 || ((_a = enemy.stunnedUntilTick) != null ? _a : 0) > simulation.tick) return;
+    if (enemy.abilityActiveTicks >= enemy.nextAbilityActiveTick) {
+      if (enemy.enemyId === "hexcaller") applyHexcallerSupport(simulation, enemy);
+      if (enemy.enemyId === "ironhide-warlord") applyWarlordRally(simulation, enemy);
+      if (enemy.enemyId === "mossback-brute") {
+        telegraphBossAbility(simulation, enemy, "mossback-telegraph", config.telegraphTicks);
+      }
+      if (enemy.enemyId === "dread-colossus" && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3) {
+        telegraphBossAbility(simulation, enemy, "dread-pulse-telegraph", config.pulseTelegraphTicks);
+      }
+      enemy.nextAbilityActiveTick += config.cooldownTicks;
+    }
+    enemy.abilityActiveTicks += 1;
+    const remainingActiveTicks = enemy.nextAbilityActiveTick - enemy.abilityActiveTicks;
+    enemy.nextAbilityTick = simulation.tick + Math.max(1, remainingActiveTicks + 1);
+  };
+  var triggerTelegraphs = (simulation) => {
+    for (const effect of simulation.effects) {
+      if (effect.triggered || effect.triggerTick !== simulation.tick) continue;
+      effect.triggered = true;
+      const source = simulation.enemies.find((enemy) => enemy.id === effect.sourceId);
+      if (!source || source.health <= 0) continue;
+      const sourcePosition = getEnemyPosition(simulation, source);
+      const config = ENEMIES[source.enemyId];
+      for (const tower of simulation.towers) {
+        const radius = effect.kind === "mossback-telegraph" ? config.abilityRadius : config.pulseRadius;
+        if (distance(sourcePosition, getTowerPosition(simulation, tower)) > radius) continue;
+        if (effect.kind === "mossback-telegraph") {
+          addEffect(simulation, {
+            sourceId: source.id,
+            targetId: tower.id,
+            kind: "tower-stun",
+            value: 1,
+            expiresAtTick: simulation.tick + Math.round(config.stunSeconds * COMBAT_RULES.ticksPerSecond)
+          });
+        } else {
+          addEffect(simulation, {
+            sourceId: source.id,
+            targetId: tower.id,
+            kind: "tower-attack-slow",
+            value: config.pulseSlow,
+            expiresAtTick: simulation.tick + config.pulseDurationTicks
+          });
+        }
+      }
+    }
+  };
+  var addProjectile = (simulation, tower, target, damage, options = {}) => {
+    var _a, _b, _c, _d;
+    simulation.projectiles.push({
+      id: `projectile-${simulation.nextEntityId++}`,
+      sourceTowerId: tower.id,
+      targetId: target.id,
+      impactTick: simulation.tick + ((_a = options.delayTicks) != null ? _a : DEFENDERS[tower.defenderId].projectileTicks),
+      damage,
+      armorPierce: (_b = options.armorPierce) != null ? _b : 0,
+      splashRadius: (_c = options.splashRadius) != null ? _c : 0,
+      stunSeconds: (_d = options.stunSeconds) != null ? _d : 0
+    });
+  };
+  var fireTower = (simulation, tower, targets) => {
+    var _a;
+    const config = DEFENDERS[tower.defenderId];
+    const damage = config.damage[tower.tier];
+    tower.attackCount = ((_a = tower.attackCount) != null ? _a : 0) + 1;
+    const mastery = tower.tier === 2 && tower.attackCount % config.masteryAttackCount === 0;
+    const primary = selectTarget(targets, config.targetPriority);
+    if (!primary) return;
+    if (mastery && tower.defenderId === "bladeguard") {
+      const center = getEnemyPosition(simulation, primary);
+      for (const target of simulation.enemies) {
+        if (target.health > 0 && distance(center, getEnemyPosition(simulation, target)) <= config.masteryRadius) {
+          addProjectile(simulation, tower, target, damage, { delayTicks: 1 });
+        }
+      }
+    } else if (mastery && tower.defenderId === "ranger") {
+      const distinctTargets = [];
+      const remainingTargets = [...targets];
+      while (distinctTargets.length < config.masteryTargetCount && remainingTargets.length > 0) {
+        const target = selectTarget(remainingTargets, config.targetPriority);
+        distinctTargets.push(target);
+        remainingTargets.splice(remainingTargets.indexOf(target), 1);
+      }
+      for (const target of distinctTargets) {
+        addProjectile(simulation, tower, target, Math.round(damage * config.masteryMultiplier));
+      }
+    } else {
+      addProjectile(simulation, tower, primary, damage, {
+        armorPierce: config.armorPierce,
+        splashRadius: config.splashRadius,
+        stunSeconds: mastery && tower.defenderId === "ironwarden" ? config.stunSeconds : 0
+      });
+      if (mastery && tower.defenderId === "rune-artificer") {
+        addProjectile(simulation, tower, primary, damage, {
+          armorPierce: config.armorPierce,
+          splashRadius: config.splashRadius,
+          delayTicks: config.projectileTicks + config.masteryDelayTicks
+        });
+      }
+    }
+  };
+  var updateTowers = (simulation) => {
+    var _a;
+    for (const tower of simulation.towers) {
+      if (strongestEffect(simulation, tower.id, "tower-stun", 1) > 0) continue;
+      if (simulation.tick < ((_a = tower.nextAttackTick) != null ? _a : 0)) continue;
+      const config = DEFENDERS[tower.defenderId];
+      const towerPosition = getTowerPosition(simulation, tower);
+      const targets = simulation.enemies.filter((enemy) => enemy.health > 0 && distance(towerPosition, getEnemyPosition(simulation, enemy)) <= config.range[tower.tier]);
+      if (targets.length === 0) continue;
+      fireTower(simulation, tower, targets);
+      const attackSlow = strongestEffect(
+        simulation,
+        tower.id,
+        "tower-attack-slow",
+        ENEMIES["dread-colossus"].pulseSlow
+      );
+      const allySpeed = strongestEffect(
+        simulation,
+        tower.id,
+        "tower-attack-speed",
+        DEFENDERS.ironwarden.rallySpeed
+      );
+      tower.nextAttackTick = simulation.tick + Math.max(1, Math.round(
+        config.cooldownTicks[tower.tier] * (1 + attackSlow) * (1 - allySpeed)
+      ));
+    }
+  };
+  var processProjectiles = (simulation) => {
+    const pending = [];
+    for (const projectile of simulation.projectiles) {
+      if (projectile.impactTick > simulation.tick) {
+        pending.push(projectile);
+        continue;
+      }
+      const target = simulation.enemies.find((enemy) => enemy.id === projectile.targetId && enemy.health > 0);
+      if (!target) continue;
+      const targets = projectile.splashRadius > 0 ? simulation.enemies.filter((enemy) => enemy.health > 0 && distance(
+        getEnemyPosition(simulation, target),
+        getEnemyPosition(simulation, enemy)
+      ) <= projectile.splashRadius) : [target];
+      for (const impacted of targets) applyHit(simulation, impacted, projectile);
+    }
+    simulation.projectiles = pending;
+  };
+  var applyIronwardenAuras = (simulation) => {
+    for (const source of simulation.towers) {
+      const config = DEFENDERS[source.defenderId];
+      if (source.defenderId !== "ironwarden" || source.tier !== 2) continue;
+      const sourcePosition = getTowerPosition(simulation, source);
+      for (const tower of simulation.towers) {
+        if (tower.id !== source.id && distance(sourcePosition, getTowerPosition(simulation, tower)) <= config.rallyRadius) {
+          addEffect(simulation, {
+            sourceId: source.id,
+            targetId: tower.id,
+            kind: "tower-attack-speed",
+            value: config.rallySpeed,
+            expiresAtTick: simulation.tick + 2
+          });
+        }
+      }
+    }
+  };
+  var moveEnemies = (simulation) => {
+    var _a;
+    for (const enemy of simulation.enemies) {
+      if (enemy.health <= 0) continue;
+      const support = applySupportEffects(simulation, enemy);
+      if (((_a = enemy.stunnedUntilTick) != null ? _a : 0) > simulation.tick) continue;
+      const phaseSpeed = enemy.enemyId === "dread-colossus" && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3 ? ENEMIES[enemy.enemyId].phase3Speed : 0;
+      const speedMultiplier = Math.min(
+        COMBAT_RULES.enemySpeedMultiplierMax,
+        1 + support.speedBonus + phaseSpeed
+      );
+      enemy.pathProgress += enemy.speed * COMBAT_RULES.movementScale * speedMultiplier / COMBAT_RULES.ticksPerSecond;
+    }
+  };
+  var resolveEnemies = (simulation) => {
+    const survivors = [];
+    for (const enemy of simulation.enemies) {
+      if (enemy.health <= 0) continue;
+      if (enemy.pathProgress >= simulation.pathMetrics.total) {
+        simulation.castleHearts = Math.max(0, simulation.castleHearts - enemy.castleDamage);
+        continue;
+      }
+      survivors.push(enemy);
+    }
+    simulation.enemies = survivors;
+  };
+  var awardCompletedWaves = (simulation) => {
+    for (let waveIndex = 0; waveIndex < simulation.level.waveCount; waveIndex += 1) {
+      if (simulation.waveCompletionFlags[waveIndex]) continue;
+      const hasPendingSpawn = simulation.waveSchedule.slice(simulation.nextSpawnIndex).some((entry) => entry.waveIndex === waveIndex);
+      const hasLivingEnemy = simulation.enemies.some((enemy) => enemy.waveIndex === waveIndex);
+      const hasProjectile = simulation.projectiles.some((projectile) => simulation.enemies.some((enemy) => enemy.id === projectile.targetId && enemy.waveIndex === waveIndex));
+      if (!hasPendingSpawn && !hasLivingEnemy && !hasProjectile) {
+        simulation.waveCompletionFlags[waveIndex] = true;
+        simulation.score += COMBAT_RULES.waveCompletionScore;
+      }
+    }
+  };
+  var stepCombat = (simulation) => {
+    if (!simulation.pathMetrics) simulation.pathMetrics = getPathMetrics(simulation.level.path);
+    for (const enemy of simulation.enemies) initializeSpawnedEnemy(simulation, enemy);
+    simulation.effects = simulation.effects.filter((effect) => effect.expiresAtTick > simulation.tick);
+    rebuildEffectIndex(simulation);
+    triggerTelegraphs(simulation);
+    for (const enemy of [...simulation.enemies]) {
+      if (enemy.health <= 0) continue;
+      updateBossThresholds(simulation, enemy);
+      updateEnemyAbilities(simulation, enemy);
+    }
+    applyIronwardenAuras(simulation);
+    updateTowers(simulation);
+    processProjectiles(simulation);
+    moveEnemies(simulation);
+    resolveEnemies(simulation);
+    awardCompletedWaves(simulation);
+  };
+
+  // public/Games/DefenderChampion/src/core/scoring.js
+  var MEDAL_RANKS = Object.freeze(["bronze", "silver", "gold"]);
+  var calculateBattleResult = (simulation) => {
+    const outcome = simulation.castleHearts > 0 ? "victory" : "defeat";
+    if (outcome === "defeat") {
+      return Object.freeze({ outcome, score: simulation.score, medal: null });
+    }
+    const elapsedSeconds = simulation.tick / COMBAT_RULES.ticksPerSecond;
+    const parRatio = Math.max(0, 1 - elapsedSeconds / simulation.level.parSeconds);
+    const finalScore = simulation.score + simulation.castleHearts * COMBAT_RULES.castleHeartScore + Math.round(parRatio * COMBAT_RULES.parTimeScore) + Math.min(simulation.coins, COMBAT_RULES.unspentCoinScoreCap);
+    const medal = simulation.castleHearts === 3 && finalScore >= simulation.level.goldScore ? "gold" : simulation.castleHearts >= 2 && finalScore >= simulation.level.silverScore ? "silver" : "bronze";
+    return Object.freeze({ outcome, score: finalScore, medal });
+  };
+  var getCrossedMedalRanks = (previousMedal, nextMedal) => {
+    const previousRank = previousMedal === "none" || previousMedal === null ? -1 : MEDAL_RANKS.indexOf(previousMedal);
+    const nextRank = MEDAL_RANKS.indexOf(nextMedal);
+    const previousMedalIsValid = previousMedal === "none" || previousMedal === null || previousRank >= 0;
+    if (!previousMedalIsValid || nextRank < 0 || nextRank <= previousRank) {
+      return [];
+    }
+    return MEDAL_RANKS.slice(previousRank + 1, nextRank + 1);
+  };
+
+  // public/Games/DefenderChampion/src/core/simulation.js
+  var MAX_STRATEGY_TICKS = 60 * 720;
+  var accepted = () => ({ accepted: true, reason: null });
+  var rejected = (reason) => ({ accepted: false, reason });
+  var createSimulation = (levelId, options = {}) => {
+    var _a;
+    const level2 = getLevel(levelId);
+    return {
+      version: 1,
+      levelId,
+      level: level2,
+      tick: 0,
+      timeScale: 1,
+      pauseReasons: /* @__PURE__ */ new Set(),
+      coins: level2.startingCoins,
+      bountyCoinsEarned: 0,
+      score: 0,
+      castleHearts: level2.castleHearts,
+      nextEntityId: 1,
+      waveIndex: -1,
+      spawnedAllWaves: false,
+      enemies: [],
+      towers: [],
+      projectiles: [],
+      effects: [],
+      terminal: false,
+      outcome: null,
+      qa: options.qa === true,
+      seed: (_a = options.seed) != null ? _a : 0,
+      waveSchedule: createWaveController(level2),
+      nextSpawnIndex: 0,
+      waveCompletionFlags: {},
+      pathMetrics: null,
+      medal: null,
+      purchaseHistory: []
+    };
+  };
+  var findTower = (simulation, towerId) => simulation.towers.find((tower) => tower.id === towerId);
+  var buildTower = (simulation, command) => {
+    const defender = DEFENDERS[command.defenderId];
+    if (!defender) return rejected("invalid-defender");
+    if (!simulation.level.pads.some((pad) => pad.id === command.padId)) return rejected("invalid-pad");
+    if (simulation.towers.some((tower2) => tower2.padId === command.padId)) return rejected("pad-occupied");
+    const cost = getBuildCost(defender);
+    if (simulation.coins < cost) return rejected("insufficient-coins");
+    simulation.coins -= cost;
+    const tower = {
+      id: `tower-${simulation.nextEntityId++}`,
+      defenderId: defender.id,
+      padId: command.padId,
+      tier: 0,
+      totalInvested: cost,
+      nextAttackTick: simulation.tick,
+      attackCount: 0
+    };
+    simulation.towers.push(tower);
+    simulation.purchaseHistory.push({
+      tick: simulation.tick,
+      type: "build",
+      towerId: tower.id,
+      defenderId: tower.defenderId,
+      padId: tower.padId,
+      cost
+    });
+    return accepted();
+  };
+  var upgradeTower = (simulation, towerId) => {
+    const tower = findTower(simulation, towerId);
+    if (!tower) return rejected("missing-tower");
+    const cost = getUpgradeCost(tower, DEFENDERS[tower.defenderId]);
+    if (cost === null) return rejected("max-tier");
+    if (simulation.coins < cost) return rejected("insufficient-coins");
+    simulation.coins -= cost;
+    tower.tier += 1;
+    tower.totalInvested += cost;
+    simulation.purchaseHistory.push({
+      tick: simulation.tick,
+      type: "upgrade",
+      towerId: tower.id,
+      defenderId: tower.defenderId,
+      padId: tower.padId,
+      tier: tower.tier,
+      cost
+    });
+    return accepted();
+  };
+  var sellTower = (simulation, towerId) => {
+    const towerIndex = simulation.towers.findIndex((tower2) => tower2.id === towerId);
+    if (towerIndex === -1) return rejected("missing-tower");
+    const [tower] = simulation.towers.splice(towerIndex, 1);
+    simulation.coins += getSellRefund(tower);
+    return accepted();
+  };
+  var issueCommand = (simulation, command) => {
+    if (!command || typeof command.type !== "string") return rejected("invalid-command");
+    switch (command.type) {
+      case "build":
+        return buildTower(simulation, command);
+      case "upgrade":
+        return upgradeTower(simulation, command.towerId);
+      case "sell":
+        return sellTower(simulation, command.towerId);
+      case "set-speed":
+        if (command.value !== 1 && command.value !== 2) return rejected("invalid-speed");
+        simulation.timeScale = command.value;
+        return accepted();
+      case "set-pause-reason":
+        if (typeof command.reason !== "string" || command.reason.length === 0 || typeof command.active !== "boolean") {
+          return rejected("invalid-pause-reason");
+        }
+        if (command.active) simulation.pauseReasons.add(command.reason);
+        else simulation.pauseReasons.delete(command.reason);
+        return accepted();
+      default:
+        return rejected("invalid-command");
+    }
+  };
+  var advanceSimulation = (simulation, steps) => {
+    const count = Number.isInteger(steps) && steps > 0 ? steps : 0;
+    for (let step = 0; step < count; step += 1) {
+      if (simulation.terminal || simulation.pauseReasons.size > 0) break;
+      spawnScheduledEnemies(simulation);
+      stepCombat(simulation);
+      if (simulation.castleHearts <= 0) {
+        const result = calculateBattleResult(simulation);
+        simulation.terminal = true;
+        simulation.outcome = result.outcome;
+        simulation.score = result.score;
+        simulation.medal = result.medal;
+        simulation.projectiles = [];
+        simulation.effects = [];
+        simulation.activeEffectValues = /* @__PURE__ */ new Map();
+      } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
+        const result = calculateBattleResult(simulation);
+        simulation.terminal = true;
+        simulation.outcome = result.outcome;
+        simulation.score = result.score;
+        simulation.medal = result.medal;
+        simulation.effects = [];
+        simulation.activeEffectValues = /* @__PURE__ */ new Map();
+      }
+      simulation.tick += 1;
+    }
+    return simulation;
+  };
+  var snapshotTower = (tower) => ({
+    id: tower.id,
+    defenderId: tower.defenderId,
+    padId: tower.padId,
+    tier: tower.tier,
+    totalInvested: tower.totalInvested
+  });
+  var snapshotEnemy = (enemy) => ({
+    id: enemy.id,
+    enemyId: enemy.enemyId,
+    spawnTick: enemy.spawnTick,
+    pathProgress: enemy.pathProgress,
+    health: enemy.health,
+    speed: enemy.speed,
+    armor: enemy.armor,
+    clusterSize: enemy.clusterSize,
+    castleDamage: enemy.castleDamage,
+    maxHealth: enemy.maxHealth,
+    waveIndex: enemy.waveIndex,
+    nextAbilityTick: enemy.nextAbilityTick,
+    abilityActiveTicks: enemy.abilityActiveTicks,
+    nextAbilityActiveTick: enemy.nextAbilityActiveTick,
+    thresholdFlags: enemy.thresholdFlags ? { ...enemy.thresholdFlags } : {},
+    ...enemy.stunnedUntilTick !== void 0 && { stunnedUntilTick: enemy.stunnedUntilTick },
+    ...enemy.stunImmuneUntilTick !== void 0 && { stunImmuneUntilTick: enemy.stunImmuneUntilTick },
+    ...enemy.vulnerableUntilTick !== void 0 && { vulnerableUntilTick: enemy.vulnerableUntilTick },
+    ...enemy.isSummon !== void 0 && { isSummon: enemy.isSummon }
+  });
+  var sortById = (first, second) => compareEntityIds(first.id, second.id);
+  var getStrategyMetrics = (simulation) => {
+    var _a, _b, _c;
+    const spendByDefender = {};
+    const occupiedPadIds = /* @__PURE__ */ new Set();
+    for (const purchase of simulation.purchaseHistory) {
+      spendByDefender[purchase.defenderId] = ((_a = spendByDefender[purchase.defenderId]) != null ? _a : 0) + purchase.cost;
+      if (purchase.type === "build") occupiedPadIds.add(purchase.padId);
+    }
+    const highestSpendDefenderId = (_c = (_b = Object.entries(spendByDefender).sort(([firstId, firstSpend], [secondId, secondSpend]) => secondSpend - firstSpend || firstId.localeCompare(secondId))[0]) == null ? void 0 : _b[0]) != null ? _c : null;
+    return {
+      purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
+      spendByDefender,
+      highestSpendDefenderId,
+      occupiedPadIds: [...occupiedPadIds].sort()
+    };
+  };
+  var summarizeSimulation = (simulation) => ({
+    ...getStrategyMetrics(simulation),
+    version: simulation.version,
+    levelId: simulation.levelId,
+    tick: simulation.tick,
+    timeScale: simulation.timeScale,
+    pauseReasons: [...simulation.pauseReasons].sort(),
+    coins: simulation.coins,
+    score: simulation.score,
+    castleHearts: simulation.castleHearts,
+    nextEntityId: simulation.nextEntityId,
+    waveIndex: simulation.waveIndex,
+    spawnedAllWaves: simulation.spawnedAllWaves,
+    enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
+    towers: simulation.towers.map(snapshotTower).sort(sortById),
+    projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
+    effects: simulation.effects.map((effect) => structuredClone(effect)).sort(sortById),
+    terminal: simulation.terminal,
+    outcome: simulation.outcome,
+    medal: simulation.medal,
+    qa: simulation.qa,
+    seed: simulation.seed
+  });
+
+  // public/Games/DefenderChampion/src/ui/hud-controller.js
+  var FIXED_STEP_MILLISECONDS = 1e3 / 60;
+  var MAX_FRAME_STEPS = 5;
+  var MAX_QA_ADVANCE_MILLISECONDS = 6e4;
+  var DEFENDER_PRESENTATION = Object.freeze({
+    bladeguard: Object.freeze({ name: "Bladeguard", role: "Close defense" }),
+    ranger: Object.freeze({ name: "Ranger", role: "Long range" }),
+    ironwarden: Object.freeze({ name: "Ironwarden", role: "Armor breaker" }),
+    "rune-artificer": Object.freeze({ name: "Rune Artificer", role: "Splash damage" })
+  });
+  var clampFinite = (value, maximum) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.min(maximum, Math.max(0, number)) : 0;
+  };
+  var createFixedStepClock = ({
+    advanceSteps,
+    getSpeed = () => 1,
+    fixedStepMilliseconds = FIXED_STEP_MILLISECONDS,
+    maxFrameSteps = MAX_FRAME_STEPS,
+    maxQaAdvanceMilliseconds = MAX_QA_ADVANCE_MILLISECONDS
+  } = {}) => {
+    let accumulator = 0;
+    const runIntervals = (intervals) => {
+      if (intervals <= 0) return 0;
+      const speed = getSpeed() === 2 ? 2 : 1;
+      const steps = intervals * speed;
+      advanceSteps == null ? void 0 : advanceSteps(steps);
+      return steps;
+    };
+    return Object.freeze({
+      advanceExact(milliseconds) {
+        const accepted2 = clampFinite(milliseconds, maxQaAdvanceMilliseconds);
+        const intervals = Math.floor(accepted2 / fixedStepMilliseconds + 1e-9);
+        return runIntervals(intervals);
+      },
+      advanceFrame(milliseconds) {
+        const accepted2 = clampFinite(milliseconds, fixedStepMilliseconds * maxFrameSteps);
+        accumulator = Math.min(fixedStepMilliseconds * maxFrameSteps, accumulator + accepted2);
+        const intervals = Math.min(
+          maxFrameSteps,
+          Math.floor(accumulator / fixedStepMilliseconds + 1e-9)
+        );
+        accumulator -= intervals * fixedStepMilliseconds;
+        return runIntervals(intervals);
+      },
+      getAccumulator: () => accumulator,
+      reset() {
+        accumulator = 0;
+      }
+    });
+  };
+  var installQaRuntimeHooks = ({
+    windowRef: windowRef2 = globalThis.window,
+    enabled = false,
+    getActiveBattle = () => null,
+    isKnownLevel = () => false,
+    startLevel = () => {
+    }
+  } = {}) => {
+    if (!enabled || !windowRef2) return () => {
+    };
+    const renderGameToText = () => {
+      var _a, _b, _c;
+      return JSON.stringify((_c = (_b = (_a = getActiveBattle()) == null ? void 0 : _a.getTextSnapshot) == null ? void 0 : _b.call(_a)) != null ? _c : null);
+    };
+    const advanceTime = (milliseconds) => {
+      var _a, _b, _c;
+      return (_c = (_b = (_a = getActiveBattle()) == null ? void 0 : _a.advanceTime) == null ? void 0 : _b.call(_a, milliseconds)) != null ? _c : null;
+    };
+    const debugApi = Object.freeze({
+      startLevel(levelId) {
+        if (!isKnownLevel(levelId)) return false;
+        startLevel(levelId);
+        return true;
+      }
+    });
+    windowRef2.render_game_to_text = renderGameToText;
+    windowRef2.advanceTime = advanceTime;
+    windowRef2.__defenderChampion = debugApi;
+    return () => {
+      if (windowRef2.render_game_to_text === renderGameToText) delete windowRef2.render_game_to_text;
+      if (windowRef2.advanceTime === advanceTime) delete windowRef2.advanceTime;
+      if (windowRef2.__defenderChampion === debugApi) delete windowRef2.__defenderChampion;
+    };
+  };
+  var formatElapsedTime = (tick) => {
+    const totalSeconds = Math.max(0, Math.floor((Number(tick) || 0) / 60));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  };
+  var createBattleHudModel = (snapshot, {
+    selectedDefenderId = null,
+    selectedTowerId = null,
+    interactive = true,
+    notice = ""
+  } = {}) => {
+    var _a;
+    const level2 = getLevel(snapshot.levelId);
+    const defenders = Object.values(DEFENDERS).map((defender) => ({
+      affordable: snapshot.coins >= defender.costs[0],
+      cost: defender.costs[0],
+      id: defender.id,
+      name: DEFENDER_PRESENTATION[defender.id].name,
+      role: DEFENDER_PRESENTATION[defender.id].role,
+      selected: defender.id === selectedDefenderId
+    }));
+    const tower = (_a = snapshot.towers.find((entry) => entry.id === selectedTowerId)) != null ? _a : null;
+    const towerConfig = tower ? DEFENDERS[tower.defenderId] : null;
+    const upgradeCost = tower ? getUpgradeCost(tower, towerConfig) : null;
+    const selectedTower = tower ? {
+      damage: towerConfig.damage[tower.tier],
+      defenderId: tower.defenderId,
+      id: tower.id,
+      mastery: towerConfig.mastery,
+      name: DEFENDER_PRESENTATION[tower.defenderId].name,
+      range: towerConfig.range[tower.tier],
+      sellValue: getSellRefund(tower),
+      speedSeconds: towerConfig.cooldownTicks[tower.tier] / 60,
+      tier: tower.tier,
+      upgradeCost,
+      upgradeEnabled: interactive && upgradeCost !== null && snapshot.coins >= upgradeCost
+    } : null;
+    return Object.freeze({
+      coins: snapshot.coins,
+      defenders,
+      hearts: snapshot.castleHearts,
+      interactive,
+      levelTitle: level2.name,
+      notice,
+      paused: snapshot.pauseReasons.length > 0,
+      score: snapshot.score,
+      selectedTower,
+      speed: snapshot.timeScale,
+      timeLabel: formatElapsedTime(snapshot.tick),
+      waveLabel: snapshot.waveIndex < 0 ? `Ready / ${level2.waveCount}` : `${Math.min(snapshot.waveIndex + 1, level2.waveCount)} / ${level2.waveCount}`
+    });
+  };
+  var SCREEN_IDS = Object.freeze({
+    menu: "menu-screen",
+    levels: "level-select-screen",
+    battle: "battle-screen",
+    result: "result-screen"
+  });
+  var getLevelNumber = (levelId) => Number.parseInt(levelId == null ? void 0 : levelId.replace("level-", ""), 10);
+  var FOCUSABLE_SELECTOR = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(", ");
+  var resolveContinueLevel = (saveState) => {
+    var _a, _b;
+    const clearedLevelIds = Object.keys((_a = saveState == null ? void 0 : saveState.levels) != null ? _a : {});
+    if (clearedLevelIds.length === 0) return null;
+    const highestUnlocked = Math.min(LEVELS.length, Math.max(1, (_b = saveState == null ? void 0 : saveState.highestUnlockedLevel) != null ? _b : 1));
+    for (let levelNumber = highestUnlocked; levelNumber >= 1; levelNumber -= 1) {
+      const levelId = `level-${levelNumber}`;
+      if (!saveState.levels[levelId]) return levelId;
+    }
+    return LEVELS.at(-1).id;
+  };
+  var resolveMotionState = (override, systemReduced = false) => {
+    if (override === true) return { mode: "reduce", reduced: true };
+    if (override === false) return { mode: "full", reduced: false };
+    return { mode: "system", reduced: Boolean(systemReduced) };
+  };
+  var createModalFocusTrap = ({ documentRef: documentRef2, overlay, onEscape } = {}) => {
+    let active = false;
+    let returnFocus = null;
+    const getFocusable = () => Array.from(overlay.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
+      var _a;
+      return !element.disabled && !element.hidden && ((_a = element.getAttribute) == null ? void 0 : _a.call(element, "aria-hidden")) !== "true";
+    });
+    const focusFirst = () => {
+      var _a, _b;
+      const first = getFocusable()[0];
+      (_b = (_a = first != null ? first : overlay).focus) == null ? void 0 : _b.call(_a);
+    };
+    const handleKeydown = (event) => {
+      var _a, _b, _c, _d, _e;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onEscape == null ? void 0 : onEscape();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        (_a = overlay.focus) == null ? void 0 : _a.call(overlay);
+        return;
+      }
+      if (focusable.length === 1) {
+        event.preventDefault();
+        (_c = (_b = focusable[0]).focus) == null ? void 0 : _c.call(_b);
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      const current = documentRef2.activeElement;
+      if (event.shiftKey && (current === first || !overlay.contains(current))) {
+        event.preventDefault();
+        (_d = last.focus) == null ? void 0 : _d.call(last);
+      } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
+        event.preventDefault();
+        (_e = first.focus) == null ? void 0 : _e.call(first);
+      }
+    };
+    const deactivate = ({ restoreFocus = true } = {}) => {
+      var _a;
+      if (!active) return;
+      active = false;
+      documentRef2.removeEventListener("keydown", handleKeydown);
+      if (restoreFocus && (returnFocus == null ? void 0 : returnFocus.isConnected) !== false) (_a = returnFocus == null ? void 0 : returnFocus.focus) == null ? void 0 : _a.call(returnFocus);
+      returnFocus = null;
+    };
+    return Object.freeze({
+      activate({ returnFocus: nextReturnFocus = documentRef2.activeElement } = {}) {
+        if (active) return;
+        active = true;
+        returnFocus = nextReturnFocus;
+        documentRef2.addEventListener("keydown", handleKeydown);
+        focusFirst();
+      },
+      deactivate,
+      isActive: () => active
+    });
+  };
+  var percentage = (value) => `${Math.round(value * 100)}%`;
+  var createHudController = ({
+    documentRef: documentRef2 = globalThis.document,
+    windowRef: windowRef2 = globalThis.window,
+    saveStore: saveStore2,
+    hostBridge: hostBridge2,
+    audioController: audioController2,
+    navigate
+  } = {}) => {
+    var _a, _b, _c;
+    const shell = documentRef2.getElementById("game-shell");
+    const screens = Object.fromEntries(Object.entries(SCREEN_IDS).map(([key, id]) => [
+      key,
+      documentRef2.getElementById(id)
+    ]));
+    const overlays = {
+      help: documentRef2.getElementById("how-to-screen"),
+      settings: documentRef2.getElementById("settings-screen")
+    };
+    const listeners = [];
+    const motionQuery = (_a = windowRef2 == null ? void 0 : windowRef2.matchMedia) == null ? void 0 : _a.call(windowRef2, "(prefers-reduced-motion: reduce)");
+    const shortLandscapeQuery = (_b = windowRef2 == null ? void 0 : windowRef2.matchMedia) == null ? void 0 : _b.call(windowRef2, "(orientation: landscape) and (max-height: 720px)");
+    let battleBinding = null;
+    let currentBattleModel = null;
+    let modalTraps;
+    const on = (element, type, listener) => {
+      element == null ? void 0 : element.addEventListener(type, listener);
+      listeners.push(() => element == null ? void 0 : element.removeEventListener(type, listener));
+    };
+    const announce = (message) => {
+      const announcer2 = documentRef2.getElementById("status-announcer");
+      if (announcer2) announcer2.textContent = message;
+    };
+    const ensureBattleDom = () => {
+      var _a2, _b2, _c2, _d;
+      const battleHeading = (_a2 = documentRef2.querySelector) == null ? void 0 : _a2.call(documentRef2, ".battle-heading");
+      const battleTitle = documentRef2.getElementById("battle-level-name");
+      const battleControls = (_b2 = documentRef2.querySelector) == null ? void 0 : _b2.call(documentRef2, ".battle-controls");
+      if (battleHeading) battleHeading.style.minWidth = "0";
+      if (battleTitle) {
+        battleTitle.style.fontSize = "clamp(1.1rem, 4.7vw, 2.2rem)";
+        battleTitle.style.overflowWrap = "break-word";
+      }
+      if (battleControls) battleControls.style.gap = "4px";
+      const stats = (_c2 = documentRef2.querySelector) == null ? void 0 : _c2.call(documentRef2, ".battle-stats");
+      const ensureStat = (id, label) => {
+        if (!stats || documentRef2.getElementById(id)) return;
+        const wrapper = documentRef2.createElement("div");
+        const term = documentRef2.createElement("dt");
+        const value = documentRef2.createElement("dd");
+        term.textContent = label;
+        value.id = id;
+        value.textContent = "0";
+        wrapper.append(term, value);
+        stats.append(wrapper);
+      };
+      ensureStat("hud-time", "Time");
+      ensureStat("hud-score", "Score");
+      const speedButton = documentRef2.getElementById("speed-button");
+      if (speedButton) {
+        speedButton.style.width = "44px";
+        speedButton.dataset.speed = "2";
+        speedButton.textContent = "2\xD7";
+        speedButton.setAttribute("aria-label", "Set battle speed to two times");
+        if (!documentRef2.getElementById("speed-1-button")) {
+          const speedOne = documentRef2.createElement("button");
+          speedOne.id = "speed-1-button";
+          speedOne.className = "button speed-button";
+          speedOne.type = "button";
+          speedOne.dataset.speed = "1";
+          speedOne.style.width = "44px";
+          speedOne.textContent = "1\xD7";
+          speedOne.setAttribute("aria-label", "Set battle speed to normal");
+          speedButton.before(speedOne);
+        }
+      }
+      const dock = documentRef2.getElementById("defender-dock");
+      const dockList = (_d = dock == null ? void 0 : dock.querySelector) == null ? void 0 : _d.call(dock, ".dock-list");
+      if (dockList && dockList.dataset.ready !== "true") {
+        dockList.dataset.ready = "true";
+        dockList.replaceChildren();
+        for (const defender of Object.values(DEFENDERS)) {
+          const presentation = DEFENDER_PRESENTATION[defender.id];
+          const button = documentRef2.createElement("button");
+          const name = documentRef2.createElement("span");
+          const details = documentRef2.createElement("small");
+          button.className = "defender-card";
+          button.type = "button";
+          button.dataset.defenderId = defender.id;
+          button.setAttribute("aria-keyshortcuts", String(dockList.children.length + 1));
+          button.style.overflow = "hidden";
+          name.textContent = presentation.name;
+          name.style.fontSize = "clamp(0.72rem, 2.8vw, 1rem)";
+          name.style.lineHeight = "1.05";
+          name.style.overflowWrap = "anywhere";
+          details.textContent = `${defender.costs[0]} coins \xB7 ${presentation.role}`;
+          details.style.fontSize = "clamp(0.58rem, 2.2vw, 0.68rem)";
+          details.style.overflowWrap = "anywhere";
+          button.append(name, details);
+          dockList.append(button);
+        }
+      }
+      if (dock && !documentRef2.getElementById("battle-notice")) {
+        const notice = documentRef2.createElement("p");
+        notice.id = "battle-notice";
+        notice.className = "settings-note";
+        notice.hidden = true;
+        notice.setAttribute("role", "status");
+        dock.append(notice);
+      }
+      if (dock && !documentRef2.getElementById("tower-panel")) {
+        const panel = documentRef2.createElement("section");
+        const heading = documentRef2.createElement("p");
+        const statistics = documentRef2.createElement("p");
+        const upgrade = documentRef2.createElement("button");
+        const sell = documentRef2.createElement("button");
+        panel.id = "tower-panel";
+        panel.hidden = true;
+        panel.setAttribute("aria-label", "Selected defender");
+        heading.id = "tower-panel-heading";
+        heading.className = "dock-title";
+        statistics.id = "tower-panel-stats";
+        upgrade.id = "tower-upgrade-button";
+        upgrade.className = "button button-primary";
+        upgrade.type = "button";
+        upgrade.dataset.battleCommand = "upgrade";
+        sell.id = "tower-sell-button";
+        sell.className = "button button-quiet";
+        sell.type = "button";
+        sell.dataset.battleCommand = "sell";
+        panel.append(heading, statistics, upgrade, sell);
+        dock.append(panel);
+      }
+    };
+    const syncDockLayout = () => {
+      var _a2;
+      const dockList = (_a2 = documentRef2.querySelector) == null ? void 0 : _a2.call(documentRef2, "#defender-dock .dock-list");
+      if (!dockList) return;
+      dockList.style.gridTemplateColumns = (shortLandscapeQuery == null ? void 0 : shortLandscapeQuery.matches) ? "1fr" : "repeat(4, minmax(0, 1fr))";
+      dockList.style.overflow = "visible";
+    };
+    const renderBattle = (snapshot, selection = {}) => {
+      var _a2, _b2;
+      ensureBattleDom();
+      currentBattleModel = createBattleHudModel(snapshot, selection);
+      const model = currentBattleModel;
+      documentRef2.getElementById("battle-level-name").textContent = model.levelTitle;
+      documentRef2.getElementById("hud-hearts").textContent = String(model.hearts);
+      documentRef2.getElementById("hud-coins").textContent = String(model.coins);
+      documentRef2.getElementById("hud-wave").textContent = model.waveLabel;
+      documentRef2.getElementById("hud-time").textContent = model.timeLabel;
+      documentRef2.getElementById("hud-score").textContent = String(model.score);
+      const pauseButton = documentRef2.getElementById("pause-button");
+      pauseButton.disabled = !model.interactive;
+      pauseButton.setAttribute("aria-pressed", String(model.paused));
+      pauseButton.setAttribute("aria-label", model.paused ? "Resume battle" : "Pause battle");
+      pauseButton.textContent = model.paused ? "\u25B6" : "\u2161";
+      for (const speed of [1, 2]) {
+        const button = (_a2 = documentRef2.querySelector) == null ? void 0 : _a2.call(documentRef2, `[data-speed="${speed}"]`);
+        if (!button) continue;
+        button.disabled = !model.interactive;
+        button.setAttribute("aria-pressed", String(model.speed === speed));
+      }
+      for (const defender of model.defenders) {
+        const button = (_b2 = documentRef2.querySelector) == null ? void 0 : _b2.call(documentRef2, `[data-defender-id="${defender.id}"]`);
+        if (!button) continue;
+        button.disabled = !model.interactive || !defender.affordable;
+        button.setAttribute("aria-pressed", String(defender.selected));
+        button.setAttribute("aria-label", `${defender.name}, ${defender.cost} coins, ${defender.role}`);
+      }
+      const notice = documentRef2.getElementById("battle-notice");
+      notice.hidden = !model.notice;
+      notice.textContent = model.notice;
+      const panel = documentRef2.getElementById("tower-panel");
+      panel.hidden = !model.selectedTower;
+      if (model.selectedTower) {
+        const tower = model.selectedTower;
+        documentRef2.getElementById("tower-panel-heading").textContent = `${tower.name} \xB7 Tier ${tower.tier + 1}`;
+        documentRef2.getElementById("tower-panel-stats").textContent = `Damage ${tower.damage} \xB7 Speed ${tower.speedSeconds.toFixed(2)}s \xB7 Range ${tower.range} \xB7 Mastery ${tower.mastery}`;
+        const upgrade = documentRef2.getElementById("tower-upgrade-button");
+        upgrade.disabled = !tower.upgradeEnabled;
+        upgrade.textContent = tower.upgradeCost === null ? "Maximum tier" : `Upgrade \xB7 ${tower.upgradeCost} coins`;
+        const sell = documentRef2.getElementById("tower-sell-button");
+        sell.disabled = !model.interactive;
+        sell.textContent = `Sell \xB7 ${tower.sellValue} coins`;
+      }
+      return model;
+    };
+    const showScreen = (screenName) => {
+      for (const [name, screen2] of Object.entries(screens)) {
+        if (screen2) screen2.hidden = name !== screenName;
+      }
+      shell.dataset.screen = screenName;
+    };
+    const closeOverlay = (name) => {
+      var _a2;
+      const overlay = overlays[name];
+      if (!overlay || overlay.hidden) return;
+      overlay.hidden = true;
+      for (const screen2 of Object.values(screens)) screen2.inert = false;
+      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, false);
+      modalTraps[name].deactivate({ restoreFocus: true });
+    };
+    const openOverlay = (name) => {
+      var _a2;
+      const overlay = overlays[name];
+      if (!overlay) return;
+      const returnFocus = documentRef2.activeElement;
+      for (const screen2 of Object.values(screens)) screen2.inert = true;
+      overlay.hidden = false;
+      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, true);
+      modalTraps[name].activate({ returnFocus });
+    };
+    const refreshContinue = () => {
+      const continueButton = documentRef2.getElementById("continue-button");
+      const levelId = resolveContinueLevel(saveStore2.getState());
+      continueButton.hidden = !levelId;
+      continueButton.dataset.levelId = levelId != null ? levelId : "";
+      return levelId;
+    };
+    const renderLevels = () => {
+      const state = saveStore2.getState();
+      const grid = documentRef2.getElementById("level-grid");
+      const fragment = documentRef2.createDocumentFragment();
+      grid.replaceChildren();
+      for (const level2 of LEVELS) {
+        const levelNumber = getLevelNumber(level2.id);
+        const unlocked = levelNumber <= state.highestUnlockedLevel;
+        const result = state.levels[level2.id];
+        const button = documentRef2.createElement("button");
+        button.type = "button";
+        button.className = "level-card";
+        button.disabled = !unlocked;
+        button.dataset.levelId = level2.id;
+        button.setAttribute("aria-label", unlocked ? `Level ${levelNumber}, ${level2.name}. ${result ? `${result.medal} medal, best score ${result.bestScore}` : "Not yet cleared"}` : `Level ${levelNumber}, ${level2.name}, locked`);
+        button.innerHTML = `
+        <span class="level-number">Chapter ${levelNumber}${unlocked ? "" : " \xB7 Locked"}</span>
+        <span class="level-name">${level2.name}</span>
+        <span class="level-progress">${result ? `${result.medal} medal \xB7 ${result.bestScore.toLocaleString()} points` : unlocked ? "Ready to defend" : "Win earlier chapters to unlock"}</span>
+      `;
+        fragment.append(button);
+      }
+      grid.append(fragment);
+    };
+    const applyReducedMotion = (value) => {
+      const root = documentRef2.documentElement;
+      const motionState = resolveMotionState(value, motionQuery == null ? void 0 : motionQuery.matches);
+      root.dataset.motionPreference = motionState.mode;
+      root.dataset.reducedMotion = String(motionState.reduced);
+    };
+    const syncSettings = () => {
+      const audioSettings = audioController2.getSettings();
+      const embedded = Boolean(hostBridge2.getState().embedded);
+      const music = documentRef2.getElementById("music-volume");
+      const sfx = documentRef2.getElementById("sfx-volume");
+      const musicOutput = documentRef2.getElementById("music-volume-output");
+      const sfxOutput = documentRef2.getElementById("sfx-volume-output");
+      music.value = String(Math.round(audioSettings.musicVolume * 100));
+      sfx.value = String(Math.round(audioSettings.sfxVolume * 100));
+      music.disabled = embedded;
+      sfx.disabled = embedded;
+      musicOutput.value = percentage(audioSettings.musicVolume);
+      sfxOutput.value = percentage(audioSettings.sfxVolume);
+      documentRef2.getElementById("host-sound-note").hidden = !embedded;
+      const motion = saveStore2.getState().reducedMotionOverride;
+      documentRef2.getElementById("reduced-motion").value = motion === null ? "system" : motion ? "reduce" : "full";
+      applyReducedMotion(motion);
+    };
+    const showMenu = () => {
+      var _a2;
+      showScreen("menu");
+      refreshContinue();
+      (_a2 = documentRef2.getElementById("play-button")) == null ? void 0 : _a2.focus();
+    };
+    const showLevelSelect = () => {
+      var _a2;
+      renderLevels();
+      showScreen("levels");
+      (_a2 = documentRef2.getElementById("levels-back-button")) == null ? void 0 : _a2.focus();
+      announce("Level selection opened");
+    };
+    const showBattle = (snapshot, selection = {}) => {
+      var _a2;
+      const resolvedSnapshot = typeof snapshot === "string" ? {
+        castleHearts: getLevel(snapshot).castleHearts,
+        coins: getLevel(snapshot).startingCoins,
+        levelId: snapshot,
+        pauseReasons: [],
+        score: 0,
+        tick: 0,
+        timeScale: 1,
+        towers: [],
+        waveIndex: -1
+      } : snapshot;
+      const model = renderBattle(resolvedSnapshot, selection);
+      showScreen("battle");
+      (_a2 = documentRef2.getElementById("battlefield")) == null ? void 0 : _a2.focus();
+      announce(model.notice || `${model.levelTitle}. Battle ready.`);
+    };
+    const connectBattle = (binding) => {
+      battleBinding = binding;
+      return () => {
+        if (battleBinding === binding) {
+          battleBinding = null;
+          currentBattleModel = null;
+        }
+      };
+    };
+    const dispatchBattleCommand = (command) => {
+      var _a2, _b2;
+      const result = (_b2 = (_a2 = battleBinding == null ? void 0 : battleBinding.issueCommand) == null ? void 0 : _a2.call(battleBinding, command)) != null ? _b2 : {
+        accepted: false,
+        reason: "battle-unavailable"
+      };
+      if (!result.accepted) announce(`Command not accepted: ${result.reason}.`);
+      return result;
+    };
+    const selectDefender = (defenderId) => {
+      var _a2;
+      if (!(currentBattleModel == null ? void 0 : currentBattleModel.interactive)) return;
+      (_a2 = battleBinding == null ? void 0 : battleBinding.selectDefender) == null ? void 0 : _a2.call(battleBinding, defenderId);
+    };
+    const showResult = ({ victory = false, summary = "" } = {}) => {
+      var _a2;
+      documentRef2.getElementById("result-title").textContent = victory ? "The woodland is safe!" : "The castle needs you";
+      documentRef2.getElementById("result-summary").textContent = summary || (victory ? "A brave defense. Your chapter progress has been saved." : "Regroup your defenders and try a new plan.");
+      showScreen("result");
+      (_a2 = documentRef2.getElementById("result-levels-button")) == null ? void 0 : _a2.focus();
+    };
+    const reconcile = () => {
+      const state = saveStore2.getState();
+      applyReducedMotion(state.reducedMotionOverride);
+      if (!screens.menu.hidden) refreshContinue();
+      if (!overlays.settings.hidden) syncSettings();
+    };
+    modalTraps = {
+      help: createModalFocusTrap({
+        documentRef: documentRef2,
+        overlay: overlays.help,
+        onEscape: () => closeOverlay("help")
+      }),
+      settings: createModalFocusTrap({
+        documentRef: documentRef2,
+        overlay: overlays.settings,
+        onEscape: () => closeOverlay("settings")
+      })
+    };
+    ensureBattleDom();
+    syncDockLayout();
+    const handleDefenderPointer = (event) => {
+      var _a2, _b2;
+      const button = (_b2 = (_a2 = event.target).closest) == null ? void 0 : _b2.call(_a2, "button[data-defender-id]");
+      if (button && !button.disabled) selectDefender(button.dataset.defenderId);
+    };
+    const handleDockClick = (event) => {
+      var _a2, _b2, _c2, _d, _e;
+      const defenderButton = (_b2 = (_a2 = event.target).closest) == null ? void 0 : _b2.call(_a2, "button[data-defender-id]");
+      if (defenderButton && event.detail === 0 && !defenderButton.disabled) {
+        selectDefender(defenderButton.dataset.defenderId);
+        return;
+      }
+      const commandButton = (_d = (_c2 = event.target).closest) == null ? void 0 : _d.call(_c2, "button[data-battle-command]");
+      const towerId = (_e = currentBattleModel == null ? void 0 : currentBattleModel.selectedTower) == null ? void 0 : _e.id;
+      if (!commandButton || commandButton.disabled || !towerId) return;
+      if (commandButton.dataset.battleCommand === "upgrade") {
+        dispatchBattleCommand({ type: "upgrade", towerId });
+      } else if (commandButton.dataset.battleCommand === "sell") {
+        dispatchBattleCommand({ type: "sell", towerId });
+      }
+    };
+    const handleBattleControl = (event) => {
+      var _a2, _b2;
+      const speedButton = (_b2 = (_a2 = event.target).closest) == null ? void 0 : _b2.call(_a2, "button[data-speed]");
+      if (speedButton && !speedButton.disabled) {
+        dispatchBattleCommand({ type: "set-speed", value: Number(speedButton.dataset.speed) });
+      }
+    };
+    on(documentRef2.getElementById("play-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
+    on(documentRef2.getElementById("continue-button"), "click", (event) => {
+      const levelId = event.currentTarget.dataset.levelId;
+      if (levelId) navigate == null ? void 0 : navigate("BattleScene", { levelId });
+    });
+    on(documentRef2.getElementById("level-grid"), "click", (event) => {
+      var _a2, _b2;
+      const button = (_b2 = (_a2 = event.target).closest) == null ? void 0 : _b2.call(_a2, "button[data-level-id]");
+      if (button && !button.disabled) navigate == null ? void 0 : navigate("BattleScene", { levelId: button.dataset.levelId });
+    });
+    on(documentRef2.getElementById("levels-back-button"), "click", () => navigate == null ? void 0 : navigate("MenuScene"));
+    on(documentRef2.getElementById("battle-back-button"), "click", () => {
+      var _a2;
+      dispatchBattleCommand({ type: "set-pause-reason", reason: "manual", active: false });
+      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setManualPaused) == null ? void 0 : _a2.call(hostBridge2, false);
+      navigate == null ? void 0 : navigate("LevelSelectScene");
+    });
+    on(documentRef2.getElementById("result-levels-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
+    on(documentRef2.getElementById("result-menu-button"), "click", () => navigate == null ? void 0 : navigate("MenuScene"));
+    on(documentRef2.getElementById("how-to-button"), "click", () => openOverlay("help"));
+    on(documentRef2.getElementById("settings-button"), "click", () => {
+      syncSettings();
+      openOverlay("settings");
+    });
+    on(documentRef2.getElementById("exit-button"), "click", () => hostBridge2.exit());
+    on(documentRef2.getElementById("how-to-close-button"), "click", () => closeOverlay("help"));
+    on(documentRef2.getElementById("settings-close-button"), "click", () => closeOverlay("settings"));
+    on(documentRef2.getElementById("defender-dock"), "pointerdown", handleDefenderPointer);
+    on(documentRef2.getElementById("defender-dock"), "click", handleDockClick);
+    on((_c = documentRef2.querySelector) == null ? void 0 : _c.call(documentRef2, ".battle-controls"), "click", handleBattleControl);
+    on(documentRef2.getElementById("pause-button"), "click", () => {
+      if (!(currentBattleModel == null ? void 0 : currentBattleModel.interactive)) return;
+      dispatchBattleCommand({
+        type: "set-pause-reason",
+        reason: "manual",
+        active: !currentBattleModel.paused
+      });
+    });
+    on(documentRef2.getElementById("music-volume"), "input", (event) => {
+      if (hostBridge2.getState().embedded) return syncSettings();
+      audioController2.setMusicVolume(Number(event.currentTarget.value) / 100);
+      syncSettings();
+    });
+    on(documentRef2.getElementById("sfx-volume"), "input", (event) => {
+      if (hostBridge2.getState().embedded) return syncSettings();
+      audioController2.setSfxVolume(Number(event.currentTarget.value) / 100);
+      syncSettings();
+    });
+    on(documentRef2.getElementById("reduced-motion"), "change", (event) => {
+      const value = event.currentTarget.value;
+      const reducedMotionOverride = value === "system" ? null : value === "reduce";
+      const state = saveStore2.getState();
+      saveStore2.save({ ...state, reducedMotionOverride });
+      applyReducedMotion(reducedMotionOverride);
+    });
+    on(motionQuery, "change", () => {
+      if (saveStore2.getState().reducedMotionOverride === null) applyReducedMotion(null);
+    });
+    on(shortLandscapeQuery, "change", syncDockLayout);
+    applyReducedMotion(saveStore2.getState().reducedMotionOverride);
+    return Object.freeze({
+      announce,
+      connectBattle,
+      destroy() {
+        closeOverlay("help");
+        closeOverlay("settings");
+        modalTraps.help.deactivate({ restoreFocus: false });
+        modalTraps.settings.deactivate({ restoreFocus: false });
+        battleBinding = null;
+        currentBattleModel = null;
+        listeners.splice(0).forEach((remove) => remove());
+      },
+      reconcile,
+      refreshContinue,
+      renderBattle,
+      showBattle,
+      showLevelSelect,
+      showMenu,
+      showResult
+    });
+  };
+
   // public/Games/DefenderChampion/src/scenes/BattleScene.js
+  var WORLD_WIDTH = 720;
+  var PATH_X_SCALE = WORLD_WIDTH / 640;
+  var PATH_Y_OFFSET = 110;
+  var PATH_Y_SCALE = 1.45;
+  var POINTER_HIT_RADIUS = 48;
+  var KEYBOARD_DEFENDERS = Object.freeze(Object.keys(DEFENDERS));
+  var DEBUG_TEXTURE_NAMES = Object.freeze([
+    "enemy",
+    "tower",
+    "projectile",
+    "telegraph",
+    "particle"
+  ]);
+  var nextDebugTextureSet = 1;
+  var toWorldPoint = (point) => ({
+    x: point.x * PATH_X_SCALE,
+    y: PATH_Y_OFFSET + point.y * PATH_Y_SCALE
+  });
+  var distanceSquared = (first, second) => (first.x - second.x) ** 2 + (first.y - second.y) ** 2;
+  var createPathMetrics = (path) => {
+    const segments = [];
+    let total = 0;
+    for (let index = 1; index < path.length; index += 1) {
+      const start = path[index - 1];
+      const end = path[index];
+      const length = Math.hypot(end.x - start.x, end.y - start.y);
+      segments.push({ end, length, offset: total, start });
+      total += length;
+    }
+    return { segments, total };
+  };
+  var projectPathProgress = (metrics, pathProgress) => {
+    var _a;
+    const progress = Math.min(metrics.total, Math.max(0, pathProgress));
+    const segment = (_a = metrics.segments.find((entry) => progress <= entry.offset + entry.length)) != null ? _a : metrics.segments.at(-1);
+    const ratio = segment.length === 0 ? 1 : (progress - segment.offset) / segment.length;
+    return toWorldPoint({
+      x: segment.start.x + (segment.end.x - segment.start.x) * ratio,
+      y: segment.start.y + (segment.end.y - segment.start.y) * ratio
+    });
+  };
+  var ViewPool = class {
+    constructor(createView) {
+      this.available = [];
+      this.createView = createView;
+      this.views = /* @__PURE__ */ new Set();
+    }
+    acquire() {
+      var _a, _b, _c, _d;
+      const view = (_a = this.available.pop()) != null ? _a : this.createView();
+      this.views.add(view);
+      (_b = view.setActive) == null ? void 0 : _b.call(view, true);
+      (_c = view.setVisible) == null ? void 0 : _c.call(view, true);
+      (_d = view.setAlpha) == null ? void 0 : _d.call(view, 1);
+      return view;
+    }
+    release(view) {
+      var _a, _b;
+      if (!view || !this.views.has(view) || this.available.includes(view)) return;
+      (_a = view.setActive) == null ? void 0 : _a.call(view, false);
+      (_b = view.setVisible) == null ? void 0 : _b.call(view, false);
+      this.available.push(view);
+    }
+    destroy() {
+      var _a;
+      for (const view of this.views) (_a = view.destroy) == null ? void 0 : _a.call(view);
+      this.available.length = 0;
+      this.views.clear();
+    }
+  };
+  var syncProjectionMap = (projectionMap, pool, entries, applyProjection, onRelease) => {
+    const activeIds = new Set(entries.map((entry) => entry.id));
+    for (const [id, view] of projectionMap) {
+      if (activeIds.has(id)) continue;
+      onRelease == null ? void 0 : onRelease(id, view);
+      pool.release(view);
+      projectionMap.delete(id);
+    }
+    for (const entry of entries) {
+      let view = projectionMap.get(entry.id);
+      if (!view) {
+        view = pool.acquire();
+        projectionMap.set(entry.id, view);
+      }
+      applyProjection(view, entry);
+    }
+  };
+  var defenderTint = (defenderId) => {
+    var _a;
+    return (_a = {
+      bladeguard: 16177019,
+      ranger: 9553260,
+      ironwarden: 12110040,
+      "rune-artificer": 12095974
+    }[defenderId]) != null ? _a : 16777215;
+  };
+  var enemyTint = (enemyId) => {
+    var _a;
+    return (_a = {
+      skitter: 15119983,
+      swarmkin: 10475119,
+      shellguard: 11118240,
+      hexcaller: 12095974,
+      crusher: 12875611,
+      "mossback-brute": 7315547,
+      "ironhide-warlord": 9140072,
+      "dread-colossus": 7489375
+    }[enemyId]) != null ? _a : 14255208;
+  };
   var BattleScene = class extends __webpack_exports__default.Scene {
     constructor() {
       super("BattleScene");
@@ -146375,31 +148294,501 @@
       this.levelId = (_a = data.levelId) != null ? _a : "level-1";
     }
     create() {
-      const level2 = getLevel(this.levelId);
-      this.registry.get("hud").showBattle(level2.id);
-      this.scale.refresh();
-      const map = this.add.graphics();
-      map.lineStyle(34, 14140299, 0.72);
-      map.beginPath();
-      level2.path.forEach((point, index) => {
-        const x = point.x * (720 / 640);
-        const y = 110 + point.y * 1.45;
-        if (index === 0) map.moveTo(x, y);
-        else map.lineTo(x, y);
+      var _a, _b;
+      this.level = getLevel(this.levelId);
+      this.hud = this.registry.get("hud");
+      this.hostBridge = this.registry.get("hostBridge");
+      this.qaMode = Boolean((_b = (_a = this.hostBridge) == null ? void 0 : _a.getState) == null ? void 0 : _b.call(_a).qaMode);
+      this.simulation = createSimulation(this.level.id, { qa: this.qaMode });
+      this.pathMetrics = createPathMetrics(this.level.path);
+      this.selectedDefenderId = null;
+      this.selectedTowerId = null;
+      this.focusIndex = 0;
+      this.lastSnapshot = summarizeSimulation(this.simulation);
+      this.terminalHandled = false;
+      this.destroyed = false;
+      this.domCleanups = [];
+      this.transientDamageLabels = [];
+      this.transientParticles = [];
+      this.previousEnemyHealth = /* @__PURE__ */ new Map();
+      this.enemySprites = /* @__PURE__ */ new Map();
+      this.towerSprites = /* @__PURE__ */ new Map();
+      this.projectileSprites = /* @__PURE__ */ new Map();
+      this.telegraphSprites = /* @__PURE__ */ new Map();
+      this.clock = createFixedStepClock({
+        advanceSteps: (steps) => advanceSimulation(this.simulation, steps),
+        getSpeed: () => this.lastSnapshot.timeScale
       });
-      map.strokePath();
-      for (const pad of level2.pads) {
-        const x = pad.x * (720 / 640);
-        const y = 110 + pad.y * 1.45;
-        map.fillStyle(1523509, 0.92);
-        map.fillCircle(x, y, 31);
-        map.lineStyle(5, 16177019, 0.76);
-        map.strokeCircle(x, y, 31);
+      this.events.once(__webpack_exports__default.Scenes.Events.SHUTDOWN, this.shutdown, this);
+      this.events.on(__webpack_exports__default.Scenes.Events.RESUME, this.handleResume, this);
+      this.scale.refresh();
+      if (!this.qaMode) {
+        this.hud.showBattle(this.lastSnapshot, {
+          interactive: false,
+          notice: "Battle artwork is required before this level can start."
+        });
+        return;
       }
-      map.fillStyle(16182218, 0.95);
-      map.fillRoundedRect(570, 82, 104, 112, 18);
-      map.lineStyle(6, 14132797, 0.95);
-      map.strokeRoundedRect(570, 82, 104, 112, 18);
+      this.createDebugTextures();
+      this.createDebugMap();
+      this.createPools();
+      this.createFocusViews();
+      this.bindDomInput();
+      this.disconnectHud = this.hud.connectBattle({
+        issueCommand: (command) => this.issueBattleCommand(command),
+        selectDefender: (defenderId) => this.selectDefender(defenderId)
+      });
+      this.hud.showBattle(this.lastSnapshot, { interactive: true });
+      this.refreshProjection();
+      this.hud.announce(`${this.level.name}. Select a defender, then choose an open pad.`);
+    }
+    createDebugTextures() {
+      this.debugTexturePrefix = `dc-qa-${nextDebugTextureSet++}`;
+      this.debugTextureKeys = Object.fromEntries(DEBUG_TEXTURE_NAMES.map((name) => [
+        name,
+        `${this.debugTexturePrefix}-${name}`
+      ]));
+      const graphics = this.make.graphics({ add: false });
+      graphics.fillStyle(16777215, 1);
+      graphics.fillCircle(24, 24, 20);
+      graphics.lineStyle(4, 1520425, 1);
+      graphics.strokeCircle(24, 24, 20);
+      graphics.generateTexture(this.debugTextureKeys.enemy, 48, 48);
+      graphics.clear();
+      graphics.fillStyle(16777215, 1);
+      graphics.fillRoundedRect(4, 4, 48, 48, 12);
+      graphics.lineStyle(4, 1520425, 1);
+      graphics.strokeRoundedRect(4, 4, 48, 48, 12);
+      graphics.generateTexture(this.debugTextureKeys.tower, 56, 56);
+      graphics.clear();
+      graphics.fillStyle(16177019, 1);
+      graphics.fillCircle(7, 7, 6);
+      graphics.generateTexture(this.debugTextureKeys.projectile, 14, 14);
+      graphics.clear();
+      graphics.lineStyle(6, 16762967, 0.9);
+      graphics.strokeCircle(62, 62, 56);
+      graphics.generateTexture(this.debugTextureKeys.telegraph, 124, 124);
+      graphics.clear();
+      graphics.fillStyle(16773286, 1);
+      graphics.fillCircle(5, 5, 5);
+      graphics.generateTexture(this.debugTextureKeys.particle, 10, 10);
+      graphics.destroy();
+    }
+    createDebugMap() {
+      this.mapView = this.add.graphics();
+      this.mapView.lineStyle(34, 14140299, 0.72);
+      this.mapView.beginPath();
+      this.level.path.forEach((point, index) => {
+        const projected = toWorldPoint(point);
+        if (index === 0) this.mapView.moveTo(projected.x, projected.y);
+        else this.mapView.lineTo(projected.x, projected.y);
+      });
+      this.mapView.strokePath();
+      for (const pad of this.level.pads) {
+        const projected = toWorldPoint(pad);
+        this.mapView.fillStyle(1523509, 0.92);
+        this.mapView.fillCircle(projected.x, projected.y, 31);
+        this.mapView.lineStyle(5, 16177019, 0.76);
+        this.mapView.strokeCircle(projected.x, projected.y, 31);
+      }
+      this.mapView.fillStyle(16182218, 0.95);
+      this.mapView.fillRoundedRect(570, 82, 104, 112, 18);
+      this.mapView.lineStyle(6, 14132797, 0.95);
+      this.mapView.strokeRoundedRect(570, 82, 104, 112, 18);
+    }
+    createPools() {
+      this.enemyPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.enemy).setDepth(4));
+      this.towerPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.tower).setDepth(3));
+      this.projectilePool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.projectile).setDepth(6));
+      this.telegraphPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.telegraph).setDepth(2));
+      this.damageLabelPool = new ViewPool(() => this.add.text(0, 0, "", {
+        color: "#fff9e8",
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "24px",
+        fontStyle: "bold",
+        stroke: "#173329",
+        strokeThickness: 5
+      }).setDepth(8).setOrigin(0.5));
+      this.particlePool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.particle).setDepth(7));
+    }
+    createFocusViews() {
+      this.focusRing = this.add.graphics().setDepth(9);
+      this.rangeRing = this.add.graphics().setDepth(1);
+    }
+    bindDomInput() {
+      var _a;
+      const battlefield = (_a = globalThis.document) == null ? void 0 : _a.getElementById("battlefield");
+      if (!battlefield) return;
+      const on = (type, listener) => {
+        battlefield.addEventListener(type, listener);
+        this.domCleanups.push(() => battlefield.removeEventListener(type, listener));
+      };
+      on("pointerdown", (event) => this.handlePointerDown(event, battlefield));
+      on("pointerup", (event) => this.releasePointer(event, battlefield));
+      on("pointercancel", (event) => this.releasePointer(event, battlefield));
+      on("keydown", (event) => this.handleKeyDown(event));
+    }
+    pointerToWorld(event, battlefield) {
+      const bounds = battlefield.getBoundingClientRect();
+      return {
+        x: (event.clientX - bounds.left) / Math.max(1, bounds.width) * WORLD_WIDTH,
+        y: (event.clientY - bounds.top) / Math.max(1, bounds.height) * 960
+      };
+    }
+    handlePointerDown(event, battlefield) {
+      event.preventDefault();
+      battlefield.focus();
+      try {
+        battlefield.setPointerCapture(event.pointerId);
+      } catch {
+      }
+      const point = this.pointerToWorld(event, battlefield);
+      const pad = this.level.pads.find((candidate) => distanceSquared(point, toWorldPoint(candidate)) <= POINTER_HIT_RADIUS ** 2);
+      if (!pad) return;
+      this.focusIndex = this.level.pads.indexOf(pad);
+      const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+      if (tower) {
+        this.selectTower(tower.id);
+        return;
+      }
+      if (this.selectedDefenderId) {
+        this.issueBattleCommand({
+          type: "build",
+          defenderId: this.selectedDefenderId,
+          padId: pad.id
+        });
+      } else {
+        this.hud.announce("Open build pad. Select defender 1 through 4 first.");
+        this.updateFocusViews();
+      }
+    }
+    releasePointer(event, battlefield) {
+      var _a;
+      try {
+        if ((_a = battlefield.hasPointerCapture) == null ? void 0 : _a.call(battlefield, event.pointerId)) battlefield.releasePointerCapture(event.pointerId);
+      } catch {
+      }
+    }
+    handleKeyDown(event) {
+      const defenderIndex = Number.parseInt(event.key, 10) - 1;
+      if (defenderIndex >= 0 && defenderIndex < KEYBOARD_DEFENDERS.length) {
+        event.preventDefault();
+        this.selectDefender(KEYBOARD_DEFENDERS[defenderIndex]);
+        return;
+      }
+      if (event.code === "Space" || event.key === " ") {
+        event.preventDefault();
+        this.issueBattleCommand({
+          type: "set-pause-reason",
+          reason: "manual",
+          active: !this.lastSnapshot.pauseReasons.includes("manual")
+        });
+        return;
+      }
+      if (event.key === "Tab" || event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const direction = event.shiftKey || event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
+        this.focusIndex = (this.focusIndex + direction + this.level.pads.length) % this.level.pads.length;
+        this.announceFocusedTarget();
+        this.updateFocusViews();
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.confirmFocusedTarget();
+      }
+    }
+    confirmFocusedTarget() {
+      const pad = this.level.pads[this.focusIndex];
+      const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+      if (tower) {
+        this.selectTower(tower.id);
+      } else if (this.selectedDefenderId) {
+        this.issueBattleCommand({
+          type: "build",
+          defenderId: this.selectedDefenderId,
+          padId: pad.id
+        });
+      } else {
+        this.hud.announce("Open build pad. Select defender 1 through 4 first.");
+      }
+    }
+    announceFocusedTarget() {
+      const pad = this.level.pads[this.focusIndex];
+      const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+      this.hud.announce(tower ? `${DEFENDERS[tower.defenderId].id}, tier ${tower.tier + 1}. Press Enter to inspect.` : `Open build pad ${this.focusIndex + 1}. Press Enter to build.`);
+    }
+    selectDefender(defenderId) {
+      if (!DEFENDERS[defenderId]) return;
+      this.selectedDefenderId = defenderId;
+      this.selectedTowerId = null;
+      this.hud.announce(`${defenderId} selected. Choose an open build pad.`);
+      this.refreshProjection();
+    }
+    selectTower(towerId) {
+      if (!this.lastSnapshot.towers.some((tower2) => tower2.id === towerId)) return;
+      this.selectedTowerId = towerId;
+      this.selectedDefenderId = null;
+      const tower = this.lastSnapshot.towers.find((entry) => entry.id === towerId);
+      this.focusIndex = this.level.pads.findIndex((pad) => pad.id === tower.padId);
+      this.hud.announce(`${tower.defenderId}, tier ${tower.tier + 1}, selected.`);
+      this.refreshProjection();
+    }
+    issueBattleCommand(command) {
+      var _a, _b, _c;
+      if (this.destroyed || !this.qaMode) return { accepted: false, reason: "battle-unavailable" };
+      const result = issueCommand(this.simulation, command);
+      if (!result.accepted) {
+        this.hud.announce(`Command not accepted: ${result.reason}.`);
+        return result;
+      }
+      if (command.type === "sell" && command.towerId === this.selectedTowerId) this.selectedTowerId = null;
+      this.lastSnapshot = summarizeSimulation(this.simulation);
+      this.refreshProjection();
+      if (command.type === "set-pause-reason" && command.reason === "manual") {
+        (_b = (_a = this.hostBridge) == null ? void 0 : _a.setManualPaused) == null ? void 0 : _b.call(_a, command.active);
+      }
+      const messages = {
+        build: "Defender deployed.",
+        sell: "Defender sold.",
+        upgrade: "Defender upgraded.",
+        "set-speed": `Battle speed set to ${command.value} times.`,
+        "set-pause-reason": command.active ? "Battle paused." : "Battle resumed."
+      };
+      this.hud.announce((_c = messages[command.type]) != null ? _c : "Command accepted.");
+      return result;
+    }
+    setExternalPauseReasons(reasons = []) {
+      if (!this.simulation || this.destroyed) return;
+      for (const reason of ["host", "visibility", "modal"]) {
+        issueCommand(this.simulation, {
+          type: "set-pause-reason",
+          reason,
+          active: reasons.includes(reason)
+        });
+      }
+      this.lastSnapshot = summarizeSimulation(this.simulation);
+      if (this.qaMode) this.refreshProjection();
+    }
+    handleResume() {
+      var _a;
+      (_a = this.clock) == null ? void 0 : _a.reset();
+      if (this.simulation) {
+        this.lastSnapshot = summarizeSimulation(this.simulation);
+        if (this.qaMode) this.refreshProjection();
+      }
+    }
+    update(_time, delta) {
+      if (!this.qaMode || this.destroyed || this.terminalHandled) return;
+      const advanced = this.clock.advanceFrame(delta);
+      if (advanced > 0) {
+        this.lastSnapshot = summarizeSimulation(this.simulation);
+        this.refreshProjection();
+        this.handleTerminalState();
+      }
+    }
+    advanceTime(milliseconds) {
+      if (!this.qaMode || this.destroyed || this.terminalHandled) return this.getTextSnapshot();
+      const advanced = this.clock.advanceExact(milliseconds);
+      if (advanced > 0) {
+        this.lastSnapshot = summarizeSimulation(this.simulation);
+        this.refreshProjection();
+        this.handleTerminalState();
+      }
+      return this.getTextSnapshot();
+    }
+    refreshProjection() {
+      const snapshot = this.lastSnapshot;
+      this.projectEnemies(snapshot);
+      this.projectTowers(snapshot);
+      this.projectProjectiles(snapshot);
+      this.projectTelegraphs(snapshot);
+      this.projectTransients(snapshot.tick);
+      this.updateFocusViews();
+      this.hud.renderBattle(snapshot, {
+        interactive: true,
+        selectedDefenderId: this.selectedDefenderId,
+        selectedTowerId: this.selectedTowerId
+      });
+    }
+    projectEnemies(snapshot) {
+      syncProjectionMap(
+        this.enemySprites,
+        this.enemyPool,
+        snapshot.enemies,
+        (view, enemy) => {
+          const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
+          const previousHealth = this.previousEnemyHealth.get(enemy.id);
+          view.setPosition(position.x, position.y);
+          view.setTint(enemyTint(enemy.enemyId));
+          view.setScale(enemy.enemyId.includes("brute") || enemy.enemyId.includes("warlord") || enemy.enemyId.includes("colossus") ? 1.35 : 1);
+          if (previousHealth !== void 0 && previousHealth > enemy.health) {
+            const label = this.damageLabelPool.acquire();
+            label.setText(`-${previousHealth - enemy.health}`);
+            label.setPosition(position.x, position.y - 34);
+            this.transientDamageLabels.push({ expiresAtTick: snapshot.tick + 30, view: label });
+          }
+          this.previousEnemyHealth.set(enemy.id, enemy.health);
+        },
+        (id, view) => {
+          this.previousEnemyHealth.delete(id);
+          const particle = this.particlePool.acquire();
+          particle.setPosition(view.x, view.y);
+          this.transientParticles.push({ expiresAtTick: snapshot.tick + 24, view: particle });
+        }
+      );
+    }
+    projectTowers(snapshot) {
+      syncProjectionMap(this.towerSprites, this.towerPool, snapshot.towers, (view, tower) => {
+        const pad = this.level.pads.find((entry) => entry.id === tower.padId);
+        const position = toWorldPoint(pad);
+        view.setPosition(position.x, position.y);
+        view.setTint(defenderTint(tower.defenderId));
+        view.setScale(1 + tower.tier * 0.12);
+      });
+    }
+    projectProjectiles(snapshot) {
+      syncProjectionMap(this.projectileSprites, this.projectilePool, snapshot.projectiles, (view, projectile) => {
+        const source = snapshot.towers.find((tower) => tower.id === projectile.sourceTowerId);
+        const target = snapshot.enemies.find((enemy) => enemy.id === projectile.targetId);
+        if (!source || !target) {
+          view.setVisible(false);
+          return;
+        }
+        const sourcePosition = toWorldPoint(this.level.pads.find((pad) => pad.id === source.padId));
+        const targetPosition = projectPathProgress(this.pathMetrics, target.pathProgress);
+        view.setVisible(true);
+        view.setPosition(
+          (sourcePosition.x + targetPosition.x) / 2,
+          (sourcePosition.y + targetPosition.y) / 2
+        );
+      });
+    }
+    projectTelegraphs(snapshot) {
+      const telegraphs = snapshot.effects.filter((effect) => effect.kind.includes("telegraph"));
+      syncProjectionMap(this.telegraphSprites, this.telegraphPool, telegraphs, (view, effect) => {
+        const source = snapshot.enemies.find((enemy) => enemy.id === effect.sourceId);
+        if (!source) {
+          view.setVisible(false);
+          return;
+        }
+        const position = projectPathProgress(this.pathMetrics, source.pathProgress);
+        view.setVisible(true);
+        view.setPosition(position.x, position.y);
+        view.setAlpha(0.72);
+      });
+    }
+    projectTransients(tick) {
+      const retain = (entries, pool) => entries.filter((entry) => {
+        if (entry.expiresAtTick > tick) {
+          const progress = Math.max(0, (entry.expiresAtTick - tick) / 30);
+          entry.view.setAlpha(Math.min(1, progress));
+          return true;
+        }
+        pool.release(entry.view);
+        return false;
+      });
+      this.transientDamageLabels = retain(this.transientDamageLabels, this.damageLabelPool);
+      this.transientParticles = retain(this.transientParticles, this.particlePool);
+    }
+    updateFocusViews() {
+      if (!this.focusRing || !this.rangeRing) return;
+      const pad = this.level.pads[this.focusIndex];
+      const position = toWorldPoint(pad);
+      const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+      this.focusRing.clear();
+      this.focusRing.lineStyle(6, 16777215, 1);
+      this.focusRing.strokeCircle(position.x, position.y, 39);
+      this.rangeRing.clear();
+      if (tower) {
+        const range = DEFENDERS[tower.defenderId].range[tower.tier] * PATH_X_SCALE;
+        this.rangeRing.lineStyle(4, 16177019, 0.48);
+        this.rangeRing.strokeCircle(position.x, position.y, range);
+      }
+    }
+    handleTerminalState() {
+      var _a, _b;
+      if (!this.lastSnapshot.terminal || this.terminalHandled) return;
+      this.terminalHandled = true;
+      const victory = this.lastSnapshot.outcome === "victory";
+      if (victory) {
+        const levelNumber = Number.parseInt(this.level.id.replace("level-", ""), 10);
+        (_b = (_a = this.hostBridge) == null ? void 0 : _a.recordBattleResult) == null ? void 0 : _b.call(_a, {
+          highestUnlockedLevel: Math.min(10, levelNumber + 1),
+          levelId: this.level.id,
+          medal: this.lastSnapshot.medal,
+          score: this.lastSnapshot.score
+        });
+      }
+      this.scene.start("ResultScene", {
+        summary: victory ? `${this.lastSnapshot.medal} medal \xB7 ${this.lastSnapshot.score} points` : `Wave ${Math.max(1, this.lastSnapshot.waveIndex + 1)} reached the castle.`,
+        victory
+      });
+    }
+    getTextSnapshot() {
+      if (!this.lastSnapshot) return null;
+      const snapshot = this.lastSnapshot;
+      return {
+        castleHearts: snapshot.castleHearts,
+        coins: snapshot.coins,
+        effects: snapshot.effects.map(({ id, kind, sourceId, targetId }) => ({ id, kind, sourceId, targetId })),
+        enemies: snapshot.enemies.map(({ id, enemyId, health, maxHealth, pathProgress }) => ({
+          enemyId,
+          health,
+          id,
+          maxHealth,
+          pathProgress: Number(pathProgress.toFixed(3))
+        })),
+        levelId: snapshot.levelId,
+        medal: snapshot.medal,
+        outcome: snapshot.outcome,
+        pauseReasons: [...snapshot.pauseReasons],
+        projectiles: snapshot.projectiles.map(({ id, sourceTowerId, targetId, impactTick }) => ({
+          id,
+          impactTick,
+          sourceTowerId,
+          targetId
+        })),
+        qa: snapshot.qa,
+        score: snapshot.score,
+        seed: snapshot.seed,
+        selectedDefenderId: this.selectedDefenderId,
+        selectedTowerId: this.selectedTowerId,
+        terminal: snapshot.terminal,
+        tick: snapshot.tick,
+        timeScale: snapshot.timeScale,
+        towers: snapshot.towers.map((tower) => ({ ...tower })),
+        waveIndex: snapshot.waveIndex
+      };
+    }
+    shutdown() {
+      var _a, _b, _c, _d, _e, _f;
+      if (this.destroyed) return;
+      this.destroyed = true;
+      this.events.off(__webpack_exports__default.Scenes.Events.RESUME, this.handleResume, this);
+      this.domCleanups.splice(0).forEach((remove) => remove());
+      (_a = this.disconnectHud) == null ? void 0 : _a.call(this);
+      this.disconnectHud = null;
+      for (const pool of [
+        this.enemyPool,
+        this.towerPool,
+        this.projectilePool,
+        this.telegraphPool,
+        this.damageLabelPool,
+        this.particlePool
+      ]) pool == null ? void 0 : pool.destroy();
+      this.enemySprites.clear();
+      this.towerSprites.clear();
+      this.projectileSprites.clear();
+      this.telegraphSprites.clear();
+      this.previousEnemyHealth.clear();
+      this.transientDamageLabels.length = 0;
+      this.transientParticles.length = 0;
+      (_b = this.focusRing) == null ? void 0 : _b.destroy();
+      (_c = this.rangeRing) == null ? void 0 : _c.destroy();
+      (_d = this.mapView) == null ? void 0 : _d.destroy();
+      for (const key of Object.values((_e = this.debugTextureKeys) != null ? _e : {})) this.textures.remove(key);
+      (_f = this.clock) == null ? void 0 : _f.reset();
     }
   };
 
@@ -146589,154 +148978,6 @@
       setPaused,
       setSfxVolume
     });
-  };
-
-  // public/Games/DefenderChampion/src/config/enemies.js
-  var EFFECT_LIMITS = Object.freeze({
-    armorReductionMax: 0.65,
-    slowMax: 0.4,
-    supportSpeedMax: 0.25,
-    supportHealingPerSecondMax: 0.03,
-    standardStunSecondsMax: 1.5,
-    standardStunImmunitySeconds: 2,
-    bossStunSecondsMax: 0.5,
-    bossStunImmunitySeconds: 4
-  });
-  var COMBAT_RULES = Object.freeze({
-    ticksPerSecond: 60,
-    movementScale: 0.09,
-    waveCompletionScore: 35,
-    castleHeartScore: 100,
-    parTimeScore: 180,
-    unspentCoinScoreCap: 120,
-    enemySpeedMultiplierMax: 1.2,
-    supportArmorMax: 0.15
-  });
-  var freezeNested = (value) => {
-    if (value && typeof value === "object" && !Object.isFrozen(value)) {
-      for (const child of Object.values(value)) freezeNested(child);
-      Object.freeze(value);
-    }
-    return value;
-  };
-  var freezeEnemy = (enemy) => freezeNested({ ...enemy });
-  var ENEMIES = Object.freeze({
-    "blight-walker": freezeEnemy({
-      id: "blight-walker",
-      health: 58,
-      speed: 42,
-      bounty: 12,
-      armor: 0,
-      cooldownTicks: 0,
-      castleDamage: 1
-    }),
-    skitter: freezeEnemy({
-      id: "skitter",
-      health: 38,
-      speed: 66,
-      bounty: 13,
-      armor: 0,
-      cooldownTicks: 0,
-      castleDamage: 1
-    }),
-    swarmkin: freezeEnemy({
-      id: "swarmkin",
-      health: 27,
-      speed: 50,
-      bounty: 7,
-      armor: 0,
-      cooldownTicks: 0,
-      castleDamage: 1
-    }),
-    shellguard: freezeEnemy({
-      id: "shellguard",
-      health: 160,
-      speed: 29,
-      bounty: 27,
-      armor: 0.55,
-      cooldownTicks: 0,
-      castleDamage: 1
-    }),
-    hexcaller: freezeEnemy({
-      id: "hexcaller",
-      health: 110,
-      speed: 34,
-      bounty: 30,
-      armor: 0.15,
-      cooldownTicks: 180,
-      castleDamage: 1,
-      supportRadius: 145,
-      supportDurationTicks: 180,
-      supportSpeed: 0.2,
-      supportHealingPerSecond: 0.03
-    }),
-    crusher: freezeEnemy({
-      id: "crusher",
-      health: 800,
-      speed: 24,
-      bounty: 120,
-      armor: 0.3,
-      cooldownTicks: 0,
-      castleDamage: 2
-    }),
-    "mossback-brute": freezeEnemy({
-      id: "mossback-brute",
-      health: 1100,
-      speed: 25,
-      bounty: 190,
-      armor: 0.2,
-      cooldownTicks: 600,
-      castleDamage: 2,
-      telegraphTicks: 60,
-      stunSeconds: 1.5,
-      abilityRadius: 150
-    }),
-    "ironhide-warlord": freezeEnemy({
-      id: "ironhide-warlord",
-      health: 12e3,
-      speed: 36,
-      bounty: 370,
-      armor: 0.35,
-      cooldownTicks: 480,
-      castleDamage: 2,
-      rallyRadius: 165,
-      rallyDurationTicks: 180,
-      rallySpeed: 0.2,
-      rallyArmor: 0.15,
-      plateThresholds: Object.freeze([0.75, 0.5, 0.25]),
-      plateArmorBonuses: Object.freeze([0.15, 0.1, 0.05]),
-      vulnerableTicks: 180
-    }),
-    "dread-colossus": freezeEnemy({
-      id: "dread-colossus",
-      health: 1530,
-      speed: 26,
-      bounty: 900,
-      armor: 0.25,
-      cooldownTicks: 720,
-      castleDamage: 3,
-      phaseThresholds: Object.freeze({ phase2: 0.75, phase3: 0.4 }),
-      phase2Armor: 0.2,
-      phase3Speed: 0.2,
-      summonThresholds: Object.freeze([0.75, 0.5, 0.25]),
-      summonCount: 6,
-      pulseTelegraphTicks: 75,
-      pulseDurationTicks: 180,
-      pulseSlow: 0.25,
-      pulseRadius: 190
-    })
-  });
-
-  // public/Games/DefenderChampion/src/core/scoring.js
-  var MEDAL_RANKS = Object.freeze(["bronze", "silver", "gold"]);
-  var getCrossedMedalRanks = (previousMedal, nextMedal) => {
-    const previousRank = previousMedal === "none" || previousMedal === null ? -1 : MEDAL_RANKS.indexOf(previousMedal);
-    const nextRank = MEDAL_RANKS.indexOf(nextMedal);
-    const previousMedalIsValid = previousMedal === "none" || previousMedal === null || previousRank >= 0;
-    if (!previousMedalIsValid || nextRank < 0 || nextRank <= previousRank) {
-      return [];
-    }
-    return MEDAL_RANKS.slice(previousRank + 1, nextRank + 1);
   };
 
   // public/Games/DefenderChampion/src/services/host-bridge.js
@@ -147103,322 +149344,6 @@
     });
   };
 
-  // public/Games/DefenderChampion/src/ui/hud-controller.js
-  var SCREEN_IDS = Object.freeze({
-    menu: "menu-screen",
-    levels: "level-select-screen",
-    battle: "battle-screen",
-    result: "result-screen"
-  });
-  var getLevelNumber = (levelId) => Number.parseInt(levelId == null ? void 0 : levelId.replace("level-", ""), 10);
-  var FOCUSABLE_SELECTOR = [
-    "a[href]",
-    "button:not([disabled])",
-    "input:not([disabled])",
-    "select:not([disabled])",
-    "textarea:not([disabled])",
-    '[tabindex]:not([tabindex="-1"])'
-  ].join(", ");
-  var resolveContinueLevel = (saveState) => {
-    var _a, _b;
-    const clearedLevelIds = Object.keys((_a = saveState == null ? void 0 : saveState.levels) != null ? _a : {});
-    if (clearedLevelIds.length === 0) return null;
-    const highestUnlocked = Math.min(LEVELS.length, Math.max(1, (_b = saveState == null ? void 0 : saveState.highestUnlockedLevel) != null ? _b : 1));
-    for (let levelNumber = highestUnlocked; levelNumber >= 1; levelNumber -= 1) {
-      const levelId = `level-${levelNumber}`;
-      if (!saveState.levels[levelId]) return levelId;
-    }
-    return LEVELS.at(-1).id;
-  };
-  var resolveMotionState = (override, systemReduced = false) => {
-    if (override === true) return { mode: "reduce", reduced: true };
-    if (override === false) return { mode: "full", reduced: false };
-    return { mode: "system", reduced: Boolean(systemReduced) };
-  };
-  var createModalFocusTrap = ({ documentRef: documentRef2, overlay, onEscape } = {}) => {
-    let active = false;
-    let returnFocus = null;
-    const getFocusable = () => Array.from(overlay.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
-      var _a;
-      return !element.disabled && !element.hidden && ((_a = element.getAttribute) == null ? void 0 : _a.call(element, "aria-hidden")) !== "true";
-    });
-    const focusFirst = () => {
-      var _a, _b;
-      const first = getFocusable()[0];
-      (_b = (_a = first != null ? first : overlay).focus) == null ? void 0 : _b.call(_a);
-    };
-    const handleKeydown = (event) => {
-      var _a, _b, _c, _d, _e;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onEscape == null ? void 0 : onEscape();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const focusable = getFocusable();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        (_a = overlay.focus) == null ? void 0 : _a.call(overlay);
-        return;
-      }
-      if (focusable.length === 1) {
-        event.preventDefault();
-        (_c = (_b = focusable[0]).focus) == null ? void 0 : _c.call(_b);
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable.at(-1);
-      const current = documentRef2.activeElement;
-      if (event.shiftKey && (current === first || !overlay.contains(current))) {
-        event.preventDefault();
-        (_d = last.focus) == null ? void 0 : _d.call(last);
-      } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
-        event.preventDefault();
-        (_e = first.focus) == null ? void 0 : _e.call(first);
-      }
-    };
-    const deactivate = ({ restoreFocus = true } = {}) => {
-      var _a;
-      if (!active) return;
-      active = false;
-      documentRef2.removeEventListener("keydown", handleKeydown);
-      if (restoreFocus && (returnFocus == null ? void 0 : returnFocus.isConnected) !== false) (_a = returnFocus == null ? void 0 : returnFocus.focus) == null ? void 0 : _a.call(returnFocus);
-      returnFocus = null;
-    };
-    return Object.freeze({
-      activate({ returnFocus: nextReturnFocus = documentRef2.activeElement } = {}) {
-        if (active) return;
-        active = true;
-        returnFocus = nextReturnFocus;
-        documentRef2.addEventListener("keydown", handleKeydown);
-        focusFirst();
-      },
-      deactivate,
-      isActive: () => active
-    });
-  };
-  var percentage = (value) => `${Math.round(value * 100)}%`;
-  var createHudController = ({
-    documentRef: documentRef2 = globalThis.document,
-    saveStore: saveStore2,
-    hostBridge: hostBridge2,
-    audioController: audioController2,
-    navigate
-  } = {}) => {
-    var _a;
-    const shell = documentRef2.getElementById("game-shell");
-    const screens = Object.fromEntries(Object.entries(SCREEN_IDS).map(([key, id]) => [
-      key,
-      documentRef2.getElementById(id)
-    ]));
-    const overlays = {
-      help: documentRef2.getElementById("how-to-screen"),
-      settings: documentRef2.getElementById("settings-screen")
-    };
-    const listeners = [];
-    const motionQuery = (_a = globalThis.matchMedia) == null ? void 0 : _a.call(globalThis, "(prefers-reduced-motion: reduce)");
-    let modalTraps;
-    const on = (element, type, listener) => {
-      element == null ? void 0 : element.addEventListener(type, listener);
-      listeners.push(() => element == null ? void 0 : element.removeEventListener(type, listener));
-    };
-    const announce = (message) => {
-      const announcer2 = documentRef2.getElementById("status-announcer");
-      if (announcer2) announcer2.textContent = message;
-    };
-    const showScreen = (screenName) => {
-      for (const [name, screen2] of Object.entries(screens)) {
-        if (screen2) screen2.hidden = name !== screenName;
-      }
-      shell.dataset.screen = screenName;
-    };
-    const closeOverlay = (name) => {
-      var _a2;
-      const overlay = overlays[name];
-      if (!overlay || overlay.hidden) return;
-      overlay.hidden = true;
-      for (const screen2 of Object.values(screens)) screen2.inert = false;
-      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, false);
-      modalTraps[name].deactivate({ restoreFocus: true });
-    };
-    const openOverlay = (name) => {
-      var _a2;
-      const overlay = overlays[name];
-      if (!overlay) return;
-      const returnFocus = documentRef2.activeElement;
-      for (const screen2 of Object.values(screens)) screen2.inert = true;
-      overlay.hidden = false;
-      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, true);
-      modalTraps[name].activate({ returnFocus });
-    };
-    const refreshContinue = () => {
-      const continueButton = documentRef2.getElementById("continue-button");
-      const levelId = resolveContinueLevel(saveStore2.getState());
-      continueButton.hidden = !levelId;
-      continueButton.dataset.levelId = levelId != null ? levelId : "";
-      return levelId;
-    };
-    const renderLevels = () => {
-      const state = saveStore2.getState();
-      const grid = documentRef2.getElementById("level-grid");
-      const fragment = documentRef2.createDocumentFragment();
-      grid.replaceChildren();
-      for (const level2 of LEVELS) {
-        const levelNumber = getLevelNumber(level2.id);
-        const unlocked = levelNumber <= state.highestUnlockedLevel;
-        const result = state.levels[level2.id];
-        const button = documentRef2.createElement("button");
-        button.type = "button";
-        button.className = "level-card";
-        button.disabled = !unlocked;
-        button.dataset.levelId = level2.id;
-        button.setAttribute("aria-label", unlocked ? `Level ${levelNumber}, ${level2.name}. ${result ? `${result.medal} medal, best score ${result.bestScore}` : "Not yet cleared"}` : `Level ${levelNumber}, ${level2.name}, locked`);
-        button.innerHTML = `
-        <span class="level-number">Chapter ${levelNumber}${unlocked ? "" : " \xB7 Locked"}</span>
-        <span class="level-name">${level2.name}</span>
-        <span class="level-progress">${result ? `${result.medal} medal \xB7 ${result.bestScore.toLocaleString()} points` : unlocked ? "Ready to defend" : "Win earlier chapters to unlock"}</span>
-      `;
-        fragment.append(button);
-      }
-      grid.append(fragment);
-    };
-    const applyReducedMotion = (value) => {
-      const root = documentRef2.documentElement;
-      const motionState = resolveMotionState(value, motionQuery == null ? void 0 : motionQuery.matches);
-      root.dataset.motionPreference = motionState.mode;
-      root.dataset.reducedMotion = String(motionState.reduced);
-    };
-    const syncSettings = () => {
-      const audioSettings = audioController2.getSettings();
-      const embedded = Boolean(hostBridge2.getState().embedded);
-      const music = documentRef2.getElementById("music-volume");
-      const sfx = documentRef2.getElementById("sfx-volume");
-      const musicOutput = documentRef2.getElementById("music-volume-output");
-      const sfxOutput = documentRef2.getElementById("sfx-volume-output");
-      music.value = String(Math.round(audioSettings.musicVolume * 100));
-      sfx.value = String(Math.round(audioSettings.sfxVolume * 100));
-      music.disabled = embedded;
-      sfx.disabled = embedded;
-      musicOutput.value = percentage(audioSettings.musicVolume);
-      sfxOutput.value = percentage(audioSettings.sfxVolume);
-      documentRef2.getElementById("host-sound-note").hidden = !embedded;
-      const motion = saveStore2.getState().reducedMotionOverride;
-      documentRef2.getElementById("reduced-motion").value = motion === null ? "system" : motion ? "reduce" : "full";
-      applyReducedMotion(motion);
-    };
-    const showMenu = () => {
-      var _a2;
-      showScreen("menu");
-      refreshContinue();
-      (_a2 = documentRef2.getElementById("play-button")) == null ? void 0 : _a2.focus();
-    };
-    const showLevelSelect = () => {
-      var _a2;
-      renderLevels();
-      showScreen("levels");
-      (_a2 = documentRef2.getElementById("levels-back-button")) == null ? void 0 : _a2.focus();
-      announce("Level selection opened");
-    };
-    const showBattle = (levelId) => {
-      var _a2;
-      const level2 = getLevel(levelId);
-      documentRef2.getElementById("battle-level-name").textContent = level2.name;
-      documentRef2.getElementById("hud-hearts").textContent = String(level2.castleHearts);
-      documentRef2.getElementById("hud-coins").textContent = String(level2.startingCoins);
-      documentRef2.getElementById("hud-wave").textContent = `Ready / ${level2.waveCount}`;
-      documentRef2.getElementById("pause-button").setAttribute("aria-pressed", "false");
-      documentRef2.getElementById("speed-button").setAttribute("aria-pressed", "false");
-      documentRef2.getElementById("speed-button").textContent = "1\xD7";
-      showScreen("battle");
-      (_a2 = documentRef2.getElementById("battlefield")) == null ? void 0 : _a2.focus();
-      announce(`${level2.name}. Battle preview ready.`);
-    };
-    const showResult = ({ victory = false, summary = "" } = {}) => {
-      var _a2;
-      documentRef2.getElementById("result-title").textContent = victory ? "The woodland is safe!" : "The castle needs you";
-      documentRef2.getElementById("result-summary").textContent = summary || (victory ? "A brave defense. Your chapter progress has been saved." : "Regroup your defenders and try a new plan.");
-      showScreen("result");
-      (_a2 = documentRef2.getElementById("result-levels-button")) == null ? void 0 : _a2.focus();
-    };
-    const reconcile = () => {
-      const state = saveStore2.getState();
-      applyReducedMotion(state.reducedMotionOverride);
-      if (!screens.menu.hidden) refreshContinue();
-      if (!overlays.settings.hidden) syncSettings();
-    };
-    modalTraps = {
-      help: createModalFocusTrap({
-        documentRef: documentRef2,
-        overlay: overlays.help,
-        onEscape: () => closeOverlay("help")
-      }),
-      settings: createModalFocusTrap({
-        documentRef: documentRef2,
-        overlay: overlays.settings,
-        onEscape: () => closeOverlay("settings")
-      })
-    };
-    on(documentRef2.getElementById("play-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
-    on(documentRef2.getElementById("continue-button"), "click", (event) => {
-      const levelId = event.currentTarget.dataset.levelId;
-      if (levelId) navigate == null ? void 0 : navigate("BattleScene", { levelId });
-    });
-    on(documentRef2.getElementById("level-grid"), "click", (event) => {
-      var _a2, _b;
-      const button = (_b = (_a2 = event.target).closest) == null ? void 0 : _b.call(_a2, "button[data-level-id]");
-      if (button && !button.disabled) navigate == null ? void 0 : navigate("BattleScene", { levelId: button.dataset.levelId });
-    });
-    on(documentRef2.getElementById("levels-back-button"), "click", () => navigate == null ? void 0 : navigate("MenuScene"));
-    on(documentRef2.getElementById("battle-back-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
-    on(documentRef2.getElementById("result-levels-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
-    on(documentRef2.getElementById("result-menu-button"), "click", () => navigate == null ? void 0 : navigate("MenuScene"));
-    on(documentRef2.getElementById("how-to-button"), "click", () => openOverlay("help"));
-    on(documentRef2.getElementById("settings-button"), "click", () => {
-      syncSettings();
-      openOverlay("settings");
-    });
-    on(documentRef2.getElementById("exit-button"), "click", () => hostBridge2.exit());
-    on(documentRef2.getElementById("how-to-close-button"), "click", () => closeOverlay("help"));
-    on(documentRef2.getElementById("settings-close-button"), "click", () => closeOverlay("settings"));
-    on(documentRef2.getElementById("music-volume"), "input", (event) => {
-      if (hostBridge2.getState().embedded) return syncSettings();
-      audioController2.setMusicVolume(Number(event.currentTarget.value) / 100);
-      syncSettings();
-    });
-    on(documentRef2.getElementById("sfx-volume"), "input", (event) => {
-      if (hostBridge2.getState().embedded) return syncSettings();
-      audioController2.setSfxVolume(Number(event.currentTarget.value) / 100);
-      syncSettings();
-    });
-    on(documentRef2.getElementById("reduced-motion"), "change", (event) => {
-      const value = event.currentTarget.value;
-      const reducedMotionOverride = value === "system" ? null : value === "reduce";
-      const state = saveStore2.getState();
-      saveStore2.save({ ...state, reducedMotionOverride });
-      applyReducedMotion(reducedMotionOverride);
-    });
-    on(motionQuery, "change", () => {
-      if (saveStore2.getState().reducedMotionOverride === null) applyReducedMotion(null);
-    });
-    applyReducedMotion(saveStore2.getState().reducedMotionOverride);
-    return Object.freeze({
-      announce,
-      destroy() {
-        closeOverlay("help");
-        closeOverlay("settings");
-        modalTraps.help.deactivate({ restoreFocus: false });
-        modalTraps.settings.deactivate({ restoreFocus: false });
-        listeners.splice(0).forEach((remove) => remove());
-      },
-      reconcile,
-      refreshContinue,
-      showBattle,
-      showLevelSelect,
-      showMenu,
-      showResult
-    });
-  };
-
   // public/Games/DefenderChampion/src/runtime-lifecycle.js
   var safelyCall = (callback) => {
     try {
@@ -147503,6 +149428,12 @@
   // public/Games/DefenderChampion/src/main.js
   var documentRef = globalThis.document;
   var windowRef = globalThis.window;
+  if (!documentRef.querySelector('link[rel~="icon"]')) {
+    const favicon = documentRef.createElement("link");
+    favicon.rel = "icon";
+    favicon.href = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+    documentRef.head.append(favicon);
+  }
   var announcer = documentRef.getElementById("status-announcer");
   var saveStore = createSaveStore({
     onNotice(notice) {
@@ -147517,9 +149448,10 @@
     documentRef,
     saveStore,
     audioController,
-    onPauseChange({ paused }) {
-      var _a, _b;
-      (_b = (_a = game == null ? void 0 : game.scene) == null ? void 0 : _a.scenes) == null ? void 0 : _b.forEach((scene) => {
+    onPauseChange({ paused, reasons }) {
+      var _a, _b, _c, _d, _e, _f;
+      (_d = (_c = (_b = (_a = game == null ? void 0 : game.scene) == null ? void 0 : _a.getScene) == null ? void 0 : _b.call(_a, "BattleScene")) == null ? void 0 : _c.setExternalPauseReasons) == null ? void 0 : _d.call(_c, reasons);
+      (_f = (_e = game == null ? void 0 : game.scene) == null ? void 0 : _e.scenes) == null ? void 0 : _f.forEach((scene) => {
         if (paused) {
           if (scene.scene.isActive()) scene.scene.pause();
         } else if (scene.scene.isPaused()) {
@@ -147530,6 +149462,7 @@
   });
   var hud = createHudController({
     documentRef,
+    windowRef,
     saveStore,
     hostBridge,
     audioController,
@@ -147559,6 +149492,7 @@
     callbacks: {
       preBoot(phaserGame) {
         phaserGame.registry.set("hud", hud);
+        phaserGame.registry.set("hostBridge", hostBridge);
       }
     }
   });
@@ -147569,6 +149503,32 @@
     hostBridge,
     hud
   });
+  var getBattleScene = () => {
+    var _a, _b, _c;
+    return (_c = (_b = (_a = game == null ? void 0 : game.scene) == null ? void 0 : _a.getScene) == null ? void 0 : _b.call(_a, "BattleScene")) != null ? _c : null;
+  };
+  var cleanupQaHooks = installQaRuntimeHooks({
+    windowRef,
+    enabled: hostBridge.getState().qaMode,
+    getActiveBattle: getBattleScene,
+    isKnownLevel: (levelId) => LEVELS.some((level2) => level2.id === levelId),
+    startLevel(levelId) {
+      hostBridge.setManualPaused(false);
+      game.scene.start("BattleScene", { levelId });
+    }
+  });
+  var handleFinalPageHide = (event) => {
+    if (event.persisted) return;
+    cleanupQaHooks();
+    windowRef.removeEventListener("pagehide", handleFinalPageHide);
+    windowRef.removeEventListener("pageshow", handleBfCachePageShow);
+  };
+  var handleBfCachePageShow = (event) => {
+    var _a, _b;
+    if (event.persisted) (_b = (_a = getBattleScene()) == null ? void 0 : _a.handleResume) == null ? void 0 : _b.call(_a);
+  };
+  windowRef.addEventListener("pagehide", handleFinalPageHide);
+  windowRef.addEventListener("pageshow", handleBfCachePageShow);
 })();
 /*! Bundled license information:
 

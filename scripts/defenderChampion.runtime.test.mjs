@@ -99,6 +99,8 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(main, /Math\.min\([^)]*devicePixelRatio[^)]*,\s*2\)/);
   assert.match(main, /scene:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
   assert.match(main, /if\s*\(paused\)\s*{[^}]*scene\.scene\.isActive\(\)/s);
+  assert.match(main, /rel\s*=\s*['"]icon['"]/);
+  assert.match(main, /data:image\/gif;base64/);
 });
 
 test('continue targets the highest unlocked uncleared level and falls back to level 10', async () => {
@@ -234,4 +236,195 @@ test('BFCache transitions suspend and restore one runtime while real unload dest
   assert.equal(windowRef.listenerCount('pagehide'), 0);
   assert.equal(windowRef.listenerCount('pageshow'), 0);
   assert.equal(lifecycle.getState().destroyed, true);
+});
+
+test('the fixed-step clock caps wall-clock catch-up, doubles simulation steps at 2x, and resets on resume', async () => {
+  const hudModule = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
+  assert.equal(typeof hudModule.createFixedStepClock, 'function');
+
+  const advances = [];
+  let speed = 1;
+  const clock = hudModule.createFixedStepClock({
+    advanceSteps: (steps) => advances.push(steps),
+    getSpeed: () => speed,
+  });
+
+  assert.equal(clock.advanceFrame(8), 0);
+  assert.equal(clock.advanceFrame(9), 1);
+  assert.deepEqual(advances, [1]);
+
+  clock.reset();
+  assert.equal(clock.advanceFrame(1_000), 5);
+  assert.deepEqual(advances, [1, 5]);
+
+  speed = 2;
+  clock.reset();
+  assert.equal(clock.advanceFrame(17), 2);
+  assert.deepEqual(advances, [1, 5, 2]);
+
+  clock.reset();
+  assert.equal(clock.advanceFrame(8), 0);
+  clock.reset();
+  assert.equal(clock.advanceFrame(9), 0);
+  assert.deepEqual(advances, [1, 5, 2]);
+});
+
+test('the browser entry resets the battle accumulator after a BFCache resume', async () => {
+  const main = await readGameFile('src/main.js');
+
+  assert.match(main, /addEventListener\(['"]pageshow['"]/);
+  assert.match(main, /event\.persisted[^]*getBattleScene\(\)\?\.handleResume\?\.\(\)/);
+});
+
+test('bounded QA advancement uses fixed simulation steps without a variable delta', async () => {
+  const hudModule = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
+  assert.equal(typeof hudModule.createFixedStepClock, 'function');
+
+  const advances = [];
+  const clock = hudModule.createFixedStepClock({
+    advanceSteps: (steps) => advances.push(steps),
+    getSpeed: () => 2,
+  });
+
+  assert.equal(clock.advanceExact(1_000), 120);
+  assert.equal(clock.advanceExact(-10), 0);
+  assert.equal(clock.advanceExact(Number.POSITIVE_INFINITY), 0);
+  assert.equal(clock.advanceExact(999_999), 7_200);
+  assert.deepEqual(advances, [120, 7_200]);
+});
+
+test('QA runtime hooks expose deterministic controls only for qa=1 and restrict level starts', async () => {
+  const hudModule = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
+  assert.equal(typeof hudModule.installQaRuntimeHooks, 'function');
+
+  const ordinaryWindow = {};
+  const ordinaryCleanup = hudModule.installQaRuntimeHooks({
+    windowRef: ordinaryWindow,
+    enabled: false,
+  });
+  assert.equal('render_game_to_text' in ordinaryWindow, false);
+  assert.equal('advanceTime' in ordinaryWindow, false);
+  assert.equal('__defenderChampion' in ordinaryWindow, false);
+  ordinaryCleanup();
+
+  const qaWindow = {};
+  const starts = [];
+  const battle = {
+    advanceTime: (milliseconds) => ({ advanced: milliseconds }),
+    getTextSnapshot: () => ({ levelId: 'level-1', tick: 42 }),
+  };
+  const cleanup = hudModule.installQaRuntimeHooks({
+    windowRef: qaWindow,
+    enabled: true,
+    getActiveBattle: () => battle,
+    isKnownLevel: (levelId) => levelId === 'level-1',
+    startLevel: (levelId) => starts.push(levelId),
+  });
+
+  assert.equal(qaWindow.render_game_to_text(), '{"levelId":"level-1","tick":42}');
+  assert.deepEqual(qaWindow.advanceTime(250), { advanced: 250 });
+  assert.equal(qaWindow.__defenderChampion.startLevel('missing'), false);
+  assert.equal(qaWindow.__defenderChampion.startLevel('level-1'), true);
+  assert.deepEqual(starts, ['level-1']);
+
+  cleanup();
+  assert.equal('render_game_to_text' in qaWindow, false);
+  assert.equal('advanceTime' in qaWindow, false);
+  assert.equal('__defenderChampion' in qaWindow, false);
+});
+
+test('the battle HUD model projects all combat labels and four defender cards from one detached snapshot', async () => {
+  const hudModule = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
+  assert.equal(typeof hudModule.createBattleHudModel, 'function');
+
+  const snapshot = {
+    levelId: 'level-1',
+    tick: 125,
+    timeScale: 2,
+    pauseReasons: ['manual'],
+    coins: 100,
+    score: 90,
+    castleHearts: 2,
+    waveIndex: 1,
+    towers: [{
+      id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+    }],
+  };
+  const model = hudModule.createBattleHudModel(snapshot, {
+    selectedDefenderId: 'ranger',
+    selectedTowerId: 'tower-1',
+  });
+
+  assert.deepEqual({
+    title: model.levelTitle,
+    hearts: model.hearts,
+    wave: model.waveLabel,
+    time: model.timeLabel,
+    score: model.score,
+    coins: model.coins,
+    paused: model.paused,
+    speed: model.speed,
+  }, {
+    title: 'Meadow Watch',
+    hearts: 2,
+    wave: '2 / 3',
+    time: '0:02',
+    score: 90,
+    coins: 100,
+    paused: true,
+    speed: 2,
+  });
+  assert.equal(model.defenders.length, 4);
+  assert.deepEqual(model.defenders.map(({ id, cost, selected }) => ({ id, cost, selected })), [
+    { id: 'bladeguard', cost: 50, selected: false },
+    { id: 'ranger', cost: 70, selected: true },
+    { id: 'ironwarden', cost: 120, selected: false },
+    { id: 'rune-artificer', cost: 150, selected: false },
+  ]);
+  assert.deepEqual({
+    id: model.selectedTower.id,
+    upgradeCost: model.selectedTower.upgradeCost,
+    sellValue: model.selectedTower.sellValue,
+    damage: model.selectedTower.damage,
+    range: model.selectedTower.range,
+  }, {
+    id: 'tower-1', upgradeCost: 60, sellValue: 35, damage: 60, range: 80,
+  });
+  assert.deepEqual(snapshot.towers, [{
+    id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+  }]);
+});
+
+test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell actions through validated commands', async () => {
+  const [battleScene, hud, main, bundle] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    readGameFile('src/ui/hud-controller.js'),
+    readGameFile('src/main.js'),
+    readGameFile('js/app.bundle.js'),
+  ]);
+
+  assert.match(battleScene, /createSimulation/);
+  assert.match(battleScene, /summarizeSimulation/);
+  assert.match(battleScene, /issueCommand\(this\.simulation, command\)/);
+  assert.equal((battleScene.match(/this\.hud\.showBattle\(this\.lastSnapshot/g) ?? []).length, 2);
+  assert.match(battleScene, /setPointerCapture/);
+  assert.match(battleScene, /['"]keydown['"]/);
+  assert.match(battleScene, /['"]Tab['"]/);
+  assert.match(battleScene, /['"]ArrowRight['"]/);
+  assert.match(battleScene, /['"]Enter['"]/);
+  assert.match(battleScene, /['"]Space['"]/);
+  assert.match(battleScene, /enemySprites\s*=\s*new Map/);
+  assert.match(battleScene, /projectileSprites\s*=\s*new Map/);
+  assert.match(battleScene, /telegraphSprites\s*=\s*new Map/);
+  assert.match(battleScene, /damageLabelPool/);
+  assert.match(battleScene, /particlePool/);
+  assert.match(hud, /type:\s*['"]upgrade['"]/);
+  assert.match(hud, /type:\s*['"]sell['"]/);
+  assert.match(hud, /name\.style\.overflowWrap\s*=\s*['"]anywhere['"]/);
+  assert.match(hud, /name\.style\.fontSize/);
+  assert.match(hud, /battleHeading\.style\.minWidth\s*=/);
+  assert.match(hud, /battleControls\.style\.gap\s*=/);
+  assert.match(main, /installQaRuntimeHooks/);
+  assert.match(bundle, /render_game_to_text/);
+  assert.match(bundle, /__defenderChampion/);
 });

@@ -7,11 +7,18 @@ import { ResultScene } from './scenes/ResultScene.js';
 import { createAudioController } from './services/audio.js';
 import { createHostBridge } from './services/host-bridge.js';
 import { createSaveStore } from './services/save-store.js';
-import { createHudController } from './ui/hud-controller.js';
+import { LEVELS } from './config/levels.js';
+import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
 import { createRuntimeLifecycle } from './runtime-lifecycle.js';
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
+if (!documentRef.querySelector('link[rel~="icon"]')) {
+  const favicon = documentRef.createElement('link');
+  favicon.rel = 'icon';
+  favicon.href = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+  documentRef.head.append(favicon);
+}
 const announcer = documentRef.getElementById('status-announcer');
 const saveStore = createSaveStore({
   onNotice(notice) {
@@ -28,7 +35,8 @@ const hostBridge = createHostBridge({
   documentRef,
   saveStore,
   audioController,
-  onPauseChange({ paused }) {
+  onPauseChange({ paused, reasons }) {
+    game?.scene?.getScene?.('BattleScene')?.setExternalPauseReasons?.(reasons);
     game?.scene?.scenes?.forEach((scene) => {
       if (paused) {
         if (scene.scene.isActive()) scene.scene.pause();
@@ -40,6 +48,7 @@ const hostBridge = createHostBridge({
 });
 const hud = createHudController({
   documentRef,
+  windowRef,
   saveStore,
   hostBridge,
   audioController,
@@ -71,6 +80,7 @@ game = new Phaser.Game({
   callbacks: {
     preBoot(phaserGame) {
       phaserGame.registry.set('hud', hud);
+      phaserGame.registry.set('hostBridge', hostBridge);
     },
   },
 });
@@ -82,3 +92,26 @@ createRuntimeLifecycle({
   hostBridge,
   hud,
 });
+
+const getBattleScene = () => game?.scene?.getScene?.('BattleScene') ?? null;
+const cleanupQaHooks = installQaRuntimeHooks({
+  windowRef,
+  enabled: hostBridge.getState().qaMode,
+  getActiveBattle: getBattleScene,
+  isKnownLevel: (levelId) => LEVELS.some((level) => level.id === levelId),
+  startLevel(levelId) {
+    hostBridge.setManualPaused(false);
+    game.scene.start('BattleScene', { levelId });
+  },
+});
+const handleFinalPageHide = (event) => {
+  if (event.persisted) return;
+  cleanupQaHooks();
+  windowRef.removeEventListener('pagehide', handleFinalPageHide);
+  windowRef.removeEventListener('pageshow', handleBfCachePageShow);
+};
+const handleBfCachePageShow = (event) => {
+  if (event.persisted) getBattleScene()?.handleResume?.();
+};
+windowRef.addEventListener('pagehide', handleFinalPageHide);
+windowRef.addEventListener('pageshow', handleBfCachePageShow);
