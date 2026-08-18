@@ -10,6 +10,7 @@ import { useZoomLock } from '../hooks/useZoomLock';
 import { HomepageSessionProvider } from '../context/homepageSessionContext';
 import { useAuth } from '../context/AuthContext';
 import UserHomePage from '../pages/UserHomePage';
+import { getGameHostPolicyForRoute } from '../utils/gameHostPolicy';
 
 const MainLayout: React.FC = () => {
     useGlobalUiClickSound();
@@ -66,7 +67,9 @@ const MainLayout: React.FC = () => {
         || isPrimingHomepageSession;
     const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isHtmlViewerRoute || isPrimingHomepageSession;
 
-    useZoomLock({ enabled: shouldDisableZoom });
+    useZoomLock({
+        enabled: shouldDisableZoom && getGameHostPolicyForRoute(location.pathname).lockZoom,
+    });
 
     useEffect(() => {
         if (typeof document === 'undefined') {

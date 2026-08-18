@@ -13,6 +13,7 @@ import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
 import { isGuestUser } from '../utils/guestSession';
+import { getGameHostPolicy } from '../utils/gameHostPolicy';
 import { teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
@@ -155,7 +156,6 @@ const GamePlayer: React.FC = () => {
     const { currentStamina, nextRechargeAtMs, consumeStamina } = useStamina();
     const { settings: soundSettings } = useSoundSettings();
     const { shouldUseNativeFullscreenFallback } = usePWA();
-    useZoomLock({ enabled: true, iframeRefs: zoomLockIframes });
     const processedPointEventsRef = useRef<Set<string>>(new Set());
     const fullscreenAttemptAtRef = useRef(0);
     const [isRouteFullscreenActive, setIsRouteFullscreenActive] = useState(() => {
@@ -219,6 +219,8 @@ const GamePlayer: React.FC = () => {
         return '';
     }, [item]);
     const currentGameId = item?.id ?? null;
+    const gameHostPolicy = getGameHostPolicy(currentGameId ?? id);
+    useZoomLock({ enabled: gameHostPolicy.lockZoom, iframeRefs: zoomLockIframes });
     const isGameItem = item?.type === 'game';
     const isCarKingGame = currentGameId === CAR_KING_GAME_ID;
     const isWordPuzzleGame = currentGameId === WORD_PUZZLE_GAME_ID;
@@ -263,7 +265,8 @@ const GamePlayer: React.FC = () => {
     const requiresStaminaCharge = Boolean(item && launchPath && item.type === 'game' && staminaLaunchEventId);
     const isFrameLoading = loadedLaunchPath !== launchPath;
     const requiresRouteFullscreen = Boolean(
-        shouldUseNativeFullscreenFallback
+        gameHostPolicy.requiresNativeFullscreen
+        && shouldUseNativeFullscreenFallback
         && isImmersiveType
         && launchPath,
     );
@@ -835,8 +838,8 @@ const GamePlayer: React.FC = () => {
                     src={launchPath}
                     title={item.title}
                     className={`game-player-frame ${isFrameLoading ? 'is-loading' : ''}`}
-                    allow="autoplay; fullscreen; camera; microphone; geolocation"
-                    allowFullScreen
+                    allow={gameHostPolicy.iframeAllow}
+                    allowFullScreen={gameHostPolicy.allowFullScreen}
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation"
                     onLoad={() => {
                         setLoadedLaunchPath(launchPath);

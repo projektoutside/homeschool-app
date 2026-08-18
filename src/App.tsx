@@ -15,6 +15,7 @@ import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
 import { buildAssetPath } from './utils/pathUtils';
+import { getGameHostPolicyForRoute } from './utils/gameHostPolicy';
 import './App.css';
 import './components/ErrorBoundary.css';
 
@@ -149,7 +150,7 @@ const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }
     const maxRetries = 3;
     const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
         location.pathname === route || location.pathname.startsWith(`${route}/`)
-    );
+    ) || !getGameHostPolicyForRoute(location.pathname).requiresNativeFullscreen;
 
     useEffect(() => {
         const attemptFullscreen = async () => {
