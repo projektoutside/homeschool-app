@@ -99,6 +99,15 @@ test('App global fullscreen fallback consults the route host policy', () => {
   );
 });
 
+test('App preserves install and auth static fullscreen exemptions before policy gating', () => {
+  const staticExemptions = "const FULLSCREEN_EXEMPT_ROUTES = ['/install', '/auth'];";
+  const staticExemptionsIndex = appSource.indexOf(staticExemptions);
+  const policyGateIndex = appSource.indexOf('!getGameHostPolicyForRoute(location.pathname).requiresNativeFullscreen');
+
+  assert.notEqual(staticExemptionsIndex, -1, 'both legacy static fullscreen exemptions must remain');
+  assert.ok(staticExemptionsIndex < policyGateIndex, 'static exemptions must be evaluated before policy gating');
+});
+
 test('MainLayout combines its current zoom decision with the route host policy', () => {
   assert.match(
     mainLayoutSource,
@@ -106,6 +115,15 @@ test('MainLayout combines its current zoom decision with the route host policy',
   );
   assert.match(mainLayoutSource, /getGameHostPolicyForRoute\(location\.pathname\)\.lockZoom/);
   assert.match(mainLayoutSource, /useZoomLock\(\{\s*enabled:\s*shouldDisableZoom\s*&&/);
+});
+
+test('MainLayout preserves the complete legacy zoom predicate before policy gating', () => {
+  const legacyPredicate = 'const shouldDisableZoom = isUserHomeRoute || isAppsRoute || isGamePlayerRoute || isClassroomRoute || isHtmlViewerRoute || isPrimingHomepageSession;';
+  const legacyPredicateIndex = mainLayoutSource.indexOf(legacyPredicate);
+  const policyGateIndex = mainLayoutSource.indexOf('shouldDisableZoom && getGameHostPolicyForRoute(location.pathname).lockZoom');
+
+  assert.notEqual(legacyPredicateIndex, -1, 'all six legacy zoom-lock terms must remain');
+  assert.ok(legacyPredicateIndex < policyGateIndex, 'the legacy predicate must be derived before policy gating');
 });
 
 test('GamePlayer derives one policy before its unconditional zoom hook and enforces every iframe boundary', () => {
