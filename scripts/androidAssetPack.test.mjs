@@ -1,8 +1,106 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import test from 'node:test';
+import { execFile } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test, { after } from 'node:test';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.js';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const execFileAsync = promisify(execFile);
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const powershellExecutable = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+const temporaryBundleRoots = new Set();
+
+const powershellFileArgs = (scriptPath, ...scriptArgs) => [
+  '-NoProfile',
+  ...(process.platform === 'win32' ? ['-ExecutionPolicy', 'Bypass'] : []),
+  '-File',
+  scriptPath,
+  ...scriptArgs,
+];
+
+const runPowerShellFile = (scriptPath, ...scriptArgs) => execFileAsync(
+  powershellExecutable,
+  powershellFileArgs(scriptPath, ...scriptArgs),
+  { encoding: 'utf8', maxBuffer: 1024 * 1024, windowsHide: true },
+);
+
+const createSyntheticAnimalBundle = async (archiveEntries) => {
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'animal-champion-aab-'));
+  temporaryBundleRoots.add(fixtureRoot);
+  const payloadRoot = path.join(fixtureRoot, 'payload');
+  const archivePath = path.join(fixtureRoot, 'fixture.aab');
+  const zipScriptPath = path.join(fixtureRoot, 'create-archive.ps1');
+
+  await Promise.all(archiveEntries.map(async (entryName) => {
+    const segments = entryName.split('/');
+    const destination = path.join(payloadRoot, ...segments);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await writeFile(destination, `fixture:${entryName}`, 'utf8');
+  }));
+  await writeFile(zipScriptPath, String.raw`param(
+    [Parameter(Mandatory = $true)][string]$SourcePath,
+    [Parameter(Mandatory = $true)][string]$ArchivePath
+)
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$resolvedSourcePath = (Resolve-Path -LiteralPath $SourcePath).Path
+$archive = [IO.Compression.ZipFile]::Open(
+    $ArchivePath,
+    [IO.Compression.ZipArchiveMode]::Create
+)
+try {
+    foreach ($file in Get-ChildItem -LiteralPath $resolvedSourcePath -File -Recurse) {
+        $entryName = $file.FullName.Substring($resolvedSourcePath.Length + 1) -replace '\\', '/'
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $archive,
+            $file.FullName,
+            $entryName,
+            [IO.Compression.CompressionLevel]::Optimal
+        )
+    }
+}
+finally {
+    $archive.Dispose()
+}
+`, 'utf8');
+  await runPowerShellFile(zipScriptPath, '-SourcePath', payloadRoot, '-ArchivePath', archivePath);
+  return archivePath;
+};
+
+const runAnimalBundleInspector = async (archivePath) => {
+  const runnerPath = path.join(path.dirname(archivePath), 'invoke-inspector.ps1');
+  await writeFile(runnerPath, String.raw`param(
+    [Parameter(Mandatory = $true)][string]$InspectorPath,
+    [Parameter(Mandatory = $true)][string]$BundlePath
+)
+$ErrorActionPreference = 'Stop'
+try {
+    & $InspectorPath -BundlePath $BundlePath
+}
+catch {
+    [Console]::Error.WriteLine($_.Exception.Message)
+    exit 1
+}
+`, 'utf8');
+  return runPowerShellFile(
+    runnerPath,
+    '-InspectorPath',
+    path.join(repoRoot, 'scripts', 'Inspect-AndroidBundle.ps1'),
+    '-BundlePath',
+    archivePath,
+  );
+};
+
+after(async () => {
+  await Promise.all([...temporaryBundleRoots].map((fixtureRoot) => (
+    rm(fixtureRoot, { recursive: true, force: true })
+  )));
+});
 
 test('Android registers a fast-follow game_assets pack', async () => {
   const settings = await readSource('android/settings.gradle');
@@ -124,4 +222,65 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /expectedAnimalImageCount\s*=\s*100/);
   assert.match(inspector, /StringComparer.*Ordinal/);
   assert.match(release, /Inspect-AndroidBundle\.ps1/);
+});
+
+const fixedAnimalBundleEntries = [
+  'game_assets/assets/Games/Animal Champion/index.html',
+  'game_assets/assets/Games/Animal Champion/css/style.css',
+  'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+  'game_assets/assets/Games/Animal Champion/js/game-engine.js',
+  'game_assets/assets/Games/Animal Champion/js/game.js',
+  'game_assets/assets/Games/Animal Champion/assets/images/ui/menu-wallpaper.webp',
+  'game_assets/assets/Games/Animal Champion/assets/images/ui/thumb.webp',
+  'game_assets/assets/Games/shared/lahsPointsBridge.js',
+  'base/assets/public/assets/thumbnails/optimized/animal-champion-128.webp',
+];
+const selectedAnimalBundleEntries = ANIMAL_DATABASE.flatMap(({ images }) => (
+  images.map((imagePath) => `game_assets/assets/Games/Animal Champion/${imagePath}`)
+));
+const requiredAnimalBundleEntries = [...fixedAnimalBundleEntries, ...selectedAnimalBundleEntries];
+
+test('Android bundle inspector accepts a complete exact Animal Champion archive', async () => {
+  assert.equal(requiredAnimalBundleEntries.length, 109);
+  assert.equal(new Set(requiredAnimalBundleEntries).size, 109);
+
+  const archivePath = await createSyntheticAnimalBundle(requiredAnimalBundleEntries);
+  const { stdout } = await runAnimalBundleInspector(archivePath);
+  const result = JSON.parse(stdout);
+
+  assert.equal(path.resolve(result.bundlePath), path.resolve(archivePath));
+  assert.deepEqual(Object.keys(result.modules), ['base', 'game_assets']);
+  assert.ok(result.modules.base > 0);
+  assert.ok(result.modules.game_assets > 0);
+});
+
+test('Android bundle inspector aggregates sorted missing and case-mismatched Animal paths', async () => {
+  const caseMismatchedEntry = 'game_assets/assets/Games/Animal Champion/js/game.js';
+  const expectedMissingEntries = [
+    'base/assets/public/assets/thumbnails/optimized/animal-champion-128.webp',
+    'game_assets/assets/Games/Animal Champion/Animals/Bat/chatgpt-generated.webp',
+    'game_assets/assets/Games/Animal Champion/index.html',
+    caseMismatchedEntry,
+    'game_assets/assets/Games/shared/lahsPointsBridge.js',
+  ].sort();
+  const includedEntries = requiredAnimalBundleEntries
+    .filter((entry) => !expectedMissingEntries.includes(entry))
+    .concat(
+      'base/manifest/AndroidManifest.xml',
+      'game_assets/assets/Games/Animal Champion/js/Game.js',
+    );
+  const archivePath = await createSyntheticAnimalBundle(includedEntries);
+  const expectedMessage = [
+    'Android bundle is missing required Animal Champion entries:',
+    ...expectedMissingEntries,
+  ].join('\n');
+
+  await assert.rejects(
+    runAnimalBundleInspector(archivePath),
+    (error) => {
+      assert.notEqual(error.code, 0);
+      assert.equal(String(error.stderr).replaceAll('\r\n', '\n').trim(), expectedMessage);
+      return true;
+    },
+  );
 });
