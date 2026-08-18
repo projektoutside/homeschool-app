@@ -49,12 +49,23 @@ const requireElement = (documentRef, id) => {
   return element;
 };
 
-const showStartupFailure = (documentRef, error) => {
+export const initializePointsBridge = (windowRef) => {
+  try {
+    const initialization = windowRef.LAHSPointsBridge?.init({ gameId: 'animal-champion' });
+    if (initialization && typeof initialization.then === 'function') {
+      Promise.resolve(initialization).catch(() => {});
+    }
+  } catch {
+    // The optional host integration cannot prevent standalone play.
+  }
+};
+
+export const showStartupFailure = (documentRef, error) => {
   const message = error instanceof Error ? error.message : 'Animal Champion could not start.';
   const errorScreen = documentRef.getElementById('errorScreen');
   const errorMessage = documentRef.getElementById('errorMessage');
-  if (errorMessage) errorMessage.textContent = message;
-  if (errorScreen) {
+  if (errorScreen && errorMessage) {
+    errorMessage.textContent = message;
     documentRef.querySelectorAll('.screen').forEach((screen) => {
       screen.hidden = screen !== errorScreen;
     });
@@ -78,6 +89,7 @@ export class AnimalChampionController {
     this.phase = 'menu-locked';
     this.deadline = null;
     this.countdownFrame = null;
+    this.lastCountdownLabel = null;
     this.pendingTimeouts = new Set();
     this.runToken = 0;
     this.roundToken = 0;
@@ -174,15 +186,21 @@ export class AnimalChampionController {
     const runToken = this.runToken;
     const roundToken = this.roundToken;
     const startedAt = this.window.performance.now();
-    this.elements.countdownValue.textContent = '3';
+    this.lastCountdownLabel = null;
+    const announce = (label) => {
+      if (label === this.lastCountdownLabel) return;
+      this.lastCountdownLabel = label;
+      this.elements.countdownValue.textContent = label;
+    };
+    announce('3');
 
     const drawCountdown = () => {
       if (!this.isCurrent(runToken, roundToken)) return;
       const elapsedMs = Math.max(0, this.window.performance.now() - startedAt);
-      if (elapsedMs < 1_000) this.elements.countdownValue.textContent = '3';
-      else if (elapsedMs < 2_000) this.elements.countdownValue.textContent = '2';
-      else if (elapsedMs < 3_000) this.elements.countdownValue.textContent = '1';
-      else this.elements.countdownValue.textContent = 'GO';
+      if (elapsedMs < 1_000) announce('3');
+      else if (elapsedMs < 2_000) announce('2');
+      else if (elapsedMs < 3_000) announce('1');
+      else announce('GO');
 
       if (elapsedMs >= 4_500) {
         this.countdownFrame = null;
@@ -506,16 +524,16 @@ export class AnimalChampionController {
   }
 }
 
-if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+export const bootAnimalChampion = ({ document, window }) => {
+  initializePointsBridge(window);
   try {
-    window.LAHSPointsBridge?.init({ gameId: 'animal-champion' });
-  } catch {
-    // The optional host integration cannot prevent standalone play.
-  }
-
-  try {
-    new AnimalChampionController({ document, window }).start();
+    return new AnimalChampionController({ document, window }).start();
   } catch (error) {
     showStartupFailure(document, error);
+    return null;
   }
+};
+
+if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+  bootAnimalChampion({ document, window });
 }
