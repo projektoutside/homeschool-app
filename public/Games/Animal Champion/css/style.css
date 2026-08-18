@@ -382,9 +382,10 @@ button:disabled {
 }
 
 .primary-action {
+  border: 1px solid rgb(246 207 114 / 58%);
   color: var(--ink-950);
-  background: linear-gradient(135deg, var(--gold-300), var(--gold-500));
-  box-shadow: 0 12px 30px rgb(215 154 43 / 24%);
+  background: linear-gradient(135deg, #69edbd, var(--emerald-400) 54%, #1eaf7b);
+  box-shadow: 0 12px 30px rgb(49 215 155 / 28%), inset 0 1px rgb(255 249 232 / 38%);
   letter-spacing: 0.04em;
 }
 
@@ -395,7 +396,9 @@ button:disabled {
 }
 
 .primary-action:hover {
-  box-shadow: 0 15px 34px rgb(215 154 43 / 34%);
+  border-color: var(--gold-300);
+  background: linear-gradient(135deg, #86f2ca, var(--emerald-400));
+  box-shadow: 0 15px 34px rgb(49 215 155 / 38%), 0 0 0 1px rgb(246 207 114 / 20%);
 }
 
 .secondary-action,
@@ -414,7 +417,7 @@ button:disabled {
 .screen--game {
   --content-width: 1180px;
   grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: repeat(5, auto);
   align-content: center;
   gap: clamp(0.65rem, 1.5vw, 1rem) clamp(1rem, 2.6vw, 2.4rem);
   max-width: calc(var(--content-width) + max(20px, var(--safe-left)) + max(20px, var(--safe-right)));
@@ -469,7 +472,7 @@ button:disabled {
 .animal-stage {
   position: relative;
   grid-column: 1;
-  grid-row: 2 / 7;
+  grid-row: 2 / 6;
   width: 100%;
   max-height: min(68vh, 680px);
   max-height: min(68dvh, 680px);
@@ -591,7 +594,7 @@ button:disabled {
     var(--glass);
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
   line-height: 1.15;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
@@ -604,7 +607,6 @@ button:disabled {
 .choice-grid button[data-result="correct"],
 .choice-grid button.is-correct {
   border-color: var(--emerald-400);
-  padding-right: 5.5rem;
   background: rgb(20 92 67 / 92%);
 }
 
@@ -623,7 +625,6 @@ button:disabled {
 .choice-grid button[data-result="wrong"],
 .choice-grid button.is-wrong {
   border-color: var(--coral-400);
-  padding-right: 4.6rem;
   background: rgb(112 27 42 / 86%);
 }
 
@@ -637,6 +638,28 @@ button:disabled {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   transform: translateY(-50%);
+}
+
+.choice-grid button[data-result],
+.choice-grid button.is-correct,
+.choice-grid button.is-wrong {
+  min-height: 64px;
+  padding: 0.45rem 0.55rem 1.35rem;
+  line-height: 1.05;
+}
+
+.choice-grid button[data-result]::after,
+.choice-grid button.is-correct::after,
+.choice-grid button.is-wrong::after {
+  top: auto;
+  right: 50%;
+  bottom: 0.35rem;
+  width: max-content;
+  max-width: calc(100% - 0.7rem);
+  font-size: 0.6rem;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(50%);
 }
 
 .feedback {
@@ -956,6 +979,30 @@ button:disabled {
   }
 }
 
+@media (max-width: 420px) {
+  .choice-grid button[data-result],
+  .choice-grid button.is-correct,
+  .choice-grid button.is-wrong {
+    min-height: 64px;
+    padding: 0.45rem 0.35rem 1.35rem;
+    line-height: 1.05;
+  }
+
+  .choice-grid button[data-result]::after,
+  .choice-grid button.is-correct::after,
+  .choice-grid button.is-wrong::after {
+    top: auto;
+    right: 50%;
+    bottom: 0.35rem;
+    width: max-content;
+    max-width: calc(100% - 0.7rem);
+    font-size: 0.58rem;
+    line-height: 1;
+    white-space: nowrap;
+    transform: translateX(50%);
+  }
+}
+
 @media (min-width: 641px) and (max-width: 799px) {
   .screen--game {
     max-width: 720px;
@@ -1048,7 +1095,7 @@ button:disabled {
 
   .screen--game {
     grid-template-columns: minmax(300px, 44%) minmax(0, 56%);
-    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    grid-template-rows: repeat(5, auto);
     align-content: center;
     gap: 0.42rem 0.8rem;
     max-width: 980px;
@@ -1061,7 +1108,7 @@ button:disabled {
 
   .animal-stage {
     grid-column: 1;
-    grid-row: 1 / 7;
+    grid-row: 1 / 6;
     align-self: center;
     max-height: calc(100dvh - max(20px, var(--safe-top)) - max(20px, var(--safe-bottom)));
   }
@@ -1197,12 +1244,52 @@ button:disabled {
     color-scheme: light dark;
   }
 
+  *,
+  *::before,
+  *::after {
+    forced-color-adjust: auto;
+  }
+
   body,
   .screen,
   .screen--menu,
   .screen--centered {
     color: CanvasText;
     background: Canvas;
+  }
+
+  .app-shell::before,
+  .screen--menu::before,
+  .screen--menu::after,
+  .menu-atmosphere,
+  .animal-stage::after,
+  .animal-stage__frame {
+    display: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  .menu-hero,
+  .menu-hero h1 span,
+  .eyebrow,
+  .menu-panel__label,
+  .menu-hero__intro,
+  .mode-toggle small,
+  .hud-stat span,
+  .hud-stat strong,
+  .question-block h2,
+  .feedback,
+  .final-score,
+  .final-score strong,
+  .leaderboard-card h3,
+  .leaderboard-card ol,
+  .error-card > p:not(.eyebrow),
+  .trail-mark {
+    color: CanvasText;
+    opacity: 1;
+    filter: none;
+    text-shadow: none;
   }
 
   button,
@@ -1214,8 +1301,40 @@ button:disabled {
   .timer-track {
     border: 2px solid ButtonText;
     color: ButtonText;
-    background: Canvas;
+    background: ButtonFace;
+    box-shadow: none;
+    opacity: 1;
+    filter: none;
+    text-shadow: none;
     forced-color-adjust: auto;
+  }
+
+  .primary-action,
+  .primary-action:hover,
+  .mode-toggle button[aria-pressed="true"] {
+    border-color: Highlight;
+    color: ButtonText;
+    background: ButtonFace;
+    box-shadow: none;
+  }
+
+  .choice-grid button[data-result="correct"],
+  .choice-grid button[data-result="wrong"],
+  .choice-grid button.is-correct,
+  .choice-grid button.is-wrong,
+  .choice-grid button[data-result="correct"]::after,
+  .choice-grid button[data-result="wrong"]::after,
+  .choice-grid button.is-correct::after,
+  .choice-grid button.is-wrong::after {
+    color: ButtonText;
+    background: ButtonFace;
+    opacity: 1;
+    filter: none;
+  }
+
+  .trail-mark {
+    border-color: CanvasText;
+    background: Canvas;
   }
 
   button:focus-visible {
@@ -1224,10 +1343,15 @@ button:disabled {
   }
 
   #timerBar {
+    color: HighlightText;
     background: Highlight;
   }
 
   #animalBackdrop {
     display: none;
+  }
+
+  #animalImage {
+    filter: none;
   }
 }
