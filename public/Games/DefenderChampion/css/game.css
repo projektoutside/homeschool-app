@@ -593,9 +593,9 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html[data-motion-preference="system"] *,
+  html[data-motion-preference="system"] *::before,
+  html[data-motion-preference="system"] *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
@@ -603,9 +603,9 @@ h2 {
   }
 }
 
-html[data-reduced-motion="true"] *,
-html[data-reduced-motion="true"] *::before,
-html[data-reduced-motion="true"] *::after {
+html[data-motion-preference="reduce"] *,
+html[data-motion-preference="reduce"] *::before,
+html[data-motion-preference="reduce"] *::after {
   scroll-behavior: auto !important;
   transition-duration: 0.01ms !important;
   animation-duration: 0.01ms !important;

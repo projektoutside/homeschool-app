@@ -147111,6 +147111,14 @@
     result: "result-screen"
   });
   var getLevelNumber = (levelId) => Number.parseInt(levelId == null ? void 0 : levelId.replace("level-", ""), 10);
+  var FOCUSABLE_SELECTOR = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(", ");
   var resolveContinueLevel = (saveState) => {
     var _a, _b;
     const clearedLevelIds = Object.keys((_a = saveState == null ? void 0 : saveState.levels) != null ? _a : {});
@@ -147122,6 +147130,73 @@
     }
     return LEVELS.at(-1).id;
   };
+  var resolveMotionState = (override, systemReduced = false) => {
+    if (override === true) return { mode: "reduce", reduced: true };
+    if (override === false) return { mode: "full", reduced: false };
+    return { mode: "system", reduced: Boolean(systemReduced) };
+  };
+  var createModalFocusTrap = ({ documentRef: documentRef2, overlay, onEscape } = {}) => {
+    let active = false;
+    let returnFocus = null;
+    const getFocusable = () => Array.from(overlay.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
+      var _a;
+      return !element.disabled && !element.hidden && ((_a = element.getAttribute) == null ? void 0 : _a.call(element, "aria-hidden")) !== "true";
+    });
+    const focusFirst = () => {
+      var _a, _b;
+      const first = getFocusable()[0];
+      (_b = (_a = first != null ? first : overlay).focus) == null ? void 0 : _b.call(_a);
+    };
+    const handleKeydown = (event) => {
+      var _a, _b, _c, _d, _e;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onEscape == null ? void 0 : onEscape();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        (_a = overlay.focus) == null ? void 0 : _a.call(overlay);
+        return;
+      }
+      if (focusable.length === 1) {
+        event.preventDefault();
+        (_c = (_b = focusable[0]).focus) == null ? void 0 : _c.call(_b);
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      const current = documentRef2.activeElement;
+      if (event.shiftKey && (current === first || !overlay.contains(current))) {
+        event.preventDefault();
+        (_d = last.focus) == null ? void 0 : _d.call(last);
+      } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
+        event.preventDefault();
+        (_e = first.focus) == null ? void 0 : _e.call(first);
+      }
+    };
+    const deactivate = ({ restoreFocus = true } = {}) => {
+      var _a;
+      if (!active) return;
+      active = false;
+      documentRef2.removeEventListener("keydown", handleKeydown);
+      if (restoreFocus && (returnFocus == null ? void 0 : returnFocus.isConnected) !== false) (_a = returnFocus == null ? void 0 : returnFocus.focus) == null ? void 0 : _a.call(returnFocus);
+      returnFocus = null;
+    };
+    return Object.freeze({
+      activate({ returnFocus: nextReturnFocus = documentRef2.activeElement } = {}) {
+        if (active) return;
+        active = true;
+        returnFocus = nextReturnFocus;
+        documentRef2.addEventListener("keydown", handleKeydown);
+        focusFirst();
+      },
+      deactivate,
+      isActive: () => active
+    });
+  };
   var percentage = (value) => `${Math.round(value * 100)}%`;
   var createHudController = ({
     documentRef: documentRef2 = globalThis.document,
@@ -147130,6 +147205,7 @@
     audioController: audioController2,
     navigate
   } = {}) => {
+    var _a;
     const shell = documentRef2.getElementById("game-shell");
     const screens = Object.fromEntries(Object.entries(SCREEN_IDS).map(([key, id]) => [
       key,
@@ -147140,7 +147216,8 @@
       settings: documentRef2.getElementById("settings-screen")
     };
     const listeners = [];
-    let overlayReturnFocus = null;
+    const motionQuery = (_a = globalThis.matchMedia) == null ? void 0 : _a.call(globalThis, "(prefers-reduced-motion: reduce)");
+    let modalTraps;
     const on = (element, type, listener) => {
       element == null ? void 0 : element.addEventListener(type, listener);
       listeners.push(() => element == null ? void 0 : element.removeEventListener(type, listener));
@@ -147156,24 +147233,23 @@
       shell.dataset.screen = screenName;
     };
     const closeOverlay = (name) => {
-      var _a;
+      var _a2;
       const overlay = overlays[name];
       if (!overlay || overlay.hidden) return;
       overlay.hidden = true;
       for (const screen2 of Object.values(screens)) screen2.inert = false;
-      (_a = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a.call(hostBridge2, false);
-      overlayReturnFocus == null ? void 0 : overlayReturnFocus.focus();
-      overlayReturnFocus = null;
+      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, false);
+      modalTraps[name].deactivate({ restoreFocus: true });
     };
     const openOverlay = (name) => {
-      var _a, _b;
+      var _a2;
       const overlay = overlays[name];
       if (!overlay) return;
-      overlayReturnFocus = documentRef2.activeElement;
+      const returnFocus = documentRef2.activeElement;
       for (const screen2 of Object.values(screens)) screen2.inert = true;
       overlay.hidden = false;
-      (_a = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a.call(hostBridge2, true);
-      (_b = overlay.querySelector("button, input, select")) == null ? void 0 : _b.focus();
+      (_a2 = hostBridge2 == null ? void 0 : hostBridge2.setModalPaused) == null ? void 0 : _a2.call(hostBridge2, true);
+      modalTraps[name].activate({ returnFocus });
     };
     const refreshContinue = () => {
       const continueButton = documentRef2.getElementById("continue-button");
@@ -147207,10 +147283,10 @@
       grid.append(fragment);
     };
     const applyReducedMotion = (value) => {
-      var _a;
       const root = documentRef2.documentElement;
-      const reduced = value === true || value === null && ((_a = globalThis.matchMedia) == null ? void 0 : _a.call(globalThis, "(prefers-reduced-motion: reduce)").matches);
-      root.dataset.reducedMotion = String(Boolean(reduced));
+      const motionState = resolveMotionState(value, motionQuery == null ? void 0 : motionQuery.matches);
+      root.dataset.motionPreference = motionState.mode;
+      root.dataset.reducedMotion = String(motionState.reduced);
     };
     const syncSettings = () => {
       const audioSettings = audioController2.getSettings();
@@ -147231,20 +147307,20 @@
       applyReducedMotion(motion);
     };
     const showMenu = () => {
-      var _a;
+      var _a2;
       showScreen("menu");
       refreshContinue();
-      (_a = documentRef2.getElementById("play-button")) == null ? void 0 : _a.focus();
+      (_a2 = documentRef2.getElementById("play-button")) == null ? void 0 : _a2.focus();
     };
     const showLevelSelect = () => {
-      var _a;
+      var _a2;
       renderLevels();
       showScreen("levels");
-      (_a = documentRef2.getElementById("levels-back-button")) == null ? void 0 : _a.focus();
+      (_a2 = documentRef2.getElementById("levels-back-button")) == null ? void 0 : _a2.focus();
       announce("Level selection opened");
     };
     const showBattle = (levelId) => {
-      var _a;
+      var _a2;
       const level2 = getLevel(levelId);
       documentRef2.getElementById("battle-level-name").textContent = level2.name;
       documentRef2.getElementById("hud-hearts").textContent = String(level2.castleHearts);
@@ -147254,15 +147330,33 @@
       documentRef2.getElementById("speed-button").setAttribute("aria-pressed", "false");
       documentRef2.getElementById("speed-button").textContent = "1\xD7";
       showScreen("battle");
-      (_a = documentRef2.getElementById("battlefield")) == null ? void 0 : _a.focus();
+      (_a2 = documentRef2.getElementById("battlefield")) == null ? void 0 : _a2.focus();
       announce(`${level2.name}. Battle preview ready.`);
     };
     const showResult = ({ victory = false, summary = "" } = {}) => {
-      var _a;
+      var _a2;
       documentRef2.getElementById("result-title").textContent = victory ? "The woodland is safe!" : "The castle needs you";
       documentRef2.getElementById("result-summary").textContent = summary || (victory ? "A brave defense. Your chapter progress has been saved." : "Regroup your defenders and try a new plan.");
       showScreen("result");
-      (_a = documentRef2.getElementById("result-levels-button")) == null ? void 0 : _a.focus();
+      (_a2 = documentRef2.getElementById("result-levels-button")) == null ? void 0 : _a2.focus();
+    };
+    const reconcile = () => {
+      const state = saveStore2.getState();
+      applyReducedMotion(state.reducedMotionOverride);
+      if (!screens.menu.hidden) refreshContinue();
+      if (!overlays.settings.hidden) syncSettings();
+    };
+    modalTraps = {
+      help: createModalFocusTrap({
+        documentRef: documentRef2,
+        overlay: overlays.help,
+        onEscape: () => closeOverlay("help")
+      }),
+      settings: createModalFocusTrap({
+        documentRef: documentRef2,
+        overlay: overlays.settings,
+        onEscape: () => closeOverlay("settings")
+      })
     };
     on(documentRef2.getElementById("play-button"), "click", () => navigate == null ? void 0 : navigate("LevelSelectScene"));
     on(documentRef2.getElementById("continue-button"), "click", (event) => {
@@ -147270,8 +147364,8 @@
       if (levelId) navigate == null ? void 0 : navigate("BattleScene", { levelId });
     });
     on(documentRef2.getElementById("level-grid"), "click", (event) => {
-      var _a, _b;
-      const button = (_b = (_a = event.target).closest) == null ? void 0 : _b.call(_a, "button[data-level-id]");
+      var _a2, _b;
+      const button = (_b = (_a2 = event.target).closest) == null ? void 0 : _b.call(_a2, "button[data-level-id]");
       if (button && !button.disabled) navigate == null ? void 0 : navigate("BattleScene", { levelId: button.dataset.levelId });
     });
     on(documentRef2.getElementById("levels-back-button"), "click", () => navigate == null ? void 0 : navigate("MenuScene"));
@@ -147303,10 +147397,8 @@
       saveStore2.save({ ...state, reducedMotionOverride });
       applyReducedMotion(reducedMotionOverride);
     });
-    on(documentRef2, "keydown", (event) => {
-      if (event.key !== "Escape") return;
-      if (!overlays.settings.hidden) closeOverlay("settings");
-      else if (!overlays.help.hidden) closeOverlay("help");
+    on(motionQuery, "change", () => {
+      if (saveStore2.getState().reducedMotionOverride === null) applyReducedMotion(null);
     });
     applyReducedMotion(saveStore2.getState().reducedMotionOverride);
     return Object.freeze({
@@ -147314,13 +147406,97 @@
       destroy() {
         closeOverlay("help");
         closeOverlay("settings");
+        modalTraps.help.deactivate({ restoreFocus: false });
+        modalTraps.settings.deactivate({ restoreFocus: false });
         listeners.splice(0).forEach((remove) => remove());
       },
+      reconcile,
       refreshContinue,
       showBattle,
       showLevelSelect,
       showMenu,
       showResult
+    });
+  };
+
+  // public/Games/DefenderChampion/src/runtime-lifecycle.js
+  var safelyCall = (callback) => {
+    try {
+      callback == null ? void 0 : callback();
+    } catch {
+    }
+  };
+  var createRuntimeLifecycle = ({
+    windowRef: windowRef2 = globalThis.window,
+    audioController: audioController2,
+    game: game2,
+    hostBridge: hostBridge2,
+    hud: hud2
+  } = {}) => {
+    var _a, _b;
+    let bfcacheSuspended = false;
+    let destroyed = false;
+    const destroy = () => {
+      var _a2, _b2;
+      if (destroyed) return;
+      destroyed = true;
+      (_a2 = windowRef2 == null ? void 0 : windowRef2.removeEventListener) == null ? void 0 : _a2.call(windowRef2, "pagehide", handlePageHide);
+      (_b2 = windowRef2 == null ? void 0 : windowRef2.removeEventListener) == null ? void 0 : _b2.call(windowRef2, "pageshow", handlePageShow);
+      safelyCall(() => {
+        var _a3;
+        return (_a3 = hostBridge2 == null ? void 0 : hostBridge2.cleanup) == null ? void 0 : _a3.call(hostBridge2);
+      });
+      safelyCall(() => {
+        var _a3;
+        return (_a3 = hud2 == null ? void 0 : hud2.destroy) == null ? void 0 : _a3.call(hud2);
+      });
+      safelyCall(() => {
+        var _a3;
+        return (_a3 = game2 == null ? void 0 : game2.destroy) == null ? void 0 : _a3.call(game2, true);
+      });
+    };
+    const handlePageHide = (event) => {
+      if (destroyed) return;
+      if (!(event == null ? void 0 : event.persisted)) {
+        destroy();
+        return;
+      }
+      if (bfcacheSuspended) return;
+      bfcacheSuspended = true;
+      safelyCall(() => {
+        var _a2;
+        return (_a2 = audioController2 == null ? void 0 : audioController2.setPauseReason) == null ? void 0 : _a2.call(audioController2, "bfcache", true);
+      });
+      safelyCall(() => {
+        var _a2, _b2;
+        return (_b2 = (_a2 = game2 == null ? void 0 : game2.loop) == null ? void 0 : _a2.sleep) == null ? void 0 : _b2.call(_a2);
+      });
+    };
+    const handlePageShow = (event) => {
+      if (destroyed || !(event == null ? void 0 : event.persisted) || !bfcacheSuspended) return;
+      bfcacheSuspended = false;
+      safelyCall(() => {
+        var _a2, _b2;
+        return (_b2 = (_a2 = game2 == null ? void 0 : game2.loop) == null ? void 0 : _a2.wake) == null ? void 0 : _b2.call(_a2);
+      });
+      safelyCall(() => {
+        var _a2, _b2;
+        return (_b2 = (_a2 = game2 == null ? void 0 : game2.scale) == null ? void 0 : _a2.refresh) == null ? void 0 : _b2.call(_a2);
+      });
+      safelyCall(() => {
+        var _a2;
+        return (_a2 = hud2 == null ? void 0 : hud2.reconcile) == null ? void 0 : _a2.call(hud2);
+      });
+      safelyCall(() => {
+        var _a2;
+        return (_a2 = audioController2 == null ? void 0 : audioController2.setPauseReason) == null ? void 0 : _a2.call(audioController2, "bfcache", false);
+      });
+    };
+    (_a = windowRef2 == null ? void 0 : windowRef2.addEventListener) == null ? void 0 : _a.call(windowRef2, "pagehide", handlePageHide);
+    (_b = windowRef2 == null ? void 0 : windowRef2.addEventListener) == null ? void 0 : _b.call(windowRef2, "pageshow", handlePageShow);
+    return Object.freeze({
+      destroy,
+      getState: () => ({ bfcacheSuspended, destroyed })
     });
   };
 
@@ -147386,11 +147562,13 @@
       }
     }
   });
-  windowRef.addEventListener("pagehide", () => {
-    hostBridge.cleanup();
-    hud.destroy();
-    game.destroy(true);
-  }, { once: true });
+  createRuntimeLifecycle({
+    windowRef,
+    audioController,
+    game,
+    hostBridge,
+    hud
+  });
 })();
 /*! Bundled license information:
 

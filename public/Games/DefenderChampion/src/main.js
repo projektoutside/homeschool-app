@@ -8,6 +8,7 @@ import { createAudioController } from './services/audio.js';
 import { createHostBridge } from './services/host-bridge.js';
 import { createSaveStore } from './services/save-store.js';
 import { createHudController } from './ui/hud-controller.js';
+import { createRuntimeLifecycle } from './runtime-lifecycle.js';
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -74,8 +75,10 @@ game = new Phaser.Game({
   },
 });
 
-windowRef.addEventListener('pagehide', () => {
-  hostBridge.cleanup();
-  hud.destroy();
-  game.destroy(true);
-}, { once: true });
+createRuntimeLifecycle({
+  windowRef,
+  audioController,
+  game,
+  hostBridge,
+  hud,
+});

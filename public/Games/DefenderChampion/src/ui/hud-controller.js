@@ -9,6 +9,15 @@ const SCREEN_IDS = Object.freeze({
 
 const getLevelNumber = (levelId) => Number.parseInt(levelId?.replace('level-', ''), 10);
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
 export const resolveContinueLevel = (saveState) => {
   const clearedLevelIds = Object.keys(saveState?.levels ?? {});
   if (clearedLevelIds.length === 0) return null;
@@ -19,6 +28,79 @@ export const resolveContinueLevel = (saveState) => {
     if (!saveState.levels[levelId]) return levelId;
   }
   return LEVELS.at(-1).id;
+};
+
+export const resolveMotionState = (override, systemReduced = false) => {
+  if (override === true) return { mode: 'reduce', reduced: true };
+  if (override === false) return { mode: 'full', reduced: false };
+  return { mode: 'system', reduced: Boolean(systemReduced) };
+};
+
+export const createModalFocusTrap = ({ documentRef, overlay, onEscape } = {}) => {
+  let active = false;
+  let returnFocus = null;
+
+  const getFocusable = () => Array.from(overlay.querySelectorAll(FOCUSABLE_SELECTOR))
+    .filter((element) => !element.disabled
+      && !element.hidden
+      && element.getAttribute?.('aria-hidden') !== 'true');
+
+  const focusFirst = () => {
+    const first = getFocusable()[0];
+    (first ?? overlay).focus?.();
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onEscape?.();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const focusable = getFocusable();
+    if (focusable.length === 0) {
+      event.preventDefault();
+      overlay.focus?.();
+      return;
+    }
+    if (focusable.length === 1) {
+      event.preventDefault();
+      focusable[0].focus?.();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    const current = documentRef.activeElement;
+    if (event.shiftKey && (current === first || !overlay.contains(current))) {
+      event.preventDefault();
+      last.focus?.();
+    } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
+      event.preventDefault();
+      first.focus?.();
+    }
+  };
+
+  const deactivate = ({ restoreFocus = true } = {}) => {
+    if (!active) return;
+    active = false;
+    documentRef.removeEventListener('keydown', handleKeydown);
+    if (restoreFocus && returnFocus?.isConnected !== false) returnFocus?.focus?.();
+    returnFocus = null;
+  };
+
+  return Object.freeze({
+    activate({ returnFocus: nextReturnFocus = documentRef.activeElement } = {}) {
+      if (active) return;
+      active = true;
+      returnFocus = nextReturnFocus;
+      documentRef.addEventListener('keydown', handleKeydown);
+      focusFirst();
+    },
+    deactivate,
+    isActive: () => active,
+  });
 };
 
 const percentage = (value) => `${Math.round(value * 100)}%`;
@@ -40,7 +122,8 @@ export const createHudController = ({
     settings: documentRef.getElementById('settings-screen'),
   };
   const listeners = [];
-  let overlayReturnFocus = null;
+  const motionQuery = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
+  let modalTraps;
 
   const on = (element, type, listener) => {
     element?.addEventListener(type, listener);
@@ -65,18 +148,17 @@ export const createHudController = ({
     overlay.hidden = true;
     for (const screen of Object.values(screens)) screen.inert = false;
     hostBridge?.setModalPaused?.(false);
-    overlayReturnFocus?.focus();
-    overlayReturnFocus = null;
+    modalTraps[name].deactivate({ restoreFocus: true });
   };
 
   const openOverlay = (name) => {
     const overlay = overlays[name];
     if (!overlay) return;
-    overlayReturnFocus = documentRef.activeElement;
+    const returnFocus = documentRef.activeElement;
     for (const screen of Object.values(screens)) screen.inert = true;
     overlay.hidden = false;
     hostBridge?.setModalPaused?.(true);
-    overlay.querySelector('button, input, select')?.focus();
+    modalTraps[name].activate({ returnFocus });
   };
 
   const refreshContinue = () => {
@@ -117,9 +199,9 @@ export const createHudController = ({
 
   const applyReducedMotion = (value) => {
     const root = documentRef.documentElement;
-    const reduced = value === true
-      || (value === null && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-    root.dataset.reducedMotion = String(Boolean(reduced));
+    const motionState = resolveMotionState(value, motionQuery?.matches);
+    root.dataset.motionPreference = motionState.mode;
+    root.dataset.reducedMotion = String(motionState.reduced);
   };
 
   const syncSettings = () => {
@@ -180,6 +262,26 @@ export const createHudController = ({
     documentRef.getElementById('result-levels-button')?.focus();
   };
 
+  const reconcile = () => {
+    const state = saveStore.getState();
+    applyReducedMotion(state.reducedMotionOverride);
+    if (!screens.menu.hidden) refreshContinue();
+    if (!overlays.settings.hidden) syncSettings();
+  };
+
+  modalTraps = {
+    help: createModalFocusTrap({
+      documentRef,
+      overlay: overlays.help,
+      onEscape: () => closeOverlay('help'),
+    }),
+    settings: createModalFocusTrap({
+      documentRef,
+      overlay: overlays.settings,
+      onEscape: () => closeOverlay('settings'),
+    }),
+  };
+
   on(documentRef.getElementById('play-button'), 'click', () => navigate?.('LevelSelectScene'));
   on(documentRef.getElementById('continue-button'), 'click', (event) => {
     const levelId = event.currentTarget.dataset.levelId;
@@ -218,10 +320,8 @@ export const createHudController = ({
     saveStore.save({ ...state, reducedMotionOverride });
     applyReducedMotion(reducedMotionOverride);
   });
-  on(documentRef, 'keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    if (!overlays.settings.hidden) closeOverlay('settings');
-    else if (!overlays.help.hidden) closeOverlay('help');
+  on(motionQuery, 'change', () => {
+    if (saveStore.getState().reducedMotionOverride === null) applyReducedMotion(null);
   });
 
   applyReducedMotion(saveStore.getState().reducedMotionOverride);
@@ -231,8 +331,11 @@ export const createHudController = ({
     destroy() {
       closeOverlay('help');
       closeOverlay('settings');
+      modalTraps.help.deactivate({ restoreFocus: false });
+      modalTraps.settings.deactivate({ restoreFocus: false });
       listeners.splice(0).forEach((remove) => remove());
     },
+    reconcile,
     refreshContinue,
     showBattle,
     showLevelSelect,
