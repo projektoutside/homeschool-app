@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict';
-import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { readLegacyContentRecords } from './content/source-reader.mjs';
+import { scienceContent } from '../src/data/content/science.ts';
 import { isSinglePlayerPointsGameId } from '../src/utils/gamePoints.ts';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const animalChampionEntry = {
   id: 'animal-champion',
   title: 'Animal Champion',
@@ -100,13 +98,11 @@ const readRouteDefinitions = async () => {
   return routes;
 };
 
-test('Animal Champion is one exact science catalog game', () => {
-  const records = readLegacyContentRecords({ repoRoot });
-  const matches = records.filter(({ item }) => item.id === 'animal-champion');
+test('Animal Champion is one exact science source-catalog game', () => {
+  const matches = scienceContent.filter(({ id }) => id === 'animal-champion');
 
   assert.equal(matches.length, 1);
-  assert.equal(path.basename(matches[0].filePath), 'science.ts');
-  assert.deepEqual(matches[0].item, animalChampionEntry);
+  assert.deepEqual(matches[0], animalChampionEntry);
 });
 
 test('Animal Champion is classified once as single-player and never as multiplayer', async () => {

@@ -7,6 +7,7 @@ import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const gameRoot = path.join(repoRoot, 'public', 'Games', 'Animal Champion');
+const generatedCatalogPath = path.join(repoRoot, 'src', 'generated', 'contentCatalog.ts');
 
 const readRepoFile = (relativePath) => readFile(path.join(repoRoot, relativePath), 'utf8');
 
@@ -52,8 +53,17 @@ test('Animal Champion legacy document and every selected asset are launchable', 
   }
 });
 
-test('generated catalog registers the exact Animal Champion record and legacy alias', async () => {
-  const catalogSource = await readRepoFile('src/generated/contentCatalog.ts');
+test('generated catalog registers the exact Animal Champion record and legacy alias when present', async (t) => {
+  let catalogSource;
+  try {
+    catalogSource = await readFile(generatedCatalogPath, 'utf8');
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') {
+      t.skip('generated catalog is optional in a clean source checkout');
+      return;
+    }
+    throw error;
+  }
   const contentItems = parseGeneratedLiteral(
     catalogSource,
     'export const GENERATED_CONTENT_ITEMS: ContentItem[] = ',
