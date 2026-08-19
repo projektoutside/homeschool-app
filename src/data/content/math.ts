@@ -69,6 +69,18 @@ const mathEntries: ContentItem[] = [
         dateAdded: '2026-03-28'
     },
     {
+        id: 'defender-champion',
+        title: 'Defender Champion',
+        description: 'Command four defenders, hold the path, and survive a ten-level pure-strategy campaign.',
+        type: 'game',
+        category: 'strategy',
+        subjects: ['Strategy', 'Resource Management', 'Problem Solving'],
+        gradeLevels: ['All'],
+        customHtmlPath: '/Games/DefenderChampion/index.html',
+        thumbnail: '/Games/DefenderChampion/thumb.webp',
+        dateAdded: '2026-08-18'
+    },
+    {
         id: 'word-puzzle-game',
         title: 'Word Puzzle',
         description: 'Unscramble themed words using clues and category hints.',

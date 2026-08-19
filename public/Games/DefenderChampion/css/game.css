@@ -258,7 +258,8 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   min-height: 300px;
   aspect-ratio: 3 / 4;
   justify-self:center;
-  width:min(100%, calc((100dvh - 250px) * .75));
+  width:100%;
+  max-width:calc((100dvh - 250px) * .75);
   overflow:hidden;
   border:3px solid rgba(255,229,154,.78);
   border-radius:var(--radius-lg);
@@ -358,7 +359,7 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   .battle-stats { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,1fr); }
   .battle-stats div:last-child { grid-column:1/-1; }
   .battle-controls { grid-column:1/-1; justify-content:center; }
-  #battlefield { align-self:center; width:auto; height:100%; min-height:0; max-height:100%; }
+  #battlefield { align-self:center; width:auto; height:100%; min-height:0; max-width:none; max-height:100%; }
   #defender-dock { min-height:0; overflow-y:auto; }
   .dock-heading { align-items:stretch; flex-direction:column; }
   .dock-list { grid-template-columns:1fr; }

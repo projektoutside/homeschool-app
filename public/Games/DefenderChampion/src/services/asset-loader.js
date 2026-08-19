@@ -144,7 +144,7 @@ export const createQaFailureInjector = ({ enabled = false, search = '' } = {}) =
         return record.path;
       }
       injected.add(record.id);
-      return `assets/__qa_missing__/${encodeURIComponent(record.id)}`;
+      return `http://127.0.0.1:1/__defender_champion_qa_missing__/${encodeURIComponent(record.id)}`;
     },
   });
 };

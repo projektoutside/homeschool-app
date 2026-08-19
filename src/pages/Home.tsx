@@ -37,6 +37,7 @@ const SINGLE_PLAYER_GAME_IDS = new Set<string>([
     'math-farmers-market-frenzy',
     'states-champion',
     'cage-pet-rescue',
+    'defender-champion',
 ]);
 
 const MULTIPLAYER_GAME_IDS = new Set<string>([

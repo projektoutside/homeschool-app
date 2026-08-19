@@ -14,6 +14,7 @@ export const SINGLE_PLAYER_POINTS_GAME_IDS = new Set<string>([
   'math-farmers-market-frenzy',
   'states-champion',
   'many-birds-one-stone',
+  'defender-champion',
 ]);
 
 export interface GamePointsContextMessage {

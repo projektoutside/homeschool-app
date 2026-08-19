@@ -88,6 +88,19 @@ test('the themed layout protects touch, safe-area, focus, motion, and orientatio
   assert.match(css, /html\[data-motion-preference="reduce"\]/);
 });
 
+test('portrait and tall-tablet battlefields cap their aspect-ratio width so the defender dock stays reachable', async () => {
+  const css = await readGameFile('css/game.css');
+
+  assert.match(
+    css,
+    /#battlefield\s*{[^}]*width:\s*100%;[^}]*max-width:\s*calc\(\(100dvh - 250px\) \* \.75\);/s,
+  );
+  assert.match(
+    css,
+    /@media \(orientation:\s*landscape\) and \(max-height:\s*760px\)[\s\S]*#battlefield\s*{[^}]*max-width:\s*none;/,
+  );
+});
+
 test('the local entry boots one transparent Phaser game with the declared scene list', async () => {
   const main = await readGameFile('src/main.js');
 
@@ -580,6 +593,23 @@ test('asset failure tracking retries only essential failures and records optiona
   tracker.recordSuccess('castle-states');
   assert.equal(tracker.isBlocked(), false);
   assert.deepEqual(tracker.getRetryRecords(), []);
+});
+
+test('QA asset failure injection uses a network-level failure that cannot be masked by an SPA fallback', async () => {
+  const { createQaFailureInjector } = await import(
+    '../public/Games/DefenderChampion/src/services/asset-loader.js'
+  );
+  const injector = createQaFailureInjector({
+    enabled: true,
+    search: '?qa=1&qaFailEssential=environment-title-emblem',
+  });
+  const record = { id: 'environment-title-emblem', path: 'assets/environment/title-emblem.webp' };
+
+  assert.equal(
+    injector.rewrite(record),
+    'http://127.0.0.1:1/__defender_champion_qa_missing__/environment-title-emblem',
+  );
+  assert.equal(injector.rewrite(record), record.path);
 });
 
 test('all character actions register exact metadata-driven Phaser animation contracts', async () => {

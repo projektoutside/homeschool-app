@@ -1,0 +1,9 @@
+{
+  "name": "@homeschool/content-schema",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/types.ts"
+  }
+}
