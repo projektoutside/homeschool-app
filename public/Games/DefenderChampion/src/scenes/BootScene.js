@@ -4,6 +4,7 @@ import {
   createAssetLoadTracker,
   createCampaignAssetPlan,
   createQaFailureInjector,
+  hydrateCampaignImages,
   queueCampaignAssets,
   registerMetadataAnimations,
   validateManifest,
@@ -97,6 +98,7 @@ export class BootScene extends Phaser.Scene {
     if (optionalFailures.length > 0) {
       console.warn(`[Defender Champion] Optional art unavailable: ${optionalFailures.join(', ')}`);
     }
+    hydrateCampaignImages(globalThis.document, this.plan);
     const metadata = {
       bosses: this.cache.json.get('metadata-bosses'),
       defenders: this.cache.json.get('metadata-defenders'),

@@ -192,6 +192,27 @@ test('modal focus trapping handles wrapping, single targets, empty overlays, Esc
   assert.equal(documentRef.listenerCount('keydown'), 0);
 });
 
+test('chapter briefing is a contained modal that blocks the battlefield and restores focus', async () => {
+  const [html, hud] = await Promise.all([
+    readGameFile('index.html'),
+    readGameFile('src/ui/hud-controller.js'),
+  ]);
+
+  assert.match(
+    html,
+    /id="level-intro-panel"[^>]+role="dialog"[^>]+aria-modal="true"[^>]+aria-labelledby="level-intro-title"[^>]+tabindex="-1"/,
+  );
+  assert.match(hud, /intro:\s*createModalFocusTrap\(\{[\s\S]*?overlay:\s*introPanel/);
+  assert.match(
+    hud,
+    /showLevelIntro[\s\S]*?setBattleIntroInert\(true\)[\s\S]*?modalTraps\.intro\.activate\(\{\s*returnFocus:\s*battlefield\s*\}\)/,
+  );
+  assert.match(
+    hud,
+    /closeLevelIntro[\s\S]*?setBattleIntroInert\(false\)[\s\S]*?modalTraps\.intro\.deactivate\(\{\s*restoreFocus\s*\}\)/,
+  );
+});
+
 test('BFCache transitions suspend and restore one runtime while real unload destroys it', async () => {
   const { createRuntimeLifecycle } = await import('../public/Games/DefenderChampion/src/runtime-lifecycle.js');
   const windowRef = new EventTargetDouble();
@@ -473,6 +494,8 @@ test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell ac
   assert.match(hud, /battleHeading\.style\.minWidth\s*=/);
   assert.match(hud, /battleControls\.style\.gap\s*=/);
   assert.match(main, /installQaRuntimeHooks/);
+  assert.match(hud, /getPresentationState/);
+  assert.match(battleScene, /getPresentationState/);
   assert.match(bundle, /render_game_to_text/);
   assert.match(bundle, /__defenderChampion/);
 });
@@ -513,6 +536,27 @@ test('campaign loading validates the manifest first and classifies one optional 
   assert.match(html, /id="loading-asset-id"/);
   assert.match(html, /id="retry-loading-button"[^>]*>Retry Loading</);
   assert.match(html, /id="loading-exit-button"[^>]*>Exit</);
+});
+
+test('essential raster URLs are not parser-discoverable before validated Boot loading', async () => {
+  const [html, manifest, { createCampaignAssetPlan }] = await Promise.all([
+    readGameFile('index.html'),
+    readGameFile('assets/manifest.json').then(JSON.parse),
+    import('../public/Games/DefenderChampion/src/services/asset-loader.js'),
+  ]);
+  const parserMarkup = html.slice(0, html.indexOf('<script src="./js/app.bundle.js"'));
+  const parserDiscoveredUrls = [...parserMarkup.matchAll(/\b(?:src|srcset|href)=["']([^"']+)["']/gi)]
+    .map((match) => match[1]);
+  const essentialPaths = createCampaignAssetPlan(manifest).rasters
+    .filter(({ essential }) => essential)
+    .map(({ path }) => path);
+
+  assert.deepEqual(
+    parserDiscoveredUrls.filter((url) => essentialPaths.some((path) => url.endsWith(path))),
+    [],
+  );
+  assert.match(html, /data-campaign-asset-id="environment-title-emblem"/);
+  assert.match(html, /data-campaign-asset-id="catalog-thumbnail"/);
 });
 
 test('asset failure tracking retries only essential failures and records optional failure once', async () => {
@@ -570,6 +614,56 @@ test('all character actions register exact metadata-driven Phaser animation cont
       repeat: action.loop ? -1 : 0,
     });
   }
+});
+
+test('tower projection preserves attack and mastery actions until animation completion', async () => {
+  const [{ shouldProjectDefenderIdle }, battle] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+    readGameFile('src/scenes/BattleScene.js'),
+  ]);
+  const baseState = {
+    idleAnimationKey: 'defender:ranger:idle',
+    idleAsset: 'defender-ranger-idle',
+  };
+
+  assert.equal(shouldProjectDefenderIdle({
+    ...baseState,
+    currentAnimationKey: 'defender:ranger:attack',
+    isPlaying: true,
+    textureKey: 'defender-ranger-attack',
+  }), false);
+  assert.equal(shouldProjectDefenderIdle({
+    ...baseState,
+    currentAnimationKey: 'defender:ranger:mastery',
+    isPlaying: true,
+    textureKey: 'defender-ranger-mastery',
+  }), false);
+  assert.equal(shouldProjectDefenderIdle({
+    ...baseState,
+    currentAnimationKey: 'defender:ranger:attack',
+    isPlaying: false,
+    textureKey: 'defender-ranger-attack',
+  }), true);
+  assert.equal(shouldProjectDefenderIdle({
+    ...baseState,
+    currentAnimationKey: 'defender:ranger:idle',
+    isPlaying: true,
+    textureKey: 'defender-ranger-idle',
+  }), false);
+  assert.match(battle, /shouldProjectDefenderIdle\(\{[\s\S]*?currentAnimationKey:[\s\S]*?isPlaying:[\s\S]*?textureKey:/);
+});
+
+test('boss warning geometry projects combat radius with independent world axes', async () => {
+  const battle = await readGameFile('src/scenes/BattleScene.js');
+
+  assert.match(
+    battle,
+    /\.setDisplaySize\(\s*radius \* PATH_X_SCALE \* 0\.72,\s*radius \* PATH_Y_SCALE \* 0\.72\s*\)/,
+  );
+  assert.doesNotMatch(
+    battle,
+    /\.setDisplaySize\(\s*radius \* PATH_X_SCALE \* 0\.72,\s*radius \* PATH_X_SCALE \* 0\.72\s*\)/,
+  );
 });
 
 test('ordinary play uses final art, responsive side rails, reduced-motion cosmetic caps, and exact canvas bounds', async () => {

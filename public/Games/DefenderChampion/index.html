@@ -11,7 +11,7 @@
   <main id="game-shell" data-screen="loading">
     <section id="loading-screen" aria-labelledby="loading-title">
       <div class="storybook-card loading-card">
-        <img class="loading-emblem" src="./assets/environment/title-emblem.webp" alt="" width="180" height="180">
+        <img class="loading-emblem" data-campaign-asset-id="environment-title-emblem" alt="" width="180" height="180">
         <p class="eyebrow">Opening the field guide</p>
         <h1 id="loading-title">Defender Champion</h1>
         <p id="loading-status">Preparing the woodland…</p>
@@ -26,11 +26,11 @@
 
     <section id="menu-screen" aria-labelledby="game-title">
       <div class="storybook-card hero-card">
-        <img class="title-emblem" src="./assets/environment/title-emblem.webp" alt="" width="220" height="220">
+        <img class="title-emblem" data-campaign-asset-id="environment-title-emblem" alt="" width="220" height="220">
         <p class="eyebrow">A pure strategy woodland defense</p>
         <h1 id="game-title">Defender Champion</h1>
         <p class="hero-copy">Read the path. Build your formation. Outsmart ten handcrafted sieges with no random boosts and no shortcuts.</p>
-        <img class="campaign-key-art" src="./thumb.webp" alt="Defenders guarding the woodland castle" width="1254" height="1254">
+        <img class="campaign-key-art" data-campaign-asset-id="catalog-thumbnail" alt="Defenders guarding the woodland castle" width="1254" height="1254">
         <div class="menu-actions" aria-label="Main menu">
           <button id="play-button" class="button button-primary" type="button">Begin Campaign</button>
           <button id="continue-button" class="button button-secondary" type="button" hidden>Continue</button>
@@ -96,7 +96,7 @@
         </section>
       </nav>
 
-      <section id="level-intro-panel" class="battle-overlay" aria-labelledby="level-intro-title" hidden>
+      <section id="level-intro-panel" class="battle-overlay" role="dialog" aria-modal="true" aria-labelledby="level-intro-title" tabindex="-1" hidden>
         <div class="storybook-card intro-card">
           <p class="eyebrow">Commander’s briefing</p>
           <h2 id="level-intro-title">Meadow Watch</h2>

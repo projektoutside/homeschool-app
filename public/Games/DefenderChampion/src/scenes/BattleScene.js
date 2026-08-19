@@ -18,6 +18,7 @@ import {
   animationKey,
   characterAssetId,
   resolvePresentationLimits,
+  shouldProjectDefenderIdle,
 } from '../presentation.js';
 import { createFixedStepClock, resolveBattlefieldFocusMove } from '../ui/hud-controller.js';
 
@@ -639,7 +640,7 @@ export class BattleScene extends Phaser.Scene {
   advanceTime(milliseconds) {
     if (!this.qaMode || this.destroyed || this.terminalHandled) return this.getTextSnapshot();
     if (!this.battleStarted) {
-      globalThis.document?.getElementById('level-intro-panel')?.setAttribute('hidden', '');
+      this.hud.dismissLevelIntro?.({ restoreFocus: false });
       this.completeBattleCountdown();
     }
     const advanced = this.clock.advanceExact(milliseconds);
@@ -917,10 +918,17 @@ export class BattleScene extends Phaser.Scene {
       const position = toWorldPoint(pad);
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
-      if (body.texture.key !== idleAsset) {
+      const idleAnimationKey = animationKey('defender', tower.defenderId, 'idle');
+      if (shouldProjectDefenderIdle({
+        currentAnimationKey: body.anims?.currentAnim?.key,
+        idleAnimationKey,
+        idleAsset,
+        isPlaying: body.anims?.isPlaying,
+        textureKey: body.texture.key,
+      })) {
         body.setTexture(idleAsset, 0);
-        if (this.anims.exists(animationKey('defender', tower.defenderId, 'idle'))) {
-          body.play(animationKey('defender', tower.defenderId, 'idle'), true);
+        if (this.anims.exists(idleAnimationKey)) {
+          body.play(idleAnimationKey, true);
         }
       }
       const tint = {
@@ -980,7 +988,7 @@ export class BattleScene extends Phaser.Scene {
       const remaining = Math.max(0, effect.triggerTick - snapshot.tick);
       view.setFrame(GAMEPLAY_FRAME.bossWarning)
         .setPosition(position.x, position.y - 74)
-        .setDisplaySize(radius * PATH_X_SCALE * 0.72, radius * PATH_X_SCALE * 0.72)
+        .setDisplaySize(radius * PATH_X_SCALE * 0.72, radius * PATH_Y_SCALE * 0.72)
         .setAlpha(0.56 + ((remaining % 20) / 100))
         .setVisible(this.presentationLimits.telegraphsEnabled);
     });
@@ -1078,6 +1086,28 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
+  getPresentationState() {
+    return {
+      telegraphs: [...this.telegraphSprites].map(([id, view]) => ({
+        displayHeight: Number(view.displayHeight.toFixed(3)),
+        displayWidth: Number(view.displayWidth.toFixed(3)),
+        id,
+        visible: view.visible,
+      })),
+      tick: this.lastSnapshot?.tick ?? 0,
+      towers: [...this.towerSprites].map(([id, view]) => {
+        const body = view._body;
+        return {
+          animationKey: body.anims?.currentAnim?.key ?? null,
+          frame: body.anims?.currentFrame?.textureFrame ?? body.frame?.name ?? null,
+          id,
+          isPlaying: Boolean(body.anims?.isPlaying),
+          textureKey: body.texture?.key ?? null,
+        };
+      }),
+    };
+  }
+
   getTextSnapshot() {
     if (!this.lastSnapshot) return null;
     const snapshot = summarizeSimulation(this.simulation);
@@ -1118,6 +1148,7 @@ export class BattleScene extends Phaser.Scene {
     this.destroyed = true;
     this.events.off(Phaser.Scenes.Events.RESUME, this.handleResume, this);
     this.domCleanups.splice(0).forEach((remove) => remove());
+    this.hud.dismissLevelIntro?.({ restoreFocus: false });
     this.disconnectHud?.();
     this.disconnectHud = null;
     this.resultTimer?.remove?.(false);

@@ -95,6 +95,9 @@ export const installQaRuntimeHooks = ({
     getPerformanceState() {
       return getActiveBattle()?.getPerformanceState?.() ?? null;
     },
+    getPresentationState() {
+      return getActiveBattle()?.getPresentationState?.() ?? null;
+    },
     issueCommand(command) {
       return getActiveBattle()?.issueBattleCommand?.(command) ?? null;
     },
@@ -299,6 +302,13 @@ export const createHudController = ({
     help: documentRef.getElementById('how-to-screen'),
     settings: documentRef.getElementById('settings-screen'),
   };
+  const introPanel = documentRef.getElementById('level-intro-panel');
+  const battlefield = documentRef.getElementById('battlefield');
+  const battleIntroSurfaces = [
+    documentRef.getElementById('battle-hud'),
+    battlefield,
+    documentRef.getElementById('defender-dock'),
+  ].filter(Boolean);
   const listeners = [];
   const motionQuery = windowRef?.matchMedia?.('(prefers-reduced-motion: reduce)');
   const shortLandscapeQuery = windowRef?.matchMedia?.('(orientation: landscape) and (max-height: 720px)');
@@ -491,6 +501,9 @@ export const createHudController = ({
   };
 
   const showScreen = (screenName) => {
+    if (screenName !== 'battle' && modalTraps?.intro?.isActive()) {
+      closeLevelIntro({ restoreFocus: false });
+    }
     for (const [name, screen] of Object.entries(screens)) {
       if (screen) screen.hidden = name !== screenName;
     }
@@ -539,6 +552,20 @@ export const createHudController = ({
     overlay.hidden = false;
     hostBridge?.setModalPaused?.(true);
     modalTraps[name].activate({ returnFocus });
+  };
+
+  const setBattleIntroInert = (inert) => {
+    for (const surface of battleIntroSurfaces) surface.inert = Boolean(inert);
+  };
+
+  const closeLevelIntro = ({ invokeContinue = false, restoreFocus = true } = {}) => {
+    introPanel.hidden = true;
+    setBattleIntroInert(false);
+    hostBridge?.setModalPaused?.(false);
+    modalTraps.intro.deactivate({ restoreFocus });
+    const callback = introContinue;
+    introContinue = null;
+    if (invokeContinue) callback?.();
   };
 
   const refreshContinue = () => {
@@ -631,9 +658,10 @@ export const createHudController = ({
     const boss = documentRef.getElementById('level-intro-boss');
     bossRow.hidden = !presentation.boss;
     boss.textContent = presentation.boss ?? 'None';
-    const panel = documentRef.getElementById('level-intro-panel');
-    panel.hidden = false;
-    documentRef.getElementById('level-intro-continue')?.focus();
+    introPanel.hidden = false;
+    setBattleIntroInert(true);
+    hostBridge?.setModalPaused?.(true);
+    modalTraps.intro.activate({ returnFocus: battlefield });
     announce(`${level.name}. ${presentation.lesson}`);
   };
 
@@ -749,6 +777,10 @@ export const createHudController = ({
   };
 
   modalTraps = {
+    intro: createModalFocusTrap({
+      documentRef,
+      overlay: introPanel,
+    }),
     help: createModalFocusTrap({
       documentRef,
       overlay: overlays.help,
@@ -820,10 +852,7 @@ export const createHudController = ({
     if (levelId) navigate?.('BattleScene', { levelId });
   });
   on(documentRef.getElementById('level-intro-continue'), 'click', () => {
-    documentRef.getElementById('level-intro-panel').hidden = true;
-    const callback = introContinue;
-    introContinue = null;
-    callback?.();
+    closeLevelIntro({ invokeContinue: true, restoreFocus: true });
   });
   on(documentRef.getElementById('battle-start-button'), 'click', () => battleBinding?.startBattle?.());
   on(documentRef.getElementById('how-to-button'), 'click', () => openOverlay('help'));
@@ -873,14 +902,17 @@ export const createHudController = ({
     announce,
     connectBattle,
     destroy() {
+      closeLevelIntro({ restoreFocus: false });
       closeOverlay('help');
       closeOverlay('settings');
+      modalTraps.intro.deactivate({ restoreFocus: false });
       modalTraps.help.deactivate({ restoreFocus: false });
       modalTraps.settings.deactivate({ restoreFocus: false });
       battleBinding = null;
       currentBattleModel = null;
       listeners.splice(0).forEach((remove) => remove());
     },
+    dismissLevelIntro: ({ restoreFocus = false } = {}) => closeLevelIntro({ restoreFocus }),
     reconcile,
     refreshContinue,
     renderBattle,

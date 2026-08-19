@@ -74,6 +74,23 @@ export const STRATEGY_HINTS = Object.freeze([
 export const animationKey = (kind, characterId, actionId) => `${kind}:${characterId}:${actionId}`;
 export const characterAssetId = (kind, characterId, actionId) => `${kind}-${characterId}-${actionId}`;
 
+export const shouldProjectDefenderIdle = ({
+  currentAnimationKey,
+  idleAnimationKey,
+  idleAsset,
+  isPlaying,
+  textureKey,
+} = {}) => {
+  const playingAction = Boolean(isPlaying)
+    && Boolean(currentAnimationKey)
+    && currentAnimationKey !== idleAnimationKey;
+  return !playingAction && (
+    textureKey !== idleAsset
+    || currentAnimationKey !== idleAnimationKey
+    || !isPlaying
+  );
+};
+
 export const resolvePresentationLimits = (reducedMotion = false) => Object.freeze({
   cameraShake: reducedMotion ? 0 : 0.006,
   damageLabelCap: reducedMotion ? 12 : 32,

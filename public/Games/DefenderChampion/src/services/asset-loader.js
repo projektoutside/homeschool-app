@@ -169,6 +169,19 @@ export const queueCampaignAssets = (scene, records, { failureInjector } = {}) =>
   }
 };
 
+export const hydrateCampaignImages = (documentRef, plan) => {
+  const rastersById = new Map((plan?.rasters ?? []).map((record) => [record.id, record]));
+  const hydratedIds = [];
+  for (const image of documentRef?.querySelectorAll?.('[data-campaign-asset-id]') ?? []) {
+    const id = image.dataset?.campaignAssetId;
+    const record = rastersById.get(id);
+    if (!record) continue;
+    image.setAttribute('src', record.path);
+    hydratedIds.push(id);
+  }
+  return hydratedIds;
+};
+
 export const buildAnimationDefinitions = ({ defenders, enemies, bosses }) => {
   const groups = [
     ['defender', defenders?.defenders ?? []],
