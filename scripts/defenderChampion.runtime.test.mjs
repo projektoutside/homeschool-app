@@ -33,6 +33,7 @@ const createSceneBody = () => ({
   angle: 0,
   listenerCount: 1,
   tint: 0xffffff,
+  texture: { key: 'enemy-blight-walker-walk' },
   x: 0,
   y: 0,
   anims: {
@@ -58,6 +59,8 @@ const createSceneBody = () => ({
   setAngle(angle) { this.angle = angle; return this; },
   setPosition(x, y) { this.x = x; this.y = y; return this; },
   setScale(scale) { this.scale = scale; return this; },
+  setFlipX(flipX) { this.flipX = flipX; return this; },
+  setTexture(key) { this.texture.key = key; return this; },
   setTint(tint) { this.tint = tint; return this; },
 });
 
@@ -69,11 +72,18 @@ const createSceneView = () => ({
   y: 0,
   _attackPoseReady: false,
   _attackTargetTowerId: null,
+  _accent: {
+    visible: false,
+    setFrame() { return this; },
+    setTint() { return this; },
+    setVisible(visible) { this.visible = visible; return this; },
+  },
   _baseScale: 0.4,
   _body: createSceneBody(),
   _motion: null,
   setActive(active) { this.active = active; return this; },
   setAlpha(alpha) { this.alpha = alpha; return this; },
+  setDepth(depth) { this.depth = depth; return this; },
   setPosition(x, y) { this.x = x; this.y = y; return this; },
   setVisible(visible) { this.visible = visible; return this; },
 });
@@ -347,15 +357,21 @@ test('typed marker projection keeps cross-layer pointer and keyboard builds iner
 
 test('actual pointer and keyboard entry methods reject cross-layer builds without mutation or selection', async () => {
   const { BattleScene } = await importBattleSceneModule();
+  const canvasBounds = { left: 40, top: 12, width: 270.75, height: 361 };
+  const worldToClient = ({ x, y }) => ({
+    x: canvasBounds.left + ((x / 720) * canvasBounds.width),
+    y: canvasBounds.top + ((y / 960) * canvasBounds.height),
+  });
   const announcements = [];
   const scene = Object.create(BattleScene.prototype);
   Object.assign(scene, {
     focusIndex: 0,
-    lastSnapshot: { terminal: false },
+    lastSnapshot: { coins: 150, terminal: false },
     level: {
       pads: [
         { id: 'road-a', layer: 'road' },
         { id: 'grass-b', layer: 'grass' },
+        { id: 'road-c', layer: 'road' },
       ],
     },
     selectedDefenderId: 'bladeguard',
@@ -366,27 +382,39 @@ test('actual pointer and keyboard entry methods reject cross-layer builds withou
     issueBattleCommand() {
       throw new Error('incompatible input reached core command dispatch');
     },
-    pointerToWorld: () => ({ x: 200, y: 200 }),
     resolvePlacementPosition: (pad) => (
-      pad.id === 'grass-b' ? { x: 200, y: 200 } : { x: 20, y: 20 }
+      ({
+        'road-a': { x: 100, y: 180 },
+        'grass-b': { x: 400, y: 400 },
+        'road-c': { x: 140, y: 180 },
+      }[pad.id])
     ),
     updateFocusViews() {},
   });
   const battlefield = {
     focus() {},
+    querySelector: () => ({ getBoundingClientRect: () => canvasBounds }),
     setPointerCapture() {},
   };
-  const pointerEvent = {
-    pointerId: 7,
+  const grassCenter = worldToClient({ x: 400, y: 400 });
+  const pointerEvent = (clientX, clientY, pointerId = 7) => ({
+    clientX,
+    clientY,
+    pointerId,
     preventDefault() {},
-  };
+  });
 
-  scene.handlePointerDown(pointerEvent, battlefield);
+  scene.handlePointerDown(pointerEvent(grassCenter.x + 21.9, grassCenter.y), battlefield);
 
   assert.equal(scene.focusIndex, 0, 'an inert cross-layer marker cannot change pointer focus');
   assert.equal(scene.selectedDefenderId, 'bladeguard');
   assert.equal(scene.selectedTowerId, null);
+  assert.equal(scene.lastSnapshot.coins, 150);
   assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+
+  const announcementCount = announcements.length;
+  scene.handlePointerDown(pointerEvent(grassCenter.x + 22.1, grassCenter.y, 8), battlefield);
+  assert.equal(announcements.length, announcementCount, 'a point outside the 44 CSS-pixel target stays inert');
 
   scene.focusIndex = 1;
   let keyboardPrevented = false;
@@ -401,6 +429,18 @@ test('actual pointer and keyboard entry methods reject cross-layer builds withou
   assert.equal(scene.selectedDefenderId, 'bladeguard');
   assert.equal(scene.selectedTowerId, null);
   assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+
+  const selectedTowers = [];
+  scene.selectedDefenderId = null;
+  scene.towerById = new Map([
+    ['tower-a', { id: 'tower-a', padId: 'road-a' }],
+    ['tower-c', { id: 'tower-c', padId: 'road-c' }],
+  ]);
+  scene.selectTower = (towerId) => selectedTowers.push(towerId);
+  const roadCCenter = worldToClient({ x: 140, y: 180 });
+  scene.handlePointerDown(pointerEvent(roadCCenter.x, roadCCenter.y, 9), battlefield);
+  assert.deepEqual(selectedTowers, ['tower-c'], 'overlapping hit regions choose the closest occupied pad');
+  assert.equal(scene.focusIndex, 2);
 });
 
 test('the shared placement gate blocks an incompatible command before dispatch', async () => {
@@ -896,6 +936,193 @@ test('actual lane-event entry preserves overlap and stale-motion identity across
   assert.equal(scene.towerSprites.has('tower-2'), false);
   assert.equal(scene.detachedDefenderViews.has(defeatedView), true);
   assert.match(announcements.at(-1), /permanently defeated/);
+});
+
+test('actual BattleScene consumes decisive terminal visuals before scheduling victory or defeat results', async () => {
+  const { BattleScene } = await importBattleSceneModule();
+
+  const createTerminalScene = ({ outcome, castleHearts }) => {
+    const calls = [];
+    const scene = Object.create(BattleScene.prototype);
+    Object.assign(scene, {
+      audioController: { playCue: (cue) => calls.push(`audio:${cue}`) },
+      cameras: { main: { shake: () => calls.push('castle-shake') } },
+      castleSprite: { setFrame: (frame) => { calls.push(`castle-frame:${frame}`); } },
+      hostBridge: { recordBattleResult: () => calls.push('record-result') },
+      lastBossDefeat: null,
+      lastPresentationEventId: 0,
+      lastSnapshot: {
+        castleHearts,
+        medal: outcome === 'victory' ? 'gold' : null,
+        outcome,
+        score: outcome === 'victory' ? 9_999 : 120,
+        terminal: true,
+        tick: 8_000,
+        waveIndex: 7,
+      },
+      level: { id: outcome === 'victory' ? 'level-10' : 'level-4' },
+      metadata: {},
+      pathMetrics: { total: 100, segments: [{ start: { x: 0, y: 0 }, end: { x: 0, y: 100 }, length: 100, offset: 0 }] },
+      presentationLimits: { cameraShake: 0.006 },
+      reducedMotion: false,
+      scene: { start: () => calls.push('result-start') },
+      spawnBurst: (_position, frame) => calls.push(`burst:${frame}`),
+      spawnDamageLabel: () => calls.push('enemy-hit'),
+      spawnDefeat: () => calls.push('enemy-defeated'),
+      terminalHandled: false,
+      time: {
+        now: 2_000,
+        delayedCall(delay, callback) {
+          const timer = { delay, callback, remove() {} };
+          calls.push(`timer:${delay}`);
+          return timer;
+        },
+      },
+      transientTimers: new Set(),
+    });
+    return { calls, scene };
+  };
+
+  const victory = createTerminalScene({ outcome: 'victory', castleHearts: 3 });
+  victory.scene.metadata = {
+    bosses: {
+      bosses: [{
+        id: 'dread-colossus',
+        actions: [{ id: 'defeat', frameCount: 10, frameDurationMs: 150 }],
+      }],
+    },
+  };
+  victory.scene.consumePresentationEvents([
+    { id: 10, kind: 'enemy-hit', tick: 8_000, payload: { damage: 160, position: { x: 0, y: 0 } } },
+    { id: 11, kind: 'enemy-defeated', tick: 8_000, payload: { enemyId: 'dread-colossus', id: 'enemy-99', pathProgress: 90 } },
+    { id: 12, kind: 'battle-terminal', tick: 8_000, payload: { outcome: 'victory' } },
+  ]);
+  victory.scene.handleTerminalState();
+
+  assert.ok(victory.calls.indexOf('enemy-hit') < victory.calls.indexOf('enemy-defeated'));
+  assert.ok(victory.calls.indexOf('enemy-defeated') < victory.calls.indexOf('timer:1500'));
+  assert.equal(victory.scene.lastBossDefeat.enemyId, 'dread-colossus');
+
+  const defeat = createTerminalScene({ outcome: 'defeat', castleHearts: 0 });
+  defeat.scene.consumePresentationEvents([
+    { id: 20, kind: 'castle-impact', tick: 8_000, payload: { damage: 1, position: { x: 0, y: 100 } } },
+    { id: 21, kind: 'battle-terminal', tick: 8_000, payload: { outcome: 'defeat' } },
+  ]);
+  defeat.scene.handleTerminalState();
+
+  assert.ok(defeat.calls.indexOf('castle-frame:1') < defeat.calls.indexOf('timer:1350'));
+  assert.ok(defeat.calls.indexOf(`burst:15`) < defeat.calls.indexOf('timer:1350'));
+  assert.ok(defeat.scene.transientTimers.size > 0, 'castle recovery remains tracked for terminal cleanup');
+});
+
+test('dense enemy road projection keeps 160 living views unique, footprint-safe, and behind the blocker', async () => {
+  const [
+    { BattleScene },
+    { createQueuePresentationLayout },
+    { createPathMetrics, samplePathProgress },
+    presentation,
+  ] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/lane-combat.js'),
+    import('../public/Games/DefenderChampion/src/core/path-geometry.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const { ENEMY_PRESENTATION, ViewPool, resolveEnemyRoadProjection } = presentation;
+  assert.equal(typeof resolveEnemyRoadProjection, 'function');
+
+  for (const enemyPresentation of Object.values(ENEMY_PRESENTATION)) {
+    assert.ok(enemyPresentation.roadFootprint > 0 && enemyPresentation.roadFootprint <= 112);
+  }
+  const bossProjection = resolveEnemyRoadProjection({
+    laneState: 'attacking',
+    laneOffset: 28,
+    pathProgress: 260,
+  }, ENEMY_PRESENTATION['dread-colossus']);
+  assert.equal(
+    Math.abs(bossProjection.laneOffset) + (bossProjection.footprintWidth / 2) <= 56,
+    true,
+  );
+  assert.equal(resolveEnemyRoadProjection({
+    displayLaneOffset: 0,
+    displayPathProgress: 180,
+    displayScale: 0.5,
+    laneState: 'moving',
+    pathProgress: 200,
+    queueIndex: 4,
+  }, ENEMY_PRESENTATION.crusher).depth < 4, true, 'an approaching reserved queue slot stays behind its blocker');
+
+  const path = [
+    { x: 0, y: 0 },
+    { x: 0, y: 100 },
+    { x: 100, y: 100 },
+    { x: 100, y: 200 },
+    { x: 200, y: 200 },
+  ];
+  const pathMetrics = createPathMetrics(path);
+  const queueLayout = createQueuePresentationLayout({ gatePathProgress: 260, queueCount: 157 });
+  const enemies = [
+    ...[-28, 0, 28].map((laneOffset, index) => ({
+      id: `enemy-${index + 1}`,
+      enemyId: 'blight-walker',
+      pathProgress: 240 - index,
+      laneOffset,
+      laneState: 'attacking',
+      health: 100,
+      maxHealth: 100,
+      attackState: { targetTowerId: null },
+    })),
+    ...queueLayout.map((slot, index) => ({
+      id: `enemy-${index + 4}`,
+      enemyId: 'blight-walker',
+      pathProgress: 216 - (Math.floor(index / 3) * 24),
+      laneOffset: [-28, 0, 28][index % 3],
+      laneState: 'queued',
+      displayPathProgress: slot.pathProgress,
+      displayLaneOffset: slot.laneOffset,
+      displayScale: slot.scale,
+      health: 100,
+      maxHealth: 100,
+      attackState: { targetTowerId: null },
+    })),
+  ];
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    cancelViewMotion() {},
+    enemyPool: new ViewPool(() => createSceneView(), { maximum: 160 }),
+    enemyById: new Map(enemies.map((enemy) => [enemy.id, enemy])),
+    enemySprites: new Map(),
+    ironhideMappings: null,
+    lastSnapshot: { tick: 0 },
+    padSprites: new Map(),
+    pathMetrics,
+    telegraphSprites: new Map(),
+    towerSprites: new Map(),
+  });
+
+  scene.projectEnemies({ enemies, tick: 0 });
+
+  assert.equal(scene.enemySprites.size, enemies.length);
+  const queuedViews = enemies.slice(3).map(({ id }) => scene.enemySprites.get(id));
+  assert.equal(new Set(queuedViews.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size, 157);
+  assert.equal(queuedViews.every(({ depth }) => depth < 4), true, 'queued sprites render behind depth-4 blocker');
+  assert.equal(enemies.slice(0, 3).every(({ id }) => scene.enemySprites.get(id).depth > 4), true);
+  assert.equal(queuedViews.every((view) => view._body.scale < ENEMY_PRESENTATION['blight-walker'].displayScale), true);
+  const projectionState = scene.getPresentationState();
+  assert.equal(projectionState.enemies.length, 160);
+  assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'queued').length, 157);
+  assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'attacking').length, 3);
+  assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'queued')
+    .every(({ depth, footprintWidth, scale, x, y }) => (
+      depth < 4 && footprintWidth <= 112 && scale < 1 && Number.isFinite(x) && Number.isFinite(y)
+    )), true);
+
+  for (const enemy of enemies) {
+    const projected = resolveEnemyRoadProjection(enemy, ENEMY_PRESENTATION[enemy.enemyId]);
+    assert.equal(Math.abs(projected.laneOffset) + (projected.footprintWidth / 2) <= 56, true, enemy.id);
+    const logical = samplePathProgress(pathMetrics, projected.pathProgress);
+    assert.equal(Number.isFinite(logical.x) && Number.isFinite(logical.y), true);
+  }
 });
 
 test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {

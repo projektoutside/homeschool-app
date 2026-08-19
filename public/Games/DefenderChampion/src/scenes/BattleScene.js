@@ -37,6 +37,7 @@ import {
   resolveDamageLabelMotion,
   resolveDefenderHitMotion,
   resolveEnemyAttackMotion,
+  resolveEnemyRoadProjection,
   resolveFrontlineHealthBar,
   resolveIronhidePlatePresentation,
   resolvePlacementMarkerState,
@@ -56,6 +57,7 @@ const PATH_X_SCALE = WORLD_WIDTH / 640;
 const PATH_Y_OFFSET = 110;
 const PATH_Y_SCALE = 1.45;
 const POINTER_HIT_RADIUS = 48;
+const MINIMUM_POINTER_TARGET_CSS = 44;
 const HUD_RENDER_INTERVAL_TICKS = 6;
 const ENEMY_HEALTH_RENDER_INTERVAL_TICKS = 3;
 const KEYBOARD_DEFENDERS = Object.freeze(Object.keys(DEFENDERS));
@@ -475,9 +477,30 @@ export class BattleScene extends Phaser.Scene {
     const bounds = canvas.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return null;
     return {
+      hitRadiusX: Math.max(
+        POINTER_HIT_RADIUS,
+        (MINIMUM_POINTER_TARGET_CSS / 2) * (WORLD_WIDTH / bounds.width),
+      ),
+      hitRadiusY: Math.max(
+        POINTER_HIT_RADIUS,
+        (MINIMUM_POINTER_TARGET_CSS / 2) * (WORLD_HEIGHT / bounds.height),
+      ),
       x: ((event.clientX - bounds.left) / bounds.width) * WORLD_WIDTH,
       y: ((event.clientY - bounds.top) / bounds.height) * WORLD_HEIGHT,
     };
+  }
+
+  resolvePointerPlacement(point) {
+    return this.level.pads
+      .map((pad, index) => {
+        const position = this.resolvePlacementPosition(pad);
+        const horizontal = (point.x - position.x) / point.hitRadiusX;
+        const vertical = (point.y - position.y) / point.hitRadiusY;
+        return { index, pad, proximity: (horizontal ** 2) + (vertical ** 2) };
+      })
+      .filter(({ proximity }) => proximity <= 1)
+      .sort((first, second) => first.proximity - second.proximity || first.index - second.index)[0]
+      ?.pad ?? null;
   }
 
   handlePointerDown(event, battlefield) {
@@ -491,9 +514,7 @@ export class BattleScene extends Phaser.Scene {
     }
     const point = this.pointerToWorld(event, battlefield);
     if (!point) return;
-    const pad = this.level.pads.find((candidate) => (
-      distanceSquared(point, this.resolvePlacementPosition(candidate)) <= POINTER_HIT_RADIUS ** 2
-    ));
+    const pad = this.resolvePointerPlacement(point);
     if (!pad) return;
     const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     if (!tower && this.selectedDefenderId && !this.isPlacementCompatible(pad)) {
@@ -1122,12 +1143,16 @@ export class BattleScene extends Phaser.Scene {
     syncProjectionMap(this.enemySprites, this.enemyPool, snapshot.enemies, (view, enemy) => {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
-      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress, enemy.laneOffset);
+      const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
+      const position = projectPathProgress(
+        this.pathMetrics,
+        roadProjection.pathProgress,
+        roadProjection.laneOffset,
+      );
       const body = view._body;
       const characterKey = characterAssetId(kind, enemy.enemyId, 'walk');
       if (view._characterKey !== characterKey) {
-        body.setTexture(characterKey, 0).setScale(presentation.displayScale);
-        view._baseScale = presentation.displayScale;
+        body.setTexture(characterKey, 0);
         view._enemyId = enemy.enemyId;
         if (this.anims.exists(animationKey(kind, enemy.enemyId, 'walk'))) {
           body.play(animationKey(kind, enemy.enemyId, 'walk'), true);
@@ -1135,6 +1160,10 @@ export class BattleScene extends Phaser.Scene {
         view._characterKey = characterKey;
         view._healthKey = null;
       }
+      const displayScale = presentation.displayScale * roadProjection.scale;
+      body.setScale(displayScale);
+      view._baseScale = displayScale;
+      view.setDepth(roadProjection.depth);
       const flipX = view._lastX !== null && position.x < view._lastX - 0.15;
       if (flipX !== view._flipX) {
         body.setFlipX(flipX);
@@ -1200,7 +1229,12 @@ export class BattleScene extends Phaser.Scene {
       const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
       const showHealth = kind === 'boss' || ratio < 0.999;
       if (!showHealth) continue;
-      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress, enemy.laneOffset);
+      const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
+      const position = projectPathProgress(
+        this.pathMetrics,
+        roadProjection.pathProgress,
+        roadProjection.laneOffset,
+      );
       const barY = position.y + (kind === 'boss' ? -176 : -108);
       const barWidth = kind === 'boss' ? 116 : 72;
       const barX = position.x - (barWidth / 2);
@@ -1435,17 +1469,33 @@ export class BattleScene extends Phaser.Scene {
 
   getPresentationState() {
     return {
-      enemies: [...this.enemySprites].map(([id, view]) => ({
-        accentVisible: Boolean(view._accent?.visible),
-        attackTargetTowerId: view._attackTargetTowerId,
-        id,
-        plateAccents: [...(view._plateAccents?.entries?.() ?? [])].map(([plateId, plate]) => ({
-          id: plateId,
-          visible: Boolean(plate.visible),
-          x: plate.x,
-          y: plate.y,
-        })),
-      })),
+      enemies: [...this.enemySprites].map(([id, view]) => {
+        const enemy = this.enemyById.get(id);
+        const roadProjection = resolveEnemyRoadProjection(
+          enemy,
+          ENEMY_PRESENTATION[enemy?.enemyId],
+        );
+        return {
+          accentVisible: Boolean(view._accent?.visible),
+          attackTargetTowerId: view._attackTargetTowerId,
+          blockingTowerId: enemy?.blockingTowerId ?? null,
+          depth: view.depth,
+          footprintWidth: roadProjection.footprintWidth,
+          id,
+          laneOffset: roadProjection.laneOffset,
+          laneState: enemy?.laneState ?? null,
+          plateAccents: [...(view._plateAccents?.entries?.() ?? [])].map(([plateId, plate]) => ({
+            id: plateId,
+            visible: Boolean(plate.visible),
+            x: plate.x,
+            y: plate.y,
+          })),
+          queueIndex: enemy?.queueIndex ?? null,
+          scale: roadProjection.scale,
+          x: view.x,
+          y: view.y,
+        };
+      }),
       telegraphs: [...this.telegraphSprites].map(([id, view]) => ({
         displayHeight: Number(view.displayHeight.toFixed(3)),
         displayWidth: Number(view.displayWidth.toFixed(3)),
@@ -1484,12 +1534,22 @@ export class BattleScene extends Phaser.Scene {
       coins: snapshot.coins,
       countdownRemaining: this.countdownActive ? this.countdownRemaining : 0,
       effects: snapshot.effects.map(({ id, kind, sourceId, targetId }) => ({ id, kind, sourceId, targetId })),
-      enemies: snapshot.enemies.map(({ id, enemyId, health, maxHealth, pathProgress }) => ({
+      enemies: snapshot.enemies.map(({ id, enemyId, health, maxHealth, pathProgress, attackState,
+        laneState, blockingTowerId, queueIndex, laneOffset,
+        displayPathProgress, displayLaneOffset, displayScale }) => ({
+        attackState: { ...attackState },
+        blockingTowerId,
+        displayLaneOffset,
+        displayPathProgress: Number(displayPathProgress.toFixed(3)),
+        displayScale,
         enemyId,
         health,
         id,
+        laneOffset,
+        laneState,
         maxHealth,
         pathProgress: Number(pathProgress.toFixed(3)),
+        queueIndex,
       })),
       levelId: snapshot.levelId,
       medal: snapshot.medal,

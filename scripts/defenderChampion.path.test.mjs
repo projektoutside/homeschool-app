@@ -121,6 +121,9 @@ test('path pieces map every cardinal cap and corner direction to its atlas frame
 });
 
 test('path geometry rejects malformed, diagonal, too-short, and U-turn routes', () => {
+  assert.throws(() => createPathMetrics(), /Path must contain at least two points/);
+  assert.throws(() => createPathMetrics([]), /Path must contain at least two points/);
+  assert.throws(() => createPathMetrics([{ x: 0, y: 0 }]), /Path must contain at least two points/);
   assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 10, y: 10 }]), /Diagonal path segment 0/);
   assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 0, y: 0 }]), /Empty path segment 0/);
   assert.throws(() => derivePathPieces([{ x: 0, y: 0 }, { x: 10, y: 10 }], identity), /Diagonal path segment 0/);

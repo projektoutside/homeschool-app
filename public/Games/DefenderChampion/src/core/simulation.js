@@ -30,6 +30,9 @@ const clearTransientCombatState = (simulation) => {
     enemy.queueIndex = null;
     enemy.laneState = 'moving';
     enemy.laneOffset = 0;
+    enemy.displayPathProgress = enemy.pathProgress;
+    enemy.displayLaneOffset = 0;
+    enemy.displayScale = 1;
     delete enemy.laneReleasedAtTick;
   }
   for (const tower of simulation.towers) tower.engagedEnemyIds = [];
@@ -44,12 +47,15 @@ export const clearPresentationEvents = (simulation) => {
 };
 
 const finishBattle = (simulation, result) => {
+  const decisivePresentationEvents = simulation.presentationEvents
+    .filter(({ tick }) => tick === simulation.tick);
   simulation.terminal = true;
   simulation.outcome = result.outcome;
   simulation.score = result.score;
   simulation.medal = result.medal;
   clearTransientCombatState(simulation);
   clearPresentationEventQueue(simulation);
+  simulation.presentationEvents.push(...decisivePresentationEvents);
   emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
 };
 
@@ -251,6 +257,9 @@ const snapshotEnemy = (enemy) => ({
   blockingTowerId: enemy.blockingTowerId ?? null,
   queueIndex: enemy.queueIndex ?? null,
   laneOffset: enemy.laneOffset ?? 0,
+  displayPathProgress: enemy.displayPathProgress ?? enemy.pathProgress,
+  displayLaneOffset: enemy.displayLaneOffset ?? enemy.laneOffset ?? 0,
+  displayScale: enemy.displayScale ?? 1,
   maxHealth: enemy.maxHealth,
   waveIndex: enemy.waveIndex,
   nextAbilityTick: enemy.nextAbilityTick,

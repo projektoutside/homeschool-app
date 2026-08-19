@@ -311,6 +311,10 @@ test('terminal cleanup cancels attack ownership and prevents stale impacts', () 
     kind: 'tower-stun', value: 1, expiresAtTick: 99,
   }];
   tower.engagedEnemyIds = [attacker.id];
+  simulation.presentationEvents = [{
+    id: 90, kind: 'enemy-attack-start', payload: { id: attacker.id }, tick: -1,
+  }];
+  simulation.nextPresentationEventId = 91;
 
   advanceSimulation(simulation, 1);
 
@@ -324,10 +328,84 @@ test('terminal cleanup cancels attack ownership and prevents stale impacts', () 
     impactAtTick: null,
     readyAtTick: 72,
   });
-  assert.deepEqual(simulation.presentationEvents.map(({ kind }) => kind), ['battle-terminal']);
+  assert.deepEqual(simulation.presentationEvents.map(({ id, kind, tick }) => ({ id, kind, tick })), [
+    { id: 91, kind: 'castle-impact', tick: 0 },
+    { id: 92, kind: 'wave-complete', tick: 0 },
+    { id: 93, kind: 'wave-complete', tick: 0 },
+    { id: 94, kind: 'battle-terminal', tick: 0 },
+  ]);
   const healthAfterTerminal = tower.health;
   advanceSimulation(simulation, 100);
   assert.equal(tower.health, healthAfterTerminal);
+});
+
+test('terminal victory snapshots preserve the final enemy hit and defeat before battle terminal', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  const bossConfig = ENEMIES['blight-walker'];
+  simulation.waveSchedule = [];
+  simulation.nextSpawnIndex = 0;
+  simulation.spawnedAllWaves = true;
+  simulation.presentationEvents = [{
+    id: 40, kind: 'enemy-hit', payload: { id: 'stale-enemy' }, tick: -1,
+  }];
+  simulation.nextPresentationEventId = 41;
+  simulation.enemies = [{
+    id: 'enemy-1',
+    enemyId: bossConfig.id,
+    waveIndex: simulation.level.waveCount - 1,
+    spawnTick: 0,
+    pathProgress: 100,
+    health: 1,
+    maxHealth: bossConfig.health,
+    speed: 0,
+    armor: bossConfig.armor,
+    clusterSize: 1,
+    castleDamage: bossConfig.castleDamage,
+    attackDamage: bossConfig.attackDamage,
+    attackCooldownTicks: bossConfig.attackCooldownTicks,
+    attackWindupTicks: bossConfig.attackWindupTicks,
+    attackTargets: bossConfig.attackTargets,
+    attackState: { targetTowerId: null, startedAtTick: null, impactAtTick: null, readyAtTick: 0 },
+    laneState: 'moving',
+    blockingTowerId: null,
+    queueIndex: null,
+    laneOffset: 0,
+    nextAbilityTick: Number.MAX_SAFE_INTEGER,
+    abilityActiveTicks: 0,
+    nextAbilityActiveTick: 0,
+    thresholdFlags: {},
+  }];
+  simulation.projectiles = [{
+    id: 'projectile-final',
+    sourceTowerId: 'tower-final',
+    targetId: 'enemy-1',
+    targetPathProgressAtLaunch: 100,
+    launchPosition: { x: 0, y: 0 },
+    launchTick: 0,
+    impactTick: 0,
+    damage: 10_000,
+    armorPierce: 1,
+    stunSeconds: 0,
+    slow: 0,
+    splashRadius: 0,
+  }];
+
+  advanceSimulation(simulation, 1);
+
+  const snapshot = summarizePresentationSimulation(simulation);
+  assert.equal(snapshot.terminal, true);
+  assert.equal(snapshot.outcome, 'victory');
+  assert.deepEqual(snapshot.presentationEvents.map(({ id, kind, tick }) => ({ id, kind, tick })), [
+    { id: 41, kind: 'projectile-impact', tick: 0 },
+    { id: 42, kind: 'enemy-hit', tick: 0 },
+    { id: 43, kind: 'enemy-defeated', tick: 0 },
+    { id: 44, kind: 'wave-complete', tick: 0 },
+    { id: 45, kind: 'wave-complete', tick: 0 },
+    { id: 46, kind: 'wave-complete', tick: 0 },
+    { id: 47, kind: 'battle-terminal', tick: 0 },
+  ]);
+  assert.deepEqual(snapshot.enemies, []);
+  assert.deepEqual(snapshot.projectiles, []);
 });
 
 test('restart and unload cleanup leave no transient combat state', () => {

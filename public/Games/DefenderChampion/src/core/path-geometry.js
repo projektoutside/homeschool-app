@@ -19,6 +19,9 @@ const cornerFrame = (first, second) => {
 const capFrame = (direction) => `cap${direction[0].toUpperCase()}${direction.slice(1)}`;
 
 export const createPathMetrics = (path) => {
+  if (!Array.isArray(path) || path.length < 2) {
+    throw new Error('Path must contain at least two points');
+  }
   const segments = [];
   let total = 0;
   for (let index = 1; index < path.length; index += 1) {

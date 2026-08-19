@@ -8,6 +8,8 @@ const CONTACT_DISTANCE = 18;
 const CONTACT_LANES = Object.freeze([-ROAD_WIDTH / 4, 0, ROAD_WIDTH / 4]);
 const QUEUE_DISTANCE = 44;
 const QUEUE_ROW_SPACING = 24;
+const QUEUE_ENTRANCE_MARGIN = 6;
+const MINIMUM_QUEUE_DISPLAY_SCALE = 0.18;
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const isLiving = (entity) => entity && entity.health > 0;
@@ -32,6 +34,37 @@ const compareGateCandidates = (first, second) => (
   || first.spawnTick - second.spawnTick
   || compareEntityIds(first.id, second.id)
 );
+
+export const createQueuePresentationLayout = ({
+  gatePathProgress,
+  minimumPathProgress = 0,
+  queueCount,
+} = {}) => {
+  const count = Number.isInteger(queueCount) && queueCount > 0 ? queueCount : 0;
+  if (count === 0) return Object.freeze([]);
+  const gateProgress = Math.max(0, Number(gatePathProgress) || 0);
+  const minimumProgress = Math.max(0, Number(minimumPathProgress) || 0);
+  const frontProgress = Math.max(
+    Math.min(gateProgress - Number.EPSILON, minimumProgress + (Number.EPSILON * count)),
+    gateProgress - QUEUE_DISTANCE,
+  );
+  const entranceProgress = Math.min(
+    frontProgress,
+    minimumProgress + Math.min(
+      QUEUE_ENTRANCE_MARGIN,
+      Math.max(0, frontProgress - minimumProgress) / (count + 1),
+    ),
+  );
+  const spacing = count === 1
+    ? QUEUE_ROW_SPACING
+    : (frontProgress - entranceProgress) / (count - 1);
+  const scale = clamp(spacing / QUEUE_ROW_SPACING, MINIMUM_QUEUE_DISPLAY_SCALE, 1);
+  return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
+    laneOffset: 0,
+    pathProgress: count === 1 ? frontProgress : frontProgress - (index * spacing),
+    scale,
+  })));
+};
 
 export const selectAttackersForGate = (enemies, gate, limit) => {
   const count = Number.isInteger(limit) && limit > 0 ? limit : 0;
@@ -69,6 +102,9 @@ const setMoving = (enemy, { preserveOffset = false } = {}) => {
   enemy.blockingTowerId = null;
   enemy.queueIndex = null;
   if (!preserveOffset) enemy.laneOffset = 0;
+  enemy.displayPathProgress = enemy.pathProgress;
+  enemy.displayLaneOffset = enemy.laneOffset;
+  enemy.displayScale = 1;
 };
 
 const assignAttackerSlot = (enemy, gate, index) => {
@@ -82,9 +118,12 @@ const assignAttackerSlot = (enemy, gate, index) => {
   } else {
     enemy.laneState = 'moving';
   }
+  enemy.displayPathProgress = enemy.pathProgress;
+  enemy.displayLaneOffset = enemy.laneOffset;
+  enemy.displayScale = 1;
 };
 
-const assignQueueSlot = (enemy, gate, queueIndex) => {
+const assignQueueSlot = (enemy, gate, queueIndex, displaySlot) => {
   const row = Math.floor(queueIndex / CONTACT_LANES.length);
   const targetProgress = Math.max(
     0,
@@ -99,6 +138,9 @@ const assignQueueSlot = (enemy, gate, queueIndex) => {
   } else {
     enemy.laneState = 'moving';
   }
+  enemy.displayPathProgress = displaySlot.pathProgress;
+  enemy.displayLaneOffset = displaySlot.laneOffset;
+  enemy.displayScale = displaySlot.scale;
 };
 
 export const assignLanePositions = (simulation) => {
@@ -127,7 +169,7 @@ export const assignLanePositions = (simulation) => {
     candidatesByTowerId.get(gate.towerId).push(enemy);
   }
 
-  for (const gate of gates) {
+  for (const [gateIndex, gate] of gates.entries()) {
     const candidates = candidatesByTowerId.get(gate.towerId);
     const attackers = selectAttackersForGate(candidates, gate, MAX_ATTACKERS_PER_GATE);
     const attackerIds = new Set(attackers.map(({ id }) => id));
@@ -136,7 +178,12 @@ export const assignLanePositions = (simulation) => {
     gate.queuedIds = queued.map(({ id }) => id);
     gate.tower.engagedEnemyIds = [...gate.attackerIds];
     attackers.forEach((enemy, index) => assignAttackerSlot(enemy, gate, index));
-    queued.forEach((enemy, index) => assignQueueSlot(enemy, gate, index));
+    const queuePresentation = createQueuePresentationLayout({
+      gatePathProgress: gate.pathProgress,
+      minimumPathProgress: gateIndex === 0 ? 0 : gates[gateIndex - 1].pathProgress + 1,
+      queueCount: queued.length,
+    });
+    queued.forEach((enemy, index) => assignQueueSlot(enemy, gate, index, queuePresentation[index]));
   }
 
   return {

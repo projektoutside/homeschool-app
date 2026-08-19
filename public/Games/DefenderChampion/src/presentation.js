@@ -42,16 +42,35 @@ export const DEFENDER_PRESENTATION = Object.freeze({
 });
 
 export const ENEMY_PRESENTATION = Object.freeze({
-  'blight-walker': Object.freeze({ displayScale: 0.40, kind: 'enemy' }),
-  skitter: Object.freeze({ displayScale: 0.39, kind: 'enemy' }),
-  swarmkin: Object.freeze({ displayScale: 0.34, kind: 'enemy' }),
-  shellguard: Object.freeze({ displayScale: 0.43, kind: 'enemy' }),
-  hexcaller: Object.freeze({ displayScale: 0.42, kind: 'enemy' }),
-  crusher: Object.freeze({ displayScale: 0.48, kind: 'enemy' }),
-  'mossback-brute': Object.freeze({ displayScale: 0.48, kind: 'boss' }),
-  'ironhide-warlord': Object.freeze({ displayScale: 0.50, kind: 'boss' }),
-  'dread-colossus': Object.freeze({ displayScale: 0.53, kind: 'boss' }),
+  'blight-walker': Object.freeze({ displayScale: 0.40, kind: 'enemy', roadFootprint: 48 }),
+  skitter: Object.freeze({ displayScale: 0.39, kind: 'enemy', roadFootprint: 48 }),
+  swarmkin: Object.freeze({ displayScale: 0.34, kind: 'enemy', roadFootprint: 42 }),
+  shellguard: Object.freeze({ displayScale: 0.43, kind: 'enemy', roadFootprint: 52 }),
+  hexcaller: Object.freeze({ displayScale: 0.42, kind: 'enemy', roadFootprint: 48 }),
+  crusher: Object.freeze({ displayScale: 0.48, kind: 'enemy', roadFootprint: 58 }),
+  'mossback-brute': Object.freeze({ displayScale: 0.48, kind: 'boss', roadFootprint: 80 }),
+  'ironhide-warlord': Object.freeze({ displayScale: 0.50, kind: 'boss', roadFootprint: 80 }),
+  'dread-colossus': Object.freeze({ displayScale: 0.53, kind: 'boss', roadFootprint: 80 }),
 });
+
+export const resolveEnemyRoadProjection = (enemy = {}, presentation = {}) => {
+  const scale = Math.max(0.18, Math.min(1, Number(enemy.displayScale) || 1));
+  const footprintWidth = Math.min(
+    ROAD_WIDTH,
+    Math.max(0, Number(presentation.roadFootprint) || ROAD_WIDTH) * scale,
+  );
+  const maximumLateralOffset = Math.max(0, (ROAD_WIDTH - footprintWidth) / 2);
+  const requestedLaneOffset = Number(enemy.displayLaneOffset ?? enemy.laneOffset) || 0;
+  const queued = enemy.laneState === 'queued'
+    || (enemy.queueIndex !== null && enemy.queueIndex !== undefined);
+  return Object.freeze({
+    depth: queued ? 3.6 : enemy.laneState === 'attacking' ? 5.2 : 4.6,
+    footprintWidth,
+    laneOffset: Math.max(-maximumLateralOffset, Math.min(maximumLateralOffset, requestedLaneOffset)),
+    pathProgress: Number(enemy.displayPathProgress ?? enemy.pathProgress) || 0,
+    scale,
+  });
+};
 
 export const LEVEL_PRESENTATION = Object.freeze({
   'level-1': Object.freeze({ lesson: 'Blight Walkers are balanced. Cover both the early bend and the castle approach.', boss: null }),

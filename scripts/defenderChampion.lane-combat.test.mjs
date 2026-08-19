@@ -5,9 +5,14 @@ import {
   advanceEnemyAttacks,
   applyDefenderDamage,
   assignLanePositions,
+  createQueuePresentationLayout,
   selectAttackersForGate,
   selectEnemyAttackTarget,
 } from '../public/Games/DefenderChampion/src/core/lane-combat.js';
+import {
+  createPathMetrics,
+  samplePathProgress,
+} from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 
 const roadPad = (id, pathProgress) => ({ id, layer: 'road', pathProgress });
 const grassPad = (id, x, y) => ({ id, layer: 'grass', x, y });
@@ -116,6 +121,68 @@ test('a living road defender stops the whole lane with three attackers and a sta
   assert.equal(simulation.enemies.every(({ blockingTowerId }) => blockingTowerId === 'tower-1'), true);
   assert.equal(simulation.enemies.every(({ laneOffset }) => Number.isFinite(laneOffset)), true);
   assert.equal(simulation.enemies.every(({ laneOffset }) => Math.abs(laneOffset) <= 56), true);
+});
+
+test('a 160-enemy gate gets stable unique road-safe presentation slots without entrance collapse', () => {
+  const path = [
+    { x: 0, y: 0 },
+    { x: 0, y: 100 },
+    { x: 100, y: 100 },
+    { x: 100, y: 200 },
+    { x: 200, y: 200 },
+  ];
+  const metrics = createPathMetrics(path);
+  const enemies = Array.from({ length: 160 }, (_, index) => createEnemy({
+    id: `enemy-${index + 1}`,
+    pathProgress: 259,
+    spawnTick: index,
+  }));
+  const simulation = createSimulation({
+    towers: [createTower({ id: 'tower-1', padId: 'road-a' })],
+    enemies,
+  });
+  simulation.level.pads[0].pathProgress = 260;
+
+  const state = assignLanePositions(simulation);
+  const gate = state.gates[0];
+  const queued = simulation.enemies
+    .filter(({ laneState }) => laneState === 'queued')
+    .sort((first, second) => first.queueIndex - second.queueIndex);
+
+  assert.equal(gate.attackerIds.length, 3);
+  assert.equal(queued.length, 157);
+  assert.equal(simulation.enemies.every(({ pathProgress }) => pathProgress < gate.pathProgress), true);
+  assert.deepEqual(queued.map(({ id }) => id), gate.queuedIds);
+  assert.equal(queued.every(({ displayLaneOffset }) => displayLaneOffset === 0), true);
+  assert.equal(queued.every(({ displayScale }) => displayScale > 0 && displayScale <= 1), true);
+  assert.equal(queued.every((enemy, index) => (
+    index === 0 || enemy.displayPathProgress < queued[index - 1].displayPathProgress
+  )), true);
+  assert.equal(queued.at(-1).displayPathProgress > 0, true, 'the final sprite does not collapse onto the entrance cap');
+
+  const positions = queued.map(({ displayPathProgress }) => (
+    samplePathProgress(metrics, displayPathProgress)
+  ));
+  assert.equal(new Set(positions.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size, queued.length);
+
+  const layout = createQueuePresentationLayout({ gatePathProgress: 260, queueCount: 157 });
+  assert.deepEqual(layout, queued.map(({ displayLaneOffset, displayPathProgress, displayScale }) => ({
+    laneOffset: displayLaneOffset,
+    pathProgress: displayPathProgress,
+    scale: displayScale,
+  })));
+});
+
+test('separate living gates reserve disjoint presentation intervals for their queues', () => {
+  const first = createQueuePresentationLayout({ gatePathProgress: 260, queueCount: 24 });
+  const second = createQueuePresentationLayout({
+    gatePathProgress: 520,
+    minimumPathProgress: 261,
+    queueCount: 24,
+  });
+  assert.equal(first.every(({ pathProgress }) => pathProgress < 260), true);
+  assert.equal(second.every(({ pathProgress }) => pathProgress > 260 && pathProgress < 520), true);
+  assert.equal(new Set([...first, ...second].map(({ pathProgress }) => pathProgress.toFixed(12))).size, 48);
 });
 
 test('gate and attacker ties use numeric entity IDs without mutating the candidate list', () => {
