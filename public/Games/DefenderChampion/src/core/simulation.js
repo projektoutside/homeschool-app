@@ -58,7 +58,9 @@ const findTower = (simulation, towerId) => simulation.towers.find((tower) => tow
 const buildTower = (simulation, command) => {
   const defender = DEFENDERS[command.defenderId];
   if (!defender) return rejected('invalid-defender');
-  if (!simulation.level.pads.some((pad) => pad.id === command.padId)) return rejected('invalid-pad');
+  const placement = simulation.level.pads.find(({ id }) => id === command.padId);
+  if (!placement) return rejected('invalid-pad');
+  if (placement.layer !== defender.placementLayer) return rejected('placement-layer-mismatch');
   if (simulation.towers.some((tower) => tower.padId === command.padId)) return rejected('pad-occupied');
   const cost = getBuildCost(defender);
   if (simulation.coins < cost) return rejected('insufficient-coins');
@@ -68,7 +70,13 @@ const buildTower = (simulation, command) => {
     id: `tower-${simulation.nextEntityId++}`,
     defenderId: defender.id,
     padId: command.padId,
+    placementLayer: defender.placementLayer,
+    combatLayer: defender.combatLayer,
     tier: 0,
+    health: defender.maxHealth[0],
+    maxHealth: defender.maxHealth[0],
+    armor: defender.armor[0],
+    engagedEnemyIds: [],
     totalInvested: cost,
     nextAttackTick: simulation.tick,
     attackCount: 0,
@@ -88,12 +96,17 @@ const buildTower = (simulation, command) => {
 const upgradeTower = (simulation, towerId) => {
   const tower = findTower(simulation, towerId);
   if (!tower) return rejected('missing-tower');
-  const cost = getUpgradeCost(tower, DEFENDERS[tower.defenderId]);
+  const defender = DEFENDERS[tower.defenderId];
+  const cost = getUpgradeCost(tower, defender);
   if (cost === null) return rejected('max-tier');
   if (simulation.coins < cost) return rejected('insufficient-coins');
 
   simulation.coins -= cost;
+  const previousMaxHealth = tower.maxHealth;
   tower.tier += 1;
+  tower.maxHealth = defender.maxHealth[tower.tier];
+  tower.health += tower.maxHealth - previousMaxHealth;
+  tower.armor = defender.armor[tower.tier];
   tower.totalInvested += cost;
   simulation.purchaseHistory.push({
     tick: simulation.tick,
@@ -110,7 +123,11 @@ const upgradeTower = (simulation, towerId) => {
 const sellTower = (simulation, towerId) => {
   const towerIndex = simulation.towers.findIndex((tower) => tower.id === towerId);
   if (towerIndex === -1) return rejected('missing-tower');
-  const [tower] = simulation.towers.splice(towerIndex, 1);
+  const tower = simulation.towers[towerIndex];
+  if (tower.combatLayer === 'frontline' && tower.engagedEnemyIds.length > 0) {
+    return rejected('defender-engaged');
+  }
+  simulation.towers.splice(towerIndex, 1);
   simulation.coins += getSellRefund(tower);
   return accepted();
 };
@@ -178,7 +195,13 @@ const snapshotTower = (tower) => {
     id: tower.id,
     defenderId: tower.defenderId,
     padId: tower.padId,
+    placementLayer: tower.placementLayer,
+    combatLayer: tower.combatLayer,
     tier: tower.tier,
+    health: tower.health,
+    maxHealth: tower.maxHealth,
+    armor: tower.armor,
+    engagedEnemyIds: [...tower.engagedEnemyIds],
     totalInvested: tower.totalInvested,
     attackCount: tower.attackCount ?? 0,
     masteryProgress: (tower.attackCount ?? 0) % masteryAttackCount,

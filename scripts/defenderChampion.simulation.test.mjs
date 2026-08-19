@@ -36,7 +36,7 @@ test('reference command fixtures are legal deterministic inputs for every level'
       `${level.id}-artillery`,
     ]);
 
-    const padIds = new Set(level.pads.map((pad) => pad.id));
+    const padsById = new Map(level.pads.map((pad) => [pad.id, pad]));
     for (const strategyId of level.referenceStrategies) {
       const commands = REFERENCE_STRATEGIES[strategyId];
       assert.ok(commands);
@@ -55,35 +55,91 @@ test('reference command fixtures are legal deterministic inputs for every level'
         assert.equal(Number.isInteger(command.tick), true);
         assert.equal(command.tick >= previousTick, true);
         assert.ok(DEFENDERS[command.defenderId]);
-        assert.equal(padIds.has(command.padId), true);
+        assert.equal(padsById.has(command.padId), true);
+        assert.equal(
+          padsById.get(command.padId).layer,
+          DEFENDERS[command.defenderId].placementLayer,
+        );
         if (command.tick === 0) {
           tickZeroSpend += DEFENDERS[command.defenderId].costs[0];
         }
         previousTick = command.tick;
       }
       assert.equal(tickZeroSpend <= level.startingCoins, true);
+      assert.equal(new Set(commands.map((command) => command.padId)).size, commands.length);
     }
   }
 });
 
-test('build commands accept a legal defender and reject occupied pads without changing coins', () => {
+test('build commands enforce placement layers before charging coins and snapshot tower durability', () => {
   const simulation = createSimulation('level-1', { qa: true, seed: 7 });
 
   assert.deepEqual(issueCommand(simulation, {
     type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
   }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
-  }), { accepted: false, reason: 'pad-occupied' });
+    type: 'build', defenderId: 'ranger', padId: 'l1-pad-c',
+  }), { accepted: false, reason: 'placement-layer-mismatch' });
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
+  }), { accepted: true, reason: null });
 
   const summary = summarizeSimulation(simulation);
-  assert.equal(summary.coins, 100);
-  assert.deepEqual(summary.towers, [{
-    id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
-    attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
-  }]);
+  assert.equal(summary.coins, 30);
+  assert.deepEqual(summary.towers.map(({ defenderId, padId, placementLayer, combatLayer, health, maxHealth, armor, engagedEnemyIds }) => ({
+    defenderId, padId, placementLayer, combatLayer, health, maxHealth, armor, engagedEnemyIds,
+  })), [
+    {
+      defenderId: 'bladeguard', padId: 'l1-pad-a', placementLayer: 'road', combatLayer: 'frontline',
+      health: 420, maxHealth: 420, armor: 0.10, engagedEnemyIds: [],
+    },
+    {
+      defenderId: 'ranger', padId: 'l1-pad-b', placementLayer: 'grass', combatLayer: 'backline',
+      health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [],
+    },
+  ]);
+  assert.deepEqual(
+    summarizePresentationSimulation(simulation).towers.map(({ defenderId, health, maxHealth, armor, engagedEnemyIds }) => ({
+      defenderId, health, maxHealth, armor, engagedEnemyIds,
+    })),
+    [
+      { defenderId: 'bladeguard', health: 420, maxHealth: 420, armor: 0.10, engagedEnemyIds: [] },
+      { defenderId: 'ranger', health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [] },
+    ],
+  );
 });
 
+test('frontline upgrades preserve missing health and engaged defenders cannot be sold', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 7 });
+  simulation.coins = 500;
+
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  }), { accepted: true, reason: null });
+  simulation.towers[0].health = 300;
+  assert.deepEqual(issueCommand(simulation, { type: 'upgrade', towerId: 'tower-1' }), {
+    accepted: true, reason: null,
+  });
+  assert.deepEqual(
+    summarizeSimulation(simulation).towers[0].health,
+    440,
+  );
+  assert.deepEqual(
+    summarizeSimulation(simulation).towers[0].maxHealth,
+    560,
+  );
+  assert.deepEqual(
+    summarizeSimulation(simulation).towers[0].armor,
+    0.14,
+  );
+
+  simulation.towers[0].engagedEnemyIds.push('enemy-1');
+  const beforeSell = summarizeSimulation(simulation);
+  assert.deepEqual(issueCommand(simulation, { type: 'sell', towerId: 'tower-1' }), {
+    accepted: false, reason: 'defender-engaged',
+  });
+  assert.deepEqual(summarizeSimulation(simulation), beforeSell);
+});
 test('invalid economy commands reject without mutating the public summary', () => {
   const simulation = createSimulation('level-1', { qa: true, seed: 7 });
   const expectRejectedWithoutMutation = (command, reason) => {
@@ -97,7 +153,7 @@ test('invalid economy commands reject without mutating the public summary', () =
   assert.deepEqual(issueCommand(simulation, {
     type: 'build', defenderId: 'ironwarden', padId: 'l1-pad-a',
   }), { accepted: true, reason: null });
-  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-b' }, 'insufficient-coins');
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-c' }, 'insufficient-coins');
   expectRejectedWithoutMutation({ type: 'upgrade', towerId: 'missing-tower' }, 'missing-tower');
   expectRejectedWithoutMutation({ type: 'sell', towerId: 'missing-tower' }, 'missing-tower');
 
@@ -107,7 +163,7 @@ test('invalid economy commands reject without mutating the public summary', () =
   const maxTierSimulation = createSimulation('level-1', { qa: true });
   maxTierSimulation.coins = 500;
   assert.deepEqual(issueCommand(maxTierSimulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-b',
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
   }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
@@ -207,12 +263,14 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   assert.deepEqual(first, second);
   assert.deepEqual(first.towers, [
     {
-      id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-a', tier: 0, totalInvested: 70,
-      attackCount: 48, masteryProgress: 3, nextAttackTick: 3090,
+      id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-b', placementLayer: 'grass', combatLayer: 'backline',
+      tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
+      attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
     },
     {
-      id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-b', tier: 0, totalInvested: 50,
-      attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
+      id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-a', placementLayer: 'road', combatLayer: 'frontline',
+      tier: 0, health: 420, maxHealth: 420, armor: 0.10, engagedEnemyIds: [], totalInvested: 50,
+      attackCount: 24, masteryProgress: 0, nextAttackTick: 4782,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
@@ -228,10 +286,10 @@ test('presentation events are deterministic, monotonic, bounded, and expose atta
   const second = createSimulation('level-1', { qa: true, seed: 13 });
   for (const simulation of [first, second]) {
     issueCommand(simulation, {
-      type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
+      type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
     });
     advanceSimulation(simulation, 1);
-    simulation.enemies[0].pathProgress = LEVELS[0].pads[0].pathProgress;
+    simulation.enemies[0].pathProgress = 638;
     advanceSimulation(simulation, 239);
   }
   const firstSummary = summarizeSimulation(first);
@@ -257,10 +315,10 @@ test('presentation events are deterministic, monotonic, bounded, and expose atta
 test('projectile snapshots retain launch data after their source tower is sold', () => {
   const simulation = createSimulation('level-1', { qa: true, seed: 17 });
   issueCommand(simulation, {
-    type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
   });
   advanceSimulation(simulation, 1);
-  simulation.enemies[0].pathProgress = LEVELS[0].pads[0].pathProgress;
+  simulation.enemies[0].pathProgress = 638;
   advanceSimulation(simulation, 1);
   const towerId = simulation.towers[0].id;
   assert.ok(simulation.projectiles.length > 0);
@@ -271,7 +329,7 @@ test('projectile snapshots retain launch data after their source tower is sold',
   assert.equal(projectile.launchTick, 1);
   assert.deepEqual(projectile.launchPosition, resolvePlacementPoint(
     LEVELS[0],
-    LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a'),
+    LEVELS[0].pads.find(({ id }) => id === 'l1-pad-b'),
   ));
   assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
   assert.equal(summarizeSimulation(simulation).towers.length, 0);

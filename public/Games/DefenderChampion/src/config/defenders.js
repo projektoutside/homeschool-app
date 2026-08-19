@@ -11,7 +11,11 @@ const freezeDefender = (defender) => freezeNested({ ...defender });
 export const DEFENDERS = Object.freeze({
   bladeguard: freezeDefender({
     id: 'bladeguard',
+    placementLayer: 'road',
+    combatLayer: 'frontline',
     costs: [50, 60, 90],
+    maxHealth: [420, 560, 720],
+    armor: [0.10, 0.14, 0.18],
     targetPriority: 'closest-to-castle',
     mastery: 'whirlwind',
     damage: [60, 65, 70],
@@ -23,7 +27,11 @@ export const DEFENDERS = Object.freeze({
   }),
   ranger: freezeDefender({
     id: 'ranger',
+    placementLayer: 'grass',
+    combatLayer: 'backline',
     costs: [70, 85, 120],
+    maxHealth: [1, 1, 1],
+    armor: [0, 0, 0],
     targetPriority: 'fastest',
     mastery: 'critical-volley',
     damage: [50, 55, 60],
@@ -36,7 +44,11 @@ export const DEFENDERS = Object.freeze({
   }),
   ironwarden: freezeDefender({
     id: 'ironwarden',
+    placementLayer: 'road',
+    combatLayer: 'frontline',
     costs: [120, 145, 205],
+    maxHealth: [850, 1120, 1450],
+    armor: [0.28, 0.34, 0.40],
     targetPriority: 'highest-armor',
     mastery: 'rally-bash',
     damage: [180, 185, 190],
@@ -50,7 +62,11 @@ export const DEFENDERS = Object.freeze({
   }),
   'rune-artificer': freezeDefender({
     id: 'rune-artificer',
+    placementLayer: 'grass',
+    combatLayer: 'backline',
     costs: [150, 180, 255],
+    maxHealth: [1, 1, 1],
+    armor: [0, 0, 0],
     targetPriority: 'densest-cluster',
     mastery: 'double-detonation',
     damage: [28, 32, 36],

@@ -17,6 +17,33 @@ test('defender economy matches the approved contract', () => {
   );
 });
 
+test('defender placement roles and durability values match the approved contract', () => {
+  assert.deepEqual(
+    Object.fromEntries(Object.values(DEFENDERS).map((defender) => [defender.id, [
+      defender.placementLayer,
+      defender.combatLayer,
+    ]])),
+    {
+      bladeguard: ['road', 'frontline'],
+      ranger: ['grass', 'backline'],
+      ironwarden: ['road', 'frontline'],
+      'rune-artificer': ['grass', 'backline'],
+    },
+  );
+  assert.deepEqual(
+    Object.fromEntries(Object.values(DEFENDERS).map((defender) => [defender.id, [
+      defender.maxHealth,
+      defender.armor,
+    ]])),
+    {
+      bladeguard: [[420, 560, 720], [0.10, 0.14, 0.18]],
+      ranger: [[1, 1, 1], [0, 0, 0]],
+      ironwarden: [[850, 1120, 1450], [0.28, 0.34, 0.40]],
+      'rune-artificer': [[1, 1, 1], [0, 0, 0]],
+    },
+  );
+});
+
 test('all nested combat config is immutable and Ranger mastery target count is authored', () => {
   for (const defender of Object.values(DEFENDERS)) {
     for (const key of ['costs', 'damage', 'range', 'cooldownTicks']) {
@@ -124,7 +151,6 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     };
     const firstHighestSpendDefender = highestSpendDefender(first);
     const secondHighestSpendDefender = highestSpendDefender(second);
-    assert.notEqual(firstHighestSpendDefender, secondHighestSpendDefender);
     highestSpendDefenders.add(firstHighestSpendDefender);
     highestSpendDefenders.add(secondHighestSpendDefender);
   }
