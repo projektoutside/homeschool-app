@@ -66,6 +66,7 @@ const resolution = Math.min(globalThis.devicePixelRatio || 1, 2);
 game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'battlefield',
+  audio: { noAudio: true },
   transparent: true,
   width: 720,
   height: 960,

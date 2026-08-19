@@ -435,7 +435,7 @@ export class ViewPool {
 
   destroy() {
     for (const view of this.allViews) {
-      if (this.activeViews.has(view)) this.resetView?.(view);
+      this.resetView?.(view);
       view.destroy?.();
     }
     this.availableViews.length = 0;

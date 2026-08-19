@@ -189,6 +189,7 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(main, /transparent:\s*true/);
   assert.match(main, /width:\s*720/);
   assert.match(main, /height:\s*960/);
+  assert.match(main, /audio:\s*{\s*noAudio:\s*true\s*}/s);
   assert.match(main, /Math\.min\([^)]*devicePixelRatio[^)]*,\s*2\)/);
   assert.match(main, /scene:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
   assert.match(main, /if\s*\(paused\)\s*{[^}]*scene\.scene\.isActive\(\)/s);
@@ -465,6 +466,30 @@ test('presentation teardown idempotently clears timers, listeners, and active de
   assert.deepEqual(pool.getState(), {
     created: 1, active: 0, available: 1, highWater: 1, acquires: 1, releases: 1,
   });
+});
+
+test('pool destruction resets an available character view before destroying its animation state', async () => {
+  const [{ BattleScene }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const scene = Object.create(BattleScene.prototype);
+  scene.tweens = { killTweensOf() {} };
+  const view = createSceneView();
+  let destroyCalls = 0;
+  view.destroy = () => { destroyCalls += 1; };
+  const pool = new ViewPool(() => view, {
+    resetView: (leasedView) => BattleScene.prototype.releasePooledView.call(scene, leasedView),
+  });
+
+  pool.release(pool.acquire());
+  view._body.anims.isPlaying = true;
+  view._body.listenerCount = 1;
+  pool.destroy();
+
+  assert.equal(view._body.anims.isPlaying, false);
+  assert.equal(view._body.listenerCount, 0);
+  assert.equal(destroyCalls, 1);
 });
 
 test('actual external pause entry clears every transient scene resource idempotently', async () => {
