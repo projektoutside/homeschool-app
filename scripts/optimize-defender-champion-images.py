@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 MAX_OUTPUT_BYTES = 1_500_000
 WEBP_METHOD = 6
 OPAQUE_QUALITY = 90
+CHARACTER_QUALITY = 98
 ATLAS_COLUMNS = 4
 ATLAS_ROWS = 4
 PATH_LANE_WIDTH = 128
@@ -388,6 +389,8 @@ def optimize_image(input_path: Path, output_path: Path, mode: str) -> None:
     }
     if mode in {"atlas", "lossless", "path-atlas", "sprite-atlas", "sprite", "castle-strip"}:
         save_options.update(lossless=True, quality=100)
+    elif mode == "character":
+        save_options.update(lossless=False, quality=CHARACTER_QUALITY)
     else:
         save_options.update(lossless=False, quality=OPAQUE_QUALITY)
 
@@ -430,7 +433,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--mode",
-        choices=("atlas", "lossless", "opaque", "path-atlas", "sprite-atlas", "sprite", "castle-strip"),
+        choices=(
+            "atlas",
+            "lossless",
+            "character",
+            "opaque",
+            "path-atlas",
+            "sprite-atlas",
+            "sprite",
+            "castle-strip",
+        ),
         required=True,
     )
     return parser

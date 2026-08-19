@@ -1,0 +1,832 @@
+{
+  "schemaVersion": 1,
+  "frame": {
+    "width": 384,
+    "height": 384,
+    "anchorX": 0.5,
+    "anchorY": 1,
+    "safeInset": 12
+  },
+  "bossOrder": [
+    "mossback-brute",
+    "ironhide-warlord",
+    "dread-colossus"
+  ],
+  "actionOrder": [
+    "walk",
+    "ability",
+    "defeat"
+  ],
+  "bosses": [
+    {
+      "id": "mossback-brute",
+      "acceptedSeedIdentity": "seed-mossback-brute-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 244,
+          "ability": 244,
+          "defeat": 244
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-mossback-brute-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-mossback-brute-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-mossback-brute-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "mossback-telegraph": {
+            "action": "ability",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "boss-warning"
+            },
+            "externalRangeWarning": true
+          }
+        }
+      }
+    },
+    {
+      "id": "ironhide-warlord",
+      "acceptedSeedIdentity": "seed-ironhide-warlord-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 224,
+          "ability": 224,
+          "defeat": 224
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-ironhide-warlord-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-ironhide-warlord-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-ironhide-warlord-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "rally-counter-transition": {
+            "action": "ability",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "shield-bash"
+            }
+          }
+        },
+        "plateAccents": [
+          {
+            "threshold": "plate75",
+            "removeAccent": "iron-bark-plate-1"
+          },
+          {
+            "threshold": "plate50",
+            "removeAccent": "iron-bark-plate-2"
+          },
+          {
+            "threshold": "plate25",
+            "removeAccent": "iron-bark-plate-3"
+          }
+        ],
+        "plateCrackOverlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "defeat-crack"
+        },
+        "vulnerabilityAccent": {
+          "sourceState": "vulnerableUntilTick",
+          "overlay": {
+            "atlasAssetId": "environment-gameplay-atlas",
+            "frameId": "slow-rune"
+          }
+        },
+        "baseArtUnderlayer": "coherent-underlayer-beneath-three-removable-runtime-plate-accents"
+      }
+    },
+    {
+      "id": "dread-colossus",
+      "acceptedSeedIdentity": "seed-dread-colossus-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 338,
+          "ability": 338,
+          "defeat": 338
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-dread-colossus-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-dread-colossus-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-dread-colossus-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "dread-pulse-telegraph": {
+            "action": "ability",
+            "warningOverlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "boss-warning"
+            },
+            "suppressionRangeOverlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "range-marker"
+            }
+          }
+        },
+        "healthRatioPhases": [
+          {
+            "phase": 1,
+            "range": "1.00-0.75",
+            "accent": "phase-1-runes"
+          },
+          {
+            "phase": 2,
+            "range": "below-0.75-through-0.40",
+            "accent": "phase-2-runes"
+          },
+          {
+            "phase": 3,
+            "range": "below-0.40",
+            "accent": "phase-3-runes"
+          }
+        ],
+        "summonThresholds": [
+          {
+            "healthRatio": 0.75,
+            "summon": "swarmkin-pack-1",
+            "accent": "phase-2-runes"
+          },
+          {
+            "healthRatio": 0.5,
+            "summon": "swarmkin-pack-2",
+            "accent": "phase-2-runes"
+          },
+          {
+            "healthRatio": 0.25,
+            "summon": "swarmkin-pack-3",
+            "accent": "phase-3-runes"
+          }
+        ],
+        "phaseAccentOverlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "slow-rune"
+        }
+      }
+    }
+  ]
+}

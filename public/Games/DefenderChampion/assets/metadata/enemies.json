@@ -1,0 +1,905 @@
+{
+  "schemaVersion": 1,
+  "frame": {
+    "width": 256,
+    "height": 256,
+    "anchorX": 0.5,
+    "anchorY": 1,
+    "safeInset": 8
+  },
+  "enemyOrder": [
+    "blight-walker",
+    "skitter",
+    "swarmkin",
+    "shellguard",
+    "hexcaller",
+    "crusher"
+  ],
+  "actionOrder": [
+    "walk",
+    "defeat",
+    "cast"
+  ],
+  "enemies": [
+    {
+      "id": "blight-walker",
+      "acceptedSeedIdentity": "seed-blight-walker-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 226,
+          "defeat": 226
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-blight-walker-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-blight-walker-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        }
+      }
+    },
+    {
+      "id": "skitter",
+      "acceptedSeedIdentity": "seed-skitter-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 238,
+          "defeat": 238
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-skitter-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-skitter-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        }
+      }
+    },
+    {
+      "id": "swarmkin",
+      "acceptedSeedIdentity": "seed-swarmkin-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 231,
+          "defeat": 231
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-swarmkin-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-swarmkin-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        }
+      }
+    },
+    {
+      "id": "shellguard",
+      "acceptedSeedIdentity": "seed-shellguard-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 195,
+          "defeat": 195
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-shellguard-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-shellguard-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        }
+      }
+    },
+    {
+      "id": "hexcaller",
+      "acceptedSeedIdentity": "seed-hexcaller-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 228,
+          "defeat": 228,
+          "cast": 228
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-hexcaller-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-hexcaller-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "cast",
+          "assetId": "enemy-hexcaller-cast",
+          "frameCount": 8,
+          "frameDurationMs": 110,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 6,
+              "x": 1536,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 7,
+              "x": 1792,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "sourceEffects": {
+          "enemy-healing": {
+            "sourceEnemyId": "hexcaller",
+            "action": "cast",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "heal-sparkle"
+            }
+          },
+          "enemy-speed": {
+            "sourceEnemyId": "hexcaller",
+            "action": "cast",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "range-marker"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "crusher",
+      "acceptedSeedIdentity": "seed-crusher-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 206,
+          "defeat": 206
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "enemy-crusher-walk",
+          "frameCount": 6,
+          "frameDurationMs": 120,
+          "loop": true,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "enemy-crusher-defeat",
+          "frameCount": 6,
+          "frameDurationMs": 140,
+          "loop": false,
+          "columns": 6,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 1,
+              "x": 256,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 2,
+              "x": 512,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 3,
+              "x": 768,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 4,
+              "x": 1024,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            },
+            {
+              "index": 5,
+              "x": 1280,
+              "y": 0,
+              "width": 256,
+              "height": 256
+            }
+          ]
+        }
+      ],
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        }
+      }
+    }
+  ],
+  "presentationMappings": {
+    "normalMovement": {
+      "action": "walk"
+    },
+    "defeatRemoval": {
+      "action": "defeat"
+    },
+    "sourceEffects": {
+      "enemy-healing": {
+        "sourceEnemyId": "hexcaller",
+        "action": "cast",
+        "overlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "heal-sparkle"
+        }
+      },
+      "enemy-speed": {
+        "sourceEnemyId": "hexcaller",
+        "action": "cast",
+        "overlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "range-marker"
+        }
+      }
+    }
+  }
+}
