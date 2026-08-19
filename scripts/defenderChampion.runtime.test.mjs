@@ -116,6 +116,19 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(main, /data:image\/gif;base64/);
 });
 
+test('BattleScene renders shared path pieces and resolves every typed pad position', async () => {
+  const battleScene = await readGameFile('src/scenes/BattleScene.js');
+
+  assert.match(battleScene, /import\s*{[^}]*derivePathPieces[^}]*resolvePlacementPoint[^}]*samplePathProgress[^}]*}/s);
+  assert.match(battleScene, /derivePathPieces\(this\.level\.path,\s*toWorldPoint\)/);
+  assert.match(battleScene, /PATH_FRAME\[piece\.frame\]/);
+  assert.match(battleScene, /if \(piece\.kind !== 'straight'\) return \{ height: piece\.width, width: piece\.width \};/);
+  assert.match(battleScene, /setDisplaySize\(size\.width, size\.height\)/);
+  assert.match(battleScene, /setRotation\(piece\.rotation\)/);
+  assert.match(battleScene, /resolvePlacementPoint\(this\.level,\s*placement\)/);
+  assert.doesNotMatch(battleScene, /setDisplaySize\(worldLength \+ 54,\s*210\)/);
+});
+
 test('continue targets the highest unlocked uncleared level and falls back to level 10', async () => {
   const { resolveContinueLevel } = await import('../public/Games/DefenderChampion/src/ui/hud-controller.js');
 

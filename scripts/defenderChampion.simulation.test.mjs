@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
+import { resolvePlacementPoint } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 import {
   advanceSimulation,
@@ -207,7 +208,7 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   assert.deepEqual(first.towers, [
     {
       id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-a', tier: 0, totalInvested: 70,
-      attackCount: 48, masteryProgress: 3, nextAttackTick: 2256,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 3090,
     },
     {
       id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-b', tier: 0, totalInvested: 50,
@@ -229,7 +230,9 @@ test('presentation events are deterministic, monotonic, bounded, and expose atta
     issueCommand(simulation, {
       type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
     });
-    advanceSimulation(simulation, 240);
+    advanceSimulation(simulation, 1);
+    simulation.enemies[0].pathProgress = LEVELS[0].pads[0].pathProgress;
+    advanceSimulation(simulation, 239);
   }
   const firstSummary = summarizeSimulation(first);
   const secondSummary = summarizeSimulation(second);
@@ -257,14 +260,19 @@ test('projectile snapshots retain launch data after their source tower is sold',
     type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
   });
   advanceSimulation(simulation, 1);
+  simulation.enemies[0].pathProgress = LEVELS[0].pads[0].pathProgress;
+  advanceSimulation(simulation, 1);
   const towerId = simulation.towers[0].id;
   assert.ok(simulation.projectiles.length > 0);
   issueCommand(simulation, { type: 'sell', towerId });
   const [projectile] = summarizeSimulation(simulation).projectiles;
 
   assert.equal(projectile.sourceTowerId, towerId);
-  assert.equal(projectile.launchTick, 0);
-  assert.deepEqual(projectile.launchPosition, { x: 122, y: 278 });
+  assert.equal(projectile.launchTick, 1);
+  assert.deepEqual(projectile.launchPosition, resolvePlacementPoint(
+    LEVELS[0],
+    LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a'),
+  ));
   assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
   assert.equal(summarizeSimulation(simulation).towers.length, 0);
 });

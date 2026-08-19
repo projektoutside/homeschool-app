@@ -6,6 +6,7 @@ import {
   createPathMetrics,
   derivePathPieces,
   resolvePlacementPoint,
+  samplePathProgress,
 } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 
 const identity = ({ x, y }) => ({ x, y });
@@ -48,6 +49,64 @@ test('all ten routes are orthogonal top-to-bottom roads with typed placements', 
     assert.equal(pieces.filter(({ kind }) => kind === 'corner').length, level.path.length - 2);
     assert.equal(pieces.every(({ width }) => width === ROAD_WIDTH), true);
   }
+});
+
+test('Level 1 preserves the approved S route and every campaign route stays in the authored bounds', () => {
+  assert.deepEqual(LEVELS[0].path, [
+    { x: 238, y: 0 }, { x: 238, y: 72 },
+    { x: 430, y: 72 }, { x: 430, y: 174 },
+    { x: 158, y: 174 }, { x: 158, y: 300 },
+    { x: 414, y: 300 }, { x: 414, y: 392 },
+    { x: 252, y: 392 }, { x: 252, y: 500 },
+    { x: 320, y: 500 },
+  ]);
+  for (const level of LEVELS) {
+    const entrance = level.path[0];
+    const castle = level.path.at(-1);
+    assert.ok(entrance.x >= 120 && entrance.x <= 520, `${level.id} entrance x`);
+    assert.ok(entrance.y >= 0 && entrance.y <= 24, `${level.id} entrance y`);
+    assert.ok(castle.x >= 270 && castle.x <= 370, `${level.id} castle x`);
+    assert.ok(castle.y >= 492 && castle.y <= 510, `${level.id} castle y`);
+    assert.ok(level.path.length - 1 >= 7 && level.path.length - 1 <= 11, `${level.id} segment count`);
+  }
+});
+
+test('pad letters, layers, and road fractions stay stable across every map', () => {
+  for (const [index, level] of LEVELS.entries()) {
+    const metrics = createPathMetrics(level.path);
+    assert.deepEqual(level.pads.map(({ id }) => id), 'abcdefgh'.split('').map((letter) => `l${index + 1}-pad-${letter}`));
+    assert.deepEqual(level.pads.map(({ layer }) => layer), [
+      'road', 'grass', 'road', 'grass', 'road', 'grass', 'road', 'grass',
+    ]);
+    assert.deepEqual(
+      level.pads.filter(({ layer }) => layer === 'road').map(({ pathProgress }) => Number((pathProgress / metrics.total).toFixed(2))),
+      [0.18, 0.39, 0.62, 0.84],
+    );
+  }
+});
+
+test('path sampling clamps progress and road pieces preserve directional frames and trims', () => {
+  const path = [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 }];
+  const metrics = createPathMetrics(path);
+  assert.deepEqual(samplePathProgress(metrics, -10), { x: 0, y: 0 });
+  assert.deepEqual(samplePathProgress(metrics, 50), { x: 0, y: 50 });
+  assert.deepEqual(samplePathProgress(metrics, 150), { x: 50, y: 100 });
+  assert.deepEqual(samplePathProgress(metrics, 900), { x: 100, y: 100 });
+  assert.deepEqual(derivePathPieces(path, identity), [
+    { kind: 'cap', frame: 'capSouth', x: 0, y: 0, length: 56, rotation: 0, width: 112 },
+    { kind: 'straight', frame: 'vertical', x: 0, y: 50, length: 44, rotation: 0, width: 112 },
+    { kind: 'corner', frame: 'northEast', x: 0, y: 100, length: 112, rotation: 0, width: 112 },
+    { kind: 'straight', frame: 'horizontal', x: 50, y: 100, length: 44, rotation: 0, width: 112 },
+    { kind: 'cap', frame: 'capWest', x: 100, y: 100, length: 56, rotation: 0, width: 112 },
+  ]);
+});
+
+test('path geometry rejects malformed, diagonal, too-short, and U-turn routes', () => {
+  assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 10, y: 10 }]), /Diagonal path segment 0/);
+  assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 0, y: 0 }]), /Empty path segment 0/);
+  assert.throws(() => derivePathPieces([{ x: 0, y: 0 }, { x: 10, y: 10 }], identity), /Diagonal path segment 0/);
+  assert.throws(() => derivePathPieces([{ x: 0, y: 0 }, { x: 0, y: 56 }], identity), /Projected path segment 0 is too short/);
+  assert.throws(() => derivePathPieces([{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 0, y: 0 }], identity), /Invalid corner direction/);
 });
 
 test('grass pads retain 104 projected pixels of centerline clearance', () => {

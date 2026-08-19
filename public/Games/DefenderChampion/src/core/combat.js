@@ -1,5 +1,6 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
+import { resolvePlacementPoint } from './path-geometry.js';
 import { selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
@@ -56,7 +57,10 @@ const getEnemyPosition = (simulation, enemy) => {
   };
 };
 
-const getTowerPosition = (simulation, tower) => simulation.level.pads.find((pad) => pad.id === tower.padId);
+const getTowerPosition = (simulation, tower) => resolvePlacementPoint(
+  simulation.level,
+  simulation.level.pads.find((pad) => pad.id === tower.padId),
+);
 
 const effectKey = (targetId, kind) => `${targetId}\u0000${kind}`;
 

@@ -3,6 +3,12 @@ import { DEFENDERS } from '../config/defenders.js';
 import { ENEMIES } from '../config/enemies.js';
 import { LEVELS, getLevel } from '../config/levels.js';
 import {
+  createPathMetrics,
+  derivePathPieces,
+  resolvePlacementPoint,
+  samplePathProgress,
+} from '../core/path-geometry.js';
+import {
   advanceSimulation,
   clearPresentationEvents,
   createSimulation,
@@ -51,29 +57,15 @@ const distanceSquared = (first, second) => (
   ((first.x - second.x) ** 2) + ((first.y - second.y) ** 2)
 );
 
-const createPathMetrics = (path) => {
-  const segments = [];
-  let total = 0;
-  for (let index = 1; index < path.length; index += 1) {
-    const start = path[index - 1];
-    const end = path[index];
-    const length = Math.hypot(end.x - start.x, end.y - start.y);
-    segments.push({ end, length, offset: total, start });
-    total += length;
-  }
-  return { segments, total };
+const projectPathProgress = (metrics, pathProgress) => {
+  return toWorldPoint(samplePathProgress(metrics, pathProgress));
 };
 
-const projectPathProgress = (metrics, pathProgress) => {
-  const progress = Math.min(metrics.total, Math.max(0, Number(pathProgress) || 0));
-  const segment = metrics.segments.find((entry) => progress <= entry.offset + entry.length)
-    ?? metrics.segments.at(-1);
-  if (!segment) return { x: 0, y: 0 };
-  const ratio = segment.length === 0 ? 1 : (progress - segment.offset) / segment.length;
-  return toWorldPoint({
-    x: segment.start.x + ((segment.end.x - segment.start.x) * ratio),
-    y: segment.start.y + ((segment.end.y - segment.start.y) * ratio),
-  });
+const roadPieceSize = (piece) => {
+  if (piece.kind !== 'straight') return { height: piece.width, width: piece.width };
+  return piece.frame === 'vertical'
+    ? { height: piece.length, width: piece.width }
+    : { height: piece.width, width: piece.length };
 };
 
 const stopBody = (view) => {
@@ -176,36 +168,23 @@ export class BattleScene extends Phaser.Scene {
       .setTileScale(0.62);
 
     this.staticViews = [];
-    for (const segment of this.pathMetrics.segments) {
-      const start = toWorldPoint(segment.start);
-      const end = toWorldPoint(segment.end);
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      const worldLength = Math.hypot(dx, dy);
+    for (const piece of derivePathPieces(this.level.path, toWorldPoint)) {
+      const size = roadPieceSize(piece);
       const path = this.add.image(
-        (start.x + end.x) / 2,
-        (start.y + end.y) / 2,
+        piece.x,
+        piece.y,
         'environment-path-atlas',
-        PATH_FRAME.horizontal,
+        PATH_FRAME[piece.frame],
       )
-        .setDepth(1)
-        .setDisplaySize(worldLength + 54, 210)
-        .setRotation(Math.atan2(dy, dx));
+        .setDepth(piece.kind === 'straight' ? 1 : 1.1)
+        .setDisplaySize(size.width, size.height)
+        .setRotation(piece.rotation);
       this.staticViews.push(path);
-    }
-    for (const point of this.level.path) {
-      const position = toWorldPoint(point);
-      this.staticViews.push(this.add.image(
-        position.x,
-        position.y,
-        'environment-path-atlas',
-        PATH_FRAME.isolated,
-      ).setDepth(1.1).setDisplaySize(206, 206));
     }
 
     this.padSprites = new Map();
     for (const pad of this.level.pads) {
-      const position = toWorldPoint(pad);
+      const position = this.resolvePlacementPosition(pad);
       const view = this.add.image(
         position.x,
         position.y,
@@ -223,6 +202,10 @@ export class BattleScene extends Phaser.Scene {
       'castle-states',
       0,
     ).setOrigin(0.5, 672 / 724).setDepth(3).setScale(0.27);
+  }
+
+  resolvePlacementPosition(placement) {
+    return toWorldPoint(resolvePlacementPoint(this.level, placement));
   }
 
   createOptionalProps() {
@@ -425,7 +408,7 @@ export class BattleScene extends Phaser.Scene {
     const point = this.pointerToWorld(event, battlefield);
     if (!point) return;
     const pad = this.level.pads.find((candidate) => (
-      distanceSquared(point, toWorldPoint(candidate)) <= POINTER_HIT_RADIUS ** 2
+      distanceSquared(point, this.resolvePlacementPosition(candidate)) <= POINTER_HIT_RADIUS ** 2
     ));
     if (!pad) return;
     this.focusIndex = this.level.pads.indexOf(pad);
@@ -676,7 +659,7 @@ export class BattleScene extends Phaser.Scene {
         if (kind === 'tower-mastery') {
           const tower = this.towerById.get(payload.towerId);
           const pad = tower && this.padById.get(tower.padId);
-          if (pad) this.spawnBurst(toWorldPoint(pad), GAMEPLAY_FRAME.victoryBurst, 7, event.id);
+          if (pad) this.spawnBurst(this.resolvePlacementPosition(pad), GAMEPLAY_FRAME.victoryBurst, 7, event.id);
         }
         this.audioController?.playCue?.(kind === 'tower-mastery' ? 'mastery' : 'attack');
       } else if (kind === 'enemy-hit') {
@@ -902,7 +885,7 @@ export class BattleScene extends Phaser.Scene {
   projectTowers(snapshot) {
     syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
       const pad = this.padById.get(tower.padId);
-      const position = toWorldPoint(pad);
+      const position = this.resolvePlacementPosition(pad);
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
       const idleAnimationKey = animationKey('defender', tower.defenderId, 'idle');
@@ -1000,7 +983,7 @@ export class BattleScene extends Phaser.Scene {
     if (!this.focusRing || !this.rangeRing) return;
     const pad = this.level.pads[this.focusIndex];
     if (!pad) return;
-    const position = toWorldPoint(pad);
+    const position = this.resolvePlacementPosition(pad);
     const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     this.focusRing.clear();
     if (!this.battlefieldHasFocus) {

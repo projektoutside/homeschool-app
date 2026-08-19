@@ -9,11 +9,15 @@ import {
 } from '../public/Games/DefenderChampion/src/core/combat.js';
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
+import { LEVELS } from '../public/Games/DefenderChampion/src/config/levels.js';
 import {
   advanceSimulation,
   createSimulation,
   issueCommand,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
+
+const testRoadPad = LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a');
+const testRoadProgress = testRoadPad.pathProgress;
 
 const createCombatEnemy = (id, enemyId, overrides = {}) => {
   const config = ENEMIES[enemyId];
@@ -22,7 +26,7 @@ const createCombatEnemy = (id, enemyId, overrides = {}) => {
     enemyId,
     waveIndex: 0,
     spawnTick: 0,
-    pathProgress: 0,
+    pathProgress: testRoadProgress,
     health: config.health,
     maxHealth: config.health,
     speed: config.speed,
@@ -202,7 +206,7 @@ test('Rune Artificer uses ordinary armor for normal shots and 35 percent pierce 
     const enemy = createCombatEnemy('enemy-1', 'shellguard', {
       health: 1000,
       maxHealth: 1000,
-      pathProgress: 80,
+      pathProgress: testRoadProgress,
       speed: 0,
     });
     const simulation = createTowerCombat('rune-artificer', 2, attackCount, [enemy]);

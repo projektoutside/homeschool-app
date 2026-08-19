@@ -12,7 +12,8 @@ const cornerFrame = (first, second) => {
   if (directions.has('north') && directions.has('east')) return 'northEast';
   if (directions.has('east') && directions.has('south')) return 'eastSouth';
   if (directions.has('south') && directions.has('west')) return 'southWest';
-  return 'westNorth';
+  if (directions.has('west') && directions.has('north')) return 'westNorth';
+  throw new Error(`Invalid corner direction ${first}-${second}`);
 };
 
 const capFrame = (direction) => `cap${direction[0].toUpperCase()}${direction.slice(1)}`;
@@ -44,6 +45,7 @@ export const samplePathProgress = (metrics, requestedProgress) => {
 };
 
 export const derivePathPieces = (path, projectPoint) => {
+  createPathMetrics(path);
   const projected = path.map((point) => Object.freeze(projectPoint(point)));
   const trim = ROAD_WIDTH / 4;
   const entranceDirection = cardinalDirection(projected[0], projected[1]);
@@ -75,7 +77,7 @@ export const derivePathPieces = (path, projectPoint) => {
       x: (trimmedStart.x + trimmedEnd.x) / 2,
       y: (trimmedStart.y + trimmedEnd.y) / 2,
       length: length - (ROAD_WIDTH / 2),
-      rotation: Math.atan2(vertical, horizontal),
+      rotation: 0,
       width: ROAD_WIDTH,
     }));
     if (index < projected.length - 1) {
