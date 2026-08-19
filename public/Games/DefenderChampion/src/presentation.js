@@ -164,6 +164,28 @@ export const resolvePlacementPrompt = (layer) => (
   layer === 'road' ? 'Choose a road guard slot' : 'Choose a grass ranged slot'
 );
 
+export const attemptPlacementBuild = ({
+  announce,
+  issueCommand,
+  pad,
+  selectedDefenderId,
+  selectedLayer,
+} = {}) => {
+  if (!selectedDefenderId) {
+    announce?.('Open placement slot. Select defender 1 through 4 first.');
+    return { accepted: false, reason: 'defender-required' };
+  }
+  if (!selectedLayer || pad?.layer !== selectedLayer) {
+    announce?.(`${resolvePlacementPrompt(selectedLayer)}.`);
+    return { accepted: false, reason: 'placement-layer-mismatch' };
+  }
+  return issueCommand?.({
+    type: 'build',
+    defenderId: selectedDefenderId,
+    padId: pad.id,
+  }) ?? { accepted: false, reason: 'battle-unavailable' };
+};
+
 export const resolveCommandRejectionMessage = (reason, selectedLayer = null) => ({
   'battle-terminal': 'This battle has already ended.',
   'battle-unavailable': 'The battlefield is not available.',
@@ -229,6 +251,121 @@ export const resolveEnemyAttackMotion = ({
     totalMs,
     windupMs,
   });
+};
+
+export const resolveDefenderHitMotion = ({
+  directionX = 0,
+  directionY = 1,
+  reducedMotion = false,
+} = {}) => {
+  const recoil = reducedMotion ? 0 : 10;
+  const recoilPosition = Object.freeze({
+    x: reducedMotion ? 0 : directionX * recoil,
+    y: reducedMotion ? 0 : directionY * recoil,
+  });
+  const restPosition = Object.freeze({ x: 0, y: 0 });
+  return Object.freeze({
+    steps: Object.freeze([
+      Object.freeze({
+        angle: reducedMotion ? -3 : -6,
+        duration: reducedMotion ? 45 : 75,
+        ...recoilPosition,
+      }),
+      Object.freeze({
+        angle: 0,
+        duration: reducedMotion ? 55 : 125,
+        ease: 'Cubic.easeOut',
+        ...restPosition,
+      }),
+    ]),
+  });
+};
+
+export const resolveDamageLabelMotion = ({ position = { x: 0, y: 0 }, reducedMotion = false } = {}) => {
+  const startX = position.x;
+  const startY = position.y - 68;
+  return Object.freeze({
+    duration: reducedMotion ? 180 : 520,
+    endX: startX,
+    endY: reducedMotion ? startY : position.y - 112,
+    startX,
+    startY,
+  });
+};
+
+export const resolveBurstMotion = ({
+  index = 0,
+  position = { x: 0, y: 0 },
+  reducedMotion = false,
+  seed = 0,
+} = {}) => {
+  const startX = position.x;
+  const startY = position.y - 28;
+  if (reducedMotion) {
+    return Object.freeze({ duration: 180, endX: startX, endY: startY, startX, startY });
+  }
+  const angle = (((index * 137.5) + (seed * 17)) % 360) * (Math.PI / 180);
+  const distance = 30 + ((index % 4) * 8);
+  return Object.freeze({
+    duration: 460,
+    endX: startX + (Math.cos(angle) * distance),
+    endY: startY + (Math.sin(angle) * distance),
+    startX,
+    startY,
+  });
+};
+
+export const beginDefenderDefeatPresentation = (view, { reducedMotion = false } = {}) => {
+  view._healthKey = 'defeated';
+  view._healthBackground?.clear?.();
+  view._healthBackground?.setVisible?.(false);
+  view._healthFill?.clear?.();
+  view._healthFill?.setVisible?.(false);
+  view._body?.anims?.stop?.();
+  view._body?.setTint?.(0x8b5a52);
+  return Object.freeze({
+    alpha: 0,
+    angle: reducedMotion ? 4 : 12,
+    duration: reducedMotion ? 160 : 360,
+    y: reducedMotion ? 0 : 26,
+  });
+};
+
+export const finishTrackedMotion = (view, motion, onComplete) => {
+  if (!view || view._motion !== motion) return false;
+  view._motion = null;
+  onComplete?.();
+  return true;
+};
+
+export const clearPresentationTransients = ({
+  cancelViewMotion,
+  pools = [],
+  timers,
+} = {}) => {
+  for (const timer of [...(timers ?? [])]) timer?.remove?.(false);
+  timers?.clear?.();
+  for (const pool of pools) {
+    for (const view of [...(pool?.activeViews ?? [])]) {
+      view?._body?.removeAllListeners?.('animationcomplete');
+      cancelViewMotion?.(view);
+      pool.release(view);
+    }
+  }
+};
+
+const LANE_PRESENTATION_HANDLER = Object.freeze({
+  'defender-defeated': 'onDefenderDefeated',
+  'defender-hit': 'onDefenderHit',
+  'enemy-attack-impact': 'onEnemyAttackImpact',
+  'enemy-attack-start': 'onEnemyAttackStart',
+});
+
+export const dispatchLanePresentationEvent = (event, handlers = {}) => {
+  const handlerName = LANE_PRESENTATION_HANDLER[event?.kind];
+  if (!handlerName) return false;
+  handlers[handlerName]?.(event.payload, event);
+  return true;
 };
 
 export const deriveCampaignEnemyViewCapacity = (levels = [], enemies = {}) => Math.max(

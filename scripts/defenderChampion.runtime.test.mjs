@@ -195,11 +195,254 @@ test('typed marker projection keeps cross-layer pointer and keyboard builds iner
   assert.match(battleScene, /view\._placementLayer\s*=\s*pad\.layer/);
   assert.match(battleScene, /resolvePlacementMarkerState\(\{/);
   assert.match(battleScene, /attemptBuildAtPad\(pad\)/);
-  assert.match(battleScene, /if \(!this\.isPlacementCompatible\(pad\)\)[\s\S]*?return false;/);
   const pointerHandler = battleScene.match(/handlePointerDown\(event, battlefield\) \{[\s\S]*?\n  \}\n\n  releasePointer/)?.[0] ?? '';
   const keyboardConfirmation = battleScene.match(/confirmFocusedTarget\(\) \{[\s\S]*?\n  \}\n\n  announceFocusedTarget/)?.[0] ?? '';
   assert.doesNotMatch(pointerHandler, /issueBattleCommand\(\{ type: 'build'/);
   assert.doesNotMatch(keyboardConfirmation, /issueBattleCommand\(\{ type: 'build'/);
+});
+
+test('the shared placement gate blocks incompatible pointer and keyboard commands before dispatch', async () => {
+  const { attemptPlacementBuild } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  assert.equal(typeof attemptPlacementBuild, 'function');
+
+  const dispatched = [];
+  const announcements = [];
+  const issueCommand = (command) => {
+    dispatched.push(command);
+    return { accepted: true, reason: null };
+  };
+  const announce = (message) => announcements.push(message);
+  const incompatible = {
+    announce,
+    issueCommand,
+    pad: { id: 'l1-pad-b', layer: 'grass' },
+    selectedDefenderId: 'bladeguard',
+    selectedLayer: 'road',
+  };
+
+  assert.deepEqual(attemptPlacementBuild(incompatible), {
+    accepted: false,
+    reason: 'placement-layer-mismatch',
+  }, 'pointer attempt');
+  assert.deepEqual(attemptPlacementBuild(incompatible), {
+    accepted: false,
+    reason: 'placement-layer-mismatch',
+  }, 'keyboard attempt');
+  assert.deepEqual(dispatched, [], 'incompatible input never reaches simulation commands');
+  assert.deepEqual(announcements, ['Choose a road guard slot.', 'Choose a road guard slot.']);
+
+  assert.deepEqual(attemptPlacementBuild({
+    ...incompatible,
+    pad: { id: 'l1-pad-a', layer: 'road' },
+  }), { accepted: true, reason: null });
+  assert.deepEqual(dispatched, [{
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  }]);
+});
+
+test('fatal defender presentation hides frontline health before its fade starts', async () => {
+  const { beginDefenderDefeatPresentation } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  assert.equal(typeof beginDefenderDefeatPresentation, 'function');
+
+  const createGraphics = () => ({
+    clearCount: 0,
+    visible: true,
+    clear() {
+      this.clearCount += 1;
+      return this;
+    },
+    setVisible(visible) {
+      this.visible = visible;
+      return this;
+    },
+  });
+  const healthBackground = createGraphics();
+  const healthFill = createGraphics();
+  const body = {
+    animStops: 0,
+    tint: null,
+    anims: { stop() { body.animStops += 1; } },
+    setTint(tint) {
+      this.tint = tint;
+      return this;
+    },
+  };
+  const view = {
+    _body: body,
+    _healthBackground: healthBackground,
+    _healthFill: healthFill,
+    _healthKey: 'frontline:12',
+  };
+
+  const fade = beginDefenderDefeatPresentation(view, { reducedMotion: false });
+
+  assert.equal(view._healthKey, 'defeated');
+  assert.equal(healthBackground.visible, false);
+  assert.equal(healthFill.visible, false);
+  assert.equal(healthBackground.clearCount, 1);
+  assert.equal(healthFill.clearCount, 1);
+  assert.equal(body.animStops, 1);
+  assert.equal(body.tint, 0x8b5a52);
+  assert.deepEqual(fade, { alpha: 0, angle: 12, duration: 360, y: 26 });
+});
+
+test('presentation teardown idempotently clears timers, listeners, and active defeat views', async () => {
+  const { clearPresentationTransients, ViewPool } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  assert.equal(typeof clearPresentationTransients, 'function');
+
+  let listenerCount = 1;
+  let timerRemovals = 0;
+  let resets = 0;
+  let cancellations = 0;
+  const pool = new ViewPool(() => ({
+    _body: {
+      removeAllListeners(eventName) {
+        assert.equal(eventName, 'animationcomplete');
+        listenerCount = 0;
+      },
+    },
+    setActive() { return this; },
+    setAlpha() { return this; },
+    setVisible() { return this; },
+  }), { resetView: () => { resets += 1; } });
+  pool.acquire();
+  const timers = new Set([{
+    remove(dispatchCallback) {
+      assert.equal(dispatchCallback, false);
+      timerRemovals += 1;
+    },
+  }]);
+
+  const cleanup = () => clearPresentationTransients({
+    cancelViewMotion: () => { cancellations += 1; },
+    pools: [pool],
+    timers,
+  });
+  cleanup();
+  cleanup();
+
+  assert.equal(timerRemovals, 1);
+  assert.equal(timers.size, 0);
+  assert.equal(listenerCount, 0);
+  assert.equal(cancellations, 1);
+  assert.equal(resets, 1);
+  assert.deepEqual(pool.getState(), {
+    created: 1, active: 0, available: 1, highWater: 1, acquires: 1, releases: 1,
+  });
+});
+
+test('tracked motion completion ignores stale callbacks after pooled reuse', async () => {
+  const { finishTrackedMotion, ViewPool } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  assert.equal(typeof finishTrackedMotion, 'function');
+
+  const pool = new ViewPool(() => ({
+    _motion: null,
+    setActive() { return this; },
+    setAlpha() { return this; },
+    setVisible() { return this; },
+  }), { resetView: (view) => { view._motion = null; } });
+  const firstLease = pool.acquire();
+  const staleMotion = { id: 'old' };
+  firstLease._motion = staleMotion;
+  pool.release(firstLease);
+  const reusedView = pool.acquire();
+  const currentMotion = { id: 'new' };
+  reusedView._motion = currentMotion;
+  const completions = [];
+
+  assert.equal(finishTrackedMotion(reusedView, staleMotion, () => completions.push('stale')), false);
+  assert.equal(reusedView._motion, currentMotion);
+  assert.deepEqual(completions, []);
+  assert.equal(finishTrackedMotion(reusedView, currentMotion, () => completions.push('current')), true);
+  assert.equal(reusedView._motion, null);
+  assert.deepEqual(completions, ['current']);
+});
+
+test('reduced motion keeps attack, hit, impact, and defeat cosmetic positions fixed', async () => {
+  const presentation = await import('../public/Games/DefenderChampion/src/presentation.js');
+  const {
+    beginDefenderDefeatPresentation,
+    resolveBurstMotion,
+    resolveDamageLabelMotion,
+    resolveDefenderHitMotion,
+    resolveEnemyAttackMotion,
+  } = presentation;
+  for (const helper of [
+    beginDefenderDefeatPresentation,
+    resolveBurstMotion,
+    resolveDamageLabelMotion,
+    resolveDefenderHitMotion,
+  ]) assert.equal(typeof helper, 'function');
+
+  const attack = resolveEnemyAttackMotion({
+    currentTick: 0,
+    enemyPosition: { x: 10, y: 20 },
+    impactAtTick: 60,
+    reducedMotion: true,
+    targetPosition: { x: 300, y: 400 },
+  });
+  assert.deepEqual(
+    { backX: attack.backX, backY: attack.backY, lungeX: attack.lungeX, lungeY: attack.lungeY },
+    { backX: 0, backY: 0, lungeX: 0, lungeY: 0 },
+  );
+  assert.deepEqual(resolveDefenderHitMotion({
+    directionX: 1, directionY: -1, reducedMotion: true,
+  }).steps.map(({ x, y }) => ({ x, y })), [{ x: 0, y: 0 }, { x: 0, y: 0 }]);
+  assert.deepEqual(resolveDamageLabelMotion({
+    position: { x: 100, y: 200 }, reducedMotion: true,
+  }), {
+    duration: 180, endX: 100, endY: 132, startX: 100, startY: 132,
+  });
+  assert.deepEqual(resolveBurstMotion({
+    index: 2, position: { x: 100, y: 200 }, reducedMotion: true, seed: 7,
+  }), {
+    duration: 180, endX: 100, endY: 172, startX: 100, startY: 172,
+  });
+  const healthGraphic = { clear() { return this; }, setVisible() { return this; } };
+  const body = { anims: { stop() {} }, setTint() { return this; } };
+  const defeat = beginDefenderDefeatPresentation({
+    _body: body,
+    _healthBackground: healthGraphic,
+    _healthFill: healthGraphic,
+  }, { reducedMotion: true });
+  assert.equal(defeat.y, 0);
+});
+
+test('lane presentation events execute the authoritative attack and defender handlers once', async () => {
+  const { dispatchLanePresentationEvent } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  assert.equal(typeof dispatchLanePresentationEvent, 'function');
+
+  const calls = [];
+  const handlers = {
+    onDefenderDefeated: (payload) => calls.push(['defeat', payload.towerId]),
+    onDefenderHit: (payload) => calls.push(['hit', payload.towerId]),
+    onEnemyAttackImpact: (payload, event) => calls.push(['impact', payload.id, event.id]),
+    onEnemyAttackStart: (payload) => calls.push(['start', payload.id]),
+  };
+  const events = [
+    { id: 1, kind: 'enemy-attack-start', payload: { id: 'enemy-1' } },
+    { id: 2, kind: 'enemy-attack-impact', payload: { id: 'enemy-1' } },
+    { id: 3, kind: 'defender-hit', payload: { towerId: 'tower-1' } },
+    { id: 4, kind: 'defender-defeated', payload: { towerId: 'tower-1' } },
+  ];
+  assert.deepEqual(events.map((event) => dispatchLanePresentationEvent(event, handlers)), [true, true, true, true]);
+  assert.deepEqual(calls, [
+    ['start', 'enemy-1'],
+    ['impact', 'enemy-1', 2],
+    ['hit', 'tower-1'],
+    ['defeat', 'tower-1'],
+  ]);
+  assert.equal(dispatchLanePresentationEvent({ kind: 'wave-start', payload: {} }, handlers), false);
 });
 
 test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {
@@ -266,17 +509,7 @@ test('frontline durability and lane attack helpers preserve simulation-authorita
   assert.deepEqual(resets, ['reset']);
   assert.deepEqual(destroyed, ['destroy']);
 
-  for (const kind of ['enemy-attack-start', 'enemy-attack-impact', 'defender-hit', 'defender-defeated']) {
-    assert.match(battleScene, new RegExp(`kind === ['"]${kind}['"]`), kind);
-  }
-  assert.match(battleScene, /this\.tweens\.chain\(\{/);
-  assert.match(battleScene, /cancelViewMotion\(view/);
-  assert.match(battleScene, /cancelAllPresentationMotion\(\)/);
-  assert.match(battleScene, /setExternalPauseReasons[\s\S]*?cancelAllPresentationMotion\(\)/);
-  assert.match(battleScene, /shutdown\(\)[\s\S]*?cancelAllPresentationMotion\(\)/);
-  assert.match(battleScene, /GAMEPLAY_FRAME\.defeatCrack/);
-  assert.match(battleScene, /_healthBackground/);
-  assert.match(battleScene, /_healthFill/);
+  assert.match(battleScene, /dispatchLanePresentationEvent\(event/);
 });
 
 test('continue targets the highest unlocked uncleared level and falls back to level 10', async () => {

@@ -23,11 +23,19 @@ import {
   PATH_FRAME,
   ViewPool,
   animationKey,
+  attemptPlacementBuild,
+  beginDefenderDefeatPresentation,
   characterAssetId,
+  clearPresentationTransients,
   deriveCampaignEnemyViewCapacity,
+  dispatchLanePresentationEvent,
+  finishTrackedMotion,
   projectCombatRadius,
+  resolveBurstMotion,
   resolveBetweenWaveCountdown,
   resolveCommandRejectionMessage,
+  resolveDamageLabelMotion,
+  resolveDefenderHitMotion,
   resolveEnemyAttackMotion,
   resolveFrontlineHealthBar,
   resolveIronhidePlatePresentation,
@@ -567,22 +575,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   attemptBuildAtPad(pad) {
-    if (!this.selectedDefenderId) {
-      this.hud.announce('Open placement slot. Select defender 1 through 4 first.');
-      this.updateFocusViews();
-      return false;
-    }
-    if (!this.isPlacementCompatible(pad)) {
-      const layer = DEFENDERS[this.selectedDefenderId].placementLayer;
-      this.hud.announce(`${resolvePlacementPrompt(layer)}.`);
-      this.updateFocusViews();
-      return false;
-    }
-    return this.issueBattleCommand({
-      type: 'build',
-      defenderId: this.selectedDefenderId,
-      padId: pad.id,
-    }).accepted;
+    const result = attemptPlacementBuild({
+      announce: (message) => this.hud.announce(message),
+      issueCommand: (command) => this.issueBattleCommand(command),
+      pad,
+      selectedDefenderId: this.selectedDefenderId,
+      selectedLayer: DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null,
+    });
+    if (!result.accepted) this.updateFocusViews();
+    return result.accepted;
   }
 
   announceFocusedTarget() {
@@ -736,9 +737,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   finishViewMotion(view, motion, onComplete) {
-    if (view?._motion !== motion) return;
-    view._motion = null;
-    onComplete?.();
+    return finishTrackedMotion(view, motion, onComplete);
   }
 
   cancelViewMotion(view, { preservePose = false } = {}) {
@@ -762,15 +761,21 @@ export class BattleScene extends Phaser.Scene {
 
   cancelAllPresentationMotion() {
     this.tweens?.killAll?.();
-    for (const pool of [this.enemyPool, this.defenderPool, this.defeatPool]) {
+    for (const pool of [this.enemyPool, this.defenderPool]) {
       for (const view of pool?.activeViews ?? []) this.cancelViewMotion(view);
     }
     for (const view of [...this.detachedDefenderViews]) {
       this.detachedDefenderViews.delete(view);
       this.defenderPool?.release(view);
     }
-    for (const pool of [this.damageLabelPool, this.particlePool]) {
-      for (const view of [...(pool?.activeViews ?? [])]) pool.release(view);
+    clearPresentationTransients({
+      cancelViewMotion: (view) => this.cancelViewMotion(view),
+      pools: [this.defeatPool, this.damageLabelPool, this.particlePool],
+      timers: this.transientTimers,
+    });
+    if (this.castleSprite?.frame?.name === 1) {
+      this.castleSprite.setFrame(this.lastSnapshot.castleHearts <= 0
+        ? 3 : this.lastSnapshot.castleHearts === 1 ? 2 : 0);
     }
   }
 
@@ -851,23 +856,15 @@ export class BattleScene extends Phaser.Scene {
     const sourceView = this.enemySprites.get(payload.sourceId);
     const directionX = sourceView ? Math.sign(view.x - sourceView.x) : 0;
     const directionY = sourceView ? Math.sign(view.y - sourceView.y) : 1;
-    const recoil = this.reducedMotion ? 0 : 10;
     this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
     this.cancelViewMotion(view);
     const body = view._body;
     body.setTint(0xff8b78);
+    const hitMotion = resolveDefenderHitMotion({ directionX, directionY, reducedMotion: this.reducedMotion });
     let motion;
     motion = this.tweens.chain({
       targets: body,
-      tweens: [
-        {
-          angle: this.reducedMotion ? -3 : -6,
-          duration: this.reducedMotion ? 45 : 75,
-          x: directionX * recoil,
-          y: directionY * recoil,
-        },
-        { angle: 0, duration: this.reducedMotion ? 55 : 125, ease: 'Cubic.easeOut', x: 0, y: 0 },
-      ],
+      tweens: hitMotion.steps,
       onComplete: () => this.finishViewMotion(view, motion, () => body.setTint(0xffffff)),
     });
     view._motion = motion;
@@ -882,21 +879,18 @@ export class BattleScene extends Phaser.Scene {
     this.towerSprites.delete(payload.towerId);
     this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
     this.cancelViewMotion(view);
-    view._body.anims?.stop?.();
+    const fade = beginDefenderDefeatPresentation(view, { reducedMotion: this.reducedMotion });
     this.spawnBurst({ x: view.x, y: view.y }, GAMEPLAY_FRAME.defeatCrack, 8, payload.towerId.length);
     this.audioController?.playCue?.('defeat');
     const name = DEFENDER_PRESENTATION[view._defenderId]?.name ?? 'Road defender';
     this.hud.announce(`${name} was permanently defeated. The road guard slot is available again.`);
     this.detachedDefenderViews.add(view);
-    const body = view._body.setTint(0x8b5a52);
+    const body = view._body;
     let motion;
     motion = this.tweens.add({
       targets: body,
-      alpha: 0,
-      angle: this.reducedMotion ? 4 : 12,
-      duration: this.reducedMotion ? 160 : 360,
+      ...fade,
       ease: 'Cubic.easeIn',
-      y: this.reducedMotion ? 0 : 26,
       onComplete: () => this.finishViewMotion(view, motion, () => {
         this.detachedDefenderViews.delete(view);
         this.defenderPool.release(view);
@@ -941,17 +935,25 @@ export class BattleScene extends Phaser.Scene {
       if (event.id <= this.lastPresentationEventId) continue;
       this.lastPresentationEventId = event.id;
       const { kind, payload } = event;
-      if (kind === 'enemy-attack-start') {
-        const view = this.enemySprites.get(payload.id);
-        const enemy = this.enemyById.get(payload.id);
-        if (view && enemy) this.beginEnemyAttackProjection(view, enemy, payload.targetTowerId, payload.impactAtTick);
-      } else if (kind === 'enemy-attack-impact') {
-        this.handleEnemyAttackImpact(event, payload);
-      } else if (kind === 'defender-hit') {
-        this.animateDefenderHit(payload);
-      } else if (kind === 'defender-defeated') {
-        this.animateDefenderDefeat(payload);
-      } else if (kind === 'tower-attack' || kind === 'tower-mastery') {
+      const laneEventHandled = dispatchLanePresentationEvent(event, {
+        onDefenderDefeated: (lanePayload) => this.animateDefenderDefeat(lanePayload),
+        onDefenderHit: (lanePayload) => this.animateDefenderHit(lanePayload),
+        onEnemyAttackImpact: (lanePayload, laneEvent) => this.handleEnemyAttackImpact(laneEvent, lanePayload),
+        onEnemyAttackStart: (lanePayload) => {
+          const view = this.enemySprites.get(lanePayload.id);
+          const enemy = this.enemyById.get(lanePayload.id);
+          if (view && enemy) {
+            this.beginEnemyAttackProjection(
+              view,
+              enemy,
+              lanePayload.targetTowerId,
+              lanePayload.impactAtTick,
+            );
+          }
+        },
+      });
+      if (laneEventHandled) continue;
+      if (kind === 'tower-attack' || kind === 'tower-mastery') {
         const view = this.towerSprites.get(payload.towerId);
         this.playCharacterAction(
           view,
@@ -1050,14 +1052,16 @@ export class BattleScene extends Phaser.Scene {
   spawnDamageLabel(position, damage) {
     const label = this.damageLabelPool.acquire();
     if (!label) return;
+    const labelMotion = resolveDamageLabelMotion({ position, reducedMotion: this.reducedMotion });
     label.setText(`−${damage}`);
-    label.setPosition(position.x, position.y - 68);
+    label.setPosition(labelMotion.startX, labelMotion.startY);
     label.setAlpha(1);
     this.tweens.add({
       targets: label,
-      y: position.y - (this.reducedMotion ? 76 : 112),
+      x: labelMotion.endX,
+      y: labelMotion.endY,
       alpha: 0,
-      duration: this.reducedMotion ? 180 : 520,
+      duration: labelMotion.duration,
       ease: 'Cubic.easeOut',
       onComplete: () => this.damageLabelPool.release(label),
     });
@@ -1068,16 +1072,15 @@ export class BattleScene extends Phaser.Scene {
     for (let index = 0; index < visibleCount; index += 1) {
       const particle = this.particlePool.acquire();
       if (!particle) break;
-      const angle = (((index * 137.5) + (seed * 17)) % 360) * (Math.PI / 180);
-      const distance = this.reducedMotion ? 14 : 30 + ((index % 4) * 8);
-      particle.setFrame(frame).setPosition(position.x, position.y - 28).setScale(0.12).setAlpha(0.95);
+      const burstMotion = resolveBurstMotion({ index, position, reducedMotion: this.reducedMotion, seed });
+      particle.setFrame(frame).setPosition(burstMotion.startX, burstMotion.startY).setScale(0.12).setAlpha(0.95);
       this.tweens.add({
         targets: particle,
-        x: position.x + (Math.cos(angle) * distance),
-        y: position.y - 28 + (Math.sin(angle) * distance),
+        x: burstMotion.endX,
+        y: burstMotion.endY,
         alpha: 0,
         scale: 0.05,
-        duration: this.reducedMotion ? 180 : 460,
+        duration: burstMotion.duration,
         ease: 'Cubic.easeOut',
         onComplete: () => this.particlePool.release(particle),
       });
@@ -1515,8 +1518,6 @@ export class BattleScene extends Phaser.Scene {
     this.disconnectHud?.();
     this.disconnectHud = null;
     this.resultTimer?.remove?.(false);
-    for (const timer of this.transientTimers) timer?.remove?.(false);
-    this.transientTimers.clear();
     clearPresentationEvents(this.simulation);
     for (const pool of [
       this.enemyPool,
