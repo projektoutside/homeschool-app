@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdtemp, open, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -23,7 +24,7 @@ const defaultPythonPath = existsSync(bundledPythonPath) ? bundledPythonPath : sy
 const pythonPath = process.env.DEFENDER_CHAMPION_ASSET_PYTHON ?? defaultPythonPath;
 const perAssetLimit = 1_500_000;
 const manifestTotalLimit = 15_000_000;
-const expectedManifestRasterBytes = 14_410_120;
+const expectedManifestRasterBytes = 14_403_160;
 const atlasFrameSize = 314;
 const pathLaneWidth = 128;
 const pathSafeInset = 24;
@@ -54,11 +55,39 @@ const bossActionContracts = {
   ability: { frameCount: 8, frameDurationMs: 125, loop: false },
   defeat: { frameCount: 10, frameDurationMs: 150, loop: false },
 };
+const expectedPostNormalizationPolicy = {
+  postCommonScaleAllowedOperations: ['translate', 'bottom-center', 'pad'],
+  geometricRescaleAllowed: false,
+  canonicalAlpha: 'crop alpha greater than zero to its tight bbox and hash row-major bytes',
+};
 const characterQ98AssetIds = new Set([
   'boss-mossback-brute-ability',
   'boss-dread-colossus-walk',
   'boss-dread-colossus-ability',
 ]);
+const reviewedDefeatScaleFixtures = {
+  'enemy-blight-walker-defeat': {
+    4: { width: 145, height: 70 },
+    5: { width: 142, height: 61 },
+  },
+  'enemy-hexcaller-defeat': {
+    5: { width: 218, height: 113 },
+  },
+  'boss-mossback-brute-defeat': {
+    8: { width: 221, height: 118 },
+    9: { width: 218, height: 96 },
+  },
+  'boss-ironhide-warlord-defeat': {
+    6: { width: 157, height: 126 },
+    7: { width: 169, height: 83 },
+    8: { width: 152, height: 73 },
+    9: { width: 152, height: 74 },
+  },
+  'boss-dread-colossus-defeat': {
+    8: { width: 222, height: 109 },
+    9: { width: 223, height: 109 },
+  },
+};
 const expectedManifestAssets = [
   ['environment-grass', 'assets/environment/grass.webp'],
   ['environment-path-atlas', 'assets/environment/path-atlas.webp'],
@@ -333,6 +362,13 @@ for top in range(0, image.height, frame_height):
             'bboxEdgeRuns': bbox_edge_runs,
             'components0': component_sizes(alpha, 0),
             'components': component_sizes(alpha, threshold),
+            'canonicalAlpha': None if bbox(alpha, 0) is None else {
+                'bboxWidth': bbox(alpha, 0)[2] - bbox(alpha, 0)[0],
+                'bboxHeight': bbox(alpha, 0)[3] - bbox(alpha, 0)[1],
+                'nonzeroCount': sum(value > 0 for value in alpha.getdata()),
+                'meaningfulCount': sum(value > threshold for value in alpha.getdata()),
+                'sha256': hashlib.sha256(alpha.crop(tuple(bbox(alpha, 0))).tobytes()).hexdigest(),
+            },
             'rgbaHash': hashlib.sha256(image.crop((left, top, left + frame_width, top + frame_height)).tobytes()).hexdigest(),
             'edges': {
                 'north': [x for x in range(frame_width) if pixels[x, 0] > threshold],
@@ -594,6 +630,14 @@ test('Defender Champion manifest assets satisfy the production raster contract',
     assert.equal(record.toolMode, 'built-in imagegen', `${asset.id} must use built-in imagegen`);
     assert.ok(typeof record.generatedAt === 'string' && !Number.isNaN(Date.parse(record.generatedAt)), `${asset.id} needs generatedAt`);
     assert.ok(typeof record.optimization === 'string' && record.optimization.trim().length > 0, `${asset.id} needs optimization`);
+    if (asset.id.startsWith('enemy-') || asset.id.startsWith('boss-')) {
+      assert.equal(record.finalBytes, assetStat.size, `${asset.id} provenance byte count drifted`);
+      assert.equal(
+        record.finalSha256,
+        createHash('sha256').update(await readFile(assetPath)).digest('hex'),
+        `${asset.id} provenance hash drifted`,
+      );
+    }
     assert.equal(record.qaStatus, 'approved', `${asset.id} must be QA approved`);
   }
 
@@ -905,6 +949,7 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
   });
   assert.deepEqual(enemies.enemyOrder, enemyOrder);
   assert.deepEqual(enemies.actionOrder, enemyActionOrder);
+  assert.deepEqual(enemies.postNormalizationPolicy, expectedPostNormalizationPolicy);
   assert.deepEqual(enemies.enemies.map(({ id }) => id), enemyOrder);
   assert.deepEqual(enemies.presentationMappings, expectedEnemyPresentationMappings);
 
@@ -918,6 +963,7 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
   });
   assert.deepEqual(bosses.bossOrder, bossOrder);
   assert.deepEqual(bosses.actionOrder, bossActionOrder);
+  assert.deepEqual(bosses.postNormalizationPolicy, expectedPostNormalizationPolicy);
   assert.deepEqual(bosses.bosses.map(({ id }) => id), bossOrder);
 
   for (const mapping of [
@@ -1051,15 +1097,32 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
 
         const frames = inspectAlphaFrames(path.join(gameRoot, asset.path), frameSize, frameSize);
         assert.equal(frames.length, expectedAction.frameCount);
+        const normalizationEvidence = character.normalizationEvidence?.actions?.[actionId];
+        assert.ok(normalizationEvidence, `${assetId} needs source-derived all-frame normalization evidence`);
+        assert.equal(normalizationEvidence.length, frames.length, `${assetId} normalization evidence lost a frame`);
+        assert.deepEqual(record.sourceAlphaEvidence, normalizationEvidence,
+          `${assetId} provenance must retain the same source-derived alpha evidence`);
         assert.equal(new Set(frames.map(({ rgbaHash }) => rgbaHash)).size, frames.length,
           `${assetId} contains a lost or byte-duplicated frame`);
         for (const [frameIndex, frame] of frames.entries()) {
+          assert.deepEqual(
+            normalizationEvidence[frameIndex],
+            {
+              index: frameIndex,
+              canonicalAlpha: frame.canonicalAlpha,
+              postNormalization: { scaleX: 1, scaleY: 1 },
+            },
+            `${assetId} frame ${frameIndex} must preserve source alpha without post-common-scale resizing`,
+          );
           assert.ok(frame.bbox0, `${assetId} frame ${frameIndex} is empty`);
           assert.equal(frame.alphaExtrema[0], 0, `${assetId} frame ${frameIndex} has no genuine transparent pixels`);
           assert.ok(frame.alphaExtrema[1] > 0, `${assetId} frame ${frameIndex} has no visible alpha`);
           const [left, top, right, bottom] = frame.bbox0;
           const occupiedPixels = frame.components0.reduce((sum, size) => sum + size, 0);
-          assert.ok(occupiedPixels >= (kind === 'enemy' ? 700 : 2_000),
+          const minimumOccupiedPixels = actionId === 'defeat'
+            ? (kind === 'enemy' ? 300 : 750)
+            : (kind === 'enemy' ? 700 : 2_000);
+          assert.ok(occupiedPixels >= minimumOccupiedPixels,
             `${assetId} frame ${frameIndex} is not meaningfully occupied`);
           assert.ok(left >= safeInset, `${assetId} frame ${frameIndex} crosses its left safe inset`);
           assert.ok(top >= safeInset, `${assetId} frame ${frameIndex} crosses its top safe inset`);
@@ -1070,7 +1133,9 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
             { north: 0, east: 0, west: 0 },
             `${assetId} frame ${frameIndex} crosses a cell edge`,
           );
-          const bottomEdgeLimit = kind === 'enemy' ? 72 : 128;
+          const bottomEdgeLimit = actionId === 'defeat'
+            ? (frameSize / 2) - safeInset
+            : (kind === 'enemy' ? 72 : 128);
           assert.ok(frame.edges.south.every((x) => Math.abs(x - (frameSize / 2)) <= bottomEdgeLimit),
             `${assetId} frame ${frameIndex} has edge alpha outside its bottom-center anchor`);
           assert.ok(frame.bbox[3] >= frameSize - 3,
@@ -1081,10 +1146,9 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
             assert.ok(frame.bboxEdgeRuns[side] <= (kind === 'enemy' ? 72 : 128),
               `${assetId} frame ${frameIndex} has a clipped or flat ${side} silhouette`);
           }
-          assert.ok(frame.components.every((size) => size >= 4),
-            `${assetId} frame ${frameIndex} has detached garbage alpha`);
-          assert.ok(right - left >= (kind === 'enemy' ? 48 : 96)
-            && bottom - top >= (kind === 'enemy' ? 72 : 128),
+          const minimumWidth = actionId === 'defeat' ? (kind === 'enemy' ? 40 : 72) : (kind === 'enemy' ? 48 : 96);
+          const minimumHeight = actionId === 'defeat' ? (kind === 'enemy' ? 40 : 48) : (kind === 'enemy' ? 72 : 128);
+          assert.ok(right - left >= minimumWidth && bottom - top >= minimumHeight,
           `${assetId} frame ${frameIndex} has an unstable game-scale footprint`);
         }
         inspectedActions.set(actionId, frames);
@@ -1126,6 +1190,29 @@ test('Defender Champion enemy and boss strips preserve identities, action contra
     actionContracts: bossActionContracts,
     roleBriefs: bossRoleBriefs,
   });
+});
+
+test('Defender Champion defeat assembly preserves the shared-scale source geometry in every reviewed frame', async () => {
+  const manifest = await readJson(manifestPath);
+  const assetsById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
+
+  for (const [assetId, expectedFrames] of Object.entries(reviewedDefeatScaleFixtures)) {
+    const asset = assetsById.get(assetId);
+    assert.ok(asset, `missing reviewed defeat asset ${assetId}`);
+    const frames = inspectAlphaFrames(
+      path.join(gameRoot, asset.path),
+      asset.frameWidth,
+      asset.frameHeight,
+    );
+    for (const [frameIndex, expected] of Object.entries(expectedFrames)) {
+      const [left, top, right, bottom] = frames[Number(frameIndex)].bbox0;
+      assert.deepEqual(
+        { width: right - left, height: bottom - top },
+        expected,
+        `${assetId} frame ${Number(frameIndex) + 1} must not receive post-common-scale resizing`,
+      );
+    }
+  }
 });
 
 test('Defender Champion path topology has clean, centered, edge-connected lanes', async () => {

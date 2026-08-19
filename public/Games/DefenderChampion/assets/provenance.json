@@ -293,8 +293,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/blight-walker-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/blight-walker-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 122,
+            "bboxHeight": 226,
+            "nonzeroCount": 15020,
+            "meaningfulCount": 14581,
+            "sha256": "a384dd4484a9e5ca624abd06916716b6a43728dd5a63aee120c297daf83c2dad"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 123,
+            "bboxHeight": 215,
+            "nonzeroCount": 15136,
+            "meaningfulCount": 13350,
+            "sha256": "3caa3f9cc68c4857284dc287af87291c73add43d9940cbae7b82c35be75af298"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 121,
+            "bboxHeight": 236,
+            "nonzeroCount": 15086,
+            "meaningfulCount": 13185,
+            "sha256": "2d8fe7a4e4aa9dba3fe6b523db843a241016fd0fdde41f00b62929ca283da356"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 125,
+            "bboxHeight": 240,
+            "nonzeroCount": 15193,
+            "meaningfulCount": 13314,
+            "sha256": "7ef6082551c562a613726bc075d3a2c9f566bb7dce570cfa47322c2ca56cc894"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 124,
+            "bboxHeight": 226,
+            "nonzeroCount": 15870,
+            "meaningfulCount": 13922,
+            "sha256": "7f8c6e7703515bf8eeed31b2b66809fcae98ac729c775aa4e7e14b5eb529fa73"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 122,
+            "bboxHeight": 227,
+            "nonzeroCount": 16562,
+            "meaningfulCount": 14345,
+            "sha256": "1d2b09a8592d33948fe6c6be551532b25bb4bb96453e038b44b6aafae3a9e896"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 193684,
+      "finalSha256": "d715669cb808b076ebecc4336d94b671bfec0b4b6de094457fbe6976c4dfc023",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/blight-walker-full-size.png",
@@ -315,8 +403,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/blight-walker-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/blight-walker-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 122,
+            "bboxHeight": 226,
+            "nonzeroCount": 15020,
+            "meaningfulCount": 14581,
+            "sha256": "a384dd4484a9e5ca624abd06916716b6a43728dd5a63aee120c297daf83c2dad"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 142,
+            "bboxHeight": 158,
+            "nonzeroCount": 10470,
+            "meaningfulCount": 8946,
+            "sha256": "1d3775be8c67ff1e70e2a3a6e185d6f3184b5429ab2a501e675a9f4a9d5508cc"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 137,
+            "bboxHeight": 134,
+            "nonzeroCount": 8876,
+            "meaningfulCount": 7858,
+            "sha256": "74a1cced7db7d88b47f69e7af8cf9b0e521d85d15ff0c7f9a54b4d38958e9afd"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 138,
+            "bboxHeight": 98,
+            "nonzeroCount": 8041,
+            "meaningfulCount": 7105,
+            "sha256": "35b0a428a511ed6b91f1924a45126cc0c6eb7845304b75bb957724f24197cbd0"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 145,
+            "bboxHeight": 70,
+            "nonzeroCount": 6903,
+            "meaningfulCount": 6185,
+            "sha256": "8ad884416f4b1adc1723a02d70814249aff03ad530142fc5b38ed0d8ef7f7432"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 142,
+            "bboxHeight": 61,
+            "nonzeroCount": 6107,
+            "meaningfulCount": 5474,
+            "sha256": "d520c866a65d0fe56b8144308343f77fe2c2616efbb4b3cdafe46f5319fdfff3"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 120642,
+      "finalSha256": "3af43755486a7d6f90e8f25096a646398175ba2bebd655d5877f90d5554ef222",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/blight-walker-full-size.png",
@@ -337,8 +513,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/skitter-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/skitter-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 226,
+            "bboxHeight": 239,
+            "nonzeroCount": 22426,
+            "meaningfulCount": 21587,
+            "sha256": "0845264be5e95149c9ebc5348e8389682cb4138a39e9c9914b11ba592cce955b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 208,
+            "bboxHeight": 215,
+            "nonzeroCount": 23289,
+            "meaningfulCount": 20528,
+            "sha256": "5e8f89f80dcaf533baf926c93cdde63a99a5fc08d465a6f51d1af37e949c7d84"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 195,
+            "bboxHeight": 238,
+            "nonzeroCount": 23893,
+            "meaningfulCount": 20583,
+            "sha256": "d9fe0fc4dbc3a253eb4e2e489b634f34d849bd6659f8fee473f1572eecee2731"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 199,
+            "bboxHeight": 230,
+            "nonzeroCount": 24412,
+            "meaningfulCount": 21047,
+            "sha256": "11bb3ecd69feb4db6346bb1df6bed186ed38caddef270640c568add6eb7d40bf"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 206,
+            "bboxHeight": 225,
+            "nonzeroCount": 24361,
+            "meaningfulCount": 21049,
+            "sha256": "553c4304e3fae83ecc16081499791260eb566c725f159f1b481e752d25088b2d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 216,
+            "bboxHeight": 238,
+            "nonzeroCount": 25846,
+            "meaningfulCount": 22069,
+            "sha256": "8119adb74d3803d507795ab604ed235a7da963c6cef62862add6ac3cfb90f838"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 293324,
+      "finalSha256": "4c75247aabfcf7febefe362e00c4359ae931d9575a24bd743513c32b65978be9",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/skitter-full-size.png",
@@ -359,8 +623,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/skitter-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/skitter-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 226,
+            "bboxHeight": 239,
+            "nonzeroCount": 22426,
+            "meaningfulCount": 21587,
+            "sha256": "0845264be5e95149c9ebc5348e8389682cb4138a39e9c9914b11ba592cce955b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 200,
+            "bboxHeight": 195,
+            "nonzeroCount": 20751,
+            "meaningfulCount": 17329,
+            "sha256": "b80c046ba4fbe51a35b6b31b8129f884e37b3628c351bcc220e035f57818221c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 202,
+            "bboxHeight": 175,
+            "nonzeroCount": 20340,
+            "meaningfulCount": 17142,
+            "sha256": "b32f885c30370503653845ea0ec06f0a01bbbc9e35c27ec56171d9652979690b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 166,
+            "bboxHeight": 159,
+            "nonzeroCount": 16302,
+            "meaningfulCount": 14178,
+            "sha256": "7055d79a8c39de96e9b82aa3a398ca3357f37b17a6198d8bf98a5d701244dbbc"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 200,
+            "bboxHeight": 148,
+            "nonzeroCount": 15540,
+            "meaningfulCount": 13585,
+            "sha256": "3d2f1c794fbae1cac4abebb78bf0eb7c665290efd3c55d873e92e64582e033c0"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 183,
+            "bboxHeight": 102,
+            "nonzeroCount": 12334,
+            "meaningfulCount": 10940,
+            "sha256": "c4a72e470b0450141417f37ccf5dce5fabfebb3fe605265d98dbb3320d1a8ec5"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 230216,
+      "finalSha256": "4367e28b11ce392054e47a7a8d4c005d34584a55cee7650a7b0bde662b95b90d",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/skitter-full-size.png",
@@ -381,8 +733,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/swarmkin-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/swarmkin-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 154,
+            "bboxHeight": 231,
+            "nonzeroCount": 19425,
+            "meaningfulCount": 19006,
+            "sha256": "d41dafc9ce50bb7e1b8f2dab8408ac4be344fa27d62b14993e649f16ebe2c4a4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 212,
+            "nonzeroCount": 19040,
+            "meaningfulCount": 17684,
+            "sha256": "71d8035f36dd7739f600770cb341d845082702611168ebc2283620b1810d5b83"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 229,
+            "nonzeroCount": 19238,
+            "meaningfulCount": 17733,
+            "sha256": "03cfbcf062aaece601c08e15e9c206f5ad19ddb350b982b882a51a1abc8c72be"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 154,
+            "bboxHeight": 240,
+            "nonzeroCount": 20727,
+            "meaningfulCount": 18994,
+            "sha256": "aeb1916061bc7ac4a9a9eeec065f3490df36b5edfb88a65c5d992a92a9e29fa6"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 227,
+            "nonzeroCount": 20217,
+            "meaningfulCount": 18417,
+            "sha256": "131d4a05b15beedda4c8506c83507b60e484e24fc6c9860a6adede2c34198f60"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 151,
+            "bboxHeight": 223,
+            "nonzeroCount": 18970,
+            "meaningfulCount": 17468,
+            "sha256": "bd6732bda93cd9fa651d35c61349f5ace25815c9ec0b29e1f554825af1916e19"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 242908,
+      "finalSha256": "8f90a454c181bad18742b5b14f4bebd8752a08c900445b4915b50e943c254802",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/swarmkin-full-size.png",
@@ -403,8 +843,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/swarmkin-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/swarmkin-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 154,
+            "bboxHeight": 231,
+            "nonzeroCount": 19425,
+            "meaningfulCount": 19006,
+            "sha256": "d41dafc9ce50bb7e1b8f2dab8408ac4be344fa27d62b14993e649f16ebe2c4a4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 164,
+            "nonzeroCount": 11894,
+            "meaningfulCount": 10562,
+            "sha256": "d7e29ddf800441a2c4f2edc8a90d956594fe301c137684b586d3a3ef01320ade"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 154,
+            "bboxHeight": 131,
+            "nonzeroCount": 10856,
+            "meaningfulCount": 9754,
+            "sha256": "81da35dd8cf14ed8bc64fd6e006bc4e56688da0fa929f981e555a6c8280ae80b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 128,
+            "bboxHeight": 113,
+            "nonzeroCount": 9572,
+            "meaningfulCount": 8716,
+            "sha256": "ace17c9cd166823d2dd71f878256fde91dfd456288b417f4c20a16fb56d992f9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 158,
+            "bboxHeight": 89,
+            "nonzeroCount": 8273,
+            "meaningfulCount": 7430,
+            "sha256": "6a576c2825990eeafd9207967bcaaa5a61ff62b268ebf919ef24d749e45e7c76"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 158,
+            "bboxHeight": 89,
+            "nonzeroCount": 8212,
+            "meaningfulCount": 7425,
+            "sha256": "0a81ef5745c754efc41bada0c7e4f7464387a3ab5c7ffe210e664ea496ec26c3"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 150998,
+      "finalSha256": "a3e93a31c09ebaabc00cac5a96332e6a1b7ddedd1ff34197af37e9496032fa60",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/swarmkin-full-size.png",
@@ -425,8 +953,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/shellguard-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/shellguard-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 196,
+            "bboxHeight": 195,
+            "nonzeroCount": 21397,
+            "meaningfulCount": 20768,
+            "sha256": "8b646b324ee4dd95f82833779347dbf1704408265399827573dc1473d4c1d7d1"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 186,
+            "bboxHeight": 163,
+            "nonzeroCount": 20100,
+            "meaningfulCount": 17614,
+            "sha256": "9de1046d2bd7acd8cc0580cf753e57d440c20722a855192254c3b669d966cde6"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 188,
+            "bboxHeight": 204,
+            "nonzeroCount": 23201,
+            "meaningfulCount": 20348,
+            "sha256": "96762fbacf42898abd7e618f40e73b6cc8c64ac365e76eacd4f7b702f8e38d35"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 184,
+            "bboxHeight": 231,
+            "nonzeroCount": 25304,
+            "meaningfulCount": 22126,
+            "sha256": "154509ca64d28355451f79d5a918de2a2ffdd826445e13419dcb3b9ed32fee25"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 188,
+            "bboxHeight": 190,
+            "nonzeroCount": 23395,
+            "meaningfulCount": 20474,
+            "sha256": "1a287250073a34fcd794978695002e51dee61836ac3abbb94c03f77f746009aa"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 186,
+            "bboxHeight": 191,
+            "nonzeroCount": 22821,
+            "meaningfulCount": 19895,
+            "sha256": "9fb494c7a179af1520645bf90f6f127ccda28ae0eb95b239555e51d13ca95d47"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 308714,
+      "finalSha256": "bc94033dded34c5ae9cbb42817b34ac423e0161fb0da315e376ca1ac7f715bfa",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/shellguard-full-size.png",
@@ -447,8 +1063,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/shellguard-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/shellguard-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 196,
+            "bboxHeight": 195,
+            "nonzeroCount": 21397,
+            "meaningfulCount": 20768,
+            "sha256": "8b646b324ee4dd95f82833779347dbf1704408265399827573dc1473d4c1d7d1"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 179,
+            "bboxHeight": 234,
+            "nonzeroCount": 26979,
+            "meaningfulCount": 24617,
+            "sha256": "7d87c209e2369a627dfa2a99c483f88d3d6ed927f9feddd5a2aa1d74f85a89b2"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 199,
+            "bboxHeight": 173,
+            "nonzeroCount": 24520,
+            "meaningfulCount": 22549,
+            "sha256": "b0cb22f96b3310308d0ab7dda69ee034029819c3624d87956380e9c8dcde77e6"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 214,
+            "bboxHeight": 157,
+            "nonzeroCount": 21637,
+            "meaningfulCount": 20037,
+            "sha256": "3feb963c3293a245d3a6b7787bf83ee7b70846f71bccff7fa7d580b807480e46"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 217,
+            "bboxHeight": 137,
+            "nonzeroCount": 19345,
+            "meaningfulCount": 17997,
+            "sha256": "92612344952899e97463a41f4b2aab9193e045e9f1bda2ed83aed26c0ce752f6"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 240,
+            "bboxHeight": 106,
+            "nonzeroCount": 17936,
+            "meaningfulCount": 16715,
+            "sha256": "30f00491a8d5913d7272ea6e3c49ab1da95b4f7688fba57b3fb5bbc30dcaf061"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 292328,
+      "finalSha256": "a5385b54e4771a117817a376223c232befeb5723c1306be831c2296341c0cec3",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/shellguard-full-size.png",
@@ -469,8 +1173,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/hexcaller-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/hexcaller-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 210,
+            "bboxHeight": 228,
+            "nonzeroCount": 21339,
+            "meaningfulCount": 20652,
+            "sha256": "c965444c25f71ec97245559e0c071bd2e215abf63184524558f7dd58400afdf9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 195,
+            "bboxHeight": 205,
+            "nonzeroCount": 22951,
+            "meaningfulCount": 20280,
+            "sha256": "2878e0aa6da237be529dbb49b64f386ddbe57008524bbad256481026c28c75c1"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 201,
+            "bboxHeight": 234,
+            "nonzeroCount": 23226,
+            "meaningfulCount": 20354,
+            "sha256": "36f5fc14f4838d97d459c9c99be3dd33feb596ed44f996886e439c72f88d85cd"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 202,
+            "bboxHeight": 240,
+            "nonzeroCount": 25241,
+            "meaningfulCount": 21640,
+            "sha256": "91d7f294cc5da7d7c331a20fefc068082ea6edd2d53bef02eb48c4d5ffab651c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 203,
+            "bboxHeight": 221,
+            "nonzeroCount": 25263,
+            "meaningfulCount": 21669,
+            "sha256": "067f2f0022098f4dc24cb1c69aa5062734e7beeb82f325bff4d769d2f00f563c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 199,
+            "bboxHeight": 227,
+            "nonzeroCount": 24961,
+            "meaningfulCount": 21783,
+            "sha256": "26daee586b7538281e3f396615993d52624388a32f4153c16f1268206f0b93ff"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 312486,
+      "finalSha256": "54c403d16eec9866571e6bc795eed8391ecf38c8516a5508d30e27b32aa7df43",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/hexcaller-full-size.png",
@@ -491,8 +1283,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/hexcaller-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/hexcaller-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 210,
+            "bboxHeight": 228,
+            "nonzeroCount": 21339,
+            "meaningfulCount": 20652,
+            "sha256": "c965444c25f71ec97245559e0c071bd2e215abf63184524558f7dd58400afdf9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 175,
+            "bboxHeight": 222,
+            "nonzeroCount": 18825,
+            "meaningfulCount": 15990,
+            "sha256": "63e42f584399022c04b86052802e0de5abe07c91c578c12952923d84733d87e9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 173,
+            "bboxHeight": 173,
+            "nonzeroCount": 18441,
+            "meaningfulCount": 15575,
+            "sha256": "7dc082258e57e339d88fa58d3cc136964d568e24311b89203fad2738aca2cc20"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 168,
+            "bboxHeight": 180,
+            "nonzeroCount": 17700,
+            "meaningfulCount": 15158,
+            "sha256": "5d28754928093dd59f94704fe3cece9b019a6fe328792902f2b5e22584629273"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 177,
+            "bboxHeight": 143,
+            "nonzeroCount": 14074,
+            "meaningfulCount": 12190,
+            "sha256": "1581768ea8fcf20e6fa22b1c1420dfd319ce040c0306a08123527d0883214722"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 218,
+            "bboxHeight": 113,
+            "nonzeroCount": 14460,
+            "meaningfulCount": 12306,
+            "sha256": "feb1dc6e4ef52d585e52698d214f9ecf2ab44aede567fe56aac90c43fad347b7"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 235564,
+      "finalSha256": "41302d5e3e78553a52a7971b11c789fc271fb06e5cb30f28234ccd791c85dc19",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/hexcaller-full-size.png",
@@ -513,8 +1393,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/hexcaller-cast-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/hexcaller-cast-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 210,
+            "bboxHeight": 228,
+            "nonzeroCount": 21339,
+            "meaningfulCount": 20652,
+            "sha256": "c965444c25f71ec97245559e0c071bd2e215abf63184524558f7dd58400afdf9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 131,
+            "bboxHeight": 142,
+            "nonzeroCount": 11643,
+            "meaningfulCount": 9594,
+            "sha256": "4f1a09e1e891c9118da90f2ba970fcc73bd95cc83a82d297a835a35af8f4e912"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 173,
+            "bboxHeight": 198,
+            "nonzeroCount": 17456,
+            "meaningfulCount": 12860,
+            "sha256": "7ed0eca4ccbdf2634b31a393d95d34b214fef762c6f687475e406b230bdacc3e"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 188,
+            "bboxHeight": 225,
+            "nonzeroCount": 21660,
+            "meaningfulCount": 15647,
+            "sha256": "1f39179bd2ea1f14bcccc88adadb8bf3f639a2be6ac22840907a9495f7512f46"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 179,
+            "bboxHeight": 228,
+            "nonzeroCount": 23332,
+            "meaningfulCount": 15501,
+            "sha256": "ea84ef3d5ff80fe6885b05c3fd5acd8fe7ee33d4782b816fe2f1697a24e26ad7"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 155,
+            "bboxHeight": 171,
+            "nonzeroCount": 16161,
+            "meaningfulCount": 11603,
+            "sha256": "d3441763160254761226a3defd1f3978aeec645e2faee0bfb6da486ce2a2e0f0"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 157,
+            "bboxHeight": 153,
+            "nonzeroCount": 14172,
+            "meaningfulCount": 10589,
+            "sha256": "78212b3c32e678eb26aa4601424f4c5e99b45ba79a90fdd9136ef5f46cbee51a"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 147,
+            "bboxHeight": 166,
+            "nonzeroCount": 13224,
+            "meaningfulCount": 10773,
+            "sha256": "0c2003164e044672918d814c9f0117778b27d21f1d1f88be7897d1c41975d25b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 315880,
+      "finalSha256": "14468a1b91d228dea180fe48687e15d26a93f32f3b5924cfcc463ea6ae7f1c1b",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/hexcaller-full-size.png",
@@ -535,8 +1531,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/crusher-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/crusher-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 192,
+            "bboxHeight": 206,
+            "nonzeroCount": 24707,
+            "meaningfulCount": 24190,
+            "sha256": "13f3b9c1fe94d3d33086a04e1a3281c5b5613e6558ff76e172398064851977ce"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 201,
+            "bboxHeight": 181,
+            "nonzeroCount": 25682,
+            "meaningfulCount": 22930,
+            "sha256": "f3b602370cbbe0d3637849738fe0ba48bee2dcebb015d00e4f57f3973ea1847d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 187,
+            "bboxHeight": 224,
+            "nonzeroCount": 28526,
+            "meaningfulCount": 25208,
+            "sha256": "39d0d9022cb76722d780c7ce4f6174c6419de67e31429f71019b9d2fc6b5ab1d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 188,
+            "bboxHeight": 240,
+            "nonzeroCount": 29264,
+            "meaningfulCount": 25928,
+            "sha256": "367b9da17600604e7efe2f16517baff636147a5258f16a71de442b4c405fedb7"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 210,
+            "bboxHeight": 204,
+            "nonzeroCount": 28770,
+            "meaningfulCount": 25636,
+            "sha256": "4f2850c27a7db2bf93b533098b77103d9393d65680d511562031d251257c567c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 189,
+            "bboxHeight": 221,
+            "nonzeroCount": 28264,
+            "meaningfulCount": 25194,
+            "sha256": "7fb3df111242f4e8b972175e65a1793d695fe3c45bddbe7d10d80b249460f21b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 354308,
+      "finalSha256": "e15945ac411a7393ecfa99b9a1b7b1052eb655040d450f6df1c9bd72b1a7ba80",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/crusher-full-size.png",
@@ -557,8 +1641,96 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/crusher-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/enemies/crusher-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 256x256 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 256x256 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 192,
+            "bboxHeight": 206,
+            "nonzeroCount": 24707,
+            "meaningfulCount": 24190,
+            "sha256": "13f3b9c1fe94d3d33086a04e1a3281c5b5613e6558ff76e172398064851977ce"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 195,
+            "bboxHeight": 218,
+            "nonzeroCount": 26599,
+            "meaningfulCount": 23082,
+            "sha256": "2a61b69c167b01536ebee0df0518b9d802fb831e7b52306b0b8bd1e46d0b5bd2"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 205,
+            "bboxHeight": 176,
+            "nonzeroCount": 24418,
+            "meaningfulCount": 21291,
+            "sha256": "b315daec6830eb9347e2e5c0e2fb5a8caa4e415ad59e24d74cd24164a87def5d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 219,
+            "bboxHeight": 129,
+            "nonzeroCount": 19375,
+            "meaningfulCount": 17344,
+            "sha256": "fc857cb5d64ad1b5e8bb65205e26345c7679aa10003dbb23371a329cbd2caf28"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 214,
+            "bboxHeight": 107,
+            "nonzeroCount": 16605,
+            "meaningfulCount": 14957,
+            "sha256": "57bf272f6cfe525177a9012d46cfe05ee137e692fc3471fc40c5239fa01e4e51"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 216,
+            "bboxHeight": 101,
+            "nonzeroCount": 15788,
+            "meaningfulCount": 14192,
+            "sha256": "c2e9facd348d4a33f56a7837b5b530f959d4d44c26326576018d0c6effc009ee"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 279394,
+      "finalSha256": "97372b6ec675234c5bcc0a0b927f4ba7f2f430c9530673b5e42ee3737277aec9",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/crusher-full-size.png",
@@ -579,8 +1751,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/mossback-brute-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/mossback-brute-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 258,
+            "bboxHeight": 244,
+            "nonzeroCount": 40739,
+            "meaningfulCount": 39771,
+            "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 283,
+            "bboxHeight": 223,
+            "nonzeroCount": 43361,
+            "meaningfulCount": 37419,
+            "sha256": "a193fbdb994f7aed2bda4b3d9c3f9de4558eb39263f70bd1e235df4f4068e351"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 283,
+            "bboxHeight": 237,
+            "nonzeroCount": 47026,
+            "meaningfulCount": 40744,
+            "sha256": "979e092fd4c33a4a9da8cf146e585296a8db3e8e7c53664c22170eee563d2cb4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 250,
+            "bboxHeight": 250,
+            "nonzeroCount": 45108,
+            "meaningfulCount": 39243,
+            "sha256": "e97c867c07702de9382d464383bc56a38bbab7ced2e160981a8d93532dd7e3ea"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 242,
+            "bboxHeight": 248,
+            "nonzeroCount": 44621,
+            "meaningfulCount": 38109,
+            "sha256": "ae1f6f42b54ba6af20be14b9df0309f24580e39bce45fb4168bbc91477bb55f6"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 280,
+            "bboxHeight": 216,
+            "nonzeroCount": 43052,
+            "meaningfulCount": 37072,
+            "sha256": "f1ec26694b1ef047e74b13d3b88fecf68464162dfc7cd1071d12ac7525bbb61f"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 284,
+            "bboxHeight": 250,
+            "nonzeroCount": 51272,
+            "meaningfulCount": 42406,
+            "sha256": "35363e6c044cea91a133765f2de069aa53b3a209d3668a3d9c50492b9e0a00b1"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 268,
+            "bboxHeight": 247,
+            "nonzeroCount": 50012,
+            "meaningfulCount": 42625,
+            "sha256": "8bbceb3f37b076252bd371ff57edb7eef77e6d2373a1807f466c408592d96e53"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 615476,
+      "finalSha256": "9430fea941f03472d4191424db884cfe1b87ca2fae5dec24f6d35d8937d8ad29",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/mossback-brute-full-size.png",
@@ -601,8 +1889,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/mossback-brute-ability-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/mossback-brute-ability-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 258,
+            "bboxHeight": 244,
+            "nonzeroCount": 40739,
+            "meaningfulCount": 39771,
+            "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 269,
+            "bboxHeight": 314,
+            "nonzeroCount": 56453,
+            "meaningfulCount": 47581,
+            "sha256": "f8ae0046992c28175dba44b06ef45ee8d1d2c54e891108547e58ece98bb435d7"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 236,
+            "bboxHeight": 360,
+            "nonzeroCount": 61084,
+            "meaningfulCount": 51707,
+            "sha256": "69f6186a723318fcb4f1d17207057fedd93c11142e09ef36c4a5afc169d8de9d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 273,
+            "bboxHeight": 340,
+            "nonzeroCount": 74121,
+            "meaningfulCount": 57413,
+            "sha256": "2d722ef0da2ba03ad49283359c5463dcfa8eee59b77d16cdc3d9b174a5733c46"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 302,
+            "bboxHeight": 222,
+            "nonzeroCount": 57423,
+            "meaningfulCount": 47658,
+            "sha256": "5ec91f9cc1fdc97ba89c54fb9097cd7d9d172650c3d5b85b7778bf827f7b0bd4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 301,
+            "bboxHeight": 251,
+            "nonzeroCount": 58288,
+            "meaningfulCount": 47172,
+            "sha256": "c9eff03e1e89d0401a544c7fc80014d4b1c9f98109a2733f175a75eb5a428d5c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 265,
+            "bboxHeight": 250,
+            "nonzeroCount": 49909,
+            "meaningfulCount": 42237,
+            "sha256": "2273db16f6139d77acdd8272023857720057ee58086c2e9999780218721ea93c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 265,
+            "bboxHeight": 249,
+            "nonzeroCount": 49048,
+            "meaningfulCount": 42455,
+            "sha256": "977624eef0bc1dcf61c78d8abb1fd8063c10f23137f49262d1aeaebe856b4ec2"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 455354,
+      "finalSha256": "d999683a30b67a4ce2f81fb01e4f36b6ee8888490265bc721c5bb81178a8aaa3",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/mossback-brute-full-size.png",
@@ -627,8 +2031,152 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/mossback-brute-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/mossback-brute-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 258,
+            "bboxHeight": 244,
+            "nonzeroCount": 40739,
+            "meaningfulCount": 39771,
+            "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 212,
+            "bboxHeight": 227,
+            "nonzeroCount": 38197,
+            "meaningfulCount": 32456,
+            "sha256": "b44a67e8ce2c1b099aaaf80904ceb45391d54de3555a32e99b9fd399418f4282"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 223,
+            "bboxHeight": 215,
+            "nonzeroCount": 35975,
+            "meaningfulCount": 29451,
+            "sha256": "24e397adb1034e53b2c9842cde80b62e883b39490a01a4999496a32379601a42"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 228,
+            "bboxHeight": 211,
+            "nonzeroCount": 38498,
+            "meaningfulCount": 30846,
+            "sha256": "e6f70e2c4db445e25b731ebcdfe794943da9add3dbae9a759fc1cced2cdd8aa1"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 211,
+            "bboxHeight": 188,
+            "nonzeroCount": 33466,
+            "meaningfulCount": 28195,
+            "sha256": "60d26f11f9e1a0da913f5cce893847f853ca392652522a36149fd1a83986dd4a"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 231,
+            "bboxHeight": 167,
+            "nonzeroCount": 31041,
+            "meaningfulCount": 25245,
+            "sha256": "6abaf8575dd5d0cae3b2e905d1038379028c439dafba890c0695828f0411f46a"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 237,
+            "bboxHeight": 137,
+            "nonzeroCount": 26793,
+            "meaningfulCount": 20947,
+            "sha256": "4d68bd4a4c308a2ce2c7566ecf22f06ad1abcc581b25e26f026fa0965a1a0440"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 212,
+            "bboxHeight": 133,
+            "nonzeroCount": 23316,
+            "meaningfulCount": 19253,
+            "sha256": "3dd2d52e0bc20a44c7102300ca91900e6a216d07ca21482dcd228b0fb6d06039"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 8,
+          "canonicalAlpha": {
+            "bboxWidth": 221,
+            "bboxHeight": 118,
+            "nonzeroCount": 20471,
+            "meaningfulCount": 17355,
+            "sha256": "22a028e356ec1b20fdccf8554258512fec91cedc00921c41c5ca429f70ba3a44"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 9,
+          "canonicalAlpha": {
+            "bboxWidth": 218,
+            "bboxHeight": 96,
+            "nonzeroCount": 17123,
+            "meaningfulCount": 14659,
+            "sha256": "c58e31b858e59df12e3217208c3d253000e793b3264ffb2adf9268c6da69b441"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 546692,
+      "finalSha256": "05c71755b519e5e7fa2ad66856ef7cce9bf29341a08efbb65940cf77e8229440",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/mossback-brute-full-size.png",
@@ -649,8 +2197,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/ironhide-warlord-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/ironhide-warlord-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 217,
+            "bboxHeight": 225,
+            "nonzeroCount": 24585,
+            "meaningfulCount": 23581,
+            "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 220,
+            "bboxHeight": 224,
+            "nonzeroCount": 27592,
+            "meaningfulCount": 22079,
+            "sha256": "96720f576d445c65fdde7095ab7c6ab07b350ae600eb802f738c8bb37d8fc7f5"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 214,
+            "bboxHeight": 241,
+            "nonzeroCount": 28851,
+            "meaningfulCount": 22909,
+            "sha256": "c2a697d0270c004382cfad0aa69042c4bb9cccef3be1214c5b04521f7cbeef5d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 218,
+            "bboxHeight": 252,
+            "nonzeroCount": 28869,
+            "meaningfulCount": 23611,
+            "sha256": "e9b36a5564f04424e5de135e60c2522bf39feff7296636f1b1e068a45f20390c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 212,
+            "bboxHeight": 237,
+            "nonzeroCount": 27171,
+            "meaningfulCount": 21523,
+            "sha256": "fcce9b3aa7c6b4279d9104c7b918b1f5fe4ccac281e482129468e16d0b12a274"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 208,
+            "bboxHeight": 234,
+            "nonzeroCount": 27605,
+            "meaningfulCount": 22114,
+            "sha256": "9cc9d9bb4b677d1ca5095940a33e6b46b9b96e17f68aa363697f75a39a273477"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 209,
+            "bboxHeight": 233,
+            "nonzeroCount": 26303,
+            "meaningfulCount": 21241,
+            "sha256": "0aabd70c01fc38280fdbcea3d5002f6cb906c7bda064173c3f80f232ebb6dd15"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 223,
+            "bboxHeight": 227,
+            "nonzeroCount": 31930,
+            "meaningfulCount": 25522,
+            "sha256": "a00ed3109c9da5164ef4f983016c6b7b85d083fcf4e43c0073610ecacbdef038"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 498074,
+      "finalSha256": "df8dea5fdc5fa68f0bda5fc35e4d24aa159cf798943ad5b0ce60373c35236f85",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
@@ -671,8 +2335,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/ironhide-warlord-ability-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/ironhide-warlord-ability-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 217,
+            "bboxHeight": 225,
+            "nonzeroCount": 24585,
+            "meaningfulCount": 23581,
+            "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 191,
+            "bboxHeight": 254,
+            "nonzeroCount": 27681,
+            "meaningfulCount": 22082,
+            "sha256": "b59786cf67430f0389309cd7bc0be7a6ed73836f14a4e2c91b238193c782ba6f"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 198,
+            "bboxHeight": 310,
+            "nonzeroCount": 30786,
+            "meaningfulCount": 23121,
+            "sha256": "0e11abe17df537a0ec84c829289c417877bcbcbd6c77ab26c06cf3215ffff373"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 209,
+            "bboxHeight": 353,
+            "nonzeroCount": 35253,
+            "meaningfulCount": 26080,
+            "sha256": "4cca1d4df72760562b7a9a5ca73b82f7da5919c5e6baded7a537781a40bc5963"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 208,
+            "bboxHeight": 360,
+            "nonzeroCount": 61811,
+            "meaningfulCount": 35846,
+            "sha256": "267e85b3fb9a910287731c6d524551c9b2fd16ae8b365ef5171268d50d0234f4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 219,
+            "bboxHeight": 303,
+            "nonzeroCount": 42151,
+            "meaningfulCount": 26396,
+            "sha256": "53188af80befc30b522f4989a9d961ded3bfd7682f20654d9eb557117924c01b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 191,
+            "bboxHeight": 218,
+            "nonzeroCount": 26377,
+            "meaningfulCount": 20847,
+            "sha256": "4bacf82056b3c6357da69c2640662738008308d6430dd38cc2dc432f3d63da9a"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 200,
+            "bboxHeight": 212,
+            "nonzeroCount": 27984,
+            "meaningfulCount": 22269,
+            "sha256": "362f71cdb5e6fa798943bd2db36f86a662f39d53ed1a491cfd97a19bb8b03278"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 614956,
+      "finalSha256": "762d37488cdfbdd7dfedc3f5aab56af3c7ca0de2209a07ecb10c52461ac20062",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
@@ -693,8 +2473,152 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/ironhide-warlord-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/ironhide-warlord-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 217,
+            "bboxHeight": 225,
+            "nonzeroCount": 24585,
+            "meaningfulCount": 23581,
+            "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 169,
+            "bboxHeight": 170,
+            "nonzeroCount": 18182,
+            "meaningfulCount": 12908,
+            "sha256": "7150308d75ca8008fdcee6a4ca328390df08232513ba0eb63751c1afa5bcface"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 170,
+            "bboxHeight": 151,
+            "nonzeroCount": 16336,
+            "meaningfulCount": 12124,
+            "sha256": "88d5086d11907cdd32cf6d728a300fdeb710b5be8a0668e8f47eb2263e8b1ce8"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 155,
+            "bboxHeight": 148,
+            "nonzeroCount": 14603,
+            "meaningfulCount": 10792,
+            "sha256": "60e14b6161dba5484d9bd7422a731e0fa2034270a9fa0f65de581e9dfc6f5be8"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 147,
+            "bboxHeight": 173,
+            "nonzeroCount": 16192,
+            "meaningfulCount": 11805,
+            "sha256": "0c7d949f878c20cdd953b3adda967ce202590be3ca8ac697bae3f2a296ae2a06"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 160,
+            "bboxHeight": 150,
+            "nonzeroCount": 14497,
+            "meaningfulCount": 10345,
+            "sha256": "a1bd485ab82afd22d4965a60853c11d0e4810f4e8278e235895a1db9ce8a7bab"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 157,
+            "bboxHeight": 126,
+            "nonzeroCount": 12976,
+            "meaningfulCount": 9673,
+            "sha256": "b63f4bb8eca555e5090a7ae5351c0080b10ff22bb8c06f2d8f21fe0661b2a63c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 169,
+            "bboxHeight": 83,
+            "nonzeroCount": 11809,
+            "meaningfulCount": 8454,
+            "sha256": "4d038abd14a1f205dd3236301c869c2ccea5556a4e15edc4d7749fcdd4087939"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 8,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 73,
+            "nonzeroCount": 9115,
+            "meaningfulCount": 6516,
+            "sha256": "f522d54f9932954e4de34487b69d513b32f1dce7311009295ea4523bacaee82e"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 9,
+          "canonicalAlpha": {
+            "bboxWidth": 152,
+            "bboxHeight": 74,
+            "nonzeroCount": 9208,
+            "meaningfulCount": 6659,
+            "sha256": "8b2b887a594d1030dba0d8c058eb7be0a15268297e6584b29914d32bf09ec3a3"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 332120,
+      "finalSha256": "9e4aa51ae27e5e35bf5899eea049c65d95ace8e0b99215628a97c75b6f4ec352",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
@@ -715,8 +2639,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/dread-colossus-walk-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/dread-colossus-walk-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 304,
+            "bboxHeight": 338,
+            "nonzeroCount": 58741,
+            "meaningfulCount": 54675,
+            "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 327,
+            "bboxHeight": 355,
+            "nonzeroCount": 68250,
+            "meaningfulCount": 55851,
+            "sha256": "56e49310dea74a1d790e90c38cc40df0b30cbdf286a2dab81dc8ee7611a30516"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 228,
+            "bboxHeight": 313,
+            "nonzeroCount": 55643,
+            "meaningfulCount": 46400,
+            "sha256": "c6c9260d24cb0677e9ed2f0d43d256fce5eba597cded2d65ffa1e8c63ed96f4f"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 257,
+            "bboxHeight": 342,
+            "nonzeroCount": 61098,
+            "meaningfulCount": 50254,
+            "sha256": "1229d96c75321a9f249cc32ea38c62fcf0f7a6d73cce65ccbd6ec70850679987"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 278,
+            "bboxHeight": 319,
+            "nonzeroCount": 60636,
+            "meaningfulCount": 50083,
+            "sha256": "6bcdee2e8b568e7ea3f981304b40539cae3838b46a9ff136baa95dbf5e36aba2"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 314,
+            "bboxHeight": 360,
+            "nonzeroCount": 70883,
+            "meaningfulCount": 57869,
+            "sha256": "084f2e3f8eda001f511e9514e8f02a16815b50bdf81d707f32b5a90d294435b8"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 270,
+            "bboxHeight": 301,
+            "nonzeroCount": 60299,
+            "meaningfulCount": 49911,
+            "sha256": "2cd1783e6a6e2ec9836abe23a4d8f8ece74cf8cafd96f13aabc4e6fac99be3c4"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 301,
+            "bboxHeight": 341,
+            "nonzeroCount": 71836,
+            "meaningfulCount": 58489,
+            "sha256": "bd58813290b30410002e53e325a700daa533692b1ad93e2c372d0c0a87706f82"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 480692,
+      "finalSha256": "5cf0f8b057b58a3ee1d23658e7388cf9682b745383bb87d21ca8d2969fddf1a8",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/dread-colossus-full-size.png",
@@ -741,8 +2781,124 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/dread-colossus-ability-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/dread-colossus-ability-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 304,
+            "bboxHeight": 338,
+            "nonzeroCount": 58741,
+            "meaningfulCount": 54675,
+            "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 235,
+            "bboxHeight": 305,
+            "nonzeroCount": 53337,
+            "meaningfulCount": 43139,
+            "sha256": "fee15bb07dbcdf439cdb4b7a0cc9e74517a40f7fccce489e28e34c2c0660c8ce"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 245,
+            "bboxHeight": 318,
+            "nonzeroCount": 55323,
+            "meaningfulCount": 44200,
+            "sha256": "ef9c0d8cc7f6b0e43966e6fce48b2de2670f528165110da8c648dbbec24775a8"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 341,
+            "bboxHeight": 326,
+            "nonzeroCount": 67890,
+            "meaningfulCount": 53410,
+            "sha256": "c9866e6b2ed98702b9e55052aee9871fe71a09b321b953c76675e0ff9acc5d9c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 309,
+            "bboxHeight": 321,
+            "nonzeroCount": 77748,
+            "meaningfulCount": 62267,
+            "sha256": "9669c3b1991166d1a1f6f5a6596b34a2a47483995306b0cc8e3925c874091085"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 272,
+            "bboxHeight": 322,
+            "nonzeroCount": 64014,
+            "meaningfulCount": 52183,
+            "sha256": "7ab7bc9a22d69ff4b1b7ffdcc29ed9a1ca13b6aeaa9a9579c4ba9fd268619836"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 282,
+            "bboxHeight": 307,
+            "nonzeroCount": 58676,
+            "meaningfulCount": 48701,
+            "sha256": "765ad52b1f527765ebaffb006551ebe3e422762d885edcd22bcdb44f22be49c9"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 278,
+            "bboxHeight": 304,
+            "nonzeroCount": 58747,
+            "meaningfulCount": 48902,
+            "sha256": "cc1a2c976a101d7a976d88774dd9de48519734355a41919f6e23cd4e2dafdbbb"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 501328,
+      "finalSha256": "bdb27cabdb292b4357e2268fdfbf9f164d1dd9ef5357d13614ab33f77d54421b",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/dread-colossus-full-size.png",
@@ -767,8 +2923,152 @@
       "generatedSourcePath": "output/defender-champion/raw/generated-actions/dread-colossus-defeat-v1.png",
       "acceptedSourcePath": "output/defender-champion/raw/bosses/dread-colossus-defeat-normalized.png",
       "generationMode": "edit",
-      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero pixel; exact pixel swaps attached only meaningful 1-3 pixel particles without deleting/inventing pixels or creating connector streaks; bounded readable-posture scaling; exact 384x384 cells with bottom-center anchor and safe gutters",
+      "normalization": "normalize_sprite_strip.py combined shared-scale pass across every action; decoded-alpha multi-source ownership watershed retained every nonzero source pixel; nearest-owner translation retained only visually coherent meaningful 1-3 pixel particles without deletion, invention, or connector streaks; exact 384x384 cells with bottom-center anchor and safe gutters; final assembly permits translation, bottom-centering, and padding only, with no geometric resampling; postNormalization scaleX and scaleY are 1 for every frame",
+      "sourceAlphaEvidence": [
+        {
+          "index": 0,
+          "canonicalAlpha": {
+            "bboxWidth": 304,
+            "bboxHeight": 338,
+            "nonzeroCount": 58741,
+            "meaningfulCount": 54675,
+            "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 1,
+          "canonicalAlpha": {
+            "bboxWidth": 207,
+            "bboxHeight": 255,
+            "nonzeroCount": 40809,
+            "meaningfulCount": 29032,
+            "sha256": "ea92250893553597f5e9e50d90c338916e44684bbf91fc4775e17b7028c788ab"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 2,
+          "canonicalAlpha": {
+            "bboxWidth": 225,
+            "bboxHeight": 241,
+            "nonzeroCount": 37484,
+            "meaningfulCount": 27344,
+            "sha256": "c13bebe9f09f08d2800164e6974af778944eeeb9096d0c0ede1ad0ca8b833545"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 3,
+          "canonicalAlpha": {
+            "bboxWidth": 218,
+            "bboxHeight": 192,
+            "nonzeroCount": 31330,
+            "meaningfulCount": 21594,
+            "sha256": "c2f7dfb09122a9e8cc8de85ae0697bee40831516cdbe05555fb8839b5e59336b"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 4,
+          "canonicalAlpha": {
+            "bboxWidth": 207,
+            "bboxHeight": 194,
+            "nonzeroCount": 30866,
+            "meaningfulCount": 23440,
+            "sha256": "053e2c312ab5f3ddaa6d5afae01ac2dd9751f8ad4055d7c5615e977bfaf6bc2a"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 5,
+          "canonicalAlpha": {
+            "bboxWidth": 221,
+            "bboxHeight": 173,
+            "nonzeroCount": 27483,
+            "meaningfulCount": 21088,
+            "sha256": "2173c1662fc68ad0d4b97d96a2a700265ed7d5bd66b0517af3d824d2f3a0fd7c"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 6,
+          "canonicalAlpha": {
+            "bboxWidth": 227,
+            "bboxHeight": 162,
+            "nonzeroCount": 26459,
+            "meaningfulCount": 20190,
+            "sha256": "cf0db043caec6d3a36afb11746322bd70c9eb65273341fdf98da8568cb1f6690"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 7,
+          "canonicalAlpha": {
+            "bboxWidth": 215,
+            "bboxHeight": 136,
+            "nonzeroCount": 21742,
+            "meaningfulCount": 16589,
+            "sha256": "87f9b8924be5620a1334d765d8997032783187e49b39fd823d5fba55e958fa7d"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 8,
+          "canonicalAlpha": {
+            "bboxWidth": 222,
+            "bboxHeight": 109,
+            "nonzeroCount": 19479,
+            "meaningfulCount": 14776,
+            "sha256": "b99a7a0a96f2a34954b031ea23f567b54d7678056a033d6c34ef65c5632490d5"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        },
+        {
+          "index": 9,
+          "canonicalAlpha": {
+            "bboxWidth": 223,
+            "bboxHeight": 109,
+            "nonzeroCount": 18713,
+            "meaningfulCount": 15017,
+            "sha256": "a35ec625af2e302696e1304b82ccb67323bbdcbcfee9584a6fb678390bd022a5"
+          },
+          "postNormalization": {
+            "scaleX": 1,
+            "scaleY": 1
+          }
+        }
+      ],
       "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
+      "finalBytes": 517800,
+      "finalSha256": "605d6d7c050bc564d42540b62223c3951fc8cec48ab78313195ec4322d9624dc",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/dread-colossus-full-size.png",
