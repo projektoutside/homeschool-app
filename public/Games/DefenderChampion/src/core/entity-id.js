@@ -22,3 +22,5 @@ export const compareEntityIds = (firstId, secondId) => {
   }
   return compareText(first.text, second.text);
 };
+
+export const compareEntitiesById = (first, second) => compareEntityIds(first.id, second.id);
