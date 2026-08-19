@@ -1,18 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
+import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { resolvePlacementPoint } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 import {
   advanceSimulation,
+  clearPresentationEvents,
   createSimulation,
   issueCommand,
   runStrategyFixture,
   summarizePresentationSimulation,
   summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
-import { selectTarget } from '../public/Games/DefenderChampion/src/core/targeting.js';
+import {
+  selectMeleeTarget,
+  selectTarget,
+} from '../public/Games/DefenderChampion/src/core/targeting.js';
 import { WAVE_GAP_TICKS } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
 test('presentation snapshots omit nonvisual effect fan-out without weakening full deterministic summaries', () => {
@@ -222,6 +227,140 @@ test('authored waves use integer ticks and snapshots are detached and determinis
   assert.notEqual(summarizeSimulation(first).enemies[0].health, 0);
 });
 
+test('full and presentation snapshots expose detached lane and enemy attack state', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 7 });
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  });
+
+  advanceSimulation(simulation, 1);
+  const fullEnemy = summarizeSimulation(simulation).enemies[0];
+  const presentationEnemy = summarizePresentationSimulation(simulation).enemies[0];
+  const expected = {
+    attackDamage: 18,
+    attackCooldownTicks: 72,
+    attackWindupTicks: 22,
+    attackTargets: ['frontline'],
+    attackState: {
+      targetTowerId: null,
+      startedAtTick: null,
+      impactAtTick: null,
+      readyAtTick: 0,
+    },
+    laneState: 'moving',
+    blockingTowerId: simulation.towers[0].id,
+    queueIndex: null,
+    laneOffset: -28,
+  };
+
+  for (const snapshot of [fullEnemy, presentationEnemy]) {
+    assert.deepEqual(Object.fromEntries(Object.keys(expected).map((key) => [key, snapshot[key]])), expected);
+  }
+  fullEnemy.attackTargets.push('backline');
+  fullEnemy.attackState.readyAtTick = 999;
+  const freshEnemy = summarizeSimulation(simulation).enemies[0];
+  assert.deepEqual(freshEnemy.attackTargets, ['frontline']);
+  assert.equal(freshEnemy.attackState.readyAtTick, 0);
+});
+
+test('terminal cleanup cancels attack ownership and prevents stale impacts', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.nextSpawnIndex = 0;
+  simulation.spawnedAllWaves = true;
+  simulation.castleHearts = 1;
+  simulation.coins = 1_000;
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  });
+  const [tower] = simulation.towers;
+  tower.nextAttackTick = Number.MAX_SAFE_INTEGER;
+  const config = ENEMIES['blight-walker'];
+  const attacker = {
+    id: 'enemy-2', enemyId: config.id, waveIndex: 0, spawnTick: 0,
+    pathProgress: 243, health: 1_000, maxHealth: 1_000, speed: 0,
+    armor: config.armor, clusterSize: 1, castleDamage: config.castleDamage,
+    attackDamage: config.attackDamage, attackCooldownTicks: config.attackCooldownTicks,
+    attackWindupTicks: config.attackWindupTicks, attackTargets: config.attackTargets,
+    attackState: { targetTowerId: tower.id, startedAtTick: 0, impactAtTick: 10, readyAtTick: 72 },
+    laneState: 'attacking', blockingTowerId: tower.id, queueIndex: null, laneOffset: 0,
+    nextAbilityTick: 0, abilityActiveTicks: 0, nextAbilityActiveTick: 0, thresholdFlags: {},
+  };
+  const castleEnemy = {
+    ...attacker,
+    id: 'enemy-3',
+    pathProgress: 1_000_000,
+    attackState: { targetTowerId: null, startedAtTick: null, impactAtTick: null, readyAtTick: 0 },
+    laneState: 'moving',
+    blockingTowerId: null,
+  };
+  simulation.enemies = [attacker, castleEnemy];
+  simulation.projectiles = [{ id: 'projectile-stale', sourceTowerId: tower.id, targetId: attacker.id, impactTick: 99 }];
+  simulation.effects = [{
+    id: 'effect-stale', sourceId: attacker.id, targetId: tower.id,
+    kind: 'tower-stun', value: 1, expiresAtTick: 99,
+  }];
+  tower.engagedEnemyIds = [attacker.id];
+
+  advanceSimulation(simulation, 1);
+
+  assert.equal(simulation.terminal, true);
+  assert.deepEqual(simulation.projectiles, []);
+  assert.deepEqual(simulation.effects, []);
+  assert.deepEqual(tower.engagedEnemyIds, []);
+  assert.deepEqual(attacker.attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 72,
+  });
+  assert.deepEqual(simulation.presentationEvents.map(({ kind }) => kind), ['battle-terminal']);
+  const healthAfterTerminal = tower.health;
+  advanceSimulation(simulation, 100);
+  assert.equal(tower.health, healthAfterTerminal);
+});
+
+test('restart and unload cleanup leave no transient combat state', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.coins = 1_000;
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+  });
+  const [tower] = simulation.towers;
+  const config = ENEMIES['blight-walker'];
+  simulation.enemies = [{
+    id: 'enemy-2', enemyId: config.id, health: config.health,
+    attackState: { targetTowerId: tower.id, startedAtTick: 1, impactAtTick: 23, readyAtTick: 73 },
+    blockingTowerId: tower.id, queueIndex: null, laneState: 'attacking', laneOffset: 0,
+  }];
+  tower.engagedEnemyIds = ['enemy-2'];
+  simulation.projectiles = [{ id: 'projectile-3' }];
+  simulation.effects = [{ id: 'effect-4' }];
+  simulation.presentationEvents = [{ id: 1, kind: 'enemy-attack-start', tick: 1, payload: {} }];
+
+  clearPresentationEvents(simulation);
+
+  assert.deepEqual(simulation.enemies[0].attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 73,
+  });
+  assert.equal(simulation.enemies[0].blockingTowerId, null);
+  assert.equal(simulation.enemies[0].laneState, 'moving');
+  assert.deepEqual(tower.engagedEnemyIds, []);
+  assert.deepEqual(simulation.projectiles, []);
+  assert.deepEqual(simulation.effects, []);
+  assert.deepEqual(simulation.presentationEvents, []);
+
+  const restarted = createSimulation('level-1', { qa: true });
+  assert.deepEqual(restarted.enemies, []);
+  assert.deepEqual(restarted.towers, []);
+  assert.deepEqual(restarted.projectiles, []);
+  assert.deepEqual(restarted.effects, []);
+  assert.deepEqual(restarted.presentationEvents, []);
+});
+
 test('targeting resolves role metrics then path progress, spawn tick, and entity id', () => {
   const candidates = [
     { id: 'enemy-4', speed: 40, armor: 0.1, clusterSize: 1, pathProgress: 10, spawnTick: 8 },
@@ -234,6 +373,24 @@ test('targeting resolves role metrics then path progress, spawn tick, and entity
   assert.equal(selectTarget([...candidates, {
     id: 'armored', speed: 20, armor: 0.8, clusterSize: 1, pathProgress: 1, spawnTick: 1,
   }], 'highest-armor').id, 'armored');
+});
+
+test('melee targeting exhausts its own attackers then its own queue before other candidates', () => {
+  const attacker = {
+    id: 'enemy-1', armor: 0, pathProgress: 10, spawnTick: 0,
+    blockingTowerId: 'tower-1', laneState: 'attacking',
+  };
+  const queued = {
+    id: 'enemy-2', armor: 0.1, pathProgress: 20, spawnTick: 0,
+    blockingTowerId: 'tower-1', laneState: 'queued',
+  };
+  const other = {
+    id: 'enemy-3', armor: 0.9, pathProgress: 30, spawnTick: 0,
+    blockingTowerId: null, laneState: 'moving',
+  };
+
+  assert.equal(selectMeleeTarget([other, queued, attacker], 'highest-armor', 'tower-1'), attacker);
+  assert.equal(selectMeleeTarget([other, queued], 'highest-armor', 'tower-1'), queued);
 });
 
 test('targeting orders matching entity ID prefixes by numeric suffix', () => {
@@ -270,7 +427,7 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
     {
       id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-a', placementLayer: 'road', combatLayer: 'frontline',
       tier: 0, health: 420, maxHealth: 420, armor: 0.10, engagedEnemyIds: [], totalInvested: 50,
-      attackCount: 24, masteryProgress: 0, nextAttackTick: 4782,
+      attackCount: 24, masteryProgress: 0, nextAttackTick: 4788,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);

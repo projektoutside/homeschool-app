@@ -20,3 +20,17 @@ export const selectTarget = (candidates, priority) => [...candidates].sort((firs
   || first.spawnTick - second.spawnTick
   || compareEntityIds(first.id, second.id)
 ))[0] ?? null;
+
+export const selectMeleeTarget = (candidates, priority, towerId) => {
+  const attackers = candidates.filter((candidate) => (
+    candidate.blockingTowerId === towerId && candidate.laneState === 'attacking'
+  ));
+  if (attackers.length > 0) return selectTarget(attackers, priority);
+
+  const queued = candidates.filter((candidate) => (
+    candidate.blockingTowerId === towerId && candidate.laneState === 'queued'
+  ));
+  if (queued.length > 0) return selectTarget(queued, priority);
+
+  return selectTarget(candidates, priority);
+};

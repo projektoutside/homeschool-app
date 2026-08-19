@@ -33,6 +33,20 @@ const createCombatEnemy = (id, enemyId, overrides = {}) => {
     armor: config.armor,
     clusterSize: 1,
     castleDamage: config.castleDamage,
+    attackDamage: config.attackDamage,
+    attackCooldownTicks: config.attackCooldownTicks,
+    attackWindupTicks: config.attackWindupTicks,
+    attackTargets: config.attackTargets,
+    attackState: {
+      targetTowerId: null,
+      startedAtTick: null,
+      impactAtTick: null,
+      readyAtTick: 0,
+    },
+    laneState: 'moving',
+    blockingTowerId: null,
+    queueIndex: null,
+    laneOffset: 0,
     nextAbilityTick: config.cooldownTicks,
     abilityActiveTicks: 0,
     nextAbilityActiveTick: config.cooldownTicks,
@@ -58,6 +72,266 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
   simulation.enemies = enemies;
   return simulation;
 };
+
+test('every enemy has an immutable role-shaped frontline attack profile', () => {
+  const expectedProfiles = {
+    'blight-walker': [18, 72, 22],
+    skitter: [11, 42, 14],
+    swarmkin: [8, 54, 16],
+    shellguard: [28, 96, 30],
+    hexcaller: [12, 90, 28],
+    crusher: [62, 108, 34],
+    'mossback-brute': [78, 102, 36],
+    'ironhide-warlord': [92, 96, 32],
+    'dread-colossus': [120, 114, 40],
+  };
+
+  for (const [enemyId, enemy] of Object.entries(ENEMIES)) {
+    assert.deepEqual(
+      [enemy.attackDamage, enemy.attackCooldownTicks, enemy.attackWindupTicks],
+      expectedProfiles[enemyId],
+    );
+    assert.equal(Number.isInteger(enemy.attackDamage) && enemy.attackDamage > 0, true);
+    assert.equal(Number.isInteger(enemy.attackCooldownTicks) && enemy.attackCooldownTicks > 0, true);
+    assert.equal(Number.isInteger(enemy.attackWindupTicks) && enemy.attackWindupTicks > 0, true);
+    assert.deepEqual(enemy.attackTargets, ['frontline']);
+    assert.equal(Object.isFrozen(enemy.attackTargets), true);
+  }
+
+  assert.equal(ENEMIES.crusher.attackDamage > ENEMIES['blight-walker'].attackDamage, true);
+  for (const bossId of ['mossback-brute', 'ironhide-warlord', 'dread-colossus']) {
+    assert.equal(ENEMIES[bossId].attackDamage > ENEMIES.crusher.attackDamage, true, bossId);
+  }
+});
+
+test('stepCombat starts and impacts an armored frontline on the exact active ticks', () => {
+  const enemy = createCombatEnemy('enemy-1', 'blight-walker', {
+    health: 1_000,
+    maxHealth: 1_000,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('bladeguard', 0, 0, [enemy]);
+  const [tower] = simulation.towers;
+  tower.nextAttackTick = Number.MAX_SAFE_INTEGER;
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  assert.deepEqual(enemy.attackState, {
+    targetTowerId: tower.id,
+    startedAtTick: 0,
+    impactAtTick: 22,
+    readyAtTick: 72,
+  });
+  assert.equal(tower.health, 420);
+
+  for (let tick = 1; tick < 22; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+  assert.equal(tower.health, 420);
+
+  simulation.tick = 22;
+  stepCombat(simulation);
+  assert.equal(tower.health, 404);
+  assert.deepEqual(enemy.attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 72,
+  });
+  assert.deepEqual(
+    simulation.presentationEvents
+      .filter(({ kind }) => kind.startsWith('enemy-attack') || kind.startsWith('defender-'))
+      .map(({ kind, tick }) => [kind, tick]),
+    [
+      ['enemy-attack-start', 0],
+      ['defender-hit', 22],
+      ['enemy-attack-impact', 22],
+    ],
+  );
+});
+
+test('stepCombat cancels a wind-up when the attacker is stunned on its impact tick', () => {
+  const enemy = createCombatEnemy('enemy-1', 'blight-walker', {
+    health: 1_000,
+    maxHealth: 1_000,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('bladeguard', 0, 0, [enemy]);
+  const [tower] = simulation.towers;
+  tower.nextAttackTick = Number.MAX_SAFE_INTEGER;
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  simulation.tick = ENEMIES['blight-walker'].attackWindupTicks;
+  enemy.stunnedUntilTick = simulation.tick + 1;
+  stepCombat(simulation);
+
+  assert.equal(tower.health, tower.maxHealth);
+  assert.deepEqual(enemy.attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: ENEMIES['blight-walker'].attackCooldownTicks,
+  });
+  assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'enemy-attack-impact'), false);
+});
+
+test('a defeated first frontline grants no refund and releases toward the fallback on the next tick', () => {
+  const enemy = createCombatEnemy('enemy-1', 'crusher', {
+    attackDamage: 500,
+    attackCooldownTicks: 10,
+    attackWindupTicks: 0,
+    health: 10_000,
+    maxHealth: 10_000,
+    pathProgress: testRoadProgress,
+    speed: 60,
+  });
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 1_000;
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
+  issueCommand(simulation, { type: 'build', defenderId: 'ironwarden', padId: 'l1-pad-c' });
+  simulation.towers[1].nextAttackTick = Number.MAX_SAFE_INTEGER;
+  simulation.enemies = [enemy];
+  const coinsBeforeImpact = simulation.coins;
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  const stoppedProgress = enemy.pathProgress;
+  assert.equal(simulation.towers.some(({ padId }) => padId === 'l1-pad-a'), false);
+  assert.equal(simulation.coins, coinsBeforeImpact);
+  assert.equal(enemy.blockingTowerId, null);
+  assert.equal(enemy.laneReleasedAtTick, 0);
+
+  simulation.tick = 1;
+  stepCombat(simulation);
+  assert.equal(enemy.blockingTowerId, simulation.towers[0].id);
+  assert.equal(enemy.laneState, 'moving');
+  assert.equal(enemy.pathProgress > stoppedProgress, true);
+});
+
+test('Bladeguard and Ironwarden prefer attackers at their own gate before their role priority', () => {
+  for (const defenderId of ['bladeguard', 'ironwarden']) {
+    const attacker = createCombatEnemy('enemy-1', 'blight-walker', {
+      armor: 0,
+      health: 10_000,
+      maxHealth: 10_000,
+      pathProgress: testRoadProgress,
+      speed: 0,
+    });
+    const other = createCombatEnemy('enemy-2', 'shellguard', {
+      armor: 0.9,
+      health: 10_000,
+      maxHealth: 10_000,
+      pathProgress: testRoadProgress + 50,
+      speed: 0,
+    });
+    const simulation = createTowerCombat(defenderId, 0, 0, [attacker, other]);
+
+    simulation.tick = 0;
+    stepCombat(simulation);
+
+    const attack = simulation.presentationEvents.find(({ kind }) => kind === 'tower-attack');
+    assert.equal(attack.payload.targetId, attacker.id, defenderId);
+    assert.equal(attacker.blockingTowerId, simulation.towers[0].id, defenderId);
+    assert.equal(other.blockingTowerId, null, defenderId);
+  }
+});
+
+test('a blocked Hexcaller keeps its exact active-tick support cadence', () => {
+  const source = createCombatEnemy('enemy-1', 'hexcaller', {
+    health: 10_000,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const ally = createCombatEnemy('enemy-2', 'blight-walker', {
+    health: 10_000,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('ironwarden', 0, 0, [source, ally]);
+  simulation.towers[0].nextAttackTick = Number.MAX_SAFE_INTEGER;
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  assert.equal(source.blockingTowerId, simulation.towers[0].id);
+  source.abilityActiveTicks = ENEMIES.hexcaller.cooldownTicks;
+  source.nextAbilityActiveTick = ENEMIES.hexcaller.cooldownTicks;
+
+  for (let tick = 1; tick <= 181; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+
+  assert.deepEqual(
+    simulation.presentationEvents
+      .filter(({ kind }) => kind === 'hexcaller-cast')
+      .map(({ tick }) => tick),
+    [1, 181],
+  );
+  assert.equal(source.laneState, 'attacking');
+  assert.equal(simulation.effects.some(({ sourceId }) => sourceId === source.id), true);
+});
+
+test('a blocked Dread Colossus keeps boss thresholds and its summons join the same gate queue', () => {
+  const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
+    health: 10_000,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('ironwarden', 0, 0, [boss]);
+  simulation.towers[0].nextAttackTick = Number.MAX_SAFE_INTEGER;
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  assert.equal(boss.laneState, 'attacking');
+  boss.health = 7_400;
+
+  for (let tick = 1; tick <= 61; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+
+  const summons = simulation.enemies.filter(({ isSummon }) => isSummon);
+  assert.equal(summons.length, ENEMIES['dread-colossus'].summonCount);
+  assert.equal(summons.every(({ blockingTowerId }) => blockingTowerId === simulation.towers[0].id), true);
+  assert.equal(summons.some(({ laneState }) => laneState === 'queued'), true);
+  assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'dread-summon'), true);
+});
+
+test('an enemy cannot hit the castle until the tick after defeating the last blocker', () => {
+  const enemy = createCombatEnemy('enemy-1', 'blight-walker', {
+    attackDamage: 500,
+    attackCooldownTicks: 10,
+    attackWindupTicks: 0,
+    health: 10_000,
+    maxHealth: 10_000,
+    pathProgress: 1_218,
+    speed: 200_000,
+  });
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 1_000;
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-g' });
+  simulation.enemies = [enemy];
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  const stoppedProgress = enemy.pathProgress;
+  assert.equal(simulation.towers.length, 0);
+  assert.equal(simulation.castleHearts, 3);
+  assert.equal(enemy.pathProgress, stoppedProgress);
+  assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'castle-impact'), false);
+
+  simulation.tick = 1;
+  stepCombat(simulation);
+  assert.equal(simulation.castleHearts, 2);
+  assert.equal(simulation.enemies.length, 0);
+  assert.equal(simulation.presentationEvents.some(({ kind, tick }) => kind === 'castle-impact' && tick === 1), true);
+});
 
 test('armor and control effects respect hard ceilings', () => {
   assert.equal(applyArmor(100, 0.90), 35);

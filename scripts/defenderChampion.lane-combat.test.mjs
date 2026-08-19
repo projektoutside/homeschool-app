@@ -48,6 +48,16 @@ const createEnemy = ({
   attackCooldownTicks,
   attackWindupTicks,
   attackTargets,
+  attackState: {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 0,
+  },
+  laneState: 'moving',
+  blockingTowerId: null,
+  queueIndex: null,
+  laneOffset: 0,
 });
 
 const createSimulation = ({ towers, enemies, tick = 0 } = {}) => ({
@@ -146,7 +156,12 @@ test('an enemy moves toward its reserved contact slot before it may start an att
   assert.equal(enemy.blockingTowerId, 'tower-1');
   assert.equal(enemy.laneState, 'moving');
   assert.equal(enemy.pathProgress, 10);
-  assert.equal(enemy.attackState, undefined);
+  assert.deepEqual(enemy.attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 0,
+  });
 });
 
 test('a moving enemy cannot bypass its reserved living gate by overshooting the contact slot', () => {

@@ -7,15 +7,51 @@ import { createWaveController, spawnScheduledEnemies } from './wave-controller.j
 import { stepCombat } from './combat.js';
 import { calculateBattleResult } from './scoring.js';
 import {
+  clearPresentationEvents as clearPresentationEventQueue,
   emitPresentationEvent,
   snapshotPresentationEvents,
 } from './presentation-events.js';
 
-export { clearPresentationEvents } from './presentation-events.js';
-
 const MAX_STRATEGY_TICKS = 60 * 720;
 const accepted = () => ({ accepted: true, reason: null });
 const rejected = (reason) => ({ accepted: false, reason });
+
+const idleAttackState = (readyAtTick = 0) => ({
+  targetTowerId: null,
+  startedAtTick: null,
+  impactAtTick: null,
+  readyAtTick,
+});
+
+const clearTransientCombatState = (simulation) => {
+  for (const enemy of simulation.enemies) {
+    enemy.attackState = idleAttackState(enemy.attackState?.readyAtTick ?? 0);
+    enemy.blockingTowerId = null;
+    enemy.queueIndex = null;
+    enemy.laneState = 'moving';
+    enemy.laneOffset = 0;
+    delete enemy.laneReleasedAtTick;
+  }
+  for (const tower of simulation.towers) tower.engagedEnemyIds = [];
+  simulation.projectiles = [];
+  simulation.effects = [];
+  simulation.activeEffectValues = new Map();
+};
+
+export const clearPresentationEvents = (simulation) => {
+  clearTransientCombatState(simulation);
+  clearPresentationEventQueue(simulation);
+};
+
+const finishBattle = (simulation, result) => {
+  simulation.terminal = true;
+  simulation.outcome = result.outcome;
+  simulation.score = result.score;
+  simulation.medal = result.medal;
+  clearTransientCombatState(simulation);
+  clearPresentationEventQueue(simulation);
+  emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
+};
 
 export const createSimulation = (levelId, options = {}) => {
   const level = getLevel(levelId);
@@ -166,23 +202,10 @@ export const advanceSimulation = (simulation, steps) => {
     stepCombat(simulation);
     if (simulation.castleHearts <= 0) {
       const result = calculateBattleResult(simulation);
-      simulation.terminal = true;
-      simulation.outcome = result.outcome;
-      simulation.score = result.score;
-      simulation.medal = result.medal;
-      simulation.projectiles = [];
-      simulation.effects = [];
-      simulation.activeEffectValues = new Map();
-      emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
+      finishBattle(simulation, result);
     } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
       const result = calculateBattleResult(simulation);
-      simulation.terminal = true;
-      simulation.outcome = result.outcome;
-      simulation.score = result.score;
-      simulation.medal = result.medal;
-      simulation.effects = [];
-      simulation.activeEffectValues = new Map();
-      emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
+      finishBattle(simulation, result);
     }
     simulation.tick += 1;
   }
@@ -219,6 +242,15 @@ const snapshotEnemy = (enemy) => ({
   armor: enemy.armor,
   clusterSize: enemy.clusterSize,
   castleDamage: enemy.castleDamage,
+  attackDamage: enemy.attackDamage,
+  attackCooldownTicks: enemy.attackCooldownTicks,
+  attackWindupTicks: enemy.attackWindupTicks,
+  attackTargets: [...(enemy.attackTargets ?? [])],
+  attackState: { ...idleAttackState(), ...(enemy.attackState ?? {}) },
+  laneState: enemy.laneState,
+  blockingTowerId: enemy.blockingTowerId ?? null,
+  queueIndex: enemy.queueIndex ?? null,
+  laneOffset: enemy.laneOffset ?? 0,
   maxHealth: enemy.maxHealth,
   waveIndex: enemy.waveIndex,
   nextAbilityTick: enemy.nextAbilityTick,
@@ -229,6 +261,7 @@ const snapshotEnemy = (enemy) => ({
   ...(enemy.stunImmuneUntilTick !== undefined && { stunImmuneUntilTick: enemy.stunImmuneUntilTick }),
   ...(enemy.vulnerableUntilTick !== undefined && { vulnerableUntilTick: enemy.vulnerableUntilTick }),
   ...(enemy.isSummon !== undefined && { isSummon: enemy.isSummon }),
+  ...(enemy.laneReleasedAtTick !== undefined && { laneReleasedAtTick: enemy.laneReleasedAtTick }),
 });
 
 const sortById = (first, second) => compareEntityIds(first.id, second.id);

@@ -1,7 +1,8 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
 import { resolvePlacementPoint } from './path-geometry.js';
-import { selectTarget } from './targeting.js';
+import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
+import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -202,6 +203,20 @@ const createEnemy = (simulation, enemyId, pathProgress, waveIndex, isSummon = fa
     armor: config.armor,
     clusterSize: 1,
     castleDamage: config.castleDamage,
+    attackDamage: config.attackDamage,
+    attackCooldownTicks: config.attackCooldownTicks,
+    attackWindupTicks: config.attackWindupTicks,
+    attackTargets: config.attackTargets,
+    attackState: {
+      targetTowerId: null,
+      startedAtTick: null,
+      impactAtTick: null,
+      readyAtTick: simulation.tick,
+    },
+    laneState: 'moving',
+    blockingTowerId: null,
+    queueIndex: null,
+    laneOffset: 0,
     nextAbilityTick: simulation.tick + config.cooldownTicks,
     abilityActiveTicks: 0,
     nextAbilityActiveTick: config.cooldownTicks,
@@ -211,20 +226,36 @@ const createEnemy = (simulation, enemyId, pathProgress, waveIndex, isSummon = fa
 };
 
 const initializeSpawnedEnemy = (simulation, enemy) => {
-  if (enemy.maxHealth !== undefined) return;
   const config = ENEMIES[enemy.enemyId];
-  enemy.waveIndex = simulation.waveIndex;
-  enemy.maxHealth = enemy.health;
-  enemy.nextAbilityTick = enemy.spawnTick + config.cooldownTicks;
-  enemy.abilityActiveTicks = 0;
-  enemy.nextAbilityActiveTick = config.cooldownTicks;
-  enemy.thresholdFlags = {};
-  if (enemy.enemyId === 'dread-colossus') {
-    enemy.presentationPhase = 1;
-    emitPresentationEvent(simulation, 'dread-phase', {
-      bossId: enemy.id,
-      phase: 1,
-    });
+  enemy.attackDamage ??= config.attackDamage;
+  enemy.attackCooldownTicks ??= config.attackCooldownTicks;
+  enemy.attackWindupTicks ??= config.attackWindupTicks;
+  enemy.attackTargets ??= config.attackTargets;
+  enemy.attackState ??= {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: simulation.tick,
+  };
+  enemy.laneState ??= 'moving';
+  enemy.blockingTowerId ??= null;
+  enemy.queueIndex ??= null;
+  enemy.laneOffset ??= 0;
+
+  if (enemy.maxHealth === undefined) {
+    enemy.waveIndex = simulation.waveIndex;
+    enemy.maxHealth = enemy.health;
+    enemy.nextAbilityTick = enemy.spawnTick + config.cooldownTicks;
+    enemy.abilityActiveTicks = 0;
+    enemy.nextAbilityActiveTick = config.cooldownTicks;
+    enemy.thresholdFlags = {};
+    if (enemy.enemyId === 'dread-colossus') {
+      enemy.presentationPhase = 1;
+      emitPresentationEvent(simulation, 'dread-phase', {
+        bossId: enemy.id,
+        phase: 1,
+      });
+    }
   }
 };
 
@@ -493,7 +524,9 @@ const fireTower = (simulation, tower, targets) => {
   const damage = config.damage[tower.tier];
   tower.attackCount = (tower.attackCount ?? 0) + 1;
   const mastery = tower.tier === 2 && tower.attackCount % config.masteryAttackCount === 0;
-  const primary = selectTarget(targets, config.targetPriority);
+  const primary = tower.combatLayer === 'frontline'
+    ? selectMeleeTarget(targets, config.targetPriority, tower.id)
+    : selectTarget(targets, config.targetPriority);
   if (!primary) return;
   emitPresentationEvent(simulation, 'tower-attack', {
     defenderId: tower.defenderId,
@@ -624,6 +657,7 @@ const moveEnemies = (simulation) => {
     if (enemy.health <= 0) continue;
     const support = applySupportEffects(simulation, enemy);
     if ((enemy.stunnedUntilTick ?? 0) > simulation.tick) continue;
+    if (enemy.laneState !== 'moving' || enemy.laneReleasedAtTick === simulation.tick) continue;
     const phaseSpeed = enemy.enemyId === 'dread-colossus'
       && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3
       ? ENEMIES[enemy.enemyId].phase3Speed
@@ -684,9 +718,14 @@ export const stepCombat = (simulation) => {
     updateEnemyAbilities(simulation, enemy);
   }
   applyIronwardenAuras(simulation);
+  assignLanePositions(simulation);
+  advanceEnemyAttacks(simulation);
+  assignLanePositions(simulation);
   updateTowers(simulation);
   processProjectiles(simulation);
+  assignLanePositions(simulation);
   moveEnemies(simulation);
+  assignLanePositions(simulation);
   resolveEnemies(simulation);
   awardCompletedWaves(simulation);
 };
