@@ -495,8 +495,12 @@ export class BattleScene extends Phaser.Scene {
       distanceSquared(point, this.resolvePlacementPosition(candidate)) <= POINTER_HIT_RADIUS ** 2
     ));
     if (!pad) return;
-    this.focusIndex = this.level.pads.indexOf(pad);
     const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    if (!tower && this.selectedDefenderId && !this.isPlacementCompatible(pad)) {
+      this.attemptBuildAtPad(pad);
+      return;
+    }
+    this.focusIndex = this.level.pads.indexOf(pad);
     if (tower) {
       this.selectTower(tower.id);
       return;

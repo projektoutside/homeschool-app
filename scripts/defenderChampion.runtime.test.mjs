@@ -1,9 +1,89 @@
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
+import { registerHooks } from 'node:module';
 import test from 'node:test';
 
 const gameRoot = new URL('../public/Games/DefenderChampion/', import.meta.url);
 const readGameFile = (path) => readFile(new URL(path, gameRoot), 'utf8');
+
+let battleSceneModulePromise;
+const importBattleSceneModule = () => {
+  if (battleSceneModulePromise) return battleSceneModulePromise;
+  const phaserStub = `export default {
+    Scene: class {},
+    Scenes: { Events: { SHUTDOWN: 'shutdown', RESUME: 'resume' } },
+    Math: { Linear: (start, end, ratio) => start + ((end - start) * ratio) }
+  };`;
+  const hook = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === 'phaser') {
+        return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(phaserStub)}` };
+      }
+      return nextResolve(specifier, context);
+    },
+  });
+  battleSceneModulePromise = import(
+    '../public/Games/DefenderChampion/src/scenes/BattleScene.js?runtime-test'
+  ).finally(() => hook.deregister());
+  return battleSceneModulePromise;
+};
+
+const createSceneBody = () => ({
+  alpha: 1,
+  angle: 0,
+  listenerCount: 1,
+  tint: 0xffffff,
+  x: 0,
+  y: 0,
+  anims: {
+    currentAnim: { key: 'enemy:blight-walker:walk' },
+    isPlaying: true,
+    playCalls: [],
+    play(key) {
+      this.playCalls.push(key);
+      this.isPlaying = true;
+      return this;
+    },
+    stop() {
+      this.isPlaying = false;
+      return this;
+    },
+  },
+  removeAllListeners(eventName) {
+    assert.equal(eventName, 'animationcomplete');
+    this.listenerCount = 0;
+    return this;
+  },
+  setAlpha(alpha) { this.alpha = alpha; return this; },
+  setAngle(angle) { this.angle = angle; return this; },
+  setPosition(x, y) { this.x = x; this.y = y; return this; },
+  setScale(scale) { this.scale = scale; return this; },
+  setTint(tint) { this.tint = tint; return this; },
+});
+
+const createSceneView = () => ({
+  active: false,
+  alpha: 1,
+  visible: false,
+  x: 0,
+  y: 0,
+  _attackPoseReady: false,
+  _attackTargetTowerId: null,
+  _baseScale: 0.4,
+  _body: createSceneBody(),
+  _motion: null,
+  setActive(active) { this.active = active; return this; },
+  setAlpha(alpha) { this.alpha = alpha; return this; },
+  setPosition(x, y) { this.x = x; this.y = y; return this; },
+  setVisible(visible) { this.visible = visible; return this; },
+});
+
+const createGraphicsDouble = () => ({
+  clearCount: 0,
+  visible: true,
+  clear() { this.clearCount += 1; return this; },
+  setVisible(visible) { this.visible = visible; return this; },
+});
 
 class EventTargetDouble {
   listeners = new Map();
@@ -195,13 +275,67 @@ test('typed marker projection keeps cross-layer pointer and keyboard builds iner
   assert.match(battleScene, /view\._placementLayer\s*=\s*pad\.layer/);
   assert.match(battleScene, /resolvePlacementMarkerState\(\{/);
   assert.match(battleScene, /attemptBuildAtPad\(pad\)/);
-  const pointerHandler = battleScene.match(/handlePointerDown\(event, battlefield\) \{[\s\S]*?\n  \}\n\n  releasePointer/)?.[0] ?? '';
-  const keyboardConfirmation = battleScene.match(/confirmFocusedTarget\(\) \{[\s\S]*?\n  \}\n\n  announceFocusedTarget/)?.[0] ?? '';
-  assert.doesNotMatch(pointerHandler, /issueBattleCommand\(\{ type: 'build'/);
-  assert.doesNotMatch(keyboardConfirmation, /issueBattleCommand\(\{ type: 'build'/);
 });
 
-test('the shared placement gate blocks incompatible pointer and keyboard commands before dispatch', async () => {
+test('actual pointer and keyboard entry methods reject cross-layer builds without mutation or selection', async () => {
+  const { BattleScene } = await importBattleSceneModule();
+  const announcements = [];
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    focusIndex: 0,
+    lastSnapshot: { terminal: false },
+    level: {
+      pads: [
+        { id: 'road-a', layer: 'road' },
+        { id: 'grass-b', layer: 'grass' },
+      ],
+    },
+    selectedDefenderId: 'bladeguard',
+    selectedTowerId: null,
+    terminalHandled: false,
+    towerById: new Map(),
+    hud: { announce: (message) => announcements.push(message) },
+    issueBattleCommand() {
+      throw new Error('incompatible input reached core command dispatch');
+    },
+    pointerToWorld: () => ({ x: 200, y: 200 }),
+    resolvePlacementPosition: (pad) => (
+      pad.id === 'grass-b' ? { x: 200, y: 200 } : { x: 20, y: 20 }
+    ),
+    updateFocusViews() {},
+  });
+  const battlefield = {
+    focus() {},
+    setPointerCapture() {},
+  };
+  const pointerEvent = {
+    pointerId: 7,
+    preventDefault() {},
+  };
+
+  scene.handlePointerDown(pointerEvent, battlefield);
+
+  assert.equal(scene.focusIndex, 0, 'an inert cross-layer marker cannot change pointer focus');
+  assert.equal(scene.selectedDefenderId, 'bladeguard');
+  assert.equal(scene.selectedTowerId, null);
+  assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+
+  scene.focusIndex = 1;
+  let keyboardPrevented = false;
+  scene.handleKeyDown({
+    code: 'Enter',
+    key: 'Enter',
+    preventDefault() { keyboardPrevented = true; },
+  });
+
+  assert.equal(keyboardPrevented, true);
+  assert.equal(scene.focusIndex, 1);
+  assert.equal(scene.selectedDefenderId, 'bladeguard');
+  assert.equal(scene.selectedTowerId, null);
+  assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+});
+
+test('the shared placement gate blocks an incompatible command before dispatch', async () => {
   const { attemptPlacementBuild } = await import(
     '../public/Games/DefenderChampion/src/presentation.js'
   );
@@ -225,13 +359,9 @@ test('the shared placement gate blocks incompatible pointer and keyboard command
   assert.deepEqual(attemptPlacementBuild(incompatible), {
     accepted: false,
     reason: 'placement-layer-mismatch',
-  }, 'pointer attempt');
-  assert.deepEqual(attemptPlacementBuild(incompatible), {
-    accepted: false,
-    reason: 'placement-layer-mismatch',
-  }, 'keyboard attempt');
+  });
   assert.deepEqual(dispatched, [], 'incompatible input never reaches simulation commands');
-  assert.deepEqual(announcements, ['Choose a road guard slot.', 'Choose a road guard slot.']);
+  assert.deepEqual(announcements, ['Choose a road guard slot.']);
 
   assert.deepEqual(attemptPlacementBuild({
     ...incompatible,
@@ -337,6 +467,68 @@ test('presentation teardown idempotently clears timers, listeners, and active de
   });
 });
 
+test('actual external pause entry clears every transient scene resource idempotently', async () => {
+  const [{ BattleScene }, { ViewPool }, { createSimulation, summarizePresentationSimulation }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+    import('../public/Games/DefenderChampion/src/core/simulation.js'),
+  ]);
+  const scene = Object.create(BattleScene.prototype);
+  const simulation = createSimulation('level-1');
+  const resets = [];
+  const makePool = (name, createView) => new ViewPool(createView, {
+    resetView: (view) => {
+      resets.push(name);
+      BattleScene.prototype.releasePooledView.call(scene, view);
+    },
+  });
+  const defeatPool = makePool('defeat', createSceneView);
+  const damageLabelPool = makePool('damage', createSceneView);
+  const particlePool = makePool('particle', createSceneView);
+  const defeatView = defeatPool.acquire();
+  damageLabelPool.acquire();
+  particlePool.acquire();
+  let timerRemovals = 0;
+  const transientTimers = new Set([{
+    remove(dispatchCallback) {
+      assert.equal(dispatchCallback, false);
+      timerRemovals += 1;
+    },
+  }]);
+  Object.assign(scene, {
+    castleSprite: null,
+    damageLabelPool,
+    defeatPool,
+    defenderPool: null,
+    destroyed: false,
+    detachedDefenderViews: new Set(),
+    enemyPool: null,
+    lastSnapshot: summarizePresentationSimulation(simulation),
+    particlePool,
+    refreshProjection() {},
+    simulation,
+    transientTimers,
+    tweens: {
+      killAll() {},
+      killTweensOf() {},
+    },
+  });
+
+  scene.setExternalPauseReasons(['host']);
+  scene.setExternalPauseReasons(['host']);
+
+  assert.deepEqual(scene.lastSnapshot.pauseReasons, ['host']);
+  assert.equal(timerRemovals, 1);
+  assert.equal(transientTimers.size, 0);
+  assert.equal(defeatView._body.listenerCount, 0);
+  assert.deepEqual(defeatPool.getState(), {
+    created: 1, active: 0, available: 1, highWater: 1, acquires: 1, releases: 1,
+  });
+  assert.equal(damageLabelPool.getState().active, 0);
+  assert.equal(particlePool.getState().active, 0);
+  assert.deepEqual(resets.sort(), ['damage', 'defeat', 'particle']);
+});
+
 test('tracked motion completion ignores stale callbacks after pooled reuse', async () => {
   const { finishTrackedMotion, ViewPool } = await import(
     '../public/Games/DefenderChampion/src/presentation.js'
@@ -364,6 +556,63 @@ test('tracked motion completion ignores stale callbacks after pooled reuse', asy
   assert.equal(finishTrackedMotion(reusedView, currentMotion, () => completions.push('current')), true);
   assert.equal(reusedView._motion, null);
   assert.deepEqual(completions, ['current']);
+});
+
+test('actual fatal defender entry hides health before tweening and releases on completion', async () => {
+  const [{ BattleScene }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const scene = Object.create(BattleScene.prototype);
+  const healthBackground = createGraphicsDouble();
+  const healthFill = createGraphicsDouble();
+  const defenderView = Object.assign(createSceneView(), {
+    _defenderId: 'bladeguard',
+    _healthBackground: healthBackground,
+    _healthFill: healthFill,
+    _healthKey: 'frontline:3',
+    x: 120,
+    y: 260,
+  });
+  let fadeConfig;
+  let healthHiddenWhenTweenAdded = false;
+  const defenderPool = new ViewPool(() => defenderView, {
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
+  const leasedView = defenderPool.acquire();
+  Object.assign(scene, {
+    audioController: { playCue() {} },
+    defenderPool,
+    detachedDefenderViews: new Set(),
+    hud: { announce() {} },
+    recentDefenderPositions: new Map(),
+    reducedMotion: false,
+    spawnBurst() {},
+    towerSprites: new Map([['tower-9', leasedView]]),
+    tweens: {
+      add(config) {
+        fadeConfig = config;
+        healthHiddenWhenTweenAdded = !healthBackground.visible && !healthFill.visible;
+        return { destroy() {}, stop() {} };
+      },
+      killTweensOf() {},
+    },
+  });
+
+  scene.animateDefenderDefeat({ towerId: 'tower-9' });
+
+  assert.equal(healthHiddenWhenTweenAdded, true);
+  assert.equal(healthBackground.visible, false);
+  assert.equal(healthFill.visible, false);
+  assert.equal(scene.towerSprites.has('tower-9'), false);
+  assert.equal(scene.detachedDefenderViews.has(leasedView), true);
+  assert.equal(defenderPool.getState().active, 1);
+
+  fadeConfig.onComplete();
+
+  assert.equal(scene.detachedDefenderViews.size, 0);
+  assert.equal(defenderPool.getState().active, 0);
+  assert.equal(defenderPool.getState().releases, 1);
 });
 
 test('reduced motion keeps attack, hit, impact, and defeat cosmetic positions fixed', async () => {
@@ -445,11 +694,120 @@ test('lane presentation events execute the authoritative attack and defender han
   assert.equal(dispatchLanePresentationEvent({ kind: 'wave-start', payload: {} }, handlers), false);
 });
 
-test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {
-  const [battleScene, presentation] = await Promise.all([
-    readGameFile('src/scenes/BattleScene.js'),
+test('actual lane-event entry preserves overlap and stale-motion identity across pool reuse', async () => {
+  const [{ BattleScene }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
+  const scene = Object.create(BattleScene.prototype);
+  const enemyView = Object.assign(createSceneView(), { x: 30, y: 40 });
+  const targetView = Object.assign(createSceneView(), { x: 90, y: 120 });
+  const defeatedView = Object.assign(createSceneView(), {
+    _defenderId: 'bladeguard',
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+    x: 90,
+    y: 120,
+  });
+  const chainEntries = [];
+  const addEntries = [];
+  const makeMotion = (kind, index) => ({
+    id: `${kind}-${index}`,
+    destroyed: false,
+    stopped: false,
+    destroy() { this.destroyed = true; },
+    stop() { this.stopped = true; },
+  });
+  const enemyPool = new ViewPool(() => enemyView, {
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
+  enemyPool.acquire();
+  const defenderPool = new ViewPool(() => defeatedView, {
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
+  defenderPool.acquire();
+  const announcements = [];
+  Object.assign(scene, {
+    anims: { exists: () => true },
+    audioController: { playCue() {} },
+    cameras: { main: { shake() {} } },
+    defenderPool,
+    detachedDefenderViews: new Set(),
+    enemyById: new Map([['enemy-1', { enemyId: 'blight-walker', id: 'enemy-1' }]]),
+    enemyPool,
+    enemySprites: new Map([['enemy-1', enemyView]]),
+    hud: { announce: (message) => announcements.push(message) },
+    lastPresentationEventId: 0,
+    lastSnapshot: { tick: 10, timeScale: 1 },
+    presentationLimits: { cameraShake: 0 },
+    recentDefenderPositions: new Map(),
+    reducedMotion: false,
+    spawnBurst() {},
+    spawnDamageLabel() {},
+    towerSprites: new Map([
+      ['tower-1', targetView],
+      ['tower-2', defeatedView],
+    ]),
+    tweens: {
+      add(config) {
+        const motion = makeMotion('add', addEntries.length);
+        addEntries.push({ config, motion });
+        return motion;
+      },
+      chain(config) {
+        const motion = makeMotion('chain', chainEntries.length);
+        chainEntries.push({ config, motion });
+        return motion;
+      },
+      killTweensOf() {},
+    },
+  });
+
+  scene.consumePresentationEvents([
+    {
+      id: 1,
+      kind: 'enemy-attack-start',
+      payload: { id: 'enemy-1', impactAtTick: 30, targetTowerId: 'tower-1' },
+    },
+    {
+      id: 2,
+      kind: 'enemy-attack-start',
+      payload: { id: 'enemy-1', impactAtTick: 30, targetTowerId: 'tower-1' },
+    },
+  ]);
+  assert.equal(chainEntries.length, 1, 'overlap does not replace the active wind-up');
+  const staleWindup = chainEntries[0];
+
+  scene.consumePresentationEvents([{
+    id: 3,
+    kind: 'enemy-attack-impact',
+    payload: { enemyId: 'blight-walker', id: 'enemy-1', targetTowerId: 'tower-1' },
+  }]);
+  assert.equal(addEntries.length, 1);
+  const recovery = addEntries[0];
+  assert.equal(enemyView._motion, recovery.motion);
+  staleWindup.config.onComplete();
+  assert.equal(enemyView._motion, recovery.motion, 'stale wind-up completion cannot clear recovery');
+
+  enemyPool.release(enemyView);
+  const reusedEnemyView = enemyPool.acquire();
+  const reusedMotion = makeMotion('reuse', 0);
+  reusedEnemyView._motion = reusedMotion;
+  recovery.config.onComplete();
+  assert.equal(reusedEnemyView._motion, reusedMotion, 'stale recovery cannot mutate the next pool lease');
+
+  scene.consumePresentationEvents([{
+    id: 4,
+    kind: 'defender-defeated',
+    payload: { towerId: 'tower-2' },
+  }]);
+  assert.equal(scene.towerSprites.has('tower-2'), false);
+  assert.equal(scene.detachedDefenderViews.has(defeatedView), true);
+  assert.match(announcements.at(-1), /permanently defeated/);
+});
+
+test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {
+  const presentation = await import('../public/Games/DefenderChampion/src/presentation.js');
   const { resolveEnemyAttackMotion, resolveFrontlineHealthBar, ViewPool } = presentation;
 
   assert.deepEqual(resolveFrontlineHealthBar({ combatLayer: 'backline', health: 1, maxHealth: 1 }), {
@@ -509,7 +867,6 @@ test('frontline durability and lane attack helpers preserve simulation-authorita
   assert.deepEqual(resets, ['reset']);
   assert.deepEqual(destroyed, ['destroy']);
 
-  assert.match(battleScene, /dispatchLanePresentationEvent\(event/);
 });
 
 test('continue targets the highest unlocked uncleared level and falls back to level 10', async () => {
