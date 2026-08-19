@@ -131,10 +131,12 @@
           <button id="how-to-close-button" class="button icon-button" type="button" aria-label="Close how to play">×</button>
         </header>
         <ol class="guide-list">
-          <li><strong>Build:</strong> choose a defender, then choose an open stone pad.</li>
+          <li><strong>Build by role:</strong> put Road melee defenders on road guard slots and Grass ranged defenders on grass ranged slots.</li>
+          <li><strong>Watch frontline health:</strong> enemies wind up, strike, and reduce the health bars beneath Road melee defenders.</li>
+          <li><strong>Replace permanent defeats:</strong> a Road melee defender at zero health is removed, and its road guard slot becomes available for a fresh purchase.</li>
           <li><strong>Upgrade:</strong> select a placed defender to strengthen its exact role.</li>
-          <li><strong>Sell:</strong> reclaim 70% of invested coins and reshape your plan.</li>
-          <li><strong>Protect hearts:</strong> each enemy that reaches the castle costs one heart.</li>
+          <li><strong>Sell:</strong> reclaim 70% of invested coins, but not while a Road melee defender is fighting.</li>
+          <li><strong>Protect hearts:</strong> enemies that pass every road guard damage the castle.</li>
           <li><strong>Read warnings:</strong> boss telegraphs are strategic information, not decoration.</li>
           <li><strong>Control time:</strong> pause freely or use 2× speed after your formation is ready.</li>
         </ol>
@@ -154,7 +156,7 @@
       </div>
     </section>
 
-    <div id="status-announcer" class="sr-only" aria-live="polite"></div>
+    <div id="status-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
   </main>
 
   <script src="../shared/lahsPointsBridge.js"></script>

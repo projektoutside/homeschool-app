@@ -27,8 +27,14 @@ import {
   deriveCampaignEnemyViewCapacity,
   projectCombatRadius,
   resolveBetweenWaveCountdown,
+  resolveCommandRejectionMessage,
+  resolveEnemyAttackMotion,
+  resolveFrontlineHealthBar,
   resolveIronhidePlatePresentation,
+  resolvePlacementMarkerState,
+  resolvePlacementPrompt,
   resolvePresentationLimits,
+  resolveRoadPieceDisplay,
   resolveResultTransitionDelay,
   shouldProjectDefenderIdle,
   syncProjectionMap,
@@ -57,29 +63,57 @@ const distanceSquared = (first, second) => (
   ((first.x - second.x) ** 2) + ((first.y - second.y) ** 2)
 );
 
-const projectPathProgress = (metrics, pathProgress) => {
-  return toWorldPoint(samplePathProgress(metrics, pathProgress));
+const projectPathProgress = (metrics, pathProgress, lateralOffset = 0) => {
+  const center = toWorldPoint(samplePathProgress(metrics, pathProgress));
+  if (!lateralOffset) return center;
+  const before = toWorldPoint(samplePathProgress(metrics, pathProgress - 1));
+  const after = toWorldPoint(samplePathProgress(metrics, pathProgress + 1));
+  const tangentX = after.x - before.x;
+  const tangentY = after.y - before.y;
+  const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+  return {
+    x: center.x - ((tangentY / tangentLength) * lateralOffset),
+    y: center.y + ((tangentX / tangentLength) * lateralOffset),
+  };
 };
 
-const roadPieceSize = (piece) => {
-  if (piece.kind !== 'straight') return { height: piece.width, width: piece.width };
-  return piece.frame === 'vertical'
-    ? { height: piece.length, width: piece.width }
-    : { height: piece.width, width: piece.length };
+const pointToSegmentDistanceSquared = (point, start, end) => {
+  const segmentX = end.x - start.x;
+  const segmentY = end.y - start.y;
+  const segmentLengthSquared = (segmentX ** 2) + (segmentY ** 2);
+  if (segmentLengthSquared === 0) return distanceSquared(point, start);
+  const ratio = Math.max(0, Math.min(1,
+    (((point.x - start.x) * segmentX) + ((point.y - start.y) * segmentY)) / segmentLengthSquared,
+  ));
+  return distanceSquared(point, {
+    x: start.x + (segmentX * ratio),
+    y: start.y + (segmentY * ratio),
+  });
 };
 
 const stopBody = (view) => {
   view?._body?.removeAllListeners?.('animationcomplete');
   view?._body?.anims?.stop?.();
+  view?._body?.setPosition?.(0, 0);
+  view?._body?.setAngle?.(0);
+  view?._body?.setAlpha?.(1);
   view?._body?.setTint?.(0xffffff);
   view?._body?.setFlipX?.(false);
-  view?._healthBar?.clear?.();
+  if (Number.isFinite(view?._baseScale)) view._body.setScale?.(view._baseScale);
+  view?._healthBackground?.clear?.().setVisible?.(false);
+  view?._healthFill?.clear?.().setVisible?.(false);
+  view?._aura?.setVisible?.(false);
+  view?._rank?.setVisible?.(false);
   for (const plate of view?._plateAccents?.values?.() ?? []) plate.setVisible?.(false);
   if (view) {
+    view.setAlpha?.(1);
     view._characterKey = null;
+    view._defenderId = null;
+    view._enemyId = null;
     view._flipX = false;
     view._healthKey = null;
     view._lastX = null;
+    view._padId = null;
   }
 };
 
@@ -122,6 +156,7 @@ export class BattleScene extends Phaser.Scene {
     this.terminalHandled = false;
     this.destroyed = false;
     this.domCleanups = [];
+    this.detachedDefenderViews = new Set();
     this.transientTimers = new Set();
     this.frameSamples = [];
     this.lastHudRenderTick = Number.NEGATIVE_INFINITY;
@@ -133,6 +168,7 @@ export class BattleScene extends Phaser.Scene {
     this.enemyById = new Map();
     this.towerById = new Map();
     this.defenderIdByTowerId = new Map();
+    this.recentDefenderPositions = new Map();
     this.clock = createFixedStepClock({
       advanceSteps: (steps) => advanceSimulation(this.simulation, steps),
       getSpeed: () => this.lastSnapshot.timeScale,
@@ -168,8 +204,12 @@ export class BattleScene extends Phaser.Scene {
       .setTileScale(0.62);
 
     this.staticViews = [];
-    for (const piece of derivePathPieces(this.level.path, toWorldPoint)) {
-      const size = roadPieceSize(piece);
+    const pathPieces = derivePathPieces(this.level.path, toWorldPoint);
+    const orderedPieces = [...pathPieces].sort((first, second) => (
+      (first.kind === 'straight' ? 0 : 1) - (second.kind === 'straight' ? 0 : 1)
+    ));
+    for (const piece of orderedPieces) {
+      const display = resolveRoadPieceDisplay(piece);
       const path = this.add.image(
         piece.x,
         piece.y,
@@ -177,7 +217,7 @@ export class BattleScene extends Phaser.Scene {
         PATH_FRAME[piece.frame],
       )
         .setDepth(piece.kind === 'straight' ? 1 : 1.1)
-        .setDisplaySize(size.width, size.height)
+        .setDisplaySize(display.width, display.height)
         .setRotation(piece.rotation);
       this.staticViews.push(path);
     }
@@ -190,12 +230,15 @@ export class BattleScene extends Phaser.Scene {
         position.y,
         'environment-gameplay-atlas',
         GAMEPLAY_FRAME.buildPad,
-      ).setDepth(2).setScale(0.25);
+      ).setDepth(2).setScale(0.24).setAlpha(0.4);
+      view._placementLayer = pad.layer;
+      view.setData?.('placementLayer', pad.layer);
+      view.setName?.(`${pad.layer}-placement-${pad.id}`);
       this.padSprites.set(pad.id, view);
     }
 
     if (this.textures.exists('environment-props-atlas')) this.createOptionalProps();
-    const castlePosition = toWorldPoint(this.level.path.at(-1));
+    const castlePosition = projectPathProgress(this.pathMetrics, this.pathMetrics.total);
     this.castleSprite = this.add.sprite(
       castlePosition.x,
       castlePosition.y + 18,
@@ -215,6 +258,18 @@ export class BattleScene extends Phaser.Scene {
       [60, 320, 8, 0.20], [664, 330, 9, 0.19], [248, 76, 12, 0.16], [490, 876, 13, 0.17],
     ];
     for (const [x, y, frame, scale] of placements) {
+      const position = { x, y };
+      const outsideRoad = this.level.path.slice(1).every((point, index) => (
+        pointToSegmentDistanceSquared(
+          position,
+          toWorldPoint(this.level.path[index]),
+          toWorldPoint(point),
+        ) >= 84 ** 2
+      ));
+      if (!outsideRoad || distanceSquared(position, projectPathProgress(
+        this.pathMetrics,
+        this.pathMetrics.total,
+      )) < 116 ** 2) continue;
       this.staticViews.push(this.add.image(x, y, 'environment-props-atlas', frame)
         .setDepth(0.6)
         .setScale(scale)
@@ -238,6 +293,9 @@ export class BattleScene extends Phaser.Scene {
     view._flipX = false;
     view._healthKey = null;
     view._lastX = null;
+    view._motion = null;
+    view._attackPoseReady = false;
+    view._attackTargetTowerId = null;
     return view;
   }
 
@@ -267,34 +325,46 @@ export class BattleScene extends Phaser.Scene {
   createDefenderView() {
     const aura = this.add.image(0, -34, 'environment-gameplay-atlas', GAMEPLAY_FRAME.rangeMarker)
       .setVisible(false);
+    const healthBackground = this.add.graphics().setVisible(false);
+    const healthFill = this.add.graphics().setVisible(false);
     const body = this.add.sprite(0, 0, 'defender-bladeguard-idle').setOrigin(0.5, 1);
     const rank = this.add.image(0, -95, 'environment-gameplay-atlas', GAMEPLAY_FRAME.victoryBurst)
       .setVisible(false);
-    const view = this.add.container(0, 0, [aura, body, rank]);
+    const view = this.add.container(0, 0, [aura, healthBackground, healthFill, body, rank]);
     view._aura = aura;
     view._body = body;
+    view._healthBackground = healthBackground;
+    view._healthFill = healthFill;
+    view._healthKey = null;
+    view._motion = null;
     view._rank = rank;
     return view;
+  }
+
+  releasePooledView(view) {
+    this.cancelViewMotion(view);
+    this.tweens?.killTweensOf?.(view);
+    stopBody(view);
   }
 
   createPools() {
     this.enemyPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5), {
       maximum: ENEMY_VIEW_CAPACITY,
-      resetView: stopBody,
+      resetView: (view) => this.releasePooledView(view),
     });
     this.defenderPool = new ViewPool(() => this.createDefenderView().setDepth(4), {
       maximum: 24,
-      resetView: stopBody,
+      resetView: (view) => this.releasePooledView(view),
     });
     this.projectilePool = new ViewPool(() => this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.arrow,
-    ).setDepth(7), { maximum: 640 });
+    ).setDepth(7), { maximum: 640, resetView: (view) => this.releasePooledView(view) });
     this.telegraphPool = new ViewPool(() => this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.bossWarning,
-    ).setDepth(2.5), { maximum: 48 });
+    ).setDepth(2.5), { maximum: 48, resetView: (view) => this.releasePooledView(view) });
     this.defeatPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5.5), {
       maximum: 32,
-      resetView: stopBody,
+      resetView: (view) => this.releasePooledView(view),
     });
     this.damageLabelPool = new ViewPool(() => this.add.text(0, 0, '', {
       color: '#fff9e8',
@@ -303,10 +373,16 @@ export class BattleScene extends Phaser.Scene {
       fontStyle: 'bold',
       stroke: '#173329',
       strokeThickness: 5,
-    }).setDepth(9).setOrigin(0.5), { maximum: this.presentationLimits.damageLabelCap });
+    }).setDepth(9).setOrigin(0.5), {
+      maximum: this.presentationLimits.damageLabelCap,
+      resetView: (view) => this.releasePooledView(view),
+    });
     this.particlePool = new ViewPool(() => this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.healSparkle,
-    ).setDepth(8), { maximum: this.presentationLimits.particleCap });
+    ).setDepth(8), {
+      maximum: this.presentationLimits.particleCap,
+      resetView: (view) => this.releasePooledView(view),
+    });
   }
 
   createFocusViews() {
@@ -336,7 +412,7 @@ export class BattleScene extends Phaser.Scene {
       battleStarted: false,
       countdownRemaining: 0,
       interactive: true,
-      notice: 'Select a defender, choose a stone pad, then start the wave when ready.',
+      notice: 'Select a Road melee or Grass ranged defender, choose its matching slot, then start the wave.',
     });
     this.hud.announce(`${this.level.name}. Plan your formation before starting wave one.`);
   }
@@ -417,12 +493,7 @@ export class BattleScene extends Phaser.Scene {
       this.selectTower(tower.id);
       return;
     }
-    if (this.selectedDefenderId) {
-      this.issueBattleCommand({ type: 'build', defenderId: this.selectedDefenderId, padId: pad.id });
-    } else {
-      this.hud.announce('Open build pad. Select defender 1 through 4 first.');
-      this.updateFocusViews();
-    }
+    this.attemptBuildAtPad(pad);
   }
 
   releasePointer(event, battlefield) {
@@ -487,24 +558,57 @@ export class BattleScene extends Phaser.Scene {
     const pad = this.level.pads[this.focusIndex];
     const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     if (tower) this.selectTower(tower.id);
-    else if (this.selectedDefenderId) {
-      this.issueBattleCommand({ type: 'build', defenderId: this.selectedDefenderId, padId: pad.id });
-    } else this.hud.announce('Open build pad. Select defender 1 through 4 first.');
+    else this.attemptBuildAtPad(pad);
+  }
+
+  isPlacementCompatible(pad) {
+    const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
+    return Boolean(selectedLayer) && pad?.layer === selectedLayer;
+  }
+
+  attemptBuildAtPad(pad) {
+    if (!this.selectedDefenderId) {
+      this.hud.announce('Open placement slot. Select defender 1 through 4 first.');
+      this.updateFocusViews();
+      return false;
+    }
+    if (!this.isPlacementCompatible(pad)) {
+      const layer = DEFENDERS[this.selectedDefenderId].placementLayer;
+      this.hud.announce(`${resolvePlacementPrompt(layer)}.`);
+      this.updateFocusViews();
+      return false;
+    }
+    return this.issueBattleCommand({
+      type: 'build',
+      defenderId: this.selectedDefenderId,
+      padId: pad.id,
+    }).accepted;
   }
 
   announceFocusedTarget() {
     const pad = this.level.pads[this.focusIndex];
     const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
-    this.hud.announce(tower
-      ? `${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}. Press Enter to inspect.`
-      : `Open build pad ${this.focusIndex + 1}. Press Enter to build.`);
+    if (tower) {
+      this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}. Press Enter to inspect.`);
+      return;
+    }
+    const label = pad.layer === 'road' ? 'Road guard slot' : 'Grass ranged slot';
+    const compatibility = this.selectedDefenderId && !this.isPlacementCompatible(pad)
+      ? ` Not compatible with ${DEFENDER_PRESENTATION[this.selectedDefenderId].name}.`
+      : '';
+    this.hud.announce(`${label} ${this.focusIndex + 1}. Press Enter to build.${compatibility}`);
   }
 
   selectDefender(defenderId) {
     if (!DEFENDERS[defenderId] || this.destroyed || this.lastSnapshot?.terminal) return;
     this.selectedDefenderId = defenderId;
     this.selectedTowerId = null;
-    this.hud.announce(`${DEFENDER_PRESENTATION[defenderId].name} selected. Choose an open build pad.`);
+    const layer = DEFENDERS[defenderId].placementLayer;
+    const firstCompatibleIndex = this.level.pads.findIndex((pad) => (
+      pad.layer === layer && ![...this.towerById.values()].some((tower) => tower.padId === pad.id)
+    ));
+    if (firstCompatibleIndex >= 0) this.focusIndex = firstCompatibleIndex;
+    this.hud.announce(`${DEFENDER_PRESENTATION[defenderId].name} selected. ${resolvePlacementPrompt(layer)}.`);
     this.refreshProjection(true);
   }
 
@@ -526,7 +630,8 @@ export class BattleScene extends Phaser.Scene {
     }
     const result = issueCommand(this.simulation, command);
     if (!result.accepted) {
-      this.hud.announce(`Command not accepted: ${result.reason}.`);
+      const selectedLayer = DEFENDERS[command.defenderId ?? this.selectedDefenderId]?.placementLayer ?? null;
+      this.hud.announce(resolveCommandRejectionMessage(result.reason, selectedLayer));
       return result;
     }
     if (command.type === 'sell' && command.towerId === this.selectedTowerId) this.selectedTowerId = null;
@@ -550,6 +655,7 @@ export class BattleScene extends Phaser.Scene {
 
   setExternalPauseReasons(reasons = []) {
     if (!this.simulation || this.destroyed) return;
+    if (reasons.length > 0) this.cancelAllPresentationMotion();
     for (const reason of ['host', 'visibility', 'modal']) {
       issueCommand(this.simulation, { type: 'set-pause-reason', reason, active: reasons.includes(reason) });
     }
@@ -602,10 +708,12 @@ export class BattleScene extends Phaser.Scene {
     this.defenderIdByTowerId = new Map(snapshot.purchaseHistory
       .filter(({ type }) => type === 'build')
       .map(({ towerId, defenderId }) => [towerId, defenderId]));
+    this.recentDefenderPositions.clear();
     this.consumePresentationEvents(snapshot.presentationEvents);
     this.projectEnemies(snapshot);
     this.projectEnemyHealthBars(snapshot, forceHud);
     this.projectTowers(snapshot);
+    this.projectPlacementMarkers(snapshot);
     this.projectProjectiles(snapshot);
     this.projectTelegraphs(snapshot);
     this.updateCastle(snapshot.castleHearts);
@@ -625,6 +733,192 @@ export class BattleScene extends Phaser.Scene {
         countdownRemaining: this.countdownActive ? this.countdownRemaining : 0,
       });
     }
+  }
+
+  finishViewMotion(view, motion, onComplete) {
+    if (view?._motion !== motion) return;
+    view._motion = null;
+    onComplete?.();
+  }
+
+  cancelViewMotion(view, { preservePose = false } = {}) {
+    if (!view) return;
+    const motion = view._motion;
+    view._motion = null;
+    motion?.stop?.();
+    motion?.destroy?.();
+    this.tweens?.killTweensOf?.(view);
+    this.tweens?.killTweensOf?.(view._body);
+    view._attackPoseReady = false;
+    view._attackTargetTowerId = null;
+    if (preservePose) return;
+    view.setAlpha?.(1);
+    view._body?.setPosition?.(0, 0);
+    view._body?.setAngle?.(0);
+    view._body?.setAlpha?.(1);
+    view._body?.setTint?.(0xffffff);
+    if (Number.isFinite(view._baseScale)) view._body?.setScale?.(view._baseScale);
+  }
+
+  cancelAllPresentationMotion() {
+    this.tweens?.killAll?.();
+    for (const pool of [this.enemyPool, this.defenderPool, this.defeatPool]) {
+      for (const view of pool?.activeViews ?? []) this.cancelViewMotion(view);
+    }
+    for (const view of [...this.detachedDefenderViews]) {
+      this.detachedDefenderViews.delete(view);
+      this.defenderPool?.release(view);
+    }
+    for (const pool of [this.damageLabelPool, this.particlePool]) {
+      for (const view of [...(pool?.activeViews ?? [])]) pool.release(view);
+    }
+  }
+
+  beginEnemyAttackProjection(view, enemy, targetTowerId, impactAtTick) {
+    const targetView = this.towerSprites.get(targetTowerId);
+    if (!view?._body || !targetView) return;
+    if (view._attackTargetTowerId === targetTowerId && (view._motion || view._attackPoseReady)) return;
+    this.cancelViewMotion(view);
+    const body = view._body;
+    body.anims?.stop?.();
+    body.setTint(0xffd27a).setAngle(-3);
+    const motionState = resolveEnemyAttackMotion({
+      bodyScale: view._baseScale ?? ENEMY_PRESENTATION[enemy.enemyId].displayScale,
+      boss: BOSS_IDS.has(enemy.enemyId),
+      currentTick: this.lastSnapshot.tick,
+      enemyPosition: { x: view.x, y: view.y },
+      impactAtTick,
+      reducedMotion: this.reducedMotion,
+      targetPosition: { x: targetView.x, y: targetView.y },
+      timeScale: this.lastSnapshot.timeScale,
+    });
+    view._attackTargetTowerId = targetTowerId;
+    view._attackPoseReady = motionState.totalMs === 0;
+    if (motionState.totalMs === 0) return;
+
+    let motion;
+    motion = this.tweens.chain({
+      targets: body,
+      tweens: [
+        {
+          angle: -5,
+          duration: motionState.windupMs,
+          ease: 'Sine.easeOut',
+          x: motionState.backX,
+          y: motionState.backY,
+        },
+        {
+          angle: 4,
+          duration: motionState.lungeMs,
+          ease: 'Cubic.easeIn',
+          x: motionState.lungeX,
+          y: motionState.lungeY,
+        },
+      ],
+      onComplete: () => this.finishViewMotion(view, motion, () => {
+        view._attackPoseReady = true;
+      }),
+    });
+    view._motion = motion;
+  }
+
+  recoverEnemyAttack(view, enemyId) {
+    if (!view?._body) return;
+    this.cancelViewMotion(view, { preservePose: true });
+    const body = view._body;
+    body.setTint(0xfff0a3);
+    let motion;
+    motion = this.tweens.add({
+      targets: body,
+      angle: 0,
+      duration: this.reducedMotion ? 90 : 180,
+      ease: 'Cubic.easeOut',
+      x: 0,
+      y: 0,
+      onComplete: () => this.finishViewMotion(view, motion, () => {
+        body.setTint(0xffffff);
+        const kind = BOSS_IDS.has(enemyId) ? 'boss' : 'enemy';
+        const walk = animationKey(kind, enemyId, 'walk');
+        if (view.active && this.anims.exists(walk)) body.play(walk, true);
+      }),
+    });
+    view._motion = motion;
+  }
+
+  animateDefenderHit(payload) {
+    const view = this.towerSprites.get(payload.towerId);
+    if (!view?._body) return;
+    const sourceView = this.enemySprites.get(payload.sourceId);
+    const directionX = sourceView ? Math.sign(view.x - sourceView.x) : 0;
+    const directionY = sourceView ? Math.sign(view.y - sourceView.y) : 1;
+    const recoil = this.reducedMotion ? 0 : 10;
+    this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
+    this.cancelViewMotion(view);
+    const body = view._body;
+    body.setTint(0xff8b78);
+    let motion;
+    motion = this.tweens.chain({
+      targets: body,
+      tweens: [
+        {
+          angle: this.reducedMotion ? -3 : -6,
+          duration: this.reducedMotion ? 45 : 75,
+          x: directionX * recoil,
+          y: directionY * recoil,
+        },
+        { angle: 0, duration: this.reducedMotion ? 55 : 125, ease: 'Cubic.easeOut', x: 0, y: 0 },
+      ],
+      onComplete: () => this.finishViewMotion(view, motion, () => body.setTint(0xffffff)),
+    });
+    view._motion = motion;
+    this.spawnDamageLabel({ x: view.x, y: view.y }, payload.damage);
+    const name = DEFENDER_PRESENTATION[view._defenderId]?.name ?? 'Road defender';
+    this.hud.announce(`${name} took ${payload.damage} damage. ${payload.remainingHealth} health remains.`);
+  }
+
+  animateDefenderDefeat(payload) {
+    const view = this.towerSprites.get(payload.towerId);
+    if (!view?._body) return;
+    this.towerSprites.delete(payload.towerId);
+    this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
+    this.cancelViewMotion(view);
+    view._body.anims?.stop?.();
+    this.spawnBurst({ x: view.x, y: view.y }, GAMEPLAY_FRAME.defeatCrack, 8, payload.towerId.length);
+    this.audioController?.playCue?.('defeat');
+    const name = DEFENDER_PRESENTATION[view._defenderId]?.name ?? 'Road defender';
+    this.hud.announce(`${name} was permanently defeated. The road guard slot is available again.`);
+    this.detachedDefenderViews.add(view);
+    const body = view._body.setTint(0x8b5a52);
+    let motion;
+    motion = this.tweens.add({
+      targets: body,
+      alpha: 0,
+      angle: this.reducedMotion ? 4 : 12,
+      duration: this.reducedMotion ? 160 : 360,
+      ease: 'Cubic.easeIn',
+      y: this.reducedMotion ? 0 : 26,
+      onComplete: () => this.finishViewMotion(view, motion, () => {
+        this.detachedDefenderViews.delete(view);
+        this.defenderPool.release(view);
+      }),
+    });
+    view._motion = motion;
+  }
+
+  handleEnemyAttackImpact(event, payload) {
+    const view = this.enemySprites.get(payload.id);
+    const targetPosition = this.recentDefenderPositions.get(payload.targetTowerId)
+      ?? (() => {
+        const target = this.towerSprites.get(payload.targetTowerId);
+        return target ? { x: target.x, y: target.y } : null;
+      })();
+    if (targetPosition) {
+      this.spawnBurst(targetPosition, GAMEPLAY_FRAME.shieldBash, 4, event.id);
+      this.spawnBurst(targetPosition, GAMEPLAY_FRAME.explosion, 3, event.id + 1);
+    }
+    this.recoverEnemyAttack(view, payload.enemyId);
+    if (this.presentationLimits.cameraShake > 0) this.cameras.main.shake(90, 0.003);
+    this.audioController?.playCue?.('impact');
   }
 
   playCharacterAction(view, kind, characterId, action, restore = 'walk') {
@@ -647,7 +941,17 @@ export class BattleScene extends Phaser.Scene {
       if (event.id <= this.lastPresentationEventId) continue;
       this.lastPresentationEventId = event.id;
       const { kind, payload } = event;
-      if (kind === 'tower-attack' || kind === 'tower-mastery') {
+      if (kind === 'enemy-attack-start') {
+        const view = this.enemySprites.get(payload.id);
+        const enemy = this.enemyById.get(payload.id);
+        if (view && enemy) this.beginEnemyAttackProjection(view, enemy, payload.targetTowerId, payload.impactAtTick);
+      } else if (kind === 'enemy-attack-impact') {
+        this.handleEnemyAttackImpact(event, payload);
+      } else if (kind === 'defender-hit') {
+        this.animateDefenderHit(payload);
+      } else if (kind === 'defender-defeated') {
+        this.animateDefenderDefeat(payload);
+      } else if (kind === 'tower-attack' || kind === 'tower-mastery') {
         const view = this.towerSprites.get(payload.towerId);
         this.playCharacterAction(
           view,
@@ -811,11 +1115,13 @@ export class BattleScene extends Phaser.Scene {
     syncProjectionMap(this.enemySprites, this.enemyPool, snapshot.enemies, (view, enemy) => {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
-      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
+      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress, enemy.laneOffset);
       const body = view._body;
       const characterKey = characterAssetId(kind, enemy.enemyId, 'walk');
       if (view._characterKey !== characterKey) {
         body.setTexture(characterKey, 0).setScale(presentation.displayScale);
+        view._baseScale = presentation.displayScale;
+        view._enemyId = enemy.enemyId;
         if (this.anims.exists(animationKey(kind, enemy.enemyId, 'walk'))) {
           body.play(animationKey(kind, enemy.enemyId, 'walk'), true);
         }
@@ -829,6 +1135,21 @@ export class BattleScene extends Phaser.Scene {
       }
       view._lastX = position.x;
       view.setPosition(position.x, position.y);
+      const activeAttack = enemy.attackState?.targetTowerId !== null
+        && enemy.attackState?.targetTowerId !== undefined;
+      if (activeAttack) {
+        this.beginEnemyAttackProjection(
+          view,
+          enemy,
+          enemy.attackState.targetTowerId,
+          enemy.attackState.impactAtTick,
+        );
+      } else if (view._attackTargetTowerId || view._attackPoseReady) {
+        this.cancelViewMotion(view);
+        if (this.anims.exists(animationKey(kind, enemy.enemyId, 'walk'))) {
+          body.play(animationKey(kind, enemy.enemyId, 'walk'), true);
+        }
+      }
       const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
       const showHealth = kind === 'boss' || ratio < 0.999;
       view._healthKey = showHealth ? `${kind}:${Math.round(ratio * 1_000)}` : 'hidden';
@@ -856,6 +1177,7 @@ export class BattleScene extends Phaser.Scene {
         if (view._accent.visible) view._accent.setVisible(false);
       }
     }, (_id, view) => {
+      this.cancelViewMotion(view);
       view._lastX = null;
     });
   }
@@ -871,7 +1193,7 @@ export class BattleScene extends Phaser.Scene {
       const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
       const showHealth = kind === 'boss' || ratio < 0.999;
       if (!showHealth) continue;
-      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
+      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress, enemy.laneOffset);
       const barY = position.y + (kind === 'boss' ? -176 : -108);
       const barWidth = kind === 'boss' ? 116 : 72;
       const barX = position.x - (barWidth / 2);
@@ -908,17 +1230,47 @@ export class BattleScene extends Phaser.Scene {
         'rune-artificer': 0x58d5ff,
       }[tower.defenderId];
       view.setPosition(position.x, position.y + 20);
-      body.setScale(DEFENDER_PRESENTATION[tower.defenderId].displayScale * (1 + (tower.tier * 0.05)));
+      const bodyScale = DEFENDER_PRESENTATION[tower.defenderId].displayScale * (1 + (tower.tier * 0.05));
+      body.setScale(bodyScale);
+      view._baseScale = bodyScale;
+      view._defenderId = tower.defenderId;
+      view._padId = tower.padId;
       view._aura.setTint(tint).setAlpha(tower.tier === 2 ? 0.46 : 0.28)
         .setScale(tower.tier === 2 ? 0.38 : 0.29).setVisible(tower.tier > 0);
       view._rank.setTint(tint).setScale(0.18).setVisible(tower.tier === 2);
-      this.padSprites.get(tower.padId)?.setFrame(
-        tower.id === this.selectedTowerId ? GAMEPLAY_FRAME.selectedBuildPad : GAMEPLAY_FRAME.buildPad,
-      );
+      this.projectFrontlineHealth(view, tower);
     });
-    const occupiedPads = new Set(snapshot.towers.map(({ padId }) => padId));
-    for (const [padId, view] of this.padSprites) {
-      if (!occupiedPads.has(padId)) view.setFrame(GAMEPLAY_FRAME.buildPad);
+  }
+
+  projectFrontlineHealth(view, tower) {
+    const health = resolveFrontlineHealthBar(tower);
+    if (view._healthKey === health.key) return;
+    view._healthKey = health.key;
+    const background = view._healthBackground.clear().setVisible(health.visible);
+    const fill = view._healthFill.clear().setVisible(health.visible);
+    if (!health.visible) return;
+    background.fillStyle(0x08221c, 0.94).fillRoundedRect(-38, 7, 76, 11, 5);
+    fill.fillStyle(health.ratio <= 0.3 ? 0xff6b61 : 0x8fe36a, 1)
+      .fillRoundedRect(-35, 10, Math.max(2, 70 * health.ratio), 5, 2);
+  }
+
+  projectPlacementMarkers(snapshot) {
+    const occupiedByPad = new Map(snapshot.towers.map((tower) => [tower.padId, tower.id]));
+    const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
+    for (const pad of this.level.pads) {
+      const view = this.padSprites.get(pad.id);
+      const occupiedTowerId = occupiedByPad.get(pad.id) ?? null;
+      const state = resolvePlacementMarkerState({
+        markerLayer: view._placementLayer,
+        occupied: Boolean(occupiedTowerId),
+        selected: Boolean(occupiedTowerId) && occupiedTowerId === this.selectedTowerId,
+        selectedLayer,
+      });
+      view.setAlpha(state.alpha)
+        .setFrame(state.selectedFrame ? GAMEPLAY_FRAME.selectedBuildPad : GAMEPLAY_FRAME.buildPad)
+        .setScale(state.scale)
+        .setVisible(state.visible);
+      view._acceptsBuild = state.acceptsBuild;
     }
   }
 
@@ -931,7 +1283,7 @@ export class BattleScene extends Phaser.Scene {
       const sourcePosition = toWorldPoint(projectile.launchPosition);
       const target = this.enemyById.get(projectile.targetId);
       const targetPosition = target
-        ? projectPathProgress(this.pathMetrics, target.pathProgress)
+        ? projectPathProgress(this.pathMetrics, target.pathProgress, target.laneOffset)
         : projectPathProgress(this.pathMetrics, projectile.targetPathProgressAtLaunch);
       const duration = Math.max(1, projectile.impactTick - projectile.launchTick);
       const progress = Math.max(0, Math.min(1, (snapshot.tick - projectile.launchTick) / duration));
@@ -951,7 +1303,7 @@ export class BattleScene extends Phaser.Scene {
         view.setVisible(false);
         return;
       }
-      const position = projectPathProgress(this.pathMetrics, source.pathProgress);
+      const position = projectPathProgress(this.pathMetrics, source.pathProgress, source.laneOffset);
       const radius = effect.radius ?? (effect.kind === 'mossback-telegraph'
         ? ENEMIES['mossback-brute'].abilityRadius
         : ENEMIES['dread-colossus'].pulseRadius);
@@ -990,7 +1342,8 @@ export class BattleScene extends Phaser.Scene {
       this.focusRing.setVisible(false);
     } else {
       this.focusRing.setVisible(true);
-      this.focusRing.lineStyle(6, 0xffffff, 0.96);
+      const compatible = !this.selectedDefenderId || this.isPlacementCompatible(pad);
+      this.focusRing.lineStyle(6, compatible ? 0xffffff : 0x879891, compatible ? 0.96 : 0.68);
       this.focusRing.strokeEllipse(position.x, position.y, 82, 62);
     }
     this.rangeRing.clear();
@@ -1013,7 +1366,12 @@ export class BattleScene extends Phaser.Scene {
         medal: this.lastSnapshot.medal,
         score: this.lastSnapshot.score,
       });
-      this.spawnBurst(toWorldPoint(this.level.path.at(-1)), GAMEPLAY_FRAME.victoryBurst, 16, this.lastSnapshot.tick);
+      this.spawnBurst(
+        projectPathProgress(this.pathMetrics, this.pathMetrics.total),
+        GAMEPLAY_FRAME.victoryBurst,
+        16,
+        this.lastSnapshot.tick,
+      );
       this.audioController?.playCue?.('victory');
     } else this.audioController?.playCue?.('defeat');
 
@@ -1072,6 +1430,7 @@ export class BattleScene extends Phaser.Scene {
     return {
       enemies: [...this.enemySprites].map(([id, view]) => ({
         accentVisible: Boolean(view._accent?.visible),
+        attackTargetTowerId: view._attackTargetTowerId,
         id,
         plateAccents: [...(view._plateAccents?.entries?.() ?? [])].map(([plateId, plate]) => ({
           id: plateId,
@@ -1092,11 +1451,19 @@ export class BattleScene extends Phaser.Scene {
         return {
           animationKey: body.anims?.currentAnim?.key ?? null,
           frame: body.anims?.currentFrame?.textureFrame ?? body.frame?.name ?? null,
+          healthKey: view._healthKey,
           id,
           isPlaying: Boolean(body.anims?.isPlaying),
           textureKey: body.texture?.key ?? null,
         };
       }),
+      markers: [...this.padSprites].map(([id, view]) => ({
+        acceptsBuild: Boolean(view._acceptsBuild),
+        alpha: Number(view.alpha.toFixed(3)),
+        id,
+        layer: view._placementLayer,
+        visible: view.visible,
+      })),
     };
   }
 
@@ -1141,6 +1508,7 @@ export class BattleScene extends Phaser.Scene {
   shutdown() {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.cancelAllPresentationMotion();
     this.events.off(Phaser.Scenes.Events.RESUME, this.handleResume, this);
     this.domCleanups.splice(0).forEach((remove) => remove());
     this.hud.dismissLevelIntro?.({ restoreFocus: false });
@@ -1166,6 +1534,8 @@ export class BattleScene extends Phaser.Scene {
     this.enemyById.clear();
     this.towerById.clear();
     this.defenderIdByTowerId.clear();
+    this.recentDefenderPositions.clear();
+    this.detachedDefenderViews.clear();
     this.padSprites.clear();
     this.focusRing?.destroy();
     this.rangeRing?.destroy();

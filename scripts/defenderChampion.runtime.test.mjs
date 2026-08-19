@@ -117,16 +117,166 @@ test('the local entry boots one transparent Phaser game with the declared scene 
 });
 
 test('BattleScene renders shared path pieces and resolves every typed pad position', async () => {
-  const battleScene = await readGameFile('src/scenes/BattleScene.js');
+  const [battleScene, presentation] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
 
   assert.match(battleScene, /import\s*{[^}]*derivePathPieces[^}]*resolvePlacementPoint[^}]*samplePathProgress[^}]*}/s);
   assert.match(battleScene, /derivePathPieces\(this\.level\.path,\s*toWorldPoint\)/);
   assert.match(battleScene, /PATH_FRAME\[piece\.frame\]/);
-  assert.match(battleScene, /if \(piece\.kind !== 'straight'\) return \{ height: piece\.width, width: piece\.width \};/);
-  assert.match(battleScene, /setDisplaySize\(size\.width, size\.height\)/);
+  assert.match(battleScene, /resolveRoadPieceDisplay\(piece\)/);
+  assert.match(battleScene, /setDisplaySize\(display\.width, display\.height\)/);
   assert.match(battleScene, /setRotation\(piece\.rotation\)/);
   assert.match(battleScene, /resolvePlacementPoint\(this\.level,\s*placement\)/);
   assert.doesNotMatch(battleScene, /setDisplaySize\(worldLength \+ 54,\s*210\)/);
+  assert.doesNotMatch(battleScene, /PATH_FRAME\.horizontal[\s\S]{0,160}Math\.PI\s*\/\s*2/);
+
+  assert.deepEqual(Object.keys(presentation.PATH_FRAME).sort(), [
+    'capEast', 'capNorth', 'capSouth', 'capWest', 'cross', 'eastSouth',
+    'horizontal', 'isolated', 'northEast', 'southWest', 'vertical', 'westNorth',
+  ]);
+  assert.deepEqual(presentation.resolveRoadPieceDisplay({
+    frame: 'horizontal', kind: 'straight', length: 260, rotation: 0, width: 112,
+  }), { height: 112, width: 260 });
+  assert.deepEqual(presentation.resolveRoadPieceDisplay({
+    frame: 'vertical', kind: 'straight', length: 310, rotation: 0, width: 112,
+  }), { height: 310, width: 112 });
+  for (const frame of [
+    'northEast', 'eastSouth', 'southWest', 'westNorth',
+    'capNorth', 'capEast', 'capSouth', 'capWest',
+  ]) {
+    assert.deepEqual(presentation.resolveRoadPieceDisplay({
+      frame, kind: frame.startsWith('cap') ? 'cap' : 'corner', length: 112, rotation: 0, width: 112,
+    }), { height: 112, width: 112 }, frame);
+  }
+});
+
+test('typed marker projection keeps cross-layer pointer and keyboard builds inert', async () => {
+  const [battleScene, { DEFENDER_PRESENTATION }, presentation] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const { resolveCommandRejectionMessage, resolvePlacementMarkerState, resolvePlacementPrompt } = presentation;
+
+  assert.equal(DEFENDER_PRESENTATION.bladeguard.role, 'Road melee');
+  assert.equal(DEFENDER_PRESENTATION.ironwarden.role, 'Road melee');
+  assert.equal(DEFENDER_PRESENTATION.ranger.role, 'Grass ranged');
+  assert.equal(DEFENDER_PRESENTATION['rune-artificer'].role, 'Grass ranged');
+  assert.deepEqual(resolvePlacementMarkerState({ markerLayer: 'road', selectedLayer: 'road' }), {
+    acceptsBuild: true,
+    alpha: 1,
+    scale: 0.31,
+    selectedFrame: true,
+    visible: true,
+  });
+  assert.deepEqual(resolvePlacementMarkerState({ markerLayer: 'grass', selectedLayer: 'road' }), {
+    acceptsBuild: false,
+    alpha: 0.16,
+    scale: 0.22,
+    selectedFrame: false,
+    visible: true,
+  });
+  assert.deepEqual(resolvePlacementMarkerState({
+    markerLayer: 'road', occupied: false, selected: true, selectedLayer: null,
+  }), {
+    acceptsBuild: false,
+    alpha: 0.4,
+    scale: 0.24,
+    selectedFrame: false,
+    visible: true,
+  }, 'an empty marker cannot become selected through a null tower-id comparison');
+  assert.equal(resolvePlacementPrompt('road'), 'Choose a road guard slot');
+  assert.equal(resolvePlacementPrompt('grass'), 'Choose a grass ranged slot');
+  assert.equal(resolveCommandRejectionMessage('placement-layer-mismatch', 'road'), 'Choose a road guard slot.');
+  assert.equal(resolveCommandRejectionMessage('defender-engaged'), 'That road defender is fighting and cannot be sold.');
+
+  assert.match(battleScene, /view\._placementLayer\s*=\s*pad\.layer/);
+  assert.match(battleScene, /resolvePlacementMarkerState\(\{/);
+  assert.match(battleScene, /attemptBuildAtPad\(pad\)/);
+  assert.match(battleScene, /if \(!this\.isPlacementCompatible\(pad\)\)[\s\S]*?return false;/);
+  const pointerHandler = battleScene.match(/handlePointerDown\(event, battlefield\) \{[\s\S]*?\n  \}\n\n  releasePointer/)?.[0] ?? '';
+  const keyboardConfirmation = battleScene.match(/confirmFocusedTarget\(\) \{[\s\S]*?\n  \}\n\n  announceFocusedTarget/)?.[0] ?? '';
+  assert.doesNotMatch(pointerHandler, /issueBattleCommand\(\{ type: 'build'/);
+  assert.doesNotMatch(keyboardConfirmation, /issueBattleCommand\(\{ type: 'build'/);
+});
+
+test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {
+  const [battleScene, presentation] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const { resolveEnemyAttackMotion, resolveFrontlineHealthBar, ViewPool } = presentation;
+
+  assert.deepEqual(resolveFrontlineHealthBar({ combatLayer: 'backline', health: 1, maxHealth: 1 }), {
+    key: 'hidden', ratio: 0, visible: false,
+  });
+  assert.deepEqual(resolveFrontlineHealthBar({ combatLayer: 'frontline', health: 419, maxHealth: 560 }), {
+    key: 'frontline:75', ratio: 0.75, visible: true,
+  });
+  const fullMotion = resolveEnemyAttackMotion({
+    bodyScale: 0.5,
+    currentTick: 100,
+    enemyPosition: { x: 200, y: 300 },
+    impactAtTick: 124,
+    targetPosition: { x: 230, y: 340 },
+    timeScale: 2,
+  });
+  assert.equal(fullMotion.totalMs, 200);
+  assert.equal(fullMotion.windupMs + fullMotion.lungeMs, fullMotion.totalMs);
+  assert.ok(Math.hypot(fullMotion.lungeX, fullMotion.lungeY) <= 36);
+  const bossMotion = resolveEnemyAttackMotion({
+    bodyScale: 0.53,
+    boss: true,
+    currentTick: 10,
+    enemyPosition: { x: 0, y: 0 },
+    impactAtTick: 70,
+    targetPosition: { x: 500, y: 0 },
+  });
+  assert.ok(Math.hypot(bossMotion.lungeX, bossMotion.lungeY) <= 32);
+  assert.deepEqual(resolveEnemyAttackMotion({
+    bodyScale: 0.53,
+    boss: true,
+    currentTick: 10,
+    enemyPosition: { x: 0, y: 0 },
+    impactAtTick: 70,
+    reducedMotion: true,
+    targetPosition: { x: 500, y: 0 },
+  }), {
+    backX: 0,
+    backY: 0,
+    lungeMs: 650,
+    lungeX: 0,
+    lungeY: 0,
+    totalMs: 1_000,
+    windupMs: 350,
+  });
+
+  const resets = [];
+  const destroyed = [];
+  const pool = new ViewPool(() => ({
+    destroy: () => destroyed.push('destroy'),
+    setActive() { return this; },
+    setAlpha() { return this; },
+    setVisible() { return this; },
+  }), { resetView: () => resets.push('reset') });
+  pool.acquire();
+  pool.destroy();
+  assert.deepEqual(resets, ['reset']);
+  assert.deepEqual(destroyed, ['destroy']);
+
+  for (const kind of ['enemy-attack-start', 'enemy-attack-impact', 'defender-hit', 'defender-defeated']) {
+    assert.match(battleScene, new RegExp(`kind === ['"]${kind}['"]`), kind);
+  }
+  assert.match(battleScene, /this\.tweens\.chain\(\{/);
+  assert.match(battleScene, /cancelViewMotion\(view/);
+  assert.match(battleScene, /cancelAllPresentationMotion\(\)/);
+  assert.match(battleScene, /setExternalPauseReasons[\s\S]*?cancelAllPresentationMotion\(\)/);
+  assert.match(battleScene, /shutdown\(\)[\s\S]*?cancelAllPresentationMotion\(\)/);
+  assert.match(battleScene, /GAMEPLAY_FRAME\.defeatCrack/);
+  assert.match(battleScene, /_healthBackground/);
+  assert.match(battleScene, /_healthFill/);
 });
 
 test('continue targets the highest unlocked uncleared level and falls back to level 10', async () => {

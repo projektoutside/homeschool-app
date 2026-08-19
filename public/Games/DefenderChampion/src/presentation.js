@@ -1,3 +1,5 @@
+import { ROAD_WIDTH } from './core/path-geometry.js';
+
 export const GAMEPLAY_FRAME = Object.freeze({
   buildPad: 0,
   selectedBuildPad: 1,
@@ -33,10 +35,10 @@ export const PATH_FRAME = Object.freeze({
 });
 
 export const DEFENDER_PRESENTATION = Object.freeze({
-  bladeguard: Object.freeze({ name: 'Bladeguard', role: 'Close defense', projectileFrame: GAMEPLAY_FRAME.shieldBash, displayScale: 0.44 }),
-  ranger: Object.freeze({ name: 'Ranger', role: 'Long range', projectileFrame: GAMEPLAY_FRAME.arrow, displayScale: 0.44 }),
-  ironwarden: Object.freeze({ name: 'Ironwarden', role: 'Armor breaker', projectileFrame: GAMEPLAY_FRAME.shieldBash, displayScale: 0.46 }),
-  'rune-artificer': Object.freeze({ name: 'Rune Artificer', role: 'Splash damage', projectileFrame: GAMEPLAY_FRAME.runeBolt, displayScale: 0.46 }),
+  bladeguard: Object.freeze({ name: 'Bladeguard', role: 'Road melee', projectileFrame: GAMEPLAY_FRAME.shieldBash, displayScale: 0.44 }),
+  ranger: Object.freeze({ name: 'Ranger', role: 'Grass ranged', projectileFrame: GAMEPLAY_FRAME.arrow, displayScale: 0.44 }),
+  ironwarden: Object.freeze({ name: 'Ironwarden', role: 'Road melee', projectileFrame: GAMEPLAY_FRAME.shieldBash, displayScale: 0.46 }),
+  'rune-artificer': Object.freeze({ name: 'Rune Artificer', role: 'Grass ranged', projectileFrame: GAMEPLAY_FRAME.runeBolt, displayScale: 0.46 }),
 });
 
 export const ENEMY_PRESENTATION = Object.freeze({
@@ -98,6 +100,136 @@ export const resolvePresentationLimits = (reducedMotion = false) => Object.freez
   particleCap: reducedMotion ? 18 : 64,
   telegraphsEnabled: true,
 });
+
+const SQUARE_ROAD_FRAMES = new Set([
+  'isolated', 'cross', 'northEast', 'eastSouth', 'southWest', 'westNorth',
+  'capNorth', 'capEast', 'capSouth', 'capWest',
+]);
+
+export const resolveRoadPieceDisplay = (piece = {}) => {
+  if (piece.kind === 'straight') {
+    if (piece.rotation !== 0) throw new Error('Road straight frames must not be rotated');
+    if (piece.frame === 'horizontal') return { height: ROAD_WIDTH, width: piece.length };
+    if (piece.frame === 'vertical') return { height: piece.length, width: ROAD_WIDTH };
+    throw new Error(`Unsupported road straight frame: ${piece.frame}`);
+  }
+  if (!SQUARE_ROAD_FRAMES.has(piece.frame)) throw new Error(`Unsupported road piece frame: ${piece.frame}`);
+  return { height: ROAD_WIDTH, width: ROAD_WIDTH };
+};
+
+export const resolvePlacementMarkerState = ({
+  markerLayer,
+  occupied = false,
+  selected = false,
+  selectedLayer = null,
+} = {}) => {
+  const compatible = !occupied && Boolean(selectedLayer) && markerLayer === selectedLayer;
+  if (compatible) {
+    return Object.freeze({
+      acceptsBuild: true,
+      alpha: 1,
+      scale: 0.31,
+      selectedFrame: true,
+      visible: true,
+    });
+  }
+  if (selected && occupied) {
+    return Object.freeze({
+      acceptsBuild: false,
+      alpha: 0.92,
+      scale: 0.28,
+      selectedFrame: true,
+      visible: true,
+    });
+  }
+  if (selectedLayer) {
+    return Object.freeze({
+      acceptsBuild: false,
+      alpha: 0.16,
+      scale: 0.22,
+      selectedFrame: false,
+      visible: true,
+    });
+  }
+  return Object.freeze({
+    acceptsBuild: false,
+    alpha: occupied ? 0.24 : 0.4,
+    scale: 0.24,
+    selectedFrame: false,
+    visible: true,
+  });
+};
+
+export const resolvePlacementPrompt = (layer) => (
+  layer === 'road' ? 'Choose a road guard slot' : 'Choose a grass ranged slot'
+);
+
+export const resolveCommandRejectionMessage = (reason, selectedLayer = null) => ({
+  'battle-terminal': 'This battle has already ended.',
+  'battle-unavailable': 'The battlefield is not available.',
+  'defender-engaged': 'That road defender is fighting and cannot be sold.',
+  'insufficient-coins': 'Not enough coins for that command.',
+  'invalid-defender': 'Choose an available defender.',
+  'invalid-pad': 'Choose an available placement slot.',
+  'max-tier': 'That defender is already at maximum tier.',
+  'missing-tower': 'That defender is no longer available.',
+  'pad-occupied': 'That placement slot is already occupied.',
+  'placement-layer-mismatch': `${resolvePlacementPrompt(selectedLayer)}.`,
+}[reason] ?? 'That command is not available right now.');
+
+export const resolveFrontlineHealthBar = ({ combatLayer, health, maxHealth } = {}) => {
+  if (combatLayer !== 'frontline' || !(maxHealth > 0)) {
+    return Object.freeze({ key: 'hidden', ratio: 0, visible: false });
+  }
+  const ratio = Math.round(Math.max(0, Math.min(1, health / maxHealth)) * 100) / 100;
+  return Object.freeze({ key: `frontline:${Math.round(ratio * 100)}`, ratio, visible: true });
+};
+
+export const resolveEnemyAttackMotion = ({
+  bodyScale = 1,
+  boss = false,
+  currentTick = 0,
+  enemyPosition = { x: 0, y: 0 },
+  impactAtTick = currentTick,
+  reducedMotion = false,
+  targetPosition = enemyPosition,
+  timeScale = 1,
+} = {}) => {
+  const totalMs = Math.max(0, Math.round(
+    ((impactAtTick - currentTick) * (1_000 / 60)) / Math.max(0.25, timeScale),
+  ));
+  const windupMs = Math.round(totalMs * 0.35);
+  const lungeMs = totalMs - windupMs;
+  if (reducedMotion) {
+    return Object.freeze({
+      backX: 0,
+      backY: 0,
+      lungeMs,
+      lungeX: 0,
+      lungeY: 0,
+      totalMs,
+      windupMs,
+    });
+  }
+
+  const deltaX = targetPosition.x - enemyPosition.x;
+  const deltaY = targetPosition.y - enemyPosition.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  const directionX = distance > 0 ? deltaX / distance : 0;
+  const directionY = distance > 0 ? deltaY / distance : 1;
+  const travelCap = Math.min(boss ? 32 : 44, Math.max(18, bodyScale * 80));
+  const travel = Math.min(travelCap, distance * 0.55);
+  const backTravel = Math.min(10, Math.max(5, travel * 0.25));
+  return Object.freeze({
+    backX: -directionX * backTravel,
+    backY: -directionY * backTravel,
+    lungeMs,
+    lungeX: directionX * travel,
+    lungeY: directionY * travel,
+    totalMs,
+    windupMs,
+  });
+};
 
 export const deriveCampaignEnemyViewCapacity = (levels = [], enemies = {}) => Math.max(
   0,
@@ -165,7 +297,10 @@ export class ViewPool {
   }
 
   destroy() {
-    for (const view of this.allViews) view.destroy?.();
+    for (const view of this.allViews) {
+      if (this.activeViews.has(view)) this.resetView?.(view);
+      view.destroy?.();
+    }
     this.availableViews.length = 0;
     this.activeViews.clear();
     this.allViews.clear();

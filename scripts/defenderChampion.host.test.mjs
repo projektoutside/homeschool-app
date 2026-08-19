@@ -396,10 +396,12 @@ test('prepare-unload removes listeners, suspends audio, and blocks later rewards
   const browser = createBrowserDoubles({ embedded: true });
   const pointsBridge = createPointsBridge();
   const audioCalls = [];
+  const teardownCalls = [];
   const bridge = createHostBridge({
     ...browser,
     saveStore: createSaveStore({ storage: createStorage() }),
     pointsBridge,
+    onPrepareUnload: () => teardownCalls.push('scene-teardown'),
     audioController: {
       setPaused: (paused) => audioCalls.push(['paused', paused]),
       destroy: () => audioCalls.push(['destroy']),
@@ -419,7 +421,16 @@ test('prepare-unload removes listeners, suspends audio, and blocks later rewards
   assert.equal(browser.documentRef.listenerCount('visibilitychange'), 0);
   assert.equal(pointsBridge.awardCalls.length, 0);
   assert.deepEqual(audioCalls.slice(-2), [['paused', true], ['destroy']]);
+  assert.deepEqual(teardownCalls, ['scene-teardown']);
   assert.equal(bridge.getState().destroyed, true);
+
+  browser.windowRef.dispatch('message', {
+    origin: 'https://example.test',
+    source: browser.parentRef,
+    data: { type: 'LAHS_HOST_LIFECYCLE', phase: 'prepare-unload' },
+  });
+  bridge.cleanup();
+  assert.deepEqual(teardownCalls, ['scene-teardown'], 'teardown remains idempotent');
 });
 
 test('prepare-unload blocks rewards before notifying pause consumers', () => {

@@ -290,7 +290,8 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 .defender-card[aria-pressed="true"] { border-color:var(--gold-200); color:var(--ink); background:var(--gold-200); box-shadow:0 0 0 2px var(--gold-600); }
 .defender-card span,.defender-card small { display:block; overflow-wrap:anywhere; }
 .defender-card span { font:800 clamp(.7rem,2.4vw,.95rem)/1.05 system-ui,sans-serif; }
-.defender-card small { margin-top:4px; font:600 clamp(.55rem,1.8vw,.68rem)/1.15 system-ui,sans-serif; }
+.defender-card small { margin-top:4px; color:#dbecc3; font:700 clamp(.58rem,1.8vw,.7rem)/1.2 system-ui,sans-serif; }
+.defender-card[aria-pressed="true"] small { color:var(--ink); }
 .battle-notice { margin:8px 0 0; padding:7px 10px; border-left:4px solid var(--gold-400); color:var(--cream); background:rgba(255,229,154,.1); font:700 .76rem/1.25 system-ui,sans-serif; }
 #tower-panel { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:8px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,229,154,.24); }
 #tower-panel-stats { margin:4px 0 0; font:600 .72rem/1.25 system-ui,sans-serif; }
@@ -342,7 +343,8 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   .battle-stats dt { font-size:.52rem; }
   .battle-stats dd { font-size:.78rem; }
   .button { padding-inline:12px; }
-  .defender-card { padding-inline:3px; }
+  .defender-card { min-height:52px; padding-inline:3px; }
+  .defender-card small { font-size:.58rem; }
 }
 
 @media (orientation: landscape) and (max-height: 760px) {
@@ -363,6 +365,9 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   #defender-dock { min-height:0; overflow-y:auto; }
   .dock-heading { align-items:stretch; flex-direction:column; }
   .dock-list { grid-template-columns:1fr; }
+  .defender-card { min-height:44px; text-align:left; }
+  .defender-card span,.defender-card small { display:inline; }
+  .defender-card small::before { content:" · "; }
   #tower-panel { grid-template-columns:1fr; }
   #tower-panel > div { grid-column:auto; }
 }

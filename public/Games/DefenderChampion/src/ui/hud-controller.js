@@ -5,6 +5,7 @@ import {
   DEFENDER_PRESENTATION,
   LEVEL_PRESENTATION,
   STRATEGY_HINTS,
+  resolveCommandRejectionMessage,
 } from '../presentation.js';
 
 const FIXED_STEP_MILLISECONDS = 1_000 / 60;
@@ -715,11 +716,12 @@ export const createHudController = ({
   };
 
   const dispatchBattleCommand = (command) => {
-    const result = battleBinding?.issueCommand?.(command) ?? {
+    if (battleBinding?.issueCommand) return battleBinding.issueCommand(command);
+    const result = {
       accepted: false,
       reason: 'battle-unavailable',
     };
-    if (!result.accepted) announce(`Command not accepted: ${result.reason}.`);
+    announce(resolveCommandRejectionMessage(result.reason));
     return result;
   };
 
