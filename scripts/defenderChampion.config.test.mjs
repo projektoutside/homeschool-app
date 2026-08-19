@@ -81,7 +81,7 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     assert.equal(Object.isFrozen(level), true);
     assert.equal(getLevel(id), level);
     assert.equal(level.path.length >= 2, true);
-    assert.equal(level.pads.length >= 8 && level.pads.length <= 12, true);
+    assert.equal(level.pads.length, 8);
     assert.equal(new Set(level.pads.map((pad) => pad.id)).size, level.pads.length);
     assert.equal(level.waves.length, level.waveCount);
     assert.equal(level.referenceStrategies.length, 2);
