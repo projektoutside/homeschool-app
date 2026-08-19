@@ -47,7 +47,12 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
   simulation.nextSpawnIndex = 0;
   simulation.spawnedAllWaves = true;
   simulation.coins = 1000;
-  issueCommand(simulation, { type: 'build', defenderId, padId: 'l1-pad-a' });
+  const placement = simulation.level.pads.find((pad) => (
+    pad.layer === DEFENDERS[defenderId].placementLayer
+  ));
+  issueCommand(simulation, { type: 'build', defenderId, padId: placement.id });
+  // Combat assertions use the fixed road-range fixture; placement validity is covered separately.
+  simulation.towers[0].padId = testRoadPad.id;
   simulation.towers[0].tier = tier;
   simulation.towers[0].attackCount = attackCount;
   simulation.enemies = enemies;

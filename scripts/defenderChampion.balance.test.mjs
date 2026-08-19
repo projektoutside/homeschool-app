@@ -34,7 +34,8 @@ const runMonoRosterFixture = (levelId, defenderId) => {
       }
 
       const openPad = simulation.level.pads.find((pad) => (
-        !simulation.towers.some((tower) => tower.padId === pad.id)
+        pad.layer === defender.placementLayer
+        && !simulation.towers.some((tower) => tower.padId === pad.id)
       ));
       if (!openPad || simulation.coins < defender.costs[0]) break;
       issueCommand(simulation, { type: 'build', defenderId, padId: openPad.id });

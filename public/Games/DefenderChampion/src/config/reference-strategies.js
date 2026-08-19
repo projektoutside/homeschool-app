@@ -54,12 +54,7 @@ const lateDiverseStrategies = (levelNumber, artilleryReinforcement = null) => ({
     build(levelNumber, 3600, 'ironwarden', 'e'),
     build(levelNumber, 4800, 'rune-artificer', 'f'),
     build(levelNumber, 6000, 'ranger', 'b'),
-    ...(artilleryReinforcement ? [build(
-      levelNumber,
-      artilleryReinforcement.tick,
-      'rune-artificer',
-      'h',
-    )] : []),
+    build(levelNumber, 7200, 'ranger', 'h'),
   ]),
   [`level-${levelNumber}-artillery`]: freezeCommands([
     build(levelNumber, 0, 'ranger', 'b'),

@@ -151,6 +151,7 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     };
     const firstHighestSpendDefender = highestSpendDefender(first);
     const secondHighestSpendDefender = highestSpendDefender(second);
+    assert.notEqual(firstHighestSpendDefender, secondHighestSpendDefender);
     highestSpendDefenders.add(firstHighestSpendDefender);
     highestSpendDefenders.add(secondHighestSpendDefender);
   }
@@ -161,4 +162,13 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     () => getLevel('missing-level'),
     (error) => error.message === 'Unknown level: missing-level',
   );
+});
+
+test('late balanced strategies retain all seven original build ticks', () => {
+  for (const levelNumber of [8, 9]) {
+    assert.deepEqual(
+      REFERENCE_STRATEGIES[`level-${levelNumber}-balanced`].map(({ tick }) => tick),
+      [0, 0, 0, 3600, 4800, 6000, 7200],
+    );
+  }
 });
