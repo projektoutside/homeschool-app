@@ -6,6 +6,12 @@ import { compareEntityIds } from './entity-id.js';
 import { createWaveController, spawnScheduledEnemies } from './wave-controller.js';
 import { stepCombat } from './combat.js';
 import { calculateBattleResult } from './scoring.js';
+import {
+  emitPresentationEvent,
+  snapshotPresentationEvents,
+} from './presentation-events.js';
+
+export { clearPresentationEvents } from './presentation-events.js';
 
 const MAX_STRATEGY_TICKS = 60 * 720;
 const accepted = () => ({ accepted: true, reason: null });
@@ -38,9 +44,12 @@ export const createSimulation = (levelId, options = {}) => {
     waveSchedule: createWaveController(level),
     nextSpawnIndex: 0,
     waveCompletionFlags: {},
+    waveStartedFlags: {},
     pathMetrics: null,
     medal: null,
     purchaseHistory: [],
+    nextPresentationEventId: 1,
+    presentationEvents: [],
   };
 };
 
@@ -146,6 +155,7 @@ export const advanceSimulation = (simulation, steps) => {
       simulation.projectiles = [];
       simulation.effects = [];
       simulation.activeEffectValues = new Map();
+      emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
     } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
       const result = calculateBattleResult(simulation);
       simulation.terminal = true;
@@ -154,19 +164,26 @@ export const advanceSimulation = (simulation, steps) => {
       simulation.medal = result.medal;
       simulation.effects = [];
       simulation.activeEffectValues = new Map();
+      emitPresentationEvent(simulation, 'battle-terminal', { outcome: result.outcome });
     }
     simulation.tick += 1;
   }
   return simulation;
 };
 
-const snapshotTower = (tower) => ({
-  id: tower.id,
-  defenderId: tower.defenderId,
-  padId: tower.padId,
-  tier: tower.tier,
-  totalInvested: tower.totalInvested,
-});
+const snapshotTower = (tower) => {
+  const masteryAttackCount = DEFENDERS[tower.defenderId].masteryAttackCount;
+  return {
+    id: tower.id,
+    defenderId: tower.defenderId,
+    padId: tower.padId,
+    tier: tower.tier,
+    totalInvested: tower.totalInvested,
+    attackCount: tower.attackCount ?? 0,
+    masteryProgress: (tower.attackCount ?? 0) % masteryAttackCount,
+    nextAttackTick: tower.nextAttackTick ?? 0,
+  };
+};
 
 const snapshotEnemy = (enemy) => ({
   id: enemy.id,
@@ -228,6 +245,35 @@ export const summarizeSimulation = (simulation) => ({
   towers: simulation.towers.map(snapshotTower).sort(sortById),
   projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
   effects: simulation.effects.map((effect) => structuredClone(effect)).sort(sortById),
+  presentationEvents: snapshotPresentationEvents(simulation),
+  terminal: simulation.terminal,
+  outcome: simulation.outcome,
+  medal: simulation.medal,
+  qa: simulation.qa,
+  seed: simulation.seed,
+});
+
+export const summarizePresentationSimulation = (simulation) => ({
+  version: simulation.version,
+  levelId: simulation.levelId,
+  tick: simulation.tick,
+  timeScale: simulation.timeScale,
+  pauseReasons: [...simulation.pauseReasons].sort(),
+  coins: simulation.coins,
+  score: simulation.score,
+  castleHearts: simulation.castleHearts,
+  nextEntityId: simulation.nextEntityId,
+  waveIndex: simulation.waveIndex,
+  spawnedAllWaves: simulation.spawnedAllWaves,
+  enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
+  towers: simulation.towers.map(snapshotTower).sort(sortById),
+  projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
+  effects: simulation.effects
+    .filter((effect) => effect.kind.includes('telegraph'))
+    .map((effect) => structuredClone(effect))
+    .sort(sortById),
+  presentationEvents: snapshotPresentationEvents(simulation),
+  purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
   terminal: simulation.terminal,
   outcome: simulation.outcome,
   medal: simulation.medal,

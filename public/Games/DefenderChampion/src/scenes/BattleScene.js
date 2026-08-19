@@ -1,28 +1,37 @@
 import Phaser from 'phaser';
 import { DEFENDERS } from '../config/defenders.js';
+import { ENEMIES } from '../config/enemies.js';
 import { getLevel } from '../config/levels.js';
 import {
   advanceSimulation,
+  clearPresentationEvents,
   createSimulation,
   issueCommand,
+  summarizePresentationSimulation,
   summarizeSimulation,
 } from '../core/simulation.js';
+import {
+  DEFENDER_PRESENTATION,
+  ENEMY_PRESENTATION,
+  GAMEPLAY_FRAME,
+  PATH_FRAME,
+  animationKey,
+  characterAssetId,
+  resolvePresentationLimits,
+} from '../presentation.js';
 import { createFixedStepClock, resolveBattlefieldFocusMove } from '../ui/hud-controller.js';
 
 const WORLD_WIDTH = 720;
+const WORLD_HEIGHT = 960;
 const PATH_X_SCALE = WORLD_WIDTH / 640;
 const PATH_Y_OFFSET = 110;
 const PATH_Y_SCALE = 1.45;
 const POINTER_HIT_RADIUS = 48;
+const WAVE_GAP_TICKS = 180;
+const HUD_RENDER_INTERVAL_TICKS = 6;
+const ENEMY_HEALTH_RENDER_INTERVAL_TICKS = 3;
 const KEYBOARD_DEFENDERS = Object.freeze(Object.keys(DEFENDERS));
-const DEBUG_TEXTURE_NAMES = Object.freeze([
-  'enemy',
-  'tower',
-  'projectile',
-  'telegraph',
-  'particle',
-]);
-let nextDebugTextureSet = 1;
+const BOSS_IDS = new Set(['mossback-brute', 'ironhide-warlord', 'dread-colossus']);
 
 const toWorldPoint = (point) => ({
   x: point.x * PATH_X_SCALE,
@@ -47,9 +56,10 @@ const createPathMetrics = (path) => {
 };
 
 const projectPathProgress = (metrics, pathProgress) => {
-  const progress = Math.min(metrics.total, Math.max(0, pathProgress));
+  const progress = Math.min(metrics.total, Math.max(0, Number(pathProgress) || 0));
   const segment = metrics.segments.find((entry) => progress <= entry.offset + entry.length)
     ?? metrics.segments.at(-1);
+  if (!segment) return { x: 0, y: 0 };
   const ratio = segment.length === 0 ? 1 : (progress - segment.offset) / segment.length;
   return toWorldPoint({
     x: segment.start.x + ((segment.end.x - segment.start.x) * ratio),
@@ -58,32 +68,66 @@ const projectPathProgress = (metrics, pathProgress) => {
 };
 
 class ViewPool {
-  constructor(createView) {
-    this.available = [];
+  constructor(createView, { maximum = Number.POSITIVE_INFINITY, resetView } = {}) {
+    this.availableViews = [];
+    this.activeViews = new Set();
+    this.allViews = new Set();
     this.createView = createView;
-    this.views = new Set();
+    this.maximum = maximum;
+    this.resetView = resetView;
+    this.stats = {
+      created: 0,
+      active: 0,
+      available: 0,
+      highWater: 0,
+      acquires: 0,
+      releases: 0,
+    };
   }
 
   acquire() {
-    const view = this.available.pop() ?? this.createView();
-    this.views.add(view);
+    let view = this.availableViews.pop();
+    if (!view) {
+      if (this.allViews.size >= this.maximum) return null;
+      view = this.createView();
+      this.allViews.add(view);
+      this.stats.created += 1;
+    }
+    this.activeViews.add(view);
     view.setActive?.(true);
     view.setVisible?.(true);
     view.setAlpha?.(1);
+    this.stats.acquires += 1;
+    this.stats.active = this.activeViews.size;
+    this.stats.available = this.availableViews.length;
+    this.stats.highWater = Math.max(this.stats.highWater, this.stats.active);
     return view;
   }
 
   release(view) {
-    if (!view || !this.views.has(view) || this.available.includes(view)) return;
+    if (!view || !this.activeViews.delete(view)) return;
+    this.resetView?.(view);
     view.setActive?.(false);
     view.setVisible?.(false);
-    this.available.push(view);
+    this.availableViews.push(view);
+    this.stats.releases += 1;
+    this.stats.active = this.activeViews.size;
+    this.stats.available = this.availableViews.length;
+  }
+
+  getState() {
+    return { ...this.stats };
   }
 
   destroy() {
-    for (const view of this.views) view.destroy?.();
-    this.available.length = 0;
-    this.views.clear();
+    for (const view of this.allViews) view.destroy?.();
+    this.availableViews.length = 0;
+    this.activeViews.clear();
+    this.allViews.clear();
+    this.stats.created = 0;
+    this.stats.active = 0;
+    this.stats.available = 0;
+    this.stats.highWater = 0;
   }
 }
 
@@ -99,29 +143,26 @@ const syncProjectionMap = (projectionMap, pool, entries, applyProjection, onRele
     let view = projectionMap.get(entry.id);
     if (!view) {
       view = pool.acquire();
+      if (!view) continue;
       projectionMap.set(entry.id, view);
     }
     applyProjection(view, entry);
   }
 };
 
-const defenderTint = (defenderId) => ({
-  bladeguard: 0xf6d77b,
-  ranger: 0x91c56c,
-  ironwarden: 0xb8c8d8,
-  'rune-artificer': 0xb891e6,
-}[defenderId] ?? 0xffffff);
-
-const enemyTint = (enemyId) => ({
-  skitter: 0xe6b66f,
-  swarmkin: 0x9fd66f,
-  shellguard: 0xa9a6a0,
-  hexcaller: 0xb891e6,
-  crusher: 0xc4775b,
-  'mossback-brute': 0x6fa05b,
-  'ironhide-warlord': 0x8b7768,
-  'dread-colossus': 0x72475f,
-}[enemyId] ?? 0xd98468);
+const stopBody = (view) => {
+  view?._body?.removeAllListeners?.('animationcomplete');
+  view?._body?.anims?.stop?.();
+  view?._body?.setTint?.(0xffffff);
+  view?._body?.setFlipX?.(false);
+  view?._healthBar?.clear?.();
+  if (view) {
+    view._characterKey = null;
+    view._flipX = false;
+    view._healthKey = null;
+    view._lastX = null;
+  }
+};
 
 export class BattleScene extends Phaser.Scene {
   constructor() {
@@ -136,24 +177,41 @@ export class BattleScene extends Phaser.Scene {
     this.level = getLevel(this.levelId);
     this.hud = this.registry.get('hud');
     this.hostBridge = this.registry.get('hostBridge');
+    this.audioController = this.registry.get('audioController');
+    this.metadata = this.registry.get('assetMetadata');
+    this.defenderMetadata = this.registry.get('metadata-defenders');
     this.qaMode = Boolean(this.hostBridge?.getState?.().qaMode);
+    this.reducedMotion = globalThis.document?.documentElement?.dataset?.reducedMotion === 'true';
+    this.presentationLimits = resolvePresentationLimits(this.reducedMotion);
     this.simulation = createSimulation(this.level.id, { qa: this.qaMode });
     this.pathMetrics = createPathMetrics(this.level.path);
+    this.padById = new Map(this.level.pads.map((pad) => [pad.id, pad]));
     this.selectedDefenderId = null;
     this.selectedTowerId = null;
     this.focusIndex = 0;
     this.battlefieldHasFocus = false;
-    this.lastSnapshot = summarizeSimulation(this.simulation);
+    this.battleStarted = false;
+    this.countdownRemaining = 3;
+    this.countdownActive = false;
+    this.countdownElapsed = 0;
+    this.betweenWaveCountdown = null;
+    this.betweenWaveEndsAtTick = null;
+    this.lastSnapshot = summarizePresentationSimulation(this.simulation);
+    this.lastPresentationEventId = 0;
     this.terminalHandled = false;
     this.destroyed = false;
     this.domCleanups = [];
-    this.transientDamageLabels = [];
-    this.transientParticles = [];
-    this.previousEnemyHealth = new Map();
+    this.transientTimers = new Set();
+    this.frameSamples = [];
+    this.lastHudRenderTick = Number.NEGATIVE_INFINITY;
+    this.lastHealthRenderTick = Number.NEGATIVE_INFINITY;
     this.enemySprites = new Map();
     this.towerSprites = new Map();
     this.projectileSprites = new Map();
     this.telegraphSprites = new Map();
+    this.enemyById = new Map();
+    this.towerById = new Map();
+    this.defenderIdByTowerId = new Map();
     this.clock = createFixedStepClock({
       advanceSteps: (steps) => advanceSimulation(this.simulation, steps),
       getSpeed: () => this.lastSnapshot.timeScale,
@@ -162,97 +220,147 @@ export class BattleScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.handleResume, this);
     this.scale.refresh();
-
-    if (!this.qaMode) {
-      this.hud.showBattle(this.lastSnapshot, {
-        interactive: false,
-        notice: 'Battle artwork is required before this level can start.',
-      });
-      return;
-    }
-
-    this.createDebugTextures();
-    this.createDebugMap();
+    this.createMap();
     this.createPools();
     this.createFocusViews();
     this.bindDomInput();
     this.disconnectHud = this.hud.connectBattle({
       issueCommand: (command) => this.issueBattleCommand(command),
       selectDefender: (defenderId) => this.selectDefender(defenderId),
+      startBattle: () => this.startBattleCountdown(),
     });
-    this.hud.showBattle(this.lastSnapshot, { interactive: true });
-    this.refreshProjection();
-    this.hud.announce(`${this.level.name}. Select a defender, then choose an open pad.`);
+    this.hud.showBattle(this.lastSnapshot, {
+      battleStarted: false,
+      countdownRemaining: 0,
+      focusBattlefield: false,
+      interactive: true,
+      notice: 'Review the chapter briefing, then build before starting the first wave.',
+    });
+    this.refreshProjection(true);
+    this.hud.showLevelIntro(this.level.id, () => this.enterPlacementPhase());
   }
 
-  createDebugTextures() {
-    this.debugTexturePrefix = `dc-qa-${nextDebugTextureSet++}`;
-    this.debugTextureKeys = Object.fromEntries(DEBUG_TEXTURE_NAMES.map((name) => [
-      name,
-      `${this.debugTexturePrefix}-${name}`,
-    ]));
-    const graphics = this.make.graphics({ add: false });
+  createMap() {
+    this.terrain = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'environment-grass')
+      .setOrigin(0)
+      .setDepth(0)
+      .setTileScale(0.62);
 
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillCircle(24, 24, 20);
-    graphics.lineStyle(4, 0x173329, 1);
-    graphics.strokeCircle(24, 24, 20);
-    graphics.generateTexture(this.debugTextureKeys.enemy, 48, 48);
-    graphics.clear();
-
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRoundedRect(4, 4, 48, 48, 12);
-    graphics.lineStyle(4, 0x173329, 1);
-    graphics.strokeRoundedRect(4, 4, 48, 48, 12);
-    graphics.generateTexture(this.debugTextureKeys.tower, 56, 56);
-    graphics.clear();
-
-    graphics.fillStyle(0xf6d77b, 1);
-    graphics.fillCircle(7, 7, 6);
-    graphics.generateTexture(this.debugTextureKeys.projectile, 14, 14);
-    graphics.clear();
-
-    graphics.lineStyle(6, 0xffc857, 0.9);
-    graphics.strokeCircle(62, 62, 56);
-    graphics.generateTexture(this.debugTextureKeys.telegraph, 124, 124);
-    graphics.clear();
-
-    graphics.fillStyle(0xfff0a6, 1);
-    graphics.fillCircle(5, 5, 5);
-    graphics.generateTexture(this.debugTextureKeys.particle, 10, 10);
-    graphics.destroy();
-  }
-
-  createDebugMap() {
-    this.mapView = this.add.graphics();
-    this.mapView.lineStyle(34, 0xd7c38b, 0.72);
-    this.mapView.beginPath();
-    this.level.path.forEach((point, index) => {
-      const projected = toWorldPoint(point);
-      if (index === 0) this.mapView.moveTo(projected.x, projected.y);
-      else this.mapView.lineTo(projected.x, projected.y);
-    });
-    this.mapView.strokePath();
-
-    for (const pad of this.level.pads) {
-      const projected = toWorldPoint(pad);
-      this.mapView.fillStyle(0x173f35, 0.92);
-      this.mapView.fillCircle(projected.x, projected.y, 31);
-      this.mapView.lineStyle(5, 0xf6d77b, 0.76);
-      this.mapView.strokeCircle(projected.x, projected.y, 31);
+    this.staticViews = [];
+    for (const segment of this.pathMetrics.segments) {
+      const start = toWorldPoint(segment.start);
+      const end = toWorldPoint(segment.end);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const worldLength = Math.hypot(dx, dy);
+      const path = this.add.image(
+        (start.x + end.x) / 2,
+        (start.y + end.y) / 2,
+        'environment-path-atlas',
+        PATH_FRAME.horizontal,
+      )
+        .setDepth(1)
+        .setDisplaySize(worldLength + 54, 210)
+        .setRotation(Math.atan2(dy, dx));
+      this.staticViews.push(path);
+    }
+    for (const point of this.level.path) {
+      const position = toWorldPoint(point);
+      this.staticViews.push(this.add.image(
+        position.x,
+        position.y,
+        'environment-path-atlas',
+        PATH_FRAME.isolated,
+      ).setDepth(1.1).setDisplaySize(206, 206));
     }
 
-    this.mapView.fillStyle(0xf6ebca, 0.95);
-    this.mapView.fillRoundedRect(570, 82, 104, 112, 18);
-    this.mapView.lineStyle(6, 0xd7a63d, 0.95);
-    this.mapView.strokeRoundedRect(570, 82, 104, 112, 18);
+    this.padSprites = new Map();
+    for (const pad of this.level.pads) {
+      const position = toWorldPoint(pad);
+      const view = this.add.image(
+        position.x,
+        position.y,
+        'environment-gameplay-atlas',
+        GAMEPLAY_FRAME.buildPad,
+      ).setDepth(2).setScale(0.25);
+      this.padSprites.set(pad.id, view);
+    }
+
+    if (this.textures.exists('environment-props-atlas')) this.createOptionalProps();
+    const castlePosition = toWorldPoint(this.level.path.at(-1));
+    this.castleSprite = this.add.sprite(
+      castlePosition.x,
+      castlePosition.y + 18,
+      'castle-states',
+      0,
+    ).setOrigin(0.5, 672 / 724).setDepth(3).setScale(0.27);
+  }
+
+  createOptionalProps() {
+    const placements = [
+      [54, 92, 0, 0.34], [650, 84, 3, 0.32], [62, 850, 1, 0.31], [650, 840, 2, 0.34],
+      [112, 540, 4, 0.25], [606, 520, 5, 0.24], [370, 78, 10, 0.18], [350, 870, 11, 0.18],
+      [60, 320, 8, 0.20], [664, 330, 9, 0.19], [248, 76, 12, 0.16], [490, 876, 13, 0.17],
+    ];
+    for (const [x, y, frame, scale] of placements) {
+      this.staticViews.push(this.add.image(x, y, 'environment-props-atlas', frame)
+        .setDepth(0.6)
+        .setScale(scale)
+        .setAlpha(0.92));
+    }
+  }
+
+  createCharacterView(kind) {
+    const frameSize = kind === 'boss' ? 384 : 256;
+    const body = this.add.sprite(0, 0, kind === 'defender'
+      ? 'defender-bladeguard-idle'
+      : 'enemy-blight-walker-walk').setOrigin(0.5, 1);
+    const accent = this.add.image(0, -frameSize * 0.36, 'environment-gameplay-atlas', GAMEPLAY_FRAME.rangeMarker)
+      .setAlpha(0.5)
+      .setScale(0.34)
+      .setVisible(false);
+    const view = this.add.container(0, 0, [accent, body]);
+    view._accent = accent;
+    view._body = body;
+    view._characterKey = null;
+    view._flipX = false;
+    view._healthKey = null;
+    view._lastX = null;
+    return view;
+  }
+
+  createDefenderView() {
+    const aura = this.add.image(0, -34, 'environment-gameplay-atlas', GAMEPLAY_FRAME.rangeMarker)
+      .setVisible(false);
+    const body = this.add.sprite(0, 0, 'defender-bladeguard-idle').setOrigin(0.5, 1);
+    const rank = this.add.image(0, -95, 'environment-gameplay-atlas', GAMEPLAY_FRAME.victoryBurst)
+      .setVisible(false);
+    const view = this.add.container(0, 0, [aura, body, rank]);
+    view._aura = aura;
+    view._body = body;
+    view._rank = rank;
+    return view;
   }
 
   createPools() {
-    this.enemyPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.enemy).setDepth(4));
-    this.towerPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.tower).setDepth(3));
-    this.projectilePool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.projectile).setDepth(6));
-    this.telegraphPool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.telegraph).setDepth(2));
+    this.enemyPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5), {
+      maximum: 320,
+      resetView: stopBody,
+    });
+    this.defenderPool = new ViewPool(() => this.createDefenderView().setDepth(4), {
+      maximum: 24,
+      resetView: stopBody,
+    });
+    this.projectilePool = new ViewPool(() => this.add.image(
+      0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.arrow,
+    ).setDepth(7), { maximum: 640 });
+    this.telegraphPool = new ViewPool(() => this.add.image(
+      0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.bossWarning,
+    ).setDepth(2.5), { maximum: 48 });
+    this.defeatPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5.5), {
+      maximum: 32,
+      resetView: stopBody,
+    });
     this.damageLabelPool = new ViewPool(() => this.add.text(0, 0, '', {
       color: '#fff9e8',
       fontFamily: 'system-ui, sans-serif',
@@ -260,13 +368,16 @@ export class BattleScene extends Phaser.Scene {
       fontStyle: 'bold',
       stroke: '#173329',
       strokeThickness: 5,
-    }).setDepth(8).setOrigin(0.5));
-    this.particlePool = new ViewPool(() => this.add.image(0, 0, this.debugTextureKeys.particle).setDepth(7));
+    }).setDepth(9).setOrigin(0.5), { maximum: this.presentationLimits.damageLabelCap });
+    this.particlePool = new ViewPool(() => this.add.image(
+      0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.healSparkle,
+    ).setDepth(8), { maximum: this.presentationLimits.particleCap });
   }
 
   createFocusViews() {
-    this.focusRing = this.add.graphics().setDepth(9).setVisible(false);
-    this.rangeRing = this.add.graphics().setDepth(1);
+    this.enemyHealthLayer = this.add.graphics().setDepth(6);
+    this.focusRing = this.add.graphics().setDepth(10).setVisible(false);
+    this.rangeRing = this.add.graphics().setDepth(2.2);
   }
 
   bindDomInput() {
@@ -284,6 +395,48 @@ export class BattleScene extends Phaser.Scene {
     on('blur', () => this.handleBattlefieldFocus(false));
   }
 
+  enterPlacementPhase() {
+    if (this.destroyed) return;
+    this.hud.showBattle(this.lastSnapshot, {
+      battleStarted: false,
+      countdownRemaining: 0,
+      interactive: true,
+      notice: 'Select a defender, choose a stone pad, then start the wave when ready.',
+    });
+    this.hud.announce(`${this.level.name}. Plan your formation before starting wave one.`);
+  }
+
+  startBattleCountdown() {
+    if (this.destroyed || this.battleStarted || this.countdownActive) return false;
+    this.countdownActive = true;
+    this.countdownRemaining = 3;
+    this.countdownElapsed = 0;
+    this.hud.updateBattlePhase({ battleStarted: true, countdownRemaining: 3 });
+    this.audioController?.playCue?.('ui');
+    return true;
+  }
+
+  completeBattleCountdown() {
+    this.countdownActive = false;
+    this.countdownRemaining = 0;
+    this.countdownElapsed = 0;
+    this.battleStarted = true;
+    this.hud.updateBattlePhase({ battleStarted: true, countdownRemaining: 0 });
+    this.hud.announce('Wave one has begun.');
+    this.audioController?.playCue?.('wave');
+  }
+
+  updateCountdown(delta) {
+    this.countdownElapsed += Math.max(0, delta);
+    const remaining = Math.max(0, 3 - Math.floor(this.countdownElapsed / 1_000));
+    if (remaining !== this.countdownRemaining) {
+      this.countdownRemaining = remaining;
+      this.hud.updateBattlePhase({ battleStarted: true, countdownRemaining: remaining });
+      if (remaining > 0) this.audioController?.playCue?.('ui');
+    }
+    if (this.countdownElapsed >= 3_000) this.completeBattleCountdown();
+  }
+
   handleBattlefieldFocus(active) {
     this.battlefieldHasFocus = active;
     if (!active) {
@@ -298,38 +451,38 @@ export class BattleScene extends Phaser.Scene {
   }
 
   pointerToWorld(event, battlefield) {
-    const bounds = battlefield.getBoundingClientRect();
+    const canvas = battlefield.querySelector('canvas');
+    if (!canvas) return null;
+    const bounds = canvas.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return null;
     return {
-      x: ((event.clientX - bounds.left) / Math.max(1, bounds.width)) * WORLD_WIDTH,
-      y: ((event.clientY - bounds.top) / Math.max(1, bounds.height)) * 960,
+      x: ((event.clientX - bounds.left) / bounds.width) * WORLD_WIDTH,
+      y: ((event.clientY - bounds.top) / bounds.height) * WORLD_HEIGHT,
     };
   }
 
   handlePointerDown(event, battlefield) {
     event.preventDefault();
-    battlefield.focus();
+    battlefield.focus({ preventScroll: true });
     try {
       battlefield.setPointerCapture(event.pointerId);
     } catch {
       // Pointer capture can be unavailable for synthetic or already-ended pointers.
     }
     const point = this.pointerToWorld(event, battlefield);
+    if (!point) return;
     const pad = this.level.pads.find((candidate) => (
       distanceSquared(point, toWorldPoint(candidate)) <= POINTER_HIT_RADIUS ** 2
     ));
     if (!pad) return;
     this.focusIndex = this.level.pads.indexOf(pad);
-    const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     if (tower) {
       this.selectTower(tower.id);
       return;
     }
     if (this.selectedDefenderId) {
-      this.issueBattleCommand({
-        type: 'build',
-        defenderId: this.selectedDefenderId,
-        padId: pad.id,
-      });
+      this.issueBattleCommand({ type: 'build', defenderId: this.selectedDefenderId, padId: pad.id });
     } else {
       this.hud.announce('Open build pad. Select defender 1 through 4 first.');
       this.updateFocusViews();
@@ -394,59 +547,54 @@ export class BattleScene extends Phaser.Scene {
 
   confirmFocusedTarget() {
     const pad = this.level.pads[this.focusIndex];
-    const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
-    if (tower) {
-      this.selectTower(tower.id);
-    } else if (this.selectedDefenderId) {
-      this.issueBattleCommand({
-        type: 'build',
-        defenderId: this.selectedDefenderId,
-        padId: pad.id,
-      });
-    } else {
-      this.hud.announce('Open build pad. Select defender 1 through 4 first.');
-    }
+    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    if (tower) this.selectTower(tower.id);
+    else if (this.selectedDefenderId) {
+      this.issueBattleCommand({ type: 'build', defenderId: this.selectedDefenderId, padId: pad.id });
+    } else this.hud.announce('Open build pad. Select defender 1 through 4 first.');
   }
 
   announceFocusedTarget() {
     const pad = this.level.pads[this.focusIndex];
-    const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     this.hud.announce(tower
-      ? `${DEFENDERS[tower.defenderId].id}, tier ${tower.tier + 1}. Press Enter to inspect.`
+      ? `${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}. Press Enter to inspect.`
       : `Open build pad ${this.focusIndex + 1}. Press Enter to build.`);
   }
 
   selectDefender(defenderId) {
-    if (!DEFENDERS[defenderId]) return;
+    if (!DEFENDERS[defenderId] || this.destroyed) return;
     this.selectedDefenderId = defenderId;
     this.selectedTowerId = null;
-    this.hud.announce(`${defenderId} selected. Choose an open build pad.`);
-    this.refreshProjection();
+    this.hud.announce(`${DEFENDER_PRESENTATION[defenderId].name} selected. Choose an open build pad.`);
+    this.refreshProjection(true);
   }
 
   selectTower(towerId) {
-    if (!this.lastSnapshot.towers.some((tower) => tower.id === towerId)) return;
+    const tower = this.towerById.get(towerId);
+    if (!tower) return;
     this.selectedTowerId = towerId;
     this.selectedDefenderId = null;
-    const tower = this.lastSnapshot.towers.find((entry) => entry.id === towerId);
     this.focusIndex = this.level.pads.findIndex((pad) => pad.id === tower.padId);
-    this.hud.announce(`${tower.defenderId}, tier ${tower.tier + 1}, selected.`);
-    this.refreshProjection();
+    this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}, selected.`);
+    this.refreshProjection(true);
   }
 
   issueBattleCommand(command) {
-    if (this.destroyed || !this.qaMode) return { accepted: false, reason: 'battle-unavailable' };
+    if (this.destroyed) return { accepted: false, reason: 'battle-unavailable' };
     const result = issueCommand(this.simulation, command);
     if (!result.accepted) {
       this.hud.announce(`Command not accepted: ${result.reason}.`);
       return result;
     }
     if (command.type === 'sell' && command.towerId === this.selectedTowerId) this.selectedTowerId = null;
-    this.lastSnapshot = summarizeSimulation(this.simulation);
-    this.refreshProjection();
+    this.lastSnapshot = summarizePresentationSimulation(this.simulation);
+    this.refreshProjection(true);
     if (command.type === 'set-pause-reason' && command.reason === 'manual') {
       this.hostBridge?.setManualPaused?.(command.active);
     }
+    const cues = { build: 'deploy', sell: 'coin', upgrade: 'upgrade', 'set-speed': 'ui', 'set-pause-reason': 'ui' };
+    this.audioController?.playCue?.(cues[command.type] ?? 'ui');
     const messages = {
       build: 'Defender deployed.',
       sell: 'Defender sold.',
@@ -461,164 +609,419 @@ export class BattleScene extends Phaser.Scene {
   setExternalPauseReasons(reasons = []) {
     if (!this.simulation || this.destroyed) return;
     for (const reason of ['host', 'visibility', 'modal']) {
-      issueCommand(this.simulation, {
-        type: 'set-pause-reason',
-        reason,
-        active: reasons.includes(reason),
-      });
+      issueCommand(this.simulation, { type: 'set-pause-reason', reason, active: reasons.includes(reason) });
     }
-    this.lastSnapshot = summarizeSimulation(this.simulation);
-    if (this.qaMode) this.refreshProjection();
+    this.lastSnapshot = summarizePresentationSimulation(this.simulation);
+    this.refreshProjection(true);
   }
 
   handleResume() {
     this.clock?.reset();
     if (this.simulation) {
-      this.lastSnapshot = summarizeSimulation(this.simulation);
-      if (this.qaMode) this.refreshProjection();
+      this.lastSnapshot = summarizePresentationSimulation(this.simulation);
+      this.refreshProjection(true);
     }
   }
 
   update(_time, delta) {
-    if (!this.qaMode || this.destroyed || this.terminalHandled) return;
-    const advanced = this.clock.advanceFrame(delta);
-    if (advanced > 0) {
-      this.lastSnapshot = summarizeSimulation(this.simulation);
-      this.refreshProjection();
-      this.handleTerminalState();
+    if (this.destroyed || this.terminalHandled) return;
+    this.frameSamples.push(Math.max(0, Math.min(100, delta)));
+    if (this.frameSamples.length > 120) this.frameSamples.shift();
+    if (this.countdownActive) {
+      this.updateCountdown(delta);
+      return;
     }
+    if (!this.battleStarted) return;
+    const advanced = this.clock.advanceFrame(delta);
+    if (advanced > 0) this.commitSimulationFrame();
   }
 
   advanceTime(milliseconds) {
     if (!this.qaMode || this.destroyed || this.terminalHandled) return this.getTextSnapshot();
-    const advanced = this.clock.advanceExact(milliseconds);
-    if (advanced > 0) {
-      this.lastSnapshot = summarizeSimulation(this.simulation);
-      this.refreshProjection();
-      this.handleTerminalState();
+    if (!this.battleStarted) {
+      globalThis.document?.getElementById('level-intro-panel')?.setAttribute('hidden', '');
+      this.completeBattleCountdown();
     }
+    const advanced = this.clock.advanceExact(milliseconds);
+    if (advanced > 0) this.commitSimulationFrame();
     return this.getTextSnapshot();
   }
 
-  refreshProjection() {
+  commitSimulationFrame() {
+    this.lastSnapshot = summarizePresentationSimulation(this.simulation);
+    this.refreshProjection();
+    this.handleTerminalState();
+  }
+
+  refreshProjection(forceHud = false) {
     const snapshot = this.lastSnapshot;
+    this.enemyById = new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy]));
+    this.towerById = new Map(snapshot.towers.map((tower) => [tower.id, tower]));
+    this.defenderIdByTowerId = new Map(snapshot.purchaseHistory
+      .filter(({ type }) => type === 'build')
+      .map(({ towerId, defenderId }) => [towerId, defenderId]));
+    this.consumePresentationEvents(snapshot.presentationEvents);
     this.projectEnemies(snapshot);
+    this.projectEnemyHealthBars(snapshot, forceHud);
     this.projectTowers(snapshot);
     this.projectProjectiles(snapshot);
     this.projectTelegraphs(snapshot);
-    this.projectTransients(snapshot.tick);
+    this.updateCastle(snapshot.castleHearts);
     this.updateFocusViews();
-    this.hud.renderBattle(snapshot, {
-      interactive: true,
-      selectedDefenderId: this.selectedDefenderId,
-      selectedTowerId: this.selectedTowerId,
+    this.updateBetweenWaveCountdown(snapshot.tick);
+    if (forceHud || snapshot.terminal
+      || snapshot.tick - this.lastHudRenderTick >= HUD_RENDER_INTERVAL_TICKS) {
+      this.lastHudRenderTick = snapshot.tick;
+      this.hud.renderBattle(snapshot, {
+        interactive: !snapshot.terminal,
+        selectedDefenderId: this.selectedDefenderId,
+        selectedTowerId: this.selectedTowerId,
+      });
+      this.hud.updateBattlePhase({
+        battleStarted: this.battleStarted || this.countdownActive,
+        betweenWaveCountdown: this.betweenWaveCountdown,
+        countdownRemaining: this.countdownActive ? this.countdownRemaining : 0,
+      });
+    }
+  }
+
+  playCharacterAction(view, kind, characterId, action, restore = 'walk') {
+    const body = view?._body;
+    const key = animationKey(kind, characterId, action);
+    if (!body || !this.anims.exists(key)) return;
+    body.removeAllListeners('animationcomplete');
+    body.play(key, true);
+    if (action !== restore) {
+      body.once('animationcomplete', () => {
+        if (view.active && this.anims.exists(animationKey(kind, characterId, restore))) {
+          body.play(animationKey(kind, characterId, restore), true);
+        }
+      });
+    }
+  }
+
+  consumePresentationEvents(events) {
+    for (const event of events) {
+      if (event.id <= this.lastPresentationEventId) continue;
+      this.lastPresentationEventId = event.id;
+      const { kind, payload } = event;
+      if (kind === 'tower-attack' || kind === 'tower-mastery') {
+        const view = this.towerSprites.get(payload.towerId);
+        this.playCharacterAction(
+          view,
+          'defender',
+          payload.defenderId,
+          kind === 'tower-mastery' || payload.mastery ? 'mastery' : 'attack',
+          'idle',
+        );
+        if (kind === 'tower-mastery') {
+          const tower = this.towerById.get(payload.towerId);
+          const pad = tower && this.padById.get(tower.padId);
+          if (pad) this.spawnBurst(toWorldPoint(pad), GAMEPLAY_FRAME.victoryBurst, 7, event.id);
+        }
+        this.audioController?.playCue?.(kind === 'tower-mastery' ? 'mastery' : 'attack');
+      } else if (kind === 'enemy-hit') {
+        this.spawnDamageLabel(toWorldPoint(payload.position), payload.damage);
+      } else if (kind === 'enemy-defeated') {
+        this.spawnDefeat(payload);
+        this.audioController?.playCue?.('coin');
+      } else if (kind === 'projectile-impact') {
+        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.explosion, 3, event.id);
+        this.audioController?.playCue?.('impact');
+      } else if (kind === 'hexcaller-cast') {
+        this.playCharacterAction(this.enemySprites.get(payload.enemyId), 'enemy', 'hexcaller', 'cast');
+        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.healSparkle, 6, event.id);
+      } else if (kind === 'ironhide-rally') {
+        this.playCharacterAction(this.enemySprites.get(payload.bossId), 'boss', 'ironhide-warlord', 'ability');
+        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.shieldBash, 8, event.id);
+        this.audioController?.playCue?.('boss-ability');
+      } else if (kind === 'boss-ability-warning') {
+        const bossKind = BOSS_IDS.has(payload.enemyId) ? 'boss' : 'enemy';
+        this.playCharacterAction(this.enemySprites.get(payload.bossId), bossKind, payload.enemyId, 'ability');
+        this.audioController?.playCue?.('boss-warning');
+      } else if (kind === 'boss-ability-impact') {
+        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.stunStars, 10, event.id);
+        if (this.presentationLimits.cameraShake > 0) {
+          this.cameras.main.shake(180, this.presentationLimits.cameraShake);
+        }
+        this.audioController?.playCue?.('boss-ability');
+      } else if (kind === 'ironhide-plate-break') {
+        const view = this.enemySprites.get(payload.bossId);
+        view?._accent?.setFrame(GAMEPLAY_FRAME.defeatCrack).setTint(0xffd66b).setVisible(true);
+        this.audioController?.playCue?.('armor-break');
+      } else if (kind === 'ironhide-vulnerable') {
+        const view = this.enemySprites.get(payload.bossId);
+        view?._accent?.setFrame(GAMEPLAY_FRAME.slowRune).setTint(0x58d5ff).setVisible(true);
+      } else if (kind === 'dread-phase') {
+        const view = this.enemySprites.get(payload.bossId);
+        view?._accent?.setFrame(GAMEPLAY_FRAME.slowRune)
+          .setTint([0xffffff, 0xa86bff, 0xff6b7a][payload.phase - 1] ?? 0xffffff)
+          .setVisible(true);
+        this.audioController?.playCue?.('boss-ability');
+      } else if (kind === 'dread-summon') {
+        const boss = this.enemyById.get(payload.bossId);
+        if (boss) this.spawnBurst(projectPathProgress(this.pathMetrics, boss.pathProgress), GAMEPLAY_FRAME.slowRune, 12, event.id);
+        this.audioController?.playCue?.('boss-warning');
+      } else if (kind === 'castle-impact') {
+        this.castleSprite?.setFrame(1);
+        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.defeatCrack, 9, event.id);
+        if (this.presentationLimits.cameraShake > 0) this.cameras.main.shake(220, 0.009);
+        this.audioController?.playCue?.('castle-damage');
+        const timer = this.time.delayedCall(this.reducedMotion ? 90 : 260, () => {
+          this.transientTimers.delete(timer);
+          this.castleSprite?.setFrame(this.lastSnapshot.castleHearts <= 0
+            ? 3 : this.lastSnapshot.castleHearts === 1 ? 2 : 0);
+        });
+        this.transientTimers.add(timer);
+      } else if (kind === 'wave-start') {
+        this.betweenWaveEndsAtTick = null;
+        this.betweenWaveCountdown = null;
+        this.audioController?.playCue?.('wave');
+      } else if (kind === 'wave-complete') {
+        const hasAnotherWave = payload.waveIndex + 1 < this.level.waveCount;
+        if (hasAnotherWave) this.betweenWaveEndsAtTick = event.tick + WAVE_GAP_TICKS;
+      }
+    }
+  }
+
+  spawnDamageLabel(position, damage) {
+    const label = this.damageLabelPool.acquire();
+    if (!label) return;
+    label.setText(`−${damage}`);
+    label.setPosition(position.x, position.y - 68);
+    label.setAlpha(1);
+    this.tweens.add({
+      targets: label,
+      y: position.y - (this.reducedMotion ? 76 : 112),
+      alpha: 0,
+      duration: this.reducedMotion ? 180 : 520,
+      ease: 'Cubic.easeOut',
+      onComplete: () => this.damageLabelPool.release(label),
     });
+  }
+
+  spawnBurst(position, frame, count, seed = 0) {
+    const visibleCount = Math.min(count, this.presentationLimits.particleCap);
+    for (let index = 0; index < visibleCount; index += 1) {
+      const particle = this.particlePool.acquire();
+      if (!particle) break;
+      const angle = (((index * 137.5) + (seed * 17)) % 360) * (Math.PI / 180);
+      const distance = this.reducedMotion ? 14 : 30 + ((index % 4) * 8);
+      particle.setFrame(frame).setPosition(position.x, position.y - 28).setScale(0.12).setAlpha(0.95);
+      this.tweens.add({
+        targets: particle,
+        x: position.x + (Math.cos(angle) * distance),
+        y: position.y - 28 + (Math.sin(angle) * distance),
+        alpha: 0,
+        scale: 0.05,
+        duration: this.reducedMotion ? 180 : 460,
+        ease: 'Cubic.easeOut',
+        onComplete: () => this.particlePool.release(particle),
+      });
+    }
+  }
+
+  spawnDefeat(payload) {
+    const view = this.defeatPool.acquire();
+    if (!view) return;
+    const kind = BOSS_IDS.has(payload.enemyId) ? 'boss' : 'enemy';
+    const presentation = ENEMY_PRESENTATION[payload.enemyId];
+    const position = toWorldPoint(payload.position);
+    view.setPosition(position.x, position.y);
+    view._accent.setVisible(false);
+    view._body.setTexture(characterAssetId(kind, payload.enemyId, 'defeat'), 0)
+      .setScale(presentation.displayScale);
+    const key = animationKey(kind, payload.enemyId, 'defeat');
+    const animation = this.anims.exists(key) ? this.anims.get(key) : null;
+    const release = () => this.defeatPool.release(view);
+    if (this.reducedMotion || !animation) {
+      view._body.setFrame(animation?.frames?.at(-1)?.textureFrame ?? 0);
+      const timer = this.time.delayedCall(240, () => {
+        this.transientTimers.delete(timer);
+        release();
+      });
+      this.transientTimers.add(timer);
+    } else {
+      view._body.removeAllListeners('animationcomplete');
+      view._body.once('animationcomplete', release);
+      view._body.play(key, true);
+    }
   }
 
   projectEnemies(snapshot) {
-    syncProjectionMap(
-      this.enemySprites,
-      this.enemyPool,
-      snapshot.enemies,
-      (view, enemy) => {
-        const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
-        const previousHealth = this.previousEnemyHealth.get(enemy.id);
-        view.setPosition(position.x, position.y);
-        view.setTint(enemyTint(enemy.enemyId));
-        view.setScale(enemy.enemyId.includes('brute') || enemy.enemyId.includes('warlord')
-          || enemy.enemyId.includes('colossus') ? 1.35 : 1);
-        if (previousHealth !== undefined && previousHealth > enemy.health) {
-          const label = this.damageLabelPool.acquire();
-          label.setText(`-${previousHealth - enemy.health}`);
-          label.setPosition(position.x, position.y - 34);
-          this.transientDamageLabels.push({ expiresAtTick: snapshot.tick + 30, view: label });
+    syncProjectionMap(this.enemySprites, this.enemyPool, snapshot.enemies, (view, enemy) => {
+      const presentation = ENEMY_PRESENTATION[enemy.enemyId];
+      const kind = presentation.kind;
+      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
+      const body = view._body;
+      const characterKey = characterAssetId(kind, enemy.enemyId, 'walk');
+      if (view._characterKey !== characterKey) {
+        body.setTexture(characterKey, 0).setScale(presentation.displayScale);
+        if (this.anims.exists(animationKey(kind, enemy.enemyId, 'walk'))) {
+          body.play(animationKey(kind, enemy.enemyId, 'walk'), true);
         }
-        this.previousEnemyHealth.set(enemy.id, enemy.health);
-      },
-      (id, view) => {
-        this.previousEnemyHealth.delete(id);
-        const particle = this.particlePool.acquire();
-        particle.setPosition(view.x, view.y);
-        this.transientParticles.push({ expiresAtTick: snapshot.tick + 24, view: particle });
-      },
-    );
+        view._characterKey = characterKey;
+        view._healthKey = null;
+      }
+      const flipX = view._lastX !== null && position.x < view._lastX - 0.15;
+      if (flipX !== view._flipX) {
+        body.setFlipX(flipX);
+        view._flipX = flipX;
+      }
+      view._lastX = position.x;
+      view.setPosition(position.x, position.y);
+      const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
+      const showHealth = kind === 'boss' || ratio < 0.999;
+      view._healthKey = showHealth ? `${kind}:${Math.round(ratio * 1_000)}` : 'hidden';
+      if (enemy.enemyId === 'ironhide-warlord') {
+        const broken = Object.keys(enemy.thresholdFlags).filter((key) => key.startsWith('plate')).length;
+        view._accent.setFrame(broken >= 3 ? GAMEPLAY_FRAME.slowRune : GAMEPLAY_FRAME.defeatCrack)
+          .setTint(broken >= 3 ? 0x58d5ff : 0xffd66b)
+          .setVisible(broken > 0);
+      } else if (enemy.enemyId === 'dread-colossus') {
+        const ratioPhase = ratio < 0.4 ? 3 : ratio < 0.75 ? 2 : 1;
+        view._accent.setFrame(GAMEPLAY_FRAME.slowRune)
+          .setTint([0xffffff, 0xa86bff, 0xff6b7a][ratioPhase - 1])
+          .setVisible(true);
+      } else if (view._accent.visible) view._accent.setVisible(false);
+    }, (_id, view) => {
+      view._lastX = null;
+    });
+  }
+
+  projectEnemyHealthBars(snapshot, force = false) {
+    if (!this.enemyHealthLayer || (!force
+      && snapshot.tick - this.lastHealthRenderTick < ENEMY_HEALTH_RENDER_INTERVAL_TICKS)) return;
+    this.lastHealthRenderTick = snapshot.tick;
+    this.enemyHealthLayer.clear();
+    for (const enemy of snapshot.enemies) {
+      const presentation = ENEMY_PRESENTATION[enemy.enemyId];
+      const kind = presentation.kind;
+      const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
+      const showHealth = kind === 'boss' || ratio < 0.999;
+      if (!showHealth) continue;
+      const position = projectPathProgress(this.pathMetrics, enemy.pathProgress);
+      const barY = position.y + (kind === 'boss' ? -176 : -108);
+      const barWidth = kind === 'boss' ? 116 : 72;
+      const barX = position.x - (barWidth / 2);
+      this.enemyHealthLayer.fillStyle(0x102f29, 0.85)
+        .fillRoundedRect(barX, barY, barWidth, 10, 5);
+      this.enemyHealthLayer.fillStyle(kind === 'boss' ? 0xff6b61 : 0x8fe36a, 1)
+        .fillRoundedRect(barX + 2, barY + 2, Math.max(1, (barWidth - 4) * ratio), 6, 3);
+    }
   }
 
   projectTowers(snapshot) {
-    syncProjectionMap(this.towerSprites, this.towerPool, snapshot.towers, (view, tower) => {
-      const pad = this.level.pads.find((entry) => entry.id === tower.padId);
+    syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
+      const pad = this.padById.get(tower.padId);
       const position = toWorldPoint(pad);
-      view.setPosition(position.x, position.y);
-      view.setTint(defenderTint(tower.defenderId));
-      view.setScale(1 + (tower.tier * 0.12));
+      const body = view._body;
+      const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
+      if (body.texture.key !== idleAsset) {
+        body.setTexture(idleAsset, 0);
+        if (this.anims.exists(animationKey('defender', tower.defenderId, 'idle'))) {
+          body.play(animationKey('defender', tower.defenderId, 'idle'), true);
+        }
+      }
+      const tint = {
+        bladeguard: 0x8fe36a,
+        ranger: 0xf2c94c,
+        ironwarden: 0x69a7ff,
+        'rune-artificer': 0x58d5ff,
+      }[tower.defenderId];
+      view.setPosition(position.x, position.y + 20);
+      body.setScale(DEFENDER_PRESENTATION[tower.defenderId].displayScale * (1 + (tower.tier * 0.05)));
+      view._aura.setTint(tint).setAlpha(tower.tier === 2 ? 0.46 : 0.28)
+        .setScale(tower.tier === 2 ? 0.38 : 0.29).setVisible(tower.tier > 0);
+      view._rank.setTint(tint).setScale(0.18).setVisible(tower.tier === 2);
+      this.padSprites.get(tower.padId)?.setFrame(
+        tower.id === this.selectedTowerId ? GAMEPLAY_FRAME.selectedBuildPad : GAMEPLAY_FRAME.buildPad,
+      );
     });
+    const occupiedPads = new Set(snapshot.towers.map(({ padId }) => padId));
+    for (const [padId, view] of this.padSprites) {
+      if (!occupiedPads.has(padId)) view.setFrame(GAMEPLAY_FRAME.buildPad);
+    }
   }
 
   projectProjectiles(snapshot) {
     syncProjectionMap(this.projectileSprites, this.projectilePool, snapshot.projectiles, (view, projectile) => {
-      const source = snapshot.towers.find((tower) => tower.id === projectile.sourceTowerId);
-      const target = snapshot.enemies.find((enemy) => enemy.id === projectile.targetId);
-      if (!source || !target) {
-        view.setVisible(false);
-        return;
-      }
-      const sourcePosition = toWorldPoint(this.level.pads.find((pad) => pad.id === source.padId));
-      const targetPosition = projectPathProgress(this.pathMetrics, target.pathProgress);
-      view.setVisible(true);
-      view.setPosition(
-        (sourcePosition.x + targetPosition.x) / 2,
-        (sourcePosition.y + targetPosition.y) / 2,
-      );
+      const tower = this.towerById.get(projectile.sourceTowerId);
+      const defenderId = tower?.defenderId
+        ?? this.defenderIdByTowerId.get(projectile.sourceTowerId)
+        ?? 'ranger';
+      const sourcePosition = toWorldPoint(projectile.launchPosition);
+      const target = this.enemyById.get(projectile.targetId);
+      const targetPosition = target
+        ? projectPathProgress(this.pathMetrics, target.pathProgress)
+        : projectPathProgress(this.pathMetrics, projectile.targetPathProgressAtLaunch);
+      const duration = Math.max(1, projectile.impactTick - projectile.launchTick);
+      const progress = Math.max(0, Math.min(1, (snapshot.tick - projectile.launchTick) / duration));
+      const frame = DEFENDER_PRESENTATION[defenderId]?.projectileFrame ?? GAMEPLAY_FRAME.arrow;
+      const x = Phaser.Math.Linear(sourcePosition.x, targetPosition.x, progress);
+      const y = Phaser.Math.Linear(sourcePosition.y - 42, targetPosition.y - 32, progress);
+      view.setFrame(frame).setPosition(x, y).setVisible(true).setScale(frame === GAMEPLAY_FRAME.arrow ? 0.14 : 0.17);
+      view.setRotation(Math.atan2(targetPosition.y - sourcePosition.y, targetPosition.x - sourcePosition.x));
     });
   }
 
   projectTelegraphs(snapshot) {
     const telegraphs = snapshot.effects.filter((effect) => effect.kind.includes('telegraph'));
     syncProjectionMap(this.telegraphSprites, this.telegraphPool, telegraphs, (view, effect) => {
-      const source = snapshot.enemies.find((enemy) => enemy.id === effect.sourceId);
+      const source = this.enemyById.get(effect.sourceId);
       if (!source) {
         view.setVisible(false);
         return;
       }
       const position = projectPathProgress(this.pathMetrics, source.pathProgress);
-      view.setVisible(true);
-      view.setPosition(position.x, position.y);
-      view.setAlpha(0.72);
+      const radius = effect.kind === 'mossback-telegraph'
+        ? ENEMIES['mossback-brute'].abilityRadius
+        : ENEMIES['dread-colossus'].pulseRadius;
+      const remaining = Math.max(0, effect.triggerTick - snapshot.tick);
+      view.setFrame(GAMEPLAY_FRAME.bossWarning)
+        .setPosition(position.x, position.y - 74)
+        .setDisplaySize(radius * PATH_X_SCALE * 0.72, radius * PATH_X_SCALE * 0.72)
+        .setAlpha(0.56 + ((remaining % 20) / 100))
+        .setVisible(this.presentationLimits.telegraphsEnabled);
     });
   }
 
-  projectTransients(tick) {
-    const retain = (entries, pool) => entries.filter((entry) => {
-      if (entry.expiresAtTick > tick) {
-        const progress = Math.max(0, (entry.expiresAtTick - tick) / 30);
-        entry.view.setAlpha(Math.min(1, progress));
-        return true;
-      }
-      pool.release(entry.view);
-      return false;
-    });
-    this.transientDamageLabels = retain(this.transientDamageLabels, this.damageLabelPool);
-    this.transientParticles = retain(this.transientParticles, this.particlePool);
+  updateCastle(hearts) {
+    if (!this.castleSprite || this.castleSprite.frame.name === 1) return;
+    this.castleSprite.setFrame(hearts <= 0 ? 3 : hearts === 1 ? 2 : 0);
+  }
+
+  updateBetweenWaveCountdown(tick) {
+    if (this.betweenWaveEndsAtTick === null) {
+      this.betweenWaveCountdown = null;
+      return;
+    }
+    this.betweenWaveCountdown = Math.max(0, Math.ceil((this.betweenWaveEndsAtTick - tick) / 60));
+    if (this.betweenWaveCountdown <= 0) {
+      this.betweenWaveCountdown = null;
+      this.betweenWaveEndsAtTick = null;
+    }
   }
 
   updateFocusViews() {
     if (!this.focusRing || !this.rangeRing) return;
     const pad = this.level.pads[this.focusIndex];
+    if (!pad) return;
     const position = toWorldPoint(pad);
-    const tower = this.lastSnapshot.towers.find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
     this.focusRing.clear();
     if (!this.battlefieldHasFocus) {
       this.focusRing.setVisible(false);
     } else {
       this.focusRing.setVisible(true);
-      this.focusRing.lineStyle(6, 0xffffff, 1);
-      this.focusRing.strokeCircle(position.x, position.y, 39);
+      this.focusRing.lineStyle(6, 0xffffff, 0.96);
+      this.focusRing.strokeEllipse(position.x, position.y, 82, 62);
     }
     this.rangeRing.clear();
     if (tower) {
-      const range = DEFENDERS[tower.defenderId].range[tower.tier] * PATH_X_SCALE;
-      this.rangeRing.lineStyle(4, 0xf6d77b, 0.48);
-      this.rangeRing.strokeCircle(position.x, position.y, range);
+      const range = DEFENDERS[tower.defenderId].range[tower.tier];
+      this.rangeRing.lineStyle(4, 0xffe59a, 0.5);
+      this.rangeRing.strokeEllipse(position.x, position.y, range * PATH_X_SCALE * 2, range * PATH_Y_SCALE * 2);
     }
   }
 
@@ -634,21 +1037,55 @@ export class BattleScene extends Phaser.Scene {
         medal: this.lastSnapshot.medal,
         score: this.lastSnapshot.score,
       });
-    }
-    this.scene.start('ResultScene', {
+      this.spawnBurst(toWorldPoint(this.level.path.at(-1)), GAMEPLAY_FRAME.victoryBurst, 16, this.lastSnapshot.tick);
+      this.audioController?.playCue?.('victory');
+    } else this.audioController?.playCue?.('defeat');
+
+    const resultData = {
+      elapsedTicks: this.lastSnapshot.tick,
+      hearts: this.lastSnapshot.castleHearts,
+      levelId: this.level.id,
+      medal: this.lastSnapshot.medal,
+      score: this.lastSnapshot.score,
       summary: victory
         ? `${this.lastSnapshot.medal} medal · ${this.lastSnapshot.score} points`
         : `Wave ${Math.max(1, this.lastSnapshot.waveIndex + 1)} reached the castle.`,
       victory,
-    });
+    };
+    const delay = this.reducedMotion ? 650 : 1_350;
+    this.resultTimer = this.time.delayedCall(delay, () => this.scene.start('ResultScene', resultData));
+  }
+
+  getPerformanceState() {
+    const sorted = [...this.frameSamples].sort((a, b) => a - b);
+    const averageFrameMs = this.frameSamples.length > 0
+      ? this.frameSamples.reduce((sum, value) => sum + value, 0) / this.frameSamples.length
+      : 0;
+    return {
+      averageFrameMs: Number(averageFrameMs.toFixed(3)),
+      p95FrameMs: Number((sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] ?? 0).toFixed(3)),
+      pools: {
+        damageLabels: this.damageLabelPool?.getState() ?? null,
+        defeats: this.defeatPool?.getState() ?? null,
+        defenders: this.defenderPool?.getState() ?? null,
+        enemies: this.enemyPool?.getState() ?? null,
+        particles: this.particlePool?.getState() ?? null,
+        projectiles: this.projectilePool?.getState() ?? null,
+        telegraphs: this.telegraphPool?.getState() ?? null,
+      },
+      reducedMotion: this.reducedMotion,
+      sampleCount: this.frameSamples.length,
+    };
   }
 
   getTextSnapshot() {
     if (!this.lastSnapshot) return null;
-    const snapshot = this.lastSnapshot;
+    const snapshot = summarizeSimulation(this.simulation);
     return {
+      battleStarted: this.battleStarted,
       castleHearts: snapshot.castleHearts,
       coins: snapshot.coins,
+      countdownRemaining: this.countdownActive ? this.countdownRemaining : 0,
       effects: snapshot.effects.map(({ id, kind, sourceId, targetId }) => ({ id, kind, sourceId, targetId })),
       enemies: snapshot.enemies.map(({ id, enemyId, health, maxHealth, pathProgress }) => ({
         enemyId,
@@ -661,12 +1098,8 @@ export class BattleScene extends Phaser.Scene {
       medal: snapshot.medal,
       outcome: snapshot.outcome,
       pauseReasons: [...snapshot.pauseReasons],
-      projectiles: snapshot.projectiles.map(({ id, sourceTowerId, targetId, impactTick }) => ({
-        id,
-        impactTick,
-        sourceTowerId,
-        targetId,
-      })),
+      performance: this.getPerformanceState(),
+      projectiles: snapshot.projectiles.map((projectile) => ({ ...projectile })),
       qa: snapshot.qa,
       score: snapshot.score,
       seed: snapshot.seed,
@@ -687,11 +1120,16 @@ export class BattleScene extends Phaser.Scene {
     this.domCleanups.splice(0).forEach((remove) => remove());
     this.disconnectHud?.();
     this.disconnectHud = null;
+    this.resultTimer?.remove?.(false);
+    for (const timer of this.transientTimers) timer?.remove?.(false);
+    this.transientTimers.clear();
+    clearPresentationEvents(this.simulation);
     for (const pool of [
       this.enemyPool,
-      this.towerPool,
+      this.defenderPool,
       this.projectilePool,
       this.telegraphPool,
+      this.defeatPool,
       this.damageLabelPool,
       this.particlePool,
     ]) pool?.destroy();
@@ -699,13 +1137,15 @@ export class BattleScene extends Phaser.Scene {
     this.towerSprites.clear();
     this.projectileSprites.clear();
     this.telegraphSprites.clear();
-    this.previousEnemyHealth.clear();
-    this.transientDamageLabels.length = 0;
-    this.transientParticles.length = 0;
+    this.enemyById.clear();
+    this.towerById.clear();
+    this.defenderIdByTowerId.clear();
+    this.padSprites.clear();
     this.focusRing?.destroy();
     this.rangeRing?.destroy();
-    this.mapView?.destroy();
-    for (const key of Object.values(this.debugTextureKeys ?? {})) this.textures.remove(key);
+    this.castleSprite?.destroy();
+    this.terrain?.destroy();
+    for (const view of this.staticViews ?? []) view.destroy?.();
     this.clock?.reset();
   }
 }

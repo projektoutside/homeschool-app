@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
 
 const gameRoot = new URL('../public/Games/DefenderChampion/', import.meta.url);
@@ -121,6 +121,13 @@ test('continue targets the highest unlocked uncleared level and falls back to le
       { bestScore: 100, medal: 'bronze' },
     ])),
   }), 'level-10');
+  assert.equal(resolveContinueLevel({
+    highestUnlockedLevel: 10,
+    levels: {
+      'level-1': { bestScore: 250, medal: 'gold' },
+      'level-2': { bestScore: 300, medal: 'silver' },
+    },
+  }), null, 'partial corrupt progress must never jump to locked Level 10');
 });
 
 test('revisiting level select uses one delegated level handler', async () => {
@@ -348,7 +355,9 @@ test('QA runtime hooks expose deterministic controls only for qa=1 and restrict 
   const starts = [];
   const battle = {
     advanceTime: (milliseconds) => ({ advanced: milliseconds }),
+    getPerformanceState: () => ({ averageFrameMs: 16.6 }),
     getTextSnapshot: () => ({ levelId: 'level-1', tick: 42 }),
+    issueBattleCommand: (command) => ({ accepted: command.type === 'build' }),
   };
   const cleanup = hudModule.installQaRuntimeHooks({
     windowRef: qaWindow,
@@ -362,6 +371,8 @@ test('QA runtime hooks expose deterministic controls only for qa=1 and restrict 
   assert.deepEqual(qaWindow.advanceTime(250), { advanced: 250 });
   assert.equal(qaWindow.__defenderChampion.startLevel('missing'), false);
   assert.equal(qaWindow.__defenderChampion.startLevel('level-1'), true);
+  assert.deepEqual(qaWindow.__defenderChampion.getPerformanceState(), { averageFrameMs: 16.6 });
+  assert.deepEqual(qaWindow.__defenderChampion.issueCommand({ type: 'build' }), { accepted: true });
   assert.deepEqual(starts, ['level-1']);
 
   cleanup();
@@ -464,4 +475,199 @@ test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell ac
   assert.match(main, /installQaRuntimeHooks/);
   assert.match(bundle, /render_game_to_text/);
   assert.match(bundle, /__defenderChampion/);
+});
+
+test('campaign loading validates the manifest first and classifies one optional decorative raster', async () => {
+  const [loaderModule, manifest, boot, html] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/services/asset-loader.js'),
+    readGameFile('assets/manifest.json').then(JSON.parse),
+    readGameFile('src/scenes/BootScene.js'),
+    readGameFile('index.html'),
+  ]);
+  const {
+    ASSET_USAGE_BY_ID,
+    RUNTIME_METADATA_REQUESTS,
+    createCampaignAssetPlan,
+    validateManifest,
+  } = loaderModule;
+  assert.equal(validateManifest(manifest), manifest);
+  const plan = createCampaignAssetPlan(manifest);
+
+  assert.equal(plan.rasters.length, 41);
+  assert.deepEqual(plan.rasters.filter(({ optional }) => optional).map(({ id }) => id), [
+    'environment-props-atlas',
+  ]);
+  assert.equal(plan.rasters.filter(({ essential }) => essential).length, 40);
+  assert.deepEqual(RUNTIME_METADATA_REQUESTS.map(({ id, essential }) => [id, essential]), [
+    ['metadata-environment', true],
+    ['metadata-castle', true],
+    ['metadata-defenders', true],
+    ['metadata-enemies', true],
+    ['metadata-bosses', true],
+  ]);
+  assert.deepEqual(Object.keys(ASSET_USAGE_BY_ID).sort(), manifest.assets.map(({ id }) => id).sort());
+  assert.ok(Object.values(ASSET_USAGE_BY_ID).every((use) => typeof use === 'string' && use.length > 0));
+  assert.match(boot, /preload\(\)[\s\S]*assets\/manifest\.json[\s\S]*create\(\)[\s\S]*validateManifest[\s\S]*queueCampaignAssets/);
+  assert.match(html, /id="loading-progress"/);
+  assert.match(html, /id="loading-percent"/);
+  assert.match(html, /id="loading-asset-id"/);
+  assert.match(html, /id="retry-loading-button"[^>]*>Retry Loading</);
+  assert.match(html, /id="loading-exit-button"[^>]*>Exit</);
+});
+
+test('asset failure tracking retries only essential failures and records optional failure once', async () => {
+  const { createAssetLoadTracker } = await import(
+    '../public/Games/DefenderChampion/src/services/asset-loader.js'
+  );
+  const tracker = createAssetLoadTracker([
+    { id: 'castle-states', essential: true, optional: false },
+    { id: 'environment-props-atlas', essential: false, optional: true },
+  ]);
+
+  tracker.recordFailure('environment-props-atlas');
+  tracker.recordFailure('environment-props-atlas');
+  assert.deepEqual(tracker.getOptionalFailures(), ['environment-props-atlas']);
+  assert.equal(tracker.isBlocked(), false);
+
+  tracker.recordFailure('castle-states');
+  assert.equal(tracker.isBlocked(), true);
+  assert.deepEqual(tracker.getFailedEssentialIds(), ['castle-states']);
+  assert.deepEqual(tracker.getRetryRecords().map(({ id }) => id), ['castle-states']);
+  tracker.recordSuccess('castle-states');
+  assert.equal(tracker.isBlocked(), false);
+  assert.deepEqual(tracker.getRetryRecords(), []);
+});
+
+test('all character actions register exact metadata-driven Phaser animation contracts', async () => {
+  const { buildAnimationDefinitions } = await import(
+    '../public/Games/DefenderChampion/src/services/asset-loader.js'
+  );
+  const [defenders, enemies, bosses] = await Promise.all([
+    readGameFile('assets/metadata/defenders.json').then(JSON.parse),
+    readGameFile('assets/metadata/enemies.json').then(JSON.parse),
+    readGameFile('assets/metadata/bosses.json').then(JSON.parse),
+  ]);
+  const definitions = buildAnimationDefinitions({ defenders, enemies, bosses });
+  const authoredActions = [
+    ...defenders.defenders,
+    ...enemies.enemies,
+    ...bosses.bosses,
+  ].flatMap((character) => character.actions.map((action) => ({ character, action })));
+
+  assert.equal(definitions.length, authoredActions.length);
+  for (const { character, action } of authoredActions) {
+    const expectedKind = defenders.defenders.includes(character)
+      ? 'defender'
+      : enemies.enemies.includes(character) ? 'enemy' : 'boss';
+    const definition = definitions.find(({ key }) => key === `${expectedKind}:${character.id}:${action.id}`);
+    assert.deepEqual(definition, {
+      assetId: action.assetId,
+      durationMs: action.frameDurationMs * action.frameCount,
+      frameCount: action.frameCount,
+      frameDurationMs: action.frameDurationMs,
+      key: `${expectedKind}:${character.id}:${action.id}`,
+      loop: action.loop,
+      repeat: action.loop ? -1 : 0,
+    });
+  }
+});
+
+test('ordinary play uses final art, responsive side rails, reduced-motion cosmetic caps, and exact canvas bounds', async () => {
+  const [battle, css, presentation] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    readGameFile('css/game.css'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+
+  assert.doesNotMatch(battle, /createDebugTextures|generateTexture|debugTextureKeys/);
+  assert.match(battle, /assets\/metadata\/defenders\.json|metadata-defenders|defender:/);
+  assert.match(battle, /canvas\.getBoundingClientRect\(\)/);
+  assert.match(battle, /focus\(\{\s*preventScroll:\s*true\s*\}\)/);
+  assert.match(battle, /HUD_RENDER_INTERVAL_TICKS/);
+  assert.match(battle, /_healthKey/);
+  assert.match(battle, /enemyHealthLayer/);
+  assert.match(battle, /const showHealth\s*=\s*kind === 'boss' \|\| ratio < 0\.999/);
+  assert.doesNotMatch(battle, /const healthBar = this\.add\.graphics\(\)/);
+  assert.match(battle, /animation\?\.frames\?\.at\(-1\)\?\.textureFrame/);
+  assert.doesNotMatch(battle, /texture\.frameTotal\s*-\s*1/);
+  assert.match(battle, /strokeEllipse\([^\n]*PATH_X_SCALE[^\n]*PATH_Y_SCALE/);
+  assert.match(css, /@media \(orientation:\s*landscape\)[\s\S]*grid-template-areas:[^;]*"status battlefield defenders"/);
+  assert.doesNotMatch(css, /rotate-(?:only|device)|please rotate/i);
+  assert.match(css, /#battlefield canvas\s*{[^}]*width:\s*auto\s*!important;[^}]*height:\s*auto\s*!important;/s);
+
+  const full = presentation.resolvePresentationLimits(false);
+  const reduced = presentation.resolvePresentationLimits(true);
+  assert.equal(reduced.cameraShake, 0);
+  assert.ok(reduced.particleCap < full.particleCap);
+  assert.ok(reduced.damageLabelCap <= full.damageLabelCap);
+  assert.equal(reduced.telegraphsEnabled, true);
+  assert.equal(reduced.fixedStepMilliseconds, full.fixedStepMilliseconds);
+});
+
+test('battle flow starts paused for placement, counts down before tick zero, and exposes complete result actions', async () => {
+  const [html, battle, hud] = await Promise.all([
+    readGameFile('index.html'),
+    readGameFile('src/scenes/BattleScene.js'),
+    readGameFile('src/ui/hud-controller.js'),
+  ]);
+  assert.match(html, /id="level-intro-panel"/);
+  assert.match(html, /id="battle-start-button"/);
+  assert.match(html, /id="battle-countdown"[^>]+aria-live="assertive"/);
+  assert.match(html, /id="result-next-button"/);
+  assert.match(html, /id="result-replay-button"/);
+  assert.match(battle, /battleStarted\s*=\s*false/);
+  assert.match(battle, /countdownRemaining\s*=\s*3/);
+  assert.match(battle, /startBattleCountdown/);
+  assert.match(hud, /showLevelIntro/);
+  assert.match(hud, /betweenWaveCountdown/);
+});
+
+test('presentation pools are bounded, observable, reusable, and fully cleared on restart or unload', async () => {
+  const [battle, lifecycle] = await Promise.all([
+    readGameFile('src/scenes/BattleScene.js'),
+    readGameFile('src/runtime-lifecycle.js'),
+  ]);
+  for (const poolName of [
+    'enemyPool', 'defenderPool', 'projectilePool', 'telegraphPool',
+    'defeatPool', 'damageLabelPool', 'particlePool',
+  ]) assert.match(battle, new RegExp(`this\\.${poolName}`));
+  assert.match(battle, /created[\s\S]*active[\s\S]*available[\s\S]*highWater[\s\S]*acquires[\s\S]*releases/);
+  assert.match(battle, /getPerformanceState/);
+  assert.match(battle, /damageLabelCap/);
+  assert.match(battle, /particleCap/);
+  assert.match(battle, /clearPresentationEvents/);
+  assert.match(lifecycle, /prepareUnload|shutdownActiveScenes|scene\.stop/);
+});
+
+test('combat emits every required short-lived presentation edge without changing authored rules', async () => {
+  const [combat, waves, simulation] = await Promise.all([
+    readGameFile('src/core/combat.js'),
+    readGameFile('src/core/wave-controller.js'),
+    readGameFile('src/core/simulation.js'),
+  ]);
+  for (const kind of [
+    'tower-attack', 'tower-mastery', 'enemy-defeated', 'castle-impact',
+    'hexcaller-cast', 'ironhide-rally', 'boss-ability-warning', 'boss-ability-impact',
+    'ironhide-plate-break', 'ironhide-vulnerable', 'dread-phase', 'dread-summon',
+  ]) assert.match(combat, new RegExp(`['\"]${kind}['\"]`), `missing ${kind}`);
+  assert.match(waves, /['"]wave-start['"]/);
+  assert.match(combat, /['"]wave-complete['"]/);
+  assert.match(simulation, /presentationEvents/);
+  assert.match(simulation, /clearPresentationEvents/);
+});
+
+test('the complete uncompressed first-load file ledger stays within fifteen million bytes', async () => {
+  const { getRuntimePayloadPaths } = await import(
+    '../public/Games/DefenderChampion/src/services/asset-loader.js'
+  );
+  const manifest = JSON.parse(await readGameFile('assets/manifest.json'));
+  const relativePaths = getRuntimePayloadPaths(manifest);
+  assert.equal(relativePaths.length, new Set(relativePaths).size, 'payload ledger cannot double-count files');
+  const byteEntries = await Promise.all(relativePaths.map(async (relativePath) => ({
+    bytes: (await stat(new URL(relativePath, gameRoot))).size,
+    path: relativePath,
+  })));
+  const totalBytes = byteEntries.reduce((sum, entry) => sum + entry.bytes, 0);
+  assert.ok(totalBytes <= 15_000_000, `raw first-load payload ${totalBytes} exceeds 15000000 bytes`);
+  assert.ok(15_000_000 - totalBytes >= 100_000, `payload headroom ${15_000_000 - totalBytes} is below 100 KB`);
 });

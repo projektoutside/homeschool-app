@@ -1,4 +1,5 @@
 import { ENEMIES } from '../config/enemies.js';
+import { emitPresentationEvent } from './presentation-events.js';
 
 export const WAVE_GAP_TICKS = 180;
 
@@ -31,6 +32,13 @@ export const spawnScheduledEnemies = (simulation) => {
     && simulation.waveSchedule[simulation.nextSpawnIndex].spawnTick === simulation.tick
   ) {
     const entry = simulation.waveSchedule[simulation.nextSpawnIndex];
+    simulation.waveStartedFlags ??= {};
+    if (!simulation.waveStartedFlags[entry.waveIndex]) {
+      simulation.waveStartedFlags[entry.waveIndex] = true;
+      emitPresentationEvent(simulation, 'wave-start', {
+        waveIndex: entry.waveIndex,
+      });
+    }
     const enemy = ENEMIES[entry.enemyId];
     simulation.enemies.push({
       id: `enemy-${simulation.nextEntityId++}`,

@@ -45,6 +45,7 @@ export const createHostBridge = ({
   pointsBridge = windowRef?.LAHSPointsBridge,
   audioController = null,
   onPauseChange,
+  onPrepareUnload,
 } = {}) => {
   const origin = getOrigin(windowRef?.location);
   const parentRef = resolveSameOriginParent(windowRef, origin);
@@ -107,6 +108,11 @@ export const createHostBridge = ({
   const cleanup = () => {
     if (destroyed) return;
     destroyed = true;
+    try {
+      onPrepareUnload?.();
+    } catch {
+      // Runtime teardown remains isolated from host listener cleanup.
+    }
     pauseReasons.add('host');
     syncPause();
     windowRef?.removeEventListener?.('message', handleHostMessage);

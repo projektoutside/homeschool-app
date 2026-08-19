@@ -21,8 +21,15 @@ const isTrustedPersistedState = (candidate) => {
     if (!Number.isFinite(levelValue.bestScore) || levelValue.bestScore < 0) return false;
     if (!VALID_MEDALS.has(levelValue.medal)) return false;
   }
-  return Object.entries(candidate.tutorialHints)
-    .every(([hintId, completed]) => hintId !== '__proto__' && typeof completed === 'boolean');
+  if (!Object.entries(candidate.tutorialHints)
+    .every(([hintId, completed]) => hintId !== '__proto__' && typeof completed === 'boolean')) return false;
+
+  const sanitized = sanitizeSaveState(candidate);
+  const candidateLevelIds = Object.keys(candidate.levels).sort();
+  const sanitizedLevelIds = Object.keys(sanitized.levels).sort();
+  return candidate.highestUnlockedLevel === sanitized.highestUnlockedLevel
+    && candidateLevelIds.length === sanitizedLevelIds.length
+    && candidateLevelIds.every((levelId, index) => levelId === sanitizedLevelIds[index]);
 };
 
 const notify = (onNotice, notice) => {
@@ -46,21 +53,30 @@ export const sanitizeSaveState = (candidate) => {
     return createDefaultSaveState();
   }
 
-  const highestUnlockedLevel = Number.isFinite(candidate.highestUnlockedLevel)
-    ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(candidate.highestUnlockedLevel)))
-    : 1;
-  const levels = {};
+  const validLevels = {};
   if (isRecord(candidate.levels)) {
     for (const [levelId, levelValue] of Object.entries(candidate.levels)) {
       if (!VALID_LEVEL_ID.test(levelId) || !isRecord(levelValue)) continue;
       if (!Number.isFinite(levelValue.bestScore) || levelValue.bestScore < 0) continue;
       if (!VALID_MEDALS.has(levelValue.medal)) continue;
-      levels[levelId] = {
+      validLevels[levelId] = {
         bestScore: Math.floor(levelValue.bestScore),
         medal: levelValue.medal,
       };
     }
   }
+
+  const levels = {};
+  let clearedPrefix = 0;
+  for (let levelNumber = 1; levelNumber <= MAX_LEVEL; levelNumber += 1) {
+    const levelId = `level-${levelNumber}`;
+    if (!validLevels[levelId]) break;
+    levels[levelId] = validLevels[levelId];
+    clearedPrefix = levelNumber;
+  }
+  const highestUnlockedLevel = clearedPrefix === MAX_LEVEL
+    ? MAX_LEVEL
+    : clearedPrefix + 1;
 
   const tutorialHints = {};
   if (isRecord(candidate.tutorialHints)) {

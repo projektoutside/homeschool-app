@@ -10,7 +10,7 @@ test('defender champion pins Phaser and bundles its local entry', () => {
   assert.equal(packageJson.dependencies?.phaser, '4.2.1');
   assert.equal(
     packageJson.scripts?.['build:defender-champion'],
-    'esbuild "public/Games/DefenderChampion/src/main.js" --bundle --format=iife --platform=browser --target=es2019 --outfile="public/Games/DefenderChampion/js/app.bundle.js"',
+    'esbuild "public/Games/DefenderChampion/src/main.js" --bundle --minify --format=iife --platform=browser --target=es2019 --outfile="public/Games/DefenderChampion/js/app.bundle.js"',
   );
   assert.match(packageJson.scripts?.build ?? '', /npm run build:defender-champion/);
 });

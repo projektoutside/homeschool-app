@@ -30,11 +30,15 @@ const saveStore = createSaveStore({
 });
 const audioController = createAudioController({ windowRef });
 let game;
+let runtimeLifecycle;
 const hostBridge = createHostBridge({
   windowRef,
   documentRef,
   saveStore,
   audioController,
+  onPrepareUnload() {
+    runtimeLifecycle?.prepareUnload?.();
+  },
   onPauseChange({ paused, reasons }) {
     game?.scene?.getScene?.('BattleScene')?.setExternalPauseReasons?.(reasons);
     game?.scene?.scenes?.forEach((scene) => {
@@ -81,11 +85,12 @@ game = new Phaser.Game({
     preBoot(phaserGame) {
       phaserGame.registry.set('hud', hud);
       phaserGame.registry.set('hostBridge', hostBridge);
+      phaserGame.registry.set('audioController', audioController);
     },
   },
 });
 
-createRuntimeLifecycle({
+runtimeLifecycle = createRuntimeLifecycle({
   windowRef,
   audioController,
   game,

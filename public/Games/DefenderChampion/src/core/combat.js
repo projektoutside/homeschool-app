@@ -1,6 +1,7 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
 import { selectTarget } from './targeting.js';
+import { emitPresentationEvent } from './presentation-events.js';
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const isBoss = (enemy) => enemy.enemyId === 'mossback-brute'
@@ -138,6 +139,13 @@ const getEnemyArmor = (simulation, enemy, supportArmor) => {
 const defeatEnemy = (simulation, enemy) => {
   if (enemy.defeated) return;
   enemy.defeated = true;
+  emitPresentationEvent(simulation, 'enemy-defeated', {
+    enemyId: enemy.enemyId,
+    id: enemy.id,
+    pathProgress: enemy.pathProgress,
+    position: getEnemyPosition(simulation, enemy),
+    waveIndex: enemy.waveIndex,
+  });
   const config = ENEMIES[enemy.enemyId];
   const remainingBountyCoins = simulation.level.bountyCoinCap === null
     ? config.bounty
@@ -153,6 +161,14 @@ export const applyHit = (simulation, enemy, hit) => {
   const { armorBonus } = applySupportEffects(simulation, enemy);
   const dealt = applyArmor(hit.damage, getEnemyArmor(simulation, enemy, armorBonus), hit.armorPierce);
   enemy.health = Math.max(0, enemy.health - dealt);
+  emitPresentationEvent(simulation, 'enemy-hit', {
+    damage: dealt,
+    enemyId: enemy.enemyId,
+    id: enemy.id,
+    pathProgress: enemy.pathProgress,
+    position: getEnemyPosition(simulation, enemy),
+    remainingHealth: enemy.health,
+  });
 
   if (hit.stunSeconds > 0 && (enemy.stunImmuneUntilTick ?? 0) <= simulation.tick) {
     const control = clampControlEffect(isBoss(enemy) ? 'boss' : 'standard', hit);
@@ -199,6 +215,13 @@ const initializeSpawnedEnemy = (simulation, enemy) => {
   enemy.abilityActiveTicks = 0;
   enemy.nextAbilityActiveTick = config.cooldownTicks;
   enemy.thresholdFlags = {};
+  if (enemy.enemyId === 'dread-colossus') {
+    enemy.presentationPhase = 1;
+    emitPresentationEvent(simulation, 'dread-phase', {
+      bossId: enemy.id,
+      phase: 1,
+    });
+  }
 };
 
 const summonDreadPack = (simulation, boss, threshold) => {
@@ -213,6 +236,11 @@ const summonDreadPack = (simulation, boss, threshold) => {
     ));
   }
   boss.thresholdFlags[`summon${threshold}`] = true;
+  emitPresentationEvent(simulation, 'dread-summon', {
+    bossId: boss.id,
+    count: config.summonCount,
+    healthThresholdPercent: threshold,
+  });
 };
 
 const updateBossThresholds = (simulation, enemy) => {
@@ -223,8 +251,16 @@ const updateBossThresholds = (simulation, enemy) => {
       const thresholdPercent = Math.round(threshold * 100);
       if (ratio <= threshold && !enemy.thresholdFlags[`plate${thresholdPercent}`]) {
         enemy.thresholdFlags[`plate${thresholdPercent}`] = true;
+        emitPresentationEvent(simulation, 'ironhide-plate-break', {
+          bossId: enemy.id,
+          threshold: `plate${thresholdPercent}`,
+        });
         if (threshold === config.plateThresholds.at(-1)) {
           enemy.vulnerableUntilTick = simulation.tick + config.vulnerableTicks;
+          emitPresentationEvent(simulation, 'ironhide-vulnerable', {
+            bossId: enemy.id,
+            untilTick: enemy.vulnerableUntilTick,
+          });
         }
       }
     }
@@ -238,6 +274,13 @@ const updateBossThresholds = (simulation, enemy) => {
       }
     }
     const phase = getDreadColossusPhase(ratio);
+    if (enemy.presentationPhase !== phase) {
+      enemy.presentationPhase = phase;
+      emitPresentationEvent(simulation, 'dread-phase', {
+        bossId: enemy.id,
+        phase,
+      });
+    }
     if (phase === 3 && !enemy.thresholdFlags.phase3Started) {
       enemy.thresholdFlags.phase3Started = true;
       enemy.abilityActiveTicks = 0;
@@ -284,22 +327,54 @@ const applyWarlordRally = (simulation, source) => {
   }
 };
 
-const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => addEffect(simulation, {
-  sourceId: source.id,
-  targetId: source.id,
-  kind,
-  value: 1,
-  triggerTick: simulation.tick + telegraphTicks,
-  expiresAtTick: simulation.tick + telegraphTicks + 1,
-  triggered: false,
-});
+const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => {
+  const triggerTick = simulation.tick + telegraphTicks;
+  addEffect(simulation, {
+    sourceId: source.id,
+    targetId: source.id,
+    kind,
+    value: 1,
+    triggerTick,
+    expiresAtTick: triggerTick + 1,
+    triggered: false,
+  });
+  emitPresentationEvent(simulation, 'boss-ability-warning', {
+    abilityKind: kind,
+    bossId: source.id,
+    enemyId: source.enemyId,
+    pathProgress: source.pathProgress,
+    position: getEnemyPosition(simulation, source),
+    triggerTick,
+  });
+};
 
 const updateEnemyAbilities = (simulation, enemy) => {
   const config = ENEMIES[enemy.enemyId];
   if (config.cooldownTicks <= 0 || (enemy.stunnedUntilTick ?? 0) > simulation.tick) return;
   if (enemy.abilityActiveTicks >= enemy.nextAbilityActiveTick) {
-    if (enemy.enemyId === 'hexcaller') applyHexcallerSupport(simulation, enemy);
-    if (enemy.enemyId === 'ironhide-warlord') applyWarlordRally(simulation, enemy);
+    if (enemy.enemyId === 'hexcaller') {
+      emitPresentationEvent(simulation, 'hexcaller-cast', {
+        enemyId: enemy.id,
+        pathProgress: enemy.pathProgress,
+        position: getEnemyPosition(simulation, enemy),
+      });
+      applyHexcallerSupport(simulation, enemy);
+    }
+    if (enemy.enemyId === 'ironhide-warlord') {
+      emitPresentationEvent(simulation, 'ironhide-rally', {
+        bossId: enemy.id,
+        pathProgress: enemy.pathProgress,
+        position: getEnemyPosition(simulation, enemy),
+      });
+      emitPresentationEvent(simulation, 'boss-ability-impact', {
+        abilityKind: 'ironhide-rally',
+        bossId: enemy.id,
+        enemyId: enemy.enemyId,
+        pathProgress: enemy.pathProgress,
+        position: getEnemyPosition(simulation, enemy),
+      });
+      applyWarlordRally(simulation, enemy);
+    }
     if (enemy.enemyId === 'mossback-brute') {
       telegraphBossAbility(simulation, enemy, 'mossback-telegraph', config.telegraphTicks);
     }
@@ -322,6 +397,13 @@ const triggerTelegraphs = (simulation) => {
     if (!source || source.health <= 0) continue;
     const sourcePosition = getEnemyPosition(simulation, source);
     const config = ENEMIES[source.enemyId];
+    emitPresentationEvent(simulation, 'boss-ability-impact', {
+      abilityKind: effect.kind,
+      bossId: source.id,
+      enemyId: source.enemyId,
+      pathProgress: source.pathProgress,
+      position: sourcePosition,
+    });
     for (const tower of simulation.towers) {
       const radius = effect.kind === 'mossback-telegraph' ? config.abilityRadius : config.pulseRadius;
       if (distance(sourcePosition, getTowerPosition(simulation, tower)) > radius) continue;
@@ -347,10 +429,14 @@ const triggerTelegraphs = (simulation) => {
 };
 
 const addProjectile = (simulation, tower, target, damage, options = {}) => {
+  const launchPosition = getTowerPosition(simulation, tower);
   simulation.projectiles.push({
     id: `projectile-${simulation.nextEntityId++}`,
     sourceTowerId: tower.id,
     targetId: target.id,
+    launchTick: simulation.tick,
+    launchPosition: { x: launchPosition.x, y: launchPosition.y },
+    targetPathProgressAtLaunch: target.pathProgress,
     impactTick: simulation.tick + (options.delayTicks ?? DEFENDERS[tower.defenderId].projectileTicks),
     damage,
     armorPierce: options.armorPierce ?? 0,
@@ -366,6 +452,19 @@ const fireTower = (simulation, tower, targets) => {
   const mastery = tower.tier === 2 && tower.attackCount % config.masteryAttackCount === 0;
   const primary = selectTarget(targets, config.targetPriority);
   if (!primary) return;
+  emitPresentationEvent(simulation, 'tower-attack', {
+    defenderId: tower.defenderId,
+    mastery,
+    targetId: primary.id,
+    towerId: tower.id,
+  });
+  if (mastery) {
+    emitPresentationEvent(simulation, 'tower-mastery', {
+      defenderId: tower.defenderId,
+      targetId: primary.id,
+      towerId: tower.id,
+    });
+  }
 
   if (mastery && tower.defenderId === 'bladeguard') {
     const center = getEnemyPosition(simulation, primary);
@@ -439,6 +538,13 @@ const processProjectiles = (simulation) => {
     }
     const target = simulation.enemies.find((enemy) => enemy.id === projectile.targetId && enemy.health > 0);
     if (!target) continue;
+    emitPresentationEvent(simulation, 'projectile-impact', {
+      pathProgress: target.pathProgress,
+      position: getEnemyPosition(simulation, target),
+      projectileId: projectile.id,
+      sourceTowerId: projectile.sourceTowerId,
+      targetId: target.id,
+    });
     const targets = projectile.splashRadius > 0
       ? simulation.enemies.filter((enemy) => enemy.health > 0 && distance(
         getEnemyPosition(simulation, target),
@@ -491,6 +597,13 @@ const resolveEnemies = (simulation) => {
   for (const enemy of simulation.enemies) {
     if (enemy.health <= 0) continue;
     if (enemy.pathProgress >= simulation.pathMetrics.total) {
+      emitPresentationEvent(simulation, 'castle-impact', {
+        damage: enemy.castleDamage,
+        enemyId: enemy.enemyId,
+        id: enemy.id,
+        pathProgress: enemy.pathProgress,
+        position: getEnemyPosition(simulation, enemy),
+      });
       simulation.castleHearts = Math.max(0, simulation.castleHearts - enemy.castleDamage);
       continue;
     }
@@ -510,6 +623,7 @@ const awardCompletedWaves = (simulation) => {
     if (!hasPendingSpawn && !hasLivingEnemy && !hasProjectile) {
       simulation.waveCompletionFlags[waveIndex] = true;
       simulation.score += COMBAT_RULES.waveCompletionScore;
+      emitPresentationEvent(simulation, 'wave-complete', { waveIndex });
     }
   }
 };

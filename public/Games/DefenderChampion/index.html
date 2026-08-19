@@ -3,19 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#173f35">
+  <meta name="theme-color" content="#102f29">
   <title>Defender Champion</title>
   <link rel="stylesheet" href="./css/game.css">
 </head>
 <body>
   <main id="game-shell" data-screen="loading">
+    <section id="loading-screen" aria-labelledby="loading-title">
+      <div class="storybook-card loading-card">
+        <img class="loading-emblem" src="./assets/environment/title-emblem.webp" alt="" width="180" height="180">
+        <p class="eyebrow">Opening the field guide</p>
+        <h1 id="loading-title">Defender Champion</h1>
+        <p id="loading-status">Preparing the woodland…</p>
+        <progress id="loading-progress" max="100" value="0">0%</progress>
+        <div class="loading-detail"><span id="loading-percent">0%</span><span id="loading-asset-id">Campaign manifest</span></div>
+        <div id="loading-error-actions" class="loading-actions" hidden>
+          <button id="retry-loading-button" class="button button-primary" type="button">Retry Loading</button>
+          <button id="loading-exit-button" class="button button-quiet" type="button">Exit</button>
+        </div>
+      </div>
+    </section>
+
     <section id="menu-screen" aria-labelledby="game-title">
       <div class="storybook-card hero-card">
-        <p class="eyebrow">The woodland is calling</p>
+        <img class="title-emblem" src="./assets/environment/title-emblem.webp" alt="" width="220" height="220">
+        <p class="eyebrow">A pure strategy woodland defense</p>
         <h1 id="game-title">Defender Champion</h1>
-        <p class="hero-copy">Gather brave defenders and guard the greenheart castle.</p>
+        <p class="hero-copy">Read the path. Build your formation. Outsmart ten handcrafted sieges with no random boosts and no shortcuts.</p>
+        <img class="campaign-key-art" src="./thumb.webp" alt="Defenders guarding the woodland castle" width="1254" height="1254">
         <div class="menu-actions" aria-label="Main menu">
-          <button id="play-button" class="button button-primary" type="button">Play</button>
+          <button id="play-button" class="button button-primary" type="button">Begin Campaign</button>
           <button id="continue-button" class="button button-secondary" type="button" hidden>Continue</button>
           <button id="how-to-button" class="button button-quiet" type="button">How to Play</button>
           <button id="settings-button" class="button button-quiet" type="button">Settings</button>
@@ -46,29 +63,63 @@
           <div><dt>Hearts</dt><dd id="hud-hearts">3</dd></div>
           <div><dt>Coins</dt><dd id="hud-coins">150</dd></div>
           <div><dt>Wave</dt><dd id="hud-wave">Ready</dd></div>
+          <div><dt>Time</dt><dd id="hud-time">0:00</dd></div>
+          <div><dt>Score</dt><dd id="hud-score">0</dd></div>
         </dl>
         <div class="battle-controls" aria-label="Battle controls">
           <button id="pause-button" class="button icon-button" type="button" aria-pressed="false" aria-label="Pause battle">Ⅱ</button>
-          <button id="speed-button" class="button speed-button" type="button" aria-pressed="false" aria-label="Set battle speed to two times">1×</button>
+          <button id="speed-1-button" class="button speed-button" data-speed="1" type="button" aria-pressed="true" aria-label="Set battle speed to normal">1×</button>
+          <button id="speed-button" class="button speed-button" data-speed="2" type="button" aria-pressed="false" aria-label="Set battle speed to two times">2×</button>
         </div>
+        <p id="between-wave-countdown" class="between-wave-countdown" aria-live="polite" hidden></p>
       </header>
-      <div id="battlefield" tabindex="0" aria-label="Defense map"></div>
+
+      <div id="battlefield" tabindex="0" aria-label="Defense map">
+        <div id="battle-countdown" class="battle-countdown" aria-live="assertive" hidden></div>
+      </div>
+
       <nav id="defender-dock" aria-label="Defenders">
-        <p class="dock-title">Defender guild</p>
-        <div class="dock-list">
-          <button class="defender-card" type="button" disabled><span>Acorn Guard</span><small>Coming next</small></button>
-          <button class="defender-card" type="button" disabled><span>Lantern Archer</span><small>Coming next</small></button>
-          <button class="defender-card" type="button" disabled><span>Moss Mage</span><small>Coming next</small></button>
+        <div class="dock-heading">
+          <p class="dock-title">Defender guild</p>
+          <button id="battle-start-button" class="button button-primary battle-start-button" type="button">Start Wave 1</button>
         </div>
+        <div class="dock-list"></div>
+        <p id="battle-notice" class="battle-notice" role="status" hidden></p>
+        <section id="tower-panel" aria-label="Selected defender" hidden>
+          <div>
+            <p id="tower-panel-heading" class="dock-title">Selected defender</p>
+            <p id="tower-panel-stats"></p>
+            <div class="mastery-track" aria-label="Mastery progress"><span id="tower-mastery-progress"></span></div>
+          </div>
+          <button id="tower-upgrade-button" class="button button-primary" data-battle-command="upgrade" type="button">Upgrade</button>
+          <button id="tower-sell-button" class="button button-quiet" data-battle-command="sell" type="button">Sell</button>
+        </section>
       </nav>
+
+      <section id="level-intro-panel" class="battle-overlay" aria-labelledby="level-intro-title" hidden>
+        <div class="storybook-card intro-card">
+          <p class="eyebrow">Commander’s briefing</p>
+          <h2 id="level-intro-title">Meadow Watch</h2>
+          <p id="level-intro-lesson"></p>
+          <dl class="intro-facts">
+            <div><dt>Waves</dt><dd id="level-intro-waves">3</dd></div>
+            <div id="level-intro-boss-row"><dt>Boss warning</dt><dd id="level-intro-boss">None</dd></div>
+          </dl>
+          <button id="level-intro-continue" class="button button-primary" type="button">Plan My Defense</button>
+        </div>
+      </section>
     </section>
 
     <section id="result-screen" aria-live="polite" hidden>
       <div class="storybook-card result-card">
+        <div id="result-art" class="result-art" aria-hidden="true"></div>
         <p class="eyebrow">Battle report</p>
         <h2 id="result-title">The woodland waits</h2>
         <p id="result-summary">Your result will appear here.</p>
-        <button id="result-levels-button" class="button button-primary" type="button">Choose a Level</button>
+        <dl id="result-stats" class="result-stats"></dl>
+        <button id="result-next-button" class="button button-primary" type="button">Next Chapter</button>
+        <button id="result-replay-button" class="button button-secondary" type="button">Replay Chapter</button>
+        <button id="result-levels-button" class="button button-quiet" type="button">Choose a Level</button>
         <button id="result-menu-button" class="button button-quiet" type="button">Main Menu</button>
       </div>
     </section>
@@ -76,19 +127,16 @@
     <section id="how-to-screen" class="overlay-screen" role="dialog" aria-modal="true" aria-labelledby="how-to-title" tabindex="-1" hidden>
       <div class="storybook-card guide-card">
         <header class="panel-heading">
-          <div>
-            <p class="eyebrow">Field guide</p>
-            <h2 id="how-to-title">How to Play</h2>
-          </div>
+          <div><p class="eyebrow">Field guide</p><h2 id="how-to-title">How to Play</h2></div>
           <button id="how-to-close-button" class="button icon-button" type="button" aria-label="Close how to play">×</button>
         </header>
         <ol class="guide-list">
           <li><strong>Build:</strong> choose a defender, then choose an open stone pad.</li>
-          <li><strong>Upgrade:</strong> select a placed defender to strengthen its skills.</li>
-          <li><strong>Sell:</strong> reclaim coins from a selected defender and change your plan.</li>
+          <li><strong>Upgrade:</strong> select a placed defender to strengthen its exact role.</li>
+          <li><strong>Sell:</strong> reclaim 70% of invested coins and reshape your plan.</li>
           <li><strong>Protect hearts:</strong> each enemy that reaches the castle costs one heart.</li>
-          <li><strong>Pause:</strong> use the pause control whenever you need time to think.</li>
-          <li><strong>Speed:</strong> switch between 1× and 2× once your defense is ready.</li>
+          <li><strong>Read warnings:</strong> boss telegraphs are strategic information, not decoration.</li>
+          <li><strong>Control time:</strong> pause freely or use 2× speed after your formation is ready.</li>
         </ol>
       </div>
     </section>
@@ -96,29 +144,13 @@
     <section id="settings-screen" class="overlay-screen" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabindex="-1" hidden>
       <div class="storybook-card settings-card">
         <header class="panel-heading">
-          <div>
-            <p class="eyebrow">Traveling kit</p>
-            <h2 id="settings-title">Settings</h2>
-          </div>
+          <div><p class="eyebrow">Traveling kit</p><h2 id="settings-title">Settings</h2></div>
           <button id="settings-close-button" class="button icon-button" type="button" aria-label="Close settings">×</button>
         </header>
         <p id="host-sound-note" class="settings-note" hidden>Sound is managed by the homeschool app.</p>
-        <label class="setting-row" for="music-volume">
-          <span>Music <output id="music-volume-output" for="music-volume">30%</output></span>
-          <input id="music-volume" type="range" min="0" max="100" step="5" value="30">
-        </label>
-        <label class="setting-row" for="sfx-volume">
-          <span>Sound effects <output id="sfx-volume-output" for="sfx-volume">70%</output></span>
-          <input id="sfx-volume" type="range" min="0" max="100" step="5" value="70">
-        </label>
-        <label class="setting-row" for="reduced-motion">
-          <span>Motion</span>
-          <select id="reduced-motion">
-            <option value="system">Use device setting</option>
-            <option value="reduce">Reduce motion</option>
-            <option value="full">Full motion</option>
-          </select>
-        </label>
+        <label class="setting-row" for="music-volume"><span>Music <output id="music-volume-output" for="music-volume">30%</output></span><input id="music-volume" type="range" min="0" max="100" step="5" value="30"></label>
+        <label class="setting-row" for="sfx-volume"><span>Sound effects <output id="sfx-volume-output" for="sfx-volume">70%</output></span><input id="sfx-volume" type="range" min="0" max="100" step="5" value="70"></label>
+        <label class="setting-row" for="reduced-motion"><span>Motion</span><select id="reduced-motion"><option value="system">Use device setting</option><option value="reduce">Reduce motion</option><option value="full">Full motion</option></select></label>
       </div>
     </section>
 

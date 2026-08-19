@@ -54,7 +54,7 @@ test('save data excludes active combat and clamps campaign progress', () => {
     activeWave: 7,
     coins: 9999,
   });
-  assert.equal(value.highestUnlockedLevel, 10);
+  assert.equal(value.highestUnlockedLevel, 2);
   assert.equal('activeWave' in value, false);
   assert.equal('coins' in value, false);
 });
@@ -80,7 +80,7 @@ test('save validation migrates incomplete snapshots and discards invalid nested 
 
   assert.deepEqual(value, {
     version: 1,
-    highestUnlockedLevel: 3,
+    highestUnlockedLevel: 2,
     levels: {
       'level-1': { bestScore: 410, medal: 'silver' },
     },
@@ -171,4 +171,34 @@ test('storage denial keeps temporary campaign progress and disables rewards', ()
   assert.equal(store.getState().highestUnlockedLevel, 2);
   assert.equal(store.isDurable(), false);
   assert.deepEqual(notices, [{ type: 'storage-unavailable', reason: 'denied' }]);
+});
+
+test('persisted progress keeps only one contiguous cleared prefix and distrusts impossible unlocks', () => {
+  const notices = [];
+  const storage = createMemoryStorage(JSON.stringify({
+    version: 1,
+    highestUnlockedLevel: 10,
+    levels: {
+      'level-1': { bestScore: 100, medal: 'bronze' },
+      'level-2': { bestScore: 200, medal: 'silver' },
+      'level-4': { bestScore: 900, medal: 'gold' },
+      'level-10': { bestScore: 1_500, medal: 'gold' },
+    },
+    tutorialHints: {},
+    reducedMotionOverride: null,
+  }));
+  const store = createSaveStore({ storage, onNotice: (notice) => notices.push(notice) });
+
+  assert.deepEqual(store.getState(), {
+    version: 1,
+    highestUnlockedLevel: 3,
+    levels: {
+      'level-1': { bestScore: 100, medal: 'bronze' },
+      'level-2': { bestScore: 200, medal: 'silver' },
+    },
+    tutorialHints: {},
+    reducedMotionOverride: null,
+  });
+  assert.equal(store.rewardsDisabled(), true);
+  assert.deepEqual(notices, [{ type: 'save-reset', reason: 'invalid-schema' }]);
 });

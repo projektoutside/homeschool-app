@@ -1,16 +1,15 @@
 import { LEVELS, getLevel } from '../config/levels.js';
 import { DEFENDERS } from '../config/defenders.js';
 import { getSellRefund, getUpgradeCost } from '../core/economy.js';
+import {
+  DEFENDER_PRESENTATION,
+  LEVEL_PRESENTATION,
+  STRATEGY_HINTS,
+} from '../presentation.js';
 
 const FIXED_STEP_MILLISECONDS = 1_000 / 60;
 const MAX_FRAME_STEPS = 5;
 const MAX_QA_ADVANCE_MILLISECONDS = 60_000;
-const DEFENDER_PRESENTATION = Object.freeze({
-  bladeguard: Object.freeze({ name: 'Bladeguard', role: 'Close defense' }),
-  ranger: Object.freeze({ name: 'Ranger', role: 'Long range' }),
-  ironwarden: Object.freeze({ name: 'Ironwarden', role: 'Armor breaker' }),
-  'rune-artificer': Object.freeze({ name: 'Rune Artificer', role: 'Splash damage' }),
-});
 
 const clampFinite = (value, maximum) => {
   const number = Number(value);
@@ -93,6 +92,12 @@ export const installQaRuntimeHooks = ({
   const renderGameToText = () => JSON.stringify(getActiveBattle()?.getTextSnapshot?.() ?? null);
   const advanceTime = (milliseconds) => getActiveBattle()?.advanceTime?.(milliseconds) ?? null;
   const debugApi = Object.freeze({
+    getPerformanceState() {
+      return getActiveBattle()?.getPerformanceState?.() ?? null;
+    },
+    issueCommand(command) {
+      return getActiveBattle()?.issueBattleCommand?.(command) ?? null;
+    },
     startLevel(levelId) {
       if (!isKnownLevel(levelId)) return false;
       startLevel(levelId);
@@ -141,6 +146,8 @@ export const createBattleHudModel = (snapshot, {
     defenderId: tower.defenderId,
     id: tower.id,
     mastery: towerConfig.mastery,
+    masteryProgress: tower.masteryProgress ?? 0,
+    masteryTarget: towerConfig.masteryAttackCount,
     name: DEFENDER_PRESENTATION[tower.defenderId].name,
     range: towerConfig.range[tower.tier],
     sellValue: getSellRefund(tower),
@@ -169,6 +176,7 @@ export const createBattleHudModel = (snapshot, {
 };
 
 const SCREEN_IDS = Object.freeze({
+  loading: 'loading-screen',
   menu: 'menu-screen',
   levels: 'level-select-screen',
   battle: 'battle-screen',
@@ -191,11 +199,12 @@ export const resolveContinueLevel = (saveState) => {
   if (clearedLevelIds.length === 0) return null;
 
   const highestUnlocked = Math.min(LEVELS.length, Math.max(1, saveState?.highestUnlockedLevel ?? 1));
+  if (highestUnlocked === LEVELS.length && clearedLevelIds.length < LEVELS.length) return null;
   for (let levelNumber = highestUnlocked; levelNumber >= 1; levelNumber -= 1) {
     const levelId = `level-${levelNumber}`;
     if (!saveState.levels[levelId]) return levelId;
   }
-  return LEVELS.at(-1).id;
+  return clearedLevelIds.length === LEVELS.length ? LEVELS.at(-1).id : null;
 };
 
 export const resolveMotionState = (override, systemReduced = false) => {
@@ -295,6 +304,10 @@ export const createHudController = ({
   const shortLandscapeQuery = windowRef?.matchMedia?.('(orientation: landscape) and (max-height: 720px)');
   let battleBinding = null;
   let currentBattleModel = null;
+  let loadingRetry = null;
+  let loadingExit = null;
+  let introContinue = null;
+  let resultLevelId = null;
   let modalTraps;
 
   const on = (element, type, listener) => {
@@ -463,6 +476,10 @@ export const createHudController = ({
       const tower = model.selectedTower;
       documentRef.getElementById('tower-panel-heading').textContent = `${tower.name} · Tier ${tower.tier + 1}`;
       documentRef.getElementById('tower-panel-stats').textContent = `Damage ${tower.damage} · Speed ${tower.speedSeconds.toFixed(2)}s · Range ${tower.range} · Mastery ${tower.mastery}`;
+      const masteryProgress = documentRef.getElementById('tower-mastery-progress');
+      if (masteryProgress) {
+        masteryProgress.style.width = `${Math.min(100, (tower.masteryProgress / tower.masteryTarget) * 100)}%`;
+      }
       const upgrade = documentRef.getElementById('tower-upgrade-button');
       upgrade.disabled = !tower.upgradeEnabled;
       upgrade.textContent = tower.upgradeCost === null ? 'Maximum tier' : `Upgrade · ${tower.upgradeCost} coins`;
@@ -478,6 +495,31 @@ export const createHudController = ({
       if (screen) screen.hidden = name !== screenName;
     }
     shell.dataset.screen = screenName;
+  };
+
+  const showLoading = ({
+    percent = 0,
+    currentId = 'Campaign manifest',
+    status = 'Preparing the woodland…',
+    errorIds = [],
+    retry = null,
+    exit = null,
+  } = {}) => {
+    const boundedPercent = Math.min(100, Math.max(0, Math.round(Number(percent) || 0)));
+    const progress = documentRef.getElementById('loading-progress');
+    progress.value = boundedPercent;
+    progress.textContent = `${boundedPercent}%`;
+    documentRef.getElementById('loading-percent').textContent = `${boundedPercent}%`;
+    documentRef.getElementById('loading-asset-id').textContent = currentId;
+    documentRef.getElementById('loading-status').textContent = errorIds.length > 0
+      ? `Could not load: ${errorIds.join(', ')}`
+      : status;
+    const actions = documentRef.getElementById('loading-error-actions');
+    actions.hidden = errorIds.length === 0;
+    loadingRetry = typeof retry === 'function' ? retry : null;
+    loadingExit = typeof exit === 'function' ? exit : null;
+    showScreen('loading');
+    if (errorIds.length > 0) documentRef.getElementById('retry-loading-button')?.focus();
   };
 
   const closeOverlay = (name) => {
@@ -577,6 +619,42 @@ export const createHudController = ({
     announce('Level selection opened');
   };
 
+  const showLevelIntro = (levelId, onContinue) => {
+    const level = getLevel(levelId);
+    const presentation = LEVEL_PRESENTATION[levelId];
+    resultLevelId = levelId;
+    introContinue = typeof onContinue === 'function' ? onContinue : null;
+    documentRef.getElementById('level-intro-title').textContent = `Chapter ${getLevelNumber(levelId)} · ${level.name}`;
+    documentRef.getElementById('level-intro-lesson').textContent = presentation.lesson;
+    documentRef.getElementById('level-intro-waves').textContent = String(level.waveCount);
+    const bossRow = documentRef.getElementById('level-intro-boss-row');
+    const boss = documentRef.getElementById('level-intro-boss');
+    bossRow.hidden = !presentation.boss;
+    boss.textContent = presentation.boss ?? 'None';
+    const panel = documentRef.getElementById('level-intro-panel');
+    panel.hidden = false;
+    documentRef.getElementById('level-intro-continue')?.focus();
+    announce(`${level.name}. ${presentation.lesson}`);
+  };
+
+  const updateBattlePhase = ({
+    battleStarted = true,
+    countdownRemaining = 0,
+    betweenWaveCountdown = null,
+  } = {}) => {
+    const startButton = documentRef.getElementById('battle-start-button');
+    startButton.hidden = battleStarted;
+    startButton.disabled = countdownRemaining > 0;
+    const countdown = documentRef.getElementById('battle-countdown');
+    countdown.hidden = countdownRemaining <= 0;
+    countdown.textContent = countdownRemaining > 0 ? String(countdownRemaining) : '';
+    const betweenWave = documentRef.getElementById('between-wave-countdown');
+    betweenWave.hidden = betweenWaveCountdown === null;
+    betweenWave.textContent = betweenWaveCountdown === null
+      ? ''
+      : `Next wave in ${betweenWaveCountdown}`;
+  };
+
   const showBattle = (snapshot, selection = {}) => {
     const resolvedSnapshot = typeof snapshot === 'string'
       ? {
@@ -593,7 +671,8 @@ export const createHudController = ({
       : snapshot;
     const model = renderBattle(resolvedSnapshot, selection);
     showScreen('battle');
-    documentRef.getElementById('battlefield')?.focus();
+    updateBattlePhase(selection);
+    if (selection.focusBattlefield !== false) documentRef.getElementById('battlefield')?.focus();
     announce(model.notice || `${model.levelTitle}. Battle ready.`);
   };
 
@@ -621,13 +700,45 @@ export const createHudController = ({
     battleBinding?.selectDefender?.(defenderId);
   };
 
-  const showResult = ({ victory = false, summary = '' } = {}) => {
+  const showResult = ({
+    victory = false,
+    summary = '',
+    levelId = resultLevelId,
+    score = 0,
+    medal = 'none',
+    elapsedTicks = 0,
+    hearts = 0,
+  } = {}) => {
+    resultLevelId = levelId;
     documentRef.getElementById('result-title').textContent = victory ? 'The woodland is safe!' : 'The castle needs you';
     documentRef.getElementById('result-summary').textContent = summary || (victory
       ? 'A brave defense. Your chapter progress has been saved.'
-      : 'Regroup your defenders and try a new plan.');
+      : `Regroup your defenders and try a new plan. ${STRATEGY_HINTS[(getLevelNumber(levelId) - 1) % STRATEGY_HINTS.length]}`);
+    const card = documentRef.querySelector?.('.result-card');
+    if (card) card.dataset.victory = String(victory);
+    const stats = documentRef.getElementById('result-stats');
+    stats.replaceChildren();
+    for (const [label, value] of [
+      ['Score', Number(score).toLocaleString()],
+      ['Medal', medal === 'none' ? 'No medal' : medal],
+      ['Time', formatElapsedTime(elapsedTicks)],
+      ['Hearts', String(hearts)],
+    ]) {
+      const row = documentRef.createElement('div');
+      const term = documentRef.createElement('dt');
+      const detail = documentRef.createElement('dd');
+      term.textContent = label;
+      detail.textContent = value;
+      row.append(term, detail);
+      stats.append(row);
+    }
+    const nextLevelNumber = getLevelNumber(levelId) + 1;
+    const next = documentRef.getElementById('result-next-button');
+    next.hidden = !victory || nextLevelNumber > LEVELS.length;
+    next.dataset.levelId = next.hidden ? '' : `level-${nextLevelNumber}`;
+    documentRef.getElementById('result-replay-button').dataset.levelId = levelId ?? '';
     showScreen('result');
-    documentRef.getElementById('result-levels-button')?.focus();
+    (next.hidden ? documentRef.getElementById('result-replay-button') : next)?.focus();
   };
 
   const reconcile = () => {
@@ -682,6 +793,8 @@ export const createHudController = ({
   };
 
   on(documentRef.getElementById('play-button'), 'click', () => navigate?.('LevelSelectScene'));
+  on(documentRef.getElementById('retry-loading-button'), 'click', () => loadingRetry?.());
+  on(documentRef.getElementById('loading-exit-button'), 'click', () => (loadingExit ?? hostBridge?.exit)?.());
   on(documentRef.getElementById('continue-button'), 'click', (event) => {
     const levelId = event.currentTarget.dataset.levelId;
     if (levelId) navigate?.('BattleScene', { levelId });
@@ -698,6 +811,21 @@ export const createHudController = ({
   });
   on(documentRef.getElementById('result-levels-button'), 'click', () => navigate?.('LevelSelectScene'));
   on(documentRef.getElementById('result-menu-button'), 'click', () => navigate?.('MenuScene'));
+  on(documentRef.getElementById('result-next-button'), 'click', (event) => {
+    const levelId = event.currentTarget.dataset.levelId;
+    if (levelId) navigate?.('BattleScene', { levelId });
+  });
+  on(documentRef.getElementById('result-replay-button'), 'click', (event) => {
+    const levelId = event.currentTarget.dataset.levelId;
+    if (levelId) navigate?.('BattleScene', { levelId });
+  });
+  on(documentRef.getElementById('level-intro-continue'), 'click', () => {
+    documentRef.getElementById('level-intro-panel').hidden = true;
+    const callback = introContinue;
+    introContinue = null;
+    callback?.();
+  });
+  on(documentRef.getElementById('battle-start-button'), 'click', () => battleBinding?.startBattle?.());
   on(documentRef.getElementById('how-to-button'), 'click', () => openOverlay('help'));
   on(documentRef.getElementById('settings-button'), 'click', () => {
     syncSettings();
@@ -757,8 +885,11 @@ export const createHudController = ({
     refreshContinue,
     renderBattle,
     showBattle,
+    showLevelIntro,
     showLevelSelect,
+    showLoading,
     showMenu,
     showResult,
+    updateBattlePhase,
   });
 };

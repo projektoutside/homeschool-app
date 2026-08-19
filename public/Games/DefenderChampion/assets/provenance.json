@@ -1866,13 +1866,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 615476,
-      "finalSha256": "9430fea941f03472d4191424db884cfe1b87ca2fae5dec24f6d35d8937d8ad29",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 343644,
+      "finalSha256": "0119d680834d581d7f3a18b48d17e2f75c77b3fea800be1d6d1a117c083cf550",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/mossback-brute-full-size.png",
         "output/defender-champion/previews/mossback-brute-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/mossback-brute-walk-full-size.png",
+        "output/defender-champion/previews/optimization-q98/mossback-brute-walk-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     },
@@ -2174,13 +2178,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 546692,
-      "finalSha256": "05c71755b519e5e7fa2ad66856ef7cce9bf29341a08efbb65940cf77e8229440",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 324330,
+      "finalSha256": "812ace3b4895d409fa120a93d8e8ca997c6e361341f6404f6bb748e41704941d",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/mossback-brute-full-size.png",
         "output/defender-champion/previews/mossback-brute-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/mossback-brute-defeat-full-size.png",
+        "output/defender-champion/previews/optimization-q98/mossback-brute-defeat-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     },
@@ -2312,13 +2320,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 498074,
-      "finalSha256": "df8dea5fdc5fa68f0bda5fc35e4d24aa159cf798943ad5b0ce60373c35236f85",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 263408,
+      "finalSha256": "e84757761628adc5320c929858dd324a418c2136f0ce97ee65de46f92a78508f",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
         "output/defender-champion/previews/ironhide-warlord-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-walk-full-size.png",
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-walk-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     },
@@ -2450,13 +2462,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 614956,
-      "finalSha256": "762d37488cdfbdd7dfedc3f5aab56af3c7ca0de2209a07ecb10c52461ac20062",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 328438,
+      "finalSha256": "e3282a0226befc685a5dda067f94e2df95d5ed104b8959080dcf2f02318824b5",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
         "output/defender-champion/previews/ironhide-warlord-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-ability-full-size.png",
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-ability-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     },
@@ -2616,13 +2632,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 332120,
-      "finalSha256": "9e4aa51ae27e5e35bf5899eea049c65d95ace8e0b99215628a97c75b6f4ec352",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 185382,
+      "finalSha256": "205db86c966f348d0d86fd38c80afc24193a4fa71fa0bac2de47ab14bb00ba5c",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/ironhide-warlord-full-size.png",
         "output/defender-champion/previews/ironhide-warlord-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-defeat-full-size.png",
+        "output/defender-champion/previews/optimization-q98/ironhide-warlord-defeat-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     },
@@ -3066,13 +3086,17 @@
           }
         }
       ],
-      "optimization": "Pillow lossless WebP, quality 100, exact alpha, method 6",
-      "finalBytes": 517800,
-      "finalSha256": "605d6d7c050bc564d42540b62223c3951fc8cec48ab78313195ec4322d9624dc",
+      "optimization": "Pillow WebP character mode, quality 98, exact alpha, method 6; deliberate reviewed high-quality raster-budget fallback",
+      "finalBytes": 330934,
+      "finalSha256": "c75317b987ac03246e6fc44112d3b526371677ab692dbcc1061f10ba0ac6c05a",
       "referenceDisclosure": "Style direction only; no copied reference pixels",
       "approvalEvidencePaths": [
         "output/defender-champion/previews/dread-colossus-full-size.png",
         "output/defender-champion/previews/dread-colossus-game-scale.png"
+      ],
+      "optimizationApprovalEvidencePaths": [
+        "output/defender-champion/previews/optimization-q98/dread-colossus-defeat-full-size.png",
+        "output/defender-champion/previews/optimization-q98/dread-colossus-defeat-game-scale-96px.png"
       ],
       "qaStatus": "approved"
     }

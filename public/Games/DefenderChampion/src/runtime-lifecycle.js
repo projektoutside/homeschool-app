@@ -16,11 +16,20 @@ export const createRuntimeLifecycle = ({
   let bfcacheSuspended = false;
   let destroyed = false;
 
+  const shutdownActiveScenes = () => {
+    for (const scene of game?.scene?.scenes ?? []) {
+      if (scene?.scene?.isActive?.() || scene?.scene?.isPaused?.()) {
+        safelyCall(() => scene.scene.stop());
+      }
+    }
+  };
+
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
     windowRef?.removeEventListener?.('pagehide', handlePageHide);
     windowRef?.removeEventListener?.('pageshow', handlePageShow);
+    shutdownActiveScenes();
     safelyCall(() => hostBridge?.cleanup?.());
     safelyCall(() => hud?.destroy?.());
     safelyCall(() => game?.destroy?.(true));
@@ -52,6 +61,7 @@ export const createRuntimeLifecycle = ({
 
   return Object.freeze({
     destroy,
+    prepareUnload: destroy,
     getState: () => ({ bfcacheSuspended, destroyed }),
   });
 };

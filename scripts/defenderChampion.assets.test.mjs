@@ -24,7 +24,7 @@ const defaultPythonPath = existsSync(bundledPythonPath) ? bundledPythonPath : sy
 const pythonPath = process.env.DEFENDER_CHAMPION_ASSET_PYTHON ?? defaultPythonPath;
 const perAssetLimit = 1_500_000;
 const manifestTotalLimit = 15_000_000;
-const expectedManifestRasterBytes = 14_403_160;
+const expectedManifestRasterBytes = 13_054_178;
 const atlasFrameSize = 314;
 const pathLaneWidth = 128;
 const pathSafeInset = 24;
@@ -61,9 +61,15 @@ const expectedPostNormalizationPolicy = {
   canonicalAlpha: 'crop alpha greater than zero to its tight bbox and hash row-major bytes',
 };
 const characterQ98AssetIds = new Set([
+  'boss-mossback-brute-walk',
   'boss-mossback-brute-ability',
+  'boss-mossback-brute-defeat',
+  'boss-ironhide-warlord-walk',
+  'boss-ironhide-warlord-ability',
+  'boss-ironhide-warlord-defeat',
   'boss-dread-colossus-walk',
   'boss-dread-colossus-ability',
+  'boss-dread-colossus-defeat',
 ]);
 const reviewedDefeatScaleFixtures = {
   'enemy-blight-walker-defeat': {

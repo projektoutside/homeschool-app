@@ -8,9 +8,23 @@ import {
   createSimulation,
   issueCommand,
   runStrategyFixture,
+  summarizePresentationSimulation,
   summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
 import { selectTarget } from '../public/Games/DefenderChampion/src/core/targeting.js';
+
+test('presentation snapshots omit nonvisual effect fan-out without weakening full deterministic summaries', () => {
+  const simulation = createSimulation('level-10', { qa: true });
+  simulation.effects = [
+    { id: 'effect-1', kind: 'enemy-healing', sourceId: 'enemy-1', targetId: 'enemy-2' },
+    { id: 'effect-2', kind: 'mossback-telegraph', sourceId: 'enemy-3', untilTick: 60 },
+  ];
+
+  assert.deepEqual(summarizePresentationSimulation(simulation).effects, [
+    { id: 'effect-2', kind: 'mossback-telegraph', sourceId: 'enemy-3', untilTick: 60 },
+  ]);
+  assert.equal(summarizeSimulation(simulation).effects.length, 2);
+});
 
 test('reference command fixtures are legal deterministic inputs for every level', () => {
   for (const level of LEVELS) {
@@ -64,6 +78,7 @@ test('build commands accept a legal defender and reject occupied pads without ch
   assert.equal(summary.coins, 100);
   assert.deepEqual(summary.towers, [{
     id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+    attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
   }]);
 });
 
@@ -189,9 +204,66 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
 
   assert.deepEqual(first, second);
   assert.deepEqual(first.towers, [
-    { id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-a', tier: 0, totalInvested: 70 },
-    { id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-b', tier: 0, totalInvested: 50 },
+    {
+      id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-a', tier: 0, totalInvested: 70,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 2256,
+    },
+    {
+      id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-b', tier: 0, totalInvested: 50,
+      attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
+    },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
   assert.throws(() => runStrategyFixture('level-1', 'level-2-balanced'), /does not belong to level-1/);
+});
+
+test('presentation events are deterministic, monotonic, bounded, and expose attack mastery progress', async () => {
+  const {
+    PRESENTATION_EVENT_LIMIT,
+    emitPresentationEvent,
+  } = await import('../public/Games/DefenderChampion/src/core/presentation-events.js');
+  const first = createSimulation('level-1', { qa: true, seed: 13 });
+  const second = createSimulation('level-1', { qa: true, seed: 13 });
+  for (const simulation of [first, second]) {
+    issueCommand(simulation, {
+      type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
+    });
+    advanceSimulation(simulation, 240);
+  }
+  const firstSummary = summarizeSimulation(first);
+  const secondSummary = summarizeSimulation(second);
+  assert.deepEqual(firstSummary.presentationEvents, secondSummary.presentationEvents);
+  assert.ok(firstSummary.presentationEvents.some(({ kind }) => kind === 'wave-start'));
+  assert.ok(firstSummary.presentationEvents.some(({ kind }) => kind === 'tower-attack'));
+  assert.equal(typeof firstSummary.towers[0].attackCount, 'number');
+  assert.equal(typeof firstSummary.towers[0].nextAttackTick, 'number');
+  assert.equal(typeof firstSummary.towers[0].masteryProgress, 'number');
+  assert.ok(firstSummary.presentationEvents.every((event, index, events) => (
+    index === 0 || event.id > events[index - 1].id
+  )));
+
+  for (let index = 0; index < PRESENTATION_EVENT_LIMIT + 50; index += 1) {
+    emitPresentationEvent(first, 'qa-bounded-event', { index });
+  }
+  const bounded = summarizeSimulation(first).presentationEvents;
+  assert.equal(bounded.length, PRESENTATION_EVENT_LIMIT);
+  assert.equal(bounded.at(-1).payload.index, PRESENTATION_EVENT_LIMIT + 49);
+});
+
+test('projectile snapshots retain launch data after their source tower is sold', () => {
+  const simulation = createSimulation('level-1', { qa: true, seed: 17 });
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'ranger', padId: 'l1-pad-a',
+  });
+  advanceSimulation(simulation, 1);
+  const towerId = simulation.towers[0].id;
+  assert.ok(simulation.projectiles.length > 0);
+  issueCommand(simulation, { type: 'sell', towerId });
+  const [projectile] = summarizeSimulation(simulation).projectiles;
+
+  assert.equal(projectile.sourceTowerId, towerId);
+  assert.equal(projectile.launchTick, 0);
+  assert.deepEqual(projectile.launchPosition, { x: 122, y: 278 });
+  assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
+  assert.equal(summarizeSimulation(simulation).towers.length, 0);
 });
