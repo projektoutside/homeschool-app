@@ -101,6 +101,25 @@ test('path sampling clamps progress and road pieces preserve directional frames 
   ]);
 });
 
+test('path pieces map every cardinal cap and corner direction to its atlas frame', () => {
+  const framesFor = (path) => derivePathPieces(path, identity)
+    .filter(({ kind }) => kind !== 'straight')
+    .map(({ kind, frame }) => `${kind}:${frame}`);
+
+  assert.deepEqual(framesFor([{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 }]), [
+    'cap:capSouth', 'corner:northEast', 'cap:capWest',
+  ]);
+  assert.deepEqual(framesFor([{ x: 100, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 100 }]), [
+    'cap:capWest', 'corner:eastSouth', 'cap:capNorth',
+  ]);
+  assert.deepEqual(framesFor([{ x: 0, y: 100 }, { x: 0, y: 0 }, { x: -100, y: 0 }]), [
+    'cap:capNorth', 'corner:southWest', 'cap:capEast',
+  ]);
+  assert.deepEqual(framesFor([{ x: -100, y: 0 }, { x: 0, y: 0 }, { x: 0, y: -100 }]), [
+    'cap:capEast', 'corner:westNorth', 'cap:capSouth',
+  ]);
+});
+
 test('path geometry rejects malformed, diagonal, too-short, and U-turn routes', () => {
   assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 10, y: 10 }]), /Diagonal path segment 0/);
   assert.throws(() => createPathMetrics([{ x: 0, y: 0 }, { x: 0, y: 0 }]), /Empty path segment 0/);
