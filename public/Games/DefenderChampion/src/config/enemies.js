@@ -56,7 +56,7 @@ export const ENEMIES = Object.freeze({
   }),
   'ironhide-warlord': freezeEnemy({
     id: 'ironhide-warlord', health: 12000, speed: 36, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
-    rallyRadius: 165, rallyDurationTicks: 180, rallySpeed: 0.20, rallyArmor: 0.15,
+    rallyRadius: 165, rallyDurationTicks: 180, rallyTelegraphTicks: 60, rallySpeed: 0.20, rallyArmor: 0.15,
     plateThresholds: Object.freeze([0.75, 0.50, 0.25]),
     plateArmorBonuses: Object.freeze([0.15, 0.10, 0.05]), vulnerableTicks: 180,
   }),
@@ -65,6 +65,7 @@ export const ENEMIES = Object.freeze({
     phaseThresholds: Object.freeze({ phase2: 0.75, phase3: 0.40 }),
     phase2Armor: 0.20, phase3Speed: 0.20,
     summonThresholds: Object.freeze([0.75, 0.50, 0.25]), summonCount: 6,
+    summonTelegraphTicks: 60, summonWarningRadius: 84,
     pulseTelegraphTicks: 75, pulseDurationTicks: 180, pulseSlow: 0.25, pulseRadius: 190,
   }),
 });

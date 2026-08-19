@@ -98,3 +98,154 @@ export const resolvePresentationLimits = (reducedMotion = false) => Object.freez
   particleCap: reducedMotion ? 18 : 64,
   telegraphsEnabled: true,
 });
+
+export const deriveCampaignEnemyViewCapacity = (levels = [], enemies = {}) => Math.max(
+  0,
+  ...levels.map((level) => level.waves.reduce((levelTotal, wave) => (
+    levelTotal + wave.reduce((waveTotal, group) => {
+      const enemy = enemies[group.enemyId] ?? {};
+      const authoredSummons = Array.isArray(enemy.summonThresholds)
+        ? enemy.summonThresholds.length * Math.max(0, enemy.summonCount ?? 0)
+        : 0;
+      return waveTotal + (group.count * (1 + authoredSummons));
+    }, 0)
+  ), 0)),
+);
+
+export class ViewPool {
+  constructor(createView, { maximum = Number.POSITIVE_INFINITY, resetView } = {}) {
+    this.availableViews = [];
+    this.activeViews = new Set();
+    this.allViews = new Set();
+    this.createView = createView;
+    this.maximum = maximum;
+    this.resetView = resetView;
+    this.stats = {
+      created: 0,
+      active: 0,
+      available: 0,
+      highWater: 0,
+      acquires: 0,
+      releases: 0,
+    };
+  }
+
+  acquire() {
+    let view = this.availableViews.pop();
+    if (!view) {
+      if (this.allViews.size >= this.maximum) return null;
+      view = this.createView();
+      this.allViews.add(view);
+      this.stats.created += 1;
+    }
+    this.activeViews.add(view);
+    view.setActive?.(true);
+    view.setVisible?.(true);
+    view.setAlpha?.(1);
+    this.stats.acquires += 1;
+    this.stats.active = this.activeViews.size;
+    this.stats.available = this.availableViews.length;
+    this.stats.highWater = Math.max(this.stats.highWater, this.stats.active);
+    return view;
+  }
+
+  release(view) {
+    if (!view || !this.activeViews.delete(view)) return;
+    this.resetView?.(view);
+    view.setActive?.(false);
+    view.setVisible?.(false);
+    this.availableViews.push(view);
+    this.stats.releases += 1;
+    this.stats.active = this.activeViews.size;
+    this.stats.available = this.availableViews.length;
+  }
+
+  getState() {
+    return { ...this.stats };
+  }
+
+  destroy() {
+    for (const view of this.allViews) view.destroy?.();
+    this.availableViews.length = 0;
+    this.activeViews.clear();
+    this.allViews.clear();
+    for (const key of Object.keys(this.stats)) this.stats[key] = 0;
+  }
+}
+
+export const syncProjectionMap = (projectionMap, pool, entries, applyProjection, onRelease) => {
+  const activeIds = new Set(entries.map((entry) => entry.id));
+  for (const [id, view] of projectionMap) {
+    if (activeIds.has(id)) continue;
+    onRelease?.(id, view);
+    pool.release(view);
+    projectionMap.delete(id);
+  }
+  for (const entry of entries) {
+    let view = projectionMap.get(entry.id);
+    if (!view) {
+      view = pool.acquire();
+      if (!view) throw new Error(`Projection pool exhausted for ${entry.id}`);
+      projectionMap.set(entry.id, view);
+    }
+    applyProjection(view, entry);
+  }
+};
+
+export const projectCombatRadius = ({ position, radius, xScale, yScale }) => ({
+  displayHeight: 2 * radius * yScale,
+  displayWidth: 2 * radius * xScale,
+  x: position.x,
+  y: position.y,
+});
+
+export const resolveBetweenWaveCountdown = (snapshot, gapTicks, ticksPerSecond = 60) => {
+  const startTick = snapshot?.nextWaveStartTick;
+  const tick = snapshot?.tick;
+  if (!Number.isInteger(startTick) || !Number.isInteger(tick) || startTick <= tick) return null;
+  const ticksRemaining = startTick - tick;
+  if (ticksRemaining > gapTicks) return null;
+  return Math.ceil(ticksRemaining / ticksPerSecond);
+};
+
+const IRONHIDE_PLATE_POSITIONS = Object.freeze({
+  plate75: Object.freeze({ x: -54, y: -112 }),
+  plate50: Object.freeze({ x: 54, y: -112 }),
+  plate25: Object.freeze({ x: 0, y: -158 }),
+});
+
+export const resolveIronhidePlatePresentation = (mappings, {
+  thresholdFlags = {},
+  tick = 0,
+  vulnerableUntilTick = 0,
+} = {}) => {
+  const plates = (mappings?.plateAccents ?? []).map(({ removeAccent: id, threshold }) => ({
+    id,
+    threshold,
+    ...(IRONHIDE_PLATE_POSITIONS[threshold] ?? { x: 0, y: -112 }),
+    visible: thresholdFlags[threshold] !== true,
+  }));
+  return {
+    plates,
+    vulnerabilityVisible: plates.length > 0
+      && plates.every(({ visible }) => !visible)
+      && vulnerableUntilTick > tick,
+  };
+};
+
+export const resolveResultTransitionDelay = ({
+  bossMetadata,
+  elapsedSinceBossDefeatMs = 0,
+  enemyId,
+  fallbackDelayMs = 1_350,
+  reducedMotion = false,
+} = {}) => {
+  if (reducedMotion) return 650;
+  const records = bossMetadata?.bosses ?? bossMetadata?.enemies ?? [];
+  const defeat = records.find(({ id }) => id === enemyId)
+    ?.actions?.find(({ id }) => id === 'defeat');
+  if (!defeat) return fallbackDelayMs;
+  const authoredDuration = defeat.frameCount * defeat.frameDurationMs;
+  const remainingDuration = authoredDuration - Math.max(0, elapsedSinceBossDefeatMs);
+  return Math.max(fallbackDelayMs, remainingDuration);
+};

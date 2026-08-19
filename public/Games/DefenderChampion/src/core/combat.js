@@ -235,6 +235,7 @@ const summonDreadPack = (simulation, boss, threshold) => {
       true,
     ));
   }
+  delete boss.thresholdFlags[`summon${threshold}Pending`];
   boss.thresholdFlags[`summon${threshold}`] = true;
   emitPresentationEvent(simulation, 'dread-summon', {
     bossId: boss.id,
@@ -269,8 +270,22 @@ const updateBossThresholds = (simulation, enemy) => {
     const config = ENEMIES[enemy.enemyId];
     for (const threshold of config.summonThresholds) {
       const thresholdPercent = Math.round(threshold * 100);
-      if (ratio <= threshold && !enemy.thresholdFlags[`summon${thresholdPercent}`]) {
-        summonDreadPack(simulation, enemy, thresholdPercent);
+      const completedFlag = `summon${thresholdPercent}`;
+      const pendingFlag = `${completedFlag}Pending`;
+      if (ratio <= threshold
+        && !enemy.thresholdFlags[completedFlag]
+        && !enemy.thresholdFlags[pendingFlag]) {
+        enemy.thresholdFlags[pendingFlag] = true;
+        telegraphBossAbility(
+          simulation,
+          enemy,
+          `dread-summon-${thresholdPercent}-telegraph`,
+          config.summonTelegraphTicks,
+          {
+            healthThresholdPercent: thresholdPercent,
+            radius: config.summonWarningRadius,
+          },
+        );
       }
     }
     const phase = getDreadColossusPhase(ratio);
@@ -327,7 +342,7 @@ const applyWarlordRally = (simulation, source) => {
   }
 };
 
-const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => {
+const telegraphBossAbility = (simulation, source, kind, telegraphTicks, details = {}) => {
   const triggerTick = simulation.tick + telegraphTicks;
   addEffect(simulation, {
     sourceId: source.id,
@@ -337,6 +352,7 @@ const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => {
     triggerTick,
     expiresAtTick: triggerTick + 1,
     triggered: false,
+    ...details,
   });
   emitPresentationEvent(simulation, 'boss-ability-warning', {
     abilityKind: kind,
@@ -345,6 +361,7 @@ const telegraphBossAbility = (simulation, source, kind, telegraphTicks) => {
     pathProgress: source.pathProgress,
     position: getEnemyPosition(simulation, source),
     triggerTick,
+    ...details,
   });
 };
 
@@ -361,26 +378,32 @@ const updateEnemyAbilities = (simulation, enemy) => {
       applyHexcallerSupport(simulation, enemy);
     }
     if (enemy.enemyId === 'ironhide-warlord') {
-      emitPresentationEvent(simulation, 'ironhide-rally', {
-        bossId: enemy.id,
-        pathProgress: enemy.pathProgress,
-        position: getEnemyPosition(simulation, enemy),
-      });
-      emitPresentationEvent(simulation, 'boss-ability-impact', {
-        abilityKind: 'ironhide-rally',
-        bossId: enemy.id,
-        enemyId: enemy.enemyId,
-        pathProgress: enemy.pathProgress,
-        position: getEnemyPosition(simulation, enemy),
-      });
-      applyWarlordRally(simulation, enemy);
+      telegraphBossAbility(
+        simulation,
+        enemy,
+        'ironhide-rally-telegraph',
+        config.rallyTelegraphTicks,
+        { radius: config.rallyRadius },
+      );
     }
     if (enemy.enemyId === 'mossback-brute') {
-      telegraphBossAbility(simulation, enemy, 'mossback-telegraph', config.telegraphTicks);
+      telegraphBossAbility(
+        simulation,
+        enemy,
+        'mossback-telegraph',
+        config.telegraphTicks,
+        { radius: config.abilityRadius },
+      );
     }
     if (enemy.enemyId === 'dread-colossus'
       && getDreadColossusPhase(enemy.health / enemy.maxHealth) === 3) {
-      telegraphBossAbility(simulation, enemy, 'dread-pulse-telegraph', config.pulseTelegraphTicks);
+      telegraphBossAbility(
+        simulation,
+        enemy,
+        'dread-pulse-telegraph',
+        config.pulseTelegraphTicks,
+        { radius: config.pulseRadius },
+      );
     }
     enemy.nextAbilityActiveTick += config.cooldownTicks;
   }
@@ -403,7 +426,23 @@ const triggerTelegraphs = (simulation) => {
       enemyId: source.enemyId,
       pathProgress: source.pathProgress,
       position: sourcePosition,
+      ...(effect.healthThresholdPercent !== undefined && {
+        healthThresholdPercent: effect.healthThresholdPercent,
+      }),
     });
+    if (effect.kind === 'ironhide-rally-telegraph') {
+      applyWarlordRally(simulation, source);
+      emitPresentationEvent(simulation, 'ironhide-rally', {
+        bossId: source.id,
+        pathProgress: source.pathProgress,
+        position: sourcePosition,
+      });
+      continue;
+    }
+    if (effect.kind.startsWith('dread-summon-')) {
+      summonDreadPack(simulation, source, effect.healthThresholdPercent);
+      continue;
+    }
     for (const tower of simulation.towers) {
       const radius = effect.kind === 'mossback-telegraph' ? config.abilityRadius : config.pulseRadius;
       if (distance(sourcePosition, getTowerPosition(simulation, tower)) > radius) continue;
@@ -485,14 +524,15 @@ const fireTower = (simulation, tower, targets) => {
       addProjectile(simulation, tower, target, Math.round(damage * config.masteryMultiplier));
     }
   } else {
+    const runeMastery = mastery && tower.defenderId === 'rune-artificer';
     addProjectile(simulation, tower, primary, damage, {
-      armorPierce: config.armorPierce,
+      armorPierce: runeMastery ? config.masteryArmorPierce : 0,
       splashRadius: config.splashRadius,
       stunSeconds: mastery && tower.defenderId === 'ironwarden' ? config.stunSeconds : 0,
     });
-    if (mastery && tower.defenderId === 'rune-artificer') {
+    if (runeMastery) {
       addProjectile(simulation, tower, primary, damage, {
-        armorPierce: config.armorPierce,
+        armorPierce: config.masteryArmorPierce,
         splashRadius: config.splashRadius,
         delayTicks: config.projectileTicks + config.masteryDelayTicks,
       });

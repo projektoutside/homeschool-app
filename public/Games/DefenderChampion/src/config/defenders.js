@@ -58,7 +58,7 @@ export const DEFENDERS = Object.freeze({
     cooldownTicks: [84, 76, 68],
     projectileTicks: 4,
     splashRadius: 60,
-    armorPierce: 0.35,
+    masteryArmorPierce: 0.35,
     masteryAttackCount: 4,
     masteryDelayTicks: 8,
   }),

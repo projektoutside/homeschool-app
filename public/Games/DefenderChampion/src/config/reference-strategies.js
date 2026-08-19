@@ -46,7 +46,7 @@ const earlyDiverseStrategies = (levelNumber) => ({
   ]),
 });
 
-const lateDiverseStrategies = (levelNumber) => ({
+const lateDiverseStrategies = (levelNumber, artilleryReinforcement = null) => ({
   [`level-${levelNumber}-balanced`]: freezeCommands([
     build(levelNumber, 0, 'bladeguard', 'a'),
     build(levelNumber, 0, 'bladeguard', 'd'),
@@ -62,6 +62,12 @@ const lateDiverseStrategies = (levelNumber) => ({
     build(levelNumber, 3600, 'rune-artificer', 'f'),
     build(levelNumber, 4800, 'rune-artificer', 'd'),
     build(levelNumber, 6000, 'rune-artificer', 'e'),
+    ...(artilleryReinforcement ? [build(
+      levelNumber,
+      artilleryReinforcement.tick,
+      artilleryReinforcement.defenderId,
+      artilleryReinforcement.pad,
+    )] : []),
   ]),
 });
 
@@ -98,11 +104,11 @@ export const REFERENCE_STRATEGIES = Object.freeze({
     build(7, 7500, 'bladeguard', 'd'),
   ]),
   ...lateDiverseStrategies(8),
-  ...lateDiverseStrategies(9),
+  ...lateDiverseStrategies(9, { tick: 7200, defenderId: 'ironwarden', pad: 'h' }),
   'level-10-artillery': freezeCommands([
     build(10, 0, 'rune-artificer', 'f'),
-    build(10, 5400, 'rune-artificer', 'd'),
-    build(10, 6000, 'ironwarden', 'a'),
+    build(10, 5400, 'ironwarden', 'd'),
+    build(10, 6000, 'rune-artificer', 'a'),
     build(10, 6600, 'ironwarden', 'g'),
     build(10, 7200, 'ranger', 'b'),
     build(10, 7800, 'ranger', 'h'),

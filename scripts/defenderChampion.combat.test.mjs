@@ -196,3 +196,119 @@ test('terminal cleanup clears effects and every internal effect cache', () => {
   assert.deepEqual(simulation.effects, []);
   assert.equal(simulation.activeEffectValues.size, 0);
 });
+
+test('Rune Artificer uses ordinary armor for normal shots and 35 percent pierce only for mastery projectiles', () => {
+  const runShot = (attackCount) => {
+    const enemy = createCombatEnemy('enemy-1', 'shellguard', {
+      health: 1000,
+      maxHealth: 1000,
+      pathProgress: 80,
+      speed: 0,
+    });
+    const simulation = createTowerCombat('rune-artificer', 2, attackCount, [enemy]);
+
+    simulation.tick = 0;
+    stepCombat(simulation);
+    const launchedProjectiles = simulation.projectiles.map(({ armorPierce, impactTick }) => ({
+      armorPierce,
+      impactTick,
+    }));
+    for (let tick = 1; tick <= 12; tick += 1) {
+      simulation.tick = tick;
+      stepCombat(simulation);
+    }
+
+    return {
+      damage: 1000 - enemy.health,
+      launchedProjectiles,
+    };
+  };
+
+  assert.deepEqual(runShot(0), {
+    damage: 16,
+    launchedProjectiles: [{ armorPierce: 0, impactTick: 4 }],
+  });
+  assert.deepEqual(runShot(3), {
+    damage: 58,
+    launchedProjectiles: [
+      { armorPierce: 0.35, impactTick: 4 },
+      { armorPierce: 0.35, impactTick: 12 },
+    ],
+  });
+});
+
+test('Ironhide rally warns for one active second before applying its combat effects exactly once', () => {
+  assert.equal(ENEMIES['ironhide-warlord'].rallyTelegraphTicks, 60);
+  const boss = createCombatEnemy('enemy-1', 'ironhide-warlord', {
+    abilityActiveTicks: ENEMIES['ironhide-warlord'].cooldownTicks,
+    nextAbilityActiveTick: ENEMIES['ironhide-warlord'].cooldownTicks,
+    speed: 0,
+  });
+  const ally = createCombatEnemy('enemy-2', 'blight-walker', { speed: 0 });
+  const simulation = createTowerCombat('bladeguard', 0, 0, [boss, ally]);
+  simulation.towers = [];
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  assert.equal(simulation.effects.some(({ kind }) => kind === 'ironhide-rally-telegraph'), true);
+  assert.equal(simulation.effects.some(({ kind }) => kind === 'enemy-speed' || kind === 'enemy-armor'), false);
+  assert.equal(simulation.presentationEvents.filter(({ kind }) => kind === 'boss-ability-warning').length, 1);
+  assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'ironhide-rally'), false);
+
+  for (let tick = 1; tick < 60; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+  assert.equal(simulation.effects.some(({ kind }) => kind === 'enemy-speed' || kind === 'enemy-armor'), false);
+
+  simulation.tick = 60;
+  stepCombat(simulation);
+  assert.equal(simulation.effects.some(({ kind, targetId }) => kind === 'enemy-speed' && targetId === ally.id), true);
+  assert.equal(simulation.effects.some(({ kind, targetId }) => kind === 'enemy-armor' && targetId === ally.id), true);
+  const eventKinds = simulation.presentationEvents.map(({ kind }) => kind);
+  assert.ok(eventKinds.indexOf('boss-ability-warning') < eventKinds.indexOf('boss-ability-impact'));
+  assert.ok(eventKinds.indexOf('boss-ability-impact') < eventKinds.indexOf('ironhide-rally'));
+
+  simulation.tick = 61;
+  stepCombat(simulation);
+  assert.equal(simulation.presentationEvents.filter(({ kind }) => kind === 'ironhide-rally').length, 1);
+});
+
+test('Dread threshold summons warn for one active second before insertion without duplicate packs', () => {
+  assert.equal(ENEMIES['dread-colossus'].summonTelegraphTicks, 60);
+  const maxHealth = 10_000;
+  const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
+    health: 7_400,
+    maxHealth,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('bladeguard', 0, 0, [boss]);
+  simulation.towers = [];
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  assert.equal(simulation.enemies.length, 1);
+  assert.equal(simulation.effects.some(({ kind }) => kind === 'dread-summon-75-telegraph'), true);
+  assert.equal(boss.thresholdFlags.summon75, undefined);
+  assert.equal(boss.thresholdFlags.summon75Pending, true);
+
+  for (let tick = 1; tick < 60; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+  assert.equal(simulation.enemies.length, 1);
+
+  simulation.tick = 60;
+  stepCombat(simulation);
+  assert.equal(simulation.enemies.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
+  assert.equal(boss.thresholdFlags.summon75, true);
+  assert.equal(boss.thresholdFlags.summon75Pending, undefined);
+  const eventKinds = simulation.presentationEvents.map(({ kind }) => kind);
+  assert.ok(eventKinds.indexOf('boss-ability-warning') < eventKinds.indexOf('boss-ability-impact'));
+  assert.ok(eventKinds.indexOf('boss-ability-impact') < eventKinds.indexOf('dread-summon'));
+
+  simulation.tick = 61;
+  stepCombat(simulation);
+  assert.equal(simulation.enemies.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
+  assert.equal(simulation.presentationEvents.filter(({ kind }) => kind === 'dread-summon').length, 1);
+});

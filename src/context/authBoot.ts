@@ -1,6 +1,40 @@
 export const AUTH_BOOT_TIMEOUT_MS = 3000;
 export const AUTH_REFRESH_TIMEOUT_MS = 3000;
 
+export type ProtectedRouteState = 'allow' | 'deny' | 'pending';
+
+export const createInitialAuthState = <TUser>({
+  remoteAuthAvailable,
+  readPersistedGuest,
+}: {
+  remoteAuthAvailable: boolean;
+  readPersistedGuest: () => TUser | null;
+}): { loading: boolean; user: TUser | null } => {
+  let user: TUser | null = null;
+  try {
+    user = readPersistedGuest();
+  } catch {
+    user = null;
+  }
+  return {
+    loading: remoteAuthAvailable,
+    user,
+  };
+};
+
+export const resolveProtectedRouteState = ({
+  user,
+  loading,
+  allowWhileLoading = false,
+}: {
+  user: unknown;
+  loading: boolean;
+  allowWhileLoading?: boolean;
+}): ProtectedRouteState => {
+  if (loading) return allowWhileLoading ? 'allow' : 'pending';
+  return user ? 'allow' : 'deny';
+};
+
 interface SessionCandidate {
   user?: unknown;
   expires_at?: number | null;

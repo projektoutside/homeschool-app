@@ -12,6 +12,7 @@ import {
   summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
 import { selectTarget } from '../public/Games/DefenderChampion/src/core/targeting.js';
+import { WAVE_GAP_TICKS } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
 test('presentation snapshots omit nonvisual effect fan-out without weakening full deterministic summaries', () => {
   const simulation = createSimulation('level-10', { qa: true });
@@ -266,4 +267,77 @@ test('projectile snapshots retain launch data after their source tower is sold',
   assert.deepEqual(projectile.launchPosition, { x: 122, y: 278 });
   assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
   assert.equal(summarizeSimulation(simulation).towers.length, 0);
+});
+
+test('between-wave countdown follows authored start ticks through overlapping enemies at Levels 1 and 4', async () => {
+  const { resolveBetweenWaveCountdown } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+
+  for (const levelId of ['level-1', 'level-4']) {
+    const simulation = createSimulation(levelId, { qa: true });
+    const waveStarts = Array.from(
+      { length: simulation.level.waveCount },
+      (_unused, waveIndex) => simulation.waveSchedule.find((entry) => entry.waveIndex === waveIndex).spawnTick,
+    );
+    const nextStartTick = waveStarts[1];
+
+    advanceSimulation(simulation, nextStartTick - WAVE_GAP_TICKS);
+    let summary = summarizeSimulation(simulation);
+    assert.equal(summary.nextWaveIndex, 1, `${levelId} next wave index`);
+    assert.equal(summary.nextWaveStartTick, nextStartTick, `${levelId} next wave start`);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), 3);
+    assert.equal(summary.enemies.some(({ waveIndex }) => waveIndex === 0), true, `${levelId} overlap`);
+
+    advanceSimulation(simulation, 60);
+    summary = summarizeSimulation(simulation);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), 2);
+    advanceSimulation(simulation, 60);
+    summary = summarizeSimulation(simulation);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), 1);
+    advanceSimulation(simulation, 60);
+    summary = summarizeSimulation(simulation);
+    assert.equal(summary.tick, nextStartTick);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), null);
+    assert.equal(summary.presentationEvents.some(({ kind, tick, payload }) => (
+      kind === 'wave-start' && tick === nextStartTick && payload.waveIndex === 1
+    )), false);
+
+    advanceSimulation(simulation, 1);
+    summary = summarizeSimulation(simulation);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), null);
+    assert.equal(summary.presentationEvents.some(({ kind, tick, payload }) => (
+      kind === 'wave-start' && tick === nextStartTick && payload.waveIndex === 1
+    )), true);
+
+    const finalStartTick = waveStarts.at(-1);
+    advanceSimulation(simulation, finalStartTick - summary.tick + 1);
+    summary = summarizeSimulation(simulation);
+    assert.equal(summary.waveIndex, simulation.level.waveCount - 1);
+    assert.equal(summary.nextWaveIndex, null);
+    assert.equal(summary.nextWaveStartTick, null);
+    assert.equal(resolveBetweenWaveCountdown(summary, WAVE_GAP_TICKS), null);
+  }
+});
+
+test('terminal simulations reject every gameplay command without changing coins, entities, time, or pause state', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
+  simulation.terminal = true;
+  simulation.outcome = 'victory';
+  const before = summarizeSimulation(simulation);
+  const commands = [
+    { type: 'build', defenderId: 'ranger', padId: 'l1-pad-b' },
+    { type: 'upgrade', towerId: 'tower-1' },
+    { type: 'sell', towerId: 'tower-1' },
+    { type: 'set-speed', value: 2 },
+    { type: 'set-pause-reason', reason: 'manual', active: true },
+  ];
+
+  for (const command of commands) {
+    assert.deepEqual(issueCommand(simulation, command), { accepted: false, reason: 'battle-terminal' });
+    assert.deepEqual(summarizeSimulation(simulation), before);
+  }
+  advanceSimulation(simulation, 120);
+  assert.deepEqual(summarizeSimulation(simulation), before);
 });

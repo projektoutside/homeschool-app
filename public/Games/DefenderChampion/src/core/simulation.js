@@ -117,6 +117,7 @@ const sellTower = (simulation, towerId) => {
 
 export const issueCommand = (simulation, command) => {
   if (!command || typeof command.type !== 'string') return rejected('invalid-command');
+  if (simulation.terminal) return rejected('battle-terminal');
   switch (command.type) {
     case 'build':
       return buildTower(simulation, command);
@@ -228,58 +229,78 @@ const getStrategyMetrics = (simulation) => {
   };
 };
 
-export const summarizeSimulation = (simulation) => ({
-  ...getStrategyMetrics(simulation),
-  version: simulation.version,
-  levelId: simulation.levelId,
-  tick: simulation.tick,
-  timeScale: simulation.timeScale,
-  pauseReasons: [...simulation.pauseReasons].sort(),
-  coins: simulation.coins,
-  score: simulation.score,
-  castleHearts: simulation.castleHearts,
-  nextEntityId: simulation.nextEntityId,
-  waveIndex: simulation.waveIndex,
-  spawnedAllWaves: simulation.spawnedAllWaves,
-  enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
-  towers: simulation.towers.map(snapshotTower).sort(sortById),
-  projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
-  effects: simulation.effects.map((effect) => structuredClone(effect)).sort(sortById),
-  presentationEvents: snapshotPresentationEvents(simulation),
-  terminal: simulation.terminal,
-  outcome: simulation.outcome,
-  medal: simulation.medal,
-  qa: simulation.qa,
-  seed: simulation.seed,
-});
+const getNextScheduledWave = (simulation) => {
+  for (let waveIndex = 0; waveIndex < simulation.level.waveCount; waveIndex += 1) {
+    if (simulation.waveStartedFlags[waveIndex]) continue;
+    const firstSpawn = simulation.waveSchedule.find((entry) => entry.waveIndex === waveIndex);
+    if (!firstSpawn || firstSpawn.spawnTick <= simulation.tick) return null;
+    return { nextWaveIndex: waveIndex, nextWaveStartTick: firstSpawn.spawnTick };
+  }
+  return null;
+};
 
-export const summarizePresentationSimulation = (simulation) => ({
-  version: simulation.version,
-  levelId: simulation.levelId,
-  tick: simulation.tick,
-  timeScale: simulation.timeScale,
-  pauseReasons: [...simulation.pauseReasons].sort(),
-  coins: simulation.coins,
-  score: simulation.score,
-  castleHearts: simulation.castleHearts,
-  nextEntityId: simulation.nextEntityId,
-  waveIndex: simulation.waveIndex,
-  spawnedAllWaves: simulation.spawnedAllWaves,
-  enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
-  towers: simulation.towers.map(snapshotTower).sort(sortById),
-  projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
-  effects: simulation.effects
-    .filter((effect) => effect.kind.includes('telegraph'))
-    .map((effect) => structuredClone(effect))
-    .sort(sortById),
-  presentationEvents: snapshotPresentationEvents(simulation),
-  purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
-  terminal: simulation.terminal,
-  outcome: simulation.outcome,
-  medal: simulation.medal,
-  qa: simulation.qa,
-  seed: simulation.seed,
-});
+export const summarizeSimulation = (simulation) => {
+  const nextWave = getNextScheduledWave(simulation);
+  return {
+    ...getStrategyMetrics(simulation),
+    version: simulation.version,
+    levelId: simulation.levelId,
+    tick: simulation.tick,
+    timeScale: simulation.timeScale,
+    pauseReasons: [...simulation.pauseReasons].sort(),
+    coins: simulation.coins,
+    score: simulation.score,
+    castleHearts: simulation.castleHearts,
+    nextEntityId: simulation.nextEntityId,
+    nextWaveIndex: nextWave?.nextWaveIndex ?? null,
+    nextWaveStartTick: nextWave?.nextWaveStartTick ?? null,
+    waveIndex: simulation.waveIndex,
+    spawnedAllWaves: simulation.spawnedAllWaves,
+    enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
+    towers: simulation.towers.map(snapshotTower).sort(sortById),
+    projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
+    effects: simulation.effects.map((effect) => structuredClone(effect)).sort(sortById),
+    presentationEvents: snapshotPresentationEvents(simulation),
+    terminal: simulation.terminal,
+    outcome: simulation.outcome,
+    medal: simulation.medal,
+    qa: simulation.qa,
+    seed: simulation.seed,
+  };
+};
+
+export const summarizePresentationSimulation = (simulation) => {
+  const nextWave = getNextScheduledWave(simulation);
+  return {
+    version: simulation.version,
+    levelId: simulation.levelId,
+    tick: simulation.tick,
+    timeScale: simulation.timeScale,
+    pauseReasons: [...simulation.pauseReasons].sort(),
+    coins: simulation.coins,
+    score: simulation.score,
+    castleHearts: simulation.castleHearts,
+    nextEntityId: simulation.nextEntityId,
+    nextWaveIndex: nextWave?.nextWaveIndex ?? null,
+    nextWaveStartTick: nextWave?.nextWaveStartTick ?? null,
+    waveIndex: simulation.waveIndex,
+    spawnedAllWaves: simulation.spawnedAllWaves,
+    enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
+    towers: simulation.towers.map(snapshotTower).sort(sortById),
+    projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
+    effects: simulation.effects
+      .filter((effect) => effect.kind.includes('telegraph'))
+      .map((effect) => structuredClone(effect))
+      .sort(sortById),
+    presentationEvents: snapshotPresentationEvents(simulation),
+    purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
+    terminal: simulation.terminal,
+    outcome: simulation.outcome,
+    medal: simulation.medal,
+    qa: simulation.qa,
+    seed: simulation.seed,
+  };
+};
 
 export const runStrategyFixture = (levelId, strategyId) => {
   const strategy = REFERENCE_STRATEGIES[strategyId];

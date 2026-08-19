@@ -683,17 +683,22 @@ test('tower projection preserves attack and mastery actions until animation comp
   assert.match(battle, /shouldProjectDefenderIdle\(\{[\s\S]*?currentAnimationKey:[\s\S]*?isPlaying:[\s\S]*?textureKey:/);
 });
 
-test('boss warning geometry projects combat radius with independent world axes', async () => {
-  const battle = await readGameFile('src/scenes/BattleScene.js');
+test('boss warning geometry centers the full projected combat diameter on its logical source', async () => {
+  const { projectCombatRadius } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
 
-  assert.match(
-    battle,
-    /\.setDisplaySize\(\s*radius \* PATH_X_SCALE \* 0\.72,\s*radius \* PATH_Y_SCALE \* 0\.72\s*\)/,
-  );
-  assert.doesNotMatch(
-    battle,
-    /\.setDisplaySize\(\s*radius \* PATH_X_SCALE \* 0\.72,\s*radius \* PATH_X_SCALE \* 0\.72\s*\)/,
-  );
+  assert.deepEqual(projectCombatRadius({
+    position: { x: 208, y: 412 },
+    radius: 150,
+    xScale: 720 / 640,
+    yScale: 1.45,
+  }), {
+    displayHeight: 435,
+    displayWidth: 337.5,
+    x: 208,
+    y: 412,
+  });
 });
 
 test('ordinary play uses final art, responsive side rails, reduced-motion cosmetic caps, and exact canvas bounds', async () => {
@@ -746,21 +751,103 @@ test('battle flow starts paused for placement, counts down before tick zero, and
   assert.match(hud, /betweenWaveCountdown/);
 });
 
-test('presentation pools are bounded, observable, reusable, and fully cleared on restart or unload', async () => {
-  const [battle, lifecycle] = await Promise.all([
-    readGameFile('src/scenes/BattleScene.js'),
-    readGameFile('src/runtime-lifecycle.js'),
+test('campaign-derived enemy pool maps every possible authored combatant and fails loudly below capacity', async () => {
+  const [{ LEVELS }, { ENEMIES }, presentation] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/config/enemies.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
-  for (const poolName of [
-    'enemyPool', 'defenderPool', 'projectilePool', 'telegraphPool',
-    'defeatPool', 'damageLabelPool', 'particlePool',
-  ]) assert.match(battle, new RegExp(`this\\.${poolName}`));
-  assert.match(battle, /created[\s\S]*active[\s\S]*available[\s\S]*highWater[\s\S]*acquires[\s\S]*releases/);
-  assert.match(battle, /getPerformanceState/);
-  assert.match(battle, /damageLabelCap/);
-  assert.match(battle, /particleCap/);
-  assert.match(battle, /clearPresentationEvents/);
-  assert.match(lifecycle, /prepareUnload|shutdownActiveScenes|scene\.stop/);
+  const {
+    ViewPool,
+    deriveCampaignEnemyViewCapacity,
+    syncProjectionMap,
+  } = presentation;
+  const capacity = deriveCampaignEnemyViewCapacity(LEVELS, ENEMIES);
+  assert.equal(capacity, 421);
+
+  const createView = () => ({
+    setActive() { return this; },
+    setAlpha() { return this; },
+    setVisible() { return this; },
+  });
+  const entries = Array.from({ length: capacity }, (_unused, index) => ({ id: `enemy-${index + 1}` }));
+  const projections = new Map();
+  const pool = new ViewPool(createView, { maximum: capacity });
+  syncProjectionMap(projections, pool, entries, () => {});
+  assert.equal(projections.size, capacity);
+  assert.deepEqual(pool.getState(), {
+    active: capacity,
+    acquires: capacity,
+    available: 0,
+    created: capacity,
+    highWater: capacity,
+    releases: 0,
+  });
+
+  const undersizedPool = new ViewPool(createView, { maximum: capacity - 1 });
+  assert.throws(
+    () => syncProjectionMap(new Map(), undersizedPool, entries, () => {}),
+    /Projection pool exhausted for enemy-421/,
+  );
+});
+
+test('Ironhide metadata maps three stable removable plate overlays and a plate-free vulnerability accent', async () => {
+  const { resolveIronhidePlatePresentation } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  const metadata = JSON.parse(await readGameFile('assets/metadata/bosses.json'));
+  const mappings = metadata.bosses.find(({ id }) => id === 'ironhide-warlord').presentationMappings;
+
+  const expectedPlates = [
+    { id: 'iron-bark-plate-1', threshold: 'plate75', x: -54, y: -112 },
+    { id: 'iron-bark-plate-2', threshold: 'plate50', x: 54, y: -112 },
+    { id: 'iron-bark-plate-3', threshold: 'plate25', x: 0, y: -158 },
+  ];
+  for (const [thresholdFlags, visibleIds, vulnerabilityVisible] of [
+    [{}, expectedPlates.map(({ id }) => id), false],
+    [{ plate75: true }, ['iron-bark-plate-2', 'iron-bark-plate-3'], false],
+    [{ plate75: true, plate50: true }, ['iron-bark-plate-3'], false],
+    [{ plate75: true, plate50: true, plate25: true }, [], true],
+  ]) {
+    const state = resolveIronhidePlatePresentation(mappings, {
+      thresholdFlags,
+      tick: 120,
+      vulnerableUntilTick: vulnerabilityVisible ? 180 : 0,
+    });
+    assert.deepEqual(state.plates.map(({ id, threshold, x, y }) => ({ id, threshold, x, y })), expectedPlates);
+    assert.deepEqual(state.plates.filter(({ visible }) => visible).map(({ id }) => id), visibleIds);
+    assert.equal(state.vulnerabilityVisible, vulnerabilityVisible);
+  }
+});
+
+test('result transition waits exactly for the authored ten-frame boss defeat and preserves a reduced-motion final frame', async () => {
+  const { resolveResultTransitionDelay } = await import(
+    '../public/Games/DefenderChampion/src/presentation.js'
+  );
+  const metadata = JSON.parse(await readGameFile('assets/metadata/bosses.json'));
+
+  assert.equal(resolveResultTransitionDelay({
+    bossMetadata: metadata,
+    enemyId: 'dread-colossus',
+    reducedMotion: false,
+  }), 1_500);
+  assert.equal(resolveResultTransitionDelay({
+    bossMetadata: metadata,
+    elapsedSinceBossDefeatMs: 100,
+    enemyId: 'dread-colossus',
+    reducedMotion: false,
+  }), 1_400);
+  assert.equal(resolveResultTransitionDelay({
+    bossMetadata: metadata,
+    elapsedSinceBossDefeatMs: 200,
+    enemyId: 'dread-colossus',
+    reducedMotion: false,
+  }), 1_350);
+  assert.equal(resolveResultTransitionDelay({
+    bossMetadata: metadata,
+    enemyId: 'dread-colossus',
+    reducedMotion: true,
+  }), 650);
 });
 
 test('combat emits every required short-lived presentation edge without changing authored rules', async () => {
