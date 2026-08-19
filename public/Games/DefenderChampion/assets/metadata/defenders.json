@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "frame": {
+    "width": 256,
+    "height": 256,
+    "anchorX": 0.5,
+    "anchorY": 1,
+    "safeInset": 8
+  },
+  "defenderOrder": ["bladeguard", "ranger", "ironwarden", "rune-artificer"],
+  "actionOrder": ["idle", "attack", "mastery"],
+  "defenders": [
+    {
+      "id": "bladeguard",
+      "acceptedSeedIdentity": "seed-bladeguard-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": { "idle": 175, "attack": 175, "mastery": 175 },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        { "id": "idle", "assetId": "defender-bladeguard-idle", "frameCount": 4, "frameDurationMs": 180, "loop": true, "columns": 4, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 },
+          { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 },
+          { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 },
+          { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "attack", "assetId": "defender-bladeguard-attack", "frameCount": 6, "frameDurationMs": 100, "loop": false, "columns": 6, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 },
+          { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 },
+          { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 },
+          { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 },
+          { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 },
+          { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "mastery", "assetId": "defender-bladeguard-mastery", "frameCount": 8, "frameDurationMs": 110, "loop": false, "columns": 8, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 },
+          { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 },
+          { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 },
+          { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 },
+          { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 },
+          { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 },
+          { "index": 6, "x": 1536, "y": 0, "width": 256, "height": 256 },
+          { "index": 7, "x": 1792, "y": 0, "width": 256, "height": 256 }
+        ] }
+      ],
+      "tiers": [
+        { "tier": 1, "characterAssets": { "idle": "defender-bladeguard-idle", "attack": "defender-bladeguard-attack", "mastery": "defender-bladeguard-mastery" }, "overlays": [] },
+        { "tier": 2, "characterAssets": { "idle": "defender-bladeguard-idle", "attack": "defender-bladeguard-attack", "mastery": "defender-bladeguard-mastery" }, "overlays": [
+          { "id": "armor-trim-rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "selected-build-pad", "tint": "#8FE36A", "scale": 0.34, "opacity": 0.34 },
+          { "id": "weapon-glow", "atlasAssetId": "environment-gameplay-atlas", "frameId": "shield-bash", "tint": "#8FE36A", "scale": 0.38, "opacity": 0.45 }
+        ] },
+        { "tier": 3, "characterAssets": { "idle": "defender-bladeguard-idle", "attack": "defender-bladeguard-attack", "mastery": "defender-bladeguard-mastery" }, "overlays": [
+          { "id": "rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "victory-burst", "tint": "#FFD66B", "scale": 0.45, "opacity": 0.68 },
+          { "id": "aura", "atlasAssetId": "environment-gameplay-atlas", "frameId": "range-marker", "tint": "#8FE36A", "scale": 0.68, "opacity": 0.36 },
+          { "id": "mastery-effect", "atlasAssetId": "environment-gameplay-atlas", "frameId": "shield-bash", "tint": "#8FE36A", "scale": 0.58, "opacity": 0.72 }
+        ] }
+      ]
+    },
+    {
+      "id": "ranger",
+      "acceptedSeedIdentity": "seed-ranger-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": { "idle": 149, "attack": 149, "mastery": 149 },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        { "id": "idle", "assetId": "defender-ranger-idle", "frameCount": 4, "frameDurationMs": 180, "loop": true, "columns": 4, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "attack", "assetId": "defender-ranger-attack", "frameCount": 6, "frameDurationMs": 100, "loop": false, "columns": 6, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "mastery", "assetId": "defender-ranger-mastery", "frameCount": 8, "frameDurationMs": 110, "loop": false, "columns": 8, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }, { "index": 6, "x": 1536, "y": 0, "width": 256, "height": 256 }, { "index": 7, "x": 1792, "y": 0, "width": 256, "height": 256 }
+        ] }
+      ],
+      "tiers": [
+        { "tier": 1, "characterAssets": { "idle": "defender-ranger-idle", "attack": "defender-ranger-attack", "mastery": "defender-ranger-mastery" }, "overlays": [] },
+        { "tier": 2, "characterAssets": { "idle": "defender-ranger-idle", "attack": "defender-ranger-attack", "mastery": "defender-ranger-mastery" }, "overlays": [
+          { "id": "armor-trim-rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "selected-build-pad", "tint": "#F2C94C", "scale": 0.34, "opacity": 0.34 }, { "id": "weapon-glow", "atlasAssetId": "environment-gameplay-atlas", "frameId": "arrow", "tint": "#F2C94C", "scale": 0.38, "opacity": 0.45 }
+        ] },
+        { "tier": 3, "characterAssets": { "idle": "defender-ranger-idle", "attack": "defender-ranger-attack", "mastery": "defender-ranger-mastery" }, "overlays": [
+          { "id": "rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "victory-burst", "tint": "#FFD66B", "scale": 0.45, "opacity": 0.68 }, { "id": "aura", "atlasAssetId": "environment-gameplay-atlas", "frameId": "range-marker", "tint": "#F2C94C", "scale": 0.68, "opacity": 0.36 }, { "id": "mastery-effect", "atlasAssetId": "environment-gameplay-atlas", "frameId": "arrow", "tint": "#F2C94C", "scale": 0.58, "opacity": 0.72 }
+        ] }
+      ]
+    },
+    {
+      "id": "ironwarden",
+      "acceptedSeedIdentity": "seed-ironwarden-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": { "idle": 144, "attack": 144, "mastery": 144 },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        { "id": "idle", "assetId": "defender-ironwarden-idle", "frameCount": 4, "frameDurationMs": 180, "loop": true, "columns": 4, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "attack", "assetId": "defender-ironwarden-attack", "frameCount": 6, "frameDurationMs": 100, "loop": false, "columns": 6, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "mastery", "assetId": "defender-ironwarden-mastery", "frameCount": 8, "frameDurationMs": 110, "loop": false, "columns": 8, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }, { "index": 6, "x": 1536, "y": 0, "width": 256, "height": 256 }, { "index": 7, "x": 1792, "y": 0, "width": 256, "height": 256 }
+        ] }
+      ],
+      "tiers": [
+        { "tier": 1, "characterAssets": { "idle": "defender-ironwarden-idle", "attack": "defender-ironwarden-attack", "mastery": "defender-ironwarden-mastery" }, "overlays": [] },
+        { "tier": 2, "characterAssets": { "idle": "defender-ironwarden-idle", "attack": "defender-ironwarden-attack", "mastery": "defender-ironwarden-mastery" }, "overlays": [
+          { "id": "armor-trim-rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "selected-build-pad", "tint": "#69A7FF", "scale": 0.34, "opacity": 0.34 }, { "id": "weapon-glow", "atlasAssetId": "environment-gameplay-atlas", "frameId": "shield-bash", "tint": "#69A7FF", "scale": 0.38, "opacity": 0.45 }
+        ] },
+        { "tier": 3, "characterAssets": { "idle": "defender-ironwarden-idle", "attack": "defender-ironwarden-attack", "mastery": "defender-ironwarden-mastery" }, "overlays": [
+          { "id": "rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "victory-burst", "tint": "#FFD66B", "scale": 0.45, "opacity": 0.68 }, { "id": "aura", "atlasAssetId": "environment-gameplay-atlas", "frameId": "range-marker", "tint": "#69A7FF", "scale": 0.68, "opacity": 0.36 }, { "id": "mastery-effect", "atlasAssetId": "environment-gameplay-atlas", "frameId": "shield-bash", "tint": "#69A7FF", "scale": 0.58, "opacity": 0.72 }
+        ] }
+      ]
+    },
+    {
+      "id": "rune-artificer",
+      "acceptedSeedIdentity": "seed-rune-artificer-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": { "idle": 128, "attack": 128, "mastery": 127 },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        { "id": "idle", "assetId": "defender-rune-artificer-idle", "frameCount": 4, "frameDurationMs": 180, "loop": true, "columns": 4, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "attack", "assetId": "defender-rune-artificer-attack", "frameCount": 6, "frameDurationMs": 100, "loop": false, "columns": 6, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }
+        ] },
+        { "id": "mastery", "assetId": "defender-rune-artificer-mastery", "frameCount": 8, "frameDurationMs": 110, "loop": false, "columns": 8, "rows": 1, "frames": [
+          { "index": 0, "x": 0, "y": 0, "width": 256, "height": 256 }, { "index": 1, "x": 256, "y": 0, "width": 256, "height": 256 }, { "index": 2, "x": 512, "y": 0, "width": 256, "height": 256 }, { "index": 3, "x": 768, "y": 0, "width": 256, "height": 256 }, { "index": 4, "x": 1024, "y": 0, "width": 256, "height": 256 }, { "index": 5, "x": 1280, "y": 0, "width": 256, "height": 256 }, { "index": 6, "x": 1536, "y": 0, "width": 256, "height": 256 }, { "index": 7, "x": 1792, "y": 0, "width": 256, "height": 256 }
+        ] }
+      ],
+      "tiers": [
+        { "tier": 1, "characterAssets": { "idle": "defender-rune-artificer-idle", "attack": "defender-rune-artificer-attack", "mastery": "defender-rune-artificer-mastery" }, "overlays": [] },
+        { "tier": 2, "characterAssets": { "idle": "defender-rune-artificer-idle", "attack": "defender-rune-artificer-attack", "mastery": "defender-rune-artificer-mastery" }, "overlays": [
+          { "id": "armor-trim-rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "selected-build-pad", "tint": "#58D5FF", "scale": 0.34, "opacity": 0.34 }, { "id": "weapon-glow", "atlasAssetId": "environment-gameplay-atlas", "frameId": "rune-bolt", "tint": "#58D5FF", "scale": 0.38, "opacity": 0.45 }
+        ] },
+        { "tier": 3, "characterAssets": { "idle": "defender-rune-artificer-idle", "attack": "defender-rune-artificer-attack", "mastery": "defender-rune-artificer-mastery" }, "overlays": [
+          { "id": "rank-crest", "atlasAssetId": "environment-gameplay-atlas", "frameId": "victory-burst", "tint": "#FFD66B", "scale": 0.45, "opacity": 0.68 }, { "id": "aura", "atlasAssetId": "environment-gameplay-atlas", "frameId": "range-marker", "tint": "#58D5FF", "scale": 0.68, "opacity": 0.36 }, { "id": "mastery-effect", "atlasAssetId": "environment-gameplay-atlas", "frameId": "explosion", "tint": "#58D5FF", "scale": 0.58, "opacity": 0.72 }
+        ] }
+      ]
+    }
+  ]
+}

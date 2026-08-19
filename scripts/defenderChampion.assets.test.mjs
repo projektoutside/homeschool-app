@@ -13,6 +13,7 @@ const manifestPath = path.join(gameRoot, 'assets', 'manifest.json');
 const provenancePath = path.join(gameRoot, 'assets', 'provenance.json');
 const environmentMetadataPath = path.join(gameRoot, 'assets', 'metadata', 'environment.json');
 const castleMetadataPath = path.join(gameRoot, 'assets', 'metadata', 'castle.json');
+const defenderMetadataPath = path.join(gameRoot, 'assets', 'metadata', 'defenders.json');
 const optimizerPath = path.join(repoRoot, 'scripts', 'optimize-defender-champion-images.py');
 const bundledPythonPath = 'C:\\Users\\Xator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
 const systemPythonPath = process.platform === 'win32' ? 'python' : 'python3';
@@ -24,6 +25,14 @@ const atlasFrameSize = 314;
 const pathLaneWidth = 128;
 const pathSafeInset = 24;
 const spriteSafeInset = 16;
+const defenderFrameSize = 256;
+const defenderSafeInset = 8;
+const defenderOrder = ['bladeguard', 'ranger', 'ironwarden', 'rune-artificer'];
+const defenderActions = [
+  { id: 'idle', frameCount: 4, frameDurationMs: 180, loop: true },
+  { id: 'attack', frameCount: 6, frameDurationMs: 100, loop: false },
+  { id: 'mastery', frameCount: 8, frameDurationMs: 110, loop: false },
+];
 const expectedManifestAssets = [
   ['environment-grass', 'assets/environment/grass.webp'],
   ['environment-path-atlas', 'assets/environment/path-atlas.webp'],
@@ -32,7 +41,47 @@ const expectedManifestAssets = [
   ['environment-title-emblem', 'assets/environment/title-emblem.webp'],
   ['castle-states', 'assets/castle/castle-states.webp'],
   ['catalog-thumbnail', 'thumb.webp'],
+  ...defenderOrder.flatMap((defenderId) => defenderActions.map(({ id: actionId }) => [
+    `defender-${defenderId}-${actionId}`,
+    `assets/defenders/${defenderId}-${actionId}.webp`,
+  ])),
 ];
+const expectedTierEffects = {
+  bladeguard: { weaponGlow: 'shield-bash', masteryEffect: 'shield-bash', tint: '#8FE36A' },
+  ranger: { weaponGlow: 'arrow', masteryEffect: 'arrow', tint: '#F2C94C' },
+  ironwarden: { weaponGlow: 'shield-bash', masteryEffect: 'shield-bash', tint: '#69A7FF' },
+  'rune-artificer': { weaponGlow: 'rune-bolt', masteryEffect: 'explosion', tint: '#58D5FF' },
+};
+const expectedSharedScaleEvidence = {
+  bladeguard: { idle: 175, attack: 175, mastery: 175 },
+  ranger: { idle: 149, attack: 149, mastery: 149 },
+  ironwarden: { idle: 144, attack: 144, mastery: 144 },
+  'rune-artificer': { idle: 128, attack: 128, mastery: 127 },
+};
+const defenderRoleBriefs = {
+  bladeguard: 'agile youthful champion in green-and-cream leather armor with short silver sword and round blue shield',
+  ranger: 'focused green-hooded longbow champion with brown leather gear and a clear wooden bow',
+  ironwarden: 'sturdy cobalt-and-silver armored guardian with broad shield, short sword, and blue plume',
+  'rune-artificer': 'clever cobalt-hooded fantasy artificer with a brass-and-wood rune launcher that reads as magical equipment rather than a firearm',
+};
+const expectedActionDirections = {
+  bladeguard: {
+    attack: 'quick short-sword slash while the shield stays readable',
+    mastery: 'a controlled sword-and-shield whirlwind with compact silver wind arcs, clearly returning to guard',
+  },
+  ranger: {
+    attack: 'draw, release one arrow, recover; bow/string continuity must stay readable',
+    mastery: 'a critical volley, drawing high and releasing a compact fan of three gold-tipped arrows without arrows crossing a slot boundary',
+  },
+  ironwarden: {
+    attack: 'heavy shield-led sword bash',
+    mastery: 'a rally bash, planting the broad shield and releasing one compact blue-and-gold rally pulse around the feet',
+  },
+  'rune-artificer': {
+    attack: 'shoulder the brass-and-wood rune launcher and release a blue rune bolt; it must remain magical equipment, not a firearm',
+    mastery: 'a double detonation, charging the launcher then releasing one close blue rune burst followed by a smaller echo ring',
+  },
+};
 const expectedPathTiles = [
   { id: 'isolated', connects: [] },
   { id: 'straight-horizontal', connects: ['east', 'west'] },
@@ -65,6 +114,7 @@ const expectedGameplayOrder = [
 ];
 
 const alphaInspectorScript = String.raw`
+import hashlib
 import json
 import sys
 from PIL import Image
@@ -138,6 +188,7 @@ for top in range(0, image.height, frame_height):
             'bboxEdgeRuns': bbox_edge_runs,
             'components0': component_sizes(alpha, 0),
             'components': component_sizes(alpha, threshold),
+            'rgbaHash': hashlib.sha256(image.crop((left, top, left + frame_width, top + frame_height)).tobytes()).hexdigest(),
             'edges': {
                 'north': [x for x in range(frame_width) if pixels[x, 0] > threshold],
                 'east': [y for y in range(frame_height) if pixels[frame_width - 1, y] > threshold],
@@ -346,7 +397,7 @@ test('Defender Champion manifest assets satisfy the production raster contract',
   assert.deepEqual(
     manifest.assets.map(({ id, path: assetPath }) => [id, assetPath]),
     expectedManifestAssets,
-    'manifest must register exactly the seven Task 8 raster assets in contract order',
+    'manifest must preserve the seven Task 8 assets and append the twelve Task 9 defender strips in contract order',
   );
   assert.equal(provenance.schemaVersion, 1);
   assert.ok(Array.isArray(provenance.assets));
@@ -458,6 +509,226 @@ test('Defender Champion frame metadata exactly maps every atlas and castle state
       groundContactY: castle.groundContactY,
       scale: castle.scale,
     });
+  }
+});
+
+test('Defender Champion defender strips preserve identity, animation geometry, and tier overlays', async () => {
+  const [manifest, provenance, defenders, environment] = await Promise.all([
+    readJson(manifestPath),
+    readJson(provenancePath),
+    readJson(defenderMetadataPath),
+    readJson(environmentMetadataPath),
+  ]);
+  const assetsById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
+  const provenanceById = new Map(provenance.assets.map((record) => [record.id, record]));
+  const gameplayFrames = new Set(environment.atlases.gameplay.order);
+
+  assert.equal(defenders.schemaVersion, 1);
+  assert.deepEqual(defenders.frame, {
+    width: defenderFrameSize,
+    height: defenderFrameSize,
+    anchorX: 0.5,
+    anchorY: 1,
+    safeInset: defenderSafeInset,
+  });
+  assert.deepEqual(defenders.defenderOrder, defenderOrder);
+  assert.deepEqual(defenders.actionOrder, defenderActions.map(({ id }) => id));
+  assert.deepEqual(defenders.defenders.map(({ id }) => id), defenderOrder);
+
+  for (const defender of defenders.defenders) {
+    assert.equal(defender.acceptedSeedIdentity, `seed-${defender.id}-v1`);
+    assert.deepEqual(defender.sharedScaleEvidence, {
+      measurement: 'decoded alpha bbox height above threshold 64 in the first normalized frame',
+      actionFirstFrameHeightPx: expectedSharedScaleEvidence[defender.id],
+      maxActionDeltaPx: 1,
+    });
+    assert.deepEqual(defender.actions.map(({ id }) => id), defenderActions.map(({ id }) => id));
+    assert.deepEqual(defender.tiers.map(({ tier }) => tier), [1, 2, 3]);
+
+    const expectedCharacterAssets = Object.fromEntries(defenderActions.map(({ id: actionId }) => [
+      actionId,
+      `defender-${defender.id}-${actionId}`,
+    ]));
+    for (const tier of defender.tiers) {
+      assert.deepEqual(
+        tier.characterAssets,
+        expectedCharacterAssets,
+        `${defender.id} tier ${tier.tier} must reuse the same normalized character strips`,
+      );
+    }
+    assert.deepEqual(defender.tiers[0].overlays, []);
+    assert.deepEqual(defender.tiers[1].overlays, [
+      {
+        id: 'armor-trim-rank-crest',
+        atlasAssetId: 'environment-gameplay-atlas',
+        frameId: 'selected-build-pad',
+        tint: expectedTierEffects[defender.id].tint,
+        scale: 0.34,
+        opacity: 0.34,
+      },
+      {
+        id: 'weapon-glow',
+        atlasAssetId: 'environment-gameplay-atlas',
+        frameId: expectedTierEffects[defender.id].weaponGlow,
+        tint: expectedTierEffects[defender.id].tint,
+        scale: 0.38,
+        opacity: 0.45,
+      },
+    ]);
+    assert.deepEqual(defender.tiers[2].overlays, [
+      {
+        id: 'rank-crest',
+        atlasAssetId: 'environment-gameplay-atlas',
+        frameId: 'victory-burst',
+        tint: '#FFD66B',
+        scale: 0.45,
+        opacity: 0.68,
+      },
+      {
+        id: 'aura',
+        atlasAssetId: 'environment-gameplay-atlas',
+        frameId: 'range-marker',
+        tint: expectedTierEffects[defender.id].tint,
+        scale: 0.68,
+        opacity: 0.36,
+      },
+      {
+        id: 'mastery-effect',
+        atlasAssetId: 'environment-gameplay-atlas',
+        frameId: expectedTierEffects[defender.id].masteryEffect,
+        tint: expectedTierEffects[defender.id].tint,
+        scale: 0.58,
+        opacity: 0.72,
+      },
+    ]);
+    for (const tier of defender.tiers.slice(1)) {
+      for (const overlay of tier.overlays) {
+        assert.equal(overlay.atlasAssetId, 'environment-gameplay-atlas');
+        assert.ok(gameplayFrames.has(overlay.frameId), `${defender.id} tier ${tier.tier} invents ${overlay.frameId}`);
+      }
+    }
+
+    const inspectedActions = new Map();
+    for (const [actionIndex, expectedAction] of defenderActions.entries()) {
+      const action = defender.actions[actionIndex];
+      const assetId = `defender-${defender.id}-${expectedAction.id}`;
+      const asset = assetsById.get(assetId);
+      assert.ok(asset, `missing manifest asset ${assetId}`);
+      assert.deepEqual(action, {
+        id: expectedAction.id,
+        assetId,
+        frameCount: expectedAction.frameCount,
+        frameDurationMs: expectedAction.frameDurationMs,
+        loop: expectedAction.loop,
+        columns: expectedAction.frameCount,
+        rows: 1,
+        frames: Array.from({ length: expectedAction.frameCount }, (_, index) => ({
+          index,
+          x: index * defenderFrameSize,
+          y: 0,
+          width: defenderFrameSize,
+          height: defenderFrameSize,
+        })),
+      });
+      assert.deepEqual(
+        {
+          width: asset.width,
+          height: asset.height,
+          alpha: asset.alpha,
+          animated: asset.animated,
+          frameWidth: asset.frameWidth,
+          frameHeight: asset.frameHeight,
+          frameCount: asset.frameCount,
+        },
+        {
+          width: expectedAction.frameCount * defenderFrameSize,
+          height: defenderFrameSize,
+          alpha: true,
+          animated: true,
+          frameWidth: defenderFrameSize,
+          frameHeight: defenderFrameSize,
+          frameCount: expectedAction.frameCount,
+        },
+      );
+
+      const record = provenanceById.get(assetId);
+      assert.ok(record, `missing provenance ${assetId}`);
+      assert.equal(record.seedIdentityReference, `seed-${defender.id}-v1`);
+      assert.ok(record.seedPrompt.includes(defenderRoleBriefs[defender.id]), `${assetId} seed prompt lost its role brief`);
+      assert.match(record.seedPrompt, /visual direction only[\s\S]*do not copy pixels/i);
+      assert.equal(record.generationMode, 'edit');
+      assert.ok(record.finalPrompt.includes(`Exact ${expectedAction.frameCount}`), `${assetId} prompt lost its frame contract`);
+      if (expectedAction.id !== 'idle') {
+        assert.ok(
+          record.finalPrompt.includes(expectedActionDirections[defender.id][expectedAction.id]),
+          `${assetId} prompt lost its exact action direction`,
+        );
+      }
+      assert.match(record.normalization, /normalize_sprite_strip\.py[\s\S]*256x256[\s\S]*bottom-center/i);
+      assert.match(record.optimization, /lossless[\s\S]*method 6/i);
+      assert.equal(record.referenceDisclosure, 'Style direction only; no copied reference pixels');
+
+      const frames = inspectAlphaFrames(
+        path.join(gameRoot, asset.path),
+        defenderFrameSize,
+        defenderFrameSize,
+      );
+      assert.equal(frames.length, expectedAction.frameCount);
+      assert.equal(new Set(frames.map(({ rgbaHash }) => rgbaHash)).size, frames.length,
+        `${assetId} contains a lost or byte-duplicated frame`);
+      for (const [frameIndex, frame] of frames.entries()) {
+        assert.ok(frame.bbox0, `${assetId} frame ${frameIndex} is empty`);
+        const [left, top, right, bottom] = frame.bbox0;
+        const occupiedPixels = frame.components0.reduce((sum, size) => sum + size, 0);
+        assert.ok(occupiedPixels >= 1_024, `${assetId} frame ${frameIndex} is not meaningfully occupied`);
+        assert.ok(left >= defenderSafeInset, `${assetId} frame ${frameIndex} crosses its left safe inset`);
+        assert.ok(top >= defenderSafeInset, `${assetId} frame ${frameIndex} crosses its top safe inset`);
+        assert.ok(defenderFrameSize - right >= defenderSafeInset,
+          `${assetId} frame ${frameIndex} crosses its right safe inset`);
+        assert.equal(bottom, defenderFrameSize, `${assetId} frame ${frameIndex} lost the shared foot baseline`);
+        assert.deepEqual(
+          Object.fromEntries(['north', 'east', 'west'].map((side) => [side, frame.edges[side].length])),
+          { north: 0, east: 0, west: 0 },
+          `${assetId} frame ${frameIndex} crosses a cell edge`,
+        );
+        assert.ok(frame.bbox[3] >= defenderFrameSize - 3,
+          `${assetId} frame ${frameIndex} meaningful foot alpha drifted from the shared baseline`);
+        assert.ok(Math.abs(((left + right) / 2) - (defenderFrameSize / 2)) <= 40,
+          `${assetId} frame ${frameIndex} drifted from the bottom-center anchor`);
+        assert.ok(frame.bboxEdgeRuns.south <= 64,
+          `${assetId} frame ${frameIndex} has a clipped or non-foot baseline silhouette`);
+        for (const side of ['north', 'east', 'west']) {
+          assert.ok(frame.bboxEdgeRuns[side] <= 64,
+            `${assetId} frame ${frameIndex} has a clipped ${side} silhouette`);
+        }
+        assert.ok(right - left >= 64 && bottom - top >= 96,
+          `${assetId} frame ${frameIndex} has an unstable game-scale footprint`);
+      }
+      inspectedActions.set(expectedAction.id, frames);
+    }
+
+    const measuredFirstFrameHeights = Object.fromEntries(defenderActions.map(({ id: actionId }) => {
+      const [left, top, right, bottom] = inspectedActions.get(actionId)[0].bbox;
+      void left;
+      void right;
+      return [actionId, bottom - top];
+    }));
+    assert.deepEqual(measuredFirstFrameHeights, defender.sharedScaleEvidence.actionFirstFrameHeightPx,
+      `${defender.id} shared-scale evidence drifted from decoded production pixels`);
+    const scaleHeights = Object.values(measuredFirstFrameHeights);
+    assert.ok(Math.max(...scaleHeights) - Math.min(...scaleHeights) <= defender.sharedScaleEvidence.maxActionDeltaPx,
+      `${defender.id} actions do not share one character scale`);
+
+    const idleStart = inspectedActions.get('idle')[0].bbox0;
+    for (const actionId of ['attack', 'mastery']) {
+      const returnFrame = inspectedActions.get(actionId).at(-1).bbox0;
+      const idleWidth = idleStart[2] - idleStart[0];
+      const idleHeight = idleStart[3] - idleStart[1];
+      const returnWidth = returnFrame[2] - returnFrame[0];
+      const returnHeight = returnFrame[3] - returnFrame[1];
+      assert.ok(Math.abs(returnWidth - idleWidth) <= 64, `${defender.id} ${actionId} return footprint drifted`);
+      assert.ok(Math.abs(returnHeight - idleHeight) <= 48, `${defender.id} ${actionId} return scale drifted`);
+    }
   }
 });
 
