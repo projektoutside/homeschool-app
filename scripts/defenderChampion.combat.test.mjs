@@ -75,15 +75,15 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
 
 test('every enemy has an immutable role-shaped frontline attack profile', () => {
   const expectedProfiles = {
-    'blight-walker': [18, 72, 22],
-    skitter: [11, 42, 14],
-    swarmkin: [8, 54, 16],
-    shellguard: [28, 96, 30],
-    hexcaller: [12, 90, 28],
-    crusher: [62, 108, 34],
-    'mossback-brute': [78, 102, 36],
-    'ironhide-warlord': [92, 96, 32],
-    'dread-colossus': [120, 114, 40],
+    'blight-walker': [24, 72, 22],
+    skitter: [16, 42, 14],
+    swarmkin: [12, 54, 16],
+    shellguard: [40, 96, 30],
+    hexcaller: [18, 90, 28],
+    crusher: [78, 108, 34],
+    'mossback-brute': [102, 102, 36],
+    'ironhide-warlord': [126, 96, 32],
+    'dread-colossus': [160, 114, 40],
   };
 
   for (const [enemyId, enemy] of Object.entries(ENEMIES)) {
@@ -132,7 +132,7 @@ test('stepCombat starts and impacts an armored frontline on the exact active tic
 
   simulation.tick = 22;
   stepCombat(simulation);
-  assert.equal(tower.health, 404);
+  assert.equal(tower.health, 398);
   assert.deepEqual(enemy.attackState, {
     targetTowerId: null,
     startedAtTick: null,

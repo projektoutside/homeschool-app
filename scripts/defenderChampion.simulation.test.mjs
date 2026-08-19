@@ -49,29 +49,39 @@ test('reference command fixtures are legal deterministic inputs for every level'
 
       let previousTick = -1;
       let tickZeroSpend = 0;
+      const firstBuildTickByPad = new Map();
       for (const command of commands) {
-        assert.deepEqual(Object.keys(command).sort(), [
-          'defenderId',
-          'padId',
-          'tick',
-          'type',
-        ]);
-        assert.equal(command.type, 'build');
+        const expectedKeys = command.type === 'build'
+          ? ['defenderId', 'padId', 'tick', 'type']
+          : ['tick', 'towerId', 'type'];
+        assert.deepEqual(Object.keys(command).sort(), expectedKeys);
+        assert.ok(['build', 'upgrade'].includes(command.type));
         assert.equal(Number.isInteger(command.tick), true);
         assert.equal(command.tick >= previousTick, true);
-        assert.ok(DEFENDERS[command.defenderId]);
-        assert.equal(padsById.has(command.padId), true);
-        assert.equal(
-          padsById.get(command.padId).layer,
-          DEFENDERS[command.defenderId].placementLayer,
-        );
-        if (command.tick === 0) {
-          tickZeroSpend += DEFENDERS[command.defenderId].costs[0];
+        if (command.type === 'build') {
+          assert.ok(DEFENDERS[command.defenderId]);
+          assert.equal(padsById.has(command.padId), true);
+          assert.equal(
+            padsById.get(command.padId).layer,
+            DEFENDERS[command.defenderId].placementLayer,
+          );
+          const firstBuildTick = firstBuildTickByPad.get(command.padId);
+          if (firstBuildTick !== undefined) {
+            assert.ok(['level-4', 'level-7', 'level-10'].includes(level.id));
+            assert.equal(DEFENDERS[command.defenderId].combatLayer, 'frontline');
+            assert.ok(command.tick > firstBuildTick);
+          } else {
+            firstBuildTickByPad.set(command.padId, command.tick);
+          }
+          if (command.tick === 0) {
+            tickZeroSpend += DEFENDERS[command.defenderId].costs[0];
+          }
+        } else {
+          assert.match(command.towerId, /^tower-\d+$/);
         }
         previousTick = command.tick;
       }
       assert.equal(tickZeroSpend <= level.startingCoins, true);
-      assert.equal(new Set(commands.map((command) => command.padId)).size, commands.length);
     }
   }
 });
@@ -237,7 +247,7 @@ test('full and presentation snapshots expose detached lane and enemy attack stat
   const fullEnemy = summarizeSimulation(simulation).enemies[0];
   const presentationEnemy = summarizePresentationSimulation(simulation).enemies[0];
   const expected = {
-    attackDamage: 18,
+    attackDamage: 24,
     attackCooldownTicks: 72,
     attackWindupTicks: 22,
     attackTargets: ['frontline'],
@@ -420,14 +430,14 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   assert.deepEqual(first, second);
   assert.deepEqual(first.towers, [
     {
-      id: 'tower-1', defenderId: 'ranger', padId: 'l1-pad-b', placementLayer: 'grass', combatLayer: 'backline',
-      tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
+      id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', placementLayer: 'road', combatLayer: 'frontline',
+      tier: 1, health: 560, maxHealth: 560, armor: 0.14, engagedEnemyIds: [], totalInvested: 110,
       attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
     },
     {
-      id: 'tower-2', defenderId: 'bladeguard', padId: 'l1-pad-a', placementLayer: 'road', combatLayer: 'frontline',
-      tier: 0, health: 420, maxHealth: 420, armor: 0.10, engagedEnemyIds: [], totalInvested: 50,
-      attackCount: 24, masteryProgress: 0, nextAttackTick: 4788,
+      id: 'tower-2', defenderId: 'ranger', padId: 'l1-pad-b', placementLayer: 'grass', combatLayer: 'backline',
+      tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 4390,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
@@ -446,7 +456,7 @@ test('presentation events are deterministic, monotonic, bounded, and expose atta
       type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
     });
     advanceSimulation(simulation, 1);
-    simulation.enemies[0].pathProgress = 638;
+    simulation.enemies[0].pathProgress = 264;
     advanceSimulation(simulation, 239);
   }
   const firstSummary = summarizeSimulation(first);
@@ -475,7 +485,7 @@ test('projectile snapshots retain launch data after their source tower is sold',
     type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
   });
   advanceSimulation(simulation, 1);
-  simulation.enemies[0].pathProgress = 638;
+  simulation.enemies[0].pathProgress = 264;
   advanceSimulation(simulation, 1);
   const towerId = simulation.towers[0].id;
   assert.ok(simulation.projectiles.length > 0);

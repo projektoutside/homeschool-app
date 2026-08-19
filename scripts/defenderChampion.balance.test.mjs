@@ -2,13 +2,111 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { LEVELS } from '../public/Games/DefenderChampion/src/config/levels.js';
+import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 import {
   advanceSimulation,
   createSimulation,
   issueCommand,
-  runStrategyFixture,
   summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
+
+const MAX_STRATEGY_TICKS = 60 * 720;
+const METRIC_KEYS = Object.freeze([
+  'frontlineDefeats',
+  'frontlineRepurchases',
+  'damageTakenByDefender',
+  'maxQueueDepth',
+  'maxConcurrentAttackers',
+]);
+
+const deterministicEvidence = (summary) => ({
+  outcome: summary.outcome,
+  tick: summary.tick,
+  castleHearts: summary.castleHearts,
+  coins: summary.coins,
+  score: summary.score,
+  medal: summary.medal,
+  purchaseHistory: summary.purchaseHistory,
+  occupiedPadIds: summary.occupiedPadIds,
+  highestSpendDefenderId: summary.highestSpendDefenderId,
+  frontlineDefeats: summary.frontlineDefeats,
+  frontlineRepurchases: summary.frontlineRepurchases,
+  damageTakenByDefender: summary.damageTakenByDefender,
+  maxQueueDepth: summary.maxQueueDepth,
+  maxConcurrentAttackers: summary.maxConcurrentAttackers,
+});
+
+const snapshotFrontline = (simulation) => new Map(simulation.towers
+  .filter((tower) => tower.combatLayer === 'frontline')
+  .map((tower) => [tower.id, {
+    defenderId: tower.defenderId,
+    health: tower.health,
+    padId: tower.padId,
+  }]));
+
+const updateLaneMaximums = (metrics, simulation) => {
+  const queueDepthByGate = new Map();
+  for (const enemy of simulation.enemies) {
+    if (enemy.laneState !== 'queued' || !enemy.blockingTowerId) continue;
+    queueDepthByGate.set(
+      enemy.blockingTowerId,
+      (queueDepthByGate.get(enemy.blockingTowerId) ?? 0) + 1,
+    );
+  }
+  metrics.maxQueueDepth = Math.max(metrics.maxQueueDepth, 0, ...queueDepthByGate.values());
+  metrics.maxConcurrentAttackers = Math.max(
+    metrics.maxConcurrentAttackers,
+    0,
+    ...simulation.towers.map((tower) => tower.engagedEnemyIds?.length ?? 0),
+  );
+};
+
+const runInstrumentedStrategyFixture = (levelId, strategyId) => {
+  const strategy = REFERENCE_STRATEGIES[strategyId];
+  assert.ok(strategy, `Unknown strategy: ${strategyId}`);
+  const simulation = createSimulation(levelId, { qa: true });
+  const defeatedPads = new Map();
+  const metrics = {
+    frontlineDefeats: 0,
+    frontlineRepurchases: 0,
+    damageTakenByDefender: Object.fromEntries(Object.keys(DEFENDERS).map((id) => [id, 0])),
+    maxQueueDepth: 0,
+    maxConcurrentAttackers: 0,
+  };
+
+  for (let requestedTick = 0; requestedTick < MAX_STRATEGY_TICKS && !simulation.terminal; requestedTick += 1) {
+    for (const command of strategy) {
+      if (command.tick !== simulation.tick) continue;
+      const result = issueCommand(simulation, command);
+      if (result.accepted && command.type === 'build') {
+        const defender = DEFENDERS[command.defenderId];
+        const defeatedAtTick = defeatedPads.get(command.padId);
+        if (defender.combatLayer === 'frontline' && defeatedAtTick < simulation.tick) {
+          metrics.frontlineRepurchases += 1;
+        }
+      }
+    }
+
+    const before = snapshotFrontline(simulation);
+    advanceSimulation(simulation, 1);
+    const after = snapshotFrontline(simulation);
+    for (const [towerId, towerBefore] of before) {
+      const towerAfter = after.get(towerId);
+      const remainingHealth = towerAfter?.health ?? 0;
+      metrics.damageTakenByDefender[towerBefore.defenderId] += Math.max(
+        0,
+        towerBefore.health - remainingHealth,
+      );
+      if (!towerAfter) {
+        metrics.frontlineDefeats += 1;
+        defeatedPads.set(towerBefore.padId, simulation.tick - 1);
+      }
+    }
+    updateLaneMaximums(metrics, simulation);
+  }
+
+  return { ...summarizeSimulation(simulation), ...metrics };
+};
 
 const compareStrategies = (first, second) => {
   const firstPads = new Set(first.occupiedPadIds);
@@ -24,6 +122,15 @@ const runMonoRosterFixture = (levelId, defenderId) => {
   const defender = DEFENDERS[defenderId];
   for (let requestedTick = 0; requestedTick < 60 * 720 && !simulation.terminal; requestedTick += 1) {
     while (true) {
+      const openPad = simulation.level.pads.find((pad) => (
+        pad.layer === defender.placementLayer
+        && !simulation.towers.some((tower) => tower.padId === pad.id)
+      ));
+      if (openPad && simulation.coins >= defender.costs[0]) {
+        issueCommand(simulation, { type: 'build', defenderId, padId: openPad.id });
+        continue;
+      }
+
       const upgradeableTower = simulation.towers.find((tower) => {
         const nextCost = defender.costs[tower.tier + 1];
         return nextCost !== undefined && simulation.coins >= nextCost;
@@ -33,12 +140,8 @@ const runMonoRosterFixture = (levelId, defenderId) => {
         continue;
       }
 
-      const openPad = simulation.level.pads.find((pad) => (
-        pad.layer === defender.placementLayer
-        && !simulation.towers.some((tower) => tower.padId === pad.id)
-      ));
       if (!openPad || simulation.coins < defender.costs[0]) break;
-      issueCommand(simulation, { type: 'build', defenderId, padId: openPad.id });
+      break;
     }
     advanceSimulation(simulation, 1);
   }
@@ -47,6 +150,7 @@ const runMonoRosterFixture = (levelId, defenderId) => {
 
 test('every level has a no-build loss and two materially distinct authored wins', () => {
   const highestSpendDefenderIds = new Set();
+  const replacementLevels = new Map();
 
   for (const level of LEVELS) {
     const noBuildSimulation = createSimulation(level.id, { qa: true });
@@ -56,8 +160,29 @@ test('every level has a no-build loss and two materially distinct authored wins'
     assert.equal(noBuildSummary.outcome, 'defeat', `${level.id} should lose without defenders`);
 
     const [firstId, secondId] = level.referenceStrategies;
-    const firstSummary = runStrategyFixture(level.id, firstId);
-    const secondSummary = runStrategyFixture(level.id, secondId);
+    const firstSummary = runInstrumentedStrategyFixture(level.id, firstId);
+    const secondSummary = runInstrumentedStrategyFixture(level.id, secondId);
+    for (const [strategyId, summary] of [[firstId, firstSummary], [secondId, secondSummary]]) {
+      for (const metricKey of METRIC_KEYS) {
+        assert.ok(Object.hasOwn(summary, metricKey), `${level.id}:${strategyId} lacks ${metricKey}`);
+      }
+      assert.ok(
+        summary.maxConcurrentAttackers <= 3,
+        `${level.id}:${strategyId} reached ${summary.maxConcurrentAttackers} concurrent attackers`,
+      );
+      const dueCommands = REFERENCE_STRATEGIES[strategyId]
+        .filter((command) => command.tick < summary.tick);
+      assert.equal(
+        summary.purchaseHistory.length,
+        dueCommands.length,
+        `${level.id}:${strategyId} should accept every command issued before terminal`,
+      );
+      assert.deepEqual(
+        deterministicEvidence(runInstrumentedStrategyFixture(level.id, strategyId)),
+        deterministicEvidence(summary),
+        `${level.id}:${strategyId} metrics must be deterministic`,
+      );
+    }
     assert.equal(firstSummary.terminal, true, `${level.id}:${firstId} should terminate`);
     assert.equal(firstSummary.outcome, 'victory', `${level.id}:${firstId} should win`);
     assert.equal(secondSummary.terminal, true, `${level.id}:${secondId} should terminate`);
@@ -72,12 +197,24 @@ test('every level has a no-build loss and two materially distinct authored wins'
     assert.ok(padDifferenceRatio >= 0.25, `${level.id} actual pad difference was ${padDifferenceRatio}`);
     highestSpendDefenderIds.add(firstSummary.highestSpendDefenderId);
     highestSpendDefenderIds.add(secondSummary.highestSpendDefenderId);
+    replacementLevels.set(level.id, [firstSummary, secondSummary].some((summary) => (
+      summary.outcome === 'victory'
+      && summary.frontlineDefeats > 0
+      && summary.frontlineRepurchases > 0
+    )));
   }
 
   assert.deepEqual(
     highestSpendDefenderIds,
     new Set(['bladeguard', 'ranger', 'ironwarden', 'rune-artificer']),
   );
+  for (const levelId of ['level-4', 'level-7', 'level-10']) {
+    assert.equal(
+      replacementLevels.get(levelId),
+      true,
+      `${levelId} needs a winning fixture with a permanent frontline defeat and repurchase`,
+    );
+  }
 });
 
 test('reinvesting mono-roster fixtures cannot clear Levels 7 or 10', () => {

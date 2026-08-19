@@ -1516,7 +1516,7 @@ test('campaign-derived enemy pool maps every possible authored combatant and fai
     syncProjectionMap,
   } = presentation;
   const capacity = deriveCampaignEnemyViewCapacity(LEVELS, ENEMIES);
-  assert.equal(capacity, 421);
+  assert.equal(capacity, 299);
 
   const createView = () => ({
     setActive() { return this; },
@@ -1540,7 +1540,7 @@ test('campaign-derived enemy pool maps every possible authored combatant and fai
   const undersizedPool = new ViewPool(createView, { maximum: capacity - 1 });
   assert.throws(
     () => syncProjectionMap(new Map(), undersizedPool, entries, () => {}),
-    /Projection pool exhausted for enemy-421/,
+    new RegExp(`Projection pool exhausted for enemy-${capacity}`),
   );
 });
 

@@ -5,6 +5,27 @@ import { EFFECT_LIMITS, ENEMIES } from '../public/Games/DefenderChampion/src/con
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 
+const distanceToSegment = (point, start, end) => {
+  const horizontal = end.x - start.x;
+  const vertical = end.y - start.y;
+  const squaredLength = (horizontal ** 2) + (vertical ** 2);
+  const progress = squaredLength === 0
+    ? 0
+    : Math.max(0, Math.min(1, (
+      ((point.x - start.x) * horizontal) + ((point.y - start.y) * vertical)
+    ) / squaredLength));
+  return Math.hypot(
+    point.x - (start.x + (horizontal * progress)),
+    point.y - (start.y + (vertical * progress)),
+  );
+};
+
+const minimumGrassRoadDistance = (level, pads = level.pads.filter(({ layer }) => layer === 'grass')) => (
+  Math.min(...pads.flatMap((pad) => level.path.slice(1).map((point, index) => (
+    distanceToSegment(pad, level.path[index], point)
+  ))))
+);
+
 test('defender economy matches the approved contract', () => {
   assert.deepEqual(
     Object.fromEntries(Object.entries(DEFENDERS).map(([id, value]) => [id, value.costs])),
@@ -60,6 +81,35 @@ test('all nested combat config is immutable and Ranger mastery target count is a
   assert.equal(Object.isFrozen(ENEMIES['dread-colossus'].summonThresholds), true);
 });
 
+test('base ranged defenders can engage from the authored legal grass footprint', () => {
+  assert.equal(DEFENDERS.ranger.range[0], 190);
+  assert.equal(DEFENDERS['rune-artificer'].range[0], 72);
+
+  for (const defenderId of ['ranger', 'rune-artificer']) {
+    const defender = DEFENDERS[defenderId];
+    assert.ok(
+      Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))) <= defender.range[0],
+      `${defenderId} needs at least one base-tier legal target footprint`,
+    );
+  }
+
+  for (const levelId of ['level-7', 'level-10']) {
+    const level = getLevel(levelId);
+    const firstGrassPad = level.pads.find(({ layer }) => layer === 'grass');
+    assert.ok(
+      minimumGrassRoadDistance(level, [firstGrassPad]) <= DEFENDERS['rune-artificer'].range[0],
+      `${levelId} first grass pad must fund the mono-roster loss fixture`,
+    );
+  }
+});
+
+test('Rune Artificer keeps the legal two-hit floor without exceeding its damage cap', () => {
+  const runeDamage = DEFENDERS['rune-artificer'].damage;
+  assert.deepEqual(runeDamage, [36, 36, 36]);
+  assert.equal(runeDamage.every((damage, index) => index === 0 || damage >= runeDamage[index - 1]), true);
+  assert.equal(Math.max(...runeDamage), 36);
+});
+
 test('campaign and effect ceilings are exact', () => {
   assert.equal(LEVELS.length, 10);
   assert.deepEqual(LEVELS.map((level) => level.waveCount), [3, 4, 4, 5, 5, 5, 6, 6, 7, 8]);
@@ -83,7 +133,7 @@ test('campaign and effect ceilings are exact', () => {
   assert.equal(Object.isFrozen(ENEMIES['dread-colossus'].phaseThresholds), true);
 });
 
-test('levels are immutable authored shells with valid strategy fixtures', () => {
+test('levels are immutable authored shells with legal mixed strategy fixtures', () => {
   const expectedMeta = [
     ['level-1', 'Meadow Watch', 1, 100],
     ['level-2', 'Quickstep Grove', 1.12, 135],
@@ -96,8 +146,6 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     ['level-9', 'The Last Green', 2.38, 640],
     ['level-10', "Champion's Stand", 2.65, 800],
   ];
-  const highestSpendDefenders = new Set();
-
   assert.equal(Object.isFrozen(LEVELS), true);
   for (const [index, level] of LEVELS.entries()) {
     const [id, name, healthScale, threatIndex] = expectedMeta[index];
@@ -119,44 +167,50 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
     const second = REFERENCE_STRATEGIES[secondStrategyId];
     assert.equal(Object.isFrozen(first), true);
     assert.equal(Object.isFrozen(second), true);
-    assert.equal(first.every((command) => command.type === 'build' && command.tick >= 0), true);
-    assert.equal(second.every((command) => command.type === 'build' && command.tick >= 0), true);
+    assert.equal(first.every((command) => ['build', 'upgrade'].includes(command.type) && command.tick >= 0), true);
+    assert.equal(second.every((command) => ['build', 'upgrade'].includes(command.type) && command.tick >= 0), true);
 
     for (const strategy of [first, second]) {
-      const pads = new Set(level.pads.map((pad) => pad.id));
-      const tickZeroSpend = strategy
-        .filter((command) => command.tick === 0)
-        .reduce((total, command) => {
-          assert.ok(DEFENDERS[command.defenderId]);
-          assert.equal(pads.has(command.padId), true);
-          return total + DEFENDERS[command.defenderId].costs[0];
-        }, 0);
-      assert.equal(tickZeroSpend <= level.startingCoins, true);
+      const pads = new Map(level.pads.map((pad) => [pad.id, pad]));
+      const openingBuilds = strategy.filter((command) => command.tick === 0);
+      assert.equal(openingBuilds.length, 2, `${level.id} opens with exactly one road/grass pair`);
+      assert.equal(openingBuilds.every((command) => command.type === 'build'), true);
+      assert.deepEqual(
+        openingBuilds.map((command) => DEFENDERS[command.defenderId].placementLayer).sort(),
+        ['grass', 'road'],
+      );
+      assert.ok(
+        openingBuilds.reduce((total, command) => total + DEFENDERS[command.defenderId].costs[0], 0)
+          <= level.startingCoins,
+      );
+
+      const buildCommands = strategy.filter((command) => command.type === 'build');
+      for (const command of buildCommands) {
+        const defender = DEFENDERS[command.defenderId];
+        const pad = pads.get(command.padId);
+        assert.ok(defender, `${level.id} has unknown ${command.defenderId}`);
+        assert.ok(pad, `${level.id} has unknown ${command.padId}`);
+        assert.equal(pad.layer, defender.placementLayer, `${command.defenderId} cannot use ${command.padId}`);
+      }
+
+      const thirdBuildIndex = strategy.findIndex((command, index) => (
+        command.type === 'build' && strategy.slice(0, index + 1)
+          .filter((candidate) => candidate.type === 'build').length === 3
+      ));
+      if (thirdBuildIndex >= 0) {
+        assert.ok(
+          strategy.slice(2, thirdBuildIndex).some((command) => command.type === 'upgrade'),
+          `${level.id} upgrades before speculative extra builds`,
+        );
+      }
     }
 
-    const firstPads = new Set(first.map((command) => command.padId));
-    const secondPads = new Set(second.map((command) => command.padId));
+    const firstPads = new Set(first.filter(({ type }) => type === 'build').map((command) => command.padId));
+    const secondPads = new Set(second.filter(({ type }) => type === 'build').map((command) => command.padId));
     const occupiedPads = new Set([...firstPads, ...secondPads]);
     const differingPads = [...occupiedPads].filter((padId) => firstPads.has(padId) !== secondPads.has(padId));
     assert.equal(differingPads.length / occupiedPads.size >= 0.25, true);
-
-    const highestSpendDefender = (strategy) => {
-      const spendByDefender = new Map();
-      for (const command of strategy) {
-        const previous = spendByDefender.get(command.defenderId) ?? 0;
-        spendByDefender.set(command.defenderId, previous + DEFENDERS[command.defenderId].costs[0]);
-      }
-      return [...spendByDefender.entries()]
-        .sort(([firstId, firstSpend], [secondId, secondSpend]) => secondSpend - firstSpend || firstId.localeCompare(secondId))[0][0];
-    };
-    const firstHighestSpendDefender = highestSpendDefender(first);
-    const secondHighestSpendDefender = highestSpendDefender(second);
-    assert.notEqual(firstHighestSpendDefender, secondHighestSpendDefender);
-    highestSpendDefenders.add(firstHighestSpendDefender);
-    highestSpendDefenders.add(secondHighestSpendDefender);
   }
-
-  assert.deepEqual(highestSpendDefenders, new Set(['bladeguard', 'ranger', 'ironwarden', 'rune-artificer']));
 
   assert.throws(
     () => getLevel('missing-level'),
@@ -164,11 +218,9 @@ test('levels are immutable authored shells with valid strategy fixtures', () => 
   );
 });
 
-test('late balanced strategies retain all seven original build ticks', () => {
-  for (const levelNumber of [8, 9]) {
-    assert.deepEqual(
-      REFERENCE_STRATEGIES[`level-${levelNumber}-balanced`].map(({ tick }) => tick),
-      [0, 0, 0, 3600, 4800, 6000, 7200],
-    );
+test('reference strategies are immutable and commands are chronologically authored', () => {
+  for (const strategy of Object.values(REFERENCE_STRATEGIES)) {
+    assert.equal(Object.isFrozen(strategy), true);
+    assert.deepEqual([...strategy].sort((first, second) => first.tick - second.tick), strategy);
   }
 });
