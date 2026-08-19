@@ -1,5 +1,5 @@
 import { compareEntitiesById, compareEntityIds } from './entity-id.js';
-import { ROAD_WIDTH } from './path-geometry.js';
+import { ROAD_WIDTH, projectPathProgress } from './path-geometry.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
 const MAX_ATTACKERS_PER_GATE = 3;
@@ -9,7 +9,8 @@ const CONTACT_LANES = Object.freeze([-ROAD_WIDTH / 4, 0, ROAD_WIDTH / 4]);
 const QUEUE_DISTANCE = 44;
 const QUEUE_ROW_SPACING = 24;
 const QUEUE_ENTRANCE_MARGIN = 6;
-const MINIMUM_QUEUE_DISPLAY_SCALE = 0.18;
+export const QUEUE_PRESENTATION_FOOTPRINT = 80;
+export const MAX_QUEUE_OVERLAP_RATIO = 1 / 3;
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const isLiving = (entity) => entity && entity.health > 0;
@@ -35,33 +36,77 @@ const compareGateCandidates = (first, second) => (
   || compareEntityIds(first.id, second.id)
 );
 
+const findMinimumQueueSpacing = (slots, pathMetrics) => {
+  if (!pathMetrics || slots.length < 2) return Number.POSITIVE_INFINITY;
+  const cellSize = ROAD_WIDTH;
+  const cells = new Map();
+  let minimum = Number.POSITIVE_INFINITY;
+  for (const slot of slots) {
+    const point = projectPathProgress(pathMetrics, slot.pathProgress, slot.laneOffset);
+    const cellX = Math.floor(point.x / cellSize);
+    const cellY = Math.floor(point.y / cellSize);
+    for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
+      for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
+        const neighbors = cells.get(`${cellX + xOffset}:${cellY + yOffset}`) ?? [];
+        for (const neighbor of neighbors) {
+          minimum = Math.min(minimum, Math.hypot(point.x - neighbor.x, point.y - neighbor.y));
+        }
+      }
+    }
+    const key = `${cellX}:${cellY}`;
+    const occupants = cells.get(key) ?? [];
+    occupants.push(point);
+    cells.set(key, occupants);
+  }
+  return minimum;
+};
+
 export const createQueuePresentationLayout = ({
   gatePathProgress,
   minimumPathProgress = 0,
+  pathMetrics = null,
   queueCount,
 } = {}) => {
   const count = Number.isInteger(queueCount) && queueCount > 0 ? queueCount : 0;
   if (count === 0) return Object.freeze([]);
   const gateProgress = Math.max(0, Number(gatePathProgress) || 0);
   const minimumProgress = Math.max(0, Number(minimumPathProgress) || 0);
-  const frontProgress = Math.max(
-    Math.min(gateProgress - Number.EPSILON, minimumProgress + (Number.EPSILON * count)),
-    gateProgress - QUEUE_DISTANCE,
+  const rowCount = Math.ceil(count / CONTACT_LANES.length);
+  const frontProgress = Math.max(minimumProgress, gateProgress - QUEUE_DISTANCE);
+  const availableProgress = Math.max(0, frontProgress - minimumProgress);
+  const entranceProgress = minimumProgress + Math.min(
+    QUEUE_ENTRANCE_MARGIN,
+    availableProgress / (rowCount + 1),
   );
-  const entranceProgress = Math.min(
-    frontProgress,
-    minimumProgress + Math.min(
-      QUEUE_ENTRANCE_MARGIN,
-      Math.max(0, frontProgress - minimumProgress) / (count + 1),
-    ),
-  );
-  const spacing = count === 1
+  const rowSpacing = rowCount <= 1
     ? QUEUE_ROW_SPACING
-    : (frontProgress - entranceProgress) / (count - 1);
-  const scale = clamp(spacing / QUEUE_ROW_SPACING, MINIMUM_QUEUE_DISPLAY_SCALE, 1);
-  return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
-    laneOffset: 0,
-    pathProgress: count === 1 ? frontProgress : frontProgress - (index * spacing),
+    : (frontProgress - entranceProgress) / (rowCount - 1);
+  const slots = Array.from({ length: count }, (_, index) => ({
+    laneOffset: CONTACT_LANES[index % CONTACT_LANES.length],
+    pathProgress: frontProgress - (Math.floor(index / CONTACT_LANES.length) * rowSpacing),
+  }));
+  const requiredSeparation = 1 - MAX_QUEUE_OVERLAP_RATIO;
+  const lateralSpacing = CONTACT_LANES[1] - CONTACT_LANES[0];
+  const maximumLateralScale = lateralSpacing
+    / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
+  const maximumLongitudinalScale = rowCount <= 1
+    ? 1
+    : (rowSpacing / Math.SQRT2)
+      / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
+  const maximumRoadScale = (ROAD_WIDTH - (2 * Math.abs(CONTACT_LANES[0])))
+    / QUEUE_PRESENTATION_FOOTPRINT;
+  const minimumProjectedSpacing = findMinimumQueueSpacing(slots, pathMetrics);
+  const maximumProjectedScale = minimumProjectedSpacing
+    / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
+  const scale = Math.max(Number.EPSILON, Math.min(
+    1,
+    maximumLateralScale,
+    maximumLongitudinalScale,
+    maximumProjectedScale,
+    maximumRoadScale,
+  ));
+  return Object.freeze(slots.map((slot) => Object.freeze({
+    ...slot,
     scale,
   })));
 };
@@ -181,6 +226,7 @@ export const assignLanePositions = (simulation) => {
     const queuePresentation = createQueuePresentationLayout({
       gatePathProgress: gate.pathProgress,
       minimumPathProgress: gateIndex === 0 ? 0 : gates[gateIndex - 1].pathProgress + 1,
+      pathMetrics: simulation.pathMetrics,
       queueCount: queued.length,
     });
     queued.forEach((enemy, index) => assignQueueSlot(enemy, gate, index, queuePresentation[index]));

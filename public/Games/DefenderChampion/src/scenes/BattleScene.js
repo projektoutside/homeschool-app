@@ -3,10 +3,12 @@ import { DEFENDERS } from '../config/defenders.js';
 import { ENEMIES } from '../config/enemies.js';
 import { LEVELS, getLevel } from '../config/levels.js';
 import {
+  PATH_PRESENTATION_TRANSFORM,
   createPathMetrics,
   derivePathPieces,
+  projectPathPoint,
+  projectPathProgress,
   resolvePlacementPoint,
-  samplePathProgress,
 } from '../core/path-geometry.js';
 import {
   advanceSimulation,
@@ -53,39 +55,23 @@ import { createFixedStepClock, resolveBattlefieldFocusMove } from '../ui/hud-con
 
 const WORLD_WIDTH = 720;
 const WORLD_HEIGHT = 960;
-const PATH_X_SCALE = WORLD_WIDTH / 640;
-const PATH_Y_OFFSET = 110;
-const PATH_Y_SCALE = 1.45;
+const PATH_X_SCALE = PATH_PRESENTATION_TRANSFORM.xScale;
+const PATH_Y_SCALE = PATH_PRESENTATION_TRANSFORM.yScale;
 const POINTER_HIT_RADIUS = 48;
 const MINIMUM_POINTER_TARGET_CSS = 44;
 const HUD_RENDER_INTERVAL_TICKS = 6;
 const ENEMY_HEALTH_RENDER_INTERVAL_TICKS = 3;
+const QUEUE_DENSITY_CUE_SCALE = 0.08;
+const QUEUE_DENSITY_CUE_MINIMUM = 12;
 const KEYBOARD_DEFENDERS = Object.freeze(Object.keys(DEFENDERS));
 const BOSS_IDS = new Set(['mossback-brute', 'ironhide-warlord', 'dread-colossus']);
 const ENEMY_VIEW_CAPACITY = deriveCampaignEnemyViewCapacity(LEVELS, ENEMIES);
 
-const toWorldPoint = (point) => ({
-  x: point.x * PATH_X_SCALE,
-  y: PATH_Y_OFFSET + (point.y * PATH_Y_SCALE),
-});
+const toWorldPoint = projectPathPoint;
 
 const distanceSquared = (first, second) => (
   ((first.x - second.x) ** 2) + ((first.y - second.y) ** 2)
 );
-
-const projectPathProgress = (metrics, pathProgress, lateralOffset = 0) => {
-  const center = toWorldPoint(samplePathProgress(metrics, pathProgress));
-  if (!lateralOffset) return center;
-  const before = toWorldPoint(samplePathProgress(metrics, pathProgress - 1));
-  const after = toWorldPoint(samplePathProgress(metrics, pathProgress + 1));
-  const tangentX = after.x - before.x;
-  const tangentY = after.y - before.y;
-  const tangentLength = Math.hypot(tangentX, tangentY) || 1;
-  return {
-    x: center.x - ((tangentY / tangentLength) * lateralOffset),
-    y: center.y + ((tangentX / tangentLength) * lateralOffset),
-  };
-};
 
 const pointToSegmentDistanceSquared = (point, start, end) => {
   const segmentX = end.x - start.x;
@@ -109,14 +95,25 @@ const stopBody = (view) => {
   view?._body?.setAlpha?.(1);
   view?._body?.setTint?.(0xffffff);
   view?._body?.setFlipX?.(false);
-  if (Number.isFinite(view?._baseScale)) view._body.setScale?.(view._baseScale);
+  view?._body?.setScale?.(1);
   view?._healthBackground?.clear?.().setVisible?.(false);
   view?._healthFill?.clear?.().setVisible?.(false);
   view?._aura?.setVisible?.(false);
   view?._rank?.setVisible?.(false);
-  for (const plate of view?._plateAccents?.values?.() ?? []) plate.setVisible?.(false);
+  const resetOverlay = (overlay) => {
+    overlay?.setVisible?.(false);
+    if (Number.isFinite(overlay?._baseScale)) overlay.setScale?.(overlay._baseScale);
+    if (Number.isFinite(overlay?._baseX) && Number.isFinite(overlay?._baseY)) {
+      overlay.setPosition?.(overlay._baseX, overlay._baseY);
+    }
+  };
+  resetOverlay(view?._accent);
+  for (const plate of view?._plateAccents?.values?.() ?? []) resetOverlay(plate);
   if (view) {
     view.setAlpha?.(1);
+    view.setScale?.(1);
+    if (Number.isFinite(view._poolDepth)) view.setDepth?.(view._poolDepth);
+    view._baseScale = null;
     view._characterKey = null;
     view._defenderId = null;
     view._enemyId = null;
@@ -124,7 +121,13 @@ const stopBody = (view) => {
     view._healthKey = null;
     view._lastX = null;
     view._padId = null;
+    view._visualTransform = null;
   }
+};
+
+const preparePooledView = (view, depth) => {
+  view._poolDepth = depth;
+  return view.setDepth(depth);
 };
 
 export class BattleScene extends Phaser.Scene {
@@ -296,6 +299,9 @@ export class BattleScene extends Phaser.Scene {
       .setAlpha(0.5)
       .setScale(0.34)
       .setVisible(false);
+    accent._baseScale = 0.34;
+    accent._baseX = 0;
+    accent._baseY = -frameSize * 0.36;
     const view = this.add.container(0, 0, [accent, body]);
     view._accent = accent;
     view._body = body;
@@ -326,6 +332,9 @@ export class BattleScene extends Phaser.Scene {
         .setRotation(index === 0 ? -0.2 : index === 1 ? 0.2 : 0)
         .setTint(plateTints[index] ?? 0xbad7df)
         .setVisible(false);
+      accent._baseScale = index === 2 ? 0.13 : 0.115;
+      accent._baseX = plate.x;
+      accent._baseY = plate.y;
       view.add(accent);
       view._plateAccents.set(plate.id, accent);
     }
@@ -358,45 +367,48 @@ export class BattleScene extends Phaser.Scene {
   }
 
   createPools() {
-    this.enemyPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5), {
+    this.enemyPool = new ViewPool(() => preparePooledView(this.createCharacterView('enemy'), 5), {
       maximum: ENEMY_VIEW_CAPACITY,
       resetView: (view) => this.releasePooledView(view),
     });
-    this.defenderPool = new ViewPool(() => this.createDefenderView().setDepth(4), {
+    this.defenderPool = new ViewPool(() => preparePooledView(this.createDefenderView(), 4), {
       maximum: 24,
       resetView: (view) => this.releasePooledView(view),
     });
-    this.projectilePool = new ViewPool(() => this.add.image(
+    this.projectilePool = new ViewPool(() => preparePooledView(this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.arrow,
-    ).setDepth(7), { maximum: 640, resetView: (view) => this.releasePooledView(view) });
-    this.telegraphPool = new ViewPool(() => this.add.image(
+    ), 7), { maximum: 640, resetView: (view) => this.releasePooledView(view) });
+    this.telegraphPool = new ViewPool(() => preparePooledView(this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.bossWarning,
-    ).setDepth(2.5), { maximum: 48, resetView: (view) => this.releasePooledView(view) });
-    this.defeatPool = new ViewPool(() => this.createCharacterView('enemy').setDepth(5.5), {
+    ), 2.5), { maximum: 48, resetView: (view) => this.releasePooledView(view) });
+    this.defeatPool = new ViewPool(() => preparePooledView(this.createCharacterView('enemy'), 5.5), {
       maximum: 32,
       resetView: (view) => this.releasePooledView(view),
     });
-    this.damageLabelPool = new ViewPool(() => this.add.text(0, 0, '', {
+    this.damageLabelPool = new ViewPool(() => preparePooledView(this.add.text(0, 0, '', {
       color: '#fff9e8',
       fontFamily: 'system-ui, sans-serif',
       fontSize: '24px',
       fontStyle: 'bold',
       stroke: '#173329',
       strokeThickness: 5,
-    }).setDepth(9).setOrigin(0.5), {
+    }).setOrigin(0.5), 9), {
       maximum: this.presentationLimits.damageLabelCap,
       resetView: (view) => this.releasePooledView(view),
     });
-    this.particlePool = new ViewPool(() => this.add.image(
+    this.particlePool = new ViewPool(() => preparePooledView(this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.healSparkle,
-    ).setDepth(8), {
+    ), 8), {
       maximum: this.presentationLimits.particleCap,
       resetView: (view) => this.releasePooledView(view),
     });
   }
 
   createFocusViews() {
-    this.enemyHealthLayer = this.add.graphics().setDepth(6);
+    this.queuedEnemyHealthLayer = this.add.graphics().setDepth(3.7);
+    this.activeEnemyHealthLayer = this.add.graphics().setDepth(6);
+    this.enemyHealthLayer = this.activeEnemyHealthLayer;
+    this.queueDensityLabels = new Map();
     this.focusRing = this.add.graphics().setDepth(10).setVisible(false);
     this.rangeRing = this.add.graphics().setDepth(2.2);
   }
@@ -737,6 +749,7 @@ export class BattleScene extends Phaser.Scene {
     this.recentDefenderPositions.clear();
     this.consumePresentationEvents(snapshot.presentationEvents);
     this.projectEnemies(snapshot);
+    this.projectQueueDensityCues(snapshot);
     this.projectEnemyHealthBars(snapshot, forceHud);
     this.projectTowers(snapshot);
     this.projectPlacementMarkers(snapshot);
@@ -994,7 +1007,8 @@ export class BattleScene extends Phaser.Scene {
         }
         this.audioController?.playCue?.(kind === 'tower-mastery' ? 'mastery' : 'attack');
       } else if (kind === 'enemy-hit') {
-        this.spawnDamageLabel(toWorldPoint(payload.position), payload.damage);
+        const visual = this.resolveEnemyVisualTransform(payload);
+        this.spawnDamageLabel(visual.position, payload.damage, visual);
       } else if (kind === 'enemy-defeated') {
         this.spawnDefeat(payload);
         if (BOSS_IDS.has(payload.enemyId)) {
@@ -1006,21 +1020,25 @@ export class BattleScene extends Phaser.Scene {
         }
         this.audioController?.playCue?.('coin');
       } else if (kind === 'projectile-impact') {
-        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.explosion, 3, event.id);
+        const visual = this.resolveEnemyVisualTransform(payload);
+        this.spawnBurst(visual.position, GAMEPLAY_FRAME.explosion, 3, event.id, visual);
         this.audioController?.playCue?.('impact');
       } else if (kind === 'hexcaller-cast') {
         this.playCharacterAction(this.enemySprites.get(payload.enemyId), 'enemy', 'hexcaller', 'cast');
-        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.healSparkle, 6, event.id);
+        const visual = this.resolveEnemyVisualTransform(payload);
+        this.spawnBurst(visual.position, GAMEPLAY_FRAME.healSparkle, 6, event.id, visual);
       } else if (kind === 'ironhide-rally') {
         this.playCharacterAction(this.enemySprites.get(payload.bossId), 'boss', 'ironhide-warlord', 'ability');
-        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.shieldBash, 8, event.id);
+        const visual = this.resolveEnemyVisualTransform(payload);
+        this.spawnBurst(visual.position, GAMEPLAY_FRAME.shieldBash, 8, event.id, visual);
         this.audioController?.playCue?.('boss-ability');
       } else if (kind === 'boss-ability-warning') {
         const bossKind = BOSS_IDS.has(payload.enemyId) ? 'boss' : 'enemy';
         this.playCharacterAction(this.enemySprites.get(payload.bossId), bossKind, payload.enemyId, 'ability');
         this.audioController?.playCue?.('boss-warning');
       } else if (kind === 'boss-ability-impact') {
-        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.stunStars, 10, event.id);
+        const visual = this.resolveEnemyVisualTransform(payload);
+        this.spawnBurst(visual.position, GAMEPLAY_FRAME.stunStars, 10, event.id, visual);
         if (this.presentationLimits.cameraShake > 0) {
           this.cameras.main.shake(180, this.presentationLimits.cameraShake);
         }
@@ -1028,22 +1046,26 @@ export class BattleScene extends Phaser.Scene {
       } else if (kind === 'ironhide-plate-break') {
         const boss = this.enemyById.get(payload.bossId);
         if (boss) {
+          const visual = this.resolveEnemyVisualTransform(boss);
           this.spawnBurst(
-            projectPathProgress(this.pathMetrics, boss.pathProgress),
+            visual.position,
             GAMEPLAY_FRAME.defeatCrack,
             7,
             event.id,
+            visual,
           );
         }
         this.audioController?.playCue?.('armor-break');
       } else if (kind === 'ironhide-vulnerable') {
         const boss = this.enemyById.get(payload.bossId);
         if (boss) {
+          const visual = this.resolveEnemyVisualTransform(boss);
           this.spawnBurst(
-            projectPathProgress(this.pathMetrics, boss.pathProgress),
+            visual.position,
             GAMEPLAY_FRAME.slowRune,
             9,
             event.id,
+            visual,
           );
         }
       } else if (kind === 'dread-phase') {
@@ -1054,7 +1076,10 @@ export class BattleScene extends Phaser.Scene {
         this.audioController?.playCue?.('boss-ability');
       } else if (kind === 'dread-summon') {
         const boss = this.enemyById.get(payload.bossId);
-        if (boss) this.spawnBurst(projectPathProgress(this.pathMetrics, boss.pathProgress), GAMEPLAY_FRAME.slowRune, 12, event.id);
+        if (boss) {
+          const visual = this.resolveEnemyVisualTransform(boss);
+          this.spawnBurst(visual.position, GAMEPLAY_FRAME.slowRune, 12, event.id, visual);
+        }
         this.audioController?.playCue?.('boss-warning');
       } else if (kind === 'castle-impact') {
         this.castleSprite?.setFrame(1);
@@ -1074,12 +1099,19 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  spawnDamageLabel(position, damage) {
+  spawnDamageLabel(position, damage, visual = null) {
     const label = this.damageLabelPool.acquire();
     if (!label) return;
-    const labelMotion = resolveDamageLabelMotion({ position, reducedMotion: this.reducedMotion });
+    const visualScale = visual?.scale ?? 1;
+    const labelMotion = resolveDamageLabelMotion({
+      position,
+      reducedMotion: this.reducedMotion,
+      scale: visualScale,
+    });
     label.setText(`−${damage}`);
     label.setPosition(labelMotion.startX, labelMotion.startY);
+    label.setDepth?.(visual ? Math.max(visual.depth + 0.2, 3.8) : 9);
+    label.setScale?.(visualScale);
     label.setAlpha(1);
     this.tweens.add({
       targets: label,
@@ -1092,19 +1124,28 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  spawnBurst(position, frame, count, seed = 0) {
+  spawnBurst(position, frame, count, seed = 0, visual = null) {
     const visibleCount = Math.min(count, this.presentationLimits.particleCap);
+    const visualScale = visual?.scale ?? 1;
     for (let index = 0; index < visibleCount; index += 1) {
       const particle = this.particlePool.acquire();
       if (!particle) break;
-      const burstMotion = resolveBurstMotion({ index, position, reducedMotion: this.reducedMotion, seed });
-      particle.setFrame(frame).setPosition(burstMotion.startX, burstMotion.startY).setScale(0.12).setAlpha(0.95);
+      const burstMotion = resolveBurstMotion({
+        index,
+        position,
+        reducedMotion: this.reducedMotion,
+        scale: visualScale,
+        seed,
+      });
+      particle.setFrame(frame).setPosition(burstMotion.startX, burstMotion.startY)
+        .setDepth?.(visual ? visual.depth + 0.1 : 8);
+      particle.setScale(0.12 * visualScale).setAlpha(0.95);
       this.tweens.add({
         targets: particle,
         x: burstMotion.endX,
         y: burstMotion.endY,
         alpha: 0,
-        scale: 0.05,
+        scale: 0.05 * visualScale,
         duration: burstMotion.duration,
         ease: 'Cubic.easeOut',
         onComplete: () => this.particlePool.release(particle),
@@ -1117,11 +1158,11 @@ export class BattleScene extends Phaser.Scene {
     if (!view) return;
     const kind = BOSS_IDS.has(payload.enemyId) ? 'boss' : 'enemy';
     const presentation = ENEMY_PRESENTATION[payload.enemyId];
-    const position = toWorldPoint(payload.position);
-    view.setPosition(position.x, position.y);
+    const visual = this.resolveEnemyVisualTransform(payload);
+    view.setPosition(visual.position.x, visual.position.y).setDepth(visual.depth);
     view._accent.setVisible(false);
     view._body.setTexture(characterAssetId(kind, payload.enemyId, 'defeat'), 0)
-      .setScale(presentation.displayScale);
+      .setScale(presentation.displayScale * visual.scale);
     const key = animationKey(kind, payload.enemyId, 'defeat');
     const animation = this.anims.exists(key) ? this.anims.get(key) : null;
     const release = () => this.defeatPool.release(view);
@@ -1139,16 +1180,32 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  resolveEnemyVisualTransform(source = {}) {
+    const entityId = source.id ?? source.targetId ?? source.bossId
+      ?? (this.enemyById?.has?.(source.enemyId) ? source.enemyId : null);
+    const liveEnemy = entityId ? this.enemyById?.get?.(entityId) : null;
+    const enemy = liveEnemy ? { ...liveEnemy, ...source } : source;
+    const presentation = ENEMY_PRESENTATION[enemy.enemyId] ?? { displayScale: 1, kind: 'enemy' };
+    const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
+    return Object.freeze({
+      ...roadProjection,
+      bodyScale: presentation.displayScale * roadProjection.scale,
+      enemyId: enemy.enemyId ?? null,
+      entityId,
+      position: Object.freeze(projectPathProgress(
+        this.pathMetrics,
+        roadProjection.pathProgress,
+        roadProjection.laneOffset,
+      )),
+    });
+  }
+
   projectEnemies(snapshot) {
     syncProjectionMap(this.enemySprites, this.enemyPool, snapshot.enemies, (view, enemy) => {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
-      const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
-      const position = projectPathProgress(
-        this.pathMetrics,
-        roadProjection.pathProgress,
-        roadProjection.laneOffset,
-      );
+      const visual = this.resolveEnemyVisualTransform(enemy);
+      const position = visual.position;
       const body = view._body;
       const characterKey = characterAssetId(kind, enemy.enemyId, 'walk');
       if (view._characterKey !== characterKey) {
@@ -1160,10 +1217,11 @@ export class BattleScene extends Phaser.Scene {
         view._characterKey = characterKey;
         view._healthKey = null;
       }
-      const displayScale = presentation.displayScale * roadProjection.scale;
+      const displayScale = visual.bodyScale;
       body.setScale(displayScale);
       view._baseScale = displayScale;
-      view.setDepth(roadProjection.depth);
+      view.setDepth(visual.depth);
+      view._visualTransform = visual;
       const flipX = view._lastX !== null && position.x < view._lastX - 0.15;
       if (flipX !== view._flipX) {
         body.setFlipX(flipX);
@@ -1197,16 +1255,25 @@ export class BattleScene extends Phaser.Scene {
         });
         const plateViews = this.ensureIronhidePlateViews(view);
         for (const plate of plateState.plates) {
-          plateViews.get(plate.id)?.setPosition(plate.x, plate.y).setVisible(plate.visible);
+          plateViews.get(plate.id)?.setPosition(
+            plate.x * visual.scale,
+            plate.y * visual.scale,
+          ).setScale(
+            plateViews.get(plate.id)._baseScale * visual.scale,
+          ).setVisible(plate.visible);
         }
         view._accent.setFrame(GAMEPLAY_FRAME.slowRune)
           .setTint(0x58d5ff)
+          .setPosition(view._accent._baseX * visual.scale, view._accent._baseY * visual.scale)
+          .setScale(view._accent._baseScale * visual.scale)
           .setVisible(plateState.vulnerabilityVisible);
       } else if (enemy.enemyId === 'dread-colossus') {
         for (const plate of view._plateAccents?.values?.() ?? []) plate.setVisible(false);
         const ratioPhase = ratio < 0.4 ? 3 : ratio < 0.75 ? 2 : 1;
         view._accent.setFrame(GAMEPLAY_FRAME.slowRune)
           .setTint([0xffffff, 0xa86bff, 0xff6b7a][ratioPhase - 1])
+          .setPosition(view._accent._baseX * visual.scale, view._accent._baseY * visual.scale)
+          .setScale(view._accent._baseScale * visual.scale)
           .setVisible(true);
       } else {
         for (const plate of view._plateAccents?.values?.() ?? []) plate.setVisible(false);
@@ -1219,29 +1286,78 @@ export class BattleScene extends Phaser.Scene {
   }
 
   projectEnemyHealthBars(snapshot, force = false) {
-    if (!this.enemyHealthLayer || (!force
+    if (!this.activeEnemyHealthLayer || !this.queuedEnemyHealthLayer || (!force
       && snapshot.tick - this.lastHealthRenderTick < ENEMY_HEALTH_RENDER_INTERVAL_TICKS)) return;
     this.lastHealthRenderTick = snapshot.tick;
-    this.enemyHealthLayer.clear();
+    this.activeEnemyHealthLayer.clear();
+    this.queuedEnemyHealthLayer.clear();
     for (const enemy of snapshot.enemies) {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
       const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
       const showHealth = kind === 'boss' || ratio < 0.999;
       if (!showHealth) continue;
-      const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
-      const position = projectPathProgress(
-        this.pathMetrics,
-        roadProjection.pathProgress,
-        roadProjection.laneOffset,
-      );
-      const barY = position.y + (kind === 'boss' ? -176 : -108);
-      const barWidth = kind === 'boss' ? 116 : 72;
+      const visual = this.resolveEnemyVisualTransform(enemy);
+      const position = visual.position;
+      const layer = visual.depth < 4 ? this.queuedEnemyHealthLayer : this.activeEnemyHealthLayer;
+      const barY = position.y + ((kind === 'boss' ? -176 : -108) * visual.scale);
+      const barWidth = (kind === 'boss' ? 116 : 72) * visual.scale;
+      const barHeight = 10 * visual.scale;
+      const radius = 5 * visual.scale;
       const barX = position.x - (barWidth / 2);
-      this.enemyHealthLayer.fillStyle(0x102f29, 0.85)
-        .fillRoundedRect(barX, barY, barWidth, 10, 5);
-      this.enemyHealthLayer.fillStyle(kind === 'boss' ? 0xff6b61 : 0x8fe36a, 1)
-        .fillRoundedRect(barX + 2, barY + 2, Math.max(1, (barWidth - 4) * ratio), 6, 3);
+      layer.fillStyle(0x102f29, 0.85)
+        .fillRoundedRect(barX, barY, barWidth, barHeight, radius);
+      layer.fillStyle(kind === 'boss' ? 0xff6b61 : 0x8fe36a, 1)
+        .fillRoundedRect(
+          barX + (2 * visual.scale),
+          barY + (2 * visual.scale),
+          Math.max(visual.scale, (barWidth - (4 * visual.scale)) * ratio),
+          6 * visual.scale,
+          3 * visual.scale,
+        );
+    }
+  }
+
+  projectQueueDensityCues(snapshot) {
+    this.queueDensityLabels ??= new Map();
+    const groups = new Map();
+    for (const enemy of snapshot.enemies) {
+      if (enemy.queueIndex === null || enemy.queueIndex === undefined) continue;
+      const group = groups.get(enemy.blockingTowerId) ?? [];
+      group.push(enemy);
+      groups.set(enemy.blockingTowerId, group);
+    }
+    const visibleKeys = new Set();
+    for (const [blockingTowerId, enemies] of groups) {
+      const ordered = [...enemies].sort((first, second) => first.queueIndex - second.queueIndex);
+      const minimumScale = Math.min(...ordered.map((enemy) => enemy.displayScale ?? 1));
+      if (ordered.length < QUEUE_DENSITY_CUE_MINIMUM || minimumScale >= QUEUE_DENSITY_CUE_SCALE) continue;
+      const key = blockingTowerId ?? 'unblocked';
+      let label = this.queueDensityLabels.get(key);
+      if (!label) {
+        label = this.add.text(0, 0, '', {
+          backgroundColor: '#0b352cdd',
+          color: '#fff0a8',
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '16px',
+          fontStyle: 'bold',
+          padding: { x: 6, y: 3 },
+          stroke: '#09251f',
+          strokeThickness: 3,
+        }).setOrigin(0.5, 1).setDepth(3.8);
+        label.setName?.(`queue-density-${key}`);
+        this.queueDensityLabels.set(key, label);
+      }
+      const visual = this.resolveEnemyVisualTransform(ordered[Math.floor(ordered.length / 2)]);
+      label.setText(`×${ordered.length} queued`)
+        .setPosition(visual.position.x, visual.position.y - 8)
+        .setVisible(true);
+      visibleKeys.add(key);
+    }
+    for (const [key, label] of this.queueDensityLabels) {
+      if (visibleKeys.has(key)) continue;
+      label.destroy?.();
+      this.queueDensityLabels.delete(key);
     }
   }
 
@@ -1319,19 +1435,36 @@ export class BattleScene extends Phaser.Scene {
     syncProjectionMap(this.projectileSprites, this.projectilePool, snapshot.projectiles, (view, projectile) => {
       const tower = this.towerById.get(projectile.sourceTowerId);
       const defenderId = tower?.defenderId
-        ?? this.defenderIdByTowerId.get(projectile.sourceTowerId)
+        ?? this.defenderIdByTowerId?.get?.(projectile.sourceTowerId)
         ?? 'ranger';
       const sourcePosition = toWorldPoint(projectile.launchPosition);
       const target = this.enemyById.get(projectile.targetId);
-      const targetPosition = target
-        ? projectPathProgress(this.pathMetrics, target.pathProgress, target.laneOffset)
-        : projectPathProgress(this.pathMetrics, projectile.targetPathProgressAtLaunch);
+      const targetVisual = target
+        ? this.resolveEnemyVisualTransform(target)
+        : this.resolveEnemyVisualTransform({
+          enemyId: projectile.targetEnemyIdAtLaunch,
+          id: projectile.targetId,
+          pathProgress: projectile.targetPathProgressAtLaunch,
+          displayPathProgress: projectile.targetDisplayPathProgressAtLaunch
+            ?? projectile.targetPathProgressAtLaunch,
+          displayLaneOffset: projectile.targetDisplayLaneOffsetAtLaunch ?? 0,
+          displayScale: projectile.targetDisplayScaleAtLaunch ?? 1,
+          laneState: projectile.targetLaneStateAtLaunch ?? 'moving',
+          queueIndex: projectile.targetQueueIndexAtLaunch ?? null,
+        });
+      const targetPosition = targetVisual.position;
       const duration = Math.max(1, projectile.impactTick - projectile.launchTick);
       const progress = Math.max(0, Math.min(1, (snapshot.tick - projectile.launchTick) / duration));
       const frame = DEFENDER_PRESENTATION[defenderId]?.projectileFrame ?? GAMEPLAY_FRAME.arrow;
       const x = Phaser.Math.Linear(sourcePosition.x, targetPosition.x, progress);
-      const y = Phaser.Math.Linear(sourcePosition.y - 42, targetPosition.y - 32, progress);
-      view.setFrame(frame).setPosition(x, y).setVisible(true).setScale(frame === GAMEPLAY_FRAME.arrow ? 0.14 : 0.17);
+      const y = Phaser.Math.Linear(
+        sourcePosition.y - 42,
+        targetPosition.y - (32 * targetVisual.scale),
+        progress,
+      );
+      view.setFrame(frame).setPosition(x, y).setVisible(true)
+        .setDepth(targetVisual.depth + 0.2)
+        .setScale((frame === GAMEPLAY_FRAME.arrow ? 0.14 : 0.17) * targetVisual.scale);
       view.setRotation(Math.atan2(targetPosition.y - sourcePosition.y, targetPosition.x - sourcePosition.x));
     });
   }
@@ -1344,7 +1477,8 @@ export class BattleScene extends Phaser.Scene {
         view.setVisible(false);
         return;
       }
-      const position = projectPathProgress(this.pathMetrics, source.pathProgress, source.laneOffset);
+      const visual = this.resolveEnemyVisualTransform(source);
+      const position = visual.position;
       const radius = effect.radius ?? (effect.kind === 'mossback-telegraph'
         ? ENEMIES['mossback-brute'].abilityRadius
         : ENEMIES['dread-colossus'].pulseRadius);
@@ -1357,6 +1491,7 @@ export class BattleScene extends Phaser.Scene {
       const remaining = Math.max(0, effect.triggerTick - snapshot.tick);
       view.setFrame(GAMEPLAY_FRAME.bossWarning)
         .setPosition(geometry.x, geometry.y)
+        .setDepth(visual.depth - 0.1)
         .setDisplaySize(geometry.displayWidth, geometry.displayHeight)
         .setAlpha(0.56 + ((remaining % 20) / 100))
         .setVisible(this.presentationLimits.telegraphsEnabled);
@@ -1502,6 +1637,14 @@ export class BattleScene extends Phaser.Scene {
         id,
         visible: view.visible,
       })),
+      queueDensityCues: [...(this.queueDensityLabels ?? [])].map(([id, view]) => ({
+        depth: view.depth,
+        id,
+        text: view.text,
+        visible: view.visible,
+        x: view.x,
+        y: view.y,
+      })),
       tick: this.lastSnapshot?.tick ?? 0,
       towers: [...this.towerSprites].map(([id, view]) => {
         const body = view._body;
@@ -1601,6 +1744,8 @@ export class BattleScene extends Phaser.Scene {
     this.defenderIdByTowerId.clear();
     this.recentDefenderPositions.clear();
     this.detachedDefenderViews.clear();
+    for (const label of this.queueDensityLabels?.values?.() ?? []) label.destroy?.();
+    this.queueDensityLabels?.clear?.();
     this.padSprites.clear();
     this.focusRing?.destroy();
     this.rangeRing?.destroy();

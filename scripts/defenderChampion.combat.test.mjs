@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   applyArmor,
+  applyHit,
   applySupportEffects,
   clampControlEffect,
   getDreadColossusPhase,
@@ -10,6 +11,7 @@ import {
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
 import { LEVELS } from '../public/Games/DefenderChampion/src/config/levels.js';
+import { createPathMetrics } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 import {
   advanceSimulation,
   createSimulation,
@@ -101,6 +103,47 @@ test('every enemy has an immutable role-shaped frontline attack profile', () => 
   assert.equal(ENEMIES.crusher.attackDamage > ENEMIES['blight-walker'].attackDamage, true);
   for (const bossId of ['mossback-brute', 'ironhide-warlord', 'dread-colossus']) {
     assert.equal(ENEMIES[bossId].attackDamage > ENEMIES.crusher.attackDamage, true, bossId);
+  }
+});
+
+test('enemy hit and defeat events retain the resolved queue presentation fallback', () => {
+  const enemy = createCombatEnemy('enemy-queued', 'blight-walker', {
+    displayLaneOffset: 28,
+    displayPathProgress: 150,
+    displayScale: 0.075,
+    health: 1,
+    laneState: 'queued',
+    queueIndex: 5,
+  });
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.pathMetrics = createPathMetrics(simulation.level.path);
+  simulation.enemies = [enemy];
+
+  applyHit(simulation, enemy, {
+    armorPierce: 1,
+    damage: 10,
+    slow: 0,
+    stunSeconds: 0,
+  });
+
+  const events = simulation.presentationEvents.filter(({ kind }) => (
+    kind === 'enemy-hit' || kind === 'enemy-defeated'
+  ));
+  assert.equal(events.length, 2);
+  for (const { payload } of events) {
+    assert.deepEqual({
+      displayLaneOffset: payload.displayLaneOffset,
+      displayPathProgress: payload.displayPathProgress,
+      displayScale: payload.displayScale,
+      laneState: payload.laneState,
+      queueIndex: payload.queueIndex,
+    }, {
+      displayLaneOffset: 28,
+      displayPathProgress: 150,
+      displayScale: 0.075,
+      laneState: 'queued',
+      queueIndex: 5,
+    });
   }
 });
 

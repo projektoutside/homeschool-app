@@ -60,6 +60,7 @@ const createSceneBody = () => ({
   setPosition(x, y) { this.x = x; this.y = y; return this; },
   setScale(scale) { this.scale = scale; return this; },
   setFlipX(flipX) { this.flipX = flipX; return this; },
+  setFrame(frame) { this.frame = frame; return this; },
   setTexture(key) { this.texture.key = key; return this; },
   setTint(tint) { this.tint = tint; return this; },
 });
@@ -73,8 +74,16 @@ const createSceneView = () => ({
   _attackPoseReady: false,
   _attackTargetTowerId: null,
   _accent: {
+    _baseScale: 0.34,
+    _baseX: 0,
+    _baseY: -92.16,
+    scale: 0.34,
     visible: false,
+    x: 0,
+    y: -92.16,
     setFrame() { return this; },
+    setPosition(x, y) { this.x = x; this.y = y; return this; },
+    setScale(scale) { this.scale = scale; return this; },
     setTint() { return this; },
     setVisible(visible) { this.visible = visible; return this; },
   },
@@ -280,7 +289,7 @@ test('BattleScene renders shared path pieces and resolves every typed pad positi
     import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
 
-  assert.match(battleScene, /import\s*{[^}]*derivePathPieces[^}]*resolvePlacementPoint[^}]*samplePathProgress[^}]*}/s);
+  assert.match(battleScene, /import\s*{[^}]*derivePathPieces[^}]*projectPathProgress[^}]*resolvePlacementPoint[^}]*}/s);
   assert.match(battleScene, /derivePathPieces\(this\.level\.path,\s*toWorldPoint\)/);
   assert.match(battleScene, /PATH_FRAME\[piece\.frame\]/);
   assert.match(battleScene, /resolveRoadPieceDisplay\(piece\)/);
@@ -1123,6 +1132,386 @@ test('dense enemy road projection keeps 160 living views unique, footprint-safe,
     const logical = samplePathProgress(pathMetrics, projected.pathProgress);
     assert.equal(Number.isFinite(logical.x) && Number.isFinite(logical.y), true);
   }
+});
+
+test('actual Level 10 tick 5982 queue bounds complete footprints across three readable lanes', async () => {
+  const [
+    { BattleScene },
+    { advanceSimulation, createSimulation, issueCommand, summarizePresentationSimulation },
+    { REFERENCE_STRATEGIES },
+    { createPathMetrics },
+    { ENEMY_PRESENTATION, ViewPool },
+  ] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/simulation.js'),
+    import('../public/Games/DefenderChampion/src/config/reference-strategies.js'),
+    import('../public/Games/DefenderChampion/src/core/path-geometry.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const simulation = createSimulation('level-10', { qa: true });
+  const commandResults = [];
+  for (const command of REFERENCE_STRATEGIES['level-10-balanced']) {
+    if (command.tick > 4_800) break;
+    if (simulation.tick < command.tick) advanceSimulation(simulation, command.tick - simulation.tick);
+    commandResults.push(issueCommand(simulation, command));
+  }
+  advanceSimulation(simulation, 5_982 - simulation.tick);
+  const snapshot = summarizePresentationSimulation(simulation);
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    add: {
+      text() {
+        return {
+          depth: 0,
+          text: '',
+          visible: true,
+          x: 0,
+          y: 0,
+          destroy() { this.destroyed = true; },
+          setDepth(depth) { this.depth = depth; return this; },
+          setOrigin() { return this; },
+          setPosition(x, y) { this.x = x; this.y = y; return this; },
+          setText(text) { this.text = text; return this; },
+          setVisible(visible) { this.visible = visible; return this; },
+        };
+      },
+    },
+    anims: { exists: () => false },
+    cancelViewMotion() {},
+    enemyPool: new ViewPool(() => createSceneView(), { maximum: snapshot.enemies.length }),
+    enemyById: new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy])),
+    enemySprites: new Map(),
+    ironhideMappings: null,
+    lastSnapshot: snapshot,
+    padSprites: new Map(),
+    pathMetrics: createPathMetrics(simulation.level.path),
+    queueDensityLabels: new Map(),
+    telegraphSprites: new Map(),
+    towerSprites: new Map(),
+  });
+
+  scene.projectEnemies(snapshot);
+  scene.projectQueueDensityCues(snapshot);
+
+  const projected = scene.getPresentationState().enemies;
+  const snapshotEnemyById = new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy]));
+  const queued = projected
+    .filter(({ queueIndex }) => queueIndex !== null)
+    .sort((first, second) => first.queueIndex - second.queueIndex);
+  const attackers = projected.filter(({ laneState }) => laneState === 'attacking');
+  let maximumOverlapRatio = 0;
+  let minimumCenterDistance = Number.POSITIVE_INFINITY;
+  let maximumOverlapPair = null;
+  for (let firstIndex = 0; firstIndex < queued.length; firstIndex += 1) {
+    const first = queued[firstIndex];
+    for (let secondIndex = firstIndex + 1; secondIndex < queued.length; secondIndex += 1) {
+      const second = queued[secondIndex];
+      const distance = Math.hypot(first.x - second.x, first.y - second.y);
+      const combinedRadius = (first.footprintWidth + second.footprintWidth) / 2;
+      const overlapRatio = Math.max(0, (combinedRadius - distance)
+        / Math.min(first.footprintWidth, second.footprintWidth));
+      if (overlapRatio > maximumOverlapRatio) {
+        maximumOverlapRatio = overlapRatio;
+        maximumOverlapPair = {
+          distance,
+          first: { id: first.id, blockingTowerId: first.blockingTowerId, footprintWidth: first.footprintWidth, queueIndex: first.queueIndex, x: first.x, y: first.y, snapshot: snapshotEnemyById.get(first.id) },
+          second: { id: second.id, blockingTowerId: second.blockingTowerId, footprintWidth: second.footprintWidth, queueIndex: second.queueIndex, x: second.x, y: second.y, snapshot: snapshotEnemyById.get(second.id) },
+        };
+      }
+      minimumCenterDistance = Math.min(minimumCenterDistance, distance);
+    }
+  }
+
+  assert.equal(commandResults.every(({ accepted }) => accepted), true);
+  assert.equal(projected.length, snapshot.enemies.length, 'all living enemies keep a projected view');
+  assert.equal(queued.length > 120, true, 'the real campaign reaches the reviewed dense queue');
+  assert.deepEqual([...new Set(queued.map(({ laneOffset }) => laneOffset))], [-28, 0, 28]);
+  assert.equal(queued.every(({ laneOffset }, index) => laneOffset === [-28, 0, 28][index % 3]), true);
+  assert.equal(queued.every(({ laneOffset, footprintWidth }) => (
+    Math.abs(laneOffset) + (footprintWidth / 2) <= 56
+  )), true, 'every complete declared footprint remains on road');
+  assert.ok(minimumCenterDistance > 0, 'no queued pair shares an exact projected center');
+  assert.ok(maximumOverlapRatio <= (1 / 3) + 1e-9,
+    `maximum overlap ratio ${maximumOverlapRatio}: ${JSON.stringify(maximumOverlapPair)}`);
+  assert.equal(queued.every(({ depth }) => depth < 4), true, 'queue stays behind its blocker');
+  assert.equal(attackers.length <= 3, true);
+  assert.equal(attackers.every(({ depth }) => depth > 4), true, 'active attackers remain readable');
+  assert.equal(Math.min(...queued.map(({ x, y }) => Math.hypot(x, y))) > 0, true);
+  assert.equal(Object.values(ENEMY_PRESENTATION).every(({ roadFootprint }) => roadFootprint <= 80), true);
+  assert.equal(scene.queueDensityLabels.size, 1, 'tiny living sprites get one readable non-aggregating gate cue');
+  const densityCue = [...scene.queueDensityLabels.values()][0];
+  assert.equal(densityCue.text, `×${queued.length} queued`);
+  assert.equal(densityCue.depth < 4, true, 'density cue stays behind the living blocker');
+  assert.equal(densityCue.visible, true);
+  const medianQueuedView = scene.enemySprites.get(queued[Math.floor(queued.length / 2)].id);
+  assert.deepEqual(
+    { x: densityCue.x, y: densityCue.y + 8 },
+    { x: medianQueuedView.x, y: medianQueuedView.y },
+    'density cue remains readable at the queue midpoint instead of under the blocker pile',
+  );
+});
+
+test('queued bodies, projectiles, telegraphs, health, plates, hits, and defeats share one visual transform', async () => {
+  const [{ BattleScene }, { createPathMetrics }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/path-geometry.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const expected = { x: -28, y: 327.5 };
+  const makeImage = () => ({
+    alpha: 1,
+    depth: 0,
+    displayHeight: 0,
+    displayWidth: 0,
+    scale: 1,
+    visible: true,
+    x: 0,
+    y: 0,
+    setActive(active) { this.active = active; return this; },
+    setAlpha(alpha) { this.alpha = alpha; return this; },
+    setDepth(depth) { this.depth = depth; return this; },
+    setDisplaySize(width, height) { this.displayWidth = width; this.displayHeight = height; return this; },
+    setFrame(frame) { this.frame = frame; return this; },
+    setPosition(x, y) { this.x = x; this.y = y; return this; },
+    setRotation(rotation) { this.rotation = rotation; return this; },
+    setScale(scale) { this.scale = scale; return this; },
+    setText(text) { this.text = text; return this; },
+    setTexture(texture) { this.texture = { key: texture }; return this; },
+    setTint(tint) { this.tint = tint; return this; },
+    setVisible(visible) { this.visible = visible; return this; },
+  });
+  const makeGraphics = (depth) => ({
+    depth,
+    rectangles: [],
+    clear() { this.rectangles.length = 0; return this; },
+    fillRoundedRect(x, y, width, height, radius) {
+      this.rectangles.push({ x, y, width, height, radius });
+      return this;
+    },
+    fillStyle() { return this; },
+    setDepth(value) { this.depth = value; return this; },
+  });
+  const plate = (baseScale) => ({
+    ...makeImage(),
+    _baseScale: baseScale,
+  });
+  const enemyView = createSceneView();
+  enemyView._accent = { ...makeImage(), _baseScale: 0.34, _baseY: -138.24 };
+  enemyView._plateAccents = new Map([
+    ['iron-bark-plate-1', plate(0.115)],
+    ['iron-bark-plate-2', plate(0.115)],
+    ['iron-bark-plate-3', plate(0.13)],
+  ]);
+  const enemy = {
+    attackState: { targetTowerId: null },
+    blockingTowerId: 'tower-1',
+    displayLaneOffset: 28,
+    displayPathProgress: 150,
+    displayScale: 0.1,
+    enemyId: 'ironhide-warlord',
+    health: 500,
+    id: 'enemy-queued',
+    laneOffset: 0,
+    laneState: 'queued',
+    maxHealth: 1_000,
+    pathProgress: 0,
+    queueIndex: 2,
+    thresholdFlags: {},
+    vulnerableUntilTick: 0,
+  };
+  const queuedHealth = makeGraphics(3.7);
+  const activeHealth = makeGraphics(6);
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    activeEnemyHealthLayer: activeHealth,
+    anims: { exists: () => false },
+    audioController: { playCue() {} },
+    cancelViewMotion() {},
+    damageLabelPool: new ViewPool(makeImage, { maximum: 4 }),
+    defeatPool: new ViewPool(() => ({ ...createSceneView(), _accent: makeImage() }), { maximum: 4 }),
+    enemyById: new Map([[enemy.id, enemy]]),
+    enemyPool: new ViewPool(() => enemyView, { maximum: 1 }),
+    enemySprites: new Map(),
+    ironhideMappings: {
+      plateAccents: [
+        { removeAccent: 'iron-bark-plate-1', threshold: 'plate75' },
+        { removeAccent: 'iron-bark-plate-2', threshold: 'plate50' },
+        { removeAccent: 'iron-bark-plate-3', threshold: 'plate25' },
+      ],
+    },
+    lastHealthRenderTick: Number.NEGATIVE_INFINITY,
+    lastPresentationEventId: 0,
+    lastSnapshot: { tick: 10 },
+    pathMetrics: createPathMetrics([{ x: 0, y: 0 }, { x: 0, y: 200 }, { x: 100, y: 200 }]),
+    presentationLimits: { cameraShake: 0, particleCap: 0, telegraphsEnabled: true },
+    projectilePool: new ViewPool(makeImage, { maximum: 4 }),
+    projectileSprites: new Map(),
+    queuedEnemyHealthLayer: queuedHealth,
+    reducedMotion: true,
+    telegraphPool: new ViewPool(makeImage, { maximum: 4 }),
+    telegraphSprites: new Map(),
+    time: { delayedCall: () => ({ remove() {} }) },
+    towerById: new Map(),
+    transientTimers: new Set(),
+    tweens: { add() {} },
+  });
+
+  scene.projectEnemies({ enemies: [enemy], tick: 10 });
+  const projectedBody = scene.enemySprites.get(enemy.id);
+  assert.deepEqual({ x: projectedBody.x, y: projectedBody.y }, expected);
+  assert.equal(projectedBody.depth, 3.6);
+  assert.equal(projectedBody._body.scale, 0.05);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').x - -5.4) < 1e-9);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').y - -11.2) < 1e-9);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').scale - 0.0115) < 1e-9);
+  assert.ok(Math.abs(projectedBody._accent.y - -13.824) < 1e-9);
+  assert.ok(Math.abs(projectedBody._accent.scale - 0.034) < 1e-9);
+
+  scene.projectEnemyHealthBars({ enemies: [enemy], tick: 10 }, true);
+  assert.equal(activeHealth.rectangles.length, 0);
+  assert.equal(queuedHealth.rectangles.length, 2);
+  const queuedBar = queuedHealth.rectangles[0];
+  assert.ok(Math.abs(queuedBar.x - (expected.x - 5.8)) < 1e-9);
+  assert.ok(Math.abs(queuedBar.y - (expected.y - 17.6)) < 1e-9);
+  assert.ok(Math.abs(queuedBar.width - 11.6) < 1e-9);
+  assert.ok(Math.abs(queuedBar.height - 1) < 1e-9);
+  assert.ok(Math.abs(queuedBar.radius - 0.5) < 1e-9);
+
+  const liveProjectile = {
+    id: 'projectile-live',
+    sourceTowerId: 'tower-missing',
+    targetId: enemy.id,
+    launchTick: 0,
+    launchPosition: { x: 0, y: 0 },
+    targetPathProgressAtLaunch: 0,
+    targetDisplayPathProgressAtLaunch: 150,
+    targetDisplayLaneOffsetAtLaunch: 28,
+    targetDisplayScaleAtLaunch: 0.1,
+    impactTick: 10,
+  };
+  scene.projectProjectiles({ projectiles: [liveProjectile], tick: 10 });
+  const liveProjectileView = scene.projectileSprites.get(liveProjectile.id);
+  assert.equal(liveProjectileView.x, expected.x);
+  assert.equal(liveProjectileView.y, expected.y - 3.2);
+
+  scene.enemyById.clear();
+  const missingProjectile = { ...liveProjectile, id: 'projectile-fallback', targetId: 'enemy-gone' };
+  scene.projectProjectiles({ projectiles: [missingProjectile], tick: 10 });
+  const fallbackProjectileView = scene.projectileSprites.get(missingProjectile.id);
+  assert.equal(fallbackProjectileView.x, expected.x);
+  assert.equal(fallbackProjectileView.y, expected.y - 3.2);
+
+  scene.enemyById.set(enemy.id, enemy);
+  scene.projectTelegraphs({
+    effects: [{ id: 'telegraph-1', kind: 'ironhide-rally-telegraph', sourceId: enemy.id, radius: 90, triggerTick: 20 }],
+    tick: 10,
+  });
+  const telegraph = scene.telegraphSprites.get('telegraph-1');
+  assert.deepEqual({ x: telegraph.x, y: telegraph.y }, expected);
+  assert.equal(telegraph.depth, 3.5);
+  assert.equal(telegraph.displayWidth, 202.5, 'combat radius stays authoritative rather than shrinking with the body');
+
+  const labels = [];
+  const bursts = [];
+  scene.spawnDamageLabel = (position, damage, visual) => labels.push({ position, damage, visual });
+  scene.spawnBurst = (position, frame, count, seed, visual) => bursts.push({ position, frame, count, seed, visual });
+  scene.consumePresentationEvents([
+    { id: 1, kind: 'enemy-hit', tick: 10, payload: {
+      damage: 14, enemyId: enemy.enemyId, id: enemy.id, position: { x: 0, y: 0 },
+      displayPathProgress: 150, displayLaneOffset: 28, displayScale: 0.1, laneState: 'queued', queueIndex: 2,
+    } },
+    { id: 2, kind: 'projectile-impact', tick: 10, payload: {
+      enemyId: enemy.enemyId, targetId: enemy.id, position: { x: 0, y: 0 },
+      displayPathProgress: 150, displayLaneOffset: 28, displayScale: 0.1, laneState: 'queued', queueIndex: 2,
+    } },
+  ]);
+  assert.deepEqual(labels[0].position, expected);
+  assert.deepEqual({ scale: labels[0].visual.scale, depth: labels[0].visual.depth }, { scale: 0.1, depth: 3.6 });
+  assert.deepEqual(bursts[0].position, expected);
+  assert.deepEqual({ scale: bursts[0].visual.scale, depth: bursts[0].visual.depth }, { scale: 0.1, depth: 3.6 });
+
+  BattleScene.prototype.spawnDamageLabel.call(scene, expected, 14, { scale: 0.1, depth: 3.6 });
+  const renderedLabel = [...scene.damageLabelPool.activeViews][0];
+  assert.equal(renderedLabel.x, expected.x);
+  assert.ok(Math.abs(renderedLabel.y - (expected.y - 6.8)) < 1e-9);
+  assert.equal(renderedLabel.scale, 0.1);
+  assert.ok(Math.abs(renderedLabel.depth - 3.8) < 1e-9);
+
+  scene.presentationLimits.particleCap = 1;
+  scene.particlePool = new ViewPool(makeImage, { maximum: 1 });
+  BattleScene.prototype.spawnBurst.call(
+    scene,
+    expected,
+    9,
+    1,
+    2,
+    { scale: 0.1, depth: 3.6 },
+  );
+  const renderedBurst = [...scene.particlePool.activeViews][0];
+  assert.equal(renderedBurst.x, expected.x);
+  assert.ok(Math.abs(renderedBurst.y - (expected.y - 2.8)) < 1e-9);
+  assert.ok(Math.abs(renderedBurst.scale - 0.012) < 1e-9);
+  assert.ok(Math.abs(renderedBurst.depth - 3.7) < 1e-9);
+
+  scene.enemyById.clear();
+  scene.spawnDefeat({
+    enemyId: enemy.enemyId,
+    id: enemy.id,
+    position: { x: 0, y: 0 },
+    displayPathProgress: 150,
+    displayLaneOffset: 28,
+    displayScale: 0.1,
+    laneState: 'queued',
+    queueIndex: 2,
+  });
+  const defeat = [...scene.defeatPool.activeViews][0];
+  assert.deepEqual({ x: defeat.x, y: defeat.y }, expected);
+  assert.equal(defeat.depth, 3.6);
+  assert.equal(defeat._body.scale, 0.05);
+});
+
+test('pooled enemy presentation resets queue scale, depth, and overlay transforms before reuse', async () => {
+  const { BattleScene } = await importBattleSceneModule();
+  const makeOverlay = (baseScale, baseX, baseY) => ({
+    scale: 0.01,
+    visible: true,
+    x: 99,
+    y: 99,
+    _baseScale: baseScale,
+    _baseX: baseX,
+    _baseY: baseY,
+    setPosition(x, y) { this.x = x; this.y = y; return this; },
+    setScale(scale) { this.scale = scale; return this; },
+    setVisible(visible) { this.visible = visible; return this; },
+  });
+  const view = createSceneView();
+  view.depth = 3.6;
+  view._poolDepth = 5;
+  view._baseScale = 0.03;
+  view._body.scale = 0.03;
+  view._accent = makeOverlay(0.34, 0, -92.16);
+  view._plateAccents = new Map([
+    ['plate-1', makeOverlay(0.115, -54, -112)],
+  ]);
+  view._visualTransform = { scale: 0.075, depth: 3.6 };
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    cancelViewMotion() {},
+    tweens: { killTweensOf() {} },
+  });
+
+  scene.releasePooledView(view);
+
+  assert.equal(view.depth, 5);
+  assert.equal(view._body.scale, 1);
+  assert.equal(view._accent.scale, 0.34);
+  assert.deepEqual({ x: view._accent.x, y: view._accent.y }, { x: 0, y: -92.16 });
+  assert.equal(view._plateAccents.get('plate-1').scale, 0.115);
+  assert.deepEqual(
+    { x: view._plateAccents.get('plate-1').x, y: view._plateAccents.get('plate-1').y },
+    { x: -54, y: -112 },
+  );
+  assert.equal(view._visualTransform, null);
 });
 
 test('frontline durability and lane attack helpers preserve simulation-authoritative motion', async () => {

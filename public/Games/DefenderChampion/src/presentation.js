@@ -54,7 +54,10 @@ export const ENEMY_PRESENTATION = Object.freeze({
 });
 
 export const resolveEnemyRoadProjection = (enemy = {}, presentation = {}) => {
-  const scale = Math.max(0.18, Math.min(1, Number(enemy.displayScale) || 1));
+  const requestedScale = Number(enemy.displayScale);
+  const scale = Number.isFinite(requestedScale) && requestedScale > 0
+    ? Math.min(1, requestedScale)
+    : 1;
   const footprintWidth = Math.min(
     ROAD_WIDTH,
     Math.max(0, Number(presentation.roadFootprint) || ROAD_WIDTH) * scale,
@@ -300,13 +303,18 @@ export const resolveDefenderHitMotion = ({
   });
 };
 
-export const resolveDamageLabelMotion = ({ position = { x: 0, y: 0 }, reducedMotion = false } = {}) => {
+export const resolveDamageLabelMotion = ({
+  position = { x: 0, y: 0 },
+  reducedMotion = false,
+  scale = 1,
+} = {}) => {
+  const visualScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
   const startX = position.x;
-  const startY = position.y - 68;
+  const startY = position.y - (68 * visualScale);
   return Object.freeze({
     duration: reducedMotion ? 180 : 520,
     endX: startX,
-    endY: reducedMotion ? startY : position.y - 112,
+    endY: reducedMotion ? startY : position.y - (112 * visualScale),
     startX,
     startY,
   });
@@ -316,15 +324,17 @@ export const resolveBurstMotion = ({
   index = 0,
   position = { x: 0, y: 0 },
   reducedMotion = false,
+  scale = 1,
   seed = 0,
 } = {}) => {
+  const visualScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
   const startX = position.x;
-  const startY = position.y - 28;
+  const startY = position.y - (28 * visualScale);
   if (reducedMotion) {
     return Object.freeze({ duration: 180, endX: startX, endY: startY, startX, startY });
   }
   const angle = (((index * 137.5) + (seed * 17)) % 360) * (Math.PI / 180);
-  const distance = 30 + ((index % 4) * 8);
+  const distance = (30 + ((index % 4) * 8)) * visualScale;
   return Object.freeze({
     duration: 460,
     endX: startX + (Math.cos(angle) * distance),

@@ -1,4 +1,9 @@
 export const ROAD_WIDTH = 112;
+export const PATH_PRESENTATION_TRANSFORM = Object.freeze({
+  xScale: 720 / 640,
+  yOffset: 110,
+  yScale: 1.45,
+});
 
 const cardinalDirection = (from, to) => {
   if (to.x > from.x) return 'east';
@@ -44,6 +49,25 @@ export const samplePathProgress = (metrics, requestedProgress) => {
   return Object.freeze({
     x: segment.start.x + ((segment.end.x - segment.start.x) * ratio),
     y: segment.start.y + ((segment.end.y - segment.start.y) * ratio),
+  });
+};
+
+export const projectPathPoint = (point) => Object.freeze({
+  x: point.x * PATH_PRESENTATION_TRANSFORM.xScale,
+  y: PATH_PRESENTATION_TRANSFORM.yOffset + (point.y * PATH_PRESENTATION_TRANSFORM.yScale),
+});
+
+export const projectPathProgress = (metrics, pathProgress, lateralOffset = 0) => {
+  const center = projectPathPoint(samplePathProgress(metrics, pathProgress));
+  if (!lateralOffset) return center;
+  const before = projectPathPoint(samplePathProgress(metrics, pathProgress - 1));
+  const after = projectPathPoint(samplePathProgress(metrics, pathProgress + 1));
+  const tangentX = after.x - before.x;
+  const tangentY = after.y - before.y;
+  const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+  return Object.freeze({
+    x: center.x - ((tangentY / tangentLength) * lateralOffset),
+    y: center.y + ((tangentX / tangentLength) * lateralOffset),
   });
 };
 

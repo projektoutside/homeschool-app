@@ -11,11 +11,38 @@ import {
 } from '../public/Games/DefenderChampion/src/core/lane-combat.js';
 import {
   createPathMetrics,
+  projectPathProgress,
   samplePathProgress,
 } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
+import * as laneCombat from '../public/Games/DefenderChampion/src/core/lane-combat.js';
 
 const roadPad = (id, pathProgress) => ({ id, layer: 'road', pathProgress });
 const grassPad = (id, x, y) => ({ id, layer: 'grass', x, y });
+const QUEUED_FOOTPRINT = 80;
+const MAXIMUM_OVERLAP_RATIO = 1 / 3;
+
+const projectQueuePoint = (metrics, { pathProgress, laneOffset }) => (
+  projectPathProgress(metrics, pathProgress, laneOffset)
+);
+
+const maximumPairwiseOverlapRatio = (slots, metrics) => {
+  let maximum = 0;
+  for (let firstIndex = 0; firstIndex < slots.length; firstIndex += 1) {
+    const first = slots[firstIndex];
+    const firstPosition = projectQueuePoint(metrics, first);
+    for (let secondIndex = firstIndex + 1; secondIndex < slots.length; secondIndex += 1) {
+      const second = slots[secondIndex];
+      const secondPosition = projectQueuePoint(metrics, second);
+      const distance = Math.hypot(
+        firstPosition.x - secondPosition.x,
+        firstPosition.y - secondPosition.y,
+      );
+      const footprint = QUEUED_FOOTPRINT * Math.max(first.scale, second.scale);
+      maximum = Math.max(maximum, Math.max(0, 1 - (distance / footprint)));
+    }
+  }
+  return maximum;
+};
 
 const createTower = ({
   id,
@@ -123,7 +150,7 @@ test('a living road defender stops the whole lane with three attackers and a sta
   assert.equal(simulation.enemies.every(({ laneOffset }) => Math.abs(laneOffset) <= 56), true);
 });
 
-test('a 160-enemy gate gets stable unique road-safe presentation slots without entrance collapse', () => {
+test('a 160-enemy gate gets three-lane footprint-safe presentation slots without entrance collapse', () => {
   const path = [
     { x: 0, y: 0 },
     { x: 0, y: 100 },
@@ -141,6 +168,7 @@ test('a 160-enemy gate gets stable unique road-safe presentation slots without e
     towers: [createTower({ id: 'tower-1', padId: 'road-a' })],
     enemies,
   });
+  simulation.pathMetrics = metrics;
   simulation.level.pads[0].pathProgress = 260;
 
   const state = assignLanePositions(simulation);
@@ -153,24 +181,35 @@ test('a 160-enemy gate gets stable unique road-safe presentation slots without e
   assert.equal(queued.length, 157);
   assert.equal(simulation.enemies.every(({ pathProgress }) => pathProgress < gate.pathProgress), true);
   assert.deepEqual(queued.map(({ id }) => id), gate.queuedIds);
-  assert.equal(queued.every(({ displayLaneOffset }) => displayLaneOffset === 0), true);
+  assert.equal(typeof laneCombat.QUEUE_PRESENTATION_FOOTPRINT, 'number');
+  assert.equal(typeof laneCombat.MAX_QUEUE_OVERLAP_RATIO, 'number');
+  assert.deepEqual([...new Set(queued.map(({ displayLaneOffset }) => displayLaneOffset))], [-28, 0, 28]);
+  assert.equal(queued.every(({ displayLaneOffset }, index) => (
+    displayLaneOffset === [-28, 0, 28][index % 3]
+  )), true);
   assert.equal(queued.every(({ displayScale }) => displayScale > 0 && displayScale <= 1), true);
-  assert.equal(queued.every((enemy, index) => (
-    index === 0 || enemy.displayPathProgress < queued[index - 1].displayPathProgress
+  assert.equal(queued.every((enemy, index) => index < 3 || (
+    enemy.displayPathProgress < queued[index - 3].displayPathProgress
   )), true);
   assert.equal(queued.at(-1).displayPathProgress > 0, true, 'the final sprite does not collapse onto the entrance cap');
 
-  const positions = queued.map(({ displayPathProgress }) => (
-    samplePathProgress(metrics, displayPathProgress)
-  ));
-  assert.equal(new Set(positions.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size, queued.length);
-
-  const layout = createQueuePresentationLayout({ gatePathProgress: 260, queueCount: 157 });
-  assert.deepEqual(layout, queued.map(({ displayLaneOffset, displayPathProgress, displayScale }) => ({
+  const slots = queued.map(({ displayLaneOffset, displayPathProgress, displayScale }) => ({
     laneOffset: displayLaneOffset,
     pathProgress: displayPathProgress,
     scale: displayScale,
-  })));
+  }));
+  const positions = slots.map((slot) => projectQueuePoint(metrics, slot));
+  assert.equal(new Set(positions.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size, queued.length);
+  assert.equal(slots.every(({ laneOffset, scale }) => (
+    Math.abs(laneOffset) + ((QUEUED_FOOTPRINT * scale) / 2) <= 56
+  )), true, 'every complete footprint remains inside the road');
+  assert.ok(
+    maximumPairwiseOverlapRatio(slots, metrics) <= MAXIMUM_OVERLAP_RATIO + 1e-9,
+    'pairwise footprint overlap stays at or below one third through corners',
+  );
+
+  const layout = createQueuePresentationLayout({ gatePathProgress: 260, pathMetrics: metrics, queueCount: 157 });
+  assert.deepEqual(layout, slots);
 });
 
 test('separate living gates reserve disjoint presentation intervals for their queues', () => {
@@ -182,7 +221,9 @@ test('separate living gates reserve disjoint presentation intervals for their qu
   });
   assert.equal(first.every(({ pathProgress }) => pathProgress < 260), true);
   assert.equal(second.every(({ pathProgress }) => pathProgress > 260 && pathProgress < 520), true);
-  assert.equal(new Set([...first, ...second].map(({ pathProgress }) => pathProgress.toFixed(12))).size, 48);
+  assert.equal(new Set([...first, ...second].map(({ laneOffset, pathProgress }) => (
+    `${pathProgress.toFixed(12)}:${laneOffset}`
+  ))).size, 48);
 });
 
 test('gate and attacker ties use numeric entity IDs without mutating the candidate list', () => {

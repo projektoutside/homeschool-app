@@ -58,6 +58,14 @@ const getEnemyPosition = (simulation, enemy) => {
   };
 };
 
+const enemyPresentationFields = (enemy) => ({
+  displayLaneOffset: enemy.displayLaneOffset ?? enemy.laneOffset ?? 0,
+  displayPathProgress: enemy.displayPathProgress ?? enemy.pathProgress,
+  displayScale: enemy.displayScale ?? 1,
+  laneState: enemy.laneState ?? 'moving',
+  queueIndex: enemy.queueIndex ?? null,
+});
+
 const getTowerPosition = (simulation, tower) => resolvePlacementPoint(
   simulation.level,
   simulation.level.pads.find((pad) => pad.id === tower.padId),
@@ -150,6 +158,7 @@ const defeatEnemy = (simulation, enemy) => {
     pathProgress: enemy.pathProgress,
     position: getEnemyPosition(simulation, enemy),
     waveIndex: enemy.waveIndex,
+    ...enemyPresentationFields(enemy),
   });
   const config = ENEMIES[enemy.enemyId];
   const remainingBountyCoins = simulation.level.bountyCoinCap === null
@@ -173,6 +182,7 @@ export const applyHit = (simulation, enemy, hit) => {
     pathProgress: enemy.pathProgress,
     position: getEnemyPosition(simulation, enemy),
     remainingHealth: enemy.health,
+    ...enemyPresentationFields(enemy),
   });
 
   if (hit.stunSeconds > 0 && (enemy.stunImmuneUntilTick ?? 0) <= simulation.tick) {
@@ -396,6 +406,7 @@ const telegraphBossAbility = (simulation, source, kind, telegraphTicks, details 
     pathProgress: source.pathProgress,
     position: getEnemyPosition(simulation, source),
     triggerTick,
+    ...enemyPresentationFields(source),
     ...details,
   });
 };
@@ -409,6 +420,7 @@ const updateEnemyAbilities = (simulation, enemy) => {
         enemyId: enemy.id,
         pathProgress: enemy.pathProgress,
         position: getEnemyPosition(simulation, enemy),
+        ...enemyPresentationFields(enemy),
       });
       applyHexcallerSupport(simulation, enemy);
     }
@@ -461,6 +473,7 @@ const triggerTelegraphs = (simulation) => {
       enemyId: source.enemyId,
       pathProgress: source.pathProgress,
       position: sourcePosition,
+      ...enemyPresentationFields(source),
       ...(effect.healthThresholdPercent !== undefined && {
         healthThresholdPercent: effect.healthThresholdPercent,
       }),
@@ -471,6 +484,7 @@ const triggerTelegraphs = (simulation) => {
         bossId: source.id,
         pathProgress: source.pathProgress,
         position: sourcePosition,
+        ...enemyPresentationFields(source),
       });
       continue;
     }
@@ -511,6 +525,12 @@ const addProjectile = (simulation, tower, target, damage, options = {}) => {
     launchTick: simulation.tick,
     launchPosition: { x: launchPosition.x, y: launchPosition.y },
     targetPathProgressAtLaunch: target.pathProgress,
+    targetEnemyIdAtLaunch: target.enemyId,
+    targetDisplayLaneOffsetAtLaunch: target.displayLaneOffset ?? target.laneOffset ?? 0,
+    targetDisplayPathProgressAtLaunch: target.displayPathProgress ?? target.pathProgress,
+    targetDisplayScaleAtLaunch: target.displayScale ?? 1,
+    targetLaneStateAtLaunch: target.laneState ?? 'moving',
+    targetQueueIndexAtLaunch: target.queueIndex ?? null,
     impactTick: simulation.tick + (options.delayTicks ?? DEFENDERS[tower.defenderId].projectileTicks),
     damage,
     armorPierce: options.armorPierce ?? 0,
@@ -621,6 +641,8 @@ const processProjectiles = (simulation) => {
       projectileId: projectile.id,
       sourceTowerId: projectile.sourceTowerId,
       targetId: target.id,
+      enemyId: target.enemyId,
+      ...enemyPresentationFields(target),
     });
     const targets = projectile.splashRadius > 0
       ? simulation.enemies.filter((enemy) => enemy.health > 0 && distance(
@@ -681,6 +703,7 @@ const resolveEnemies = (simulation) => {
         id: enemy.id,
         pathProgress: enemy.pathProgress,
         position: getEnemyPosition(simulation, enemy),
+        ...enemyPresentationFields(enemy),
       });
       simulation.castleHearts = Math.max(0, simulation.castleHearts - enemy.castleDamage);
       continue;

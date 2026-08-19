@@ -577,6 +577,12 @@ test('projectile snapshots retain launch data after their source tower is sold',
     LEVELS[0].pads.find(({ id }) => id === 'l1-pad-b'),
   ));
   assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
+  assert.equal(typeof projectile.targetDisplayPathProgressAtLaunch, 'number');
+  assert.equal(typeof projectile.targetDisplayLaneOffsetAtLaunch, 'number');
+  assert.equal(typeof projectile.targetDisplayScaleAtLaunch, 'number');
+  assert.equal(projectile.targetDisplayPathProgressAtLaunch, projectile.targetPathProgressAtLaunch);
+  assert.equal(projectile.targetDisplayLaneOffsetAtLaunch, 0);
+  assert.equal(projectile.targetDisplayScaleAtLaunch, 1);
   assert.equal(summarizeSimulation(simulation).towers.length, 0);
 });
 
