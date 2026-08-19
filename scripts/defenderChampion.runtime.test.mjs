@@ -182,19 +182,86 @@ test('portrait and tall-tablet battlefields cap their aspect-ratio width so the 
 });
 
 test('the local entry boots one transparent Phaser game with the declared scene list', async () => {
-  const main = await readGameFile('src/main.js');
+  const [main, phaserEntry] = await Promise.all([
+    readGameFile('src/main.js'),
+    readGameFile('src/phaser-entry.js'),
+  ]);
 
   assert.match(main, /from ['"]phaser['"]/);
-  assert.match(main, /parent:\s*['"]battlefield['"]/);
-  assert.match(main, /transparent:\s*true/);
-  assert.match(main, /width:\s*720/);
-  assert.match(main, /height:\s*960/);
-  assert.match(main, /audio:\s*{\s*noAudio:\s*true\s*}/s);
+  assert.match(main, /createDefenderPhaserGame/);
+  assert.match(phaserEntry, /parent:\s*['"]battlefield['"]/);
+  assert.match(phaserEntry, /transparent:\s*true/);
+  assert.match(phaserEntry, /width:\s*720/);
+  assert.match(phaserEntry, /height:\s*960/);
   assert.match(main, /Math\.min\([^)]*devicePixelRatio[^)]*,\s*2\)/);
-  assert.match(main, /scene:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
+  assert.match(main, /scenes:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
   assert.match(main, /if\s*\(paused\)\s*{[^}]*scene\.scene\.isActive\(\)/s);
   assert.match(main, /rel\s*=\s*['"]icon['"]/);
   assert.match(main, /data:image\/gif;base64/);
+});
+
+test('the production Phaser entry boots with denied Web Audio while independent audio degrades silently', async () => {
+  const [{ createDefenderPhaserGame }, { createAudioController }] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/phaser-entry.js'),
+    import('../public/Games/DefenderChampion/src/services/audio.js'),
+  ]);
+  const windowRef = new EventTargetDouble();
+  let audioConstructionAttempts = 0;
+  windowRef.AudioContext = class DeniedAudioContext {
+    constructor() {
+      audioConstructionAttempts += 1;
+      throw new DOMException('QA audio denied', 'NotAllowedError');
+    }
+  };
+  const audioController = createAudioController({ windowRef });
+  const registryEntries = new Map();
+  const constructedGames = [];
+  const PhaserDouble = {
+    AUTO: 'auto',
+    Scale: { CENTER_BOTH: 'center-both', FIT: 'fit' },
+    Game: class GameDouble {
+      constructor(config) {
+        if (!config.audio?.noAudio) new windowRef.AudioContext();
+        this.config = config;
+        this.registry = { set: (key, value) => registryEntries.set(key, value) };
+        config.callbacks.preBoot(this);
+        constructedGames.push(this);
+      }
+    },
+  };
+  const hud = { id: 'hud' };
+  const hostBridge = { id: 'host' };
+  const scenes = [class Boot {}, class Menu {}, class Levels {}, class Battle {}, class Result {}];
+
+  const game = createDefenderPhaserGame({
+    PhaserLib: PhaserDouble,
+    audioController,
+    hostBridge,
+    hud,
+    resolution: 2,
+    scenes,
+  });
+
+  assert.equal(constructedGames.length, 1);
+  assert.equal(game, constructedGames[0]);
+  assert.deepEqual(game.config.audio, { noAudio: true });
+  assert.equal(game.config.parent, 'battlefield');
+  assert.equal(game.config.resolution, 2);
+  assert.equal(game.config.scale.mode, PhaserDouble.Scale.FIT);
+  assert.deepEqual(game.config.scene, scenes);
+  assert.equal(registryEntries.get('hud'), hud);
+  assert.equal(registryEntries.get('hostBridge'), hostBridge);
+  assert.equal(registryEntries.get('audioController'), audioController);
+  assert.equal(audioConstructionAttempts, 0, 'Phaser must not construct its own audio context');
+
+  windowRef.dispatch('pointerdown');
+  assert.equal(audioConstructionAttempts, 1, 'only the independent audio controller tries Web Audio');
+  assert.equal(audioController.isUnlocked(), false);
+  audioController.setAudioMuted(true);
+  audioController.setPaused(true);
+  audioController.setPaused(false);
+  assert.deepEqual(audioController.getSettings(), { muted: true, musicVolume: 0.3, sfxVolume: 0.7 });
+  audioController.destroy();
 });
 
 test('BattleScene renders shared path pieces and resolves every typed pad position', async () => {

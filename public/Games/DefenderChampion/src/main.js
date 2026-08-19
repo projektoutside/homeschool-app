@@ -10,6 +10,7 @@ import { createSaveStore } from './services/save-store.js';
 import { LEVELS } from './config/levels.js';
 import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
 import { createRuntimeLifecycle } from './runtime-lifecycle.js';
+import { createDefenderPhaserGame } from './phaser-entry.js';
 
 const documentRef = globalThis.document;
 const windowRef = globalThis.window;
@@ -63,32 +64,13 @@ const hud = createHudController({
 
 const resolution = Math.min(globalThis.devicePixelRatio || 1, 2);
 
-game = new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'battlefield',
-  audio: { noAudio: true },
-  transparent: true,
-  width: 720,
-  height: 960,
+game = createDefenderPhaserGame({
+  PhaserLib: Phaser,
+  audioController,
+  hostBridge,
+  hud,
   resolution,
-  render: {
-    antialias: true,
-    transparent: true,
-  },
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 720,
-    height: 960,
-  },
-  scene: [BootScene, MenuScene, LevelSelectScene, BattleScene, ResultScene],
-  callbacks: {
-    preBoot(phaserGame) {
-      phaserGame.registry.set('hud', hud);
-      phaserGame.registry.set('hostBridge', hostBridge);
-      phaserGame.registry.set('audioController', audioController);
-    },
-  },
+  scenes: [BootScene, MenuScene, LevelSelectScene, BattleScene, ResultScene],
 });
 
 runtimeLifecycle = createRuntimeLifecycle({
