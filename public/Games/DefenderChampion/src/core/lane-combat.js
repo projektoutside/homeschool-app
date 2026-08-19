@@ -3,6 +3,7 @@ import { ROAD_WIDTH } from './path-geometry.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
 const MAX_ATTACKERS_PER_GATE = 3;
+const DEFAULT_ATTACK_TARGETS = Object.freeze(['frontline']);
 const CONTACT_DISTANCE = 18;
 const CONTACT_LANES = Object.freeze([-ROAD_WIDTH / 4, 0, ROAD_WIDTH / 4]);
 const QUEUE_DISTANCE = 44;
@@ -115,8 +116,10 @@ export const assignLanePositions = (simulation) => {
       continue;
     }
     const reservedGate = gates.find(({ towerId }) => towerId === enemy.blockingTowerId);
-    const gate = reservedGate
-      ?? gates.find((candidate) => candidate.pathProgress >= enemy.pathProgress);
+    const nextGate = gates.find((candidate) => candidate.pathProgress >= enemy.pathProgress);
+    const gate = reservedGate && enemy.pathProgress > reservedGate.pathProgress
+      ? reservedGate
+      : nextGate ?? reservedGate;
     if (!gate) {
       setMoving(enemy);
       continue;
@@ -142,7 +145,8 @@ export const assignLanePositions = (simulation) => {
 };
 
 export const selectEnemyAttackTarget = (simulation, enemy, combatLayer) => {
-  if (!enemy.attackTargets?.includes(combatLayer)) return null;
+  const attackTargets = enemy.attackTargets ?? DEFAULT_ATTACK_TARGETS;
+  if (!attackTargets.includes(combatLayer)) return null;
   const placementLayer = combatLayer === 'frontline' ? 'road' : 'grass';
   const candidates = simulation.towers
     .filter((tower) => {
@@ -270,5 +274,6 @@ export const advanceEnemyAttacks = (simulation) => {
     const target = selectEnemyAttackTarget(simulation, enemy, 'frontline');
     if (!target) continue;
     startEnemyAttack(simulation, enemy, target);
+    if (enemy.attackState.impactAtTick === simulation.tick) resolveEnemyImpact(simulation, enemy);
   }
 };

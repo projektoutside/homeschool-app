@@ -165,6 +165,23 @@ test('a moving enemy cannot bypass its reserved living gate by overshooting the 
   assert.equal(enemy.pathProgress < 100, true);
 });
 
+test('a newly built nearer gate supersedes a farther reservation before the enemy reaches it', () => {
+  const enemy = createEnemy({ id: 'enemy-1', pathProgress: 100 });
+  const fartherTower = createTower({ id: 'tower-2', padId: 'road-b' });
+  const simulation = createSimulation({ towers: [fartherTower], enemies: [enemy] });
+  assignLanePositions(simulation);
+  assert.equal(enemy.blockingTowerId, 'tower-2');
+
+  simulation.level.pads.push(roadPad('road-middle', 150));
+  simulation.towers.push(createTower({ id: 'tower-3', padId: 'road-middle' }));
+  const state = assignLanePositions(simulation);
+
+  assert.deepEqual(state.gates.map(({ towerId }) => towerId), ['tower-3', 'tower-2']);
+  assert.deepEqual(state.gates[0].attackerIds, ['enemy-1']);
+  assert.deepEqual(state.gates[1].attackerIds, []);
+  assert.equal(enemy.blockingTowerId, 'tower-3');
+});
+
 test('enemy attacks use exact active ticks and a stun at impact cancels the same target', () => {
   const tower = createTower({ id: 'tower-1', padId: 'road-a', health: 40, armor: 0.5 });
   const enemy = createEnemy({
@@ -201,6 +218,30 @@ test('enemy attacks use exact active ticks and a stun at impact cancels the same
     readyAtTick: 16,
   });
   assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'enemy-attack-impact'), false);
+});
+
+test('a zero-windup attack resolves once in its start tick with stable event order and cooldown', () => {
+  const tower = createTower({ id: 'tower-1', padId: 'road-a', health: 10 });
+  const enemy = createEnemy({
+    id: 'enemy-1', pathProgress: 100, attackDamage: 4, attackCooldownTicks: 6, attackWindupTicks: 0,
+  });
+  const simulation = createSimulation({ towers: [tower], enemies: [enemy], tick: 20 });
+  assignLanePositions(simulation);
+
+  advanceEnemyAttacks(simulation);
+  advanceEnemyAttacks(simulation);
+
+  assert.equal(tower.health, 6);
+  assert.deepEqual(enemy.attackState, {
+    targetTowerId: null,
+    startedAtTick: null,
+    impactAtTick: null,
+    readyAtTick: 26,
+  });
+  assert.deepEqual(
+    simulation.presentationEvents.map(({ kind }) => kind),
+    ['enemy-attack-start', 'defender-hit', 'enemy-attack-impact'],
+  );
 });
 
 test('a valid impact applies defender armor with a minimum of one damage', () => {
@@ -309,4 +350,17 @@ test('attack target capabilities allow a future backline enemy without widening 
   assert.equal(selectEnemyAttackTarget(simulation, ordinary, 'backline'), null);
   assert.equal(selectEnemyAttackTarget(simulation, futureMage, 'frontline'), null);
   assert.equal(selectEnemyAttackTarget(simulation, futureMage, 'backline'), backline);
+});
+
+test('a missing attackTargets profile defaults to frontline-only targeting', () => {
+  const frontline = createTower({ id: 'tower-1', padId: 'road-a' });
+  const backline = createTower({ id: 'tower-2', padId: 'grass-a', combatLayer: 'backline' });
+  const productionEnemy = createEnemy({ id: 'enemy-1', pathProgress: 100 });
+  delete productionEnemy.attackTargets;
+  productionEnemy.laneState = 'attacking';
+  productionEnemy.blockingTowerId = frontline.id;
+  const simulation = createSimulation({ towers: [frontline, backline], enemies: [productionEnemy] });
+
+  assert.equal(selectEnemyAttackTarget(simulation, productionEnemy, 'frontline'), frontline);
+  assert.equal(selectEnemyAttackTarget(simulation, productionEnemy, 'backline'), null);
 });
