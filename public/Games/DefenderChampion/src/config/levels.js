@@ -1,0 +1,205 @@
+import { createTerrainCells, expandGridPath } from '../core/grid-geometry.js';
+
+const freeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) {
+      freeze(child);
+    }
+    Object.freeze(value);
+  }
+  return value;
+};
+
+const GRID_WAYPOINTS = Object.freeze({
+  'level-1': [[0, 4], [2, 4], [2, 7], [4, 7], [4, 2], [7, 2], [7, 6], [9, 6], [9, 4], [11, 4]],
+  'level-2': [[0, 1], [2, 1], [2, 5], [4, 5], [4, 8], [6, 8], [6, 3], [8, 3], [8, 7], [10, 7], [10, 4], [11, 4]],
+  'level-3': [[0, 7], [1, 7], [1, 3], [3, 3], [3, 0], [5, 0], [5, 5], [7, 5], [7, 8], [9, 8], [9, 4], [11, 4]],
+  'level-4': [[0, 2], [2, 2], [2, 6], [3, 6], [3, 3], [5, 3], [5, 7], [7, 7], [7, 5], [10, 5], [10, 4], [11, 4]],
+  'level-5': [[0, 6], [2, 6], [2, 2], [4, 2], [4, 7], [6, 7], [6, 1], [8, 1], [8, 6], [10, 6], [10, 4], [11, 4]],
+  'level-6': [[0, 4], [1, 4], [1, 8], [3, 8], [3, 5], [5, 5], [5, 1], [7, 1], [7, 7], [9, 7], [9, 3], [11, 3]],
+  'level-7': [[0, 5], [2, 5], [2, 1], [4, 1], [4, 6], [6, 6], [6, 8], [8, 8], [8, 3], [10, 3], [10, 4], [11, 4]],
+  'level-8': [[0, 1], [2, 1], [2, 6], [4, 6], [4, 3], [6, 3], [6, 8], [8, 8], [8, 5], [10, 5], [10, 4], [11, 4]],
+  'level-9': [[0, 7], [2, 7], [2, 3], [4, 3], [4, 6], [6, 6], [6, 2], [8, 2], [8, 8], [10, 8], [10, 4], [11, 4]],
+  'level-10': [[0, 2], [2, 2], [2, 7], [4, 7], [4, 4], [6, 4], [6, 8], [8, 8], [8, 1], [10, 1], [10, 4], [11, 4]],
+});
+
+const waypoints = (levelId) => GRID_WAYPOINTS[levelId]
+  .map(([row, column]) => ({ row, column }));
+
+const spawn = (enemyId, count, intervalTicks, delayTicks = 0) => ({
+  enemyId,
+  count,
+  intervalTicks,
+  delayTicks,
+});
+
+const level = ({
+  id, name, waveCount, healthScale, bountyCoinCap = null, threatIndex,
+  waves, silverScore, goldScore, parSeconds,
+}) => {
+  const roadCells = expandGridPath(waypoints(id));
+  return freeze({
+    id,
+    name,
+    waveCount,
+    healthScale,
+    bountyCoinCap,
+    threatIndex,
+    castleHearts: 3,
+    startingCoins: 150,
+    roadCells,
+    cells: createTerrainCells(roadCells),
+    waves,
+    silverScore,
+    goldScore,
+    parSeconds,
+    referenceStrategies: [`${id}-balanced`, `${id}-artillery`],
+  });
+};
+
+export const LEVELS = freeze([
+  level({
+    id: 'level-1', name: 'Meadow Watch', waveCount: 3, healthScale: 1.00, threatIndex: 100,
+    waves: [
+      [spawn('blight-walker', 6, 84, 0)],
+      [spawn('blight-walker', 8, 72, 0)],
+      [spawn('blight-walker', 10, 66, 0)],
+    ],
+    silverScore: 180, goldScore: 250, parSeconds: 180,
+  }),
+  level({
+    id: 'level-2', name: 'Quickstep Grove', waveCount: 4, healthScale: 1.12, threatIndex: 135,
+    waves: [
+      [spawn('blight-walker', 7, 78, 0)],
+      [spawn('skitter', 8, 56, 0)],
+      [spawn('blight-walker', 6, 66, 0), spawn('skitter', 6, 54, 120)],
+      [spawn('skitter', 12, 48, 0)],
+    ],
+    silverScore: 280, goldScore: 380, parSeconds: 210,
+  }),
+  level({
+    id: 'level-3', name: 'Iron Trail', waveCount: 4, healthScale: 1.25, threatIndex: 175,
+    waves: [
+      [spawn('blight-walker', 8, 72, 0)],
+      [spawn('shellguard', 4, 108, 0), spawn('skitter', 6, 60, 90)],
+      [spawn('shellguard', 6, 96, 0)],
+      [spawn('blight-walker', 8, 66, 0), spawn('shellguard', 5, 90, 144)],
+    ],
+    silverScore: 390, goldScore: 520, parSeconds: 240,
+  }),
+  level({
+    id: 'level-4', name: "Brute's Crossing", waveCount: 5, healthScale: 1.52, threatIndex: 225,
+    waves: [
+      [spawn('blight-walker', 10, 66, 0)],
+      [spawn('skitter', 10, 50, 0), spawn('shellguard', 4, 102, 120)],
+      [spawn('shellguard', 7, 90, 0)],
+      [spawn('blight-walker', 10, 60, 0), spawn('skitter', 10, 48, 90)],
+      [
+        spawn('mossback-brute', 1, 0, 0),
+        spawn('crusher', 2, 120, 0),
+        spawn('blight-walker', 10, 72, 1800),
+      ],
+    ],
+    silverScore: 520, goldScore: 690, parSeconds: 270,
+  }),
+  level({
+    id: 'level-5', name: 'Twisting Thicket', waveCount: 5, healthScale: 1.34, threatIndex: 285,
+    waves: [
+      [spawn('swarmkin', 10, 38, 0)],
+      [spawn('hexcaller', 1, 144, 0), spawn('blight-walker', 5, 78, 120)],
+      [spawn('swarmkin', 12, 36, 0)],
+      [spawn('shellguard', 4, 102, 0), spawn('hexcaller', 1, 138, 180)],
+      [spawn('swarmkin', 10, 38, 0), spawn('skitter', 6, 60, 96)],
+    ],
+    silverScore: 680, goldScore: 880, parSeconds: 300,
+  }),
+  level({
+    id: 'level-6', name: 'Moonlit Rush', waveCount: 5, healthScale: 1.48, threatIndex: 350,
+    waves: [
+      [spawn('swarmkin', 12, 34, 0)],
+      [spawn('skitter', 10, 48, 0), spawn('hexcaller', 1, 132, 132)],
+      [spawn('shellguard', 5, 96, 0), spawn('swarmkin', 10, 36, 120)],
+      [spawn('crusher', 1, 162, 0), spawn('skitter', 8, 50, 120)],
+      [spawn('hexcaller', 2, 126, 0), spawn('swarmkin', 12, 32, 132)],
+    ],
+    silverScore: 850, goldScore: 1100, parSeconds: 330,
+  }),
+  level({
+    id: 'level-7', name: "Warlord's March", waveCount: 6, healthScale: 1.0, bountyCoinCap: 550, threatIndex: 430,
+    waves: [
+      [spawn('swarmkin', 24, 30, 0)],
+      [spawn('hexcaller', 4, 114, 0), spawn('skitter', 16, 42, 60)],
+      [spawn('crusher', 4, 180, 0), spawn('shellguard', 6, 96, 96)],
+      [spawn('swarmkin', 28, 22, 0)],
+      [spawn('skitter', 10, 0, 0), spawn('hexcaller', 4, 96, 108)],
+      [
+        spawn('ironhide-warlord', 1, 0, 0),
+        spawn('shellguard', 12, 72, 120),
+        spawn('crusher', 8, 108, 180),
+        spawn('skitter', 32, 0, 0),
+        spawn('hexcaller', 12, 36, 15000),
+      ],
+    ],
+    silverScore: 1050, goldScore: 1360, parSeconds: 360,
+  }),
+  level({
+    id: 'level-8', name: 'Fogbound Siege', waveCount: 6, healthScale: 1.5, threatIndex: 525,
+    waves: [
+      [spawn('swarmkin', 30, 34, 0), spawn('skitter', 12, 54, 84)],
+      [spawn('shellguard', 10, 96, 0), spawn('hexcaller', 4, 114, 90)],
+      [spawn('crusher', 5, 180, 0), spawn('swarmkin', 22, 34, 90)],
+      [spawn('hexcaller', 5, 108, 0), spawn('skitter', 18, 52, 72)],
+      [spawn('shellguard', 12, 96, 0), spawn('crusher', 4, 168, 96)],
+      [spawn('swarmkin', 34, 34, 0), spawn('hexcaller', 5, 108, 120)],
+    ],
+    silverScore: 1280, goldScore: 1650, parSeconds: 390,
+  }),
+  level({
+    id: 'level-9', name: 'The Last Green', waveCount: 7, healthScale: 1.0, threatIndex: 640,
+    waves: [
+      [spawn('crusher', 5, 144, 0), spawn('skitter', 8, 90, 96)],
+      [spawn('hexcaller', 5, 102, 0), spawn('swarmkin', 20, 32, 84)],
+      [spawn('skitter', 14, 48, 0), spawn('crusher', 4, 138, 90)],
+      [spawn('skitter', 12, 96, 0), spawn('hexcaller', 5, 96, 90)],
+      [spawn('swarmkin', 24, 30, 0), spawn('skitter', 14, 46, 72)],
+      [spawn('shellguard', 6, 156, 0), spawn('skitter', 10, 120, 108)],
+      [spawn('hexcaller', 6, 96, 0), spawn('swarmkin', 26, 30, 96)],
+    ],
+    silverScore: 1540, goldScore: 1980, parSeconds: 420,
+  }),
+  level({
+    id: 'level-10', name: "Champion's Stand", waveCount: 8, healthScale: 1.0, bountyCoinCap: 580, threatIndex: 800,
+    waves: [
+      [
+        spawn('crusher', 3, 96, 0),
+        spawn('swarmkin', 24, 24, 0),
+        spawn('shellguard', 4, 84, 120),
+      ],
+      [spawn('swarmkin', 24, 24, 0), spawn('skitter', 12, 36, 60)],
+      [spawn('ironhide-warlord', 3, 114, 0), spawn('shellguard', 8, 78, 90)],
+      [spawn('hexcaller', 4, 96, 0), spawn('swarmkin', 22, 24, 96)],
+      [spawn('skitter', 16, 46, 0), spawn('crusher', 3, 132, 90)],
+      [spawn('shellguard', 10, 72, 0), spawn('hexcaller', 4, 84, 108)],
+      [spawn('swarmkin', 26, 22, 0), spawn('crusher', 2, 132, 90)],
+      [
+        spawn('dread-colossus', 1, 0, 0),
+        spawn('swarmkin', 16, 28, 120),
+        spawn('skitter', 32, 24, 120),
+        spawn('hexcaller', 16, 36, 15000),
+        spawn('skitter', 32, 22, 22000),
+        spawn('shellguard', 12, 54, 120),
+        spawn('crusher', 3, 102, 180),
+        spawn('hexcaller', 4, 84, 240),
+      ],
+    ],
+    silverScore: 1850, goldScore: 2400, parSeconds: 480,
+  }),
+]);
+
+export const getLevel = (levelId) => {
+  const matchedLevel = LEVELS.find((levelEntry) => levelEntry.id === levelId);
+  if (!matchedLevel) {
+    throw new Error(`Unknown level: ${levelId}`);
+  }
+  return matchedLevel;
+};

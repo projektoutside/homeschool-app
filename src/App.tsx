@@ -11,6 +11,7 @@ import { UpdateNotification } from './components/UpdateNotification';
 import AppLoadingFallback from './components/AppLoadingFallback';
 import { HomepageSessionGate } from './components/HomepageSessionGate';
 import { useAuth } from './context/AuthContext';
+import { resolveProtectedRouteState } from './context/authBoot';
 import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
@@ -88,9 +89,13 @@ const RequireAuth: React.FC<{ user: User | null; loading: boolean; children: Rea
         return false;
     }, [location.pathname]);
 
-    if (loading && !canBypassLoadingFallback) return <LoadingFallback />;
-    if (loading && canBypassLoadingFallback) return <>{children}</>;
-    if (!user) return <Navigate to="/auth" replace />;
+    const routeState = resolveProtectedRouteState({
+        user,
+        loading,
+        allowWhileLoading: canBypassLoadingFallback,
+    });
+    if (routeState === 'pending') return <LoadingFallback />;
+    if (routeState === 'deny') return <Navigate to="/auth" replace />;
     return <>{children}</>;
 };
 

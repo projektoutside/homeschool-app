@@ -1,0 +1,1963 @@
+{
+  "schemaVersion": 1,
+  "frame": {
+    "width": 384,
+    "height": 384,
+    "anchorX": 0.5,
+    "anchorY": 1,
+    "safeInset": 12
+  },
+  "bossOrder": [
+    "mossback-brute",
+    "ironhide-warlord",
+    "dread-colossus"
+  ],
+  "actionOrder": [
+    "walk",
+    "ability",
+    "defeat"
+  ],
+  "postNormalizationPolicy": {
+    "postCommonScaleAllowedOperations": [
+      "translate",
+      "bottom-center",
+      "pad"
+    ],
+    "geometricRescaleAllowed": false,
+    "canonicalAlpha": "crop alpha greater than zero to its tight bbox and hash row-major bytes"
+  },
+  "bosses": [
+    {
+      "id": "mossback-brute",
+      "acceptedSeedIdentity": "seed-mossback-brute-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 244,
+          "ability": 244,
+          "defeat": 244
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-mossback-brute-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-mossback-brute-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-mossback-brute-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "normalizationEvidence": {
+        "actions": {
+          "walk": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 258,
+                "bboxHeight": 244,
+                "nonzeroCount": 40739,
+                "meaningfulCount": 39771,
+                "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 283,
+                "bboxHeight": 223,
+                "nonzeroCount": 43361,
+                "meaningfulCount": 37419,
+                "sha256": "a193fbdb994f7aed2bda4b3d9c3f9de4558eb39263f70bd1e235df4f4068e351"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 283,
+                "bboxHeight": 237,
+                "nonzeroCount": 47026,
+                "meaningfulCount": 40744,
+                "sha256": "979e092fd4c33a4a9da8cf146e585296a8db3e8e7c53664c22170eee563d2cb4"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 250,
+                "bboxHeight": 250,
+                "nonzeroCount": 45108,
+                "meaningfulCount": 39243,
+                "sha256": "e97c867c07702de9382d464383bc56a38bbab7ced2e160981a8d93532dd7e3ea"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 242,
+                "bboxHeight": 248,
+                "nonzeroCount": 44621,
+                "meaningfulCount": 38109,
+                "sha256": "ae1f6f42b54ba6af20be14b9df0309f24580e39bce45fb4168bbc91477bb55f6"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 280,
+                "bboxHeight": 216,
+                "nonzeroCount": 43052,
+                "meaningfulCount": 37072,
+                "sha256": "f1ec26694b1ef047e74b13d3b88fecf68464162dfc7cd1071d12ac7525bbb61f"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 284,
+                "bboxHeight": 250,
+                "nonzeroCount": 51272,
+                "meaningfulCount": 42406,
+                "sha256": "35363e6c044cea91a133765f2de069aa53b3a209d3668a3d9c50492b9e0a00b1"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 268,
+                "bboxHeight": 247,
+                "nonzeroCount": 50012,
+                "meaningfulCount": 42625,
+                "sha256": "8bbceb3f37b076252bd371ff57edb7eef77e6d2373a1807f466c408592d96e53"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "ability": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 258,
+                "bboxHeight": 244,
+                "nonzeroCount": 40739,
+                "meaningfulCount": 39771,
+                "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 269,
+                "bboxHeight": 314,
+                "nonzeroCount": 56453,
+                "meaningfulCount": 47581,
+                "sha256": "f8ae0046992c28175dba44b06ef45ee8d1d2c54e891108547e58ece98bb435d7"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 236,
+                "bboxHeight": 360,
+                "nonzeroCount": 61084,
+                "meaningfulCount": 51707,
+                "sha256": "69f6186a723318fcb4f1d17207057fedd93c11142e09ef36c4a5afc169d8de9d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 273,
+                "bboxHeight": 340,
+                "nonzeroCount": 74121,
+                "meaningfulCount": 57413,
+                "sha256": "2d722ef0da2ba03ad49283359c5463dcfa8eee59b77d16cdc3d9b174a5733c46"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 302,
+                "bboxHeight": 222,
+                "nonzeroCount": 57423,
+                "meaningfulCount": 47658,
+                "sha256": "5ec91f9cc1fdc97ba89c54fb9097cd7d9d172650c3d5b85b7778bf827f7b0bd4"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 301,
+                "bboxHeight": 251,
+                "nonzeroCount": 58288,
+                "meaningfulCount": 47172,
+                "sha256": "c9eff03e1e89d0401a544c7fc80014d4b1c9f98109a2733f175a75eb5a428d5c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 265,
+                "bboxHeight": 250,
+                "nonzeroCount": 49909,
+                "meaningfulCount": 42237,
+                "sha256": "2273db16f6139d77acdd8272023857720057ee58086c2e9999780218721ea93c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 265,
+                "bboxHeight": 249,
+                "nonzeroCount": 49048,
+                "meaningfulCount": 42455,
+                "sha256": "977624eef0bc1dcf61c78d8abb1fd8063c10f23137f49262d1aeaebe856b4ec2"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "defeat": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 258,
+                "bboxHeight": 244,
+                "nonzeroCount": 40739,
+                "meaningfulCount": 39771,
+                "sha256": "ba7de44f1b50a03f569c82a31d00bd54bae18d9e8a2e9fae7633590f9c9fba8e"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 212,
+                "bboxHeight": 227,
+                "nonzeroCount": 38197,
+                "meaningfulCount": 32456,
+                "sha256": "b44a67e8ce2c1b099aaaf80904ceb45391d54de3555a32e99b9fd399418f4282"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 223,
+                "bboxHeight": 215,
+                "nonzeroCount": 35975,
+                "meaningfulCount": 29451,
+                "sha256": "24e397adb1034e53b2c9842cde80b62e883b39490a01a4999496a32379601a42"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 228,
+                "bboxHeight": 211,
+                "nonzeroCount": 38498,
+                "meaningfulCount": 30846,
+                "sha256": "e6f70e2c4db445e25b731ebcdfe794943da9add3dbae9a759fc1cced2cdd8aa1"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 211,
+                "bboxHeight": 188,
+                "nonzeroCount": 33466,
+                "meaningfulCount": 28195,
+                "sha256": "60d26f11f9e1a0da913f5cce893847f853ca392652522a36149fd1a83986dd4a"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 231,
+                "bboxHeight": 167,
+                "nonzeroCount": 31041,
+                "meaningfulCount": 25245,
+                "sha256": "6abaf8575dd5d0cae3b2e905d1038379028c439dafba890c0695828f0411f46a"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 237,
+                "bboxHeight": 137,
+                "nonzeroCount": 26793,
+                "meaningfulCount": 20947,
+                "sha256": "4d68bd4a4c308a2ce2c7566ecf22f06ad1abcc581b25e26f026fa0965a1a0440"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 212,
+                "bboxHeight": 133,
+                "nonzeroCount": 23316,
+                "meaningfulCount": 19253,
+                "sha256": "3dd2d52e0bc20a44c7102300ca91900e6a216d07ca21482dcd228b0fb6d06039"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 8,
+              "canonicalAlpha": {
+                "bboxWidth": 221,
+                "bboxHeight": 118,
+                "nonzeroCount": 20471,
+                "meaningfulCount": 17355,
+                "sha256": "22a028e356ec1b20fdccf8554258512fec91cedc00921c41c5ca429f70ba3a44"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 9,
+              "canonicalAlpha": {
+                "bboxWidth": 218,
+                "bboxHeight": 96,
+                "nonzeroCount": 17123,
+                "meaningfulCount": 14659,
+                "sha256": "c58e31b858e59df12e3217208c3d253000e793b3264ffb2adf9268c6da69b441"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ]
+        }
+      },
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "mossback-telegraph": {
+            "action": "ability",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "boss-warning"
+            },
+            "externalRangeWarning": true
+          }
+        }
+      }
+    },
+    {
+      "id": "ironhide-warlord",
+      "acceptedSeedIdentity": "seed-ironhide-warlord-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 224,
+          "ability": 224,
+          "defeat": 224
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-ironhide-warlord-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-ironhide-warlord-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-ironhide-warlord-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "normalizationEvidence": {
+        "actions": {
+          "walk": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 217,
+                "bboxHeight": 225,
+                "nonzeroCount": 24585,
+                "meaningfulCount": 23581,
+                "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 220,
+                "bboxHeight": 224,
+                "nonzeroCount": 27592,
+                "meaningfulCount": 22079,
+                "sha256": "96720f576d445c65fdde7095ab7c6ab07b350ae600eb802f738c8bb37d8fc7f5"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 214,
+                "bboxHeight": 241,
+                "nonzeroCount": 28851,
+                "meaningfulCount": 22909,
+                "sha256": "c2a697d0270c004382cfad0aa69042c4bb9cccef3be1214c5b04521f7cbeef5d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 218,
+                "bboxHeight": 252,
+                "nonzeroCount": 28869,
+                "meaningfulCount": 23611,
+                "sha256": "e9b36a5564f04424e5de135e60c2522bf39feff7296636f1b1e068a45f20390c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 212,
+                "bboxHeight": 237,
+                "nonzeroCount": 27171,
+                "meaningfulCount": 21523,
+                "sha256": "fcce9b3aa7c6b4279d9104c7b918b1f5fe4ccac281e482129468e16d0b12a274"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 208,
+                "bboxHeight": 234,
+                "nonzeroCount": 27605,
+                "meaningfulCount": 22114,
+                "sha256": "9cc9d9bb4b677d1ca5095940a33e6b46b9b96e17f68aa363697f75a39a273477"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 209,
+                "bboxHeight": 233,
+                "nonzeroCount": 26303,
+                "meaningfulCount": 21241,
+                "sha256": "0aabd70c01fc38280fdbcea3d5002f6cb906c7bda064173c3f80f232ebb6dd15"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 223,
+                "bboxHeight": 227,
+                "nonzeroCount": 31930,
+                "meaningfulCount": 25522,
+                "sha256": "a00ed3109c9da5164ef4f983016c6b7b85d083fcf4e43c0073610ecacbdef038"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "ability": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 217,
+                "bboxHeight": 225,
+                "nonzeroCount": 24585,
+                "meaningfulCount": 23581,
+                "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 191,
+                "bboxHeight": 254,
+                "nonzeroCount": 27681,
+                "meaningfulCount": 22082,
+                "sha256": "b59786cf67430f0389309cd7bc0be7a6ed73836f14a4e2c91b238193c782ba6f"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 198,
+                "bboxHeight": 310,
+                "nonzeroCount": 30786,
+                "meaningfulCount": 23121,
+                "sha256": "0e11abe17df537a0ec84c829289c417877bcbcbd6c77ab26c06cf3215ffff373"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 209,
+                "bboxHeight": 353,
+                "nonzeroCount": 35253,
+                "meaningfulCount": 26080,
+                "sha256": "4cca1d4df72760562b7a9a5ca73b82f7da5919c5e6baded7a537781a40bc5963"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 208,
+                "bboxHeight": 360,
+                "nonzeroCount": 61811,
+                "meaningfulCount": 35846,
+                "sha256": "267e85b3fb9a910287731c6d524551c9b2fd16ae8b365ef5171268d50d0234f4"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 219,
+                "bboxHeight": 303,
+                "nonzeroCount": 42151,
+                "meaningfulCount": 26396,
+                "sha256": "53188af80befc30b522f4989a9d961ded3bfd7682f20654d9eb557117924c01b"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 191,
+                "bboxHeight": 218,
+                "nonzeroCount": 26377,
+                "meaningfulCount": 20847,
+                "sha256": "4bacf82056b3c6357da69c2640662738008308d6430dd38cc2dc432f3d63da9a"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 200,
+                "bboxHeight": 212,
+                "nonzeroCount": 27984,
+                "meaningfulCount": 22269,
+                "sha256": "362f71cdb5e6fa798943bd2db36f86a662f39d53ed1a491cfd97a19bb8b03278"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "defeat": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 217,
+                "bboxHeight": 225,
+                "nonzeroCount": 24585,
+                "meaningfulCount": 23581,
+                "sha256": "a7a1161c00a3920de60e504a9b7abf8d2dc8350f3e8ddce0b69af93d10abe75b"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 169,
+                "bboxHeight": 170,
+                "nonzeroCount": 18182,
+                "meaningfulCount": 12908,
+                "sha256": "7150308d75ca8008fdcee6a4ca328390df08232513ba0eb63751c1afa5bcface"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 170,
+                "bboxHeight": 151,
+                "nonzeroCount": 16336,
+                "meaningfulCount": 12124,
+                "sha256": "88d5086d11907cdd32cf6d728a300fdeb710b5be8a0668e8f47eb2263e8b1ce8"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 155,
+                "bboxHeight": 148,
+                "nonzeroCount": 14603,
+                "meaningfulCount": 10792,
+                "sha256": "60e14b6161dba5484d9bd7422a731e0fa2034270a9fa0f65de581e9dfc6f5be8"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 147,
+                "bboxHeight": 173,
+                "nonzeroCount": 16192,
+                "meaningfulCount": 11805,
+                "sha256": "0c7d949f878c20cdd953b3adda967ce202590be3ca8ac697bae3f2a296ae2a06"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 160,
+                "bboxHeight": 150,
+                "nonzeroCount": 14497,
+                "meaningfulCount": 10345,
+                "sha256": "a1bd485ab82afd22d4965a60853c11d0e4810f4e8278e235895a1db9ce8a7bab"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 157,
+                "bboxHeight": 126,
+                "nonzeroCount": 12976,
+                "meaningfulCount": 9673,
+                "sha256": "b63f4bb8eca555e5090a7ae5351c0080b10ff22bb8c06f2d8f21fe0661b2a63c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 169,
+                "bboxHeight": 83,
+                "nonzeroCount": 11809,
+                "meaningfulCount": 8454,
+                "sha256": "4d038abd14a1f205dd3236301c869c2ccea5556a4e15edc4d7749fcdd4087939"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 8,
+              "canonicalAlpha": {
+                "bboxWidth": 152,
+                "bboxHeight": 73,
+                "nonzeroCount": 9115,
+                "meaningfulCount": 6516,
+                "sha256": "f522d54f9932954e4de34487b69d513b32f1dce7311009295ea4523bacaee82e"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 9,
+              "canonicalAlpha": {
+                "bboxWidth": 152,
+                "bboxHeight": 74,
+                "nonzeroCount": 9208,
+                "meaningfulCount": 6659,
+                "sha256": "8b2b887a594d1030dba0d8c058eb7be0a15268297e6584b29914d32bf09ec3a3"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ]
+        }
+      },
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "rally-counter-transition": {
+            "action": "ability",
+            "overlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "shield-bash"
+            }
+          }
+        },
+        "plateAccents": [
+          {
+            "threshold": "plate75",
+            "removeAccent": "iron-bark-plate-1"
+          },
+          {
+            "threshold": "plate50",
+            "removeAccent": "iron-bark-plate-2"
+          },
+          {
+            "threshold": "plate25",
+            "removeAccent": "iron-bark-plate-3"
+          }
+        ],
+        "plateCrackOverlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "defeat-crack"
+        },
+        "vulnerabilityAccent": {
+          "sourceState": "vulnerableUntilTick",
+          "overlay": {
+            "atlasAssetId": "environment-gameplay-atlas",
+            "frameId": "slow-rune"
+          }
+        },
+        "baseArtUnderlayer": "coherent-underlayer-beneath-three-removable-runtime-plate-accents"
+      }
+    },
+    {
+      "id": "dread-colossus",
+      "acceptedSeedIdentity": "seed-dread-colossus-v1",
+      "sharedScaleEvidence": {
+        "measurement": "decoded alpha bbox height above threshold 64 in the first normalized frame",
+        "actionFirstFrameHeightPx": {
+          "walk": 338,
+          "ability": 338,
+          "defeat": 338
+        },
+        "maxActionDeltaPx": 1
+      },
+      "actions": [
+        {
+          "id": "walk",
+          "assetId": "boss-dread-colossus-walk",
+          "frameCount": 8,
+          "frameDurationMs": 150,
+          "loop": true,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "ability",
+          "assetId": "boss-dread-colossus-ability",
+          "frameCount": 8,
+          "frameDurationMs": 125,
+          "loop": false,
+          "columns": 8,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        },
+        {
+          "id": "defeat",
+          "assetId": "boss-dread-colossus-defeat",
+          "frameCount": 10,
+          "frameDurationMs": 150,
+          "loop": false,
+          "columns": 10,
+          "rows": 1,
+          "frames": [
+            {
+              "index": 0,
+              "x": 0,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 1,
+              "x": 384,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 2,
+              "x": 768,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 3,
+              "x": 1152,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 4,
+              "x": 1536,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 5,
+              "x": 1920,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 6,
+              "x": 2304,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 7,
+              "x": 2688,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 8,
+              "x": 3072,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            },
+            {
+              "index": 9,
+              "x": 3456,
+              "y": 0,
+              "width": 384,
+              "height": 384
+            }
+          ]
+        }
+      ],
+      "normalizationEvidence": {
+        "actions": {
+          "walk": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 304,
+                "bboxHeight": 338,
+                "nonzeroCount": 58741,
+                "meaningfulCount": 54675,
+                "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 327,
+                "bboxHeight": 355,
+                "nonzeroCount": 68250,
+                "meaningfulCount": 55851,
+                "sha256": "56e49310dea74a1d790e90c38cc40df0b30cbdf286a2dab81dc8ee7611a30516"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 228,
+                "bboxHeight": 313,
+                "nonzeroCount": 55643,
+                "meaningfulCount": 46400,
+                "sha256": "c6c9260d24cb0677e9ed2f0d43d256fce5eba597cded2d65ffa1e8c63ed96f4f"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 257,
+                "bboxHeight": 342,
+                "nonzeroCount": 61098,
+                "meaningfulCount": 50254,
+                "sha256": "1229d96c75321a9f249cc32ea38c62fcf0f7a6d73cce65ccbd6ec70850679987"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 278,
+                "bboxHeight": 319,
+                "nonzeroCount": 60636,
+                "meaningfulCount": 50083,
+                "sha256": "6bcdee2e8b568e7ea3f981304b40539cae3838b46a9ff136baa95dbf5e36aba2"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 314,
+                "bboxHeight": 360,
+                "nonzeroCount": 70883,
+                "meaningfulCount": 57869,
+                "sha256": "084f2e3f8eda001f511e9514e8f02a16815b50bdf81d707f32b5a90d294435b8"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 270,
+                "bboxHeight": 301,
+                "nonzeroCount": 60299,
+                "meaningfulCount": 49911,
+                "sha256": "2cd1783e6a6e2ec9836abe23a4d8f8ece74cf8cafd96f13aabc4e6fac99be3c4"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 301,
+                "bboxHeight": 341,
+                "nonzeroCount": 71836,
+                "meaningfulCount": 58489,
+                "sha256": "bd58813290b30410002e53e325a700daa533692b1ad93e2c372d0c0a87706f82"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "ability": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 304,
+                "bboxHeight": 338,
+                "nonzeroCount": 58741,
+                "meaningfulCount": 54675,
+                "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 235,
+                "bboxHeight": 305,
+                "nonzeroCount": 53337,
+                "meaningfulCount": 43139,
+                "sha256": "fee15bb07dbcdf439cdb4b7a0cc9e74517a40f7fccce489e28e34c2c0660c8ce"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 245,
+                "bboxHeight": 318,
+                "nonzeroCount": 55323,
+                "meaningfulCount": 44200,
+                "sha256": "ef9c0d8cc7f6b0e43966e6fce48b2de2670f528165110da8c648dbbec24775a8"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 341,
+                "bboxHeight": 326,
+                "nonzeroCount": 67890,
+                "meaningfulCount": 53410,
+                "sha256": "c9866e6b2ed98702b9e55052aee9871fe71a09b321b953c76675e0ff9acc5d9c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 309,
+                "bboxHeight": 321,
+                "nonzeroCount": 77748,
+                "meaningfulCount": 62267,
+                "sha256": "9669c3b1991166d1a1f6f5a6596b34a2a47483995306b0cc8e3925c874091085"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 272,
+                "bboxHeight": 322,
+                "nonzeroCount": 64014,
+                "meaningfulCount": 52183,
+                "sha256": "7ab7bc9a22d69ff4b1b7ffdcc29ed9a1ca13b6aeaa9a9579c4ba9fd268619836"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 282,
+                "bboxHeight": 307,
+                "nonzeroCount": 58676,
+                "meaningfulCount": 48701,
+                "sha256": "765ad52b1f527765ebaffb006551ebe3e422762d885edcd22bcdb44f22be49c9"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 278,
+                "bboxHeight": 304,
+                "nonzeroCount": 58747,
+                "meaningfulCount": 48902,
+                "sha256": "cc1a2c976a101d7a976d88774dd9de48519734355a41919f6e23cd4e2dafdbbb"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ],
+          "defeat": [
+            {
+              "index": 0,
+              "canonicalAlpha": {
+                "bboxWidth": 304,
+                "bboxHeight": 338,
+                "nonzeroCount": 58741,
+                "meaningfulCount": 54675,
+                "sha256": "e2e6cb1c9b83e2ef3b0b9179b41f431729e9439d63f4d773b285446407df410d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 1,
+              "canonicalAlpha": {
+                "bboxWidth": 207,
+                "bboxHeight": 255,
+                "nonzeroCount": 40809,
+                "meaningfulCount": 29032,
+                "sha256": "ea92250893553597f5e9e50d90c338916e44684bbf91fc4775e17b7028c788ab"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 2,
+              "canonicalAlpha": {
+                "bboxWidth": 225,
+                "bboxHeight": 241,
+                "nonzeroCount": 37484,
+                "meaningfulCount": 27344,
+                "sha256": "c13bebe9f09f08d2800164e6974af778944eeeb9096d0c0ede1ad0ca8b833545"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 3,
+              "canonicalAlpha": {
+                "bboxWidth": 218,
+                "bboxHeight": 192,
+                "nonzeroCount": 31330,
+                "meaningfulCount": 21594,
+                "sha256": "c2f7dfb09122a9e8cc8de85ae0697bee40831516cdbe05555fb8839b5e59336b"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 4,
+              "canonicalAlpha": {
+                "bboxWidth": 207,
+                "bboxHeight": 194,
+                "nonzeroCount": 30866,
+                "meaningfulCount": 23440,
+                "sha256": "053e2c312ab5f3ddaa6d5afae01ac2dd9751f8ad4055d7c5615e977bfaf6bc2a"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 5,
+              "canonicalAlpha": {
+                "bboxWidth": 221,
+                "bboxHeight": 173,
+                "nonzeroCount": 27483,
+                "meaningfulCount": 21088,
+                "sha256": "2173c1662fc68ad0d4b97d96a2a700265ed7d5bd66b0517af3d824d2f3a0fd7c"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 6,
+              "canonicalAlpha": {
+                "bboxWidth": 227,
+                "bboxHeight": 162,
+                "nonzeroCount": 26459,
+                "meaningfulCount": 20190,
+                "sha256": "cf0db043caec6d3a36afb11746322bd70c9eb65273341fdf98da8568cb1f6690"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 7,
+              "canonicalAlpha": {
+                "bboxWidth": 215,
+                "bboxHeight": 136,
+                "nonzeroCount": 21742,
+                "meaningfulCount": 16589,
+                "sha256": "87f9b8924be5620a1334d765d8997032783187e49b39fd823d5fba55e958fa7d"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 8,
+              "canonicalAlpha": {
+                "bboxWidth": 222,
+                "bboxHeight": 109,
+                "nonzeroCount": 19479,
+                "meaningfulCount": 14776,
+                "sha256": "b99a7a0a96f2a34954b031ea23f567b54d7678056a033d6c34ef65c5632490d5"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            },
+            {
+              "index": 9,
+              "canonicalAlpha": {
+                "bboxWidth": 223,
+                "bboxHeight": 109,
+                "nonzeroCount": 18713,
+                "meaningfulCount": 15017,
+                "sha256": "a35ec625af2e302696e1304b82ccb67323bbdcbcfee9584a6fb678390bd022a5"
+              },
+              "postNormalization": {
+                "scaleX": 1,
+                "scaleY": 1
+              }
+            }
+          ]
+        }
+      },
+      "presentationMappings": {
+        "normalMovement": {
+          "action": "walk"
+        },
+        "defeatRemoval": {
+          "action": "defeat"
+        },
+        "abilities": {
+          "dread-pulse-telegraph": {
+            "action": "ability",
+            "warningOverlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "boss-warning"
+            },
+            "suppressionRangeOverlay": {
+              "atlasAssetId": "environment-gameplay-atlas",
+              "frameId": "range-marker"
+            }
+          }
+        },
+        "healthRatioPhases": [
+          {
+            "phase": 1,
+            "range": "1.00-0.75",
+            "accent": "phase-1-runes"
+          },
+          {
+            "phase": 2,
+            "range": "below-0.75-through-0.40",
+            "accent": "phase-2-runes"
+          },
+          {
+            "phase": 3,
+            "range": "below-0.40",
+            "accent": "phase-3-runes"
+          }
+        ],
+        "summonThresholds": [
+          {
+            "healthRatio": 0.75,
+            "summon": "swarmkin-pack-1",
+            "accent": "phase-2-runes"
+          },
+          {
+            "healthRatio": 0.5,
+            "summon": "swarmkin-pack-2",
+            "accent": "phase-2-runes"
+          },
+          {
+            "healthRatio": 0.25,
+            "summon": "swarmkin-pack-3",
+            "accent": "phase-3-runes"
+          }
+        ],
+        "phaseAccentOverlay": {
+          "atlasAssetId": "environment-gameplay-atlas",
+          "frameId": "slow-rune"
+        }
+      }
+    }
+  ]
+}

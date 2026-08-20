@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "terrain": {
+    "assetId": "environment-grass",
+    "tileWidth": 1254,
+    "tileHeight": 1254,
+    "seamless": true
+  },
+  "atlases": {
+    "path": {
+      "assetId": "environment-path-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "laneWidth": 128,
+      "edgeCenter": 156.5,
+      "safeInset": 24,
+      "order": [
+        "isolated", "straight-horizontal", "straight-vertical", "cross-north-east-south-west",
+        "corner-north-east", "corner-east-south", "corner-south-west", "corner-west-north",
+        "tee-north-east-south", "tee-east-south-west", "tee-south-west-north", "tee-west-north-east",
+        "cap-north", "cap-east", "cap-south", "cap-west"
+      ],
+      "tiles": [
+        { "id": "isolated", "connects": [], "index": 0 },
+        { "id": "straight-horizontal", "connects": ["east", "west"], "index": 1 },
+        { "id": "straight-vertical", "connects": ["north", "south"], "index": 2 },
+        { "id": "cross-north-east-south-west", "connects": ["north", "east", "south", "west"], "index": 3 },
+        { "id": "corner-north-east", "connects": ["north", "east"], "index": 4 },
+        { "id": "corner-east-south", "connects": ["east", "south"], "index": 5 },
+        { "id": "corner-south-west", "connects": ["south", "west"], "index": 6 },
+        { "id": "corner-west-north", "connects": ["west", "north"], "index": 7 },
+        { "id": "tee-north-east-south", "connects": ["north", "east", "south"], "index": 8 },
+        { "id": "tee-east-south-west", "connects": ["east", "south", "west"], "index": 9 },
+        { "id": "tee-south-west-north", "connects": ["south", "west", "north"], "index": 10 },
+        { "id": "tee-west-north-east", "connects": ["west", "north", "east"], "index": 11 },
+        { "id": "cap-north", "connects": ["north"], "index": 12 },
+        { "id": "cap-east", "connects": ["east"], "index": 13 },
+        { "id": "cap-south", "connects": ["south"], "index": 14 },
+        { "id": "cap-west", "connects": ["west"], "index": 15 }
+      ]
+    },
+    "props": {
+      "assetId": "environment-props-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "safeInset": 16,
+      "order": [
+        "tree-broad", "tree-round", "tree-leafy", "tree-pine",
+        "bush-leafy", "bush-flowered", "bush-spiky", "bush-berry",
+        "rock-large", "rock-small", "white-flower-single", "white-flower-pair",
+        "grass-cluster-small", "grass-cluster-large", "banner-blue", "banner-shield"
+      ]
+    },
+    "gameplay": {
+      "assetId": "environment-gameplay-atlas",
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 314,
+      "frameHeight": 314,
+      "frameCount": 16,
+      "safeInset": 16,
+      "order": [
+        "build-pad", "selected-build-pad", "range-marker", "gold-coin",
+        "full-heart", "empty-heart", "arrow", "rune-bolt",
+        "shield-bash", "explosion", "stun-stars", "slow-rune",
+        "heal-sparkle", "boss-warning", "victory-burst", "defeat-crack"
+      ]
+    }
+  },
+  "titleEmblem": {
+    "assetId": "environment-title-emblem",
+    "width": 1254,
+    "height": 1254,
+    "safePerimeter": 48,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    }
+  }
+}

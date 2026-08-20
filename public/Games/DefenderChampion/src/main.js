@@ -1,0 +1,127 @@
+import Phaser from 'phaser';
+import { BootScene } from './scenes/BootScene.js';
+import { MenuScene } from './scenes/MenuScene.js';
+import { LevelSelectScene } from './scenes/LevelSelectScene.js';
+import { BattleScene } from './scenes/BattleScene.js';
+import { ResultScene } from './scenes/ResultScene.js';
+import { createAudioController } from './services/audio.js';
+import { createHostBridge } from './services/host-bridge.js';
+import { createSaveStore } from './services/save-store.js';
+import { LEVELS } from './config/levels.js';
+import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
+import { createOrientationController } from './ui/orientation-controller.js';
+import {
+  applyRuntimePauseState,
+  createRuntimeLifecycle,
+  createRuntimePauseReplay,
+} from './runtime-lifecycle.js';
+import { createDefenderPhaserGame } from './phaser-entry.js';
+
+const documentRef = globalThis.document;
+const windowRef = globalThis.window;
+if (!documentRef.querySelector('link[rel~="icon"]')) {
+  const favicon = documentRef.createElement('link');
+  favicon.rel = 'icon';
+  favicon.href = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+  documentRef.head.append(favicon);
+}
+const announcer = documentRef.getElementById('status-announcer');
+const saveStore = createSaveStore({
+  onNotice(notice) {
+    if (!announcer) return;
+    announcer.textContent = notice.type === 'storage-unavailable'
+      ? 'Progress will last for this visit because storage is unavailable.'
+      : 'Saved progress could not be read and has been reset.';
+  },
+});
+const audioController = createAudioController({ windowRef });
+let game;
+let runtimeLifecycle;
+let runtimePauseReplay;
+let orientationController;
+const hostBridge = createHostBridge({
+  windowRef,
+  documentRef,
+  saveStore,
+  audioController,
+  onPrepareUnload() {
+    runtimeLifecycle?.prepareUnload?.();
+  },
+  onPauseChange({ paused, reasons }) {
+    if (runtimePauseReplay) {
+      runtimePauseReplay.sync();
+      return;
+    }
+    const battleScene = game?.scene?.getScene?.('BattleScene');
+    applyRuntimePauseState({ battleScene, game, paused, reasons });
+  },
+});
+orientationController = createOrientationController({
+  windowRef,
+  documentRef,
+  hostBridge,
+});
+orientationController.start();
+const hud = createHudController({
+  documentRef,
+  windowRef,
+  saveStore,
+  hostBridge,
+  audioController,
+  navigate(sceneKey, data) {
+    game?.scene.start(sceneKey, data);
+  },
+});
+
+const resolution = Math.min(globalThis.devicePixelRatio || 1, 2);
+
+game = createDefenderPhaserGame({
+  PhaserLib: Phaser,
+  audioController,
+  hostBridge,
+  hud,
+  onPostBoot(phaserGame) {
+    runtimePauseReplay?.destroy?.();
+    runtimePauseReplay = createRuntimePauseReplay({
+      game: phaserGame,
+      getBattleScene: () => phaserGame.scene?.getScene?.('BattleScene') ?? null,
+      getPauseState: () => hostBridge.getPauseState(),
+    });
+    runtimePauseReplay.start();
+  },
+  resolution,
+  scenes: [BootScene, MenuScene, LevelSelectScene, BattleScene, ResultScene],
+});
+
+runtimeLifecycle = createRuntimeLifecycle({
+  windowRef,
+  audioController,
+  game,
+  hostBridge,
+  hud,
+  orientationController,
+  pauseReplayCleanup: () => runtimePauseReplay?.destroy?.(),
+});
+
+const getBattleScene = () => game?.scene?.getScene?.('BattleScene') ?? null;
+const cleanupQaHooks = installQaRuntimeHooks({
+  windowRef,
+  enabled: hostBridge.getState().qaMode,
+  getActiveBattle: getBattleScene,
+  isKnownLevel: (levelId) => LEVELS.some((level) => level.id === levelId),
+  startLevel(levelId) {
+    hostBridge.setManualPaused(false);
+    game.scene.start('BattleScene', { levelId });
+  },
+});
+const handleFinalPageHide = (event) => {
+  if (event.persisted) return;
+  cleanupQaHooks();
+  windowRef.removeEventListener('pagehide', handleFinalPageHide);
+  windowRef.removeEventListener('pageshow', handleBfCachePageShow);
+};
+const handleBfCachePageShow = (event) => {
+  if (event.persisted) getBattleScene()?.handleResume?.();
+};
+windowRef.addEventListener('pagehide', handleFinalPageHide);
+windowRef.addEventListener('pageshow', handleBfCachePageShow);

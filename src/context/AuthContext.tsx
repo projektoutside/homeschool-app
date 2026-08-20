@@ -4,6 +4,7 @@ import {
   AUTH_BOOT_TIMEOUT_MS,
   AUTH_REFRESH_TIMEOUT_MS,
   AuthBootTimeoutError,
+  createInitialAuthState,
   getSessionAfterRefreshFailure,
   isUsableSupabaseSession,
   withAuthTimeout,
@@ -36,9 +37,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [initialAuthState] = useState(() => createInitialAuthState<User>({
+    remoteAuthAvailable: Boolean(supabase && isSupabaseConfigured),
+    readPersistedGuest: readActiveGuestUser,
+  }));
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(() => Boolean(supabase && isSupabaseConfigured));
+  const [user, setUser] = useState<User | null>(initialAuthState.user);
+  const [loading, setLoading] = useState<boolean>(initialAuthState.loading);
 
   useEffect(() => {
     let isMounted = true;
