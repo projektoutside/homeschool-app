@@ -205,3 +205,137 @@ export const projectGridPathProgress = (metrics, requestedProgress, requestedLan
     y: segment.start.y + ((segment.end.y - segment.start.y) * ratio) + (directionX * laneOffset),
   });
 };
+
+export const MAX_ENEMY_BODY_OVERLAP_RATIO = 1 / 3;
+
+const clampNumber = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+export const resolveBodyOverlapRatio = (first, second) => {
+  if (!first || !second || !(first.width > 0) || !(first.height > 0)
+    || !(second.width > 0) || !(second.height > 0)) return 0;
+  const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+  const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  return (width * height) / Math.min(first.width * first.height, second.width * second.height);
+};
+
+export const resolveContainedBodyProjection = ({
+  bodyHeight = 1,
+  bodyWidth = 1,
+  bottomInset = 0,
+  position = { x: 0, y: 0 },
+  worldHeight = GRID.height,
+  worldWidth = GRID.width,
+} = {}) => {
+  const width = Math.min(worldWidth, Math.max(1, Number(bodyWidth) || 1));
+  const height = Math.min(worldHeight, Math.max(1, Number(bodyHeight) || 1));
+  const safeBottomInset = Math.max(0, Number(bottomInset) || 0);
+  const halfWidth = width / 2;
+  const x = clampNumber(Number(position.x) || 0, halfWidth, worldWidth - halfWidth);
+  const bodyBottom = clampNumber(
+    (Number(position.y) || 0) - safeBottomInset,
+    height,
+    worldHeight,
+  );
+  const y = bodyBottom + safeBottomInset;
+  return Object.freeze({
+    bodyRect: Object.freeze({
+      bottom: bodyBottom,
+      height,
+      left: x - halfWidth,
+      right: x + halfWidth,
+      top: bodyBottom - height,
+      width,
+    }),
+    position: Object.freeze({ x, y }),
+  });
+};
+
+export const resolveReadableEnemyLayout = ({
+  entries = [],
+  maximumOverlapRatio = MAX_ENEMY_BODY_OVERLAP_RATIO,
+  metrics,
+  progressStep = 2,
+} = {}) => {
+  if (!Array.isArray(entries) || entries.length === 0) return Object.freeze([]);
+  const totalProgress = Math.max(0, Number(metrics?.total) || 0);
+  const safeOverlapRatio = clampNumber(Number(maximumOverlapRatio) || 0, 0, 1);
+  const safeProgressStep = Math.max(0.5, Number(progressStep) || 2);
+  const ordered = entries.map((entry, index) => ({ entry, index })).sort((first, second) => (
+    (Number(first.entry.pathProgress) || 0) - (Number(second.entry.pathProgress) || 0)
+    || second.index - first.index
+  ));
+  const placed = [];
+
+  for (const { entry, index } of ordered) {
+    const initialProgress = clampNumber(Number(entry.pathProgress) || 0, 0, totalProgress);
+    const maximumLaneOffset = Math.max(0, Number(entry.maximumLaneOffset) || 0);
+    const requestedLaneOffset = clampNumber(
+      Number(entry.laneOffset) || 0,
+      -maximumLaneOffset,
+      maximumLaneOffset,
+    );
+    const laneOffsets = [...new Set([
+      requestedLaneOffset,
+      0,
+      -maximumLaneOffset,
+      maximumLaneOffset,
+    ].map((value) => Number(value.toFixed(6))))];
+    const searchSteps = Math.ceil(totalProgress / safeProgressStep) + 1;
+    let resolved = null;
+
+    for (let stepIndex = 0; stepIndex < searchSteps && !resolved; stepIndex += 1) {
+      const distance = stepIndex * safeProgressStep;
+      const candidateProgress = stepIndex === 0
+        ? [initialProgress]
+        : [
+          initialProgress + distance <= totalProgress ? initialProgress + distance : null,
+          initialProgress - distance >= 0 ? initialProgress - distance : null,
+        ].filter((value) => value !== null);
+      for (const pathProgress of candidateProgress) {
+        for (const laneOffset of laneOffsets) {
+          const containment = resolveContainedBodyProjection({
+            bodyHeight: entry.bodyHeight,
+            bodyWidth: entry.bodyWidth,
+            bottomInset: entry.bottomInset,
+            position: projectGridPathProgress(metrics, pathProgress, laneOffset),
+          });
+          if (placed.every(({ bodyRect }) => (
+            resolveBodyOverlapRatio(containment.bodyRect, bodyRect) <= safeOverlapRatio + 1e-9
+          ))) {
+            resolved = Object.freeze({
+              bodyRect: containment.bodyRect,
+              id: entry.id,
+              laneOffset,
+              pathProgress,
+              position: containment.position,
+              sourceIndex: index,
+            });
+            break;
+          }
+        }
+        if (resolved) break;
+      }
+    }
+
+    if (!resolved) {
+      const laneOffset = laneOffsets[0] ?? 0;
+      const containment = resolveContainedBodyProjection({
+        bodyHeight: entry.bodyHeight,
+        bodyWidth: entry.bodyWidth,
+        bottomInset: entry.bottomInset,
+        position: projectGridPathProgress(metrics, totalProgress, laneOffset),
+      });
+      resolved = Object.freeze({
+        bodyRect: containment.bodyRect,
+        id: entry.id,
+        laneOffset,
+        pathProgress: totalProgress,
+        position: containment.position,
+        sourceIndex: index,
+      });
+    }
+    placed.push(resolved);
+  }
+
+  return Object.freeze(placed.sort((first, second) => first.sourceIndex - second.sourceIndex));
+};

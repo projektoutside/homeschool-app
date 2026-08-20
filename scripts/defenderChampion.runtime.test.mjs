@@ -1741,11 +1741,13 @@ test('actual Level 10 cap projects every living enemy without density cues', asy
     { advanceSimulation, createSimulation, summarizePresentationSimulation },
     { createGridPathMetrics },
     { ENEMY_PRESENTATION, ViewPool },
+    { resolveBodyOverlapRatio, resolveReadableEnemyLayout },
   ] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/core/simulation.js'),
     import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
     import('../public/Games/DefenderChampion/src/presentation.js'),
+    import('../public/Games/DefenderChampion/src/grid-presentation.js'),
   ]);
   const simulation = createSimulation('level-10', { qa: true });
   advanceSimulation(simulation, 289);
@@ -1769,6 +1771,24 @@ test('actual Level 10 cap projects every living enemy without density cues', asy
   const projected = scene.getPresentationState().enemies;
   const ordered = [...projected].sort((first, second) => first.id.localeCompare(second.id));
   const attackers = projected.filter(({ laneState }) => laneState === 'attacking');
+  const bodyRects = ordered.map(({ bodyRect }) => bodyRect).filter(Boolean);
+  const overlapRatio = (first, second) => {
+    const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+    const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+    return (width * height) / Math.min(first.width * first.height, second.width * second.height);
+  };
+  let maximumBodyOverlapRatio = Number.POSITIVE_INFINITY;
+  if (bodyRects.length === ordered.length) {
+    maximumBodyOverlapRatio = 0;
+    for (let firstIndex = 0; firstIndex < bodyRects.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < bodyRects.length; secondIndex += 1) {
+        maximumBodyOverlapRatio = Math.max(
+          maximumBodyOverlapRatio,
+          overlapRatio(bodyRects[firstIndex], bodyRects[secondIndex]),
+        );
+      }
+    }
+  }
   let minimumCenterDistance = Number.POSITIVE_INFINITY;
   for (let firstIndex = 0; firstIndex < ordered.length; firstIndex += 1) {
     const first = ordered[firstIndex];
@@ -1791,6 +1811,49 @@ test('actual Level 10 cap projects every living enemy without density cues', asy
   assert.equal(Math.min(...ordered.map(({ x, y }) => Math.hypot(x, y))) > 0, true);
   assert.equal(Object.values(ENEMY_PRESENTATION).every(({ roadFootprint }) => roadFootprint <= 80), true);
   assert.equal('queueDensityCues' in scene.getPresentationState(), false);
+  assert.deepEqual({
+    bodyRectangles: bodyRects.length,
+    contained: bodyRects.length === ordered.length && bodyRects.every((rect) => (
+      rect.left >= 0 && rect.top >= 0 && rect.right <= 720 && rect.bottom <= 960
+    )),
+    maximumOverlapWithinLimit: maximumBodyOverlapRatio <= (1 / 3) + 1e-9,
+  }, {
+    bodyRectangles: 18,
+    contained: true,
+    maximumOverlapWithinLimit: true,
+  });
+  const metrics = scene.pathMetrics;
+  const entries = Array.from({ length: 18 }, (_, index) => ({
+    bodyHeight: index < 3 ? 112 : 76,
+    bodyWidth: index < 3 ? 104 : 64,
+    bottomInset: 0,
+    id: `packed-${index}`,
+    laneOffset: 0,
+    maximumLaneOffset: index < 3 ? 6 : 18,
+    pathProgress: metrics.total,
+  }));
+
+  const layout = resolveReadableEnemyLayout({
+    entries,
+    maximumOverlapRatio: 0,
+    metrics,
+  });
+  let maximumOverlapRatio = 0;
+  for (let firstIndex = 0; firstIndex < layout.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < layout.length; secondIndex += 1) {
+      maximumOverlapRatio = Math.max(
+        maximumOverlapRatio,
+        resolveBodyOverlapRatio(layout[firstIndex].bodyRect, layout[secondIndex].bodyRect),
+      );
+    }
+  }
+
+  assert.equal(layout.length, 18);
+  assert.equal(maximumOverlapRatio, 0);
+  assert.equal(layout.every(({ bodyRect }) => (
+    bodyRect.left >= 0 && bodyRect.top >= 0
+      && bodyRect.right <= 720 && bodyRect.bottom <= 960
+  )), true);
 });
 
 test('queued bodies, projectiles, health, plates, hits, and defeats share one readable transform', async () => {
@@ -1800,7 +1863,7 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
     import('../public/Games/DefenderChampion/src/config/levels.js'),
     import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
-  const expected = { x: 360, y: 190 };
+  const expected = { x: 360, y: 192 };
   const makeImage = () => ({
     alpha: 1,
     depth: 0,
@@ -1901,6 +1964,7 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
   scene.projectEnemies({ enemies: [enemy], tick: 10 });
   const projectedBody = scene.enemySprites.get(enemy.id);
   assert.deepEqual({ x: projectedBody.x, y: projectedBody.y }, expected);
+  assert.equal(projectedBody._visualTransform.bodyRect.top, 0);
   assert.equal(projectedBody.depth, 3.6);
   assert.equal(projectedBody._body.scale, 0.5);
   assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').x - -27) < 1e-9);

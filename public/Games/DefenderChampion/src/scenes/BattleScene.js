@@ -45,7 +45,9 @@ import {
 } from '../presentation.js';
 import {
   formatCellAccessibleLabel,
+  MAX_ENEMY_BODY_OVERLAP_RATIO,
   projectGridPathProgress,
+  resolveReadableEnemyLayout,
   resolveCellFromWorldPoint,
   resolveCellVisualState,
   resolveContainWorldPoint,
@@ -738,8 +740,9 @@ export class BattleScene extends Phaser.Scene {
       .filter(({ type }) => type === 'build')
       .map(({ towerId, defenderId }) => [towerId, defenderId]));
     this.recentDefenderPositions.clear();
+    this.prepareEnemyVisualLayout(snapshot.enemies);
     this.consumePresentationEvents(snapshot.presentationEvents);
-    this.projectEnemies(snapshot);
+    this.projectEnemies(snapshot, { layoutPrepared: true });
     this.projectEnemyHealthBars(snapshot, forceHud);
     this.projectTowers(snapshot);
     this.projectCells(snapshot);
@@ -1208,38 +1211,121 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  resolveEnemyVisualTransform(source = {}, { includeMotion = true } = {}) {
+  resolveEnemyBodyMetrics(enemyId, presentation, artScale = 1) {
+    const metadata = presentation.kind === 'boss' ? this.metadata?.bosses : this.metadata?.enemies;
+    const collection = presentation.kind === 'boss' ? metadata?.bosses : metadata?.enemies;
+    const record = collection?.find?.(({ id }) => id === enemyId);
+    const walkFrames = record?.normalizationEvidence?.actions?.walk ?? [];
+    const frameWidth = Number(metadata?.frame?.width) || (presentation.kind === 'boss' ? 384 : 256);
+    const frameHeight = Number(metadata?.frame?.height) || (presentation.kind === 'boss' ? 384 : 256);
+    const bodyWidth = Math.max(
+      1,
+      ...walkFrames.map(({ canonicalAlpha }) => Number(canonicalAlpha?.bboxWidth) || 0),
+    ) || frameWidth;
+    const bodyHeight = Math.max(
+      1,
+      ...walkFrames.map(({ canonicalAlpha }) => Number(canonicalAlpha?.bboxHeight) || 0),
+    ) || frameHeight;
+    const hasMeasuredBody = walkFrames.length > 0;
+    return Object.freeze({
+      bottomInset: (hasMeasuredBody ? Number(metadata?.frame?.safeInset) || 0 : 0) * artScale,
+      height: (hasMeasuredBody ? bodyHeight : frameHeight) * artScale,
+      sourceHeight: hasMeasuredBody ? bodyHeight : frameHeight,
+      width: (hasMeasuredBody ? bodyWidth : frameWidth) * artScale,
+    });
+  }
+
+  resolveEnemyVisualLayoutEntry(source = {}) {
     const entityId = source.id ?? source.targetId ?? source.bossId
       ?? (this.enemyById?.has?.(source.enemyId) ? source.enemyId : null);
     const liveEnemy = entityId ? this.enemyById?.get?.(entityId) : null;
     const enemy = liveEnemy ? { ...liveEnemy, ...source } : source;
     const presentation = ENEMY_PRESENTATION[enemy.enemyId] ?? { displayScale: 1, kind: 'enemy' };
     const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
-    const frameHeight = presentation.kind === 'boss'
-      ? this.metadata?.bosses?.frame?.height ?? 384
-      : this.metadata?.enemies?.frame?.height ?? 256;
+    const unscaledBody = this.resolveEnemyBodyMetrics(enemy.enemyId, presentation, 1);
     const artScale = resolveReadableSpriteScale({
       authoredScale: presentation.displayScale,
       cssWorldScale: this.resolveCssWorldScale(),
-      frameHeight,
+      frameHeight: unscaledBody.sourceHeight,
       kind: presentation.kind,
       population: this.lastSnapshot?.enemies?.length ?? 1,
     });
-    const projectedPosition = projectGridPathProgress(
+    const body = this.resolveEnemyBodyMetrics(enemy.enemyId, presentation, artScale);
+    return Object.freeze({
+      ...roadProjection,
+      artScale,
+      body,
+      bodyScale: artScale,
+      enemyId: enemy.enemyId ?? null,
+      entityId,
+      kind: presentation.kind,
+      maximumLaneOffset: Math.max(0, (GRID.cellSize - roadProjection.footprintWidth) / 2),
+    });
+  }
+
+  prepareEnemyVisualLayout(enemies = []) {
+    const entries = enemies.map((enemy) => this.resolveEnemyVisualLayoutEntry(enemy));
+    const layout = resolveReadableEnemyLayout({
+      entries: entries.map((entry) => ({
+        bodyHeight: entry.body.height,
+        bodyWidth: entry.body.width,
+        bottomInset: entry.body.bottomInset,
+        id: entry.entityId,
+        laneOffset: entry.laneOffset,
+        maximumLaneOffset: entry.maximumLaneOffset,
+        pathProgress: entry.pathProgress,
+      })),
+      maximumOverlapRatio: 0,
+      metrics: this.pathMetrics,
+    });
+    this.enemyVisualLayout = new Map(layout.map((entry) => [entry.id, entry]));
+  }
+
+  resolveEnemyVisualTransform(source = {}, { includeMotion = true } = {}) {
+    const entry = this.resolveEnemyVisualLayoutEntry(source);
+    const fallback = resolveReadableEnemyLayout({
+      entries: [{
+        bodyHeight: entry.body.height,
+        bodyWidth: entry.body.width,
+        bottomInset: entry.body.bottomInset,
+        id: entry.entityId,
+        laneOffset: entry.laneOffset,
+        maximumLaneOffset: entry.maximumLaneOffset,
+        pathProgress: entry.pathProgress,
+      }],
+      maximumOverlapRatio: MAX_ENEMY_BODY_OVERLAP_RATIO,
+      metrics: this.pathMetrics,
+    })[0];
+    const layout = this.enemyVisualLayout?.get?.(entry.entityId) ?? fallback;
+    const projectedPosition = layout?.position ?? projectGridPathProgress(
       this.pathMetrics,
-      roadProjection.pathProgress,
-      roadProjection.laneOffset,
+      entry.pathProgress,
+      entry.laneOffset,
     );
+    const entityId = entry.entityId;
     const liveView = entityId ? this.enemySprites?.get?.(entityId) : null;
     const position = includeMotion && liveView
       ? this.resolveSharedViewPosition(liveView)
       : projectedPosition;
+    const positionOffset = {
+      x: position.x - projectedPosition.x,
+      y: position.y - projectedPosition.y,
+    };
+    const bodyRect = layout?.bodyRect ? Object.freeze({
+      bottom: layout.bodyRect.bottom + positionOffset.y,
+      height: layout.bodyRect.height,
+      left: layout.bodyRect.left + positionOffset.x,
+      right: layout.bodyRect.right + positionOffset.x,
+      top: layout.bodyRect.top + positionOffset.y,
+      width: layout.bodyRect.width,
+    }) : null;
     return Object.freeze({
-      ...roadProjection,
-      artScale,
-      bodyScale: artScale,
-      enemyId: enemy.enemyId ?? null,
+      ...entry,
+      bodyCssHeight: (bodyRect?.height ?? entry.body.height) * this.resolveCssWorldScale(),
+      bodyRect,
       entityId,
+      readabilityLaneOffset: layout?.laneOffset ?? entry.laneOffset,
+      readabilityPathProgress: layout?.pathProgress ?? entry.pathProgress,
       position: Object.freeze(position),
     });
   }
@@ -1250,7 +1336,7 @@ export class BattleScene extends Phaser.Scene {
     return Math.min(bounds.width / WORLD_WIDTH, bounds.height / WORLD_HEIGHT);
   }
 
-  projectEnemies(snapshot) {
+  projectEnemies(snapshot, { layoutPrepared = false } = {}) {
     const seen = new Set();
     const validEnemies = [];
     for (const enemy of snapshot.enemies ?? []) {
@@ -1262,6 +1348,7 @@ export class BattleScene extends Phaser.Scene {
       seen.add(enemy.id);
       validEnemies.push(enemy);
     }
+    if (!layoutPrepared) this.prepareEnemyVisualLayout(validEnemies);
     syncProjectionMap(this.enemySprites, this.enemyPool, validEnemies, (view, enemy) => {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
@@ -1734,11 +1821,14 @@ export class BattleScene extends Phaser.Scene {
           enemy,
           ENEMY_PRESENTATION[enemy?.enemyId],
         );
-        const position = this.resolveSharedViewPosition(view);
+        const visual = this.resolveEnemyVisualTransform(enemy);
+        const position = visual.position;
         return {
           accentVisible: Boolean(view._accent?.visible),
           attackTargetTowerId: view._attackTargetTowerId,
           blockingTowerId: enemy?.blockingTowerId ?? null,
+          bodyCssHeight: visual.bodyCssHeight,
+          bodyRect: visual.bodyRect ? { ...visual.bodyRect } : null,
           depth: view.depth,
           footprintWidth: roadProjection.footprintWidth,
           id,
@@ -1755,6 +1845,8 @@ export class BattleScene extends Phaser.Scene {
             y: plate.y,
           })),
           queueIndex: enemy?.queueIndex ?? null,
+          readabilityLaneOffset: visual.readabilityLaneOffset,
+          readabilityPathProgress: visual.readabilityPathProgress,
           artScale: view._visualTransform?.artScale ?? null,
           scale: roadProjection.scale,
           x: position.x,
