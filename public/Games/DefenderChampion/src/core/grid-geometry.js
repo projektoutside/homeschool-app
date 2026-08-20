@@ -19,6 +19,24 @@ export const cellCenter = (cellId) => {
   });
 };
 
+export const resolveRoadEndpointAnchors = (roadCells) => {
+  validateRoadCells(roadCells);
+  const entranceCell = cellCenter(roadCells[0]);
+  const entranceNeighbor = cellCenter(roadCells[1]);
+  const castleCell = cellCenter(roadCells.at(-1));
+  const castleNeighbor = cellCenter(roadCells.at(-2));
+  return Object.freeze({
+    castle: Object.freeze({
+      x: castleCell.x + (castleCell.x - castleNeighbor.x),
+      y: castleCell.y + (castleCell.y - castleNeighbor.y),
+    }),
+    entrance: Object.freeze({
+      x: entranceCell.x + (entranceCell.x - entranceNeighbor.x),
+      y: entranceCell.y + (entranceCell.y - entranceNeighbor.y),
+    }),
+  });
+};
+
 const cellIdFor = ({ row, column }) => {
   if (!Number.isInteger(row) || !Number.isInteger(column)) {
     throw new Error('Grid waypoint must contain integer row and column values');

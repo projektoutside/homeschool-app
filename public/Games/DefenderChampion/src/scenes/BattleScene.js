@@ -6,8 +6,10 @@ import {
   cellCenter,
   createGridPathMetrics,
   deriveRoadTiles,
+  resolveRoadEndpointAnchors,
 } from '../core/grid-geometry.js';
 import { evaluateCellBuild, getGridCell } from '../core/grid-placement.js';
+import { getGateProgress } from '../core/lane-combat.js';
 import {
   advanceSimulation,
   clearPresentationEvents,
@@ -48,6 +50,7 @@ import {
   MAX_ENEMY_BODY_OVERLAP_RATIO,
   projectGridPathProgress,
   resolveReadableEnemyLayout,
+  resolveCellActionState,
   resolveCellFromWorldPoint,
   resolveCellVisualState,
   resolveContainWorldPoint,
@@ -125,6 +128,23 @@ const stopBody = (view) => {
 const preparePooledView = (view, depth) => {
   view._poolDepth = depth;
   return view.setDepth(depth);
+};
+
+const resolveEndpointVisibleBounds = (view) => {
+  const bounds = view?.getBounds?.();
+  if (!bounds) return null;
+  const left = Math.max(0, Number(bounds.left) || 0);
+  const right = Math.min(WORLD_WIDTH, Number(bounds.right) || 0);
+  const top = Math.max(0, Number(bounds.top) || 0);
+  const bottom = Math.min(WORLD_HEIGHT, Number(bounds.bottom) || 0);
+  return Object.freeze({
+    bottom,
+    height: Math.max(0, bottom - top),
+    left,
+    right,
+    top,
+    width: Math.max(0, right - left),
+  });
 };
 
 export class BattleScene extends Phaser.Scene {
@@ -214,7 +234,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.staticViews = [];
     this.roadTileViews = new Map();
-    for (const tile of deriveRoadTiles(this.level.roadCells)) {
+    const roadTiles = deriveRoadTiles(this.level.roadCells);
+    for (const tile of roadTiles) {
       const view = this.add.image(
         tile.x,
         tile.y,
@@ -227,6 +248,18 @@ export class BattleScene extends Phaser.Scene {
       this.roadTileViews.set(tile.cellId, view);
       this.staticViews.push(view);
     }
+
+    this.endpointAnchors = resolveRoadEndpointAnchors(this.level.roadCells);
+    this.entranceSprite = this.add.image(
+      this.endpointAnchors.entrance.x,
+      this.endpointAnchors.entrance.y,
+      'environment-path-atlas',
+      ROAD_TILE_FRAME[roadTiles[0].frame],
+    )
+      .setDepth(1.1)
+      .setDisplaySize(GRID.cellSize * 1.5, GRID.cellSize * 1.5);
+    this.entranceSprite.setName?.('enemy-entrance');
+    this.staticViews.push(this.entranceSprite);
 
     this.cellViews = new Map();
     for (const cell of this.level.cells) {
@@ -245,13 +278,12 @@ export class BattleScene extends Phaser.Scene {
     }
 
     if (this.textures.exists('environment-props-atlas')) this.createOptionalProps();
-    const castlePosition = cellCenter(this.level.roadCells.at(-1));
     this.castleSprite = this.add.sprite(
-      castlePosition.x,
-      castlePosition.y + 18,
+      this.endpointAnchors.castle.x,
+      this.endpointAnchors.castle.y,
       'castle-states',
       0,
-    ).setOrigin(0.5, 672 / 724).setDepth(3).setScale(0.27);
+    ).setOrigin(0.5).setDepth(0.8).setScale(0.27);
   }
 
   createCellView(cell, center) {
@@ -556,15 +588,12 @@ export class BattleScene extends Phaser.Scene {
     }
     if (event.code === 'Space' || event.key === ' ') {
       event.preventDefault();
-      this.issueBattleCommand({
-        type: 'set-pause-reason',
-        reason: 'manual',
-        active: !(this.lastSnapshot.pauseReasons ?? []).includes('manual'),
-      });
+      this.confirmFocusedTarget();
       return;
     }
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown'
-      || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      || event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+      || event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
       this.focusedCellId = resolveGridFocusMove({
         cellId: this.focusedCellId,
@@ -1251,15 +1280,25 @@ export class BattleScene extends Phaser.Scene {
       population: this.lastSnapshot?.enemies?.length ?? 1,
     });
     const body = this.resolveEnemyBodyMetrics(enemy.enemyId, presentation, artScale);
+    const blockingTower = enemy.blockingTowerId
+      ? this.towerById?.get?.(enemy.blockingTowerId)
+      : null;
+    const gatePathProgress = blockingTower
+      ? getGateProgress(this.level, blockingTower.cellId)
+      : null;
     return Object.freeze({
       ...roadProjection,
       artScale,
+      authoritativePathProgress: Number(enemy.pathProgress) || 0,
       body,
       bodyScale: artScale,
       enemyId: enemy.enemyId ?? null,
       entityId,
+      gatePathProgress,
       kind: presentation.kind,
-      maximumLaneOffset: Math.max(0, (GRID.cellSize - roadProjection.footprintWidth) / 2),
+      laneState: enemy.laneState ?? null,
+      maximumLaneOffset: GRID.cellSize / 2,
+      queueIndex: enemy.queueIndex ?? null,
     });
   }
 
@@ -1270,12 +1309,16 @@ export class BattleScene extends Phaser.Scene {
         bodyHeight: entry.body.height,
         bodyWidth: entry.body.width,
         bottomInset: entry.body.bottomInset,
+        authoritativePathProgress: entry.authoritativePathProgress,
+        gatePathProgress: entry.gatePathProgress,
         id: entry.entityId,
         laneOffset: entry.laneOffset,
+        laneState: entry.laneState,
         maximumLaneOffset: entry.maximumLaneOffset,
         pathProgress: entry.pathProgress,
+        queueIndex: entry.queueIndex,
       })),
-      maximumOverlapRatio: 0,
+      maximumOverlapRatio: MAX_ENEMY_BODY_OVERLAP_RATIO,
       metrics: this.pathMetrics,
     });
     this.enemyVisualLayout = new Map(layout.map((entry) => [entry.id, entry]));
@@ -1288,10 +1331,14 @@ export class BattleScene extends Phaser.Scene {
         bodyHeight: entry.body.height,
         bodyWidth: entry.body.width,
         bottomInset: entry.body.bottomInset,
+        authoritativePathProgress: entry.authoritativePathProgress,
+        gatePathProgress: entry.gatePathProgress,
         id: entry.entityId,
         laneOffset: entry.laneOffset,
+        laneState: entry.laneState,
         maximumLaneOffset: entry.maximumLaneOffset,
         pathProgress: entry.pathProgress,
+        queueIndex: entry.queueIndex,
       }],
       maximumOverlapRatio: MAX_ENEMY_BODY_OVERLAP_RATIO,
       metrics: this.pathMetrics,
@@ -1558,7 +1605,8 @@ export class BattleScene extends Phaser.Scene {
       .filter((tower) => this.resolveTowerProjection(tower)
         && DEFENDERS[tower.defenderId] && DEFENDER_PRESENTATION[tower.defenderId])
       .map((tower) => [tower.cellId, tower]));
-    const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
+    const selectedBuildDefinition = DEFENDERS[this.selectedDefenderId] ?? null;
+    const selectedLayer = selectedBuildDefinition?.placementLayer ?? null;
     const selectedTower = this.towerById.get(this.selectedTowerId);
     const selectedDefinition = selectedTower ? DEFENDERS[selectedTower.defenderId] : null;
     const selectedRangeCells = selectedTower && selectedDefinition
@@ -1592,7 +1640,25 @@ export class BattleScene extends Phaser.Scene {
         level: this.level,
         towers: snapshot.towers,
       }) : null;
+      const occupiedBy = occupiedTower
+        ? DEFENDER_PRESENTATION[occupiedTower.defenderId]?.name ?? 'defender'
+        : null;
+      const selectedPresentation = this.selectedDefenderId
+        ? DEFENDER_PRESENTATION[this.selectedDefenderId]
+        : null;
+      const actionState = resolveCellActionState({
+        coins: snapshot.coins,
+        cost: selectedBuildDefinition?.costs?.[0] ?? null,
+        enemyCovered: buildState?.reason === 'enemy-occupied',
+        occupiedBy,
+        selectedLayer,
+        selectedName: selectedPresentation?.name ?? null,
+        selectedRole: selectedPresentation?.role ?? null,
+        terminal: Boolean(snapshot.terminal || this.terminalHandled),
+        terrain: cell.terrain,
+      });
       const state = resolveCellVisualState({
+        actionState,
         danger: dangerCells.has(cell.id),
         enemyCovered: buildState?.reason === 'enemy-occupied',
         focused: this.battlefieldHasFocus && cell.id === this.focusedCellId,
@@ -1608,19 +1674,18 @@ export class BattleScene extends Phaser.Scene {
       if (accessibleNode) {
         accessibleNode.setAttribute('aria-label', formatCellAccessibleLabel({
           acceptsBuild: state.acceptsBuild,
+          actionState,
           cellId: cell.id,
           danger: state.danger,
           enemyCovered: state.enemyCovered,
-          occupiedBy: occupiedTower
-            ? DEFENDER_PRESENTATION[occupiedTower.defenderId]?.name ?? 'defender'
-            : null,
+          occupiedBy,
           selectedRole: this.selectedDefenderId
             ? DEFENDER_PRESENTATION[this.selectedDefenderId]?.role ?? null
             : null,
           terrain: cell.terrain,
         }));
         accessibleNode.setAttribute('aria-selected', String(cell.id === this.focusedCellId));
-        accessibleNode.setAttribute('aria-disabled', String(Boolean(selectedLayer) && !state.acceptsBuild));
+        accessibleNode.setAttribute('aria-disabled', String(actionState.disabled));
       }
     }
     this.battlefieldElement?.setAttribute?.(
@@ -1815,6 +1880,20 @@ export class BattleScene extends Phaser.Scene {
         occupied: Boolean(view._visualState?.occupied),
         terrain: view._terrain,
       })),
+      endpoints: this.endpointAnchors ? {
+        castle: {
+          depth: this.castleSprite?.depth ?? null,
+          interactive: false,
+          visibleBounds: resolveEndpointVisibleBounds(this.castleSprite),
+          ...this.endpointAnchors.castle,
+        },
+        entrance: {
+          depth: this.entranceSprite?.depth ?? null,
+          interactive: false,
+          visibleBounds: resolveEndpointVisibleBounds(this.entranceSprite),
+          ...this.endpointAnchors.entrance,
+        },
+      } : null,
       enemies: [...this.enemySprites].map(([id, view]) => {
         const enemy = this.enemyById.get(id);
         const roadProjection = resolveEnemyRoadProjection(
@@ -1831,7 +1910,9 @@ export class BattleScene extends Phaser.Scene {
           bodyRect: visual.bodyRect ? { ...visual.bodyRect } : null,
           depth: view.depth,
           footprintWidth: roadProjection.footprintWidth,
+          frame: view._body?.anims?.currentFrame?.textureFrame ?? view._body?.frame?.name ?? null,
           id,
+          isPlaying: Boolean(view._body?.anims?.isPlaying),
           laneOffset: roadProjection.laneOffset,
           laneState: enemy?.laneState ?? null,
           motionOffset: {
@@ -1921,10 +2002,16 @@ export class BattleScene extends Phaser.Scene {
       nextWaveIndex: snapshot.nextWaveIndex,
       nextWaveStartTick: snapshot.nextWaveStartTick,
       outcome: snapshot.outcome,
+      pendingSpawnCount: snapshot.pendingSpawnCount,
       pauseReasons: [...snapshot.pauseReasons],
       performance: this.getPerformanceState(),
       projectiles: snapshot.projectiles.map((projectile) => ({ ...projectile })),
       qa: snapshot.qa,
+      runtime: {
+        audio: this.audioController?.getState?.() ?? null,
+        clockAccumulator: this.clock?.getAccumulator?.() ?? 0,
+        sceneTime: Number(this.time?.now) || 0,
+      },
       score: snapshot.score,
       seed: snapshot.seed,
       selectedDefenderId: this.selectedDefenderId,

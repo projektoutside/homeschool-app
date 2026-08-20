@@ -34,6 +34,8 @@ export const resolveCellFromWorldPoint = ({ x, y } = {}) => {
 export const resolveGridFocusMove = ({ cellId = 'r0c0', key } = {}) => {
   const current = safeCellCoordinates(cellId);
   if (!current) return 'r0c0';
+  if (key === 'Home') return 'r0c0';
+  if (key === 'End') return toCellId(GRID.rows - 1, GRID.columns - 1);
   const offsets = {
     ArrowDown: [1, 0],
     ArrowLeft: [0, -1],
@@ -47,6 +49,7 @@ export const resolveGridFocusMove = ({ cellId = 'r0c0', key } = {}) => {
 };
 
 export const resolveCellVisualState = ({
+  actionState = null,
   danger = false,
   enemyCovered = false,
   focused = false,
@@ -57,7 +60,9 @@ export const resolveCellVisualState = ({
   terrain = 'grass',
 } = {}) => {
   const compatible = selectedLayer ? selectedLayer === terrain : null;
-  const acceptsBuild = Boolean(compatible && !occupied && !enemyCovered);
+  const acceptsBuild = actionState
+    ? Boolean(actionState.acceptsBuild)
+    : Boolean(compatible && !occupied && !enemyCovered);
   let borderAlpha = 0.35;
   let borderColor = terrain === 'road' ? CELL_COLORS.baseRoad : CELL_COLORS.baseGrass;
   let fillAlpha = 0.04;
@@ -119,6 +124,60 @@ export const resolveCellVisualState = ({
   });
 };
 
+export const resolveCellActionState = ({
+  coins = 0,
+  cost = null,
+  enemyCovered = false,
+  occupiedBy = null,
+  selectedLayer = null,
+  selectedName = null,
+  selectedRole = null,
+  terminal = false,
+  terrain = 'grass',
+} = {}) => {
+  const numericCoins = Math.max(0, Number(coins) || 0);
+  const numericCost = Number.isFinite(Number(cost)) ? Math.max(0, Number(cost)) : null;
+  const compatible = selectedLayer ? selectedLayer === terrain : null;
+  const costDescription = selectedName && numericCost !== null
+    ? `${selectedName} costs ${numericCost} coins`
+    : null;
+  let actionable = false;
+  let acceptsBuild = false;
+  let description = 'available';
+  let reason = null;
+
+  if (terminal) {
+    reason = 'terminal';
+    description = 'battle ended';
+  } else if (occupiedBy) {
+    actionable = true;
+    reason = 'occupied';
+    description = `occupied by ${occupiedBy}, select to upgrade or sell`;
+  } else if (enemyCovered) {
+    reason = 'enemy-occupied';
+    description = `blocked by enemies${costDescription ? `, ${costDescription}` : ''}`;
+  } else if (selectedLayer && !compatible) {
+    reason = 'placement-layer-mismatch';
+    description = `unavailable for ${selectedRole}, requires ${selectedLayer} terrain${costDescription ? `, ${costDescription}` : ''}`;
+  } else if (selectedLayer && numericCost !== null && numericCoins < numericCost) {
+    reason = 'insufficient-coins';
+    description = `${costDescription}, insufficient funds (${numericCoins} coins available)`;
+  } else if (selectedLayer) {
+    actionable = true;
+    acceptsBuild = true;
+    description = `available for ${selectedRole}${costDescription ? `, ${costDescription}` : ''}`;
+  }
+
+  return Object.freeze({
+    acceptsBuild,
+    actionable,
+    compatible,
+    description,
+    disabled: !actionable,
+    reason,
+  });
+};
+
 export const resolveSquareRangeCells = ({
   level,
   originCellId,
@@ -153,6 +212,7 @@ export const resolveReadableSpriteScale = ({
 
 export const formatCellAccessibleLabel = ({
   acceptsBuild = false,
+  actionState = null,
   cellId,
   danger = false,
   enemyCovered = false,
@@ -163,6 +223,7 @@ export const formatCellAccessibleLabel = ({
   const coordinates = safeCellCoordinates(cellId) ?? { row: 0, column: 0 };
   const prefix = `${terrain === 'road' ? 'Road' : 'Grass'} square row ${coordinates.row + 1} column ${coordinates.column + 1}`;
   const suffix = danger ? ', danger telegraph' : '';
+  if (actionState?.description) return `${prefix}, ${actionState.description}${suffix}`;
   if (occupiedBy) return `${prefix}, occupied by ${occupiedBy}${suffix}`;
   if (enemyCovered) return `${prefix}, blocked by enemies${suffix}`;
   if (acceptsBuild && selectedRole) return `${prefix}, available for ${selectedRole}${suffix}`;
@@ -260,14 +321,50 @@ export const resolveReadableEnemyLayout = ({
   const totalProgress = Math.max(0, Number(metrics?.total) || 0);
   const safeOverlapRatio = clampNumber(Number(maximumOverlapRatio) || 0, 0, 1);
   const safeProgressStep = Math.max(0.5, Number(progressStep) || 2);
+  const stateRank = (entry) => (
+    entry.laneState === 'attacking' ? 0 : entry.laneState === 'queued' ? 1 : 2
+  );
   const ordered = entries.map((entry, index) => ({ entry, index })).sort((first, second) => (
-    (Number(first.entry.pathProgress) || 0) - (Number(second.entry.pathProgress) || 0)
-    || second.index - first.index
+    stateRank(first.entry) - stateRank(second.entry)
+    || ((Number(first.entry.gatePathProgress) || 0) - (Number(second.entry.gatePathProgress) || 0))
+    || ((Number(first.entry.queueIndex) || 0) - (Number(second.entry.queueIndex) || 0))
+    || ((Number(first.entry.pathProgress) || 0) - (Number(second.entry.pathProgress) || 0))
+    || first.index - second.index
   ));
   const placed = [];
+  const lastQueuedProgressByGate = new Map();
 
   for (const { entry, index } of ordered) {
-    const initialProgress = clampNumber(Number(entry.pathProgress) || 0, 0, totalProgress);
+    const laneState = entry.laneState ?? null;
+    const laneAware = laneState === 'attacking' || laneState === 'queued' || laneState === 'moving';
+    const authoritativeProgress = clampNumber(
+      Number(entry.authoritativePathProgress ?? entry.pathProgress) || 0,
+      0,
+      totalProgress,
+    );
+    const gateProgress = clampNumber(Number(entry.gatePathProgress) || 0, 0, totalProgress);
+    const queueKey = laneState === 'queued' ? String(gateProgress) : null;
+    const previousQueuedProgress = queueKey === null
+      ? null
+      : lastQueuedProgressByGate.get(queueKey) ?? null;
+    const maximumTruthfulProgress = laneState === 'attacking'
+      ? authoritativeProgress
+      : laneState === 'queued'
+        ? Math.min(
+          authoritativeProgress,
+          Math.max(0, gateProgress - 1),
+          previousQueuedProgress === null
+            ? totalProgress
+            : Math.max(0, previousQueuedProgress - safeProgressStep),
+        )
+        : laneState === 'moving'
+          ? authoritativeProgress
+          : totalProgress;
+    const initialProgress = clampNumber(
+      Number(entry.pathProgress) || 0,
+      0,
+      maximumTruthfulProgress,
+    );
     const maximumLaneOffset = Math.max(0, Number(entry.maximumLaneOffset) || 0);
     const requestedLaneOffset = clampNumber(
       Number(entry.laneOffset) || 0,
@@ -276,21 +373,41 @@ export const resolveReadableEnemyLayout = ({
     );
     const laneOffsets = [...new Set([
       requestedLaneOffset,
-      0,
-      -maximumLaneOffset,
-      maximumLaneOffset,
+      ...Array.from({ length: 9 }, (_, offsetIndex) => (
+        -maximumLaneOffset + ((maximumLaneOffset * offsetIndex) / 4)
+      )),
     ].map((value) => Number(value.toFixed(6))))];
     const searchSteps = Math.ceil(totalProgress / safeProgressStep) + 1;
     let resolved = null;
+
+    if (laneState === 'attacking') {
+      const containment = resolveContainedBodyProjection({
+        bodyHeight: entry.bodyHeight,
+        bodyWidth: entry.bodyWidth,
+        bottomInset: entry.bottomInset,
+        position: projectGridPathProgress(metrics, initialProgress, requestedLaneOffset),
+      });
+      resolved = Object.freeze({
+        bodyRect: containment.bodyRect,
+        id: entry.id,
+        laneOffset: requestedLaneOffset,
+        pathProgress: initialProgress,
+        position: containment.position,
+        sourceIndex: index,
+      });
+    }
 
     for (let stepIndex = 0; stepIndex < searchSteps && !resolved; stepIndex += 1) {
       const distance = stepIndex * safeProgressStep;
       const candidateProgress = stepIndex === 0
         ? [initialProgress]
-        : [
-          initialProgress + distance <= totalProgress ? initialProgress + distance : null,
-          initialProgress - distance >= 0 ? initialProgress - distance : null,
-        ].filter((value) => value !== null);
+        : laneAware
+          ? [initialProgress - distance >= 0 ? initialProgress - distance : null]
+            .filter((value) => value !== null)
+          : [
+            initialProgress + distance <= totalProgress ? initialProgress + distance : null,
+            initialProgress - distance >= 0 ? initialProgress - distance : null,
+          ].filter((value) => value !== null);
       for (const pathProgress of candidateProgress) {
         for (const laneOffset of laneOffsets) {
           const containment = resolveContainedBodyProjection({
@@ -319,22 +436,24 @@ export const resolveReadableEnemyLayout = ({
 
     if (!resolved) {
       const laneOffset = laneOffsets[0] ?? 0;
+      const fallbackProgress = laneAware ? Math.max(0, maximumTruthfulProgress) : totalProgress;
       const containment = resolveContainedBodyProjection({
         bodyHeight: entry.bodyHeight,
         bodyWidth: entry.bodyWidth,
         bottomInset: entry.bottomInset,
-        position: projectGridPathProgress(metrics, totalProgress, laneOffset),
+        position: projectGridPathProgress(metrics, fallbackProgress, laneOffset),
       });
       resolved = Object.freeze({
         bodyRect: containment.bodyRect,
         id: entry.id,
         laneOffset,
-        pathProgress: totalProgress,
+        pathProgress: fallbackProgress,
         position: containment.position,
         sourceIndex: index,
       });
     }
     placed.push(resolved);
+    if (queueKey !== null) lastQueuedProgressByGate.set(queueKey, resolved.pathProgress);
   }
 
   return Object.freeze(placed.sort((first, second) => first.sourceIndex - second.sourceIndex));

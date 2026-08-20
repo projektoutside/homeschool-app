@@ -112,6 +112,23 @@ const createGridLaneFixture = ({ gateCellId, enemyCount }) => {
   return simulation;
 };
 
+test('grid placement, lane combat, and waves share one cap rules module', async () => {
+  const [rules, placement, lanes, waves] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/core/rules.js'),
+    import('../public/Games/DefenderChampion/src/core/grid-placement.js'),
+    import('../public/Games/DefenderChampion/src/core/lane-combat.js'),
+    import('../public/Games/DefenderChampion/src/core/wave-controller.js'),
+  ]);
+  assert.equal(rules.MAX_LIVING_ENEMIES, 18);
+  assert.equal(rules.MAX_ATTACKERS_PER_GATE, 3);
+  assert.equal(placement.MAX_LIVING_ENEMIES, rules.MAX_LIVING_ENEMIES);
+  assert.equal(placement.MAX_ATTACKERS_PER_GATE, rules.MAX_ATTACKERS_PER_GATE);
+  assert.equal(lanes.MAX_LIVING_ENEMIES, rules.MAX_LIVING_ENEMIES);
+  assert.equal(lanes.MAX_ATTACKERS_PER_GATE, rules.MAX_ATTACKERS_PER_GATE);
+  assert.equal(waves.MAX_LIVING_ENEMIES, rules.MAX_LIVING_ENEMIES);
+  assert.equal(waves.MAX_ATTACKERS_PER_GATE, rules.MAX_ATTACKERS_PER_GATE);
+});
+
 test('a living road defender stops the whole lane with three attackers and a stable queue', () => {
   const simulation = createSimulation({
     enemies: [
@@ -175,9 +192,9 @@ test('a road-cell defender owns one whole-lane grid gate with three attackers', 
         id, displayLaneOffset, displayPathProgress,
       })),
     [
-      { id: 'enemy-20', displayLaneOffset: -22, displayPathProgress: 1572 },
-      { id: 'enemy-21', displayLaneOffset: 0, displayPathProgress: 1570 },
-      { id: 'enemy-22', displayLaneOffset: 22, displayPathProgress: 1568 },
+      { id: 'enemy-20', displayLaneOffset: -40, displayPathProgress: 1572 },
+      { id: 'enemy-21', displayLaneOffset: 40, displayPathProgress: 1570 },
+      { id: 'enemy-22', displayLaneOffset: 0, displayPathProgress: 1568 },
     ],
   );
   assert.deepEqual(
@@ -186,13 +203,13 @@ test('a road-cell defender owns one whole-lane grid gate with three attackers', 
       .sort((first, second) => first.queueIndex - second.queueIndex)
       .map(({ displayLaneOffset, displayPathProgress }) => [displayLaneOffset, displayPathProgress]),
     [
-      [-22, 1524], [0, 1476], [22, 1428], [-22, 1380], [0, 1332],
-      [22, 1284], [-22, 1236], [0, 1188], [22, 1140], [-22, 1092],
-      [0, 1044], [22, 996], [-22, 948], [0, 900], [22, 852],
+      [-40, 1524], [40, 1476], [-40, 1428], [40, 1380], [-40, 1332],
+      [40, 1284], [-40, 1236], [40, 1188], [-40, 1140], [40, 1092],
+      [-40, 1044], [40, 996], [-40, 948], [40, 900], [-40, 852],
     ],
   );
   assert.equal(simulation.enemies.every(({ displayLaneOffset }) => (
-    Math.abs(displayLaneOffset) <= 22
+    Math.abs(displayLaneOffset) <= 40
   )), true);
   assert.equal(simulation.maximumConcurrentAttackers, 3);
 
@@ -205,6 +222,74 @@ test('an early gate backpressures new spawns before queue art overlaps', () => {
   const gateCellId = LEVELS[0].roadCells[2];
   const simulation = createGridLaneFixture({ gateCellId, enemyCount: 3 });
   assert.equal(laneCombat.deriveReadableSpawnCapacity?.(simulation), 5);
+});
+
+test('a gate at progress 960 backpressures excess beyond its truthful queue cells', () => {
+  const gateCellId = LEVELS[0].roadCells[12];
+  const simulation = createGridLaneFixture({ gateCellId, enemyCount: 0 });
+  for (let index = 0; index < 18; index += 1) {
+    enqueueEnemySpawn(simulation, {
+      enemyId: 'blight-walker', pathProgress: 0, waveIndex: 0,
+    });
+  }
+
+  flushPendingEnemySpawns(simulation);
+
+  assert.equal(laneCombat.deriveReadableSpawnCapacity(simulation), 15);
+  assert.equal(simulation.enemies.length, 15);
+  assert.equal(simulation.pendingSpawns.length, 3);
+});
+
+test('a congested early gate admits FIFO enemies only after their deterministic entrance lane clears', () => {
+  const simulation = createGameSimulation('level-1', { qa: true });
+  simulation.pendingSpawns = [];
+  simulation.enemies = [];
+  simulation.coins = 10_000;
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[5],
+  }), { accepted: true, reason: null });
+  for (let index = 0; index < 6; index += 1) {
+    enqueueEnemySpawn(simulation, {
+      enemyId: 'blight-walker', pathProgress: 0, waveIndex: 0,
+    });
+  }
+
+  flushPendingEnemySpawns(simulation);
+  assert.deepEqual(simulation.enemies.map(({ id, entranceLaneOffset }) => [id, entranceLaneOffset]), [
+    ['enemy-2', -40], ['enemy-3', 40],
+  ]);
+  assert.deepEqual(simulation.pendingSpawns.map(({ sequence }) => sequence), [3, 4, 5, 6]);
+
+  simulation.enemies[0].pathProgress = 40;
+  simulation.enemies[1].pathProgress = 40;
+  flushPendingEnemySpawns(simulation);
+  assert.deepEqual(simulation.enemies.map(({ id, entranceLaneOffset }) => [id, entranceLaneOffset]), [
+    ['enemy-2', -40], ['enemy-3', 40], ['enemy-4', 0],
+  ]);
+  assert.deepEqual(simulation.pendingSpawns.map(({ sequence }) => sequence), [4, 5, 6],
+    'the blocked next FIFO request prevents later requests from overtaking it');
+
+  simulation.enemies[0].pathProgress = 80;
+  simulation.enemies[2].pathProgress = 40;
+  flushPendingEnemySpawns(simulation);
+  assert.deepEqual(simulation.enemies.map(({ id, entranceLaneOffset }) => [id, entranceLaneOffset]), [
+    ['enemy-2', -40], ['enemy-3', 40], ['enemy-4', 0], ['enemy-5', -40],
+  ]);
+});
+
+test('wide entrance bodies receive deterministic full-square foot anchors', () => {
+  const simulation = createGridLaneFixture({ gateCellId: LEVELS[0].roadCells[12], enemyCount: 0 });
+  for (let index = 0; index < 6; index += 1) {
+    enqueueEnemySpawn(simulation, { enemyId: 'crusher', pathProgress: 0, waveIndex: 0 });
+  }
+
+  flushPendingEnemySpawns(simulation);
+
+  assert.deepEqual(
+    simulation.enemies.map(({ entranceLaneOffset }) => entranceLaneOffset),
+    [-40, 40, -40, 40, -40, 40],
+  );
+  assert.equal(simulation.pendingSpawns.length, 0);
 });
 
 test('a congested early road-cell gate waits for readable capacity without deleting the 18-body FIFO', () => {
@@ -235,9 +320,9 @@ test('a congested early road-cell gate waits for readable capacity without delet
   assert.deepEqual(simulation.towers, []);
 
   const downstreamProgress = [
-    241, 289, 337, 385, 433, 481, 529, 577, 625, 673, 721, 769, 817,
+    241, 289, 337, 385, 433, 481, 529, 577, 625, 673, 721, 769, 817, 865, 913,
   ];
-  simulation.enemies.slice(5).forEach((enemy, index) => {
+  simulation.enemies.slice(3).forEach((enemy, index) => {
     enemy.pathProgress = downstreamProgress[index];
   });
   assert.deepEqual(issueCommand(simulation, {
@@ -252,40 +337,17 @@ test('a congested early road-cell gate waits for readable capacity without delet
 
   assert.deepEqual(simulation.enemies.map(({ id }) => id), originalEntityIds);
   assert.deepEqual(state.gates[0].attackerIds, ['enemy-1', 'enemy-2', 'enemy-3']);
-  assert.deepEqual(state.gates[0].queuedIds, ['enemy-4', 'enemy-5']);
+  assert.deepEqual(state.gates[0].queuedIds, []);
   assert.equal(simulation.maximumConcurrentAttackers, 3);
-  assert.deepEqual(
-    simulation.enemies
-      .filter(({ queueIndex }) => queueIndex !== null)
-      .sort((first, second) => first.queueIndex - second.queueIndex)
-      .map(({ id, displayLaneOffset, displayPathProgress }) => ({
-        id, displayLaneOffset, displayPathProgress,
-      })),
-    [
-      { id: 'enemy-4', displayLaneOffset: -22, displayPathProgress: 84 },
-      { id: 'enemy-5', displayLaneOffset: 0, displayPathProgress: 36 },
-    ],
-  );
+  assert.deepEqual(simulation.enemies.filter(({ queueIndex }) => queueIndex !== null), []);
   assert.equal(simulation.enemies.every(({ displayScale }) => displayScale === 1), true);
   assert.equal(simulation.enemies.every(({ displayLaneOffset }) => (
-    Math.abs(displayLaneOffset) <= 22
+    Math.abs(displayLaneOffset) <= 40
   )), true);
   assert.deepEqual(
-    simulation.enemies.slice(5).map(({ pathProgress }) => pathProgress),
+    simulation.enemies.slice(3).map(({ pathProgress }) => pathProgress),
     downstreamProgress,
   );
-  const queuePositions = simulation.enemies
-    .filter(({ queueIndex }) => queueIndex !== null)
-    .sort((first, second) => first.queueIndex - second.queueIndex)
-    .map((enemy) => projectGridPathProgress(
-      simulation.pathMetrics,
-      enemy.displayPathProgress,
-      enemy.displayLaneOffset,
-    ));
-  assert.equal(Math.hypot(
-    queuePositions[0].x - queuePositions[1].x,
-    queuePositions[0].y - queuePositions[1].y,
-  ) >= 48, true);
   const projectedPositions = simulation.enemies.map((enemy) => projectGridPathProgress(
     simulation.pathMetrics,
     enemy.displayPathProgress,
@@ -391,7 +453,7 @@ test('malformed externally injected interval state clamps deterministically with
   )), true);
   assert.equal(simulation.enemies.every(({ displayScale }) => displayScale === 1), true);
   assert.equal(simulation.enemies.every(({ displayLaneOffset }) => (
-    Math.abs(displayLaneOffset) <= 22
+    Math.abs(displayLaneOffset) <= 40
   )), true);
   assert.equal(simulation.enemies.every(({ displayPathProgress }) => (
     Number.isFinite(displayPathProgress)
@@ -410,8 +472,8 @@ test('a lane with no living road-cell gate retains the full readable spawn capac
 test('fixed-scale queue slots use hand-authored 48-progress spacing and bounded offsets', () => {
   const slots = createQueuePresentationLayout({ gatePathProgress: 160, queueCount: 2 });
   assert.deepEqual(slots, [
-    { laneOffset: -22, pathProgress: 84, scale: 1 },
-    { laneOffset: 0, pathProgress: 36, scale: 1 },
+    { laneOffset: -40, pathProgress: 84, scale: 1 },
+    { laneOffset: 40, pathProgress: 36, scale: 1 },
   ]);
 });
 
@@ -475,6 +537,28 @@ test('a moving enemy cannot bypass its reserved living gate by overshooting the 
   assert.equal(enemy.blockingTowerId, 'tower-1');
   assert.equal(enemy.laneState, 'attacking');
   assert.equal(enemy.pathProgress < 160, true);
+});
+
+test('a reserved moving queue body never displays ahead of authoritative progress', () => {
+  const enemies = Array.from({ length: 4 }, (_, index) => createEnemy({
+    id: `enemy-${index + 1}`,
+    pathProgress: 10,
+    spawnTick: index,
+  }));
+  const simulation = createSimulation({
+    towers: [createTower({ id: 'tower-1', cellId: FIRST_GATE_CELL_ID })],
+    enemies,
+  });
+
+  assignLanePositions(simulation);
+
+  const queuedMover = enemies.find(({ queueIndex }) => queueIndex === 0);
+  assert.ok(queuedMover);
+  assert.equal(queuedMover.laneState, 'moving');
+  assert.ok(
+    queuedMover.displayPathProgress <= queuedMover.pathProgress,
+    `display ${queuedMover.displayPathProgress} exceeded authority ${queuedMover.pathProgress}`,
+  );
 });
 
 test('a newly built nearer gate supersedes a farther reservation before the enemy reaches it', () => {

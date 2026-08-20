@@ -8,6 +8,24 @@ const safelyCall = (callback) => {
 
 const pausedScenesByGame = new WeakMap();
 
+const isScenePaused = (scene) => (
+  scene?.sys?.isPaused?.() ?? scene?.scene?.isPaused?.() ?? false
+);
+
+const isSceneActive = (scene) => (
+  scene?.sys?.isActive?.() ?? scene?.scene?.isActive?.() ?? false
+);
+
+const pauseSceneImmediately = (scene) => {
+  if (typeof scene?.sys?.pause === 'function') scene.sys.pause();
+  else scene?.scene?.pause?.();
+};
+
+const resumeSceneImmediately = (scene) => {
+  if (typeof scene?.sys?.resume === 'function') scene.sys.resume();
+  else scene?.scene?.resume?.();
+};
+
 export const applyRuntimePauseState = ({
   battleScene,
   game,
@@ -23,18 +41,63 @@ export const applyRuntimePauseState = ({
     }
     if (paused) {
       game.scene?.scenes?.forEach((scene) => {
-        if (pausedScenes.has(scene) || scene.scene.isPaused() || !scene.scene.isActive()) return;
+        if (pausedScenes.has(scene) || isScenePaused(scene) || !isSceneActive(scene)) return;
         pausedScenes.add(scene);
-        scene.scene.pause();
+        pauseSceneImmediately(scene);
       });
     } else {
       pausedScenes.forEach((scene) => {
-        if (scene.scene.isPaused() || scene.scene.isActive()) scene.scene.resume();
+        if (isScenePaused(scene) || isSceneActive(scene)) resumeSceneImmediately(scene);
       });
       pausedScenes.clear();
     }
   }
   if (!paused) battleScene?.handleResume?.();
+};
+
+export const createRuntimePauseReplay = ({
+  game,
+  getBattleScene = () => null,
+  getPauseState = () => ({ paused: false, reasons: [] }),
+} = {}) => {
+  let started = false;
+  const sceneListeners = new Map();
+
+  const sync = () => {
+    const state = getPauseState?.() ?? { paused: false, reasons: [] };
+    applyRuntimePauseState({
+      battleScene: getBattleScene?.() ?? null,
+      game,
+      paused: Boolean(state.paused),
+      reasons: Array.isArray(state.reasons) ? state.reasons : [],
+    });
+    return state;
+  };
+
+  const start = () => {
+    if (started) return;
+    started = true;
+    for (const scene of game?.scene?.scenes ?? []) {
+      const listener = () => {
+        pausedScenesByGame.get(game)?.delete(scene);
+        sync();
+      };
+      scene?.sys?.events?.on?.('create', listener);
+      sceneListeners.set(scene, listener);
+    }
+    sync();
+  };
+
+  const destroy = () => {
+    if (!started) return;
+    started = false;
+    for (const [scene, listener] of sceneListeners) {
+      scene?.sys?.events?.off?.('create', listener);
+    }
+    sceneListeners.clear();
+  };
+
+  return Object.freeze({ destroy, start, sync });
 };
 
 export const createRuntimeLifecycle = ({
@@ -44,6 +107,7 @@ export const createRuntimeLifecycle = ({
   hostBridge,
   hud,
   orientationController,
+  pauseReplayCleanup,
 } = {}) => {
   let bfcacheSuspended = false;
   let destroyed = false;
@@ -61,6 +125,7 @@ export const createRuntimeLifecycle = ({
     destroyed = true;
     windowRef?.removeEventListener?.('pagehide', handlePageHide);
     windowRef?.removeEventListener?.('pageshow', handlePageShow);
+    safelyCall(() => pauseReplayCleanup?.());
     shutdownActiveScenes();
     safelyCall(() => hostBridge?.cleanup?.());
     safelyCall(() => orientationController?.stop?.());

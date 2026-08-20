@@ -1,12 +1,23 @@
 import { ENEMIES } from '../config/enemies.js';
-import { deriveReadableSpawnCapacity } from './lane-combat.js';
+import { deriveReadableSpawnCapacity, getFirstLivingGateProgress } from './lane-combat.js';
 import { emitPresentationEvent } from './presentation-events.js';
+import {
+  EARLY_GATE_BACKPRESSURE_LIMIT,
+  ENTRANCE_LANE_CLEARANCE,
+  MAX_ATTACKERS_PER_GATE,
+  MAX_LIVING_ENEMIES,
+  MIN_CONGESTED_GATE_CAPACITY,
+  MIN_ENTRANCE_ADJACENT_LANE_PROGRESS,
+  MIN_ENTRANCE_SAME_LANE_PROGRESS,
+  READABLE_ENTRANCE_POLICIES,
+} from './rules.js';
 
 export const WAVE_GAP_TICKS = 180;
-export const MAX_LIVING_ENEMIES = 18;
-export { deriveReadableSpawnCapacity };
+export { deriveReadableSpawnCapacity, MAX_ATTACKERS_PER_GATE, MAX_LIVING_ENEMIES };
 
 const livingEnemyCount = (simulation) => simulation.enemies.filter(({ health }) => health > 0).length;
+const getEntrancePolicy = (enemyId) => READABLE_ENTRANCE_POLICIES[enemyId]
+  ?? READABLE_ENTRANCE_POLICIES['blight-walker'];
 
 const updateSpawnedAllWaves = (simulation) => {
   simulation.spawnedAllWaves = simulation.nextSpawnIndex === simulation.waveSchedule.length
@@ -50,7 +61,7 @@ export const enqueueEnemySpawn = (simulation, request) => {
   updateSpawnedAllWaves(simulation);
 };
 
-const createEnemy = (simulation, request) => {
+const createEnemy = (simulation, request, entranceLaneOffset = 0) => {
   const config = ENEMIES[request.enemyId];
   const maxHealth = Math.round(config.health * simulation.level.healthScale);
   return {
@@ -78,7 +89,11 @@ const createEnemy = (simulation, request) => {
     laneState: 'moving',
     blockingTowerId: null,
     queueIndex: null,
-    laneOffset: 0,
+    laneOffset: entranceLaneOffset,
+    entranceLaneOffset,
+    displayLaneOffset: entranceLaneOffset,
+    displayPathProgress: request.pathProgress,
+    displayScale: 1,
     nextAbilityTick: simulation.tick + config.cooldownTicks,
     abilityActiveTicks: 0,
     nextAbilityActiveTick: config.cooldownTicks,
@@ -93,8 +108,37 @@ export const flushPendingEnemySpawns = (simulation) => {
     MAX_LIVING_ENEMIES,
     deriveReadableSpawnCapacity(simulation),
   );
+  const firstGateProgress = getFirstLivingGateProgress(simulation);
+  const hasBackpressuredGate = readableCapacity < MAX_LIVING_ENEMIES
+    && readableCapacity >= MIN_CONGESTED_GATE_CAPACITY
+    && firstGateProgress !== null
+    && firstGateProgress <= EARLY_GATE_BACKPRESSURE_LIMIT
+    && simulation.nextSpawnIndex < simulation.waveSchedule.length;
   while (livingEnemyCount(simulation) < readableCapacity && simulation.pendingSpawns.length > 0) {
-    simulation.enemies.push(createEnemy(simulation, simulation.pendingSpawns.shift()));
+    const request = simulation.pendingSpawns[0];
+    const policy = getEntrancePolicy(request.enemyId);
+    const preferredLaneIndex = (request.sequence - 1) % policy.length;
+    const candidateLaneOffsets = [
+      ...policy.slice(preferredLaneIndex),
+      ...policy.slice(0, preferredLaneIndex),
+    ];
+    const entranceLaneOffset = hasBackpressuredGate
+      ? candidateLaneOffsets.find((candidateOffset) => !simulation.enemies.some((enemy) => {
+        if (!(enemy.health > 0)) return false;
+        const laneDistance = Math.abs((Number(enemy.laneOffset) || 0) - candidateOffset);
+        if (laneDistance >= ENTRANCE_LANE_CLEARANCE) return false;
+        const clearance = laneDistance === 0
+          ? MIN_ENTRANCE_SAME_LANE_PROGRESS
+          : MIN_ENTRANCE_ADJACENT_LANE_PROGRESS;
+        return enemy.pathProgress < clearance;
+      }))
+      : candidateLaneOffsets[0];
+    if (entranceLaneOffset === undefined) break;
+    simulation.enemies.push(createEnemy(
+      simulation,
+      simulation.pendingSpawns.shift(),
+      entranceLaneOffset,
+    ));
   }
   simulation.maximumLivingEnemies = Math.max(
     simulation.maximumLivingEnemies ?? 0,

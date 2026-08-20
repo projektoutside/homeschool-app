@@ -34,7 +34,7 @@ const EARLY_FIXTURE_EXPECTATIONS = Object.freeze({
     occupied: Object.freeze(['r3c3', 'r4c3', 'r7c5']), maxLiving: 14, maxAttackers: 3, purchaseCount: 3,
   }),
   'level-2-balanced': Object.freeze({
-    outcome: 'victory', tick: 14700, hearts: 3, score: 1054, highest: 'ranger',
+    outcome: 'victory', tick: 15588, hearts: 3, score: 1054, highest: 'ranger',
     occupied: Object.freeze(['r1c4', 'r2c4']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
   }),
   'level-2-artillery': Object.freeze({
@@ -42,7 +42,7 @@ const EARLY_FIXTURE_EXPECTATIONS = Object.freeze({
     occupied: Object.freeze(['r6c8', 'r7c5', 'r7c8']), maxLiving: 16, maxAttackers: 3, purchaseCount: 3,
   }),
   'level-3-balanced': Object.freeze({
-    outcome: 'victory', tick: 29898, hearts: 3, score: 1235, highest: 'ranger',
+    outcome: 'victory', tick: 30569, hearts: 3, score: 1235, highest: 'ranger',
     occupied: Object.freeze(['r1c2', 'r1c3']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
   }),
   'level-3-artillery': Object.freeze({
@@ -62,15 +62,15 @@ const EARLY_FIXTURE_EXPECTATIONS = Object.freeze({
     occupied: Object.freeze(['r2c4', 'r4c2', 'r9c4']), maxLiving: 7, maxAttackers: 3, purchaseCount: 3,
   }),
   'level-5-balanced': Object.freeze({
-    outcome: 'victory', tick: 30299, hearts: 3, score: 1125, highest: 'ranger',
+    outcome: 'victory', tick: 31008, hearts: 3, score: 1125, highest: 'ranger',
     occupied: Object.freeze(['r2c1', 'r2c2']), maxLiving: 9, maxAttackers: 3, purchaseCount: 2,
   }),
   'level-5-artillery': Object.freeze({
-    outcome: 'victory', tick: 33035, hearts: 3, score: 1125, highest: 'rune-artificer',
+    outcome: 'victory', tick: 33596, hearts: 3, score: 1125, highest: 'rune-artificer',
     occupied: Object.freeze(['r2c2', 'r7c2', 'r9c5']), maxLiving: 9, maxAttackers: 3, purchaseCount: 3,
   }),
   'level-6-balanced': Object.freeze({
-    outcome: 'victory', tick: 25156, hearts: 3, score: 1412, highest: 'ranger',
+    outcome: 'victory', tick: 26254, hearts: 3, score: 1412, highest: 'ranger',
     occupied: Object.freeze(['r0c8', 'r1c8']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
   }),
   'level-6-artillery': Object.freeze({
@@ -80,7 +80,7 @@ const EARLY_FIXTURE_EXPECTATIONS = Object.freeze({
 });
 const LATE_FIXTURE_EXPECTATIONS = Object.freeze({
   'level-7-balanced': Object.freeze({
-    outcome: 'victory', tick: 28013, hearts: 3, score: 4539, highest: 'ranger',
+    outcome: 'victory', tick: 24952, hearts: 3, score: 4539, highest: 'ranger',
     occupied: Object.freeze(['r0c4', 'r2c2', 'r4c4', 'r4c7', 'r6c8']),
     maxLiving: 14, maxAttackers: 3, purchaseCount: 8,
     frontlineDefeats: 2, frontlineRepurchases: 1,
@@ -94,7 +94,7 @@ const LATE_FIXTURE_EXPECTATIONS = Object.freeze({
     maxLiving: 14, maxAttackers: 3, purchaseCount: 7,
   }),
   'level-8-balanced': Object.freeze({
-    outcome: 'victory', tick: 22114, hearts: 3, score: 3726, highest: 'bladeguard',
+    outcome: 'victory', tick: 21302, hearts: 3, score: 3732, highest: 'bladeguard',
     occupied: Object.freeze(['r0c3', 'r2c4', 'r3c1', 'r4c4', 'r6c6']),
     maxLiving: 8, maxAttackers: 3, purchaseCount: 7,
   }),
@@ -107,7 +107,7 @@ const LATE_FIXTURE_EXPECTATIONS = Object.freeze({
     maxLiving: 14, maxAttackers: 3, purchaseCount: 21,
   }),
   'level-9-balanced': Object.freeze({
-    outcome: 'victory', tick: 40506, hearts: 3, score: 3631, highest: 'ironwarden',
+    outcome: 'victory', tick: 40590, hearts: 3, score: 3631, highest: 'ironwarden',
     occupied: Object.freeze([
       'r0c5', 'r0c8', 'r10c6', 'r1c4', 'r1c6', 'r1c8', 'r2c4', 'r2c8',
       'r4c4', 'r5c5', 'r6c5', 'r7c6', 'r8c6',
@@ -423,13 +423,13 @@ test('every level has a no-build loss and two materially distinct authored wins'
     assert.equal(secondSummary.terminal, true, `${level.id}:${secondId} should terminate`);
     assert.equal(secondSummary.outcome, 'victory', `${level.id}:${secondId} should win`);
 
-    const padDifferenceRatio = compareStrategies(firstSummary, secondSummary);
+    const cellDifferenceRatio = compareStrategies(firstSummary, secondSummary);
     assert.notEqual(
       firstSummary.highestSpendDefenderId,
       secondSummary.highestSpendDefenderId,
       `${level.id} should have different actual highest-spend defenders`,
     );
-    assert.ok(padDifferenceRatio >= 0.25, `${level.id} actual pad difference was ${padDifferenceRatio}`);
+    assert.ok(cellDifferenceRatio >= 0.25, `${level.id} actual cell difference was ${cellDifferenceRatio}`);
     highestSpendDefenderIds.add(firstSummary.highestSpendDefenderId);
     highestSpendDefenderIds.add(secondSummary.highestSpendDefenderId);
     replacementLevels.set(level.id, [firstSummary, secondSummary].some((summary) => (

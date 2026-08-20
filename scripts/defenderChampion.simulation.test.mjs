@@ -22,6 +22,7 @@ import {
   selectMeleeTarget,
   selectTarget,
 } from '../public/Games/DefenderChampion/src/core/targeting.js';
+import { READABLE_ENTRANCE_POLICIES } from '../public/Games/DefenderChampion/src/core/rules.js';
 import { WAVE_GAP_TICKS, spawnScheduledEnemies } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
 test('every free road and grass cell accepts exactly its matching defenders', () => {
@@ -492,6 +493,7 @@ test('full and presentation snapshots expose detached lane and enemy attack stat
   advanceSimulation(simulation, 1);
   const fullEnemy = summarizeSimulation(simulation).enemies[0];
   const presentationEnemy = summarizePresentationSimulation(simulation).enemies[0];
+  const entranceLaneOffset = READABLE_ENTRANCE_POLICIES['blight-walker'][0];
   const expected = {
     attackDamage: 24,
     attackCooldownTicks: 72,
@@ -506,8 +508,8 @@ test('full and presentation snapshots expose detached lane and enemy attack stat
     laneState: 'moving',
     blockingTowerId: simulation.towers[0].id,
     queueIndex: null,
-    laneOffset: -22,
-    displayLaneOffset: -22,
+    laneOffset: entranceLaneOffset,
+    displayLaneOffset: entranceLaneOffset,
     displayScale: 1,
   };
 
@@ -973,7 +975,10 @@ test('projectile snapshots retain launch data after their source tower is sold',
   assert.equal(typeof projectile.targetDisplayLaneOffsetAtLaunch, 'number');
   assert.equal(typeof projectile.targetDisplayScaleAtLaunch, 'number');
   assert.equal(projectile.targetDisplayPathProgressAtLaunch, projectile.targetPathProgressAtLaunch);
-  assert.equal(projectile.targetDisplayLaneOffsetAtLaunch, 0);
+  assert.equal(
+    projectile.targetDisplayLaneOffsetAtLaunch,
+    READABLE_ENTRANCE_POLICIES['blight-walker'][0],
+  );
   assert.equal(projectile.targetDisplayScaleAtLaunch, 1);
   assert.equal(summarizeSimulation(simulation).towers.length, 0);
 });

@@ -216,6 +216,11 @@ export const createAudioController = ({ windowRef = globalThis.window } = {}) =>
   return Object.freeze({
     destroy,
     getSettings: () => ({ muted, musicVolume, sfxVolume }),
+    getState: () => ({
+      contextState: context?.state ?? 'uninitialized',
+      pauseReasons: [...pauseReasons].sort(),
+      unlocked,
+    }),
     isUnlocked: () => unlocked,
     playCue,
     setAudioMuted,

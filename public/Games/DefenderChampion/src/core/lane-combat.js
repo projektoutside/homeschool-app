@@ -1,11 +1,12 @@
 import { compareEntitiesById, compareEntityIds } from './entity-id.js';
 import { GRID } from './grid-geometry.js';
 import { emitPresentationEvent } from './presentation-events.js';
+import { MAX_ATTACKERS_PER_GATE, MAX_LIVING_ENEMIES } from './rules.js';
 
-const MAX_ATTACKERS_PER_GATE = 3;
-const MAX_READABLE_ENEMIES = 18;
+export { MAX_ATTACKERS_PER_GATE, MAX_LIVING_ENEMIES };
 const DEFAULT_ATTACK_TARGETS = Object.freeze(['frontline']);
-const ATTACKER_OFFSETS = Object.freeze([-22, 0, 22]);
+const ATTACKER_OFFSETS = Object.freeze([-40, 40, 0]);
+const QUEUE_OFFSETS = Object.freeze([-40, 40]);
 const ATTACK_CONTACT_PROGRESS = 28;
 const QUEUE_SPACING = 48;
 export const QUEUE_PRESENTATION_FOOTPRINT = 80;
@@ -53,7 +54,7 @@ export const createQueuePresentationLayout = ({
     gateProgress - ATTACK_CONTACT_PROGRESS - ((index + 1) * QUEUE_SPACING)
   );
   return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
-    laneOffset: ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
+    laneOffset: QUEUE_OFFSETS[index % QUEUE_OFFSETS.length],
     pathProgress: Math.max(minimumProgress, desiredProgress(index)),
     scale: 1,
   })));
@@ -90,13 +91,17 @@ const getLivingGates = (simulation) => simulation.towers
     || compareEntityIds(first.towerId, second.towerId)
   ));
 
+export const getFirstLivingGateProgress = (simulation) => (
+  getLivingGates(simulation)[0]?.pathProgress ?? null
+);
+
 export const deriveReadableSpawnCapacity = (simulation) => {
   const firstGate = getLivingGates(simulation)[0];
-  if (!firstGate) return MAX_READABLE_ENEMIES;
+  if (!firstGate) return MAX_LIVING_ENEMIES;
   const completeUpstreamRoadCells = Math.floor(firstGate.pathProgress / GRID.cellSize);
   return Math.max(
     MAX_ATTACKERS_PER_GATE,
-    Math.min(MAX_READABLE_ENEMIES, MAX_ATTACKERS_PER_GATE + completeUpstreamRoadCells),
+    Math.min(MAX_LIVING_ENEMIES, MAX_ATTACKERS_PER_GATE + completeUpstreamRoadCells),
   );
 };
 
@@ -104,7 +109,7 @@ const setMoving = (enemy, { preserveOffset = false } = {}) => {
   enemy.laneState = 'moving';
   enemy.blockingTowerId = null;
   enemy.queueIndex = null;
-  if (!preserveOffset) enemy.laneOffset = 0;
+  if (!preserveOffset) enemy.laneOffset = Number(enemy.entranceLaneOffset) || 0;
   enemy.displayPathProgress = enemy.pathProgress;
   enemy.displayLaneOffset = enemy.laneOffset;
   enemy.displayScale = 1;
@@ -140,7 +145,9 @@ const assignQueueSlot = (enemy, gate, queueIndex, displaySlot, minimumPathProgre
   } else {
     enemy.laneState = 'moving';
   }
-  enemy.displayPathProgress = displaySlot.pathProgress;
+  enemy.displayPathProgress = enemy.laneState === 'queued'
+    ? displaySlot.pathProgress
+    : enemy.pathProgress;
   enemy.displayLaneOffset = displaySlot.laneOffset;
   enemy.displayScale = displaySlot.scale;
 };

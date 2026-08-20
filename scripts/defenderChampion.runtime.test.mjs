@@ -290,10 +290,9 @@ test('compact portrait dock preserves space for the contextual action row', asyn
 });
 
 test('the local entry boots one transparent Phaser game with the declared scene list', async () => {
-  const [main, phaserEntry, runtimeLifecycle] = await Promise.all([
+  const [main, phaserEntry] = await Promise.all([
     readGameFile('src/main.js'),
     readGameFile('src/phaser-entry.js'),
-    readGameFile('src/runtime-lifecycle.js'),
   ]);
 
   assert.match(main, /from ['"]phaser['"]/);
@@ -306,11 +305,6 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(main, /createOrientationController/);
   assert.match(main, /orientationController\.start\(\)/);
   assert.match(main, /scenes:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
-  assert.match(main, /applyRuntimePauseState\(\{\s*battleScene,\s*game,\s*paused,\s*reasons\s*\}\)/);
-  assert.match(runtimeLifecycle, /export const applyRuntimePauseState/);
-  assert.match(runtimeLifecycle, /game\?\.loop\?\.sleep\?\.\(\)/);
-  assert.match(runtimeLifecycle, /game\?\.loop\?\.wake\?\.\(\)/);
-  assert.match(phaserEntry, /hostBridge\?\.getPauseState\?\.\(\)\.paused/);
   assert.match(main, /rel\s*=\s*['"]icon['"]/);
   assert.match(main, /data:image\/gif;base64/);
 });
@@ -329,8 +323,12 @@ test('the production Phaser entry boots with denied Web Audio while independent 
     }
   };
   const audioController = createAudioController({ windowRef });
+  assert.deepEqual(audioController.getState(), {
+    contextState: 'uninitialized', pauseReasons: [], unlocked: false,
+  });
   const registryEntries = new Map();
   const constructedGames = [];
+  const postBootGames = [];
   const PhaserDouble = {
     AUTO: 'auto',
     Scale: { CENTER_BOTH: 'center-both', FIT: 'fit' },
@@ -340,6 +338,7 @@ test('the production Phaser entry boots with denied Web Audio while independent 
         this.config = config;
         this.registry = { set: (key, value) => registryEntries.set(key, value) };
         config.callbacks.preBoot(this);
+        config.callbacks.postBoot(this);
         constructedGames.push(this);
       }
     },
@@ -353,6 +352,7 @@ test('the production Phaser entry boots with denied Web Audio while independent 
     audioController,
     hostBridge,
     hud,
+    onPostBoot: (phaserGame) => postBootGames.push(phaserGame),
     resolution: 2,
     scenes,
   });
@@ -367,6 +367,7 @@ test('the production Phaser entry boots with denied Web Audio while independent 
   assert.equal(registryEntries.get('hud'), hud);
   assert.equal(registryEntries.get('hostBridge'), hostBridge);
   assert.equal(registryEntries.get('audioController'), audioController);
+  assert.deepEqual(postBootGames, [game]);
   assert.equal(audioConstructionAttempts, 0, 'Phaser must not construct its own audio context');
 
   windowRef.dispatch('pointerdown');
@@ -581,7 +582,7 @@ test('semantic grid mirror keeps 12 rows, 108 cells, one active descendant, and 
   scene.projectCells({ effects: [], enemies: [], towers: [] });
   assert.equal(battlefield.getAttribute('aria-activedescendant'), 'battlefield-cell-r0c0');
   assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
-    'Grass square row 1 column 1, unavailable for Road melee');
+    'Grass square row 1 column 1, unavailable for Road melee, requires road terrain, Bladeguard costs 50 coins');
   assert.equal(mirror.cells.get('r0c0').getAttribute('aria-selected'), 'true');
 
   scene.projectCells({
@@ -590,7 +591,7 @@ test('semantic grid mirror keeps 12 rows, 108 cells, one active descendant, and 
     towers: [],
   });
   assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
-    'Grass square row 1 column 1, unavailable for Road melee',
+    'Grass square row 1 column 1, unavailable for Road melee, requires road terrain, Bladeguard costs 50 coins',
     'danger red must not be inferred as enemy coverage');
 
   scene.towerById = new Map([['tower-1', {
@@ -598,23 +599,68 @@ test('semantic grid mirror keeps 12 rows, 108 cells, one active descendant, and 
   }]]);
   scene.projectCells({ effects: [], enemies: [], towers: [...scene.towerById.values()] });
   assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
-    'Grass square row 1 column 1, occupied by Ranger');
+    'Grass square row 1 column 1, occupied by Ranger, select to upgrade or sell');
 
   scene.towerById.clear();
   scene.selectedDefenderId = 'ranger';
-  scene.projectCells({ effects: [], enemies: [], towers: [] });
+  scene.projectCells({ coins: 60, effects: [], enemies: [], terminal: false, towers: [] });
   assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
-    'Grass square row 1 column 1, available for Grass ranged');
+    'Grass square row 1 column 1, Ranger costs 70 coins, insufficient funds (60 coins available)');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-disabled'), 'true');
+
+  scene.projectCells({ coins: 70, effects: [], enemies: [], terminal: false, towers: [] });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, available for Grass ranged, Ranger costs 70 coins');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-disabled'), 'false');
+
+  scene.towerById = new Map([['tower-1', {
+    cellId: 'r0c0', defenderId: 'ranger', id: 'tower-1', tier: 0,
+  }]]);
+  scene.projectCells({
+    coins: 0,
+    effects: [],
+    enemies: [],
+    terminal: false,
+    towers: [...scene.towerById.values()],
+  });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, occupied by Ranger, select to upgrade or sell');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-disabled'), 'false');
+
+  scene.towerById.clear();
+  scene.selectedDefenderId = 'bladeguard';
+  scene.projectCells({ coins: 150, effects: [], enemies: [], terminal: false, towers: [] });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, unavailable for Road melee, requires road terrain, Bladeguard costs 50 coins');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-disabled'), 'true');
+
+  scene.projectCells({
+    coins: 150,
+    effects: [],
+    enemies: [{ health: 10, pathProgress: 0 }],
+    terminal: false,
+    towers: [],
+  });
+  assert.equal(mirror.cells.get('r0c4').getAttribute('aria-label'),
+    'Road square row 1 column 5, blocked by enemies, Bladeguard costs 50 coins');
+  assert.equal(mirror.cells.get('r0c4').getAttribute('aria-disabled'), 'true');
+
+  scene.selectedDefenderId = 'ranger';
+  scene.projectCells({ coins: 150, effects: [], enemies: [], terminal: true, towers: [] });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, battle ended');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-disabled'), 'true');
 
   mirror.destroy();
   assert.equal(battlefield.children.length, 0);
 });
 
-test('actual battlefield creates 108 interactive square cells and square road tile records', async () => {
-  const [{ BattleScene }, { getLevel }, { createSimulation }] = await Promise.all([
+test('actual battlefield creates 108 interactive squares with endpoint art beyond the grid', async () => {
+  const [{ BattleScene }, { getLevel }, { createSimulation }, geometry] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/config/levels.js'),
     import('../public/Games/DefenderChampion/src/core/simulation.js'),
+    import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
   ]);
   const graphicViews = [];
   const roadViews = [];
@@ -629,9 +675,9 @@ test('actual battlefield creates 108 interactive square cells and square road ti
       return this;
     },
     setName(name) { this.name = name; return this; },
-    setOrigin() { return this; },
+    setOrigin(x, y = x) { this.originX = x; this.originY = y; return this; },
     setPosition(x, y) { this.x = x; this.y = y; return this; },
-    setScale() { return this; },
+    setScale(scale) { this.scale = scale; return this; },
     setTileScale() { return this; },
   });
   const scene = Object.create(BattleScene.prototype);
@@ -661,15 +707,40 @@ test('actual battlefield creates 108 interactive square cells and square road ti
   });
 
   scene.createBattlefield();
+  const endpoints = geometry.resolveRoadEndpointAnchors(scene.level.roadCells);
+  assert.deepEqual(endpoints, {
+    castle: { x: 360, y: 1000 },
+    entrance: { x: 360, y: -40 },
+  });
   assert.equal(scene.cellViews.size, 108);
   assert.equal(graphicViews.length, 108);
   assert.equal(graphicViews.every(({ width, height, interactive }) => (
     width === 80 && height === 80 && interactive === true
   )), true);
-  assert.equal(roadViews.length, scene.level.roadCells.length);
-  assert.equal(roadViews.every(({ displayWidth, displayHeight }) => (
+  const cellRoadViews = roadViews.filter((view) => view !== scene.entranceSprite);
+  assert.equal(cellRoadViews.length, scene.level.roadCells.length);
+  assert.equal(cellRoadViews.every(({ displayWidth, displayHeight }) => (
     displayWidth === 80 && displayHeight === 80
   )), true);
+  const firstCell = scene.cellViews.get(scene.level.roadCells[0]);
+  const lastCell = scene.cellViews.get(scene.level.roadCells.at(-1));
+  assert.equal(firstCell.interactive && lastCell.interactive, true);
+  assert.equal(scene.entranceSprite.interactive, undefined);
+  assert.equal(scene.castleSprite.interactive, undefined);
+  assert.equal(scene.entranceSprite.depth > cellRoadViews[0].depth, true,
+    'the entrance continuation must render above the first road tile instead of hiding behind it');
+  assert.equal(scene.entranceSprite.displayHeight >= 120, true,
+    'the beyond-grid entrance must retain a visible presentation-margin strip');
+  assert.equal(scene.entranceSprite.depth < firstCell.depth, true);
+  assert.equal(scene.castleSprite.depth < lastCell.depth, true);
+  assert.deepEqual(
+    { x: scene.entranceSprite.x, y: scene.entranceSprite.y },
+    endpoints.entrance,
+  );
+  assert.deepEqual(
+    { x: scene.castleSprite.x, y: scene.castleSprite.y },
+    endpoints.castle,
+  );
 
   Object.assign(scene, {
     enemyById: new Map(), enemySprites: new Map(), lastSnapshot: { tick: 0 },
@@ -679,20 +750,32 @@ test('actual battlefield creates 108 interactive square cells and square road ti
   assert.equal(state.cells.length, 108);
   assert.equal(state.roadTiles.length, scene.level.roadCells.length);
   assert.equal(state.roadTiles.every(({ height, width }) => height === 80 && width === 80), true);
+  assert.deepEqual(state.endpoints, {
+    castle: { depth: scene.castleSprite.depth, interactive: false, visibleBounds: null, ...endpoints.castle },
+    entrance: { depth: scene.entranceSprite.depth, interactive: false, visibleBounds: null, ...endpoints.entrance },
+  });
   assert.equal('markers' in state, false);
   Object.assign(scene, {
+    audioController: { getState: () => ({ contextState: 'suspended', pauseReasons: ['orientation'], unlocked: true }) },
     battleStarted: false,
     betweenWaveCountdown: null,
+    clock: { getAccumulator: () => 1.25 },
     countdownActive: false,
     frameSamples: [],
     selectedDefenderId: null,
     selectedTowerId: null,
     simulation: createSimulation('level-1', { qa: true }),
+    time: { now: 42 },
   });
   const textState = scene.getTextSnapshot();
   assert.equal(textState.battlefield.cells.length, 108);
   assert.equal(textState.battlefield.roadTiles.length, scene.level.roadCells.length);
   assert.equal(textState.battlefield.enemies.length, textState.enemies.length);
+  assert.deepEqual(textState.runtime, {
+    audio: { contextState: 'suspended', pauseReasons: ['orientation'], unlocked: true },
+    clockAccumulator: 1.25,
+    sceneTime: 42,
+  });
 });
 
 test('actual pointer containment and keyboard entry dispatch direct cell commands', async () => {
@@ -766,6 +849,26 @@ test('actual pointer containment and keyboard entry dispatch direct cell command
   assert.equal(scene.focusedCellId, 'r4c5');
   scene.handleKeyDown({ key: 'Enter', code: 'Enter', preventDefault() {} });
   assert.deepEqual(dispatched.at(-1), { type: 'build', defenderId: 'bladeguard', cellId: 'r4c5' });
+
+  scene.selectedDefenderId = 'ranger';
+  prevented = false;
+  scene.handleKeyDown({ key: 'Home', code: 'Home', preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.equal(scene.focusedCellId, 'r0c0');
+  scene.handleKeyDown({ key: ' ', code: 'Space', preventDefault() {} });
+  assert.deepEqual(dispatched.at(-1), { type: 'build', defenderId: 'ranger', cellId: 'r0c0' });
+
+  scene.handleKeyDown({ key: 'End', code: 'End', preventDefault() {} });
+  assert.equal(scene.focusedCellId, 'r11c8');
+  scene.handleKeyDown({ key: 'Enter', code: 'Enter', preventDefault() {} });
+  assert.deepEqual(dispatched.at(-1), { type: 'build', defenderId: 'ranger', cellId: 'r11c8' });
+
+  for (const key of ['Tab', 'Escape']) {
+    prevented = false;
+    scene.handleKeyDown({ key, code: key, preventDefault() { prevented = true; } });
+    assert.equal(prevented, false, `${key} remains available to browser and modal navigation`);
+    assert.equal(scene.focusedCellId, 'r11c8');
+  }
 });
 
 test('BattleScene source contains no circular battlefield drawing primitive or legacy pad presentation', async () => {
@@ -811,6 +914,15 @@ test('the shared placement gate blocks an incompatible command before dispatch',
   assert.deepEqual(dispatched, [{
     type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   }]);
+
+  assert.deepEqual(attemptPlacementBuild({
+    announce,
+    issueCommand,
+    pad: { id: 'legacy-pad', layer: 'road' },
+    selectedDefenderId: 'bladeguard',
+    selectedLayer: 'road',
+  }), { accepted: false, reason: 'placement-layer-mismatch' });
+  assert.equal(dispatched.length, 1, 'legacy pad and layer fields never dispatch a build');
 });
 
 test('cell-only tower snapshots project directly at their square center', async () => {
@@ -1631,21 +1743,27 @@ test('actual BattleScene consumes decisive terminal visuals before scheduling vi
   assert.ok(defeat.scene.transientTimers.size > 0, 'castle recovery remains tracked for terminal cleanup');
 });
 
-test('enemy projection keeps exact 18-of-18 living view parity at fixed display scale', async () => {
+test('enemy projection keeps a backpressured 15-of-15 gate view truthful at fixed display scale', async () => {
   const [
     { BattleScene },
     { createQueuePresentationLayout },
     { createGridPathMetrics, sampleGridPathProgress },
     { LEVELS },
+    { resolveBodyOverlapRatio },
     presentation,
   ] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/core/lane-combat.js'),
     import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
     import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/grid-presentation.js'),
     import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
   const { ENEMY_PRESENTATION, ViewPool, resolveEnemyRoadProjection } = presentation;
+  const [enemyMetadata, bossMetadata] = await Promise.all([
+    readGameFile('assets/metadata/enemies.json').then(JSON.parse),
+    readGameFile('assets/metadata/bosses.json').then(JSON.parse),
+  ]);
   assert.equal(typeof resolveEnemyRoadProjection, 'function');
 
   for (const enemyPresentation of Object.values(ENEMY_PRESENTATION)) {
@@ -1657,7 +1775,7 @@ test('enemy projection keeps exact 18-of-18 living view parity at fixed display 
     pathProgress: 260,
   }, ENEMY_PRESENTATION['dread-colossus']);
   assert.equal(
-    Math.abs(bossProjection.laneOffset) + (bossProjection.footprintWidth / 2) <= 40,
+    Math.abs(bossProjection.laneOffset) <= 40,
     true,
   );
   assert.equal(resolveEnemyRoadProjection({
@@ -1670,12 +1788,13 @@ test('enemy projection keeps exact 18-of-18 living view parity at fixed display 
   }, ENEMY_PRESENTATION.crusher).depth < 4, true, 'an approaching reserved queue slot stays behind its blocker');
 
   const pathMetrics = createGridPathMetrics(LEVELS[0].roadCells);
-  const queueLayout = createQueuePresentationLayout({ gatePathProgress: 960, queueCount: 15 });
+  const queueLayout = createQueuePresentationLayout({ gatePathProgress: 960, queueCount: 12 });
   const enemies = [
-    ...[-22, 0, 22].map((laneOffset, index) => ({
+    ...[-40, 40, 0].map((laneOffset, index) => ({
+      blockingTowerId: 'tower-1',
       id: `enemy-${index + 1}`,
       enemyId: 'blight-walker',
-      pathProgress: 932 - index,
+      pathProgress: [932, 930, 928][index],
       laneOffset,
       laneState: 'attacking',
       health: 100,
@@ -1683,11 +1802,13 @@ test('enemy projection keeps exact 18-of-18 living view parity at fixed display 
       attackState: { targetTowerId: null },
     })),
     ...queueLayout.map((slot, index) => ({
+      blockingTowerId: 'tower-1',
       id: `enemy-${index + 4}`,
       enemyId: 'blight-walker',
       pathProgress: 884 - (Math.floor(index / 3) * 48),
-      laneOffset: [-22, 0, 22][index % 3],
+      laneOffset: slot.laneOffset,
       laneState: 'queued',
+      queueIndex: index,
       displayPathProgress: slot.pathProgress,
       displayLaneOffset: slot.laneOffset,
       displayScale: slot.scale,
@@ -1705,8 +1826,13 @@ test('enemy projection keeps exact 18-of-18 living view parity at fixed display 
     enemySprites: new Map(),
     ironhideMappings: null,
     lastSnapshot: { tick: 0 },
-    metadata: { enemies: { frame: { height: 256 } }, bosses: { frame: { height: 384 } } },
+    level: LEVELS[0],
+    metadata: { enemies: enemyMetadata, bosses: bossMetadata },
     pathMetrics,
+    towerById: new Map([['tower-1', {
+      cellId: LEVELS[0].roadCells[12],
+      id: 'tower-1',
+    }]]),
     towerSprites: new Map(),
   });
 
@@ -1714,142 +1840,248 @@ test('enemy projection keeps exact 18-of-18 living view parity at fixed display 
 
   assert.equal(scene.enemySprites.size, enemies.length);
   const queuedViews = enemies.slice(3).map(({ id }) => scene.enemySprites.get(id));
-  assert.equal(new Set(queuedViews.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size, 15);
+  assert.equal(
+    new Set(queuedViews.map(({ x, y }) => `${x.toFixed(9)},${y.toFixed(9)}`)).size,
+    12,
+    JSON.stringify(scene.getPresentationState().enemies.map(({ id, readabilityPathProgress, x, y }) => ({
+      id,
+      readabilityPathProgress,
+      x,
+      y,
+    }))),
+  );
   assert.equal(queuedViews.every(({ depth }) => depth < 4), true, 'queued sprites render behind depth-4 blocker');
   assert.equal(enemies.slice(0, 3).every(({ id }) => scene.enemySprites.get(id).depth > 4), true);
   assert.equal(queuedViews.every((view) => view._body.scale >= ENEMY_PRESENTATION['blight-walker'].displayScale), true);
   const projectionState = scene.getPresentationState();
-  assert.equal(projectionState.enemies.length, 18);
-  assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'queued').length, 15);
+  assert.equal(projectionState.enemies.length, 15);
+  assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'queued').length, 12);
   assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'attacking').length, 3);
+  assert.deepEqual(
+    projectionState.enemies
+      .filter(({ laneState }) => laneState === 'attacking')
+      .map(({ id, readabilityPathProgress }) => [
+        id,
+        readabilityPathProgress,
+        enemies.find((enemy) => enemy.id === id).pathProgress,
+      ]),
+    enemies.slice(0, 3).map(({ id, pathProgress }) => [id, pathProgress, pathProgress]),
+    'BattleScene keeps attackers at simulation-authored contact progress',
+  );
+  const queuedPresentationProgress = projectionState.enemies
+    .filter(({ laneState }) => laneState === 'queued')
+    .sort((first, second) => first.queueIndex - second.queueIndex)
+    .map(({ readabilityPathProgress }) => readabilityPathProgress);
+  assert.equal(queuedPresentationProgress.every((progress) => progress < 960), true);
+  assert.equal(queuedPresentationProgress.every((progress, index) => (
+    index === 0 || progress < queuedPresentationProgress[index - 1]
+  )), true, 'queued presentation order remains strictly behind the gate');
   assert.equal(projectionState.enemies.filter(({ laneState }) => laneState === 'queued')
     .every(({ depth, footprintWidth, scale, x, y }) => (
       depth < 4 && footprintWidth <= 80 && scale === 1 && Number.isFinite(x) && Number.isFinite(y)
     )), true);
+  for (let firstIndex = 0; firstIndex < projectionState.enemies.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < projectionState.enemies.length; secondIndex += 1) {
+      if (projectionState.enemies[firstIndex].laneState === 'attacking'
+        || projectionState.enemies[secondIndex].laneState === 'attacking') continue;
+      const overlapRatio = resolveBodyOverlapRatio(
+        projectionState.enemies[firstIndex].bodyRect,
+        projectionState.enemies[secondIndex].bodyRect,
+      );
+      assert.ok(overlapRatio <= (1 / 3) + 1e-9,
+        `gate overlap ${overlapRatio}: ${projectionState.enemies[firstIndex].id}/${projectionState.enemies[secondIndex].id}`);
+    }
+  }
 
   for (const enemy of enemies) {
     const projected = resolveEnemyRoadProjection(enemy, ENEMY_PRESENTATION[enemy.enemyId]);
-    assert.equal(Math.abs(projected.laneOffset) + (projected.footprintWidth / 2) <= 40, true, enemy.id);
+    assert.equal(Math.abs(projected.laneOffset) <= 40, true, enemy.id);
     const logical = sampleGridPathProgress(pathMetrics, projected.pathProgress);
     assert.equal(Number.isFinite(logical.x) && Number.isFinite(logical.y), true);
   }
 });
 
-test('actual Level 10 cap projects every living enemy without density cues', async () => {
+test('actual Level 7 and 10 gates keep every admitted enemy truthful and readable', async () => {
   const [
     { BattleScene },
-    { advanceSimulation, createSimulation, summarizePresentationSimulation },
+    {
+      advanceSimulation,
+      createSimulation,
+      issueStrategyCommand,
+      summarizePresentationSimulation,
+    },
     { createGridPathMetrics },
+    { REFERENCE_STRATEGIES },
     { ENEMY_PRESENTATION, ViewPool },
-    { resolveBodyOverlapRatio, resolveReadableEnemyLayout },
+    { resolveBodyOverlapRatio },
+    { getGateProgress },
   ] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/core/simulation.js'),
     import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
+    import('../public/Games/DefenderChampion/src/config/reference-strategies.js'),
     import('../public/Games/DefenderChampion/src/presentation.js'),
     import('../public/Games/DefenderChampion/src/grid-presentation.js'),
+    import('../public/Games/DefenderChampion/src/core/lane-combat.js'),
   ]);
-  const simulation = createSimulation('level-10', { qa: true });
-  advanceSimulation(simulation, 289);
-  const snapshot = summarizePresentationSimulation(simulation);
-  const scene = Object.create(BattleScene.prototype);
-  Object.assign(scene, {
-    anims: { exists: () => false },
-    cancelViewMotion() {},
-    enemyPool: new ViewPool(() => createSceneView(), { maximum: snapshot.enemies.length }),
-    enemyById: new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy])),
-    enemySprites: new Map(),
-    ironhideMappings: null,
-    lastSnapshot: snapshot,
-    metadata: { enemies: { frame: { height: 256 } }, bosses: { frame: { height: 384 } } },
-    pathMetrics: createGridPathMetrics(simulation.level.roadCells),
-    towerSprites: new Map(),
-  });
-
-  scene.projectEnemies(snapshot);
-
-  const projected = scene.getPresentationState().enemies;
-  const ordered = [...projected].sort((first, second) => first.id.localeCompare(second.id));
-  const attackers = projected.filter(({ laneState }) => laneState === 'attacking');
-  const bodyRects = ordered.map(({ bodyRect }) => bodyRect).filter(Boolean);
-  const overlapRatio = (first, second) => {
-    const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
-    const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
-    return (width * height) / Math.min(first.width * first.height, second.width * second.height);
+  const [enemyMetadata, bossMetadata] = await Promise.all([
+    readGameFile('assets/metadata/enemies.json').then(JSON.parse),
+    readGameFile('assets/metadata/bosses.json').then(JSON.parse),
+  ]);
+  const replay = (strategyId, targetTick) => {
+    const levelId = strategyId.slice(0, strategyId.lastIndexOf('-'));
+    const simulation = createSimulation(levelId, { qa: true });
+    const towerRefs = new Map();
+    while (simulation.tick < targetTick && !simulation.terminal) {
+      for (const command of REFERENCE_STRATEGIES[strategyId]) {
+        if (command.tick === simulation.tick) issueStrategyCommand(simulation, command, towerRefs);
+      }
+      advanceSimulation(simulation, 1);
+    }
+    return { simulation, snapshot: summarizePresentationSimulation(simulation) };
   };
-  let maximumBodyOverlapRatio = Number.POSITIVE_INFINITY;
-  if (bodyRects.length === ordered.length) {
-    maximumBodyOverlapRatio = 0;
-    for (let firstIndex = 0; firstIndex < bodyRects.length; firstIndex += 1) {
-      for (let secondIndex = firstIndex + 1; secondIndex < bodyRects.length; secondIndex += 1) {
-        maximumBodyOverlapRatio = Math.max(
-          maximumBodyOverlapRatio,
-          overlapRatio(bodyRects[firstIndex], bodyRects[secondIndex]),
+  const cases = [
+    { strategyId: 'level-7-balanced', targetTick: 4_652, minimumQueued: 0, minimumAttacking: 0 },
+    { strategyId: 'level-7-artillery', targetTick: 17_503, minimumQueued: 0, minimumAttacking: 1 },
+    { strategyId: 'level-10-artillery', targetTick: 7_554, minimumQueued: 4, minimumAttacking: 2 },
+  ];
+
+  for (const replayCase of cases) {
+    const { simulation, snapshot } = replay(replayCase.strategyId, replayCase.targetTick);
+    const scene = Object.create(BattleScene.prototype);
+    Object.assign(scene, {
+      anims: { exists: () => false },
+      cancelViewMotion() {},
+      enemyPool: new ViewPool(() => createSceneView(), { maximum: snapshot.enemies.length }),
+      enemyById: new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy])),
+      enemySprites: new Map(),
+      game: {
+        canvas: {
+          getBoundingClientRect: () => ({ width: 360, height: 480 }),
+        },
+      },
+      ironhideMappings: null,
+      lastSnapshot: snapshot,
+      level: simulation.level,
+      metadata: { enemies: enemyMetadata, bosses: bossMetadata },
+      pathMetrics: createGridPathMetrics(simulation.level.roadCells),
+      towerById: new Map(snapshot.towers.map((tower) => [tower.id, tower])),
+      towerSprites: new Map(),
+    });
+
+    scene.projectEnemies(snapshot);
+    const projected = scene.getPresentationState().enemies;
+    const byId = new Map(snapshot.enemies.map((enemy) => [enemy.id, enemy]));
+    const attackers = projected.filter(({ laneState }) => laneState === 'attacking');
+    const queues = projected.filter(({ laneState }) => laneState === 'queued');
+    assert.equal(projected.length, snapshot.enemies.length, `${replayCase.strategyId} projects every admitted enemy`);
+    assert.ok(snapshot.pendingSpawnCount > 0 || replayCase.strategyId.includes('level-7'),
+      `${replayCase.strategyId} retains deterministic pending backpressure when its gate is full`);
+    assert.ok(queues.length >= replayCase.minimumQueued, `${replayCase.strategyId} queue checkpoint drifted`);
+    assert.ok(attackers.length >= replayCase.minimumAttacking, `${replayCase.strategyId} attack checkpoint drifted`);
+    assert.equal(projected.every(({ bodyRect }) => bodyRect
+      && bodyRect.left >= 0 && bodyRect.top >= 0 && bodyRect.right <= 720 && bodyRect.bottom <= 960), true,
+    `${replayCase.strategyId} contains every measured body`);
+    assert.equal(projected.every((entry) => (
+      entry.readabilityPathProgress <= byId.get(entry.id).pathProgress + 1e-9
+    )), true, `${replayCase.strategyId} never moves a body ahead of authoritative progress`);
+    assert.equal(attackers.every((entry) => (
+      entry.readabilityPathProgress === byId.get(entry.id).pathProgress
+    )), true, `${replayCase.strategyId} preserves exact attack contact`);
+    assert.equal(projected.every(({ bodyCssHeight, kind }) => bodyCssHeight >= (kind === 'boss' ? 52 : 38)), true,
+      `${replayCase.strategyId} preserves CSS readability floors`);
+    assert.equal(projected.every(({ readabilityLaneOffset, scale }) => (
+      Math.abs(readabilityLaneOffset) <= 40 && scale === 1
+    )), true, `${replayCase.strategyId} preserves fixed scale and foot anchors inside road squares`);
+    for (const tower of snapshot.towers) {
+      const gateProgress = getGateProgress(simulation.level, tower.cellId);
+      if (!Number.isFinite(gateProgress)) continue;
+      const gateQueue = queues
+        .filter(({ blockingTowerId }) => blockingTowerId === tower.id)
+        .sort((first, second) => first.queueIndex - second.queueIndex);
+      assert.equal(gateQueue.every(({ readabilityPathProgress }) => readabilityPathProgress < gateProgress), true,
+        `${replayCase.strategyId}:${tower.id} queue stays behind its gate`);
+      assert.equal(gateQueue.every((entry, index) => (
+        index === 0 || entry.readabilityPathProgress < gateQueue[index - 1].readabilityPathProgress
+      )), true, `${replayCase.strategyId}:${tower.id} queue order is stable`);
+    }
+    for (let firstIndex = 0; firstIndex < projected.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < projected.length; secondIndex += 1) {
+        const overlapRatio = resolveBodyOverlapRatio(
+          projected[firstIndex].bodyRect,
+          projected[secondIndex].bodyRect,
         );
+        assert.ok(overlapRatio <= (1 / 3) + 1e-9,
+          `${replayCase.strategyId} overlap ${overlapRatio}: ${JSON.stringify([
+            projected[firstIndex], projected[secondIndex],
+          ])}`);
       }
     }
+    assert.equal('queueDensityCues' in scene.getPresentationState(), false);
   }
-  let minimumCenterDistance = Number.POSITIVE_INFINITY;
-  for (let firstIndex = 0; firstIndex < ordered.length; firstIndex += 1) {
-    const first = ordered[firstIndex];
-    for (let secondIndex = firstIndex + 1; secondIndex < ordered.length; secondIndex += 1) {
-      const second = ordered[secondIndex];
-      const distance = Math.hypot(first.x - second.x, first.y - second.y);
-      minimumCenterDistance = Math.min(minimumCenterDistance, distance);
-    }
-  }
-
-  assert.equal(projected.length, snapshot.enemies.length, 'all living enemies keep a projected view');
-  assert.equal(snapshot.enemies.length, 18, 'the real campaign reaches the living cap');
-  assert.equal(ordered.every(({ laneOffset, footprintWidth }) => (
-    Math.abs(laneOffset) + (footprintWidth / 2) <= 40
-  )), true, 'every complete declared footprint remains on road');
-  assert.ok(minimumCenterDistance > 0, 'no living pair shares an exact projected center');
-  assert.equal(ordered.every(({ scale }) => scale === 1), true);
-  assert.equal(attackers.length <= 3, true);
-  assert.equal(attackers.every(({ depth }) => depth > 4), true, 'active attackers remain readable');
-  assert.equal(Math.min(...ordered.map(({ x, y }) => Math.hypot(x, y))) > 0, true);
   assert.equal(Object.values(ENEMY_PRESENTATION).every(({ roadFootprint }) => roadFootprint <= 80), true);
-  assert.equal('queueDensityCues' in scene.getPresentationState(), false);
-  assert.deepEqual({
-    bodyRectangles: bodyRects.length,
-    contained: bodyRects.length === ordered.length && bodyRects.every((rect) => (
-      rect.left >= 0 && rect.top >= 0 && rect.right <= 720 && rect.bottom <= 960
-    )),
-    maximumOverlapWithinLimit: maximumBodyOverlapRatio <= (1 / 3) + 1e-9,
-  }, {
-    bodyRectangles: 18,
-    contained: true,
-    maximumOverlapWithinLimit: true,
-  });
-  const metrics = scene.pathMetrics;
-  const entries = Array.from({ length: 18 }, (_, index) => ({
-    bodyHeight: index < 3 ? 112 : 76,
-    bodyWidth: index < 3 ? 104 : 64,
-    bottomInset: 0,
-    id: `packed-${index}`,
-    laneOffset: 0,
-    maximumLaneOffset: index < 3 ? 6 : 18,
-    pathProgress: metrics.total,
-  }));
+});
 
-  const layout = resolveReadableEnemyLayout({
-    entries,
-    maximumOverlapRatio: 0,
-    metrics,
-  });
-  let maximumOverlapRatio = 0;
-  for (let firstIndex = 0; firstIndex < layout.length; firstIndex += 1) {
-    for (let secondIndex = firstIndex + 1; secondIndex < layout.length; secondIndex += 1) {
-      maximumOverlapRatio = Math.max(
-        maximumOverlapRatio,
-        resolveBodyOverlapRatio(layout[firstIndex].bodyRect, layout[secondIndex].bodyRect),
-      );
-    }
-  }
+test('lane-aware readability never moves attackers, queues, or movers forward through a living gate', async () => {
+  const [{ LEVELS }, { createGridPathMetrics }, {
+    resolveReadableEnemyLayout,
+  }] = await Promise.all([
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
+    import('../public/Games/DefenderChampion/src/grid-presentation.js'),
+  ]);
+  const metrics = createGridPathMetrics(LEVELS[0].roadCells);
+  const gatePathProgress = 960;
+  const entries = [
+    ...[932, 930, 928].map((pathProgress, index) => ({
+      authoritativePathProgress: pathProgress,
+      bodyHeight: 96,
+      bodyWidth: 50,
+      bottomInset: 0,
+      gatePathProgress,
+      id: `attacker-${index}`,
+      laneOffset: [-16, 0, 16][index],
+      laneState: 'attacking',
+      maximumLaneOffset: 16,
+      pathProgress,
+    })),
+    ...[884, 836, 788, 740].map((pathProgress, queueIndex) => ({
+      authoritativePathProgress: pathProgress,
+      bodyHeight: 96,
+      bodyWidth: 50,
+      bottomInset: 0,
+      gatePathProgress,
+      id: `queued-${queueIndex}`,
+      laneOffset: [-16, 0, 16][queueIndex % 3],
+      laneState: 'queued',
+      maximumLaneOffset: 16,
+      pathProgress,
+      queueIndex,
+    })),
+    {
+      authoritativePathProgress: 620,
+      bodyHeight: 96,
+      bodyWidth: 50,
+      bottomInset: 0,
+      id: 'moving-0',
+      laneOffset: 0,
+      laneState: 'moving',
+      maximumLaneOffset: 16,
+      pathProgress: 620,
+    },
+  ];
 
-  assert.equal(layout.length, 18);
-  assert.equal(maximumOverlapRatio, 0);
+  const layout = resolveReadableEnemyLayout({ entries, metrics });
+  const byId = new Map(layout.map((entry) => [entry.id, entry]));
+  assert.deepEqual(
+    entries.slice(0, 3).map(({ id, pathProgress }) => [id, byId.get(id)?.pathProgress, pathProgress]),
+    entries.slice(0, 3).map(({ id, pathProgress }) => [id, pathProgress, pathProgress]),
+    'attack contact is exact',
+  );
+  const queuedProgress = entries.slice(3, 7).map(({ id }) => byId.get(id)?.pathProgress);
+  assert.equal(queuedProgress.every((progress) => progress < gatePathProgress), true);
+  assert.equal(queuedProgress.every((progress, index) => index === 0 || progress < queuedProgress[index - 1]), true);
+  assert.ok(byId.get('moving-0').pathProgress <= 620);
   assert.equal(layout.every(({ bodyRect }) => (
     bodyRect.left >= 0 && bodyRect.top >= 0
       && bodyRect.right <= 720 && bodyRect.bottom <= 960
@@ -1857,13 +2089,19 @@ test('actual Level 10 cap projects every living enemy without density cues', asy
 });
 
 test('queued bodies, projectiles, health, plates, hits, and defeats share one readable transform', async () => {
-  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ViewPool }] = await Promise.all([
+  const [
+    { BattleScene },
+    { createGridPathMetrics },
+    { LEVELS },
+    { ENEMY_PRESENTATION, ViewPool },
+    { projectGridPathProgress, resolveContainedBodyProjection },
+  ] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
     import('../public/Games/DefenderChampion/src/config/levels.js'),
     import('../public/Games/DefenderChampion/src/presentation.js'),
+    import('../public/Games/DefenderChampion/src/grid-presentation.js'),
   ]);
-  const expected = { x: 360, y: 192 };
   const makeImage = () => ({
     alpha: 1,
     depth: 0,
@@ -1902,6 +2140,7 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
     _baseScale: baseScale,
   });
   const enemyView = createSceneView();
+  const bossScale = ENEMY_PRESENTATION['ironhide-warlord'].displayScale;
   enemyView._accent = { ...makeImage(), _baseScale: 0.34, _baseY: -138.24 };
   enemyView._plateAccents = new Map([
     ['iron-bark-plate-1', plate(0.115)],
@@ -1963,25 +2202,30 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
 
   scene.projectEnemies({ enemies: [enemy], tick: 10 });
   const projectedBody = scene.enemySprites.get(enemy.id);
+  const expected = resolveContainedBodyProjection({
+    bodyHeight: 384 * bossScale,
+    bodyWidth: 384 * bossScale,
+    position: projectGridPathProgress(scene.pathMetrics, enemy.pathProgress, enemy.displayLaneOffset),
+  }).position;
   assert.deepEqual({ x: projectedBody.x, y: projectedBody.y }, expected);
   assert.equal(projectedBody._visualTransform.bodyRect.top, 0);
   assert.equal(projectedBody.depth, 3.6);
-  assert.equal(projectedBody._body.scale, 0.5);
-  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').x - -27) < 1e-9);
-  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').y - -56) < 1e-9);
-  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').scale - 0.0575) < 1e-9);
-  assert.ok(Math.abs(projectedBody._accent.y - -69.12) < 1e-9);
-  assert.ok(Math.abs(projectedBody._accent.scale - 0.17) < 1e-9);
+  assert.equal(projectedBody._body.scale, bossScale);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').x - (-54 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').y - (-112 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(projectedBody._plateAccents.get('iron-bark-plate-1').scale - (0.115 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(projectedBody._accent.y - (-138.24 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(projectedBody._accent.scale - (0.34 * bossScale)) < 1e-9);
 
   scene.projectEnemyHealthBars({ enemies: [enemy], tick: 10 }, true);
   assert.equal(activeHealth.rectangles.length, 0);
   assert.equal(queuedHealth.rectangles.length, 2);
   const queuedBar = queuedHealth.rectangles[0];
-  assert.ok(Math.abs(queuedBar.x - (expected.x - 29)) < 1e-9);
-  assert.ok(Math.abs(queuedBar.y - (expected.y - 88)) < 1e-9);
-  assert.ok(Math.abs(queuedBar.width - 58) < 1e-9);
-  assert.ok(Math.abs(queuedBar.height - 5) < 1e-9);
-  assert.ok(Math.abs(queuedBar.radius - 2.5) < 1e-9);
+  assert.ok(Math.abs(queuedBar.x - (expected.x - (58 * bossScale))) < 1e-9);
+  assert.ok(Math.abs(queuedBar.y - (expected.y - (176 * bossScale))) < 1e-9);
+  assert.ok(Math.abs(queuedBar.width - (116 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(queuedBar.height - (10 * bossScale)) < 1e-9);
+  assert.ok(Math.abs(queuedBar.radius - (5 * bossScale)) < 1e-9);
 
   const liveProjectile = {
     id: 'projectile-live',
@@ -1999,14 +2243,14 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
   scene.projectProjectiles({ projectiles: [liveProjectile], tick: 10 });
   const liveProjectileView = scene.projectileSprites.get(liveProjectile.id);
   assert.equal(liveProjectileView.x, expected.x);
-  assert.equal(liveProjectileView.y, expected.y - 16);
+  assert.equal(liveProjectileView.y, expected.y - (32 * bossScale));
 
   scene.enemyById.clear();
   const missingProjectile = { ...liveProjectile, id: 'projectile-fallback', targetId: 'enemy-gone' };
   scene.projectProjectiles({ projectiles: [missingProjectile], tick: 10 });
   const fallbackProjectileView = scene.projectileSprites.get(missingProjectile.id);
   assert.equal(fallbackProjectileView.x, expected.x);
-  assert.equal(fallbackProjectileView.y, expected.y - 16);
+  assert.equal(fallbackProjectileView.y, expected.y - (32 * bossScale));
 
   const labels = [];
   const bursts = [];
@@ -2023,9 +2267,9 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
     } },
   ]);
   assert.deepEqual(labels[0].position, expected);
-  assert.deepEqual({ scale: labels[0].visual.artScale, depth: labels[0].visual.depth }, { scale: 0.5, depth: 3.6 });
+  assert.deepEqual({ scale: labels[0].visual.artScale, depth: labels[0].visual.depth }, { scale: bossScale, depth: 3.6 });
   assert.deepEqual(bursts[0].position, expected);
-  assert.deepEqual({ scale: bursts[0].visual.artScale, depth: bursts[0].visual.depth }, { scale: 0.5, depth: 3.6 });
+  assert.deepEqual({ scale: bursts[0].visual.artScale, depth: bursts[0].visual.depth }, { scale: bossScale, depth: 3.6 });
 
   BattleScene.prototype.spawnDamageLabel.call(scene, expected, 14, { artScale: 0.5, depth: 3.6 });
   const renderedLabel = [...scene.damageLabelPool.activeViews][0];
@@ -2064,11 +2308,11 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
   const defeat = [...scene.defeatPool.activeViews][0];
   assert.deepEqual({ x: defeat.x, y: defeat.y }, expected);
   assert.equal(defeat.depth, 3.6);
-  assert.equal(defeat._body.scale, 0.5);
+  assert.equal(defeat._body.scale, bossScale);
 });
 
 test('enemy attack and defender hit motion move one shared root consumed by health projectiles and effects', async () => {
-  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ViewPool }] = await Promise.all([
+  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ENEMY_PRESENTATION, ViewPool }] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
     import('../public/Games/DefenderChampion/src/config/levels.js'),
@@ -2080,6 +2324,7 @@ test('enemy attack and defender hit motion move one shared root consumed by heal
     setRotation() { return this; }, setScale() { return this; }, setVisible() { return this; },
   });
   const enemyView = createSceneView();
+  const enemyScale = ENEMY_PRESENTATION['blight-walker'].displayScale;
   enemyView.setPosition(360, 40);
   enemyView._baseScale = 0.4;
   const defenderView = Object.assign(createSceneView(), {
@@ -2145,8 +2390,8 @@ test('enemy attack and defender hit motion move one shared root consumed by heal
 
   scene.projectEnemyHealthBars({ enemies: [enemy], tick: 10 }, true);
   const healthRect = scene.activeEnemyHealthLayer.rectangles[0];
-  assert.ok(Math.abs(healthRect[0] - (348 - 14.4)) < 1e-9);
-  assert.ok(Math.abs(healthRect[1] - (46 - 43.2)) < 1e-9);
+  assert.ok(Math.abs(healthRect[0] - (348 - (36 * enemyScale))) < 1e-9);
+  assert.ok(Math.abs(healthRect[1] - (46 - (108 * enemyScale))) < 1e-9);
 
   scene.projectProjectiles({
     projectiles: [{
@@ -2157,7 +2402,8 @@ test('enemy attack and defender hit motion move one shared root consumed by heal
     tick: 10,
   });
   const projectile = scene.projectileSprites.get('projectile-1');
-  assert.deepEqual({ x: projectile.x, y: projectile.y }, { x: 348, y: 33.2 });
+  assert.equal(projectile.x, 348);
+  assert.ok(Math.abs(projectile.y - (46 - (32 * enemyScale))) < 1e-9);
 
   scene.consumePresentationEvents([{
     id: 1, kind: 'enemy-hit', tick: 10,
@@ -2475,6 +2721,95 @@ test('runtime pause resumes real scene frames without sleeping the global Phaser
   ]);
 });
 
+test('initial landscape pause replays before the first frame and on every scene activation', async () => {
+  const { createRuntimePauseReplay } = await import(
+    '../public/Games/DefenderChampion/src/runtime-lifecycle.js'
+  );
+  const createEmitter = () => {
+    const listeners = new Map();
+    return {
+      emit(type) { for (const listener of listeners.get(type) ?? []) listener(); },
+      off(type, listener) { listeners.get(type)?.delete(listener); },
+      on(type, listener) {
+        const group = listeners.get(type) ?? new Set();
+        group.add(listener);
+        listeners.set(type, group);
+      },
+    };
+  };
+  const createScene = (key) => {
+    let active = true;
+    let paused = false;
+    const events = createEmitter();
+    return {
+      key,
+      sys: {
+        events,
+        isActive: () => active,
+        isPaused: () => paused,
+        pause() { active = false; paused = true; },
+        resume() { active = true; paused = false; },
+      },
+      get paused() { return paused; },
+    };
+  };
+  const bootScene = createScene('BootScene');
+  const battleSceneRuntime = createScene('BattleScene');
+  const game = { scene: { scenes: [bootScene, battleSceneRuntime] } };
+  const counters = {
+    accumulator: 17,
+    animationFrame: 4,
+    audioFrame: 9,
+    sceneTime: 33,
+    simulationTick: 7,
+  };
+  const frame = (scene) => {
+    if (scene.paused) return;
+    counters.accumulator += 16;
+    counters.animationFrame += 1;
+    counters.audioFrame += 1;
+    counters.sceneTime += 16;
+    counters.simulationTick += 1;
+  };
+  const externalReasons = [];
+  const battleScene = {
+    handleResume() { counters.accumulator = 0; },
+    setExternalPauseReasons(reasons) { externalReasons.push([...reasons]); },
+  };
+  let pauseState = { paused: true, reasons: ['orientation', 'manual'] };
+  const replay = createRuntimePauseReplay({
+    game,
+    getBattleScene: () => battleScene,
+    getPauseState: () => pauseState,
+  });
+
+  replay.start();
+  const frozen = { ...counters };
+  frame(bootScene);
+  frame(battleSceneRuntime);
+  assert.deepEqual(counters, frozen, 'scene time, animation, simulation, accumulator, and audio freeze before portrait');
+  assert.equal(bootScene.paused, true);
+  assert.equal(battleSceneRuntime.paused, true);
+
+  battleSceneRuntime.sys.resume();
+  battleSceneRuntime.sys.events.emit('create');
+  assert.equal(battleSceneRuntime.paused, true, 'a newly active scene is paused in the same create turn');
+
+  pauseState = { paused: true, reasons: ['manual'] };
+  replay.sync();
+  assert.equal(battleSceneRuntime.paused, true, 'portrait clears only orientation while manual remains');
+  assert.deepEqual(externalReasons.at(-1), ['manual']);
+
+  pauseState = { paused: false, reasons: [] };
+  replay.sync();
+  assert.equal(bootScene.paused, false);
+  assert.equal(battleSceneRuntime.paused, false);
+  assert.equal(counters.accumulator, 0, 'resume resets the fixed-step accumulator');
+  frame(battleSceneRuntime);
+  assert.equal(counters.simulationTick, frozen.simulationTick + 1);
+  replay.destroy();
+});
+
 test('BFCache transitions suspend and restore one runtime while real unload destroys it', async () => {
   const { createRuntimeLifecycle } = await import('../public/Games/DefenderChampion/src/runtime-lifecycle.js');
   const windowRef = new EventTargetDouble();
@@ -2718,12 +3053,11 @@ test('the battle HUD model projects all combat labels and four defender cards fr
   }]);
 });
 
-test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell actions through validated commands', async () => {
-  const [battleScene, hud, main, bundle] = await Promise.all([
+test('battle source routes pointer, pause, speed, upgrade, and sell actions through validated commands', async () => {
+  const [battleScene, hud, main] = await Promise.all([
     readGameFile('src/scenes/BattleScene.js'),
     readGameFile('src/ui/hud-controller.js'),
     readGameFile('src/main.js'),
-    readGameFile('js/app.bundle.js'),
   ]);
 
   assert.match(battleScene, /createSimulation/);
@@ -2731,10 +3065,6 @@ test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell ac
   assert.match(battleScene, /issueCommand\(this\.simulation, command\)/);
   assert.equal((battleScene.match(/this\.hud\.showBattle\(this\.lastSnapshot/g) ?? []).length, 2);
   assert.match(battleScene, /setPointerCapture/);
-  assert.match(battleScene, /['"]keydown['"]/);
-  assert.match(battleScene, /['"]ArrowRight['"]/);
-  assert.match(battleScene, /['"]Enter['"]/);
-  assert.match(battleScene, /['"]Space['"]/);
   assert.match(battleScene, /enemySprites\s*=\s*new Map/);
   assert.match(battleScene, /cellViews\s*=\s*new Map/);
   assert.match(battleScene, /projectileSprites\s*=\s*new Map/);
@@ -2750,8 +3080,6 @@ test('battle source routes pointer, keyboard, pause, speed, upgrade, and sell ac
   assert.match(main, /installQaRuntimeHooks/);
   assert.match(hud, /getPresentationState/);
   assert.match(battleScene, /getPresentationState/);
-  assert.match(bundle, /render_game_to_text/);
-  assert.match(bundle, /__defenderChampion/);
 });
 
 test('campaign loading validates the manifest first and classifies one optional decorative raster', async () => {

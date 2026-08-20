@@ -24,15 +24,15 @@ export const DEFENDER_PRESENTATION = Object.freeze({
 });
 
 export const ENEMY_PRESENTATION = Object.freeze({
-  'blight-walker': Object.freeze({ displayScale: 0.40, kind: 'enemy', roadFootprint: 48 }),
-  skitter: Object.freeze({ displayScale: 0.39, kind: 'enemy', roadFootprint: 48 }),
-  swarmkin: Object.freeze({ displayScale: 0.34, kind: 'enemy', roadFootprint: 42 }),
-  shellguard: Object.freeze({ displayScale: 0.43, kind: 'enemy', roadFootprint: 52 }),
-  hexcaller: Object.freeze({ displayScale: 0.42, kind: 'enemy', roadFootprint: 48 }),
-  crusher: Object.freeze({ displayScale: 0.48, kind: 'enemy', roadFootprint: 58 }),
-  'mossback-brute': Object.freeze({ displayScale: 0.48, kind: 'boss', roadFootprint: 80 }),
-  'ironhide-warlord': Object.freeze({ displayScale: 0.50, kind: 'boss', roadFootprint: 80 }),
-  'dread-colossus': Object.freeze({ displayScale: 0.53, kind: 'boss', roadFootprint: 80 }),
+  'blight-walker': Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 48 }),
+  skitter: Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 48 }),
+  swarmkin: Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 42 }),
+  shellguard: Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 52 }),
+  hexcaller: Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 48 }),
+  crusher: Object.freeze({ displayScale: 0.18, kind: 'enemy', roadFootprint: 58 }),
+  'mossback-brute': Object.freeze({ displayScale: 0.24, kind: 'boss', roadFootprint: 80 }),
+  'ironhide-warlord': Object.freeze({ displayScale: 0.24, kind: 'boss', roadFootprint: 80 }),
+  'dread-colossus': Object.freeze({ displayScale: 0.24, kind: 'boss', roadFootprint: 80 }),
 });
 
 export const resolveEnemyRoadProjection = (enemy = {}, presentation = {}) => {
@@ -44,10 +44,10 @@ export const resolveEnemyRoadProjection = (enemy = {}, presentation = {}) => {
     GRID.cellSize,
     Math.max(0, Number(presentation.roadFootprint) || GRID.cellSize) * scale,
   );
-  const maximumLateralOffset = Math.max(0, (GRID.cellSize - footprintWidth) / 2);
   const requestedLaneOffset = Number(enemy.displayLaneOffset ?? enemy.laneOffset) || 0;
   const queued = enemy.laneState === 'queued'
     || (enemy.queueIndex !== null && enemy.queueIndex !== undefined);
+  const maximumLateralOffset = GRID.cellSize / 2;
   return Object.freeze({
     depth: queued ? 3.6 : enemy.laneState === 'attacking' ? 5.2 : 4.6,
     footprintWidth,
@@ -115,12 +115,10 @@ export const attemptPlacementBuild = ({
   announce,
   cell,
   issueCommand,
-  pad,
   selectedDefenderId,
   selectedLayer,
 } = {}) => {
-  const target = cell ?? pad;
-  const terrain = target?.terrain ?? target?.layer;
+  const terrain = cell?.terrain;
   if (!selectedDefenderId) {
     announce?.('Open battlefield square. Select defender 1 through 4 first.');
     return { accepted: false, reason: 'defender-required' };
@@ -132,7 +130,7 @@ export const attemptPlacementBuild = ({
   return issueCommand?.({
     type: 'build',
     defenderId: selectedDefenderId,
-    cellId: target?.id,
+    cellId: cell?.id,
   }) ?? { accepted: false, reason: 'battle-unavailable' };
 };
 

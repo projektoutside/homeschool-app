@@ -1,7 +1,7 @@
 import { GRID, createGridPathMetrics } from './grid-geometry.js';
+import { MAX_ATTACKERS_PER_GATE, MAX_LIVING_ENEMIES } from './rules.js';
 
-const MAX_ATTACKERS_PER_GATE = 3;
-const MAX_READABLE_ENEMIES = 18;
+export { MAX_ATTACKERS_PER_GATE, MAX_LIVING_ENEMIES };
 
 export const getGridCell = (level, cellId) => (
   level?.cells?.find(({ id }) => id === cellId) ?? null
@@ -31,7 +31,7 @@ const isRoadCellUpstreamCongested = ({ level, enemies = [], cellId } = {}) => {
   const metrics = createGridPathMetrics(level.roadCells);
   const upstreamBoundary = (index * GRID.cellSize) - (GRID.cellSize / 2);
   const readableCapacity = Math.min(
-    MAX_READABLE_ENEMIES,
+    MAX_LIVING_ENEMIES,
     MAX_ATTACKERS_PER_GATE + index,
   );
   const upstreamLivingCount = enemies.filter((enemy) => {

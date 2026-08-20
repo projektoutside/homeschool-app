@@ -18,6 +18,10 @@ import { getFullscreenElement, requestElementFullscreen } from '../utils/fullscr
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
 import { resumeIframeRuntime, syncIframeSoundSettings } from '../utils/iframeRuntime';
 import {
+    releaseGamePortraitOrientation,
+    requestGamePortraitOrientation,
+} from '../utils/gameOrientation';
+import {
     type GamePointsAckMessage,
     type GamePointsContextMessage,
     GAME_POINTS_ACK_MESSAGE,
@@ -37,6 +41,9 @@ import { CarKingNativeFirstSpeechController } from '../features/speech/nativeSpe
 import './GamePlayer.css';
 
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
+const GAME_ORIENTATION_REQUEST_MESSAGE = 'LAHS_GAME_ORIENTATION_REQUEST';
+const GAME_ORIENTATION_RESULT_MESSAGE = 'LAHS_GAME_ORIENTATION_RESULT';
+const DEFENDER_CHAMPION_GAME_ID = 'defender-champion';
 const CAR_KING_GAME_ID = 'math-car-king';
 const WORD_PUZZLE_GAME_ID = 'word-puzzle-game';
 const CAR_KING_MIC_PREF_SYNC = 'LAHS_CAR_KING_MIC_PREF_SYNC';
@@ -140,6 +147,7 @@ const GamePlayer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const carKingSpeechControllerRef = useRef<CarKingNativeFirstSpeechController | null>(null);
+    const defenderOrientationActiveRef = useRef(false);
     const zoomLockIframes = useMemo(() => [iframeRef], []);
     const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
     const [wordPuzzleBootstrapStamp, setWordPuzzleBootstrapStamp] = useState<string | null>(null);
@@ -309,6 +317,14 @@ const GamePlayer: React.FC = () => {
     }, [pointsSessionId]);
 
     useEffect(() => {
+        return () => {
+            if (!defenderOrientationActiveRef.current) return;
+            defenderOrientationActiveRef.current = false;
+            void releaseGamePortraitOrientation(window, DEFENDER_CHAMPION_GAME_ID);
+        };
+    }, [currentGameId]);
+
+    useEffect(() => {
         const iframe = iframeRef.current;
         return () => {
             teardownIframeElementWhenDisconnected(iframe, { reason: 'game-player-unmount' });
@@ -460,7 +476,40 @@ const GamePlayer: React.FC = () => {
                 occurredAt?: unknown;
                 label?: unknown;
                 meta?: unknown;
+                action?: unknown;
+                orientation?: unknown;
+                requestId?: unknown;
             } | null;
+
+            if (
+                currentGameId === DEFENDER_CHAMPION_GAME_ID
+                && message?.type === GAME_ORIENTATION_REQUEST_MESSAGE
+                && message.gameId === DEFENDER_CHAMPION_GAME_ID
+                && message.orientation === 'portrait'
+                && typeof message.requestId === 'string'
+                && message.requestId.length > 0
+                && message.requestId.length <= 120
+                && (message.action === 'request' || message.action === 'release')
+            ) {
+                const action = message.action;
+                const requestId = message.requestId;
+                const operation = action === 'request'
+                    ? requestGamePortraitOrientation(window, DEFENDER_CHAMPION_GAME_ID)
+                    : releaseGamePortraitOrientation(window, DEFENDER_CHAMPION_GAME_ID);
+                void operation.then((orientationResult) => {
+                    defenderOrientationActiveRef.current = action === 'request'
+                        && orientationResult.success;
+                    postMessageToGame({
+                        type: GAME_ORIENTATION_RESULT_MESSAGE,
+                        gameId: DEFENDER_CHAMPION_GAME_ID,
+                        requestId,
+                        success: orientationResult.success,
+                        supported: orientationResult.supported,
+                        source: orientationResult.source,
+                    });
+                });
+                return;
+            }
 
             if (isCarKingGame && isCarKingSpeechControlMessage(message)) {
                 const controller = carKingSpeechControllerRef.current;

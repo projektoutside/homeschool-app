@@ -10,7 +10,11 @@ import { createSaveStore } from './services/save-store.js';
 import { LEVELS } from './config/levels.js';
 import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
 import { createOrientationController } from './ui/orientation-controller.js';
-import { applyRuntimePauseState, createRuntimeLifecycle } from './runtime-lifecycle.js';
+import {
+  applyRuntimePauseState,
+  createRuntimeLifecycle,
+  createRuntimePauseReplay,
+} from './runtime-lifecycle.js';
 import { createDefenderPhaserGame } from './phaser-entry.js';
 
 const documentRef = globalThis.document;
@@ -33,6 +37,7 @@ const saveStore = createSaveStore({
 const audioController = createAudioController({ windowRef });
 let game;
 let runtimeLifecycle;
+let runtimePauseReplay;
 let orientationController;
 const hostBridge = createHostBridge({
   windowRef,
@@ -43,6 +48,10 @@ const hostBridge = createHostBridge({
     runtimeLifecycle?.prepareUnload?.();
   },
   onPauseChange({ paused, reasons }) {
+    if (runtimePauseReplay) {
+      runtimePauseReplay.sync();
+      return;
+    }
     const battleScene = game?.scene?.getScene?.('BattleScene');
     applyRuntimePauseState({ battleScene, game, paused, reasons });
   },
@@ -71,6 +80,15 @@ game = createDefenderPhaserGame({
   audioController,
   hostBridge,
   hud,
+  onPostBoot(phaserGame) {
+    runtimePauseReplay?.destroy?.();
+    runtimePauseReplay = createRuntimePauseReplay({
+      game: phaserGame,
+      getBattleScene: () => phaserGame.scene?.getScene?.('BattleScene') ?? null,
+      getPauseState: () => hostBridge.getPauseState(),
+    });
+    runtimePauseReplay.start();
+  },
   resolution,
   scenes: [BootScene, MenuScene, LevelSelectScene, BattleScene, ResultScene],
 });
@@ -82,6 +100,7 @@ runtimeLifecycle = createRuntimeLifecycle({
   hostBridge,
   hud,
   orientationController,
+  pauseReplayCleanup: () => runtimePauseReplay?.destroy?.(),
 });
 
 const getBattleScene = () => game?.scene?.getScene?.('BattleScene') ?? null;
