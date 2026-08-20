@@ -11,6 +11,9 @@ import {
 import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders.js';
 import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
 import { LEVELS } from '../public/Games/DefenderChampion/src/config/levels.js';
+import {
+  cellCenter,
+} from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
 import { createPathMetrics } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 import {
   advanceSimulation,
@@ -18,8 +21,9 @@ import {
   issueCommand,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
 
-const testRoadPad = LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a');
-const testRoadProgress = testRoadPad.pathProgress;
+const testRoadCellId = 'r1c4';
+const testGrassCellId = 'r0c5';
+const testRoadProgress = LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a').pathProgress;
 
 const createCombatEnemy = (id, enemyId, overrides = {}) => {
   const config = ENEMIES[enemyId];
@@ -68,12 +72,40 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
   ));
   issueCommand(simulation, { type: 'build', defenderId, padId: placement.id });
   // Combat assertions use the fixed road-range fixture; placement validity is covered separately.
-  simulation.towers[0].padId = testRoadPad.id;
+  simulation.towers[0].cellId = DEFENDERS[defenderId].placementLayer === 'road'
+    ? testRoadCellId
+    : testGrassCellId;
   simulation.towers[0].tier = tier;
   simulation.towers[0].attackCount = attackCount;
   simulation.enemies = enemies;
   return simulation;
 };
+
+test('combat resolves a cell-based defender position from the grid center', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  const defender = DEFENDERS.ranger;
+  const cellId = 'r1c5';
+  simulation.towers = [{
+    id: 'tower-cell',
+    defenderId: defender.id,
+    cellId,
+    placementLayer: defender.placementLayer,
+    combatLayer: defender.combatLayer,
+    tier: 0,
+    health: defender.maxHealth[0],
+    maxHealth: defender.maxHealth[0],
+    armor: defender.armor[0],
+    engagedEnemyIds: [],
+    totalInvested: defender.costs[0],
+    nextAttackTick: 0,
+    attackCount: 0,
+  }];
+  simulation.enemies = [createCombatEnemy('enemy-1', 'blight-walker', { speed: 0 })];
+
+  stepCombat(simulation);
+
+  assert.deepEqual(simulation.projectiles[0].launchPosition, cellCenter(cellId));
+});
 
 test('every enemy has an immutable role-shaped frontline attack profile', () => {
   const expectedProfiles = {

@@ -1,6 +1,7 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
-import { resolvePlacementPoint } from './path-geometry.js';
+import { cellCenter } from './grid-geometry.js';
+import { createPathMetrics, resolvePlacementPoint } from './path-geometry.js';
 import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
 import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
@@ -33,19 +34,6 @@ export const getDreadColossusPhase = (healthRatio) => {
 
 const distance = (first, second) => Math.hypot(first.x - second.x, first.y - second.y);
 
-const getPathMetrics = (path) => {
-  const segments = [];
-  let total = 0;
-  for (let index = 1; index < path.length; index += 1) {
-    const start = path[index - 1];
-    const end = path[index];
-    const length = distance(start, end);
-    segments.push({ start, end, length, offset: total });
-    total += length;
-  }
-  return { segments, total };
-};
-
 const getEnemyPosition = (simulation, enemy) => {
   const metrics = simulation.pathMetrics;
   const progress = clamp(enemy.pathProgress, 0, metrics.total);
@@ -66,10 +54,10 @@ const enemyPresentationFields = (enemy) => ({
   queueIndex: enemy.queueIndex ?? null,
 });
 
-const getTowerPosition = (simulation, tower) => resolvePlacementPoint(
-  simulation.level,
-  simulation.level.pads.find((pad) => pad.id === tower.padId),
-);
+const getTowerPosition = (simulation, tower) => {
+  const legacyPlacement = simulation.level.pads.find(({ id }) => id === tower.legacyPadId);
+  return legacyPlacement ? resolvePlacementPoint(simulation.level, legacyPlacement) : cellCenter(tower.cellId);
+};
 
 const effectKey = (targetId, kind) => `${targetId}\u0000${kind}`;
 
@@ -730,7 +718,7 @@ const awardCompletedWaves = (simulation) => {
 };
 
 export const stepCombat = (simulation) => {
-  if (!simulation.pathMetrics) simulation.pathMetrics = getPathMetrics(simulation.level.path);
+  if (!simulation.pathMetrics) simulation.pathMetrics = createPathMetrics(simulation.level.path);
   for (const enemy of simulation.enemies) initializeSpawnedEnemy(simulation, enemy);
   simulation.effects = simulation.effects.filter((effect) => effect.expiresAtTick > simulation.tick);
   rebuildEffectIndex(simulation);

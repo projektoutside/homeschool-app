@@ -3,6 +3,12 @@ import { getLevel } from '../config/levels.js';
 import { REFERENCE_STRATEGIES } from '../config/reference-strategies.js';
 import { getBuildCost, getSellRefund, getUpgradeCost } from './economy.js';
 import { compareEntityIds } from './entity-id.js';
+import {
+  evaluateCellBuild,
+  getDeprecatedCellPlacements,
+  getLegacyPadIdForCell,
+  resolveCellId,
+} from './grid-placement.js';
 import { createWaveController, spawnScheduledEnemies } from './wave-controller.js';
 import { stepCombat } from './combat.js';
 import { calculateBattleResult } from './scoring.js';
@@ -100,10 +106,18 @@ const findTower = (simulation, towerId) => simulation.towers.find((tower) => tow
 const buildTower = (simulation, command) => {
   const defender = DEFENDERS[command.defenderId];
   if (!defender) return rejected('invalid-defender');
-  const placement = simulation.level.pads.find(({ id }) => id === command.padId);
-  if (!placement) return rejected('invalid-pad');
-  if (placement.layer !== defender.placementLayer) return rejected('placement-layer-mismatch');
-  if (simulation.towers.some((tower) => tower.padId === command.padId)) return rejected('pad-occupied');
+  const requestedPlacementId = command.cellId ?? command.padId;
+  const legacyPlacementId = getDeprecatedCellPlacements(simulation.level)
+    .find(({ id }) => id === requestedPlacementId)?.id ?? null;
+  const cellId = resolveCellId(simulation.level, requestedPlacementId);
+  const placement = evaluateCellBuild({
+    level: simulation.level,
+    defender,
+    towers: simulation.towers,
+    enemies: simulation.enemies,
+    cellId,
+  });
+  if (!placement.accepted) return rejected(placement.reason);
   const cost = getBuildCost(defender);
   if (simulation.coins < cost) return rejected('insufficient-coins');
 
@@ -111,7 +125,7 @@ const buildTower = (simulation, command) => {
   const tower = {
     id: `tower-${simulation.nextEntityId++}`,
     defenderId: defender.id,
-    padId: command.padId,
+    cellId,
     placementLayer: defender.placementLayer,
     combatLayer: defender.combatLayer,
     tier: 0,
@@ -123,13 +137,26 @@ const buildTower = (simulation, command) => {
     nextAttackTick: simulation.tick,
     attackCount: 0,
   };
+  const legacyPadId = getLegacyPadIdForCell(simulation.level, cellId);
+  if (legacyPadId) Object.defineProperty(tower, 'padId', {
+    configurable: true,
+    enumerable: false,
+    value: legacyPadId,
+    writable: true,
+  });
+  if (legacyPlacementId) Object.defineProperty(tower, 'legacyPadId', {
+    configurable: true,
+    enumerable: false,
+    value: legacyPlacementId,
+    writable: false,
+  });
   simulation.towers.push(tower);
   simulation.purchaseHistory.push({
     tick: simulation.tick,
     type: 'build',
     towerId: tower.id,
     defenderId: tower.defenderId,
-    padId: tower.padId,
+    cellId: tower.cellId,
     cost,
   });
   return accepted();
@@ -155,7 +182,7 @@ const upgradeTower = (simulation, towerId) => {
     type: 'upgrade',
     towerId: tower.id,
     defenderId: tower.defenderId,
-    padId: tower.padId,
+    cellId: tower.cellId,
     tier: tower.tier,
     cost,
   });
@@ -223,7 +250,7 @@ const snapshotTower = (tower) => {
   return {
     id: tower.id,
     defenderId: tower.defenderId,
-    padId: tower.padId,
+    cellId: tower.cellId,
     placementLayer: tower.placementLayer,
     combatLayer: tower.combatLayer,
     tier: tower.tier,
@@ -277,10 +304,10 @@ const sortById = (first, second) => compareEntityIds(first.id, second.id);
 
 const getStrategyMetrics = (simulation) => {
   const spendByDefender = {};
-  const occupiedPadIds = new Set();
+  const occupiedCellIds = new Set();
   for (const purchase of simulation.purchaseHistory) {
     spendByDefender[purchase.defenderId] = (spendByDefender[purchase.defenderId] ?? 0) + purchase.cost;
-    if (purchase.type === 'build') occupiedPadIds.add(purchase.padId);
+    if (purchase.type === 'build') occupiedCellIds.add(purchase.cellId);
   }
   const highestSpendDefenderId = Object.entries(spendByDefender)
     .sort(([firstId, firstSpend], [secondId, secondSpend]) => (
@@ -290,7 +317,7 @@ const getStrategyMetrics = (simulation) => {
     purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
     spendByDefender,
     highestSpendDefenderId,
-    occupiedPadIds: [...occupiedPadIds].sort(),
+    occupiedCellIds: [...occupiedCellIds].sort(),
   };
 };
 

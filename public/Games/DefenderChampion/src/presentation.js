@@ -188,23 +188,26 @@ export const resolvePlacementPrompt = (layer) => (
 
 export const attemptPlacementBuild = ({
   announce,
+  cell,
   issueCommand,
   pad,
   selectedDefenderId,
   selectedLayer,
 } = {}) => {
+  const target = cell ?? pad;
+  const terrain = target?.terrain ?? target?.layer;
   if (!selectedDefenderId) {
     announce?.('Open placement slot. Select defender 1 through 4 first.');
     return { accepted: false, reason: 'defender-required' };
   }
-  if (!selectedLayer || pad?.layer !== selectedLayer) {
+  if (!selectedLayer || terrain !== selectedLayer) {
     announce?.(`${resolvePlacementPrompt(selectedLayer)}.`);
     return { accepted: false, reason: 'placement-layer-mismatch' };
   }
   return issueCommand?.({
     type: 'build',
     defenderId: selectedDefenderId,
-    padId: pad.id,
+    cellId: target?.id,
   }) ?? { accepted: false, reason: 'battle-unavailable' };
 };
 
@@ -214,11 +217,14 @@ export const resolveCommandRejectionMessage = (reason, selectedLayer = null) => 
   'defender-engaged': 'That road defender is fighting and cannot be sold.',
   'insufficient-coins': 'Not enough coins for that command.',
   'invalid-defender': 'Choose an available defender.',
-  'invalid-pad': 'Choose an available placement slot.',
+  'invalid-cell': 'Choose a square on the battlefield.',
   'max-tier': 'That defender is already at maximum tier.',
   'missing-tower': 'That defender is no longer available.',
-  'pad-occupied': 'That placement slot is already occupied.',
-  'placement-layer-mismatch': `${resolvePlacementPrompt(selectedLayer)}.`,
+  'cell-occupied': 'That square already has a defender.',
+  'enemy-occupied': 'Enemies must clear that road square before you can build there.',
+  'placement-layer-mismatch': selectedLayer === 'road'
+    ? 'Choose a road square for this melee defender.'
+    : 'Choose a grass square for this ranged defender.',
 }[reason] ?? 'That command is not available right now.');
 
 export const resolveFrontlineHealthBar = ({ combatLayer, health, maxHealth } = {}) => {
