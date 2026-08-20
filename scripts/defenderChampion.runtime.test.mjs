@@ -101,6 +101,8 @@ const createGraphicsDouble = () => ({
   clearCount: 0,
   visible: true,
   clear() { this.clearCount += 1; return this; },
+  fillRoundedRect() { return this; },
+  fillStyle() { return this; },
   setVisible(visible) { this.visible = visible; return this; },
 });
 
@@ -525,6 +527,61 @@ test('cell-only tower snapshots project through the deprecated renderer pad adap
 
   assert.equal(view._padId, 'l1-pad-b');
   assert.deepEqual({ x: view.x, y: view.y }, { x: 540, y: 144.5 });
+});
+
+test('unmapped cell-only tower snapshots use grid centers and hide malformed cells', async () => {
+  const [
+    { BattleScene },
+    { LEVELS },
+  ] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+  ]);
+  const makeView = () => Object.assign(createSceneView(), {
+    _aura: {
+      setAlpha() { return this; }, setScale() { return this; }, setTint() { return this; }, setVisible() { return this; },
+    },
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+    _rank: {
+      setScale() { return this; }, setTint() { return this; }, setVisible() { return this; },
+    },
+  });
+  const views = [makeView(), makeView(), makeView()];
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    defenderPool: { acquire: () => views.shift(), release() {} },
+    level: LEVELS[0],
+    padById: new Map(LEVELS[0].pads.map((pad) => [pad.id, pad])),
+    towerSprites: new Map(),
+  });
+
+  assert.doesNotThrow(() => BattleScene.prototype.projectTowers.call(scene, {
+    towers: [
+      {
+        id: 'tower-road', defenderId: 'bladeguard', cellId: 'r0c4', placementLayer: 'road', combatLayer: 'frontline',
+        tier: 0, health: 420, maxHealth: 420,
+      },
+      {
+        id: 'tower-grass', defenderId: 'ranger', cellId: 'r11c0', placementLayer: 'grass', combatLayer: 'backline',
+        tier: 0, health: 1, maxHealth: 1,
+      },
+      {
+        id: 'tower-malformed', defenderId: 'ranger', cellId: 'r12c9', placementLayer: 'grass', combatLayer: 'backline',
+        tier: 0, health: 1, maxHealth: 1,
+      },
+    ],
+  }));
+
+  assert.deepEqual({ x: scene.towerSprites.get('tower-road').x, y: scene.towerSprites.get('tower-road').y }, {
+    x: 360, y: 60,
+  });
+  assert.deepEqual({ x: scene.towerSprites.get('tower-grass').x, y: scene.towerSprites.get('tower-grass').y }, {
+    x: 40, y: 940,
+  });
+  assert.equal(scene.towerSprites.get('tower-malformed').visible, false);
+  assert.equal(scene.towerSprites.get('tower-malformed')._padId, null);
 });
 
 test('fatal defender presentation hides frontline health before its fade starts', async () => {

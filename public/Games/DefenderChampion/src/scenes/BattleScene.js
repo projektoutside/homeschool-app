@@ -10,7 +10,8 @@ import {
   projectPathProgress,
   resolvePlacementPoint,
 } from '../core/path-geometry.js';
-import { getLegacyPadIdForCell } from '../core/grid-placement.js';
+import { cellCenter } from '../core/grid-geometry.js';
+import { getDeprecatedCellPlacements, getGridCell } from '../core/grid-placement.js';
 import {
   advanceSimulation,
   clearPresentationEvents,
@@ -266,8 +267,19 @@ export class BattleScene extends Phaser.Scene {
   }
 
   resolveLegacyTowerPad(tower) {
-    const padId = getLegacyPadIdForCell(this.level, tower?.cellId) ?? tower?.padId ?? null;
+    const placement = Array.isArray(this.level?.cells) && Array.isArray(this.level?.roadCells)
+      ? getDeprecatedCellPlacements(this.level).find((entry) => entry.cellId === tower?.cellId)
+      : null;
+    const padId = placement?.id ?? tower?.padId ?? null;
     return this.padById?.get(padId) ?? this.level.pads.find((pad) => pad.id === padId) ?? null;
+  }
+
+  resolveTowerProjection(tower) {
+    const pad = this.resolveLegacyTowerPad(tower);
+    if (pad) return { pad, position: this.resolvePlacementPosition(pad) };
+    const cell = getGridCell(this.level, tower?.cellId);
+    if (!cell) return null;
+    return { pad: null, position: cellCenter(cell.id) };
   }
 
   isTowerAtLegacyPad(tower, pad) {
@@ -1373,8 +1385,13 @@ export class BattleScene extends Phaser.Scene {
 
   projectTowers(snapshot) {
     syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
-      const pad = this.resolveLegacyTowerPad(tower);
-      const position = this.resolvePlacementPosition(pad);
+      const projection = this.resolveTowerProjection(tower);
+      if (!projection) {
+        view._padId = null;
+        view.setActive(false).setVisible(false);
+        return;
+      }
+      const { pad, position } = projection;
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
       const idleAnimationKey = animationKey('defender', tower.defenderId, 'idle');
@@ -1401,7 +1418,7 @@ export class BattleScene extends Phaser.Scene {
       body.setScale(bodyScale);
       view._baseScale = bodyScale;
       view._defenderId = tower.defenderId;
-      view._padId = pad.id;
+      view._padId = pad?.id ?? null;
       view._aura.setTint(tint).setAlpha(tower.tier === 2 ? 0.46 : 0.28)
         .setScale(tower.tier === 2 ? 0.38 : 0.29).setVisible(tower.tier > 0);
       view._rank.setTint(tint).setScale(0.18).setVisible(tower.tier === 2);
