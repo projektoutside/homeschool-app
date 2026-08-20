@@ -108,6 +108,8 @@ export const createSimulation = (levelId, options = {}) => {
 
 const findTower = (simulation, towerId) => simulation.towers.find((tower) => tower.id === towerId);
 
+const findTowerByCellId = (simulation, cellId) => simulation.towers.find((tower) => tower.cellId === cellId);
+
 const buildTower = (simulation, command) => {
   const defender = DEFENDERS[command.defenderId];
   if (!defender) return rejected('invalid-defender');
@@ -230,6 +232,27 @@ export const issueCommand = (simulation, command) => {
     default:
       return rejected('invalid-command');
   }
+};
+
+export const issueStrategyCommand = (simulation, command, towerRefs = new Map()) => {
+  if (!command || typeof command.type !== 'string') return rejected('invalid-command');
+  if (command.type === 'upgrade-ref') {
+    const towerId = towerRefs.get(command.ref);
+    if (!towerId) return rejected('missing-tower');
+    const tower = findTower(simulation, towerId);
+    if (!tower) return rejected('missing-tower');
+    return issueCommand(simulation, { type: 'upgrade', towerId });
+  }
+
+  const result = issueCommand(simulation, command);
+  if (!result.accepted || command.type !== 'build' || typeof command.ref !== 'string') return result;
+
+  const placedTower = findTowerByCellId(
+    simulation,
+    simulation.purchaseHistory.at(-1)?.cellId ?? command.cellId ?? null,
+  );
+  if (placedTower) towerRefs.set(command.ref, placedTower.id);
+  return result;
 };
 
 export const advanceSimulation = (simulation, steps) => {
@@ -419,9 +442,10 @@ export const runStrategyFixture = (levelId, strategyId) => {
   }
 
   const simulation = createSimulation(levelId, { qa: true });
+  const towerRefs = new Map();
   for (let requestedTick = 0; requestedTick < MAX_STRATEGY_TICKS && !simulation.terminal; requestedTick += 1) {
     for (const command of strategy) {
-      if (command.tick === simulation.tick) issueCommand(simulation, command);
+      if (command.tick === simulation.tick) issueStrategyCommand(simulation, command, towerRefs);
     }
     advanceSimulation(simulation, 1);
   }

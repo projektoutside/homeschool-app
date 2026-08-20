@@ -6,6 +6,7 @@ import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/confi
 import {
   advanceSimulation,
   createSimulation,
+  issueStrategyCommand,
   issueCommand,
   summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
@@ -27,7 +28,7 @@ const deterministicEvidence = (summary) => ({
   score: summary.score,
   medal: summary.medal,
   purchaseHistory: summary.purchaseHistory,
-  occupiedPadIds: summary.occupiedPadIds,
+  occupiedCellIds: summary.occupiedCellIds,
   highestSpendDefenderId: summary.highestSpendDefenderId,
   frontlineDefeats: summary.frontlineDefeats,
   frontlineRepurchases: summary.frontlineRepurchases,
@@ -41,7 +42,7 @@ const snapshotFrontline = (simulation) => new Map(simulation.towers
   .map((tower) => [tower.id, {
     defenderId: tower.defenderId,
     health: tower.health,
-    padId: tower.padId,
+    cellId: tower.cellId,
   }]));
 
 const updateLaneMaximums = (metrics, simulation) => {
@@ -65,7 +66,8 @@ const runInstrumentedStrategyFixture = (levelId, strategyId) => {
   const strategy = REFERENCE_STRATEGIES[strategyId];
   assert.ok(strategy, `Unknown strategy: ${strategyId}`);
   const simulation = createSimulation(levelId, { qa: true });
-  const defeatedPads = new Map();
+  const towerRefs = new Map();
+  const defeatedCells = new Map();
   const metrics = {
     frontlineDefeats: 0,
     frontlineRepurchases: 0,
@@ -77,10 +79,11 @@ const runInstrumentedStrategyFixture = (levelId, strategyId) => {
   for (let requestedTick = 0; requestedTick < MAX_STRATEGY_TICKS && !simulation.terminal; requestedTick += 1) {
     for (const command of strategy) {
       if (command.tick !== simulation.tick) continue;
-      const result = issueCommand(simulation, command);
+      const result = issueStrategyCommand(simulation, command, towerRefs);
       if (result.accepted && command.type === 'build') {
         const defender = DEFENDERS[command.defenderId];
-        const defeatedAtTick = defeatedPads.get(command.padId);
+        const builtCellId = simulation.purchaseHistory.at(-1)?.cellId ?? command.cellId ?? null;
+        const defeatedAtTick = defeatedCells.get(builtCellId);
         if (defender.combatLayer === 'frontline' && defeatedAtTick < simulation.tick) {
           metrics.frontlineRepurchases += 1;
         }
@@ -99,7 +102,7 @@ const runInstrumentedStrategyFixture = (levelId, strategyId) => {
       );
       if (!towerAfter) {
         metrics.frontlineDefeats += 1;
-        defeatedPads.set(towerBefore.padId, simulation.tick - 1);
+        defeatedCells.set(towerBefore.cellId, simulation.tick - 1);
       }
     }
     updateLaneMaximums(metrics, simulation);
@@ -109,12 +112,19 @@ const runInstrumentedStrategyFixture = (levelId, strategyId) => {
 };
 
 const compareStrategies = (first, second) => {
-  const firstPads = new Set(first.occupiedPadIds);
-  const secondPads = new Set(second.occupiedPadIds);
-  const occupiedPads = new Set([...firstPads, ...secondPads]);
-  const differingPads = [...occupiedPads]
-    .filter((padId) => firstPads.has(padId) !== secondPads.has(padId));
-  return differingPads.length / occupiedPads.size;
+  const firstCells = new Set(first.occupiedCellIds);
+  const secondCells = new Set(second.occupiedCellIds);
+  const occupiedCells = new Set([...firstCells, ...secondCells]);
+  const differingCells = [...occupiedCells]
+    .filter((cellId) => firstCells.has(cellId) !== secondCells.has(cellId));
+  return differingCells.length / occupiedCells.size;
+};
+
+const occupiedDifference = (first, second) => {
+  const union = new Set([...first.occupiedCellIds, ...second.occupiedCellIds]);
+  const shared = first.occupiedCellIds
+    .filter((id) => second.occupiedCellIds.includes(id)).length;
+  return union.size === 0 ? 0 : (union.size - shared) / union.size;
 };
 
 const runMonoRosterFixture = (levelId, defenderId) => {
@@ -233,4 +243,53 @@ test('reinvesting mono-roster fixtures cannot clear Levels 7 or 10', () => {
       );
     }
   }
+});
+
+test('Levels 1-6 square-grid campaign preserves distinct legal victories', () => {
+  const level4Strategies = [];
+
+  for (const level of LEVELS.slice(0, 6)) {
+    const noBuildSimulation = createSimulation(level.id, { qa: true });
+    advanceSimulation(noBuildSimulation, MAX_STRATEGY_TICKS);
+    const noBuildSummary = summarizeSimulation(noBuildSimulation);
+    assert.equal(noBuildSummary.terminal, true, `${level.id} should terminate in no-build mode`);
+    assert.equal(noBuildSummary.outcome, 'defeat', `${level.id} should lose without defenders`);
+
+    const balanced = runInstrumentedStrategyFixture(level.id, `${level.id}-balanced`);
+    const artillery = runInstrumentedStrategyFixture(level.id, `${level.id}-artillery`);
+
+    for (const [strategyId, summary] of [
+      [`${level.id}-balanced`, balanced],
+      [`${level.id}-artillery`, artillery],
+    ]) {
+      assert.equal(summary.terminal, true, `${strategyId} should terminate`);
+      assert.equal(summary.outcome, 'victory', `${strategyId} should win`);
+      assert.ok(summary.maximumLivingEnemies <= 18, `${strategyId} exceeded 18 living enemies`);
+      assert.ok(summary.maxConcurrentAttackers <= 3, `${strategyId} exceeded 3 attackers`);
+    }
+
+    assert.notEqual(
+      balanced.highestSpendDefenderId,
+      artillery.highestSpendDefenderId,
+      `${level.id} should have different highest-spend defenders`,
+    );
+    assert.ok(
+      occupiedDifference(balanced, artillery) >= 0.25,
+      `${level.id} actual occupied-cell difference was ${occupiedDifference(balanced, artillery)}`,
+    );
+
+    if (level.id === 'level-4') {
+      level4Strategies.push(balanced, artillery);
+    }
+  }
+
+  assert.equal(
+    level4Strategies.some((summary) => (
+      summary.outcome === 'victory'
+      && summary.frontlineDefeats > 0
+      && summary.frontlineRepurchases > 0
+    )),
+    true,
+    'level-4 needs a winning fixture with a permanent frontline defeat and repurchase',
+  );
 });

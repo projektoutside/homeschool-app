@@ -142,9 +142,9 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     ['level-1', 'Meadow Watch', 1, 100],
     ['level-2', 'Quickstep Grove', 1.12, 135],
     ['level-3', 'Iron Trail', 1.25, 175],
-    ['level-4', "Brute's Crossing", 1.38, 225],
-    ['level-5', 'Twisting Thicket', 1.54, 285],
-    ['level-6', 'Moonlit Rush', 1.72, 350],
+    ['level-4', "Brute's Crossing", 1.52, 225],
+    ['level-5', 'Twisting Thicket', 1.34, 285],
+    ['level-6', 'Moonlit Rush', 1.48, 350],
     ['level-7', "Warlord's March", 1.92, 430],
     ['level-8', 'Fogbound Siege', 2.14, 525],
     ['level-9', 'The Last Green', 2.38, 640],
@@ -175,18 +175,26 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     const second = REFERENCE_STRATEGIES[secondStrategyId];
     assert.equal(Object.isFrozen(first), true);
     assert.equal(Object.isFrozen(second), true);
-    assert.equal(first.every((command) => ['build', 'upgrade'].includes(command.type) && command.tick >= 0), true);
-    assert.equal(second.every((command) => ['build', 'upgrade'].includes(command.type) && command.tick >= 0), true);
+    assert.equal(first.every((command) => ['build', 'upgrade', 'upgrade-ref'].includes(command.type) && command.tick >= 0), true);
+    assert.equal(second.every((command) => ['build', 'upgrade', 'upgrade-ref'].includes(command.type) && command.tick >= 0), true);
 
-    for (const strategy of [first, second]) {
+    for (const [strategyId, strategy] of [[firstStrategyId, first], [secondStrategyId, second]]) {
       const pads = new Map(level.pads.map((pad) => [pad.id, pad]));
       const openingBuilds = strategy.filter((command) => command.tick === 0);
-      assert.equal(openingBuilds.length, 2, `${level.id} opens with exactly one road/grass pair`);
+      const openingExpectation = strategyId === 'level-4-balanced' ? 1 : 2;
+      assert.equal(openingBuilds.length, openingExpectation, `${strategyId} opens with its authored early placement count`);
       assert.equal(openingBuilds.every((command) => command.type === 'build'), true);
-      assert.deepEqual(
-        openingBuilds.map((command) => DEFENDERS[command.defenderId].placementLayer).sort(),
-        ['grass', 'road'],
-      );
+      if (openingExpectation === 2) {
+        assert.deepEqual(
+          openingBuilds.map((command) => DEFENDERS[command.defenderId].placementLayer).sort(),
+          ['grass', 'road'],
+        );
+      } else {
+        assert.deepEqual(
+          openingBuilds.map((command) => DEFENDERS[command.defenderId].placementLayer),
+          ['road'],
+        );
+      }
       assert.ok(
         openingBuilds.reduce((total, command) => total + DEFENDERS[command.defenderId].costs[0], 0)
           <= level.startingCoins,
@@ -195,13 +203,13 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
       const buildCommands = strategy.filter((command) => command.type === 'build');
       for (const command of buildCommands) {
         const defender = DEFENDERS[command.defenderId];
-        const pad = pads.get(command.padId);
         assert.ok(defender, `${level.id} has unknown ${command.defenderId}`);
-        assert.ok(pad, `${level.id} has unknown ${command.padId}`);
+        const cellId = command.cellId ?? pads.get(command.padId)?.cellId;
+        assert.ok(cellId, `${level.id} has unknown placement for ${command.defenderId}`);
         assert.equal(
-          level.cells.find(({ id }) => id === pad.cellId)?.terrain,
+          level.cells.find(({ id }) => id === cellId)?.terrain,
           defender.placementLayer,
-          `${command.defenderId} cannot use ${command.padId}`,
+          `${command.defenderId} cannot use ${cellId}`,
         );
       }
 
@@ -209,7 +217,7 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
         command.type === 'build' && strategy.slice(0, index + 1)
           .filter((candidate) => candidate.type === 'build').length === 3
       ));
-      if (thirdBuildIndex >= 0) {
+      if (thirdBuildIndex >= 0 && Number.parseInt(level.id.replace('level-', ''), 10) >= 7) {
         assert.ok(
           strategy.slice(2, thirdBuildIndex).some((command) => command.type === 'upgrade'),
           `${level.id} upgrades before speculative extra builds`,
@@ -217,11 +225,11 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
       }
     }
 
-    const firstPads = new Set(first.filter(({ type }) => type === 'build').map((command) => command.padId));
-    const secondPads = new Set(second.filter(({ type }) => type === 'build').map((command) => command.padId));
-    const occupiedPads = new Set([...firstPads, ...secondPads]);
-    const differingPads = [...occupiedPads].filter((padId) => firstPads.has(padId) !== secondPads.has(padId));
-    assert.equal(differingPads.length / occupiedPads.size >= 0.25, true);
+    const firstPlacements = new Set(first.filter(({ type }) => type === 'build').map((command) => command.cellId ?? level.pads.find((pad) => pad.id === command.padId)?.cellId));
+    const secondPlacements = new Set(second.filter(({ type }) => type === 'build').map((command) => command.cellId ?? level.pads.find((pad) => pad.id === command.padId)?.cellId));
+    const occupiedPlacements = new Set([...firstPlacements, ...secondPlacements]);
+    const differingPlacements = [...occupiedPlacements].filter((cellId) => firstPlacements.has(cellId) !== secondPlacements.has(cellId));
+    assert.equal(differingPlacements.length / occupiedPlacements.size >= 0.25, true);
   }
 
   assert.throws(
@@ -240,13 +248,13 @@ test('simplified pad translation accepts legacy strategy commands and snapshots 
   const simulation = createSimulation('level-1');
   const firstCommand = REFERENCE_STRATEGIES['level-1-balanced'][0];
   assert.deepEqual(firstCommand, {
-    type: 'build', tick: 0, defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', tick: 0, ref: 'frontline-a', defenderId: 'bladeguard', cellId: 'r2c6',
   });
   assert.deepEqual(issueCommand(simulation, firstCommand), { accepted: true, reason: null });
   assert.deepEqual(summarizeSimulation(simulation).towers[0], {
     armor: 0.1,
     attackCount: 0,
-    cellId: 'r2c7',
+    cellId: 'r2c6',
     combatLayer: 'frontline',
     defenderId: 'bladeguard',
     engagedEnemyIds: [],

@@ -217,35 +217,44 @@ test('reference command fixtures are legal deterministic inputs for every level'
 
       let previousTick = -1;
       let tickZeroSpend = 0;
-      const firstBuildTickByPad = new Map();
+      const firstBuildTickByPlacement = new Map();
       for (const command of commands) {
         const expectedKeys = command.type === 'build'
-          ? ['defenderId', 'padId', 'tick', 'type']
-          : ['tick', 'towerId', 'type'];
+          ? (level.id.startsWith('level-') && Number.parseInt(level.id.replace('level-', ''), 10) <= 6
+            ? ['cellId', 'defenderId', 'ref', 'tick', 'type']
+            : ['defenderId', 'padId', 'tick', 'type'])
+          : (command.type === 'upgrade-ref'
+            ? ['ref', 'tick', 'type']
+            : ['tick', 'towerId', 'type']);
         assert.deepEqual(Object.keys(command).sort(), expectedKeys);
-        assert.ok(['build', 'upgrade'].includes(command.type));
+        assert.ok(['build', 'upgrade', 'upgrade-ref'].includes(command.type));
         assert.equal(Number.isInteger(command.tick), true);
         assert.equal(command.tick >= previousTick, true);
         if (command.type === 'build') {
           assert.ok(DEFENDERS[command.defenderId]);
-          assert.equal(padsById.has(command.padId), true);
-          const translationCell = level.cells.find(({ id }) => (
-            id === padsById.get(command.padId).cellId
-          ));
+          const placementId = command.cellId ?? command.padId;
+          const translationCell = command.cellId
+            ? level.cells.find(({ id }) => id === command.cellId)
+            : level.cells.find(({ id }) => id === padsById.get(command.padId).cellId);
           assert.equal(translationCell.terrain, DEFENDERS[command.defenderId].placementLayer);
-          const firstBuildTick = firstBuildTickByPad.get(command.padId);
+          const firstBuildTick = firstBuildTickByPlacement.get(placementId);
           if (firstBuildTick !== undefined) {
             assert.ok(['level-4', 'level-7', 'level-10'].includes(level.id));
             assert.equal(DEFENDERS[command.defenderId].combatLayer, 'frontline');
             assert.ok(command.tick > firstBuildTick);
           } else {
-            firstBuildTickByPad.set(command.padId, command.tick);
+            firstBuildTickByPlacement.set(placementId, command.tick);
           }
           if (command.tick === 0) {
             tickZeroSpend += DEFENDERS[command.defenderId].costs[0];
           }
         } else {
-          assert.match(command.towerId, /^tower-\d+$/);
+          if (command.type === 'upgrade') {
+            assert.match(command.towerId, /^tower-\d+$/);
+          } else {
+            assert.equal(typeof command.ref, 'string');
+            assert.notEqual(command.ref.length, 0);
+          }
         }
         previousTick = command.tick;
       }
@@ -848,22 +857,22 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   }, {
     outcome: 'victory',
     terminal: true,
-    tick: 2214,
-    maximumLivingEnemies: 4,
+    tick: 2086,
+    maximumLivingEnemies: 3,
     maximumConcurrentAttackers: 3,
     pendingSpawnCount: 0,
   });
-  assert.equal(LEVELS[0].roadCells[5], first.towers[0].cellId);
+  assert.equal(first.towers[0].cellId, 'r2c6');
   assert.deepEqual(first.towers, [
     {
-      id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', placementLayer: 'road', combatLayer: 'frontline',
+      id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c6', placementLayer: 'road', combatLayer: 'frontline',
       tier: 0, health: 420, maxHealth: 420, armor: 0.1, engagedEnemyIds: [], totalInvested: 50,
       attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
     },
     {
-      id: 'tower-2', defenderId: 'ranger', cellId: 'r0c5', placementLayer: 'grass', combatLayer: 'backline',
-      tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
-      attackCount: 48, masteryProgress: 3, nextAttackTick: 2256,
+      id: 'tower-2', defenderId: 'ranger', cellId: 'r1c6', placementLayer: 'grass', combatLayer: 'backline',
+      tier: 1, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 155,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 2124,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
