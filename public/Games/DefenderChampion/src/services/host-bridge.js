@@ -4,7 +4,7 @@ const GAME_ID = 'defender-champion';
 const HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
 const SOUND_SETTINGS_MESSAGE = 'APP_SOUND_SETTINGS_UPDATE';
-const PAUSE_REASON_ORDER = Object.freeze(['host', 'visibility', 'manual', 'modal']);
+const PAUSE_REASON_ORDER = Object.freeze(['host', 'orientation', 'visibility', 'manual', 'modal']);
 const MEDAL_ORDER = Object.freeze(['bronze', 'silver', 'gold']);
 const VALID_LEVEL_ID = /^level-(?:[1-9]|10)$/;
 
@@ -54,7 +54,7 @@ export const createHostBridge = ({
   let destroyed = false;
   let rewardsBridgeHealthy = typeof pointsBridge?.init === 'function'
     && typeof pointsBridge?.awardPoints === 'function';
-  let lastPaused = false;
+  let lastPauseSignature = JSON.stringify({ paused: false, reasons: [] });
 
   const getPauseState = () => ({
     paused: pauseReasons.size > 0,
@@ -68,8 +68,9 @@ export const createHostBridge = ({
     } catch {
       // Audio failures cannot interrupt lifecycle handling.
     }
-    if (snapshot.paused !== lastPaused) {
-      lastPaused = snapshot.paused;
+    const signature = JSON.stringify(snapshot);
+    if (signature !== lastPauseSignature) {
+      lastPauseSignature = signature;
       try {
         onPauseChange?.(snapshot);
       } catch {
@@ -87,6 +88,7 @@ export const createHostBridge = ({
 
   const setManualPaused = (paused) => setPauseReason('manual', Boolean(paused));
   const setModalPaused = (paused) => setPauseReason('modal', Boolean(paused));
+  const setOrientationPaused = (paused) => setPauseReason('orientation', Boolean(paused));
 
   const isTrustedHostMessage = (event) => {
     if (!event || !origin || event.origin !== origin) return false;
@@ -260,5 +262,6 @@ export const createHostBridge = ({
     recordBattleResult,
     setManualPaused,
     setModalPaused,
+    setOrientationPaused,
   });
 };

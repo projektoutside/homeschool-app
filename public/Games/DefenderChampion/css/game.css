@@ -30,6 +30,7 @@
 html,
 body {
   width: 100%;
+  height: 100%;
   min-width: 280px;
   min-height: 100%;
   margin: 0;
@@ -39,6 +40,7 @@ body {
 
 body {
   color: var(--cream);
+  overflow: hidden;
   overscroll-behavior: none;
 }
 
@@ -84,10 +86,11 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   isolation: isolate;
   display: grid;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-  overflow: hidden auto;
+  overflow: hidden;
   background:
     radial-gradient(circle at 13% 18%, rgba(117, 169, 78, 0.25), transparent 31rem),
     radial-gradient(circle at 88% 82%, rgba(231, 185, 77, 0.13), transparent 24rem),
@@ -118,6 +121,8 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 #result-screen {
   place-self: center;
   width: min(100%, 620px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  overflow: auto;
 }
 
 .storybook-card {
@@ -200,7 +205,13 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 .icon-button { flex:0 0 44px; width:44px; padding:0; font-size:1.25rem; }
 
 #level-select-screen,
-#battle-screen { width:min(100%, 1160px); margin-inline:auto; }
+#battle-screen {
+  width: min(100%, 1160px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  margin-inline: auto;
+}
+
+#level-select-screen { overflow: auto; }
 
 .screen-header,
 .battle-hud { color:var(--ink); background:var(--parchment); }
@@ -221,8 +232,11 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
   grid-template-areas: "status" "battlefield" "defenders";
   grid-template-rows: auto minmax(300px, 1fr) auto;
   gap: 9px;
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
   min-width: 0;
-  min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
 }
 
 .battle-hud,
@@ -314,6 +328,22 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 .result-card .button { width:100%; margin-top:10px; }
 
 .overlay-screen { position:fixed; z-index:20; inset:0; display:grid; padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); overflow-y:auto; background:rgba(2,17,14,.84); place-items:center; }
+.portrait-lock-card {
+  width: min(100%, 520px);
+  padding: clamp(28px, 7vw, 44px);
+  text-align: center;
+  background: var(--parchment);
+  color: var(--ink);
+}
+#portrait-lock-screen {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: rgba(2, 17, 14, 0.9);
+  place-items: center;
+}
 .guide-card,.settings-card { width:min(100%,620px); max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom)); padding:clamp(20px,5vw,36px); overflow-y:auto; color:var(--ink); background:var(--parchment); }
 .panel-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .guide-list { display:grid; gap:12px; margin:0; padding-left:24px; line-height:1.45; }
@@ -324,6 +354,9 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 .setting-row select { padding-inline:12px; border:2px solid var(--forest-700); border-radius:12px; color:var(--ink); background:var(--cream); }
 
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+html[data-orientation="landscape"] body { overflow: hidden; }
+html[data-orientation="landscape"] #portrait-lock-screen { display: grid; }
 
 @media (max-width: 700px) {
   .menu-actions { grid-template-columns:1fr; }

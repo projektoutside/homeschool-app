@@ -235,6 +235,7 @@ test('the browser shell exposes semantic local-only screens and controls', async
   assert.match(html, /<section id="result-screen" aria-live="polite" hidden>/);
   assert.match(html, /id="how-to-screen"[^>]+role="dialog"[^>]+aria-modal="true"/);
   assert.match(html, /id="settings-screen"[^>]+role="dialog"[^>]+aria-modal="true"/);
+  assert.match(html, /id="portrait-lock-screen"[^>]+role="dialog"[^>]+aria-modal="true"/);
   assert.match(html, /id="status-announcer"[^>]+aria-live="polite"/);
   assert.match(html, /src="\.\.\/shared\/lahsPointsBridge\.js"/);
   assert.match(html, /src="\.\/js\/app\.bundle\.js"/);
@@ -253,6 +254,7 @@ test('the themed layout protects touch, safe-area, focus, motion, and orientatio
   assert.match(css, /min-(?:width|height):\s*44px/);
   assert.match(css, /orientation:\s*landscape/);
   assert.match(css, /touch-action:/);
+  assert.match(css, /#portrait-lock-screen\s*{[^}]*position:\s*fixed;[^}]*inset:\s*0;/s);
   assert.match(css, /#battle-screen\s*{[^}]*min-width:\s*0;/s);
   assert.match(css, /\.battle-hud,[^}]*#battlefield,[^}]*#defender-dock\s*{[^}]*min-width:\s*0;/s);
   assert.match(css, /#battlefield canvas\s*{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
@@ -260,17 +262,18 @@ test('the themed layout protects touch, safe-area, focus, motion, and orientatio
   assert.match(css, /html\[data-motion-preference="reduce"\]/);
 });
 
-test('portrait and tall-tablet battlefields cap their aspect-ratio width so the defender dock stays reachable', async () => {
+test('portrait CSS uses a definite safe-height 3 by 4 battlefield without document scrolling', async () => {
   const css = await readGameFile('css/game.css');
+  const html = await readGameFile('index.html');
 
+  assert.match(html, /id="portrait-lock-screen"[^>]+role="dialog"[^>]+aria-modal="true"/);
+  assert.match(css, /#battlefield\s*{[^}]*aspect-ratio:\s*3\s*\/\s*4;/s);
+  assert.match(css, /#battle-screen\s*{[^}]*height:\s*calc\(100dvh/s);
   assert.match(
     css,
     /#battlefield\s*{[^}]*width:\s*100%;[^}]*max-width:\s*calc\(\(100dvh - 250px\) \* \.75\);/s,
   );
-  assert.match(
-    css,
-    /@media \(orientation:\s*landscape\) and \(max-height:\s*760px\)[\s\S]*#battlefield\s*{[^}]*max-width:\s*none;/,
-  );
+  assert.match(css, /body\s*{[^}]*overflow:\s*hidden;/s);
 });
 
 test('the local entry boots one transparent Phaser game with the declared scene list', async () => {
@@ -286,8 +289,12 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(phaserEntry, /width:\s*720/);
   assert.match(phaserEntry, /height:\s*960/);
   assert.match(main, /Math\.min\([^)]*devicePixelRatio[^)]*,\s*2\)/);
+  assert.match(main, /createOrientationController/);
+  assert.match(main, /orientationController\.start\(\)/);
   assert.match(main, /scenes:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
-  assert.match(main, /if\s*\(paused\)\s*{[^}]*scene\.scene\.isActive\(\)/s);
+  assert.match(main, /game\?\.loop\?\.sleep\?\.\(\)/);
+  assert.match(main, /game\?\.loop\?\.wake\?\.\(\)/);
+  assert.match(phaserEntry, /hostBridge\?\.getPauseState\?\.\(\)\.paused/);
   assert.match(main, /rel\s*=\s*['"]icon['"]/);
   assert.match(main, /data:image\/gif;base64/);
 });
@@ -2832,8 +2839,8 @@ test('ordinary play uses final art, responsive side rails, reduced-motion cosmet
   assert.match(battle, /fillRect\(/);
   assert.match(battle, /strokeRect\(/);
   assert.doesNotMatch(battle, /strokeEllipse|fillCircle|strokeCircle/);
-  assert.match(css, /@media \(orientation:\s*landscape\)[\s\S]*grid-template-areas:[^;]*"status battlefield defenders"/);
-  assert.doesNotMatch(css, /rotate-(?:only|device)|please rotate/i);
+  assert.match(css, /#portrait-lock-screen/);
+  assert.match(css, /html\[data-orientation="landscape"\]/);
   assert.match(css, /#battlefield canvas\s*{[^}]*width:\s*auto\s*!important;[^}]*height:\s*auto\s*!important;/s);
 
   const full = presentation.resolvePresentationLimits(false);

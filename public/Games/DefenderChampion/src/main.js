@@ -9,6 +9,7 @@ import { createHostBridge } from './services/host-bridge.js';
 import { createSaveStore } from './services/save-store.js';
 import { LEVELS } from './config/levels.js';
 import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
+import { createOrientationController } from './ui/orientation-controller.js';
 import { createRuntimeLifecycle } from './runtime-lifecycle.js';
 import { createDefenderPhaserGame } from './phaser-entry.js';
 
@@ -32,6 +33,7 @@ const saveStore = createSaveStore({
 const audioController = createAudioController({ windowRef });
 let game;
 let runtimeLifecycle;
+let orientationController;
 const hostBridge = createHostBridge({
   windowRef,
   documentRef,
@@ -41,7 +43,8 @@ const hostBridge = createHostBridge({
     runtimeLifecycle?.prepareUnload?.();
   },
   onPauseChange({ paused, reasons }) {
-    game?.scene?.getScene?.('BattleScene')?.setExternalPauseReasons?.(reasons);
+    const battleScene = game?.scene?.getScene?.('BattleScene');
+    battleScene?.setExternalPauseReasons?.(reasons);
     game?.scene?.scenes?.forEach((scene) => {
       if (paused) {
         if (scene.scene.isActive()) scene.scene.pause();
@@ -49,8 +52,19 @@ const hostBridge = createHostBridge({
         scene.scene.resume();
       }
     });
+    if (paused) game?.loop?.sleep?.();
+    else {
+      game?.loop?.wake?.();
+      battleScene?.handleResume?.();
+    }
   },
 });
+orientationController = createOrientationController({
+  windowRef,
+  documentRef,
+  hostBridge,
+});
+orientationController.start();
 const hud = createHudController({
   documentRef,
   windowRef,
@@ -79,6 +93,7 @@ runtimeLifecycle = createRuntimeLifecycle({
   game,
   hostBridge,
   hud,
+  orientationController,
 });
 
 const getBattleScene = () => game?.scene?.getScene?.('BattleScene') ?? null;

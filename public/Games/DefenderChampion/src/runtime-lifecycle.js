@@ -12,6 +12,7 @@ export const createRuntimeLifecycle = ({
   game,
   hostBridge,
   hud,
+  orientationController,
 } = {}) => {
   let bfcacheSuspended = false;
   let destroyed = false;
@@ -31,6 +32,7 @@ export const createRuntimeLifecycle = ({
     windowRef?.removeEventListener?.('pageshow', handlePageShow);
     shutdownActiveScenes();
     safelyCall(() => hostBridge?.cleanup?.());
+    safelyCall(() => orientationController?.stop?.());
     safelyCall(() => hud?.destroy?.());
     safelyCall(() => game?.destroy?.(true));
   };

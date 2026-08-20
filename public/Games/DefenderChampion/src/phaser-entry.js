@@ -29,6 +29,7 @@ export const createDefenderPhaserGame = ({
       phaserGame.registry.set('hud', hud);
       phaserGame.registry.set('hostBridge', hostBridge);
       phaserGame.registry.set('audioController', audioController);
+      if (hostBridge?.getPauseState?.().paused) phaserGame.loop.sleep?.();
     },
   },
 });

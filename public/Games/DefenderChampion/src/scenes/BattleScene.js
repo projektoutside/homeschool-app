@@ -683,7 +683,7 @@ export class BattleScene extends Phaser.Scene {
   setExternalPauseReasons(reasons = []) {
     if (!this.simulation || this.destroyed) return;
     if (reasons.length > 0) this.cancelAllPresentationMotion();
-    for (const reason of ['host', 'visibility', 'modal']) {
+    for (const reason of ['host', 'orientation', 'visibility', 'modal']) {
       issueCommand(this.simulation, { type: 'set-pause-reason', reason, active: reasons.includes(reason) });
     }
     this.lastSnapshot = summarizePresentationSimulation(this.simulation);

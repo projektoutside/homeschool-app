@@ -315,7 +315,7 @@ test('standalone direct exit resolves the application root from the current URL'
   assert.deepEqual(browser.navigations, ['https://example.test/repo/']);
 });
 
-test('host, visibility, manual, and modal pause reasons compose independently', () => {
+test('host, orientation, visibility, manual, and modal pause reasons compose independently', () => {
   const browser = createBrowserDoubles({ embedded: true });
   const pauseSnapshots = [];
   const audioPauses = [];
@@ -325,6 +325,7 @@ test('host, visibility, manual, and modal pause reasons compose independently', 
     onPauseChange: (snapshot) => pauseSnapshots.push(snapshot),
   });
 
+  bridge.setOrientationPaused(true);
   bridge.setManualPaused(true);
   bridge.setModalPaused(true);
   browser.documentRef.hidden = true;
@@ -336,9 +337,14 @@ test('host, visibility, manual, and modal pause reasons compose independently', 
   });
   assert.deepEqual(bridge.getPauseState(), {
     paused: true,
-    reasons: ['host', 'visibility', 'manual', 'modal'],
+    reasons: ['host', 'orientation', 'visibility', 'manual', 'modal'],
   });
 
+  bridge.setOrientationPaused(false);
+  assert.deepEqual(pauseSnapshots.at(-1), {
+    paused: true,
+    reasons: ['host', 'visibility', 'manual', 'modal'],
+  });
   bridge.setManualPaused(false);
   bridge.setModalPaused(false);
   browser.documentRef.hidden = false;
