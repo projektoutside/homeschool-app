@@ -10,7 +10,7 @@ import { createSaveStore } from './services/save-store.js';
 import { LEVELS } from './config/levels.js';
 import { createHudController, installQaRuntimeHooks } from './ui/hud-controller.js';
 import { createOrientationController } from './ui/orientation-controller.js';
-import { createRuntimeLifecycle } from './runtime-lifecycle.js';
+import { applyRuntimePauseState, createRuntimeLifecycle } from './runtime-lifecycle.js';
 import { createDefenderPhaserGame } from './phaser-entry.js';
 
 const documentRef = globalThis.document;
@@ -44,19 +44,7 @@ const hostBridge = createHostBridge({
   },
   onPauseChange({ paused, reasons }) {
     const battleScene = game?.scene?.getScene?.('BattleScene');
-    battleScene?.setExternalPauseReasons?.(reasons);
-    game?.scene?.scenes?.forEach((scene) => {
-      if (paused) {
-        if (scene.scene.isActive()) scene.scene.pause();
-      } else if (scene.scene.isPaused()) {
-        scene.scene.resume();
-      }
-    });
-    if (paused) game?.loop?.sleep?.();
-    else {
-      game?.loop?.wake?.();
-      battleScene?.handleResume?.();
-    }
+    applyRuntimePauseState({ battleScene, game, paused, reasons });
   },
 });
 orientationController = createOrientationController({

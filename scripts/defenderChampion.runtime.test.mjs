@@ -276,10 +276,24 @@ test('portrait CSS uses a definite safe-height 3 by 4 battlefield without docume
   assert.match(css, /body\s*{[^}]*overflow:\s*hidden;/s);
 });
 
+test('compact battle controls preserve the forty-four pixel native hit floor', async () => {
+  const css = await readGameFile('css/game.css');
+  assert.match(css, /\.battle-start-button\s*{[^}]*min-height:\s*44px;/s);
+});
+
+test('compact portrait dock preserves space for the contextual action row', async () => {
+  const css = await readGameFile('css/game.css');
+  assert.match(
+    css,
+    /@media \(orientation:\s*portrait\) and \(max-height:\s*680px\)\s*{[\s\S]*?#defender-dock\s*{[^}]*grid-template-areas:\s*"heading heading"\s*"cards panel"\s*"notice notice";[\s\S]*?\.dock-list\s*{[^}]*grid-area:\s*cards;[^}]*grid-template-columns:\s*repeat\(2,[^;]+;[\s\S]*?#tower-panel\s*{[^}]*grid-area:\s*panel;[^}]*grid-template-columns:\s*1fr 1fr;/s,
+  );
+});
+
 test('the local entry boots one transparent Phaser game with the declared scene list', async () => {
-  const [main, phaserEntry] = await Promise.all([
+  const [main, phaserEntry, runtimeLifecycle] = await Promise.all([
     readGameFile('src/main.js'),
     readGameFile('src/phaser-entry.js'),
+    readGameFile('src/runtime-lifecycle.js'),
   ]);
 
   assert.match(main, /from ['"]phaser['"]/);
@@ -292,8 +306,10 @@ test('the local entry boots one transparent Phaser game with the declared scene 
   assert.match(main, /createOrientationController/);
   assert.match(main, /orientationController\.start\(\)/);
   assert.match(main, /scenes:\s*\[\s*BootScene,\s*MenuScene,\s*LevelSelectScene,\s*BattleScene,\s*ResultScene\s*\]/s);
-  assert.match(main, /game\?\.loop\?\.sleep\?\.\(\)/);
-  assert.match(main, /game\?\.loop\?\.wake\?\.\(\)/);
+  assert.match(main, /applyRuntimePauseState\(\{\s*battleScene,\s*game,\s*paused,\s*reasons\s*\}\)/);
+  assert.match(runtimeLifecycle, /export const applyRuntimePauseState/);
+  assert.match(runtimeLifecycle, /game\?\.loop\?\.sleep\?\.\(\)/);
+  assert.match(runtimeLifecycle, /game\?\.loop\?\.wake\?\.\(\)/);
   assert.match(phaserEntry, /hostBridge\?\.getPauseState\?\.\(\)\.paused/);
   assert.match(main, /rel\s*=\s*['"]icon['"]/);
   assert.match(main, /data:image\/gif;base64/);
@@ -724,12 +740,17 @@ test('actual pointer containment and keyboard entry dispatch direct cell command
   const grass = clientFor(440, 40);
 
   scene.handlePointerDown(pointerEvent(grass.x, grass.y), battlefield);
-  assert.equal(scene.focusedCellId, 'r0c5');
+  assert.equal(
+    scene.focusedCellId,
+    'r0c0',
+    'an incompatible pointer rejection must preserve the previously focused square',
+  );
   assert.deepEqual(dispatched, []);
   assert.equal(announcements.at(-1), 'Choose a road square for this melee defender.');
 
   scene.selectedDefenderId = 'ranger';
   scene.handlePointerDown(pointerEvent(grass.x, grass.y, 8), battlefield);
+  assert.equal(scene.focusedCellId, 'r0c5');
   assert.deepEqual(dispatched, [{ type: 'build', defenderId: 'ranger', cellId: 'r0c5' }]);
 
   scene.selectedDefenderId = null;
@@ -2342,6 +2363,52 @@ test('chapter briefing is a contained modal that blocks the battlefield and rest
     hud,
     /closeLevelIntro[\s\S]*?setBattleIntroInert\(false\)[\s\S]*?modalTraps\.intro\.deactivate\(\{\s*restoreFocus\s*\}\)/,
   );
+});
+
+test('runtime pause resumes real scene frames without sleeping the global Phaser loop', async () => {
+  const { applyRuntimePauseState } = await import(
+    '../public/Games/DefenderChampion/src/runtime-lifecycle.js'
+  );
+  const operations = [];
+  let active = true;
+  let paused = false;
+  const battleScene = {
+    handleResume: () => operations.push(['battle-resume']),
+    setExternalPauseReasons: (reasons) => operations.push(['reasons', [...reasons]]),
+  };
+  const game = {
+    loop: {
+      sleep: () => operations.push(['loop-sleep']),
+      wake: () => operations.push(['loop-wake']),
+    },
+    scene: {
+      scenes: [{
+        scene: {
+          isActive: () => active,
+          isPaused: () => paused,
+          pause() {
+            operations.push(['scene-pause']);
+          },
+          resume() {
+            operations.push(['scene-resume']);
+          },
+        },
+      }],
+    },
+  };
+
+  applyRuntimePauseState({ battleScene, game, paused: true, reasons: ['manual'] });
+  applyRuntimePauseState({ battleScene, game, paused: true, reasons: ['host', 'manual'] });
+  applyRuntimePauseState({ battleScene, game, paused: false, reasons: [] });
+
+  assert.deepEqual(operations, [
+    ['reasons', ['manual']],
+    ['scene-pause'],
+    ['reasons', ['host', 'manual']],
+    ['reasons', []],
+    ['scene-resume'],
+    ['battle-resume'],
+  ]);
 });
 
 test('BFCache transitions suspend and restore one runtime while real unload destroys it', async () => {

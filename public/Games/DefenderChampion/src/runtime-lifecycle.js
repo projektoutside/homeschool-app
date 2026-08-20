@@ -6,6 +6,37 @@ const safelyCall = (callback) => {
   }
 };
 
+const pausedScenesByGame = new WeakMap();
+
+export const applyRuntimePauseState = ({
+  battleScene,
+  game,
+  paused = false,
+  reasons = [],
+} = {}) => {
+  battleScene?.setExternalPauseReasons?.(reasons);
+  if (game) {
+    let pausedScenes = pausedScenesByGame.get(game);
+    if (!pausedScenes) {
+      pausedScenes = new Set();
+      pausedScenesByGame.set(game, pausedScenes);
+    }
+    if (paused) {
+      game.scene?.scenes?.forEach((scene) => {
+        if (pausedScenes.has(scene) || scene.scene.isPaused() || !scene.scene.isActive()) return;
+        pausedScenes.add(scene);
+        scene.scene.pause();
+      });
+    } else {
+      pausedScenes.forEach((scene) => {
+        if (scene.scene.isPaused() || scene.scene.isActive()) scene.scene.resume();
+      });
+      pausedScenes.clear();
+    }
+  }
+  if (!paused) battleScene?.handleResume?.();
+};
+
 export const createRuntimeLifecycle = ({
   windowRef = globalThis.window,
   audioController,

@@ -525,13 +525,15 @@ export class BattleScene extends Phaser.Scene {
     const cellId = resolveCellFromWorldPoint(point);
     const cell = getGridCell(this.level, cellId);
     if (!cell) return;
-    this.focusedCellId = cell.id;
     const tower = [...this.towerById.values()].find((entry) => entry.cellId === cell.id);
     if (tower) {
       this.selectTower(tower.id);
       return;
     }
-    this.attemptBuildAtCell(cell);
+    if (this.attemptBuildAtCell(cell)) {
+      this.focusedCellId = cell.id;
+      this.updateFocusViews();
+    }
   }
 
   releasePointer(event, battlefield) {

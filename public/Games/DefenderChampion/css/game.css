@@ -298,7 +298,7 @@ h2 { margin-bottom: 5px; font-size: clamp(1.38rem, 4.8vw, 2.15rem); line-height:
 #defender-dock { grid-area:defenders; padding:10px; border:2px solid rgba(255,229,154,.42); border-radius:var(--radius-md); background:rgba(7,29,26,.9); }
 .dock-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px; }
 .dock-title { margin:0; color:var(--gold-200); font:800 .72rem/1 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
-.battle-start-button { min-height:40px; padding-block:7px; }
+.battle-start-button { min-height:44px; padding-block:7px; }
 .dock-list { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
 .defender-card { min-width:44px; padding:8px 6px; overflow:hidden; border:1px solid rgba(255,229,154,.3); border-radius:12px; color:var(--cream); background:rgba(23,72,59,.75); }
 .defender-card[aria-pressed="true"] { border-color:var(--gold-200); color:var(--ink); background:var(--gold-200); box-shadow:0 0 0 2px var(--gold-600); }
@@ -378,6 +378,36 @@ html[data-orientation="landscape"] #portrait-lock-screen { display: grid; }
   .button { padding-inline:12px; }
   .defender-card { min-height:52px; padding-inline:3px; }
   .defender-card small { font-size:.58rem; }
+}
+
+@media (orientation: portrait) and (max-height: 680px) {
+  #defender-dock {
+    display:grid;
+    grid-template-areas:"heading heading" "cards panel" "notice notice";
+    grid-template-columns:1fr 1fr;
+    gap:4px 6px;
+    padding:6px;
+  }
+  .dock-heading { grid-area:heading; margin-bottom:0; }
+  .dock-list { grid-area:cards; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; align-content:start; }
+  .defender-card { min-height:44px; padding:3px 2px; }
+  .defender-card span { font-size:.58rem; }
+  .defender-card small { font-size:.48rem; line-height:1.05; }
+  .battle-notice { grid-area:notice; margin:0; padding:4px 6px; font-size:.65rem; }
+  #tower-panel {
+    grid-area:panel;
+    grid-template-columns:1fr 1fr;
+    align-content:start;
+    gap:4px;
+    margin:0;
+    padding:0 0 0 6px;
+    border-top:0;
+    border-left:1px solid rgba(255,229,154,.24);
+  }
+  #tower-panel > div { grid-column:1/-1; }
+  #tower-panel-stats { font-size:.58rem; line-height:1.1; }
+  .mastery-track { height:4px; margin-top:3px; }
+  #tower-panel .button { padding-inline:3px; font-size:.68rem; }
 }
 
 @media (orientation: landscape) and (max-height: 760px) {
