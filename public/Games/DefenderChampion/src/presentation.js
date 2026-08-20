@@ -183,7 +183,9 @@ export const resolvePlacementMarkerState = ({
 };
 
 export const resolvePlacementPrompt = (layer) => (
-  layer === 'road' ? 'Choose a road guard slot' : 'Choose a grass ranged slot'
+  layer === 'road'
+    ? 'Choose a road square for this melee defender'
+    : 'Choose a grass square for this ranged defender'
 );
 
 export const attemptPlacementBuild = ({

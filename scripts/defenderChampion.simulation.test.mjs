@@ -4,6 +4,10 @@ import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders
 import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { cellCenter } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
+import {
+  getDeprecatedCellPlacements,
+  isRoadCellEnemyCovered,
+} from '../public/Games/DefenderChampion/src/core/grid-placement.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 import {
   advanceSimulation,
@@ -61,6 +65,8 @@ test('cell builds expose cell IDs in snapshots and strategy metrics', () => {
   assert.equal(summary.towers[0].cellId, cellId);
   assert.equal(Object.hasOwn(summary.towers[0], 'padId'), false);
   assert.deepEqual(summary.occupiedCellIds, [cellId]);
+  assert.equal(Object.isFrozen(summary.occupiedCellIds), true);
+  assert.throws(() => summary.occupiedCellIds.push('r0c0'), TypeError);
   assert.deepEqual(summary.purchaseHistory, [{
     tick: 0,
     type: 'build',
@@ -69,6 +75,93 @@ test('cell builds expose cell IDs in snapshots and strategy metrics', () => {
     cellId,
     cost: DEFENDERS.bladeguard.costs[0],
   }]);
+});
+
+test('road coverage includes the forty-pixel boundary, clamps progress, and ignores dead enemies', () => {
+  const level = LEVELS[0];
+  const thirdRoadCell = level.roadCells[2];
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: thirdRoadCell, enemies: [{ health: 1, pathProgress: 120 }],
+  }), true);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: thirdRoadCell, enemies: [{ health: 1, pathProgress: 200 }],
+  }), true);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: thirdRoadCell, enemies: [{ health: 1, pathProgress: 119 }],
+  }), false);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: thirdRoadCell, enemies: [{ health: 1, pathProgress: 201 }],
+  }), false);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: level.roadCells[0], enemies: [{ health: 1, pathProgress: -1 }],
+  }), true);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: 'r11c4', enemies: [{ health: 1, pathProgress: 9_999 }],
+  }), true);
+  assert.equal(isRoadCellEnemyCovered({
+    level, cellId: thirdRoadCell, enemies: [{ health: 0, pathProgress: 160 }],
+  }), false);
+});
+
+test('new cell commands reject duplicate and invalid cells without charging coins', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.coins = 1_000;
+  const cellId = simulation.level.roadCells[0];
+  assert.deepEqual(issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', cellId }), {
+    accepted: true,
+    reason: null,
+  });
+  const coinsAfterBuild = simulation.coins;
+  assert.deepEqual(issueCommand(simulation, { type: 'build', defenderId: 'ironwarden', cellId }), {
+    accepted: false,
+    reason: 'cell-occupied',
+  });
+  assert.equal(simulation.coins, coinsAfterBuild);
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: 'r12c9',
+  }), { accepted: false, reason: 'invalid-cell' });
+  assert.equal(simulation.coins, coinsAfterBuild);
+});
+
+test('deprecated pad mappings cover every level with fixed road cells and unique grass cells', () => {
+  const expected = {
+    'level-1': ['r2c7', 'r0c5', 'r4c4', 'r1c1', 'r7c3', 'r4c1', 'r9c6', 'r5c5'],
+    'level-2': ['r2c4', 'r0c3', 'r5c8', 'r1c6', 'r7c3', 'r1c3', 'r9c7', 'r5c6'],
+    'level-3': ['r1c3', 'r0c3', 'r5c0', 'r2c0', 'r7c5', 'r4c3', 'r9c7', 'r6c6'],
+    'level-4': ['r2c5', 'r0c5', 'r3c3', 'r1c1', 'r5c7', 'r4c4', 'r8c5', 'r4c2'],
+    'level-5': ['r2c2', 'r0c2', 'r4c7', 'r1c7', 'r6c2', 'r2c1', 'r8c6', 'r3c6'],
+    'level-6': ['r2c8', 'r0c7', 'r5c5', 'r2c5', 'r7c3', 'r4c2', 'r9c6', 'r6c5'],
+    'level-7': ['r2c2', 'r0c3', 'r4c4', 'r1c7', 'r6c8', 'r4c0', 'r8c3', 'r5c7'],
+    'level-8': ['r2c4', 'r0c3', 'r4c4', 'r1c6', 'r6c6', 'r3c1', 'r8c5', 'r3c3'],
+    'level-9': ['r2c3', 'r0c2', 'r5c6', 'r3c6', 'r8c3', 'r4c2', 'r10c8', 'r5c5'],
+    'level-10': ['r2c6', 'r0c4', 'r5c4', 'r1c7', 'r8c8', 'r4c0', 'r9c1', 'r5c7'],
+  };
+  for (const level of LEVELS) {
+    const records = getDeprecatedCellPlacements(level);
+    assert.deepEqual(records.map(({ cellId }) => cellId), expected[level.id], level.id);
+    const grassCellIds = records.filter(({ id }) => /-pad-[bdfh]$/.test(id)).map(({ cellId }) => cellId);
+    assert.equal(new Set(grassCellIds).size, 4, `${level.id} grass cells stay unique`);
+  }
+});
+
+test('deprecated grass placement resolves equal distances by row before column', () => {
+  const level = {
+    pads: [
+      { id: 'l0-pad-b', layer: 'grass', x: 120, y: 80 },
+      { id: 'l0-pad-d', layer: 'grass', x: 120, y: 80 },
+    ],
+    roadCells: ['r0c0', 'r1c0'],
+    cells: [
+      { id: 'r0c0', terrain: 'road' },
+      { id: 'r0c1', terrain: 'grass' },
+      { id: 'r1c0', terrain: 'road' },
+      { id: 'r1c1', terrain: 'grass' },
+    ],
+  };
+  assert.deepEqual(getDeprecatedCellPlacements(level), [
+    { id: 'l0-pad-b', cellId: 'r0c1' },
+    { id: 'l0-pad-d', cellId: 'r1c1' },
+  ]);
 });
 
 test('presentation snapshots omit nonvisual effect fan-out without weakening full deterministic summaries', () => {

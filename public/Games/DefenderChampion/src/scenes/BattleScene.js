@@ -10,6 +10,7 @@ import {
   projectPathProgress,
   resolvePlacementPoint,
 } from '../core/path-geometry.js';
+import { getLegacyPadIdForCell } from '../core/grid-placement.js';
 import {
   advanceSimulation,
   clearPresentationEvents,
@@ -262,6 +263,15 @@ export class BattleScene extends Phaser.Scene {
 
   resolvePlacementPosition(placement) {
     return toWorldPoint(resolvePlacementPoint(this.level, placement));
+  }
+
+  resolveLegacyTowerPad(tower) {
+    const padId = getLegacyPadIdForCell(this.level, tower?.cellId) ?? tower?.padId ?? null;
+    return this.padById?.get(padId) ?? this.level.pads.find((pad) => pad.id === padId) ?? null;
+  }
+
+  isTowerAtLegacyPad(tower, pad) {
+    return Boolean(pad) && this.resolveLegacyTowerPad(tower)?.id === pad.id;
   }
 
   createOptionalProps() {
@@ -528,7 +538,7 @@ export class BattleScene extends Phaser.Scene {
     if (!point) return;
     const pad = this.resolvePointerPlacement(point);
     if (!pad) return;
-    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
     if (!tower && this.selectedDefenderId && !this.isPlacementCompatible(pad)) {
       this.attemptBuildAtPad(pad);
       return;
@@ -601,7 +611,7 @@ export class BattleScene extends Phaser.Scene {
   confirmFocusedTarget() {
     if (this.lastSnapshot?.terminal || this.terminalHandled) return;
     const pad = this.level.pads[this.focusIndex];
-    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
     if (tower) this.selectTower(tower.id);
     else this.attemptBuildAtPad(pad);
   }
@@ -625,7 +635,7 @@ export class BattleScene extends Phaser.Scene {
 
   announceFocusedTarget() {
     const pad = this.level.pads[this.focusIndex];
-    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
     if (tower) {
       this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}. Press Enter to inspect.`);
       return;
@@ -643,7 +653,7 @@ export class BattleScene extends Phaser.Scene {
     this.selectedTowerId = null;
     const layer = DEFENDERS[defenderId].placementLayer;
     const firstCompatibleIndex = this.level.pads.findIndex((pad) => (
-      pad.layer === layer && ![...this.towerById.values()].some((tower) => tower.padId === pad.id)
+      pad.layer === layer && ![...this.towerById.values()].some((tower) => this.isTowerAtLegacyPad(tower, pad))
     ));
     if (firstCompatibleIndex >= 0) this.focusIndex = firstCompatibleIndex;
     this.hud.announce(`${DEFENDER_PRESENTATION[defenderId].name} selected. ${resolvePlacementPrompt(layer)}.`);
@@ -656,7 +666,7 @@ export class BattleScene extends Phaser.Scene {
     if (!tower) return;
     this.selectedTowerId = towerId;
     this.selectedDefenderId = null;
-    this.focusIndex = this.level.pads.findIndex((pad) => pad.id === tower.padId);
+    this.focusIndex = this.level.pads.findIndex((pad) => this.isTowerAtLegacyPad(tower, pad));
     this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}, selected.`);
     this.refreshProjection(true);
   }
@@ -1002,7 +1012,7 @@ export class BattleScene extends Phaser.Scene {
         );
         if (kind === 'tower-mastery') {
           const tower = this.towerById.get(payload.towerId);
-          const pad = tower && this.padById.get(tower.padId);
+          const pad = tower && this.resolveLegacyTowerPad(tower);
           if (pad) this.spawnBurst(this.resolvePlacementPosition(pad), GAMEPLAY_FRAME.victoryBurst, 7, event.id);
         }
         this.audioController?.playCue?.(kind === 'tower-mastery' ? 'mastery' : 'attack');
@@ -1363,7 +1373,7 @@ export class BattleScene extends Phaser.Scene {
 
   projectTowers(snapshot) {
     syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
-      const pad = this.padById.get(tower.padId);
+      const pad = this.resolveLegacyTowerPad(tower);
       const position = this.resolvePlacementPosition(pad);
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
@@ -1391,7 +1401,7 @@ export class BattleScene extends Phaser.Scene {
       body.setScale(bodyScale);
       view._baseScale = bodyScale;
       view._defenderId = tower.defenderId;
-      view._padId = tower.padId;
+      view._padId = pad.id;
       view._aura.setTint(tint).setAlpha(tower.tier === 2 ? 0.46 : 0.28)
         .setScale(tower.tier === 2 ? 0.38 : 0.29).setVisible(tower.tier > 0);
       view._rank.setTint(tint).setScale(0.18).setVisible(tower.tier === 2);
@@ -1412,7 +1422,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   projectPlacementMarkers(snapshot) {
-    const occupiedByPad = new Map(snapshot.towers.map((tower) => [tower.padId, tower.id]));
+    const occupiedByPad = new Map(snapshot.towers
+      .map((tower) => [this.resolveLegacyTowerPad(tower)?.id ?? null, tower.id])
+      .filter(([padId]) => padId !== null));
     const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
     for (const pad of this.level.pads) {
       const view = this.padSprites.get(pad.id);
@@ -1512,7 +1524,7 @@ export class BattleScene extends Phaser.Scene {
     const pad = this.level.pads[this.focusIndex];
     if (!pad) return;
     const position = this.resolvePlacementPosition(pad);
-    const tower = [...this.towerById.values()].find((entry) => entry.padId === pad.id);
+    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
     this.focusRing.clear();
     if (!this.battlefieldHasFocus) {
       this.focusRing.setVisible(false);

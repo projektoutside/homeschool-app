@@ -317,7 +317,7 @@ const getStrategyMetrics = (simulation) => {
     purchaseHistory: simulation.purchaseHistory.map((purchase) => ({ ...purchase })),
     spendByDefender,
     highestSpendDefenderId,
-    occupiedCellIds: [...occupiedCellIds].sort(),
+    occupiedCellIds: Object.freeze([...occupiedCellIds].sort()),
   };
 };
 

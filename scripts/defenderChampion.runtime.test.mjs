@@ -354,9 +354,9 @@ test('typed marker projection keeps cross-layer pointer and keyboard builds iner
     selectedFrame: false,
     visible: true,
   }, 'an empty marker cannot become selected through a null tower-id comparison');
-  assert.equal(resolvePlacementPrompt('road'), 'Choose a road guard slot');
-  assert.equal(resolvePlacementPrompt('grass'), 'Choose a grass ranged slot');
-  assert.equal(resolveCommandRejectionMessage('placement-layer-mismatch', 'road'), 'Choose a road guard slot.');
+  assert.equal(resolvePlacementPrompt('road'), 'Choose a road square for this melee defender');
+  assert.equal(resolvePlacementPrompt('grass'), 'Choose a grass square for this ranged defender');
+  assert.equal(resolveCommandRejectionMessage('placement-layer-mismatch', 'road'), 'Choose a road square for this melee defender.');
   assert.equal(resolveCommandRejectionMessage('defender-engaged'), 'That road defender is fighting and cannot be sold.');
 
   assert.match(battleScene, /view\._placementLayer\s*=\s*pad\.layer/);
@@ -419,7 +419,7 @@ test('actual pointer and keyboard entry methods reject cross-layer builds withou
   assert.equal(scene.selectedDefenderId, 'bladeguard');
   assert.equal(scene.selectedTowerId, null);
   assert.equal(scene.lastSnapshot.coins, 150);
-  assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+  assert.equal(announcements.at(-1), 'Choose a road square for this melee defender.');
 
   const announcementCount = announcements.length;
   scene.handlePointerDown(pointerEvent(grassCenter.x + 22.1, grassCenter.y, 8), battlefield);
@@ -437,7 +437,7 @@ test('actual pointer and keyboard entry methods reject cross-layer builds withou
   assert.equal(scene.focusIndex, 1);
   assert.equal(scene.selectedDefenderId, 'bladeguard');
   assert.equal(scene.selectedTowerId, null);
-  assert.equal(announcements.at(-1), 'Choose a road guard slot.');
+  assert.equal(announcements.at(-1), 'Choose a road square for this melee defender.');
 
   const selectedTowers = [];
   scene.selectedDefenderId = null;
@@ -478,15 +478,53 @@ test('the shared placement gate blocks an incompatible command before dispatch',
     reason: 'placement-layer-mismatch',
   });
   assert.deepEqual(dispatched, [], 'incompatible input never reaches simulation commands');
-  assert.deepEqual(announcements, ['Choose a road guard slot.']);
+  assert.deepEqual(announcements, ['Choose a road square for this melee defender.']);
 
   assert.deepEqual(attemptPlacementBuild({
     ...incompatible,
     pad: { id: 'l1-pad-a', layer: 'road' },
   }), { accepted: true, reason: null });
   assert.deepEqual(dispatched, [{
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'l1-pad-a',
   }]);
+});
+
+test('cell-only tower snapshots project through the deprecated renderer pad adapter', async () => {
+  const [
+    { BattleScene },
+    { LEVELS },
+  ] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+  ]);
+  const view = Object.assign(createSceneView(), {
+    _aura: {
+      setAlpha() { return this; }, setScale() { return this; }, setTint() { return this; }, setVisible() { return this; },
+    },
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+    _rank: {
+      setScale() { return this; }, setTint() { return this; }, setVisible() { return this; },
+    },
+  });
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    defenderPool: { acquire: () => view, release() {} },
+    level: LEVELS[0],
+    padById: new Map(LEVELS[0].pads.map((pad) => [pad.id, pad])),
+    towerSprites: new Map(),
+  });
+
+  BattleScene.prototype.projectTowers.call(scene, {
+    towers: [{
+      id: 'tower-1', defenderId: 'ranger', cellId: 'r0c5', placementLayer: 'grass', combatLayer: 'backline',
+      tier: 0, health: 1, maxHealth: 1,
+    }],
+  });
+
+  assert.equal(view._padId, 'l1-pad-b');
+  assert.deepEqual({ x: view.x, y: view.y }, { x: 540, y: 144.5 });
 });
 
 test('fatal defender presentation hides frontline health before its fade starts', async () => {
