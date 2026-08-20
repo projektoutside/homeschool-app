@@ -19,12 +19,18 @@ import {
   advanceSimulation,
   createSimulation,
   issueCommand,
+  summarizePresentationSimulation,
+  summarizeSimulation,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
-import { spawnScheduledEnemies } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
+import {
+  enqueueEnemySpawn,
+  flushPendingEnemySpawns,
+  spawnScheduledEnemies,
+} from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
-const testRoadCellId = 'r1c4';
-const testGrassCellId = 'r0c5';
-const testRoadProgress = LEVELS[0].pads.find(({ id }) => id === 'l1-pad-a').pathProgress;
+const testRoadCellId = 'r4c3';
+const testGrassCellId = 'r3c3';
+const testRoadProgress = 880;
 
 const createCombatEnemy = (id, enemyId, overrides = {}) => {
   const config = ENEMIES[enemyId];
@@ -68,14 +74,10 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
   simulation.nextSpawnIndex = 0;
   simulation.spawnedAllWaves = true;
   simulation.coins = 1000;
-  const placement = simulation.level.pads.find((pad) => (
-    pad.layer === DEFENDERS[defenderId].placementLayer
-  ));
-  issueCommand(simulation, { type: 'build', defenderId, padId: placement.id });
-  // Combat assertions use the fixed road-range fixture; placement validity is covered separately.
-  simulation.towers[0].cellId = DEFENDERS[defenderId].placementLayer === 'road'
+  const cellId = DEFENDERS[defenderId].placementLayer === 'road'
     ? testRoadCellId
     : testGrassCellId;
+  issueCommand(simulation, { type: 'build', defenderId, cellId });
   simulation.towers[0].tier = tier;
   simulation.towers[0].attackCount = attackCount;
   simulation.enemies = enemies;
@@ -85,7 +87,7 @@ const createTowerCombat = (defenderId, tier, attackCount, enemies) => {
 test('combat resolves a cell-based defender position from the grid center', () => {
   const simulation = createSimulation('level-1', { qa: true });
   const defender = DEFENDERS.ranger;
-  const cellId = 'r1c5';
+  const cellId = 'r3c3';
   simulation.towers = [{
     id: 'tower-cell',
     defenderId: defender.id,
@@ -141,9 +143,9 @@ test('every enemy has an immutable role-shaped frontline attack profile', () => 
 
 test('enemy hit and defeat events retain the resolved queue presentation fallback', () => {
   const enemy = createCombatEnemy('enemy-queued', 'blight-walker', {
-    displayLaneOffset: 28,
+    displayLaneOffset: -22,
     displayPathProgress: 150,
-    displayScale: 0.075,
+    displayScale: 1,
     health: 1,
     laneState: 'queued',
     queueIndex: 5,
@@ -171,13 +173,108 @@ test('enemy hit and defeat events retain the resolved queue presentation fallbac
       laneState: payload.laneState,
       queueIndex: payload.queueIndex,
     }, {
-      displayLaneOffset: 28,
+      displayLaneOffset: -22,
       displayPathProgress: 150,
-      displayScale: 0.075,
+      displayScale: 1,
       laneState: 'queued',
       queueIndex: 5,
     });
   }
+});
+
+test('an early road-cell gate admits only readable FIFO spawns', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.pendingSpawns = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 10_000;
+  assert.equal(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[2],
+  }).accepted, true);
+  const requestedEnemyIds = [
+    'skitter', 'shellguard', 'hexcaller', 'crusher',
+    'blight-walker', 'swarmkin', 'skitter', 'shellguard',
+  ];
+  requestedEnemyIds.forEach((enemyId) => enqueueEnemySpawn(simulation, {
+    enemyId, pathProgress: 0, waveIndex: 0,
+  }));
+
+  flushPendingEnemySpawns(simulation);
+
+  assert.deepEqual(simulation.enemies.map(({ enemyId }) => enemyId), [
+    'skitter', 'shellguard', 'hexcaller', 'crusher', 'blight-walker',
+  ]);
+  assert.deepEqual(
+    simulation.pendingSpawns.map(({ enemyId, sequence }) => ({ enemyId, sequence })),
+    [
+      { enemyId: 'swarmkin', sequence: 6 },
+      { enemyId: 'skitter', sequence: 7 },
+      { enemyId: 'shellguard', sequence: 8 },
+    ],
+  );
+});
+
+test('building an early gate never deletes living enemies and defers only later FIFO requests', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.pendingSpawns = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 10_000;
+  const initialEnemyIds = [
+    'skitter', 'shellguard', 'hexcaller', 'crusher', 'blight-walker',
+    'swarmkin', 'skitter', 'shellguard', 'hexcaller', 'crusher',
+  ];
+  initialEnemyIds.forEach((enemyId) => enqueueEnemySpawn(simulation, {
+    enemyId, pathProgress: 0, waveIndex: 0,
+  }));
+  flushPendingEnemySpawns(simulation);
+  const originalEntityIds = simulation.enemies.map(({ id }) => id);
+
+  assert.equal(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[2],
+  }).accepted, true);
+  enqueueEnemySpawn(simulation, { enemyId: 'swarmkin', pathProgress: 0, waveIndex: 0 });
+  enqueueEnemySpawn(simulation, { enemyId: 'blight-walker', pathProgress: 0, waveIndex: 0 });
+  flushPendingEnemySpawns(simulation);
+
+  assert.deepEqual(simulation.enemies.map(({ id }) => id), originalEntityIds);
+  assert.deepEqual(simulation.pendingSpawns.map(({ enemyId, sequence }) => ({ enemyId, sequence })), [
+    { enemyId: 'swarmkin', sequence: 11 },
+    { enemyId: 'blight-walker', sequence: 12 },
+  ]);
+
+  simulation.towers = [];
+  flushPendingEnemySpawns(simulation);
+  assert.deepEqual(simulation.enemies.slice(-2).map(({ enemyId }) => enemyId), [
+    'swarmkin', 'blight-walker',
+  ]);
+  assert.deepEqual(simulation.pendingSpawns, []);
+});
+
+test('deterministic and presentation summaries retain the maximum attacker high-water mark', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.pendingSpawns = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 10_000;
+  const gateCellId = LEVELS[0].roadCells[20];
+  assert.equal(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: gateCellId,
+  }).accepted, true);
+  simulation.enemies = Array.from({ length: 4 }, (_, index) => createCombatEnemy(
+    `enemy-${index + 20}`,
+    'blight-walker',
+    { pathProgress: 1599, speed: 0 },
+  ));
+  simulation.towers[0].nextAttackTick = Number.MAX_SAFE_INTEGER;
+
+  stepCombat(simulation);
+  const deterministic = summarizeSimulation(simulation);
+  const presentation = summarizePresentationSimulation(simulation);
+  simulation.maximumConcurrentAttackers = 0;
+
+  assert.equal(deterministic.maximumConcurrentAttackers, 3);
+  assert.equal(presentation.maximumConcurrentAttackers, 3);
 });
 
 test('stepCombat starts and impacts an armored frontline on the exact active ticks', () => {
@@ -260,15 +357,19 @@ test('a defeated first frontline grants no refund and releases toward the fallba
     attackWindupTicks: 0,
     health: 10_000,
     maxHealth: 10_000,
-    pathProgress: testRoadProgress,
+    pathProgress: 80,
     speed: 60,
   });
   const simulation = createSimulation('level-1', { qa: true });
   simulation.waveSchedule = [];
   simulation.spawnedAllWaves = true;
   simulation.coins = 1_000;
-  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
-  issueCommand(simulation, { type: 'build', defenderId: 'ironwarden', padId: 'l1-pad-c' });
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[1],
+  });
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'ironwarden', cellId: LEVELS[0].roadCells[3],
+  });
   simulation.towers[1].nextAttackTick = Number.MAX_SAFE_INTEGER;
   simulation.enemies = [enemy];
   const coinsBeforeImpact = simulation.coins;
@@ -276,7 +377,7 @@ test('a defeated first frontline grants no refund and releases toward the fallba
   simulation.tick = 0;
   stepCombat(simulation);
   const stoppedProgress = enemy.pathProgress;
-  assert.equal(simulation.towers.some(({ padId }) => padId === 'l1-pad-a'), false);
+  assert.equal(simulation.towers.some(({ cellId }) => cellId === LEVELS[0].roadCells[1]), false);
   assert.equal(simulation.coins, coinsBeforeImpact);
   assert.equal(enemy.blockingTowerId, null);
   assert.equal(enemy.laneReleasedAtTick, 0);
@@ -505,14 +606,16 @@ test('an enemy cannot hit the castle until the tick after defeating the last blo
     attackWindupTicks: 0,
     health: 10_000,
     maxHealth: 10_000,
-    pathProgress: 1_218,
+    pathProgress: 1_360,
     speed: 200_000,
   });
   const simulation = createSimulation('level-1', { qa: true });
   simulation.waveSchedule = [];
   simulation.spawnedAllWaves = true;
   simulation.coins = 1_000;
-  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-g' });
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[17],
+  });
   simulation.enemies = [enemy];
 
   simulation.tick = 0;

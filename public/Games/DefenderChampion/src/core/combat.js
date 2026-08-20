@@ -1,7 +1,7 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
 import { cellCenter } from './grid-geometry.js';
-import { createPathMetrics, resolvePlacementPoint } from './path-geometry.js';
+import { createPathMetrics } from './path-geometry.js';
 import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
 import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
@@ -55,10 +55,7 @@ const enemyPresentationFields = (enemy) => ({
   queueIndex: enemy.queueIndex ?? null,
 });
 
-const getTowerPosition = (simulation, tower) => {
-  const legacyPlacement = simulation.level.pads.find(({ id }) => id === tower.legacyPadId);
-  return legacyPlacement ? resolvePlacementPoint(simulation.level, legacyPlacement) : cellCenter(tower.cellId);
-};
+const getTowerPosition = (_simulation, tower) => cellCenter(tower.cellId);
 
 const effectKey = (targetId, kind) => `${targetId}\u0000${kind}`;
 

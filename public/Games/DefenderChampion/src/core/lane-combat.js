@@ -1,14 +1,13 @@
 import { compareEntitiesById, compareEntityIds } from './entity-id.js';
-import { ROAD_WIDTH, projectPathProgress } from './path-geometry.js';
+import { GRID } from './grid-geometry.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
 const MAX_ATTACKERS_PER_GATE = 3;
+const MAX_READABLE_ENEMIES = 18;
 const DEFAULT_ATTACK_TARGETS = Object.freeze(['frontline']);
-const CONTACT_DISTANCE = 18;
-const CONTACT_LANES = Object.freeze([-ROAD_WIDTH / 4, 0, ROAD_WIDTH / 4]);
-const QUEUE_DISTANCE = 44;
-const QUEUE_ROW_SPACING = 24;
-const QUEUE_ENTRANCE_MARGIN = 6;
+const ATTACKER_OFFSETS = Object.freeze([-22, 0, 22]);
+const ATTACK_CONTACT_PROGRESS = 28;
+const QUEUE_SPACING = 48;
 export const QUEUE_PRESENTATION_FOOTPRINT = 80;
 export const MAX_QUEUE_OVERLAP_RATIO = 1 / 3;
 
@@ -16,8 +15,13 @@ const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, v
 const isLiving = (entity) => entity && entity.health > 0;
 const isStunned = (simulation, enemy) => (enemy.stunnedUntilTick ?? 0) > simulation.tick;
 
-const getPlacement = (simulation, tower) => simulation.level.pads
-  .find((placement) => placement.id === tower.padId);
+const getCellTerrain = (simulation, tower) => simulation.level.cells
+  ?.find(({ id }) => id === tower.cellId)?.terrain ?? null;
+
+export const getGateProgress = (level, cellId) => {
+  const roadIndex = level?.roadCells?.indexOf(cellId) ?? -1;
+  return roadIndex < 0 ? Number.NaN : roadIndex * GRID.cellSize;
+};
 
 const createIdleAttackState = (readyAtTick = 0) => ({
   targetTowerId: null,
@@ -36,78 +40,22 @@ const compareGateCandidates = (first, second) => (
   || compareEntityIds(first.id, second.id)
 );
 
-const findMinimumQueueSpacing = (slots, pathMetrics) => {
-  if (!pathMetrics || slots.length < 2) return Number.POSITIVE_INFINITY;
-  const cellSize = ROAD_WIDTH;
-  const cells = new Map();
-  let minimum = Number.POSITIVE_INFINITY;
-  for (const slot of slots) {
-    const point = projectPathProgress(pathMetrics, slot.pathProgress, slot.laneOffset);
-    const cellX = Math.floor(point.x / cellSize);
-    const cellY = Math.floor(point.y / cellSize);
-    for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
-      for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
-        const neighbors = cells.get(`${cellX + xOffset}:${cellY + yOffset}`) ?? [];
-        for (const neighbor of neighbors) {
-          minimum = Math.min(minimum, Math.hypot(point.x - neighbor.x, point.y - neighbor.y));
-        }
-      }
-    }
-    const key = `${cellX}:${cellY}`;
-    const occupants = cells.get(key) ?? [];
-    occupants.push(point);
-    cells.set(key, occupants);
-  }
-  return minimum;
-};
-
 export const createQueuePresentationLayout = ({
   gatePathProgress,
   minimumPathProgress = 0,
-  pathMetrics = null,
   queueCount,
 } = {}) => {
   const count = Number.isInteger(queueCount) && queueCount > 0 ? queueCount : 0;
   if (count === 0) return Object.freeze([]);
   const gateProgress = Math.max(0, Number(gatePathProgress) || 0);
   const minimumProgress = Math.max(0, Number(minimumPathProgress) || 0);
-  const rowCount = Math.ceil(count / CONTACT_LANES.length);
-  const frontProgress = Math.max(minimumProgress, gateProgress - QUEUE_DISTANCE);
-  const availableProgress = Math.max(0, frontProgress - minimumProgress);
-  const entranceProgress = minimumProgress + Math.min(
-    QUEUE_ENTRANCE_MARGIN,
-    availableProgress / (rowCount + 1),
-  );
-  const rowSpacing = rowCount <= 1
-    ? QUEUE_ROW_SPACING
-    : (frontProgress - entranceProgress) / (rowCount - 1);
-  const slots = Array.from({ length: count }, (_, index) => ({
-    laneOffset: CONTACT_LANES[index % CONTACT_LANES.length],
-    pathProgress: frontProgress - (Math.floor(index / CONTACT_LANES.length) * rowSpacing),
-  }));
-  const requiredSeparation = 1 - MAX_QUEUE_OVERLAP_RATIO;
-  const lateralSpacing = CONTACT_LANES[1] - CONTACT_LANES[0];
-  const maximumLateralScale = lateralSpacing
-    / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
-  const maximumLongitudinalScale = rowCount <= 1
-    ? 1
-    : (rowSpacing / Math.SQRT2)
-      / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
-  const maximumRoadScale = (ROAD_WIDTH - (2 * Math.abs(CONTACT_LANES[0])))
-    / QUEUE_PRESENTATION_FOOTPRINT;
-  const minimumProjectedSpacing = findMinimumQueueSpacing(slots, pathMetrics);
-  const maximumProjectedScale = minimumProjectedSpacing
-    / (QUEUE_PRESENTATION_FOOTPRINT * requiredSeparation);
-  const scale = Math.max(Number.EPSILON, Math.min(
-    1,
-    maximumLateralScale,
-    maximumLongitudinalScale,
-    maximumProjectedScale,
-    maximumRoadScale,
-  ));
-  return Object.freeze(slots.map((slot) => Object.freeze({
-    ...slot,
-    scale,
+  return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
+    laneOffset: ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
+    pathProgress: Math.max(
+      minimumProgress,
+      gateProgress - ATTACK_CONTACT_PROGRESS - ((index + 1) * QUEUE_SPACING),
+    ),
+    scale: 1,
   })));
 };
 
@@ -123,17 +71,17 @@ export const selectAttackersForGate = (enemies, gate, limit) => {
 
 const getLivingGates = (simulation) => simulation.towers
   .filter((tower) => {
-    const placement = getPlacement(simulation, tower);
+    const pathProgress = getGateProgress(simulation.level, tower.cellId);
     return isLiving(tower)
       && tower.combatLayer === 'frontline'
       && tower.placementLayer === 'road'
-      && placement?.layer === 'road'
-      && Number.isFinite(placement.pathProgress);
+      && getCellTerrain(simulation, tower) === 'road'
+      && Number.isFinite(pathProgress);
   })
   .map((tower) => ({
     tower,
     towerId: tower.id,
-    pathProgress: getPlacement(simulation, tower).pathProgress,
+    pathProgress: getGateProgress(simulation.level, tower.cellId),
     attackerIds: [],
     queuedIds: [],
   }))
@@ -141,6 +89,16 @@ const getLivingGates = (simulation) => simulation.towers
     first.pathProgress - second.pathProgress
     || compareEntityIds(first.towerId, second.towerId)
   ));
+
+export const deriveReadableSpawnCapacity = (simulation) => {
+  const firstGate = getLivingGates(simulation)[0];
+  if (!firstGate) return MAX_READABLE_ENEMIES;
+  const completeUpstreamRoadCells = Math.floor(firstGate.pathProgress / GRID.cellSize);
+  return Math.max(
+    MAX_ATTACKERS_PER_GATE,
+    Math.min(MAX_READABLE_ENEMIES, MAX_ATTACKERS_PER_GATE + completeUpstreamRoadCells),
+  );
+};
 
 const setMoving = (enemy, { preserveOffset = false } = {}) => {
   enemy.laneState = 'moving';
@@ -153,10 +111,10 @@ const setMoving = (enemy, { preserveOffset = false } = {}) => {
 };
 
 const assignAttackerSlot = (enemy, gate, index) => {
-  const targetProgress = Math.max(0, gate.pathProgress - CONTACT_DISTANCE - (index * 2));
+  const targetProgress = Math.max(0, gate.pathProgress - ATTACK_CONTACT_PROGRESS - (index * 2));
   enemy.blockingTowerId = gate.towerId;
   enemy.queueIndex = null;
-  enemy.laneOffset = CONTACT_LANES[index];
+  enemy.laneOffset = ATTACKER_OFFSETS[index];
   if (enemy.pathProgress >= targetProgress) {
     enemy.pathProgress = targetProgress;
     enemy.laneState = 'attacking';
@@ -169,14 +127,10 @@ const assignAttackerSlot = (enemy, gate, index) => {
 };
 
 const assignQueueSlot = (enemy, gate, queueIndex, displaySlot) => {
-  const row = Math.floor(queueIndex / CONTACT_LANES.length);
-  const targetProgress = Math.max(
-    0,
-    gate.pathProgress - QUEUE_DISTANCE - (row * QUEUE_ROW_SPACING),
-  );
+  const targetProgress = displaySlot.pathProgress;
   enemy.blockingTowerId = gate.towerId;
   enemy.queueIndex = queueIndex;
-  enemy.laneOffset = CONTACT_LANES[queueIndex % CONTACT_LANES.length];
+  enemy.laneOffset = displaySlot.laneOffset;
   if (enemy.pathProgress >= targetProgress) {
     enemy.pathProgress = targetProgress;
     enemy.laneState = 'queued';
@@ -226,11 +180,18 @@ export const assignLanePositions = (simulation) => {
     const queuePresentation = createQueuePresentationLayout({
       gatePathProgress: gate.pathProgress,
       minimumPathProgress: gateIndex === 0 ? 0 : gates[gateIndex - 1].pathProgress + 1,
-      pathMetrics: simulation.pathMetrics,
       queueCount: queued.length,
     });
     queued.forEach((enemy, index) => assignQueueSlot(enemy, gate, index, queuePresentation[index]));
   }
+
+  const currentMaximum = simulation.towers
+    .filter(isLiving)
+    .reduce((maximum, tower) => Math.max(maximum, tower.engagedEnemyIds.length), 0);
+  simulation.maximumConcurrentAttackers = Math.max(
+    simulation.maximumConcurrentAttackers ?? 0,
+    currentMaximum,
+  );
 
   return {
     gates: gates.map(({ tower, ...gate }) => gate),
@@ -243,11 +204,10 @@ export const selectEnemyAttackTarget = (simulation, enemy, combatLayer) => {
   const placementLayer = combatLayer === 'frontline' ? 'road' : 'grass';
   const candidates = simulation.towers
     .filter((tower) => {
-      const placement = getPlacement(simulation, tower);
       return isLiving(tower)
         && tower.combatLayer === combatLayer
         && tower.placementLayer === placementLayer
-        && placement?.layer === placementLayer;
+        && getCellTerrain(simulation, tower) === placementLayer;
     })
     .sort(compareEntitiesById);
   if (combatLayer === 'frontline') {

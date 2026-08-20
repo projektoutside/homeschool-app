@@ -1,8 +1,10 @@
 import { ENEMIES } from '../config/enemies.js';
+import { deriveReadableSpawnCapacity } from './lane-combat.js';
 import { emitPresentationEvent } from './presentation-events.js';
 
 export const WAVE_GAP_TICKS = 180;
 export const MAX_LIVING_ENEMIES = 18;
+export { deriveReadableSpawnCapacity };
 
 const livingEnemyCount = (simulation) => simulation.enemies.filter(({ health }) => health > 0).length;
 
@@ -87,7 +89,11 @@ const createEnemy = (simulation, request) => {
 
 export const flushPendingEnemySpawns = (simulation) => {
   simulation.pendingSpawns ??= [];
-  while (livingEnemyCount(simulation) < MAX_LIVING_ENEMIES && simulation.pendingSpawns.length > 0) {
+  const readableCapacity = Math.min(
+    MAX_LIVING_ENEMIES,
+    deriveReadableSpawnCapacity(simulation),
+  );
+  while (livingEnemyCount(simulation) < readableCapacity && simulation.pendingSpawns.length > 0) {
     simulation.enemies.push(createEnemy(simulation, simulation.pendingSpawns.shift()));
   }
   simulation.maximumLivingEnemies = Math.max(

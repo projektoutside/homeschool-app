@@ -508,7 +508,9 @@ test('full and presentation snapshots expose detached lane and enemy attack stat
     laneState: 'moving',
     blockingTowerId: simulation.towers[0].id,
     queueIndex: null,
-    laneOffset: -28,
+    laneOffset: -22,
+    displayLaneOffset: -22,
+    displayScale: 1,
   };
 
   for (const snapshot of [fullEnemy, presentationEnemy]) {
@@ -764,13 +766,16 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
     terminal: first.terminal,
     tick: first.tick,
     maximumLivingEnemies: first.maximumLivingEnemies,
+    maximumConcurrentAttackers: first.maximumConcurrentAttackers,
     pendingSpawnCount: first.pendingSpawnCount,
   }, {
     terminal: true,
-    tick: 4828,
-    maximumLivingEnemies: 18,
+    tick: 4973,
+    maximumLivingEnemies: 8,
+    maximumConcurrentAttackers: 3,
     pendingSpawnCount: 0,
   });
+  assert.equal(LEVELS[0].roadCells[5], first.towers[0].cellId);
   assert.deepEqual(first.towers, [
     {
       id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', placementLayer: 'road', combatLayer: 'frontline',
@@ -780,7 +785,7 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
     {
       id: 'tower-2', defenderId: 'ranger', cellId: 'r0c5', placementLayer: 'grass', combatLayer: 'backline',
       tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
-      attackCount: 48, masteryProgress: 3, nextAttackTick: 4870,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 5015,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
