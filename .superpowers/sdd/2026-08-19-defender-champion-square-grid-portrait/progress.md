@@ -107,3 +107,5 @@ Task 7 Ruling: keep ownership strictly to the early-campaign balance/config/simu
 Task 7: complete (cell-based Levels 1–6 fixtures, stable `upgrade-ref`/same-cell replacement support, Level 4 rebuild-proof wave retune, and owned config/simulation contract updates; review clean).
 
 Task 7: fix round 1 complete (Important test-strength gaps closed without gameplay retune: exact literal expectations for all 12 Levels 1–6 fixtures, explicit Level 4 defeat/repurchase evidence, stale-ref cleanup plus same-ref replacement upgrade regression, one late authored strategy reordered chronologically, and stale config assertions aligned to current immutable levels/strategies; verification green, scoped follow-up commit pending).
+
+Task 7: fix round 2 complete (restored Levels 7–10 live configs and legacy late strategies exactly to base `2477c3e`, removed unused late helper blueprints, restored late config expectations and the >=25% placement-difference contract, and revalidated that the current late strategy command arrays semantically match base while the Levels 1–6 exact-balance contract remains green).

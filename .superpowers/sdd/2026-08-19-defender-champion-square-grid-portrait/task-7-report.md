@@ -115,3 +115,15 @@ Result: 72 passed, 0 failed in 650.668 ms.
   - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34707.7879ms`)
   - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34997.4734ms`)
   - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs scripts/defenderChampion.combat.test.mjs` -> pass (`73/73`, `652.7383ms`)
+
+## Fix round 2
+
+- Restored Levels 7–10 live level configs in `levels.js` exactly to base `2477c3e` for health scales and wave compositions. The `2477c3e..working` diff on that file now contains only Levels 4–6 hunks.
+- Restored Levels 7–10 authored reference strategies to base legacy command semantics and removed the unused late cell blueprint helpers.
+- Restored config expectations for late health scales to `1.92 / 2.14 / 2.38 / 2.65` and restored the `>=25%` cross-strategy placement-difference contract using translated cell IDs.
+- Proof of no late-strategy semantic drift: a direct semantic compare of current vs base emitted command arrays for `level-7` through `level-10` strategy IDs returned `mismatches: []`.
+- Verification:
+  - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs` -> RED (`42/45` pass; late spillover failures in config chronology/health-scale and simulation command-shape contract)
+  - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs scripts/defenderChampion.combat.test.mjs` -> pass (`73/73`, `639.205ms`)
+  - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`33772.9053ms`)
+  - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34326.9344ms`)
