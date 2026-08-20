@@ -127,3 +127,13 @@ Result: 72 passed, 0 failed in 650.668 ms.
   - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs scripts/defenderChampion.combat.test.mjs` -> pass (`73/73`, `639.205ms`)
   - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`33772.9053ms`)
   - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34326.9344ms`)
+
+## Fix round 3
+
+- Removed only the out-of-scope late balance test `Levels 7-10 square-grid campaign and mono reinvestment preserve legal late-game losses`.
+- Kept the pre-existing late mono-roster contract `reinvesting mono-roster fixtures cannot clear Levels 7 or 10` for Task 8 ownership.
+- Kept the Task 7 early exact-metric contract, same-cell Level 4 repurchase evidence, and the ref-lifecycle simulation coverage unchanged.
+- Source-diff proof against base `2477c3e`: no new late config changes were present; the remaining `levels.js` base diff is still only Levels 4–6, and the late config/strategy surface remained the base-restored shape from round 2.
+- Verification:
+  - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`33736.7468ms`)
+  - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs scripts/defenderChampion.combat.test.mjs` -> pass (`73/73`, `643.8245ms`)
