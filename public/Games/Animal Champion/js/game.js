@@ -1,4 +1,5 @@
 import { ANIMAL_DATABASE } from './animal-data.js';
+import { AnimalChampionAudio } from './audio-system.js';
 import {
   ANSWER_WINDOW_MS,
   FEEDBACK_DELAY_MS,
@@ -12,6 +13,7 @@ import {
 } from './game-engine.js';
 
 const LEADERBOARD_STORAGE_KEY = 'animalChampionLeaderboard';
+const MAX_FEEDBACK_NARRATION_MS = 18_000;
 
 const REQUIRED_ELEMENT_IDS = Object.freeze([
   'menuScreen',
@@ -25,6 +27,7 @@ const REQUIRED_ELEMENT_IDS = Object.freeze([
   'gameScreen',
   'scoreValue',
   'streakValue',
+  'soundToggle',
   'newGameButton',
   'animalBackdrop',
   'animalImage',
@@ -85,6 +88,7 @@ export class AnimalChampionController {
     );
     this.animalById = new Map(ANIMAL_DATABASE.map((animal) => [animal.id, animal]));
     this.engine = new AnimalChampionEngine({ animals: ANIMAL_DATABASE });
+    this.audio = new AnimalChampionAudio({ window });
     this.selectedMode = MODES.CHALLENGER;
     this.phase = 'menu-locked';
     this.deadline = null;
@@ -116,12 +120,14 @@ export class AnimalChampionController {
       listenerOptions,
     );
     this.elements.startButton.addEventListener('click', () => this.startRun(), listenerOptions);
+    this.elements.soundToggle.addEventListener('click', () => this.toggleSound(), listenerOptions);
     this.elements.newGameButton.addEventListener('click', () => this.mainMenu(), listenerOptions);
     this.elements.playAgainButton.addEventListener('click', () => this.playAgain(), listenerOptions);
     this.elements.mainMenuButton.addEventListener('click', () => this.mainMenu(), listenerOptions);
     this.elements.retryButton.addEventListener('click', () => this.retry(), listenerOptions);
     this.elements.errorMenuButton.addEventListener('click', () => this.mainMenu(), listenerOptions);
     this.document.addEventListener('visibilitychange', () => {
+      this.audio.setVisibilityHidden(this.document.hidden);
       if (this.document.hidden) this.deadline?.pause();
       else this.deadline?.resume();
     }, listenerOptions);
@@ -135,6 +141,7 @@ export class AnimalChampionController {
     this.elements.menuPanel.hidden = true;
     this.elements.menuReveal.hidden = false;
     this.elements.menuReveal.setAttribute('aria-expanded', 'false');
+    this.updateSoundControl();
     this.updateHud();
     return this;
   }
@@ -159,6 +166,7 @@ export class AnimalChampionController {
     this.elements.menuReveal.hidden = true;
     this.elements.menuPanel.hidden = false;
     this.elements.modeChallenger.focus();
+    this.audio.playMenu();
   }
 
   selectMode(mode) {
@@ -180,6 +188,7 @@ export class AnimalChampionController {
     this.resetRoundView();
     this.showScreen('countdown');
     this.elements.countdownScreen.focus({ preventScroll: true });
+    this.audio.playStart();
     this.startCountdown();
   }
 
@@ -276,6 +285,7 @@ export class AnimalChampionController {
     });
     this.deadline.start();
     if (this.document.hidden) this.deadline.pause();
+    this.audio.playPrompt();
   }
 
   async loadImageCandidate(imagePath, runToken, roundToken) {
@@ -317,6 +327,7 @@ export class AnimalChampionController {
   }
 
   acceptChoice(roundId, choiceId) {
+    const remainingMs = this.deadline?.getRemainingMs?.() ?? 0;
     const result = this.engine.submitChoice(roundId, choiceId);
     if (!result.accepted) return;
     this.phase = 'feedback';
@@ -337,7 +348,7 @@ export class AnimalChampionController {
       }
     }
 
-    this.delay(() => this.finishFeedback(), FEEDBACK_DELAY_MS);
+    this.scheduleFeedbackCompletion(result, remainingMs);
   }
 
   handleTimeout(roundId) {
@@ -346,7 +357,36 @@ export class AnimalChampionController {
     this.phase = 'feedback';
     this.lockChoices();
     this.renderFeedback(result);
-    this.delay(() => this.finishFeedback(), FEEDBACK_DELAY_MS);
+    this.scheduleFeedbackCompletion(result, 0);
+  }
+
+  scheduleFeedbackCompletion(result, remainingMs) {
+    let minimumElapsed = false;
+    let narrationSettled = false;
+    let completed = false;
+    const finishWhenReady = () => {
+      if (completed || !minimumElapsed || !narrationSettled) return;
+      completed = true;
+      this.finishFeedback();
+    };
+
+    Promise.resolve(this.audio.playFeedback({
+      outcome: result.outcome,
+      animalId: result.correctAnimalId,
+      streak: this.engine.getState().streak,
+      remainingMs,
+    })).catch(() => false).then(() => {
+      narrationSettled = true;
+      finishWhenReady();
+    });
+    this.delay(() => {
+      minimumElapsed = true;
+      finishWhenReady();
+    }, FEEDBACK_DELAY_MS);
+    this.delay(() => {
+      narrationSettled = true;
+      finishWhenReady();
+    }, MAX_FEEDBACK_NARRATION_MS);
   }
 
   lockChoices() {
@@ -448,6 +488,7 @@ export class AnimalChampionController {
     this.renderLeaderboard(this.saveLeaderboard(state.score));
     this.showScreen('gameOver');
     this.elements.playAgainButton.focus();
+    this.audio.playGameOver(state.score);
   }
 
   mainMenu() {
@@ -460,6 +501,7 @@ export class AnimalChampionController {
     this.elements.menuReveal.setAttribute('aria-expanded', 'true');
     this.elements.menuPanel.hidden = false;
     this.elements.modeChallenger.focus();
+    this.audio.playMenu();
   }
 
   playAgain() {
@@ -492,6 +534,7 @@ export class AnimalChampionController {
     this.countdownFrame = null;
     this.pendingTimeouts.forEach((id) => this.window.clearTimeout(id));
     this.pendingTimeouts.clear();
+    this.audio.cancel();
     this.currentRound = null;
     this.resetRoundView();
   }
@@ -516,6 +559,24 @@ export class AnimalChampionController {
     this.elements.animalImage.removeAttribute('src');
     this.elements.animalImage.alt = '';
     this.updateTimer(ANSWER_WINDOW_MS, 1);
+  }
+
+  toggleSound() {
+    this.audio.toggle();
+    this.updateSoundControl();
+  }
+
+  updateSoundControl() {
+    const enabled = this.audio.enabled;
+    this.elements.soundToggle.setAttribute('aria-pressed', String(enabled));
+    this.elements.soundToggle.setAttribute(
+      'aria-label',
+      enabled ? 'Mute Animal Champion voice' : 'Turn on Animal Champion voice',
+    );
+    const icon = this.document.getElementById('soundToggleIcon');
+    const label = this.document.getElementById('soundToggleLabel');
+    if (icon) icon.textContent = enabled ? '🔊' : '🔇';
+    if (label) label.textContent = enabled ? 'Voice on' : 'Voice off';
   }
 
   teardown() {

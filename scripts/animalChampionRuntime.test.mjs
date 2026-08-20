@@ -16,6 +16,7 @@ const REQUIRED_IDS = [
   'gameScreen',
   'scoreValue',
   'streakValue',
+  'soundToggle',
   'newGameButton',
   'animalBackdrop',
   'animalImage',
@@ -39,6 +40,7 @@ const CONTROL_IDS = [
   'modeChallenger',
   'modeContinuous',
   'startButton',
+  'soundToggle',
   'newGameButton',
   'playAgainButton',
   'mainMenuButton',
@@ -348,9 +350,11 @@ test('Animal Champion shell has the exact stable semantic contract', async () =>
   assert.equal(attribute(scripts[1], 'type'), 'module', 'expected the controller to load as a module');
 
   const links = [...html.matchAll(/<link\b([^>]*)>/gi)].map((match) => match[1]);
-  assert.equal(links.length, 1, 'expected one link dependency');
-  assert.equal(attribute(links[0], 'rel'), 'stylesheet');
-  assert.equal(attribute(links[0], 'href'), 'css/style.css');
+  assert.equal(links.length, 2, 'expected local icon and stylesheet dependencies');
+  assert.deepEqual(links.map((tag) => [attribute(tag, 'rel'), attribute(tag, 'href')]), [
+    ['icon', 'assets/images/ui/thumb.webp'],
+    ['stylesheet', 'css/style.css'],
+  ]);
 
   assert.doesNotMatch(html, /<(?:audio|input|textarea)\b/i);
   assert.doesNotMatch(html, /\b(?:microphone|speech|fullscreen|requestFullscreen|webkitRequestFullscreen|settings?)\b/i);
@@ -385,6 +389,7 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     'retry',
     'saveLeaderboard',
     'revealMenu',
+    'scheduleFeedbackCompletion',
     'selectMode',
     'showScreen',
     'showFatalError',
@@ -393,7 +398,9 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     'startCountdown',
     'startRun',
     'teardown',
+    'toggleSound',
     'updateHud',
+    'updateSoundControl',
     'updateTimer',
   ].sort());
 
@@ -401,6 +408,7 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     .map(([, bindings, source]) => ({ bindings: bindings.replace(/\s+/g, ' ').trim(), source }));
   assert.deepEqual(imports, [
     { bindings: '{ ANIMAL_DATABASE }', source: './animal-data.js' },
+    { bindings: '{ AnimalChampionAudio }', source: './audio-system.js' },
     {
       bindings: '{ ANSWER_WINDOW_MS, FEEDBACK_DELAY_MS, MODES, OUTCOMES, POINTS_PER_CORRECT, AnimalChampionEngine, createPausableDeadline, normalizeLeaderboard, recordLeaderboardScore, }',
       source: './game-engine.js',
@@ -420,7 +428,23 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     ['menu-locked', 'menu-ready', 'countdown', 'loading-round', 'answering', 'feedback', 'game-over', 'error'],
     'expected every explicit controller state',
   );
-  assert.doesNotMatch(game, /AudioContext|new\s+Audio\b|microphone|SpeechRecognition|getUserMedia|requestFullscreen|webkitRequestFullscreen|<input|settings/i);
+  assert.match(game, /new AnimalChampionAudio\(\{ window/);
+  assert.match(game, /this\.audio\.playMenu\(\)/);
+  assert.match(game, /this\.audio\.playStart\(\)/);
+  assert.match(game, /this\.audio\.playPrompt\(\)/);
+  assert.match(game, /this\.audio\.playFeedback\(\{/);
+  assert.match(game, /this\.audio\.playGameOver\(state\.score\)/);
+  assert.doesNotMatch(game, /AudioContext|new\s+Audio\b|microphone|SpeechRecognition|getUserMedia|requestFullscreen|webkitRequestFullscreen|<input/i);
+});
+
+test('Animal Champion exposes one accessible persistent narration control', async () => {
+  const html = await read('public/Games/Animal Champion/index.html');
+  const soundToggle = openingTagById(html, 'soundToggle');
+  assert.equal(soundToggle.name, 'button');
+  assert.equal(attribute(soundToggle.source, 'type'), 'button');
+  assert.equal(attribute(soundToggle.source, 'aria-pressed'), 'true');
+  assert.equal(attribute(soundToggle.source, 'aria-label'), 'Mute Animal Champion voice');
+  assert.match(html, /id="soundToggleLabel"[^>]*>Voice on</);
 });
 
 test('Animal Champion controller guards async work and centralizes run invalidation', async () => {
@@ -699,7 +723,10 @@ test('controller accepts a correct choice once, absorbs award rejection, and can
     staleProgressions += 1;
   };
   resetHarness.controller.acceptChoice(FIXED_ROUND.roundId, 'bat');
-  assert.equal(resetHarness.timers.size, 1);
+  assert.deepEqual(
+    [...resetHarness.timers.values()].map(({ delay }) => delay).sort((left, right) => left - right),
+    [2_000, 18_000],
+  );
   resetHarness.controller.mainMenu();
   resetHarness.flushTimers();
   assert.equal(staleProgressions, 0);

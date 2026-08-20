@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.js';
+import { ALL_VOICE_CLIPS } from '../public/Games/Animal Champion/js/voice-manifest.js';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const gameRoot = path.join(repoRoot, 'public', 'Games', 'Animal Champion');
@@ -29,7 +30,7 @@ test('Animal Champion legacy document and every selected asset are launchable', 
   await access(path.resolve(gameRoot, '../shared/lahsPointsBridge.js'));
 
   const gameSource = await readFile(path.join(gameRoot, 'js', 'game.js'), 'utf8');
-  for (const ref of ['./animal-data.js', './game-engine.js']) {
+  for (const ref of ['./animal-data.js', './audio-system.js', './game-engine.js']) {
     assert.match(gameSource, new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
@@ -37,7 +38,10 @@ test('Animal Champion legacy document and every selected asset are launchable', 
     'css/style.css',
     'js/game.js',
     'js/animal-data.js',
+    'js/audio-system.js',
     'js/game-engine.js',
+    'js/voice-manifest.js',
+    'assets/audio/voice/voice-ledger.json',
     'assets/images/ui/menu-wallpaper.webp',
     'assets/images/ui/thumb.webp',
   ]) {
@@ -50,6 +54,12 @@ test('Animal Champion legacy document and every selected asset are launchable', 
   assert.equal(new Set(selectedImages).size, 100);
   for (const relativePath of selectedImages) {
     await access(path.join(gameRoot, relativePath));
+  }
+
+  assert.equal(ALL_VOICE_CLIPS.length, 154);
+  assert.equal(new Set(ALL_VOICE_CLIPS.map(({ path: voicePath }) => voicePath)).size, 154);
+  for (const { path: voicePath } of ALL_VOICE_CLIPS) {
+    await access(path.join(gameRoot, voicePath));
   }
 });
 

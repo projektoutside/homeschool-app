@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#06110f">
   <title>Animal Champion</title>
+  <link rel="icon" href="assets/images/ui/thumb.webp" type="image/webp">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -104,6 +105,11 @@
         </div>
       </div>
     </section>
+
+    <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true" aria-label="Mute Animal Champion voice">
+      <span id="soundToggleIcon" class="sound-toggle__icon" aria-hidden="true">🔊</span>
+      <span id="soundToggleLabel">Voice on</span>
+    </button>
   </main>
   <script src="../shared/lahsPointsBridge.js"></script>
   <script type="module" src="./js/game.js"></script>

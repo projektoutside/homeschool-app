@@ -7,6 +7,7 @@ import test, { after } from 'node:test';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.js';
+import { ALL_VOICE_CLIPS } from '../public/Games/Animal Champion/js/voice-manifest.js';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const execFileAsync = promisify(execFile);
@@ -247,6 +248,7 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /animal-champion-128\.webp/);
   assert.match(inspector, /shared\/lahsPointsBridge\.js/);
   assert.match(inspector, /expectedAnimalImageCount\s*=\s*100/);
+  assert.match(inspector, /expectedAnimalVoiceCount\s*=\s*154/);
   assert.match(inspector, /StringComparer.*Ordinal/);
   assert.match(inspector, /bundletool-all-\*\.jar/);
   assert.match(inspector, /dist:on-demand/);
@@ -258,8 +260,11 @@ const fixedAnimalBundleEntries = [
   'game_assets/assets/Games/Animal Champion/index.html',
   'game_assets/assets/Games/Animal Champion/css/style.css',
   'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+  'game_assets/assets/Games/Animal Champion/js/audio-system.js',
   'game_assets/assets/Games/Animal Champion/js/game-engine.js',
   'game_assets/assets/Games/Animal Champion/js/game.js',
+  'game_assets/assets/Games/Animal Champion/js/voice-manifest.js',
+  'game_assets/assets/Games/Animal Champion/assets/audio/voice/voice-ledger.json',
   'game_assets/assets/Games/Animal Champion/assets/images/ui/menu-wallpaper.webp',
   'game_assets/assets/Games/Animal Champion/assets/images/ui/thumb.webp',
   'game_assets/assets/Games/shared/lahsPointsBridge.js',
@@ -268,11 +273,18 @@ const fixedAnimalBundleEntries = [
 const selectedAnimalBundleEntries = ANIMAL_DATABASE.flatMap(({ images }) => (
   images.map((imagePath) => `game_assets/assets/Games/Animal Champion/${imagePath}`)
 ));
-const requiredAnimalBundleEntries = [...fixedAnimalBundleEntries, ...selectedAnimalBundleEntries];
+const selectedAnimalVoiceBundleEntries = ALL_VOICE_CLIPS.map(({ path: voicePath }) => (
+  `game_assets/assets/Games/Animal Champion/${voicePath}`
+));
+const requiredAnimalBundleEntries = [
+  ...fixedAnimalBundleEntries,
+  ...selectedAnimalBundleEntries,
+  ...selectedAnimalVoiceBundleEntries,
+];
 
 test('Android bundle inspector accepts a complete exact Animal Champion archive', async () => {
-  assert.equal(requiredAnimalBundleEntries.length, 109);
-  assert.equal(new Set(requiredAnimalBundleEntries).size, 109);
+  assert.equal(requiredAnimalBundleEntries.length, 266);
+  assert.equal(new Set(requiredAnimalBundleEntries).size, 266);
 
   const archivePath = await createSyntheticAnimalBundle(requiredAnimalBundleEntries);
   const { stdout } = await runAnimalBundleInspector(archivePath);
@@ -289,6 +301,7 @@ test('Android bundle inspector aggregates sorted missing and case-mismatched Ani
   const expectedMissingEntries = [
     'base/assets/public/assets/thumbnails/optimized/animal-champion-128.webp',
     'game_assets/assets/Games/Animal Champion/Animals/Bat/chatgpt-generated.webp',
+    'game_assets/assets/Games/Animal Champion/assets/audio/voice/animals/bat.mp3',
     'game_assets/assets/Games/Animal Champion/index.html',
     caseMismatchedEntry,
     'game_assets/assets/Games/shared/lahsPointsBridge.js',

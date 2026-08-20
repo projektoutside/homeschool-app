@@ -43,6 +43,24 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "dateAdded": "2026-01-26"
   },
   {
+    "id": "animal-champion",
+    "title": "Animal Champion",
+    "description": "Identify 50 animals in fast visual challenge rounds.",
+    "type": "game",
+    "category": "science",
+    "subjects": [
+      "Animals",
+      "Wildlife",
+      "Visual Recognition"
+    ],
+    "gradeLevels": [
+      "All"
+    ],
+    "thumbnail": "/assets/thumbnails/optimized/animal-champion-128.webp",
+    "customHtmlPath": "/Games/Animal Champion/index.html",
+    "dateAdded": "2026-08-18"
+  },
+  {
     "id": "cage-pet-rescue",
     "title": "Cage Pet Rescue",
     "description": "Rescue trapped pets by solving math problems and managing your energy carefully.",
@@ -1296,6 +1314,7 @@ export const GENERATED_EXPERIENCES: ExperienceManifest[] = [];
 export const GENERATED_LEGACY_PATHS: Readonly<Record<string, string>> = {
   "/FinalGraph/index.html": "sci-introduction-to-graphs",
   "/Games/2PlayersMathWrite/index.html": "math-2-players-math-write",
+  "/Games/Animal Champion/index.html": "animal-champion",
   "/Games/CarKingFinal/index.html": "math-car-king",
   "/Games/DefenderChampion/index.html": "defender-champion",
   "/Games/Farmersmarket/index.html": "math-farmers-market-frenzy",

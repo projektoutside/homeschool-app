@@ -1,0 +1,1248 @@
+{
+  "schemaVersion": 1,
+  "profile": {
+    "provider": "ElevenLabs",
+    "voiceName": "Animal Champion",
+    "language": "English",
+    "model": "Eleven v3",
+    "speed": 1,
+    "stability": 0.5,
+    "similarityBoost": 0.75,
+    "outputFormat": "MP3 44.1 kHz (128kbps)"
+  },
+  "clipCount": 154,
+  "clips": [
+    {
+      "id": "menu-01",
+      "path": "assets/audio/voice/menu/menu-01.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Welcome, wildlife champion! Pick your expedition and let the animal adventure begin!",
+      "bytes": 96478,
+      "sha256": "dc1f2e5612a9c8b3b801cc8b34764dce23f1dea092d4f5d9bf5db38fa172eb87"
+    },
+    {
+      "id": "menu-02",
+      "path": "assets/audio/voice/menu/menu-02.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] The wild is calling. Sharpen those eyes, trust your instincts, and choose your challenge!",
+      "bytes": 108181,
+      "sha256": "ee7b2e1eb203d420385dd75c6f106bbc30934a15f5a1ed64bfa19857ca5a00cd"
+    },
+    {
+      "id": "menu-03",
+      "path": "assets/audio/voice/menu/menu-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Boots ready? Binoculars ready? Brilliant brain ready? Then let us meet some animals!",
+      "bytes": 132422,
+      "sha256": "687f72edb1628c3d367a59f94e3e7877bca9cc88ac97a8d36200356168e79375"
+    },
+    {
+      "id": "menu-04",
+      "path": "assets/audio/voice/menu/menu-04.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] Fifty animals. One champion. Countless wild surprises. Your expedition starts now!",
+      "bytes": 116958,
+      "sha256": "db23ee5f6a087c9bcefc44cdf6ad886d5d5a3bc4de099ea8db22335889a8b68f"
+    },
+    {
+      "id": "menu-05",
+      "path": "assets/audio/voice/menu/menu-05.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Every great explorer starts with curiosity. Choose a mode, and show the wild what you know!",
+      "bytes": 105673,
+      "sha256": "411b9b2825727412a079ec9044d6e1b1c0f94dfa82f20ff84590faa595baa910"
+    },
+    {
+      "id": "menu-06",
+      "path": "assets/audio/voice/menu/menu-06.mp3",
+      "persona": "whimsical-guide",
+      "script": "[excited] Lions, penguins, octopuses, and more are waiting. Come on, champion, let us explore!",
+      "bytes": 127407,
+      "sha256": "dfe5e546fa90f5330e60f58f711d1eb5712a98568709a8c103068c3964013c33"
+    },
+    {
+      "id": "start-01",
+      "path": "assets/audio/voice/start/start-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] Three... two... one... Go, Animal Champion!",
+      "bytes": 85193,
+      "sha256": "6a617ae3bc17bf0cd5b9dcdc8e11514292b075e7b23a81e5037fa20d841b09cc"
+    },
+    {
+      "id": "start-02",
+      "path": "assets/audio/voice/start/start-02.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Three... two... one... Let the wild guessing begin!",
+      "bytes": 85193,
+      "sha256": "8d2d3b3214ab78a4c5ed64314095d03501fa043b4a7acae03b4345e42c1cab51"
+    },
+    {
+      "id": "start-03",
+      "path": "assets/audio/voice/start/start-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Three... two... one... Eyes sharp, explorer, go!",
+      "bytes": 93970,
+      "sha256": "480b37afe559ce7657a71695c56d670e951ad0a8e468b566de61884e8eb65519"
+    },
+    {
+      "id": "start-04",
+      "path": "assets/audio/voice/start/start-04.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Three... two... one... You have got this!",
+      "bytes": 87701,
+      "sha256": "494d4a6bff98d68bab3de6aa9d4d58954b3793541cfaba097f4c2f5daec82733"
+    },
+    {
+      "id": "start-05",
+      "path": "assets/audio/voice/start/start-05.mp3",
+      "persona": "whimsical-guide",
+      "script": "[excited] Three... two... one... Adventure time!",
+      "bytes": 80177,
+      "sha256": "68273f4b5cd2018d6bb31159e0d389828f8dddfbcd3eee2219b27429d684db28"
+    },
+    {
+      "id": "prompt-01",
+      "path": "assets/audio/voice/prompt/prompt-01.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] Which animal is exploring our screen?",
+      "bytes": 63459,
+      "sha256": "30b5606b38acdbdf2fe5224dc8a5cb4ac264a74dab707b1ad5ca19168a4ac14f"
+    },
+    {
+      "id": "prompt-02",
+      "path": "assets/audio/voice/prompt/prompt-02.mp3",
+      "persona": "bubbly-host",
+      "script": "[brightly] Wildlife champion, which animal is this?",
+      "bytes": 64713,
+      "sha256": "6eb0c5a2e405b561038d278d9d1ecff5d17aa4e024ab2e86f2cd64c341066a6e"
+    },
+    {
+      "id": "prompt-03",
+      "path": "assets/audio/voice/prompt/prompt-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Who wandered into the spotlight this time?",
+      "bytes": 55518,
+      "sha256": "85880b4bb9888aa5917c3f70c87a095980156f8a96c191b9af52bb036597bfbb"
+    },
+    {
+      "id": "prompt-04",
+      "path": "assets/audio/voice/prompt/prompt-04.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] The mystery animal has arrived. Name it!",
+      "bytes": 64713,
+      "sha256": "b2a9be1818b2fe829f3b5664ae20d7ec2e88f9c81261a7c0425680a8706a4406"
+    },
+    {
+      "id": "prompt-05",
+      "path": "assets/audio/voice/prompt/prompt-05.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Take a good look. Which animal do you see?",
+      "bytes": 65967,
+      "sha256": "8d7c21f877875c9e8e39043fce07fa5aee8830c7c94c1222ced0e84c7e1c336f"
+    },
+    {
+      "id": "prompt-06",
+      "path": "assets/audio/voice/prompt/prompt-06.mp3",
+      "persona": "whimsical-guide",
+      "script": "[whispers] Quiet now... can you identify our wild visitor?",
+      "bytes": 72236,
+      "sha256": "107e97722948e53dca300d483f18e18634f1c2c3c4e6c5ac5c0ae198fb6dbf06"
+    },
+    {
+      "id": "prompt-07",
+      "path": "assets/audio/voice/prompt/prompt-07.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] Study the shape and features. What animal is it?",
+      "bytes": 75998,
+      "sha256": "ce5eb9a3857c63310c6a79de574df8b0cfb7251b8232971e90b8dccff63e85c0"
+    },
+    {
+      "id": "prompt-08",
+      "path": "assets/audio/voice/prompt/prompt-08.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] New animal alert! Can you name this one?",
+      "bytes": 62205,
+      "sha256": "c12ede1c2bef796b02cab37059fc96f22689a59bbbd84f4ddceee6eba3f81aad"
+    },
+    {
+      "id": "prompt-09",
+      "path": "assets/audio/voice/prompt/prompt-09.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Paws, wings, fins, or scales... who could it be?",
+      "bytes": 82685,
+      "sha256": "dd0c360a613abf14ef48c7b632a8bd3f4ecbff45ea7751bf36f039ba9958ce7a"
+    },
+    {
+      "id": "prompt-10",
+      "path": "assets/audio/voice/prompt/prompt-10.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] One picture. Four choices. Which creature wins your vote?",
+      "bytes": 91462,
+      "sha256": "72f3706e37b24e129128a41e5e0a6ac30a26c07fdb7369d718e802f391ab85a7"
+    },
+    {
+      "id": "prompt-11",
+      "path": "assets/audio/voice/prompt/prompt-11.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] Trust your first instinct. Which animal is pictured?",
+      "bytes": 70982,
+      "sha256": "7405391791926164ac592e44d92ef92c19ab83d94b54356d4aa409dc2aaa409d"
+    },
+    {
+      "id": "prompt-12",
+      "path": "assets/audio/voice/prompt/prompt-12.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] A curious creature has appeared. What is its name?",
+      "bytes": 64713,
+      "sha256": "bee6d66ca2fd64b2f975120bf83525beb6832de5572618b18abad5f33b43bdbc"
+    },
+    {
+      "id": "prompt-13",
+      "path": "assets/audio/voice/prompt/prompt-13.mp3",
+      "persona": "curious-naturalist",
+      "script": "[thoughtfully] Look closely at its habitat and body. Which animal is this?",
+      "bytes": 76113,
+      "sha256": "c56c18a21484cdaa71b0c8b2bf9fb24c2a495456fd9cdeb5ac5973a49d3658f0"
+    },
+    {
+      "id": "prompt-14",
+      "path": "assets/audio/voice/prompt/prompt-14.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Ready for another wild one? Name that animal!",
+      "bytes": 65967,
+      "sha256": "34f9bdb2c5d364df76e9b1488615b6275cc006b551a2ae54eed2bad570b36346"
+    },
+    {
+      "id": "prompt-15",
+      "path": "assets/audio/voice/prompt/prompt-15.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Our mystery guest forgot its name tag. Can you help?",
+      "bytes": 75998,
+      "sha256": "43b0c601a2030eb74fe18abea5ea3d26e637cf5aa3436ec26aa5fbf7aac27289"
+    },
+    {
+      "id": "prompt-16",
+      "path": "assets/audio/voice/prompt/prompt-16.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] The next wildlife challenge is live. Make your choice!",
+      "bytes": 73490,
+      "sha256": "a9d1abb408ecfe1a928d18423c0dc45f1698bcdb2befba445cc68ad171fb3038"
+    },
+    {
+      "id": "prompt-17",
+      "path": "assets/audio/voice/prompt/prompt-17.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Breathe, observe, and choose the animal you recognize.",
+      "bytes": 74744,
+      "sha256": "6f27a1fbfa24c596afc0a0b2fb3889f714383bd246745a94d94a38105f863d45"
+    },
+    {
+      "id": "prompt-18",
+      "path": "assets/audio/voice/prompt/prompt-18.mp3",
+      "persona": "whimsical-guide",
+      "script": "[curiously] Who is peeking out from the wild today?",
+      "bytes": 56772,
+      "sha256": "ce9989368d40c8c0b8b6f2f39f7db333386f9452078ef8a801953821e2bf03aa"
+    },
+    {
+      "id": "prompt-19",
+      "path": "assets/audio/voice/prompt/prompt-19.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Notice the details. Which species are we looking at?",
+      "bytes": 64713,
+      "sha256": "a76c86503c23b2de2c8075ddf5986bfd1d4f04b4455f88c59979ada27314c5a0"
+    },
+    {
+      "id": "prompt-20",
+      "path": "assets/audio/voice/prompt/prompt-20.mp3",
+      "persona": "bubbly-host",
+      "script": "[brightly] Champion, your next animal is here. What is it?",
+      "bytes": 70982,
+      "sha256": "2356c30361ee3dfc774d737c8c77f254ac04d47cbc86b6410e5ca86d54ff4df3"
+    },
+    {
+      "id": "prompt-21",
+      "path": "assets/audio/voice/prompt/prompt-21.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Time for a creature feature. Who is on screen?",
+      "bytes": 59697,
+      "sha256": "e51aaea921ebd86a697249f7bacf23527a89471a1402ca0ca308121884f0c22a"
+    },
+    {
+      "id": "prompt-22",
+      "path": "assets/audio/voice/prompt/prompt-22.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] A new contender enters the arena. Identify it!",
+      "bytes": 78505,
+      "sha256": "ec04c109c428be82abd350a7eb357fb7fd6082f59738efecd860a6c5c3f67c67"
+    },
+    {
+      "id": "prompt-23",
+      "path": "assets/audio/voice/prompt/prompt-23.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] You know more than you think. Which animal is this?",
+      "bytes": 65967,
+      "sha256": "8389e9bee7d60b2034035107c765ad1f1c0d01334b8d5f45d3873655b68db69d"
+    },
+    {
+      "id": "prompt-24",
+      "path": "assets/audio/voice/prompt/prompt-24.mp3",
+      "persona": "whimsical-guide",
+      "script": "[excited] The wild card is revealed. Pick its perfect name!",
+      "bytes": 72236,
+      "sha256": "b41b5b1926a20033bc1d1daf152d1f2fd10ba57bf0fd728f70d47c6736f97ee8"
+    },
+    {
+      "id": "correct-normal-01",
+      "path": "assets/audio/voice/correct-normal/correct-normal-01.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Correct! Your wildlife instincts are shining!",
+      "bytes": 67221,
+      "sha256": "6e7f02cd6145ac78a063c7ab798c79f39afa9fd0a21410674c4c40adafc2e0da"
+    },
+    {
+      "id": "correct-normal-02",
+      "path": "assets/audio/voice/correct-normal/correct-normal-02.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Exactly right. Observation skills: excellent!",
+      "bytes": 80177,
+      "sha256": "57dd7e58a9279a38bb67848b770729c7631af14e28cca24d7ed32cc11abc3e3d"
+    },
+    {
+      "id": "correct-normal-03",
+      "path": "assets/audio/voice/correct-normal/correct-normal-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Nailed it! That answer was wildly good!",
+      "bytes": 70982,
+      "sha256": "7bab783438a585c9592bff029771bbad255b63e2c7b99065f7c8e0d9a65c2d24"
+    },
+    {
+      "id": "correct-normal-04",
+      "path": "assets/audio/voice/correct-normal/correct-normal-04.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] Correct answer! The champion strikes again!",
+      "bytes": 69728,
+      "sha256": "57b3963f0f4cd95be507b6d63cc1983ced9232c246792d5d0d3ebaa5d8a3800c"
+    },
+    {
+      "id": "correct-normal-05",
+      "path": "assets/audio/voice/correct-normal/correct-normal-05.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Beautiful choice. You read the clues perfectly!",
+      "bytes": 77252,
+      "sha256": "8d212dec5117f27f1036a2acd9c9db590414f70c3b4a05bffcb14e540c676840"
+    },
+    {
+      "id": "correct-normal-06",
+      "path": "assets/audio/voice/correct-normal/correct-normal-06.mp3",
+      "persona": "whimsical-guide",
+      "script": "[laughs] Yes! Even the parrots are cheering for you!",
+      "bytes": 83939,
+      "sha256": "ed85b8f21c8eb6a4da86d3fd8a1399479ac8cb75c56c4fab6b996924f3e9dc89"
+    },
+    {
+      "id": "correct-normal-07",
+      "path": "assets/audio/voice/correct-normal/correct-normal-07.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] Spot on! Another animal added to your champion collection!",
+      "bytes": 81431,
+      "sha256": "bb4f1f163aa3a4e65783be5fc7f0a0a107939402e71967a368c3232983b360a0"
+    },
+    {
+      "id": "correct-normal-08",
+      "path": "assets/audio/voice/correct-normal/correct-normal-08.mp3",
+      "persona": "curious-naturalist",
+      "script": "[pleased] Correct. Your careful look paid off!",
+      "bytes": 55518,
+      "sha256": "98410279b1f6575b322d7773c8cbe4a1df35b3b656f2230e6e2cad2043ce0e64"
+    },
+    {
+      "id": "correct-normal-09",
+      "path": "assets/audio/voice/correct-normal/correct-normal-09.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Absolutely right! You are on a roaring roll!",
+      "bytes": 82685,
+      "sha256": "fb5d9f4a41ed5dc8248081b18005232ae82608877d30c3e99d755cf9a03cdd12"
+    },
+    {
+      "id": "correct-normal-10",
+      "path": "assets/audio/voice/correct-normal/correct-normal-10.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] Confirmed! A championship-level answer!",
+      "bytes": 70982,
+      "sha256": "4711f7356fd47382bd1110e3519d33ad717197f39be7073ccb5d44533b8d10dc"
+    },
+    {
+      "id": "correct-quick-01",
+      "path": "assets/audio/voice/correct-quick/correct-quick-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] Lightning fast and completely correct!",
+      "bytes": 58025,
+      "sha256": "766973cee5ea866e867ab4d373a562576da9e4e08a8074e2bde8f64bb1992d20"
+    },
+    {
+      "id": "correct-quick-02",
+      "path": "assets/audio/voice/correct-quick/correct-quick-02.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Whoa! That answer moved faster than a cheetah!",
+      "bytes": 72236,
+      "sha256": "f008c859bb6055c1f2fb01b71a6a28a85afefa666b183d93c40f8156d41b969e"
+    },
+    {
+      "id": "correct-quick-03",
+      "path": "assets/audio/voice/correct-quick/correct-quick-03.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Quick eyes, quick choice, perfect answer!",
+      "bytes": 63459,
+      "sha256": "073daf8f0dee038829170c33abbdceb6f052aaeb567bd1427f3adaf8ddf6a28a"
+    },
+    {
+      "id": "correct-quick-04",
+      "path": "assets/audio/voice/correct-quick/correct-quick-04.mp3",
+      "persona": "warm-coach",
+      "script": "[impressed] Instant recognition! Your instincts are getting sharp!",
+      "bytes": 64713,
+      "sha256": "2e04df950913f322e40a046e25fd649c3c2ba36e83b4282da2befb78b8c90ae6"
+    },
+    {
+      "id": "correct-quick-05",
+      "path": "assets/audio/voice/correct-quick/correct-quick-05.mp3",
+      "persona": "whimsical-guide",
+      "script": "[laughs] Blink and we missed it. Brilliant answer!",
+      "bytes": 73490,
+      "sha256": "ba8a7d30ace42d3a0e759734480ab7b837104f2e7da33e3317d97ca1985645b5"
+    },
+    {
+      "id": "correct-streak-3-01",
+      "path": "assets/audio/voice/correct-streak-3/correct-streak-3-01.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] Three correct in a row! Your wild streak has begun!",
+      "bytes": 73490,
+      "sha256": "e06cc182bbd75219af7a6874c7b4acd093c40572e5a981524f693c131252ed17"
+    },
+    {
+      "id": "correct-streak-3-02",
+      "path": "assets/audio/voice/correct-streak-3/correct-streak-3-02.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] Three straight answers! The champion is heating up!",
+      "bytes": 75998,
+      "sha256": "7a6190b3cc10444273b7c6660923ae6b251cb77f1bc3a58233f08aee36d54001"
+    },
+    {
+      "id": "correct-streak-3-03",
+      "path": "assets/audio/voice/correct-streak-3/correct-streak-3-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Hat trick! Three animals could not fool you!",
+      "bytes": 68474,
+      "sha256": "047e1208e8c5dd1852a8a3762dab48060fa16cb12c3361f4e81bd6708d3f717d"
+    },
+    {
+      "id": "correct-streak-3-04",
+      "path": "assets/audio/voice/correct-streak-3/correct-streak-3-04.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] Three in a row. Keep trusting those excellent instincts!",
+      "bytes": 72236,
+      "sha256": "4380e0bc428f2599a6b704ced36c3692ab6f8cc270678853642e2f45cf1bb36b"
+    },
+    {
+      "id": "correct-streak-5-01",
+      "path": "assets/audio/voice/correct-streak-5/correct-streak-5-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] Five correct in a row! This expedition is legendary!",
+      "bytes": 78505,
+      "sha256": "7902e518b2d7dbaa40ef517a69ca89120c1bc703358c30b07172b5de0f2aeb09"
+    },
+    {
+      "id": "correct-streak-5-02",
+      "path": "assets/audio/voice/correct-streak-5/correct-streak-5-02.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] High five for a five-animal streak!",
+      "bytes": 53010,
+      "sha256": "59d280a37d62dc47b99c0d37dc0260cb3af4dca78bdbc099a3444237ceb70bee"
+    },
+    {
+      "id": "correct-streak-5-03",
+      "path": "assets/audio/voice/correct-streak-5/correct-streak-5-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Five straight! The jungle just put you on its honor roll!",
+      "bytes": 72236,
+      "sha256": "024132620e73347daa85e3d2ae0bc57540febca6972cc9f09fcfd8113373e76d"
+    },
+    {
+      "id": "correct-streak-5-04",
+      "path": "assets/audio/voice/correct-streak-5/correct-streak-5-04.mp3",
+      "persona": "warm-coach",
+      "script": "[proudly] Five in a row. Focus, knowledge, and champion confidence!",
+      "bytes": 86447,
+      "sha256": "1b84a4b3ae5e2c666b242729cddd2cd8b22cb5437b27d773c5f59802309f4b68"
+    },
+    {
+      "id": "correct-streak-10-01",
+      "path": "assets/audio/voice/correct-streak-10/correct-streak-10-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[triumphantly] Ten correct in a row! A true Animal Champion performance!",
+      "bytes": 96478,
+      "sha256": "ef33469b09f2f7abf724103188955126814584807f5ddf721ccdb687ce86ea02"
+    },
+    {
+      "id": "correct-streak-10-02",
+      "path": "assets/audio/voice/correct-streak-10/correct-streak-10-02.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] Double digits! Ten wild wins without a miss!",
+      "bytes": 70982,
+      "sha256": "ab330e2fd822c2fcf7bdae2975109564c9667d0834346b1dc1c2d46fc2453b88"
+    },
+    {
+      "id": "correct-streak-10-03",
+      "path": "assets/audio/voice/correct-streak-10/correct-streak-10-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[laughs] Ten straight! Even the owls are asking you for answers!",
+      "bytes": 91462,
+      "sha256": "6e97dc32418e8dbcbd5b202488c45869660164899fb86925db2a9165e061c490"
+    },
+    {
+      "id": "correct-streak-10-04",
+      "path": "assets/audio/voice/correct-streak-10/correct-streak-10-04.mp3",
+      "persona": "warm-coach",
+      "script": "[proudly] Ten in a row. That is knowledge, patience, and champion focus!",
+      "bytes": 96478,
+      "sha256": "3238c64d7cf9b1a2dea31ca99fcae51f82201a55bfef9a0a630dedc1750dd7ff"
+    },
+    {
+      "id": "wrong-01",
+      "path": "assets/audio/voice/wrong/wrong-01.mp3",
+      "persona": "warm-coach",
+      "script": "[gently] Not quite, but every explorer learns from the trail.",
+      "bytes": 75998,
+      "sha256": "fb2e0258d989f53843c92766c3bf25bed26666d53d1b5945639d171658df8f4a"
+    },
+    {
+      "id": "wrong-02",
+      "path": "assets/audio/voice/wrong/wrong-02.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Ooh, that animal pulled off a clever disguise!",
+      "bytes": 68474,
+      "sha256": "645142eb08641dcd5d612cdd24437bd537c7520fc1f88543dd962c1cf0c55441"
+    },
+    {
+      "id": "wrong-03",
+      "path": "assets/audio/voice/wrong/wrong-03.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Good try. Let us meet the correct animal together.",
+      "bytes": 64713,
+      "sha256": "f4212d99cd7a3d88cd60aa25a05203466cc72a1858a3349219ded7af1b39c651"
+    },
+    {
+      "id": "wrong-04",
+      "path": "assets/audio/voice/wrong/wrong-04.mp3",
+      "persona": "bubbly-host",
+      "script": "[encouragingly] Almost! Keep those wildlife eyes switched on!",
+      "bytes": 74744,
+      "sha256": "0cd58aafe46d54399b8ebe1962c5f059f8bac1b7672d2b5c1c7feb64872e375d"
+    },
+    {
+      "id": "wrong-05",
+      "path": "assets/audio/voice/wrong/wrong-05.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] A daring guess, but the mystery creature had another name!",
+      "bytes": 80177,
+      "sha256": "707d3e5854a37af60e3841c2603c19ac40945bb93a7a6fa112c87fa33d5a7be0"
+    },
+    {
+      "id": "wrong-06",
+      "path": "assets/audio/voice/wrong/wrong-06.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] Sneaky creature! It tiptoed past that guess.",
+      "bytes": 67221,
+      "sha256": "fd0303436583f96cc0616e1cbf21833e50db9b69ca5f3d719838f1e47537387a"
+    },
+    {
+      "id": "wrong-07",
+      "path": "assets/audio/voice/wrong/wrong-07.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] That one was tricky. The next clue is yours to conquer!",
+      "bytes": 77252,
+      "sha256": "fb18992cdeb36afe4870c368567b45e24aa39ffbd7a33f1b0b1134369d873f92"
+    },
+    {
+      "id": "wrong-08",
+      "path": "assets/audio/voice/wrong/wrong-08.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[laughs] Plot twist! Our wild guest fooled us for a moment.",
+      "bytes": 87701,
+      "sha256": "51d125867d45a28b6d0a4e64f9f04b21bff9741e7760c84aa2e472db7ed41ffb"
+    },
+    {
+      "id": "wrong-09",
+      "path": "assets/audio/voice/wrong/wrong-09.mp3",
+      "persona": "curious-naturalist",
+      "script": "[thoughtfully] Not this time. Notice the features, and remember them for next time.",
+      "bytes": 88954,
+      "sha256": "a659867c0e3b7d5ad4f2cfe2111dfe37339556b46bcfc06046f9ac218328d59e"
+    },
+    {
+      "id": "wrong-10",
+      "path": "assets/audio/voice/wrong/wrong-10.mp3",
+      "persona": "bubbly-host",
+      "script": "[warmly] Nice attempt! One surprise cannot stop an Animal Champion.",
+      "bytes": 90208,
+      "sha256": "659fc3ff5579428252e37cdd38b1d0c6128667f1533ff0bd6bb46f857ba1a261"
+    },
+    {
+      "id": "wrong-11",
+      "path": "assets/audio/voice/wrong/wrong-11.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] The guess is in... and the animal escapes with the point!",
+      "bytes": 83939,
+      "sha256": "c1f163ba3916642e064ec61d63dfd765a7c5f08594b358ae281e58ab8249e41c"
+    },
+    {
+      "id": "wrong-12",
+      "path": "assets/audio/voice/wrong/wrong-12.mp3",
+      "persona": "whimsical-guide",
+      "script": "[whispers] So close. The correct answer is stepping into view now.",
+      "bytes": 87701,
+      "sha256": "474f87bfea81fb54292d52c909c3f0b2dabda13b1448875555950fdc96968485"
+    },
+    {
+      "id": "wrong-13",
+      "path": "assets/audio/voice/wrong/wrong-13.mp3",
+      "persona": "warm-coach",
+      "script": "[gently] A miss is just a clue in disguise. Keep exploring.",
+      "bytes": 73490,
+      "sha256": "77e070c932a815157134e5770c1e76023ee1e7fd4322c6d3d7bc02197da127a1"
+    },
+    {
+      "id": "wrong-14",
+      "path": "assets/audio/voice/wrong/wrong-14.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Wrong trail, brave ranger. Let us hop back to the answer!",
+      "bytes": 82685,
+      "sha256": "03a6f496b2ed0481e25c7ad7515b0fbd28a8f4547e70556c19ff972196b5354d"
+    },
+    {
+      "id": "wrong-15",
+      "path": "assets/audio/voice/wrong/wrong-15.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Good observation effort. Here is the species we found.",
+      "bytes": 65967,
+      "sha256": "02195ce27441dc8bb142891c6db857bad51ea5fc5a506a0aa3c294610ac5726a"
+    },
+    {
+      "id": "wrong-16",
+      "path": "assets/audio/voice/wrong/wrong-16.mp3",
+      "persona": "bubbly-host",
+      "script": "[encouragingly] Not quite, champion. Add this one to your animal memory!",
+      "bytes": 70982,
+      "sha256": "e55f855a795ed4077a5e3a0cd5779994f58eb444e2048c9c2d8da7888be21ba9"
+    },
+    {
+      "id": "wrong-17",
+      "path": "assets/audio/voice/wrong/wrong-17.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] The wild has spoken. Time for the grand reveal!",
+      "bytes": 77252,
+      "sha256": "3149ff4504fcee556748eb455216fc5e26e672b1e6db1dad7cca94823090b497"
+    },
+    {
+      "id": "wrong-18",
+      "path": "assets/audio/voice/wrong/wrong-18.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] That guess went on a tiny detour. Here comes the answer!",
+      "bytes": 81431,
+      "sha256": "aede37214f301121028ee6c19e0877582edd04fa098de4cbd6964034b27f2e28"
+    },
+    {
+      "id": "timeout-01",
+      "path": "assets/audio/voice/timeout/timeout-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] Time! The mystery animal wins this round.",
+      "bytes": 63459,
+      "sha256": "9799162eb2b4a8f1dc71021f16206927dd38f238be6b1ba2814d1fb53d30768c"
+    },
+    {
+      "id": "timeout-02",
+      "path": "assets/audio/voice/timeout/timeout-02.mp3",
+      "persona": "warm-coach",
+      "script": "[gently] Time is up, but the answer will make the next one easier.",
+      "bytes": 82685,
+      "sha256": "4808d30cb1f65df952fbe97a28d93144aecc7bb14ce9ed94a09169dec063632a"
+    },
+    {
+      "id": "timeout-03",
+      "path": "assets/audio/voice/timeout/timeout-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] The clock scampered away like a squirrel!",
+      "bytes": 59697,
+      "sha256": "dbe9df329f1662065d7c6ac87f46eafa374ea200a21fb7507cecce5858814460"
+    },
+    {
+      "id": "timeout-04",
+      "path": "assets/audio/voice/timeout/timeout-04.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Observation time is over. Let us identify our visitor.",
+      "bytes": 73490,
+      "sha256": "7ceb2e7e2a9cd115c4f7074940f114a58e49c780d836dcab9d8ddd4af965c3cf"
+    },
+    {
+      "id": "timeout-05",
+      "path": "assets/audio/voice/timeout/timeout-05.mp3",
+      "persona": "bubbly-host",
+      "script": "[encouragingly] Time is up! No worries, champion, here comes the answer.",
+      "bytes": 67221,
+      "sha256": "145536a650d4a0a601f522829b2d4e461d03f27acecb33a3d4723be212abdb37"
+    },
+    {
+      "id": "timeout-06",
+      "path": "assets/audio/voice/timeout/timeout-06.mp3",
+      "persona": "whimsical-guide",
+      "script": "[whispers] The timer went quiet, but the wild still has a story.",
+      "bytes": 77252,
+      "sha256": "20aac92b631c23a7ad58bf115bcf5c0245d6958d9315b59d05a145a18f557f4c"
+    },
+    {
+      "id": "timeout-07",
+      "path": "assets/audio/voice/timeout/timeout-07.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] The final second has fallen. Reveal the animal!",
+      "bytes": 75998,
+      "sha256": "b24c18199cd70425471a9e3ff0fce5b74e77b67b3cd4a5869809561b443bf1b0"
+    },
+    {
+      "id": "timeout-08",
+      "path": "assets/audio/voice/timeout/timeout-08.mp3",
+      "persona": "warm-coach",
+      "script": "[encouragingly] A little more time would have done it. Remember this one!",
+      "bytes": 83939,
+      "sha256": "ab88d5b77edeb59a494c25ca15d992d2ec56f4b4f476746af7c8e03c1076dd52"
+    },
+    {
+      "id": "timeout-09",
+      "path": "assets/audio/voice/timeout/timeout-09.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] That speedy clock needs a leash! Answer time!",
+      "bytes": 67221,
+      "sha256": "7ebb364c6bf84c24ca451c97b9af7d9762cb3e646b39c3cb0a13c66375bf066f"
+    },
+    {
+      "id": "timeout-10",
+      "path": "assets/audio/voice/timeout/timeout-10.mp3",
+      "persona": "curious-naturalist",
+      "script": "[thoughtfully] The countdown ended. Study this species for the next expedition.",
+      "bytes": 81431,
+      "sha256": "500f4ecdd17e8bd12f079649010ecee0231df619ce1039226a82091cebfd468f"
+    },
+    {
+      "id": "timeout-11",
+      "path": "assets/audio/voice/timeout/timeout-11.mp3",
+      "persona": "bubbly-host",
+      "script": "[warmly] Out of time, not out of chances to learn!",
+      "bytes": 59697,
+      "sha256": "44bf42c219b6198330455d2219319334f6208cdb65e722d869e9e87c3b0fab1a"
+    },
+    {
+      "id": "timeout-12",
+      "path": "assets/audio/voice/timeout/timeout-12.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] Ding ding! The animal is ready to introduce itself.",
+      "bytes": 69728,
+      "sha256": "c96a46ef7d149d6e171df8a71bf7b345ba604013d414e5c35f086b25f2208175"
+    },
+    {
+      "id": "game-over-low-01",
+      "path": "assets/audio/voice/game-over-low/game-over-low-01.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] Expedition complete. Every champion starts by learning one animal at a time.",
+      "bytes": 110688,
+      "sha256": "fde49ac4f85bc0c14ab7f8a85e045b5af918843fa16080f7404580e294716549"
+    },
+    {
+      "id": "game-over-low-02",
+      "path": "assets/audio/voice/game-over-low/game-over-low-02.mp3",
+      "persona": "curious-naturalist",
+      "script": "[encouragingly] Good first trail. Explore again and watch your wildlife knowledge grow!",
+      "bytes": 91462,
+      "sha256": "ebb0462e0e04bad27f4c0cc9556ad84cdad013d122bfab1934ba3c69d4e245d8"
+    },
+    {
+      "id": "game-over-low-03",
+      "path": "assets/audio/voice/game-over-low/game-over-low-03.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] The wild surprised us today. Ready for a brilliant comeback?",
+      "bytes": 78505,
+      "sha256": "8f50a01f113df97a79f27da266b4cb00343c2d8dc8c8915ed82a9c22ff34c9cc"
+    },
+    {
+      "id": "game-over-low-04",
+      "path": "assets/audio/voice/game-over-low/game-over-low-04.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] Short expedition, big adventure. Let us try another trail!",
+      "bytes": 86447,
+      "sha256": "5296e9b02a55a2ff16b5bdf3dad5bb0c87d7f7821ecaa29fac47596edd6cce95"
+    },
+    {
+      "id": "game-over-mid-01",
+      "path": "assets/audio/voice/game-over-mid/game-over-mid-01.mp3",
+      "persona": "warm-coach",
+      "script": "[proudly] Strong expedition! Your animal knowledge is growing fast.",
+      "bytes": 83939,
+      "sha256": "10ba1e8fc6547ed278b0fc487f3084a791e948d3a038d0d6c9ae6382e990beb1"
+    },
+    {
+      "id": "game-over-mid-02",
+      "path": "assets/audio/voice/game-over-mid/game-over-mid-02.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] A fierce run and a fine score. The crown is getting closer!",
+      "bytes": 85193,
+      "sha256": "176976ddcff28d46da6805af3ed9673ff758c1a563360f6c0b04fea9227093a0"
+    },
+    {
+      "id": "game-over-mid-03",
+      "path": "assets/audio/voice/game-over-mid/game-over-mid-03.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] Great exploring! One more run could be your best yet!",
+      "bytes": 88954,
+      "sha256": "ebae52a4c2f48a40df25047fb890d37596154ef5c809b2807dfe76d87156b538"
+    },
+    {
+      "id": "game-over-mid-04",
+      "path": "assets/audio/voice/game-over-mid/game-over-mid-04.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] Excellent observations. Your wildlife field notes would be impressive!",
+      "bytes": 87701,
+      "sha256": "303b86d1a83c5c414428f97c0791d68538b18bdef6438262dc873998aa63a3dd"
+    },
+    {
+      "id": "game-over-high-01",
+      "path": "assets/audio/voice/game-over-high/game-over-high-01.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[triumphantly] Spectacular run! The wild salutes its Animal Champion!",
+      "bytes": 98985,
+      "sha256": "ba63f4072883fdd3aa9c46cc47c344f73fa4f7a2c77c5f4cdae3700b9da4eac0"
+    },
+    {
+      "id": "game-over-high-02",
+      "path": "assets/audio/voice/game-over-high/game-over-high-02.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] What a score! You earned a roaring, soaring, splashing celebration!",
+      "bytes": 110688,
+      "sha256": "2fdd96d7bce3daffc02a4f3987c4e3643d81dd4bf9f855ba9893271df5e83434"
+    },
+    {
+      "id": "game-over-high-03",
+      "path": "assets/audio/voice/game-over-high/game-over-high-03.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[laughs] Incredible! The lions want your autograph and the owls want lessons!",
+      "bytes": 103165,
+      "sha256": "dce86c9b6e5dac728a810b583e14d973a40e94c68dc7a8733e32b008b052bd3e"
+    },
+    {
+      "id": "game-over-high-04",
+      "path": "assets/audio/voice/game-over-high/game-over-high-04.mp3",
+      "persona": "warm-coach",
+      "script": "[proudly] Champion performance. Your focus and wildlife knowledge were outstanding!",
+      "bytes": 95224,
+      "sha256": "8bd64fe2899dab89ba27ca43c01aebaf952ea3fb8ea5dcae78a140e45d206b89"
+    },
+    {
+      "id": "animal-bat",
+      "path": "assets/audio/voice/animals/bat.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a bat! The only mammal built for true powered flight. Talk about winging it!",
+      "bytes": 109434,
+      "sha256": "27d139d987d40ff7f963d4e8d1b2f3cb670ab2969f768be985ea16a8885d1389"
+    },
+    {
+      "id": "animal-bear",
+      "path": "assets/audio/voice/animals/bear.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[warmly] It is a bear! That powerful nose can sniff out food from amazingly far away.",
+      "bytes": 118212,
+      "sha256": "050c41c092d1ff3c785b2b72c509610cbfbc597dda25b66a04d084df163184ea"
+    },
+    {
+      "id": "animal-camel",
+      "path": "assets/audio/voice/animals/camel.mp3",
+      "persona": "curious-naturalist",
+      "script": "[brightly] It is a camel! Its humps store fat, not water, for long desert journeys.",
+      "bytes": 109434,
+      "sha256": "be596b237d6e19086d8e7d94d958be07d64913321a6a2e44c0f6cb9d5b5b834d"
+    },
+    {
+      "id": "animal-cat",
+      "path": "assets/audio/voice/animals/cat.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a cat! Whiskers help it judge tight spaces. Very handy for sneaky adventures!",
+      "bytes": 115704,
+      "sha256": "f47e7793eea5011da4caf25c218cd894114c341fbe1c2ff60ba58fc1d26eb971"
+    },
+    {
+      "id": "animal-cheetah",
+      "path": "assets/audio/voice/animals/cheetah.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] It is a cheetah! The fastest land animal just sprinted into the spotlight!",
+      "bytes": 111942,
+      "sha256": "005b199d29d7289026aba81818c11aa991cf593fa0e89dbc00ebaa9234829015"
+    },
+    {
+      "id": "animal-chicken",
+      "path": "assets/audio/voice/animals/chicken.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a chicken! It can remember many different faces. No poultry memory here!",
+      "bytes": 116958,
+      "sha256": "cc06d24001234b49f867b1d1310e80a9df00dfef088c3894243f2ebc79410bc2"
+    },
+    {
+      "id": "animal-chimpanzee",
+      "path": "assets/audio/voice/animals/chimpanzee.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] It is a chimpanzee! These clever primates use tools and learn from one another.",
+      "bytes": 100657,
+      "sha256": "cbe06862c9acdbca43b36f6e65bc5a4331626c842b3c85ddb494917ff05d575a"
+    },
+    {
+      "id": "animal-cow",
+      "path": "assets/audio/voice/animals/cow.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a cow! Cows form friendships and even have favorite herd mates.",
+      "bytes": 101911,
+      "sha256": "e4dd53b440d65457a3682266f8118907cb3bafd3a2e4886917392c2aae4ff717"
+    },
+    {
+      "id": "animal-crocodile",
+      "path": "assets/audio/voice/animals/crocodile.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a crocodile! This ancient reptile carries one seriously legendary smile!",
+      "bytes": 108181,
+      "sha256": "390e8582b28b1d89636373278340147bdfd621dbc197a4d3a42bca6922a944a5"
+    },
+    {
+      "id": "animal-deer",
+      "path": "assets/audio/voice/animals/deer.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a deer! Its swiveling ears help track sounds from different directions.",
+      "bytes": 100657,
+      "sha256": "cd447274fcfa457c978f5594eac699a7d4778a425fcba0f0d7983b1be8f06e3e"
+    },
+    {
+      "id": "animal-dog",
+      "path": "assets/audio/voice/animals/dog.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a dog! That remarkable nose reads the world like a scent-filled storybook.",
+      "bytes": 109434,
+      "sha256": "d7958476d384ec59017702a4640d86cfc6ca06edf48087da27664c50ff1bc928"
+    },
+    {
+      "id": "animal-dolphin",
+      "path": "assets/audio/voice/animals/dolphin.mp3",
+      "persona": "whimsical-guide",
+      "script": "[excited] It is a dolphin! Dolphins use signature whistles a bit like names. How fin-tastic!",
+      "bytes": 123645,
+      "sha256": "96224fd312101f7bdffbcf493cc328a90317d04994ce64cf63df1b93a71ec168"
+    },
+    {
+      "id": "animal-donkey",
+      "path": "assets/audio/voice/animals/donkey.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a donkey! Those enormous ears help it hear and stay cool.",
+      "bytes": 126153,
+      "sha256": "2211e07bcb09f4f2cf3b05ca9685a6e80adbf9571c5bbbcd4ffb8d4bf98a5f83"
+    },
+    {
+      "id": "animal-duck",
+      "path": "assets/audio/voice/animals/duck.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a duck! Waterproof feathers keep it looking sharp, even after a splash!",
+      "bytes": 96478,
+      "sha256": "01cb1e0f909c986cdd916d601199fd610dceb374a38e9743d28458a6afbdf0a2"
+    },
+    {
+      "id": "animal-eagle",
+      "path": "assets/audio/voice/animals/eagle.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is an eagle! Extraordinary eyesight helps it spot prey from high above.",
+      "bytes": 111942,
+      "sha256": "0b2eade739b7758fd3a58ff9aace63321279d9cc5b43a62d7f272a001e72b778"
+    },
+    {
+      "id": "animal-elephant",
+      "path": "assets/audio/voice/animals/elephant.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] It is an elephant! Its amazing trunk can breathe, smell, draw up water, and gently pick things up.",
+      "bytes": 178398,
+      "sha256": "d7d46ed696c792a453968fccc812b0064372ebc9e3300e7e8257b59d4698cbb6"
+    },
+    {
+      "id": "animal-flamingo",
+      "path": "assets/audio/voice/animals/flamingo.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a flamingo! Its pink color comes from pigments in the food it eats.",
+      "bytes": 101911,
+      "sha256": "e5fe04ebf00645dfa5a48bbe219b206f6c7dd35655097f1d7efacdd57a7dcd99"
+    },
+    {
+      "id": "animal-fox",
+      "path": "assets/audio/voice/animals/fox.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a fox! Its bushy tail works like a blanket and a balance pole.",
+      "bytes": 109434,
+      "sha256": "fa56442253dd2bf48b3d13fae4159ca0eb4ba16f1008245cfe29d3e13bf6027d"
+    },
+    {
+      "id": "animal-frog",
+      "path": "assets/audio/voice/animals/frog.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a frog! Many frogs absorb water through their skin. That is un-frog-gettable!",
+      "bytes": 131168,
+      "sha256": "832c966628f5f3da40db22e2e900444676f53ebc1f6d34a58c519cd86282c89f"
+    },
+    {
+      "id": "animal-giraffe",
+      "path": "assets/audio/voice/animals/giraffe.mp3",
+      "persona": "bubbly-host",
+      "script": "[brightly] It is a giraffe! Its long tongue helps reach tasty leaves between thorny branches.",
+      "bytes": 121137,
+      "sha256": "d3e6c29d041b9e7f4a1c5e4d1a243d9ca649339184c60beec7272060ff7b1f22"
+    },
+    {
+      "id": "animal-goat",
+      "path": "assets/audio/voice/animals/goat.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a goat! Those rectangular pupils provide a wonderfully wide view.",
+      "bytes": 95224,
+      "sha256": "85ee27cc7c2fd5e44d23093042d6cc557d301d0e436bed77adcd9d774e01c8b3"
+    },
+    {
+      "id": "animal-gorilla",
+      "path": "assets/audio/voice/animals/gorilla.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a gorilla! These gentle giants communicate with sounds, gestures, and expressions.",
+      "bytes": 122391,
+      "sha256": "23e23b1d8e19a08b3e53625411b06a576ade91c4175ec9b82faaec954b2fea55"
+    },
+    {
+      "id": "animal-hamster",
+      "path": "assets/audio/voice/animals/hamster.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a hamster! Stretchy cheek pouches turn snack time into expert packing!",
+      "bytes": 113196,
+      "sha256": "2775f62117ffde07232cb74792203f67d769fef9c5c46d343768aea2b4e82b18"
+    },
+    {
+      "id": "animal-hippopotamus",
+      "path": "assets/audio/voice/animals/hippopotamus.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] It is a hippopotamus! It moves by pushing off the riverbed and can hold its breath for several minutes.",
+      "bytes": 138692,
+      "sha256": "a574d79909a37f4b6fb452331d9eec8edee92d4ba2ec4504f699c5cbfd7cfdf4"
+    },
+    {
+      "id": "animal-horse",
+      "path": "assets/audio/voice/animals/horse.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a horse! Mobile ears help it communicate mood and listen in many directions.",
+      "bytes": 114450,
+      "sha256": "c1ec6616cf9e8ad26bc75f018a986d33d3ae53c27296f91198a02cdf6b1b123c"
+    },
+    {
+      "id": "animal-kangaroo",
+      "path": "assets/audio/voice/animals/kangaroo.mp3",
+      "persona": "bubbly-host",
+      "script": "[excited] It is a kangaroo! Powerful legs and a sturdy tail make it a hopping champion!",
+      "bytes": 113196,
+      "sha256": "f99975495a1372cb6d1b3112c3f9aca62649cda3bc2c8ab033ce82bb105c638f"
+    },
+    {
+      "id": "animal-koala",
+      "path": "assets/audio/voice/animals/koala.mp3",
+      "persona": "whimsical-guide",
+      "script": "[softly] It is a koala! This sleepy tree expert can rest for most of the day.",
+      "bytes": 103165,
+      "sha256": "87add7e567a98e9e24f99c79089768d000cf65b2e0d6802abba1fa817e34c2d6"
+    },
+    {
+      "id": "animal-lion",
+      "path": "assets/audio/voice/animals/lion.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[triumphantly] It is a lion! A powerful roar can carry across miles of open land.",
+      "bytes": 101911,
+      "sha256": "6b83c3d35b4dfa4f3e95c1b4f7dec26d962c5117acc31c6a13a1d810a9786341"
+    },
+    {
+      "id": "animal-monkey",
+      "path": "assets/audio/voice/animals/monkey.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a monkey! Clever hands, curious eyes, and serious tree-climbing talent!",
+      "bytes": 108181,
+      "sha256": "f2ebbf52b7d4e23a251ee4cd836f4a1c18a5d0958d03dd288c8f99b36d7bac4d"
+    },
+    {
+      "id": "animal-mouse",
+      "path": "assets/audio/voice/animals/mouse.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a mouse! Tiny whiskers help it navigate when the light gets low.",
+      "bytes": 87701,
+      "sha256": "444e574a41c8e388972ef0f69ede1fb867bb126a4b69bd213f70a5ec14b1d0d6"
+    },
+    {
+      "id": "animal-octopus",
+      "path": "assets/audio/voice/animals/octopus.mp3",
+      "persona": "curious-naturalist",
+      "script": "[amazed] It is an octopus! Three hearts and eight flexible arms make one incredible ocean explorer.",
+      "bytes": 142871,
+      "sha256": "0c9ac26a29452aa4dc5b4c7efa17793e24ae91dd5e76e431d6d524a2994aef44"
+    },
+    {
+      "id": "animal-owl",
+      "path": "assets/audio/voice/animals/owl.mp3",
+      "persona": "whimsical-guide",
+      "script": "[whispers] It is an owl! Special feathers help it fly with barely a sound. Who knew?",
+      "bytes": 115704,
+      "sha256": "eac1a5715f331c8ee282b1c66b93b8dfd81f63ad6107e641c6ce6bd38f08245b"
+    },
+    {
+      "id": "animal-panda",
+      "path": "assets/audio/voice/animals/panda.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a panda! A wrist bone acts like a thumb for gripping bamboo.",
+      "bytes": 88954,
+      "sha256": "63e1fee5253bc845f7c8b3fae5e0836ff51e46846a3d0ad58a45593f1de48f3b"
+    },
+    {
+      "id": "animal-parrot",
+      "path": "assets/audio/voice/animals/parrot.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a parrot! Smart, social, colorful, and ready to repeat the good news!",
+      "bytes": 104419,
+      "sha256": "04cd9dfcb2f201a0d19dade67ee0d0e6b582143af1bc065caa672d8b8621feb2"
+    },
+    {
+      "id": "animal-peacock",
+      "path": "assets/audio/voice/animals/peacock.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a peacock! Those shimmering display feathers create a championship entrance.",
+      "bytes": 106927,
+      "sha256": "e7f28d3878359dfd02d814bad784651e05d33499fe1fc92df830b8508773a47e"
+    },
+    {
+      "id": "animal-penguin",
+      "path": "assets/audio/voice/animals/penguin.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a penguin! Its wings became flippers, making it a bird built for swimming.",
+      "bytes": 110688,
+      "sha256": "4db56d0c450eac42bf0cb396ebb7ee841eac55b822636ade422c65c184365172"
+    },
+    {
+      "id": "animal-pig",
+      "path": "assets/audio/voice/animals/pig.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a pig! Pigs are clever learners with an excellent sense of smell.",
+      "bytes": 101911,
+      "sha256": "2410eca530427bc4c939580b45037733ccbbd90268475e4eac2640c867ee24bc"
+    },
+    {
+      "id": "animal-polar-bear",
+      "path": "assets/audio/voice/animals/polar-bear.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] It is a polar bear! Thick fur and a layer of fat protect it from Arctic cold.",
+      "bytes": 114450,
+      "sha256": "7f7614b8eec2d889671a2ebfaaf1cd572840d683ca8ce870042a73700841bfa3"
+    },
+    {
+      "id": "animal-rabbit",
+      "path": "assets/audio/voice/animals/rabbit.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a rabbit! Nearly panoramic vision helps it watch for danger while it munches.",
+      "bytes": 104419,
+      "sha256": "9e861aeaf1520e29f8368eb8d838885d650c33983a3a850b7f515da840a09211"
+    },
+    {
+      "id": "animal-rhinoceros",
+      "path": "assets/audio/voice/animals/rhinoceros.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a rhinoceros! A mighty plant-eater wearing its own natural nose crown!",
+      "bytes": 131168,
+      "sha256": "d6d8b81de4e2d14a1302ff641a910ba9de00eebe6456df9904aaed9054a40d3f"
+    },
+    {
+      "id": "animal-seal",
+      "path": "assets/audio/voice/animals/seal.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a seal! Whiskers detect tiny water movements while it hunts for fish.",
+      "bytes": 100657,
+      "sha256": "6475f1df51bc9067a8d2b3bc503e6efff099d90ca1b48297a61b714c958ce032"
+    },
+    {
+      "id": "animal-shark",
+      "path": "assets/audio/voice/animals/shark.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[excited] It is a shark! Special senses can detect the faint electrical signals made by animals.",
+      "bytes": 133676,
+      "sha256": "ee1917e4d6967fe6030d28f9f3b2b298851cd57750be7408f9ebb4da4d9375a8"
+    },
+    {
+      "id": "animal-sheep",
+      "path": "assets/audio/voice/animals/sheep.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a sheep! Sheep recognize familiar faces. That answer was shear brilliance!",
+      "bytes": 119465,
+      "sha256": "0bb663063ae9b8d550f40866c36fc0391e2067726c6db7151352e0d428cf4c6c"
+    },
+    {
+      "id": "animal-snake",
+      "path": "assets/audio/voice/animals/snake.mp3",
+      "persona": "curious-naturalist",
+      "script": "[warmly] It is a snake! A flicking tongue gathers scent clues from the air and ground.",
+      "bytes": 96478,
+      "sha256": "a23dfbcfd95af200979a84c255cde8f703d545ae34c456ec72b8f39878729383"
+    },
+    {
+      "id": "animal-squirrel",
+      "path": "assets/audio/voice/animals/squirrel.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a squirrel! Forgotten buried nuts can grow into brand-new trees.",
+      "bytes": 104419,
+      "sha256": "a6d94de8c600563d341c5372bcdc7a4847d83bfb88999aa2eff139c238eb6dc0"
+    },
+    {
+      "id": "animal-tiger",
+      "path": "assets/audio/voice/animals/tiger.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a tiger! Every tiger wears a unique pattern of magnificent stripes.",
+      "bytes": 116958,
+      "sha256": "f8db8f5e9b771f7ff1abbd908e418c2c24856e04b407a61bf4921e86ca19f983"
+    },
+    {
+      "id": "animal-turtle",
+      "path": "assets/audio/voice/animals/turtle.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a turtle! Its protective shell is part of its skeleton, not a separate house.",
+      "bytes": 134930,
+      "sha256": "3e5f3f3792f90a7e4e82834640c6617fc59d3592c9aa15ef257c47fe3d58cb1e"
+    },
+    {
+      "id": "animal-whale",
+      "path": "assets/audio/voice/animals/whale.mp3",
+      "persona": "curious-naturalist",
+      "script": "[amazed] It is a whale! These ocean giants breathe air through blowholes on top of their heads.",
+      "bytes": 109434,
+      "sha256": "e84fe548b7e1e07c8b1fe4e2adf7dbe9625a698ccefe68a5098935cad341e6cb"
+    },
+    {
+      "id": "animal-wolf",
+      "path": "assets/audio/voice/animals/wolf.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a wolf! Pack members communicate with howls, posture, scent, and expression.",
+      "bytes": 119465,
+      "sha256": "9a1d30b9d7ab0b8f9a50100249601f51e736838e5d44bb6b06d3da1d83b9bd0d"
+    },
+    {
+      "id": "animal-zebra",
+      "path": "assets/audio/voice/animals/zebra.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a zebra! Every zebra has its own one-of-a-kind stripe pattern.",
+      "bytes": 97732,
+      "sha256": "50b02b2a26338bba16826364d5dd1d60398f0a9aee4b189110fec896b50c736a"
+    }
+  ]
+}

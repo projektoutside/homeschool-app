@@ -91,6 +91,55 @@ button:disabled {
   pointer-events: none;
 }
 
+.sound-toggle {
+  position: fixed;
+  z-index: 20;
+  right: max(14px, calc(var(--safe-right) + 8px));
+  bottom: max(14px, calc(var(--safe-bottom) + 8px));
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--line);
+  color: var(--ivory-100);
+  background: var(--glass-strong);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(14px);
+}
+
+.sound-toggle[aria-pressed="false"] {
+  color: var(--muted);
+}
+
+.sound-toggle__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+@media (width <= 520px), (height <= 520px) {
+  .sound-toggle {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .screen--menu:not([hidden]) ~ .sound-toggle {
+    bottom: max(76px, calc(var(--safe-bottom) + 70px));
+  }
+
+  #soundToggleLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
 .screen {
   position: relative;
   display: grid;

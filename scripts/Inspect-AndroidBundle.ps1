@@ -10,8 +10,10 @@ $resolvedBundlePath = (Resolve-Path -LiteralPath $BundlePath).Path
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $expectedAnimalImageCount = 100
+$expectedAnimalVoiceCount = 154
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $animalDataPath = Join-Path $repoRoot 'public\Games\Animal Champion\js\animal-data.js'
+$animalVoiceLedgerPath = Join-Path $repoRoot 'public\Games\Animal Champion\assets\audio\voice\voice-ledger.json'
 $animalDataSource = Get-Content -LiteralPath $animalDataPath -Raw
 $animalImageMatches = [regex]::Matches(
     $animalDataSource,
@@ -26,12 +28,29 @@ if ($animalImageMatches.Count -ne $expectedAnimalImageCount -or $animalImagePath
     throw "Animal Champion animal-data.js must contain exactly $expectedAnimalImageCount ordinal-unique quoted Animals/*.webp paths (matches: $($animalImageMatches.Count); unique: $($animalImagePaths.Count))."
 }
 
+$animalVoiceLedger = Get-Content -LiteralPath $animalVoiceLedgerPath -Raw | ConvertFrom-Json
+$animalVoicePaths = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($clip in $animalVoiceLedger.clips) {
+    $voicePath = [string]$clip.path
+    if ($voicePath -notmatch '^assets/audio/voice/[a-z0-9/-]+\.mp3$') {
+        throw "Animal Champion voice ledger contains an invalid MP3 path: $voicePath"
+    }
+    [void]$animalVoicePaths.Add($voicePath)
+}
+
+if ($animalVoiceLedger.clipCount -ne $expectedAnimalVoiceCount -or $animalVoiceLedger.clips.Count -ne $expectedAnimalVoiceCount -or $animalVoicePaths.Count -ne $expectedAnimalVoiceCount) {
+    throw "Animal Champion voice ledger must contain exactly $expectedAnimalVoiceCount ordinal-unique MP3 paths (declared: $($animalVoiceLedger.clipCount); clips: $($animalVoiceLedger.clips.Count); unique: $($animalVoicePaths.Count))."
+}
+
 $requiredAnimalEntries = @(
     'game_assets/assets/Games/Animal Champion/index.html',
     'game_assets/assets/Games/Animal Champion/css/style.css',
     'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+    'game_assets/assets/Games/Animal Champion/js/audio-system.js',
     'game_assets/assets/Games/Animal Champion/js/game-engine.js',
     'game_assets/assets/Games/Animal Champion/js/game.js',
+    'game_assets/assets/Games/Animal Champion/js/voice-manifest.js',
+    'game_assets/assets/Games/Animal Champion/assets/audio/voice/voice-ledger.json',
     'game_assets/assets/Games/Animal Champion/assets/images/ui/menu-wallpaper.webp',
     'game_assets/assets/Games/Animal Champion/assets/images/ui/thumb.webp',
     'game_assets/assets/Games/shared/lahsPointsBridge.js',
@@ -39,6 +58,9 @@ $requiredAnimalEntries = @(
 )
 foreach ($animalImagePath in $animalImagePaths) {
     $requiredAnimalEntries += "game_assets/assets/Games/Animal Champion/$animalImagePath"
+}
+foreach ($animalVoicePath in $animalVoicePaths) {
+    $requiredAnimalEntries += "game_assets/assets/Games/Animal Champion/$animalVoicePath"
 }
 
 $moduleSizes = @{}
