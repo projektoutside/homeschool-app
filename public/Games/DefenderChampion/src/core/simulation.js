@@ -9,7 +9,7 @@ import {
   getLegacyPadIdForCell,
   resolveCellId,
 } from './grid-placement.js';
-import { createWaveController, spawnScheduledEnemies } from './wave-controller.js';
+import { MAX_LIVING_ENEMIES, createWaveController, spawnScheduledEnemies } from './wave-controller.js';
 import { stepCombat } from './combat.js';
 import { calculateBattleResult } from './scoring.js';
 import {
@@ -44,6 +44,7 @@ const clearTransientCombatState = (simulation) => {
   for (const tower of simulation.towers) tower.engagedEnemyIds = [];
   simulation.projectiles = [];
   simulation.effects = [];
+  simulation.pendingSpawns = [];
   simulation.activeEffectValues = new Map();
 };
 
@@ -91,6 +92,9 @@ export const createSimulation = (levelId, options = {}) => {
     seed: options.seed ?? 0,
     waveSchedule: createWaveController(level),
     nextSpawnIndex: 0,
+    pendingSpawns: [],
+    nextSpawnSequence: 1,
+    maximumLivingEnemies: 0,
     waveCompletionFlags: {},
     waveStartedFlags: {},
     pathMetrics: null,
@@ -236,7 +240,10 @@ export const advanceSimulation = (simulation, steps) => {
     if (simulation.castleHearts <= 0) {
       const result = calculateBattleResult(simulation);
       finishBattle(simulation, result);
-    } else if (simulation.spawnedAllWaves && simulation.enemies.length === 0 && simulation.projectiles.length === 0) {
+    } else if (simulation.spawnedAllWaves
+      && simulation.pendingSpawns.length === 0
+      && simulation.enemies.length === 0
+      && simulation.projectiles.length === 0) {
       const result = calculateBattleResult(simulation);
       finishBattle(simulation, result);
     }
@@ -348,6 +355,9 @@ export const summarizeSimulation = (simulation) => {
     nextWaveStartTick: nextWave?.nextWaveStartTick ?? null,
     waveIndex: simulation.waveIndex,
     spawnedAllWaves: simulation.spawnedAllWaves,
+    pendingSpawnCount: simulation.pendingSpawns.length,
+    livingEnemyCap: MAX_LIVING_ENEMIES,
+    maximumLivingEnemies: simulation.maximumLivingEnemies,
     enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
     towers: simulation.towers.map(snapshotTower).sort(sortById),
     projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),
@@ -377,6 +387,9 @@ export const summarizePresentationSimulation = (simulation) => {
     nextWaveStartTick: nextWave?.nextWaveStartTick ?? null,
     waveIndex: simulation.waveIndex,
     spawnedAllWaves: simulation.spawnedAllWaves,
+    pendingSpawnCount: simulation.pendingSpawns.length,
+    livingEnemyCap: MAX_LIVING_ENEMIES,
+    maximumLivingEnemies: simulation.maximumLivingEnemies,
     enemies: simulation.enemies.map(snapshotEnemy).sort(sortById),
     towers: simulation.towers.map(snapshotTower).sort(sortById),
     projectiles: simulation.projectiles.map((projectile) => structuredClone(projectile)).sort(sortById),

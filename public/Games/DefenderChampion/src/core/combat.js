@@ -5,6 +5,7 @@ import { createPathMetrics, resolvePlacementPoint } from './path-geometry.js';
 import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
 import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
+import { enqueueEnemySpawn } from './wave-controller.js';
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const isBoss = (enemy) => enemy.enemyId === 'mossback-brute'
@@ -186,43 +187,6 @@ export const applyHit = (simulation, enemy, hit) => {
   return dealt;
 };
 
-const createEnemy = (simulation, enemyId, pathProgress, waveIndex, isSummon = false) => {
-  const config = ENEMIES[enemyId];
-  const maxHealth = Math.round(config.health * simulation.level.healthScale);
-  return {
-    id: `enemy-${simulation.nextEntityId++}`,
-    enemyId,
-    waveIndex,
-    spawnTick: simulation.tick,
-    pathProgress,
-    health: maxHealth,
-    maxHealth,
-    speed: config.speed,
-    armor: config.armor,
-    clusterSize: 1,
-    castleDamage: config.castleDamage,
-    attackDamage: config.attackDamage,
-    attackCooldownTicks: config.attackCooldownTicks,
-    attackWindupTicks: config.attackWindupTicks,
-    attackTargets: config.attackTargets,
-    attackState: {
-      targetTowerId: null,
-      startedAtTick: null,
-      impactAtTick: null,
-      readyAtTick: simulation.tick,
-    },
-    laneState: 'moving',
-    blockingTowerId: null,
-    queueIndex: null,
-    laneOffset: 0,
-    nextAbilityTick: simulation.tick + config.cooldownTicks,
-    abilityActiveTicks: 0,
-    nextAbilityActiveTick: config.cooldownTicks,
-    thresholdFlags: {},
-    isSummon,
-  };
-};
-
 const initializeSpawnedEnemy = (simulation, enemy) => {
   const config = ENEMIES[enemy.enemyId];
   enemy.attackDamage ??= config.attackDamage;
@@ -260,13 +224,12 @@ const initializeSpawnedEnemy = (simulation, enemy) => {
 const summonDreadPack = (simulation, boss, threshold) => {
   const config = ENEMIES['dread-colossus'];
   for (let index = 0; index < config.summonCount; index += 1) {
-    simulation.enemies.push(createEnemy(
-      simulation,
-      'swarmkin',
-      Math.max(0, boss.pathProgress - (index * 8)),
-      boss.waveIndex,
-      true,
-    ));
+    enqueueEnemySpawn(simulation, {
+      enemyId: 'swarmkin',
+      isSummon: true,
+      pathProgress: Math.max(0, boss.pathProgress - (index * 8)),
+      waveIndex: boss.waveIndex,
+    });
   }
   delete boss.thresholdFlags[`summon${threshold}Pending`];
   boss.thresholdFlags[`summon${threshold}`] = true;
@@ -705,7 +668,8 @@ const awardCompletedWaves = (simulation) => {
   for (let waveIndex = 0; waveIndex < simulation.level.waveCount; waveIndex += 1) {
     if (simulation.waveCompletionFlags[waveIndex]) continue;
     const hasPendingSpawn = simulation.waveSchedule.slice(simulation.nextSpawnIndex)
-      .some((entry) => entry.waveIndex === waveIndex);
+      .some((entry) => entry.waveIndex === waveIndex)
+      || simulation.pendingSpawns?.some((entry) => entry.waveIndex === waveIndex);
     const hasLivingEnemy = simulation.enemies.some((enemy) => enemy.waveIndex === waveIndex);
     const hasProjectile = simulation.projectiles.some((projectile) => simulation.enemies
       .some((enemy) => enemy.id === projectile.targetId && enemy.waveIndex === waveIndex));
