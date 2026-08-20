@@ -52,24 +52,9 @@ export const createQueuePresentationLayout = ({
   const desiredProgress = (index) => (
     gateProgress - ATTACK_CONTACT_PROGRESS - ((index + 1) * QUEUE_SPACING)
   );
-  let exactCount = 0;
-  while (exactCount < count && desiredProgress(exactCount) >= minimumProgress) {
-    exactCount += 1;
-  }
-  const overflowCount = count - exactCount;
-  const overflowUpperProgress = exactCount > 0
-    ? desiredProgress(exactCount - 1)
-    : Math.max(minimumProgress, gateProgress - ATTACK_CONTACT_PROGRESS);
-  const overflowProgressSpan = overflowUpperProgress - minimumProgress;
   return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
-    laneOffset: index >= exactCount && overflowProgressSpan === 0
-      ? ((index - exactCount + 1) * 21) / (overflowCount + 1)
-      : ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
-    pathProgress: index < exactCount
-      ? desiredProgress(index)
-      : overflowUpperProgress - (
-        ((index - exactCount + 1) * overflowProgressSpan) / (overflowCount + 1)
-      ),
+    laneOffset: ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
+    pathProgress: Math.max(minimumProgress, desiredProgress(index)),
     scale: 1,
   })));
 };

@@ -103,6 +103,30 @@ test('road coverage includes the forty-pixel boundary, clamps progress, and igno
   }), false);
 });
 
+test('prospective gate congestion rejects capacity plus one but ignores dead upstream overflow', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.coins = 10_000;
+  simulation.enemies = Array.from({ length: 6 }, (_, index) => ({
+    id: `enemy-${index + 1}`,
+    health: 10,
+    pathProgress: 0,
+  }));
+  const cellId = simulation.level.roadCells[2];
+
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId,
+  }), { accepted: false, reason: 'enemy-occupied' });
+  assert.equal(simulation.coins, 10_000);
+  assert.deepEqual(simulation.towers, []);
+
+  simulation.enemies[5].health = 0;
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId,
+  }), { accepted: true, reason: null });
+  assert.equal(simulation.coins, 9_950);
+  assert.equal(simulation.towers[0].cellId, cellId);
+});
+
 test('new cell commands reject duplicate and invalid cells without charging coins', () => {
   const simulation = createSimulation('level-1', { qa: true });
   simulation.coins = 1_000;

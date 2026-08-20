@@ -207,7 +207,7 @@ test('an early gate backpressures new spawns before queue art overlaps', () => {
   assert.equal(laneCombat.deriveReadableSpawnCapacity?.(simulation), 5);
 });
 
-test('building an early road-cell gate after 18 spawns preserves distinct fixed-scale FIFO positions', () => {
+test('a congested early road-cell gate waits for readable capacity without deleting the 18-body FIFO', () => {
   const simulation = createGameSimulation('level-1', { qa: true });
   simulation.waveSchedule = [];
   simulation.pendingSpawns = [];
@@ -227,9 +227,23 @@ test('building an early road-cell gate after 18 spawns preserves distinct fixed-
   ]);
 
   const gateCellId = LEVELS[0].roadCells[2];
-  assert.equal(issueCommand(simulation, {
+  assert.deepEqual(issueCommand(simulation, {
     type: 'build', defenderId: 'bladeguard', cellId: gateCellId,
-  }).accepted, true);
+  }), { accepted: false, reason: 'enemy-occupied' });
+  assert.equal(simulation.coins, 10_000);
+  assert.deepEqual(simulation.enemies.map(({ id }) => id), originalEntityIds);
+  assert.deepEqual(simulation.towers, []);
+
+  const downstreamProgress = [
+    241, 289, 337, 385, 433, 481, 529, 577, 625, 673, 721, 769, 817,
+  ];
+  simulation.enemies.slice(5).forEach((enemy, index) => {
+    enemy.pathProgress = downstreamProgress[index];
+  });
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: gateCellId,
+  }), { accepted: true, reason: null });
+  assert.equal(simulation.coins, 9_950);
   enqueueEnemySpawn(simulation, { enemyId: 'skitter', pathProgress: 0, waveIndex: 0 });
   enqueueEnemySpawn(simulation, { enemyId: 'shellguard', pathProgress: 0, waveIndex: 0 });
   flushPendingEnemySpawns(simulation);
@@ -238,27 +252,40 @@ test('building an early road-cell gate after 18 spawns preserves distinct fixed-
 
   assert.deepEqual(simulation.enemies.map(({ id }) => id), originalEntityIds);
   assert.deepEqual(state.gates[0].attackerIds, ['enemy-1', 'enemy-2', 'enemy-3']);
-  assert.deepEqual(state.gates[0].queuedIds, [
-    'enemy-4', 'enemy-5', 'enemy-6', 'enemy-7', 'enemy-8', 'enemy-9',
-    'enemy-10', 'enemy-11', 'enemy-12', 'enemy-13', 'enemy-14', 'enemy-15',
-    'enemy-16', 'enemy-17', 'enemy-18',
-  ]);
+  assert.deepEqual(state.gates[0].queuedIds, ['enemy-4', 'enemy-5']);
+  assert.equal(simulation.maximumConcurrentAttackers, 3);
   assert.deepEqual(
     simulation.enemies
       .filter(({ queueIndex }) => queueIndex !== null)
       .sort((first, second) => first.queueIndex - second.queueIndex)
-      .map(({ displayPathProgress }) => Number(displayPathProgress.toFixed(6))),
+      .map(({ id, displayLaneOffset, displayPathProgress }) => ({
+        id, displayLaneOffset, displayPathProgress,
+      })),
     [
-      84, 36, 33.428571, 30.857143, 28.285714, 25.714286, 23.142857,
-      20.571429, 18, 15.428571, 12.857143, 10.285714, 7.714286,
-      5.142857, 2.571429,
+      { id: 'enemy-4', displayLaneOffset: -22, displayPathProgress: 84 },
+      { id: 'enemy-5', displayLaneOffset: 0, displayPathProgress: 36 },
     ],
   );
   assert.equal(simulation.enemies.every(({ displayScale }) => displayScale === 1), true);
   assert.equal(simulation.enemies.every(({ displayLaneOffset }) => (
     Math.abs(displayLaneOffset) <= 22
   )), true);
-  assert.equal(simulation.enemies.every(({ pathProgress }) => pathProgress === 0), true);
+  assert.deepEqual(
+    simulation.enemies.slice(5).map(({ pathProgress }) => pathProgress),
+    downstreamProgress,
+  );
+  const queuePositions = simulation.enemies
+    .filter(({ queueIndex }) => queueIndex !== null)
+    .sort((first, second) => first.queueIndex - second.queueIndex)
+    .map((enemy) => projectPathProgress(
+      simulation.pathMetrics,
+      enemy.displayPathProgress,
+      enemy.displayLaneOffset,
+    ));
+  assert.equal(Math.hypot(
+    queuePositions[0].x - queuePositions[1].x,
+    queuePositions[0].y - queuePositions[1].y,
+  ) >= 48, true);
   const projectedPositions = simulation.enemies.map((enemy) => projectPathProgress(
     simulation.pathMetrics,
     enemy.displayPathProgress,
@@ -319,7 +346,7 @@ test('a tower on a non-road cell never becomes a lane gate', () => {
   assert.equal(laneCombat.deriveReadableSpawnCapacity(simulation), 18);
 });
 
-test('adjacent corner gates keep an interval-constrained 18-body queue distinct without crossing', () => {
+test('malformed externally injected interval state clamps deterministically without readability claims', () => {
   const simulation = createSimulation({
     towers: [
       createTower({ id: 'tower-1', cellId: LEVELS[0].roadCells[2] }),
@@ -346,10 +373,10 @@ test('adjacent corner gates keep an interval-constrained 18-body queue distinct 
     simulation.enemies
       .filter(({ queueIndex }) => queueIndex !== null)
       .sort((first, second) => first.queueIndex - second.queueIndex)
-      .map(({ displayPathProgress }) => Number(displayPathProgress.toFixed(1))),
+      .map(({ displayPathProgress }) => displayPathProgress),
     [
-      164, 163.8, 163.6, 163.4, 163.2, 163, 162.8, 162.6,
-      162.4, 162.2, 162, 161.8, 161.6, 161.4, 161.2,
+      164, 161, 161, 161, 161, 161, 161, 161,
+      161, 161, 161, 161, 161, 161, 161,
     ],
   );
   assert.deepEqual(
@@ -366,12 +393,9 @@ test('adjacent corner gates keep an interval-constrained 18-body queue distinct 
   assert.equal(simulation.enemies.every(({ displayLaneOffset }) => (
     Math.abs(displayLaneOffset) <= 22
   )), true);
-  const projectedPositions = simulation.enemies.map((enemy) => projectPathProgress(
-    simulation.pathMetrics,
-    enemy.displayPathProgress,
-    enemy.displayLaneOffset,
-  ));
-  assert.equal(new Set(projectedPositions.map(({ x, y }) => `${x}:${y}`)).size, 18);
+  assert.equal(simulation.enemies.every(({ displayPathProgress }) => (
+    Number.isFinite(displayPathProgress)
+  )), true);
 });
 
 test('a lane with no living road-cell gate retains the full readable spawn capacity', () => {

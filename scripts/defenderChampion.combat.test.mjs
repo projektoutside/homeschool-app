@@ -230,9 +230,19 @@ test('building an early gate never deletes living enemies and defers only later 
   flushPendingEnemySpawns(simulation);
   const originalEntityIds = simulation.enemies.map(({ id }) => id);
 
-  assert.equal(issueCommand(simulation, {
+  assert.deepEqual(issueCommand(simulation, {
     type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[2],
-  }).accepted, true);
+  }), { accepted: false, reason: 'enemy-occupied' });
+  assert.equal(simulation.coins, 10_000);
+  assert.deepEqual(simulation.enemies.map(({ id }) => id), originalEntityIds);
+  assert.deepEqual(simulation.towers, []);
+
+  simulation.enemies.slice(5).forEach((enemy, index) => {
+    enemy.pathProgress = 241 + (index * 48);
+  });
+  assert.deepEqual(issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[2],
+  }), { accepted: true, reason: null });
   enqueueEnemySpawn(simulation, { enemyId: 'swarmkin', pathProgress: 0, waveIndex: 0 });
   enqueueEnemySpawn(simulation, { enemyId: 'blight-walker', pathProgress: 0, waveIndex: 0 });
   flushPendingEnemySpawns(simulation);

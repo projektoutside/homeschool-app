@@ -2,6 +2,8 @@ import { GRID, cellCenter, createGridPathMetrics, parseCellId } from './grid-geo
 
 const ROAD_PAD_FRACTIONS = Object.freeze({ a: 0.18, c: 0.39, e: 0.62, g: 0.84 });
 const LEGACY_PLACEMENT_CACHE = new WeakMap();
+const MAX_ATTACKERS_PER_GATE = 3;
+const MAX_READABLE_ENEMIES = 18;
 
 export const getGridCell = (level, cellId) => (
   level?.cells?.find(({ id }) => id === cellId) ?? null
@@ -80,6 +82,23 @@ export const isRoadCellEnemyCovered = ({ level, enemies = [], cellId } = {}) => 
   });
 };
 
+const isRoadCellUpstreamCongested = ({ level, enemies = [], cellId } = {}) => {
+  const index = level?.roadCells?.indexOf(cellId) ?? -1;
+  if (index < 0) return false;
+  const metrics = createGridPathMetrics(level.roadCells);
+  const upstreamBoundary = (index * GRID.cellSize) - (GRID.cellSize / 2);
+  const readableCapacity = Math.min(
+    MAX_READABLE_ENEMIES,
+    MAX_ATTACKERS_PER_GATE + index,
+  );
+  const upstreamLivingCount = enemies.filter((enemy) => {
+    if (!(enemy?.health > 0)) return false;
+    const progress = Math.max(0, Math.min(metrics.total, Number(enemy.pathProgress) || 0));
+    return progress < upstreamBoundary;
+  }).length;
+  return upstreamLivingCount > readableCapacity;
+};
+
 export const evaluateCellBuild = ({ level, defender, towers = [], enemies = [], cellId } = {}) => {
   const cell = getGridCell(level, cellId);
   if (!cell) return Object.freeze({ accepted: false, cell: null, reason: 'invalid-cell' });
@@ -89,7 +108,10 @@ export const evaluateCellBuild = ({ level, defender, towers = [], enemies = [], 
   if (towers.some((tower) => tower.cellId === cellId)) {
     return Object.freeze({ accepted: false, cell, reason: 'cell-occupied' });
   }
-  if (cell.terrain === 'road' && isRoadCellEnemyCovered({ level, enemies, cellId })) {
+  if (cell.terrain === 'road' && (
+    isRoadCellEnemyCovered({ level, enemies, cellId })
+    || isRoadCellUpstreamCongested({ level, enemies, cellId })
+  )) {
     return Object.freeze({ accepted: false, cell, reason: 'enemy-occupied' });
   }
   return Object.freeze({ accepted: true, cell, reason: null });
