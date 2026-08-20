@@ -6,6 +6,7 @@ import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/le
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
 import { cellCenter } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
 import {
+  advanceSimulation,
   createSimulation,
   issueCommand,
   summarizeSimulation,
@@ -76,21 +77,27 @@ test('all nested combat config is immutable and Ranger mastery target count is a
 
 test('square-cell centers establish the exact ranged coverage floor without rewriting balance', () => {
   assert.equal(DEFENDERS.ranger.range[0], 190);
-  assert.equal(DEFENDERS['rune-artificer'].range[0], 72);
+  assert.deepEqual(DEFENDERS['rune-artificer'].range, [81, 90, 100]);
 
   assert.equal(Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))), 80);
   assert.equal(
     Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))) <= DEFENDERS.ranger.range[0],
     true,
   );
+  assert.equal(
+    Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))) < DEFENDERS['rune-artificer'].range[0],
+    true,
+  );
 
   for (const levelId of ['level-7', 'level-10']) {
     const level = getLevel(levelId);
-    const firstGrassPad = level.pads.find(({ cellId }) => (
-      level.cells.find(({ id }) => id === cellId)?.terrain === 'grass'
-    ));
+    const firstGrassCellId = REFERENCE_STRATEGIES[`${levelId}-balanced`]
+      .find((command) => (
+        command.type === 'build'
+        && level.cells.find(({ id }) => id === command.cellId)?.terrain === 'grass'
+      ))?.cellId;
     assert.equal(
-      minimumGrassRoadDistance(level, [{ id: firstGrassPad.cellId }]),
+      minimumGrassRoadDistance(level, [{ id: firstGrassCellId }]),
       80,
       `${levelId} first grass translation cell must touch the road by one square edge`,
     );
@@ -112,6 +119,25 @@ test('Rune Artificer keeps the legal two-hit floor without exceeding its damage 
   assert.deepEqual(runeDamage, [36, 36, 36]);
   assert.equal(runeDamage.every((damage, index) => index === 0 || damage >= runeDamage[index - 1]), true);
   assert.equal(Math.max(...runeDamage), 36);
+});
+
+test('Rune Artificer tier-0 can earn a first bounty from an adjacent grass cell', () => {
+  const simulation = createSimulation('level-7', { qa: true });
+  assert.deepEqual(
+    issueCommand(simulation, {
+      type: 'build',
+      defenderId: 'rune-artificer',
+      cellId: 'r0c4',
+    }),
+    { accepted: true, reason: null },
+  );
+
+  while (!simulation.terminal && simulation.tick < 2400 && simulation.coins === 0) {
+    advanceSimulation(simulation, 1);
+  }
+
+  assert.ok(simulation.towers[0].attackCount > 0, 'tier-0 Rune should fire from an adjacent grass cell');
+  assert.ok(simulation.coins > 0, 'tier-0 Rune should earn its first bounty from legal adjacent coverage');
 });
 
 test('campaign and effect ceilings are exact', () => {
@@ -145,10 +171,10 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     ['level-4', "Brute's Crossing", 1.52, 225],
     ['level-5', 'Twisting Thicket', 1.34, 285],
     ['level-6', 'Moonlit Rush', 1.48, 350],
-    ['level-7', "Warlord's March", 1.92, 430],
-    ['level-8', 'Fogbound Siege', 2.14, 525],
-    ['level-9', 'The Last Green', 2.38, 640],
-    ['level-10', "Champion's Stand", 2.65, 800],
+    ['level-7', "Warlord's March", 1, 430],
+    ['level-8', 'Fogbound Siege', 1.5, 525],
+    ['level-9', 'The Last Green', 1, 640],
+    ['level-10', "Champion's Stand", 1, 800],
   ];
   assert.equal(Object.isFrozen(LEVELS), true);
   for (const [index, level] of LEVELS.entries()) {
@@ -160,12 +186,7 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     assert.equal(Object.isFrozen(level), true);
     assert.equal(getLevel(id), level);
     assert.equal(Object.hasOwn(level, 'path'), false);
-    assert.equal(level.pads.length, 8);
-    assert.equal(new Set(level.pads.map((pad) => pad.id)).size, level.pads.length);
-    assert.equal(level.pads.every((pad) => (
-      Object.keys(pad).sort().join(',') === 'cellId,id'
-      && level.cells.some(({ id }) => id === pad.cellId)
-    )), true);
+    assert.equal(Object.hasOwn(level, 'pads'), false);
     assert.equal(level.waves.length, level.waveCount);
     assert.equal(level.referenceStrategies.length, 2);
     assert.equal(new Set(level.referenceStrategies).size, 2);
@@ -179,7 +200,6 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     assert.equal(second.every((command) => ['build', 'upgrade', 'upgrade-ref'].includes(command.type) && command.tick >= 0), true);
 
     for (const [strategyId, strategy] of [[firstStrategyId, first], [secondStrategyId, second]]) {
-      const pads = new Map(level.pads.map((pad) => [pad.id, pad]));
       const openingBuilds = strategy.filter((command) => command.tick === 0);
       const openingExpectation = strategyId === 'level-4-balanced' ? 1 : 2;
       assert.equal(openingBuilds.length, openingExpectation, `${strategyId} opens with its authored early placement count`);
@@ -204,12 +224,10 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
       for (const command of buildCommands) {
         const defender = DEFENDERS[command.defenderId];
         assert.ok(defender, `${level.id} has unknown ${command.defenderId}`);
-        const cellId = command.cellId ?? pads.get(command.padId)?.cellId;
-        assert.ok(cellId, `${level.id} has unknown placement for ${command.defenderId}`);
         assert.equal(
-          level.cells.find(({ id }) => id === cellId)?.terrain,
+          level.cells.find(({ id }) => id === command.cellId)?.terrain,
           defender.placementLayer,
-          `${command.defenderId} cannot use ${cellId}`,
+          `${command.defenderId} cannot use ${command.cellId}`,
         );
       }
 
@@ -225,8 +243,8 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
       }
     }
 
-    const firstPlacements = new Set(first.filter(({ type }) => type === 'build').map((command) => command.cellId ?? level.pads.find((pad) => pad.id === command.padId)?.cellId));
-    const secondPlacements = new Set(second.filter(({ type }) => type === 'build').map((command) => command.cellId ?? level.pads.find((pad) => pad.id === command.padId)?.cellId));
+    const firstPlacements = new Set(first.filter(({ type }) => type === 'build').map((command) => command.cellId));
+    const secondPlacements = new Set(second.filter(({ type }) => type === 'build').map((command) => command.cellId));
     const occupiedPlacements = new Set([...firstPlacements, ...secondPlacements]);
     const differingPlacements = [...occupiedPlacements].filter((cellId) => firstPlacements.has(cellId) !== secondPlacements.has(cellId));
     assert.equal(differingPlacements.length / occupiedPlacements.size >= 0.25, true);
@@ -238,13 +256,7 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
   );
 });
 
-test('simplified pad translation accepts legacy strategy commands and snapshots only cell IDs', () => {
-  const level = getLevel('level-1');
-  assert.deepEqual(level.pads.slice(0, 2), [
-    { id: 'l1-pad-a', cellId: 'r2c7' },
-    { id: 'l1-pad-b', cellId: 'r0c5' },
-  ]);
-
+test('cell-authored strategy commands and summaries stay cell-only', () => {
   const simulation = createSimulation('level-1');
   const firstCommand = REFERENCE_STRATEGIES['level-1-balanced'][0];
   assert.deepEqual(firstCommand, {

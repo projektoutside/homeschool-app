@@ -751,7 +751,7 @@ test('BattleScene source contains no circular battlefield drawing primitive or l
   const source = await readGameFile('src/scenes/BattleScene.js');
   assert.doesNotMatch(
     source,
-    /strokeEllipse|fillCircle|strokeCircle|rangeRing|padSprites|POINTER_HIT_RADIUS|level\.path|level\.pads/,
+    /strokeEllipse|fillCircle|strokeCircle|rangeRing|padSprites|POINTER_HIT_RADIUS|level\.path/,
   );
 });
 
@@ -1727,7 +1727,7 @@ test('actual Level 10 cap projects every living enemy without density cues', asy
     import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
   const simulation = createSimulation('level-10', { qa: true });
-  advanceSimulation(simulation, 265);
+  advanceSimulation(simulation, 289);
   const snapshot = summarizePresentationSimulation(simulation);
   const scene = Object.create(BattleScene.prototype);
   Object.assign(scene, {
@@ -2539,7 +2539,7 @@ test('the battle HUD model projects all combat labels and four defender cards fr
     castleHearts: 2,
     waveIndex: 1,
     towers: [{
-      id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+      id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', tier: 0, totalInvested: 50,
     }],
   };
   const model = hudModule.createBattleHudModel(snapshot, {
@@ -2583,7 +2583,7 @@ test('the battle HUD model projects all combat labels and four defender cards fr
     id: 'tower-1', upgradeCost: 60, sellValue: 35, damage: 60, range: 80,
   });
   assert.deepEqual(snapshot.towers, [{
-    id: 'tower-1', defenderId: 'bladeguard', padId: 'l1-pad-a', tier: 0, totalInvested: 50,
+    id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', tier: 0, totalInvested: 50,
   }]);
 });
 

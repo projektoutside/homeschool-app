@@ -936,7 +936,7 @@ export class BattleScene extends Phaser.Scene {
     this.spawnBurst(position, GAMEPLAY_FRAME.defeatCrack, 8, payload.towerId.length);
     this.audioController?.playCue?.('defeat');
     const name = DEFENDER_PRESENTATION[defenderId]?.name ?? 'Road defender';
-    this.hud.announce(`${name} was permanently defeated. The road guard slot is available again.`);
+    this.hud.announce(`${name} was permanently defeated. That road square is available again.`);
     if (!defeatView) {
       this.recordProjectionDiagnostic({ id: payload.towerId }, 'defender-defeat-pool-exhausted');
       return;

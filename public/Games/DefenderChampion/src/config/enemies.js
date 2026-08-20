@@ -69,7 +69,7 @@ export const ENEMIES = Object.freeze({
     telegraphTicks: 60, stunSeconds: 1.5, abilityRadius: 150,
   }),
   'ironhide-warlord': freezeEnemy({
-    id: 'ironhide-warlord', health: 12000, speed: 36, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 2,
+    id: 'ironhide-warlord', health: 12000, speed: 42, bounty: 370, armor: 0.35, cooldownTicks: 480, castleDamage: 3,
     attackDamage: 126, attackCooldownTicks: 96, attackWindupTicks: 32,
     attackTargets: Object.freeze(['frontline']),
     rallyRadius: 165, rallyDurationTicks: 180, rallyTelegraphTicks: 60, rallySpeed: 0.20, rallyArmor: 0.15,

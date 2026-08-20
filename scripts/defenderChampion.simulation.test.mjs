@@ -5,7 +5,6 @@ import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js'
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { cellCenter } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
 import {
-  getDeprecatedCellPlacements,
   isRoadCellEnemyCovered,
 } from '../public/Games/DefenderChampion/src/core/grid-placement.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
@@ -64,7 +63,6 @@ test('cell builds expose cell IDs in snapshots and strategy metrics', () => {
 
   const summary = summarizeSimulation(simulation);
   assert.equal(summary.towers[0].cellId, cellId);
-  assert.equal(Object.hasOwn(summary.towers[0], 'padId'), false);
   assert.deepEqual(summary.occupiedCellIds, [cellId]);
   assert.equal(Object.isFrozen(summary.occupiedCellIds), true);
   assert.throws(() => summary.occupiedCellIds.push('r0c0'), TypeError);
@@ -148,45 +146,16 @@ test('new cell commands reject duplicate and invalid cells without charging coin
   assert.equal(simulation.coins, coinsAfterBuild);
 });
 
-test('deprecated pad mappings cover every level with fixed road cells and unique grass cells', () => {
-  const expected = {
-    'level-1': ['r2c7', 'r0c5', 'r4c4', 'r1c1', 'r7c3', 'r4c1', 'r9c6', 'r5c5'],
-    'level-2': ['r2c4', 'r0c3', 'r5c8', 'r1c6', 'r7c3', 'r1c3', 'r9c7', 'r5c6'],
-    'level-3': ['r1c3', 'r0c3', 'r5c0', 'r2c0', 'r7c5', 'r4c3', 'r9c7', 'r6c6'],
-    'level-4': ['r2c5', 'r0c5', 'r3c3', 'r1c1', 'r5c7', 'r4c4', 'r8c5', 'r4c2'],
-    'level-5': ['r2c2', 'r0c2', 'r4c7', 'r1c7', 'r6c2', 'r2c1', 'r8c6', 'r3c6'],
-    'level-6': ['r2c8', 'r0c7', 'r5c5', 'r2c5', 'r7c3', 'r4c2', 'r9c6', 'r6c5'],
-    'level-7': ['r2c2', 'r0c4', 'r4c4', 'r1c7', 'r6c8', 'r4c0', 'r8c3', 'r5c7'],
-    'level-8': ['r2c4', 'r0c3', 'r4c4', 'r1c6', 'r6c6', 'r3c1', 'r8c5', 'r3c3'],
-    'level-9': ['r2c3', 'r0c2', 'r5c6', 'r3c6', 'r8c3', 'r4c2', 'r10c8', 'r5c5'],
-    'level-10': ['r2c6', 'r0c3', 'r5c4', 'r1c7', 'r8c8', 'r4c0', 'r9c1', 'r5c7'],
-  };
+test('levels and commands expose cell-authored placement surfaces', () => {
   for (const level of LEVELS) {
-    const records = getDeprecatedCellPlacements(level);
-    assert.deepEqual(records.map(({ cellId }) => cellId), expected[level.id], level.id);
-    const grassCellIds = records.filter(({ id }) => /-pad-[bdfh]$/.test(id)).map(({ cellId }) => cellId);
-    assert.equal(new Set(grassCellIds).size, 4, `${level.id} grass cells stay unique`);
+    assert.equal(level.cells.length, 108, level.id);
+    assert.ok(level.roadCells.length > 0, level.id);
   }
-});
-
-test('deprecated grass placement resolves equal distances by row before column', () => {
-  const level = {
-    pads: [
-      { id: 'l0-pad-b', layer: 'grass', x: 120, y: 80 },
-      { id: 'l0-pad-d', layer: 'grass', x: 120, y: 80 },
-    ],
-    roadCells: ['r0c0', 'r1c0'],
-    cells: [
-      { id: 'r0c0', terrain: 'road' },
-      { id: 'r0c1', terrain: 'grass' },
-      { id: 'r1c0', terrain: 'road' },
-      { id: 'r1c1', terrain: 'grass' },
-    ],
-  };
-  assert.deepEqual(getDeprecatedCellPlacements(level), [
-    { id: 'l0-pad-b', cellId: 'r0c1' },
-    { id: 'l0-pad-d', cellId: 'r1c1' },
-  ]);
+  for (const commands of Object.values(REFERENCE_STRATEGIES)) {
+    for (const command of commands) {
+      if (command.type === 'build') assert.match(command.cellId, /^r\d+c\d+$/);
+    }
+  }
 });
 
 test('presentation snapshots omit nonvisual effect fan-out without weakening full deterministic summaries', () => {
@@ -210,7 +179,6 @@ test('reference command fixtures are legal deterministic inputs for every level'
       `${level.id}-artillery`,
     ]);
 
-    const padsById = new Map(level.pads.map((pad) => [pad.id, pad]));
     for (const strategyId of level.referenceStrategies) {
       const commands = REFERENCE_STRATEGIES[strategyId];
       assert.ok(commands);
@@ -221,9 +189,7 @@ test('reference command fixtures are legal deterministic inputs for every level'
       const firstBuildTickByPlacement = new Map();
       for (const command of commands) {
         const expectedKeys = command.type === 'build'
-          ? ('cellId' in command
-            ? ['cellId', 'defenderId', 'ref', 'tick', 'type']
-            : ['defenderId', 'padId', 'tick', 'type'])
+          ? ['cellId', 'defenderId', 'ref', 'tick', 'type']
           : (command.type === 'upgrade-ref'
             ? ['ref', 'tick', 'type']
             : ['tick', 'towerId', 'type']);
@@ -233,10 +199,8 @@ test('reference command fixtures are legal deterministic inputs for every level'
         assert.equal(command.tick >= previousTick, true);
         if (command.type === 'build') {
           assert.ok(DEFENDERS[command.defenderId]);
-          const placementId = command.cellId ?? command.padId;
-          const translationCell = command.cellId
-            ? level.cells.find(({ id }) => id === command.cellId)
-            : level.cells.find(({ id }) => id === padsById.get(command.padId).cellId);
+          const placementId = command.cellId;
+          const translationCell = level.cells.find(({ id }) => id === command.cellId);
           assert.equal(translationCell.terrain, DEFENDERS[command.defenderId].placementLayer);
           const firstBuildTick = firstBuildTickByPlacement.get(placementId);
           if (firstBuildTick !== undefined) {
@@ -268,13 +232,13 @@ test('build commands enforce placement layers before charging coins and snapshot
   const simulation = createSimulation('level-1', { qa: true, seed: 7 });
 
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'ranger', padId: 'l1-pad-c',
+    type: 'build', defenderId: 'ranger', cellId: 'r4c4',
   }), { accepted: false, reason: 'placement-layer-mismatch' });
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
+    type: 'build', defenderId: 'ranger', cellId: 'r0c5',
   }), { accepted: true, reason: null });
 
   const summary = summarizeSimulation(simulation);
@@ -307,7 +271,7 @@ test('frontline upgrades preserve missing health and engaged defenders cannot be
   simulation.coins = 500;
 
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   }), { accepted: true, reason: null });
   simulation.towers[0].health = 300;
   assert.deepEqual(issueCommand(simulation, { type: 'upgrade', towerId: 'tower-1' }), {
@@ -341,12 +305,12 @@ test('invalid economy commands reject without mutating the public summary', () =
     assert.deepEqual(summarizeSimulation(simulation), before);
   };
 
-  expectRejectedWithoutMutation({ type: 'build', defenderId: 'missing', padId: 'l1-pad-a' }, 'invalid-defender');
-  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'missing-pad' }, 'invalid-cell');
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'missing', cellId: 'r2c7' }, 'invalid-defender');
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', cellId: 'missing-cell' }, 'invalid-cell');
   assert.deepEqual(issueCommand(simulation, {
-    type: 'build', defenderId: 'ironwarden', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'ironwarden', cellId: 'r2c7',
   }), { accepted: true, reason: null });
-  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-c' }, 'insufficient-coins');
+  expectRejectedWithoutMutation({ type: 'build', defenderId: 'bladeguard', cellId: 'r4c4' }, 'insufficient-coins');
   expectRejectedWithoutMutation({ type: 'upgrade', towerId: 'missing-tower' }, 'missing-tower');
   expectRejectedWithoutMutation({ type: 'sell', towerId: 'missing-tower' }, 'missing-tower');
 
@@ -356,7 +320,7 @@ test('invalid economy commands reject without mutating the public summary', () =
   const maxTierSimulation = createSimulation('level-1', { qa: true });
   maxTierSimulation.coins = 500;
   assert.deepEqual(issueCommand(maxTierSimulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
   assert.deepEqual(issueCommand(maxTierSimulation, { type: 'upgrade', towerId: 'tower-1' }), { accepted: true, reason: null });
@@ -370,7 +334,7 @@ test('invalid economy commands reject without mutating the public summary', () =
 test('sell refunds seventy percent of all invested costs without changing score', () => {
   const simulation = createSimulation('level-1', { qa: true });
 
-  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', cellId: 'r2c7' });
   issueCommand(simulation, { type: 'upgrade', towerId: 'tower-1' });
   const beforeSell = summarizeSimulation(simulation);
   assert.deepEqual(issueCommand(simulation, { type: 'sell', towerId: 'tower-1' }), { accepted: true, reason: null });
@@ -522,7 +486,7 @@ test('authored waves use integer ticks and snapshots are detached and determinis
 test('full and presentation snapshots expose detached lane and enemy attack state', () => {
   const simulation = createSimulation('level-1', { qa: true, seed: 7 });
   issueCommand(simulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   });
 
   advanceSimulation(simulation, 1);
@@ -565,7 +529,7 @@ test('terminal cleanup cancels attack ownership and prevents stale impacts', () 
   simulation.castleHearts = 1;
   simulation.coins = 1_000;
   issueCommand(simulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   });
   const [tower] = simulation.towers;
   tower.nextAttackTick = Number.MAX_SAFE_INTEGER;
@@ -748,7 +712,7 @@ test('restart and unload cleanup leave no transient combat state', () => {
   const simulation = createSimulation('level-1', { qa: true });
   simulation.coins = 1_000;
   issueCommand(simulation, {
-    type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a',
+    type: 'build', defenderId: 'bladeguard', cellId: 'r2c7',
   });
   const [tower] = simulation.towers;
   const config = ENEMIES['blight-walker'];
@@ -962,7 +926,7 @@ test('presentation events are deterministic, monotonic, bounded, and expose atta
   const second = createSimulation('level-1', { qa: true, seed: 13 });
   for (const simulation of [first, second]) {
     issueCommand(simulation, {
-      type: 'build', defenderId: 'ranger', padId: 'l1-pad-b',
+      type: 'build', defenderId: 'ranger', cellId: 'r0c5',
     });
     advanceSimulation(simulation, 1);
     simulation.enemies[0].pathProgress = 264;
@@ -1067,12 +1031,12 @@ test('between-wave countdown follows authored start ticks through overlapping en
 
 test('terminal simulations reject every gameplay command without changing coins, entities, time, or pause state', () => {
   const simulation = createSimulation('level-1', { qa: true });
-  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', padId: 'l1-pad-a' });
+  issueCommand(simulation, { type: 'build', defenderId: 'bladeguard', cellId: 'r2c7' });
   simulation.terminal = true;
   simulation.outcome = 'victory';
   const before = summarizeSimulation(simulation);
   const commands = [
-    { type: 'build', defenderId: 'ranger', padId: 'l1-pad-b' },
+    { type: 'build', defenderId: 'ranger', cellId: 'r0c5' },
     { type: 'upgrade', towerId: 'tower-1' },
     { type: 'sell', towerId: 'tower-1' },
     { type: 'set-speed', value: 2 },

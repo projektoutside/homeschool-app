@@ -70,7 +70,7 @@ export const DEFENDERS = Object.freeze({
     targetPriority: 'densest-cluster',
     mastery: 'double-detonation',
     damage: [36, 36, 36],
-    range: [72, 80, 90],
+    range: [81, 90, 100],
     cooldownTicks: [84, 76, 68],
     projectileTicks: 4,
     splashRadius: 60,

@@ -5,8 +5,6 @@ import { getBuildCost, getSellRefund, getUpgradeCost } from './economy.js';
 import { compareEntityIds } from './entity-id.js';
 import {
   evaluateCellBuild,
-  getDeprecatedCellPlacements,
-  getLegacyPadIdForCell,
   resolveCellId,
 } from './grid-placement.js';
 import { MAX_LIVING_ENEMIES, createWaveController, spawnScheduledEnemies } from './wave-controller.js';
@@ -113,10 +111,7 @@ const findTowerByCellId = (simulation, cellId) => simulation.towers.find((tower)
 const buildTower = (simulation, command) => {
   const defender = DEFENDERS[command.defenderId];
   if (!defender) return rejected('invalid-defender');
-  const requestedPlacementId = command.cellId ?? command.padId;
-  const legacyPlacementId = getDeprecatedCellPlacements(simulation.level)
-    .find(({ id }) => id === requestedPlacementId)?.id ?? null;
-  const cellId = resolveCellId(simulation.level, requestedPlacementId);
+  const cellId = resolveCellId(simulation.level, command.cellId);
   const placement = evaluateCellBuild({
     level: simulation.level,
     defender,
@@ -144,19 +139,6 @@ const buildTower = (simulation, command) => {
     nextAttackTick: simulation.tick,
     attackCount: 0,
   };
-  const legacyPadId = getLegacyPadIdForCell(simulation.level, cellId);
-  if (legacyPadId) Object.defineProperty(tower, 'padId', {
-    configurable: true,
-    enumerable: false,
-    value: legacyPadId,
-    writable: true,
-  });
-  if (legacyPlacementId) Object.defineProperty(tower, 'legacyPadId', {
-    configurable: true,
-    enumerable: false,
-    value: legacyPlacementId,
-    writable: false,
-  });
   simulation.towers.push(tower);
   simulation.purchaseHistory.push({
     tick: simulation.tick,
