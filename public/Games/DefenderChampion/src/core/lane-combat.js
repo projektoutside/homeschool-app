@@ -49,12 +49,27 @@ export const createQueuePresentationLayout = ({
   if (count === 0) return Object.freeze([]);
   const gateProgress = Math.max(0, Number(gatePathProgress) || 0);
   const minimumProgress = Math.max(0, Number(minimumPathProgress) || 0);
+  const desiredProgress = (index) => (
+    gateProgress - ATTACK_CONTACT_PROGRESS - ((index + 1) * QUEUE_SPACING)
+  );
+  let exactCount = 0;
+  while (exactCount < count && desiredProgress(exactCount) >= minimumProgress) {
+    exactCount += 1;
+  }
+  const overflowCount = count - exactCount;
+  const overflowUpperProgress = exactCount > 0
+    ? desiredProgress(exactCount - 1)
+    : Math.max(minimumProgress, gateProgress - ATTACK_CONTACT_PROGRESS);
+  const overflowProgressSpan = overflowUpperProgress - minimumProgress;
   return Object.freeze(Array.from({ length: count }, (_, index) => Object.freeze({
-    laneOffset: ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
-    pathProgress: Math.max(
-      minimumProgress,
-      gateProgress - ATTACK_CONTACT_PROGRESS - ((index + 1) * QUEUE_SPACING),
-    ),
+    laneOffset: index >= exactCount && overflowProgressSpan === 0
+      ? ((index - exactCount + 1) * 21) / (overflowCount + 1)
+      : ATTACKER_OFFSETS[index % ATTACKER_OFFSETS.length],
+    pathProgress: index < exactCount
+      ? desiredProgress(index)
+      : overflowUpperProgress - (
+        ((index - exactCount + 1) * overflowProgressSpan) / (overflowCount + 1)
+      ),
     scale: 1,
   })));
 };
@@ -126,8 +141,11 @@ const assignAttackerSlot = (enemy, gate, index) => {
   enemy.displayScale = 1;
 };
 
-const assignQueueSlot = (enemy, gate, queueIndex, displaySlot) => {
-  const targetProgress = displaySlot.pathProgress;
+const assignQueueSlot = (enemy, gate, queueIndex, displaySlot, minimumPathProgress) => {
+  const targetProgress = Math.max(
+    minimumPathProgress,
+    gate.pathProgress - ATTACK_CONTACT_PROGRESS - ((queueIndex + 1) * QUEUE_SPACING),
+  );
   enemy.blockingTowerId = gate.towerId;
   enemy.queueIndex = queueIndex;
   enemy.laneOffset = displaySlot.laneOffset;
@@ -177,12 +195,19 @@ export const assignLanePositions = (simulation) => {
     gate.queuedIds = queued.map(({ id }) => id);
     gate.tower.engagedEnemyIds = [...gate.attackerIds];
     attackers.forEach((enemy, index) => assignAttackerSlot(enemy, gate, index));
+    const minimumPathProgress = gateIndex === 0 ? 0 : gates[gateIndex - 1].pathProgress + 1;
     const queuePresentation = createQueuePresentationLayout({
       gatePathProgress: gate.pathProgress,
-      minimumPathProgress: gateIndex === 0 ? 0 : gates[gateIndex - 1].pathProgress + 1,
+      minimumPathProgress,
       queueCount: queued.length,
     });
-    queued.forEach((enemy, index) => assignQueueSlot(enemy, gate, index, queuePresentation[index]));
+    queued.forEach((enemy, index) => assignQueueSlot(
+      enemy,
+      gate,
+      index,
+      queuePresentation[index],
+      minimumPathProgress,
+    ));
   }
 
   const currentMaximum = simulation.towers

@@ -589,6 +589,58 @@ test('terminal cleanup cancels attack ownership and prevents stale impacts', () 
   assert.equal(tower.health, healthAfterTerminal);
 });
 
+test('terminal transient cleanup retains detached maximum attacker high-water summaries', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.waveSchedule = [];
+  simulation.pendingSpawns = [];
+  simulation.spawnedAllWaves = true;
+  simulation.coins = 10_000;
+  issueCommand(simulation, {
+    type: 'build', defenderId: 'bladeguard', cellId: LEVELS[0].roadCells[11],
+  });
+  const config = ENEMIES['blight-walker'];
+  simulation.enemies = Array.from({ length: 3 }, (_, index) => ({
+    id: `enemy-${index + 20}`,
+    enemyId: config.id,
+    waveIndex: 0,
+    spawnTick: index,
+    pathProgress: 880,
+    health: 1_000,
+    maxHealth: 1_000,
+    speed: 0,
+    armor: config.armor,
+    clusterSize: 1,
+    castleDamage: config.castleDamage,
+    attackDamage: config.attackDamage,
+    attackCooldownTicks: config.attackCooldownTicks,
+    attackWindupTicks: config.attackWindupTicks,
+    attackTargets: config.attackTargets,
+    attackState: {
+      targetTowerId: null, startedAtTick: null, impactAtTick: null, readyAtTick: 0,
+    },
+    laneState: 'moving',
+    blockingTowerId: null,
+    queueIndex: null,
+    laneOffset: 0,
+    nextAbilityTick: config.cooldownTicks,
+    abilityActiveTicks: 0,
+    nextAbilityActiveTick: config.cooldownTicks,
+    thresholdFlags: {},
+  }));
+  simulation.castleHearts = 0;
+
+  advanceSimulation(simulation, 1);
+  assert.equal(simulation.maximumConcurrentAttackers, 3);
+  const deterministic = summarizeSimulation(simulation);
+  const presentation = summarizePresentationSimulation(simulation);
+  simulation.maximumConcurrentAttackers = 0;
+
+  assert.equal(simulation.terminal, true);
+  assert.deepEqual(simulation.towers[0].engagedEnemyIds, []);
+  assert.equal(deterministic.maximumConcurrentAttackers, 3);
+  assert.equal(presentation.maximumConcurrentAttackers, 3);
+});
+
 test('terminal victory snapshots preserve the final enemy hit and defeat before battle terminal', () => {
   const simulation = createSimulation('level-1', { qa: true });
   const bossConfig = ENEMIES['blight-walker'];
