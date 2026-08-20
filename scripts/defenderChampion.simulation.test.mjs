@@ -155,10 +155,10 @@ test('deprecated pad mappings cover every level with fixed road cells and unique
     'level-4': ['r2c5', 'r0c5', 'r3c3', 'r1c1', 'r5c7', 'r4c4', 'r8c5', 'r4c2'],
     'level-5': ['r2c2', 'r0c2', 'r4c7', 'r1c7', 'r6c2', 'r2c1', 'r8c6', 'r3c6'],
     'level-6': ['r2c8', 'r0c7', 'r5c5', 'r2c5', 'r7c3', 'r4c2', 'r9c6', 'r6c5'],
-    'level-7': ['r2c2', 'r0c3', 'r4c4', 'r1c7', 'r6c8', 'r4c0', 'r8c3', 'r5c7'],
+    'level-7': ['r2c2', 'r0c4', 'r4c4', 'r1c7', 'r6c8', 'r4c0', 'r8c3', 'r5c7'],
     'level-8': ['r2c4', 'r0c3', 'r4c4', 'r1c6', 'r6c6', 'r3c1', 'r8c5', 'r3c3'],
     'level-9': ['r2c3', 'r0c2', 'r5c6', 'r3c6', 'r8c3', 'r4c2', 'r10c8', 'r5c5'],
-    'level-10': ['r2c6', 'r0c4', 'r5c4', 'r1c7', 'r8c8', 'r4c0', 'r9c1', 'r5c7'],
+    'level-10': ['r2c6', 'r0c3', 'r5c4', 'r1c7', 'r8c8', 'r4c0', 'r9c1', 'r5c7'],
   };
   for (const level of LEVELS) {
     const records = getDeprecatedCellPlacements(level);

@@ -56,7 +56,8 @@ export const resolveCellVisualState = ({
   selectedLayer = null,
   terrain = 'grass',
 } = {}) => {
-  const acceptsBuild = Boolean(selectedLayer && selectedLayer === terrain && !occupied && !enemyCovered);
+  const compatible = selectedLayer ? selectedLayer === terrain : null;
+  const acceptsBuild = Boolean(compatible && !occupied && !enemyCovered);
   let borderAlpha = 0.35;
   let borderColor = terrain === 'road' ? CELL_COLORS.baseRoad : CELL_COLORS.baseGrass;
   let fillAlpha = 0.04;
@@ -109,6 +110,9 @@ export const resolveCellVisualState = ({
     borderColor,
     fillAlpha,
     fillColor,
+    compatible,
+    danger: Boolean(danger),
+    enemyCovered: Boolean(enemyCovered),
     focused: Boolean(focused),
     occupied: Boolean(occupied),
     terrain,
@@ -150,6 +154,7 @@ export const resolveReadableSpriteScale = ({
 export const formatCellAccessibleLabel = ({
   acceptsBuild = false,
   cellId,
+  danger = false,
   enemyCovered = false,
   occupiedBy = null,
   selectedRole = null,
@@ -157,11 +162,12 @@ export const formatCellAccessibleLabel = ({
 } = {}) => {
   const coordinates = safeCellCoordinates(cellId) ?? { row: 0, column: 0 };
   const prefix = `${terrain === 'road' ? 'Road' : 'Grass'} square row ${coordinates.row + 1} column ${coordinates.column + 1}`;
-  if (occupiedBy) return `${prefix}, occupied by ${occupiedBy}`;
-  if (enemyCovered) return `${prefix}, blocked by enemies`;
-  if (acceptsBuild && selectedRole) return `${prefix}, available for ${selectedRole}`;
-  if (selectedRole) return `${prefix}, unavailable for ${selectedRole}`;
-  return `${prefix}, available`;
+  const suffix = danger ? ', danger telegraph' : '';
+  if (occupiedBy) return `${prefix}, occupied by ${occupiedBy}${suffix}`;
+  if (enemyCovered) return `${prefix}, blocked by enemies${suffix}`;
+  if (acceptsBuild && selectedRole) return `${prefix}, available for ${selectedRole}${suffix}`;
+  if (selectedRole) return `${prefix}, unavailable for ${selectedRole}${suffix}`;
+  return `${prefix}, available${suffix}`;
 };
 
 export const resolveContainWorldPoint = ({

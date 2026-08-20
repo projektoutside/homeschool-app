@@ -72,6 +72,16 @@ const createSceneBody = () => ({
   setTint(tint) { this.tint = tint; return this; },
 });
 
+const createVisualRoot = () => ({
+  alpha: 1,
+  angle: 0,
+  x: 0,
+  y: 0,
+  setAlpha(alpha) { this.alpha = alpha; return this; },
+  setAngle(angle) { this.angle = angle; return this; },
+  setPosition(x, y) { this.x = x; this.y = y; return this; },
+});
+
 const createSceneView = () => ({
   active: false,
   alpha: 1,
@@ -97,6 +107,7 @@ const createSceneView = () => ({
   _baseScale: 0.4,
   _body: createSceneBody(),
   _motion: null,
+  _visualRoot: createVisualRoot(),
   setActive(active) { this.active = active; return this; },
   setAlpha(alpha) { this.alpha = alpha; return this; },
   setDepth(depth) { this.depth = depth; return this; },
@@ -143,6 +154,57 @@ class EventTargetDouble {
     return this.listeners.get(type)?.size ?? 0;
   }
 }
+
+class SemanticElementDouble extends EventTargetDouble {
+  constructor(tagName, documentRef) {
+    super();
+    this.attributes = new Map();
+    this.children = [];
+    this.documentRef = documentRef;
+    this.tagName = tagName.toUpperCase();
+  }
+
+  append(...children) {
+    for (const child of children) {
+      child.parentElement = this;
+      this.children.push(child);
+    }
+  }
+
+  appendChild(child) {
+    this.append(child);
+    return child;
+  }
+
+  getAttribute(name) {
+    return this.attributes.get(name) ?? null;
+  }
+
+  remove() {
+    if (!this.parentElement) return;
+    this.parentElement.children = this.parentElement.children.filter((child) => child !== this);
+    this.parentElement = null;
+  }
+
+  setAttribute(name, value) {
+    this.attributes.set(name, String(value));
+    if (name === 'id') this.documentRef.elements.set(String(value), this);
+  }
+}
+
+const createSemanticDocument = () => {
+  const documentRef = {
+    activeElement: null,
+    elements: new Map(),
+    createElement(tagName) {
+      return new SemanticElementDouble(tagName, documentRef);
+    },
+    getElementById(id) {
+      return this.elements.get(id) ?? null;
+    },
+  };
+  return documentRef;
+};
 
 const createFocusable = (documentRef, id) => ({
   disabled: false,
@@ -344,6 +406,9 @@ test('cell visuals independently expose terrain compatibility occupancy and enem
     borderColor: 0x8fe36a,
     fillAlpha: 0.18,
     fillColor: 0x8fe36a,
+    compatible: true,
+    danger: false,
+    enemyCovered: false,
     focused: false,
     occupied: false,
     terrain: 'road',
@@ -359,6 +424,9 @@ test('cell visuals independently expose terrain compatibility occupancy and enem
     borderColor: 0xffffff,
     fillAlpha: 0.22,
     fillColor: 0xf2c94c,
+    compatible: false,
+    danger: false,
+    enemyCovered: false,
     focused: true,
     occupied: true,
     terrain: 'grass',
@@ -373,10 +441,23 @@ test('cell visuals independently expose terrain compatibility occupancy and enem
     borderColor: 0xff6b61,
     fillAlpha: 0.24,
     fillColor: 0xff6b61,
+    compatible: true,
+    danger: false,
+    enemyCovered: true,
     focused: false,
     occupied: false,
     terrain: 'road',
   });
+  const dangerOnly = resolveCellVisualState({
+    danger: true,
+    enemyCovered: false,
+    selectedLayer: 'road',
+    terrain: 'road',
+  });
+  assert.equal(dangerOnly.fillColor, 0xff6b61);
+  assert.equal(dangerOnly.danger, true);
+  assert.equal(dangerOnly.enemyCovered, false,
+    'inferring coverage from shared danger color must fail this assertion');
 });
 
 test('range mastery and danger presentation returns square cell IDs, never radii', async () => {
@@ -413,6 +494,10 @@ test('accessible labels and readable art scales preserve cell and unit identity'
   assert.equal(formatCellAccessibleLabel({
     cellId: 'r2c7', enemyCovered: true, terrain: 'road',
   }), 'Road square row 3 column 8, blocked by enemies');
+  assert.equal(formatCellAccessibleLabel({
+    acceptsBuild: true, cellId: 'r0c0', danger: true,
+    selectedRole: 'Grass ranged', terrain: 'grass',
+  }), 'Grass square row 1 column 1, available for Grass ranged, danger telegraph');
 
   assert.equal(resolveReadableSpriteScale({
     authoredScale: 0.1, cssWorldScale: 0.5, frameHeight: 256, kind: 'defender', population: 108,
@@ -426,6 +511,80 @@ test('accessible labels and readable art scales preserve cell and unit identity'
   assert.equal(resolveReadableSpriteScale({
     authoredScale: 0.44, cssWorldScale: 1, frameHeight: 256, kind: 'defender', population: 1,
   }), 0.44);
+});
+
+test('semantic grid mirror keeps 12 rows, 108 cells, one active descendant, and explicit state labels', async () => {
+  const [{ BattleScene }, { LEVELS }, hudModule] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/ui/hud-controller.js'),
+  ]);
+  assert.equal(typeof hudModule.createBattlefieldGridMirror, 'function',
+    'removing the semantic-grid builder must fail this real DOM boundary');
+
+  const documentRef = createSemanticDocument();
+  const battlefield = documentRef.createElement('div');
+  battlefield.setAttribute('id', 'battlefield');
+  const mirror = hudModule.createBattlefieldGridMirror({
+    battlefield,
+    cells: LEVELS[0].cells,
+    documentRef,
+  });
+  assert.equal(mirror.rows.length, 12);
+  assert.equal(mirror.cells.size, 108);
+  assert.equal(mirror.rows.every((row) => row.getAttribute('role') === 'row'), true);
+  assert.equal([...mirror.cells.values()].every((cell) => (
+    cell.getAttribute('role') === 'gridcell' && cell.getAttribute('tabindex') === null
+  )), true, 'adding 108 tab stops must fail this assertion');
+
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    accessibleCellNodes: mirror.cells,
+    battlefieldElement: battlefield,
+    battlefieldHasFocus: true,
+    cellViews: new Map(LEVELS[0].cells.map((cell) => [cell.id, {
+      _terrain: cell.terrain,
+      _visualState: null,
+    }])),
+    drawCellView() {},
+    enemyById: new Map(),
+    focusedCellId: 'r0c0',
+    level: LEVELS[0],
+    selectedDefenderId: 'bladeguard',
+    selectedTowerId: null,
+    towerById: new Map(),
+  });
+
+  scene.projectCells({ effects: [], enemies: [], towers: [] });
+  assert.equal(battlefield.getAttribute('aria-activedescendant'), 'battlefield-cell-r0c0');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, unavailable for Road melee');
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-selected'), 'true');
+
+  scene.projectCells({
+    effects: [{ kind: 'boss-telegraph', radius: 80, sourceId: 'enemy-warning' }],
+    enemies: [],
+    towers: [],
+  });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, unavailable for Road melee',
+    'danger red must not be inferred as enemy coverage');
+
+  scene.towerById = new Map([['tower-1', {
+    cellId: 'r0c0', defenderId: 'ranger', id: 'tower-1', tier: 0,
+  }]]);
+  scene.projectCells({ effects: [], enemies: [], towers: [...scene.towerById.values()] });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, occupied by Ranger');
+
+  scene.towerById.clear();
+  scene.selectedDefenderId = 'ranger';
+  scene.projectCells({ effects: [], enemies: [], towers: [] });
+  assert.equal(mirror.cells.get('r0c0').getAttribute('aria-label'),
+    'Grass square row 1 column 1, available for Grass ranged');
+
+  mirror.destroy();
+  assert.equal(battlefield.children.length, 0);
 });
 
 test('actual battlefield creates 108 interactive square cells and square road tile records', async () => {
@@ -664,13 +823,15 @@ test('cell-only tower snapshots project directly at their square center', async 
   assert.deepEqual({ x: view.x, y: view.y }, { x: 440, y: 72 });
 });
 
-test('unmapped cell-only tower snapshots use grid centers and hide malformed cells', async () => {
+test('mixed valid and malformed towers release invalid leases without hiding valid projections', async () => {
   const [
     { BattleScene },
     { LEVELS },
+    { ViewPool },
   ] = await Promise.all([
     importBattleSceneModule(),
     import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
   ]);
   const makeView = () => Object.assign(createSceneView(), {
     _aura: {
@@ -682,15 +843,31 @@ test('unmapped cell-only tower snapshots use grid centers and hide malformed cel
       setScale() { return this; }, setTint() { return this; }, setVisible() { return this; },
     },
   });
-  const views = [makeView(), makeView(), makeView()];
   const scene = Object.create(BattleScene.prototype);
+  const defenderPool = new ViewPool(makeView, { maximum: 3 });
   Object.assign(scene, {
     anims: { exists: () => false },
-    defenderPool: { acquire: () => views.shift(), release() {} },
+    defenderPool,
     level: LEVELS[0],
     metadata: { defenders: { frame: { height: 256 } } },
+    projectionDiagnostics: [],
     towerSprites: new Map(),
   });
+
+  scene.projectTowers({
+    towers: [
+      {
+        id: 'tower-malformed', defenderId: 'ranger', cellId: 'r0c0', placementLayer: 'grass', combatLayer: 'backline',
+        tier: 0, health: 1, maxHealth: 1,
+      },
+      {
+        id: 'tower-unknown', defenderId: 'ranger', cellId: 'r0c1', placementLayer: 'grass', combatLayer: 'backline',
+        tier: 0, health: 1, maxHealth: 1,
+      },
+    ],
+  });
+  assert.equal(defenderPool.getState().active, 2);
+  scene.projectionDiagnostics = [];
 
   assert.doesNotThrow(() => BattleScene.prototype.projectTowers.call(scene, {
     towers: [
@@ -706,6 +883,10 @@ test('unmapped cell-only tower snapshots use grid centers and hide malformed cel
         id: 'tower-malformed', defenderId: 'ranger', cellId: 'r12c9', placementLayer: 'grass', combatLayer: 'backline',
         tier: 0, health: 1, maxHealth: 1,
       },
+      {
+        id: 'tower-unknown', defenderId: 'unknown-defender', cellId: 'r0c0', placementLayer: 'grass', combatLayer: 'backline',
+        tier: 0, health: 1, maxHealth: 1,
+      },
     ],
   }));
 
@@ -715,8 +896,61 @@ test('unmapped cell-only tower snapshots use grid centers and hide malformed cel
   assert.deepEqual({ x: scene.towerSprites.get('tower-grass').x, y: scene.towerSprites.get('tower-grass').y }, {
     x: 40, y: 952,
   });
-  assert.equal(scene.towerSprites.get('tower-malformed').visible, false);
-  assert.equal(scene.towerSprites.get('tower-malformed')._cellId, null);
+  assert.deepEqual([...scene.towerSprites.keys()], ['tower-road', 'tower-grass']);
+  assert.equal(defenderPool.getState().active, 2);
+  assert.deepEqual(scene.projectionDiagnostics.map(({ id, reason }) => ({ id, reason })), [
+    { id: 'tower-malformed', reason: 'invalid-cell' },
+    { id: 'tower-unknown', reason: 'unknown-defender' },
+  ]);
+
+  scene.projectTowers({ towers: [] });
+  assert.equal(defenderPool.getState().active, 0);
+  assert.equal(defenderPool.getState().available, 2);
+});
+
+test('mixed valid and unknown enemies isolate malformed entries and recover the enemy pool', async () => {
+  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const valid = {
+    attackState: { targetTowerId: null }, displayLaneOffset: 0, displayPathProgress: 0,
+    displayScale: 1, enemyId: 'blight-walker', health: 80, id: 'enemy-valid',
+    laneState: 'moving', maxHealth: 80, pathProgress: 0,
+  };
+  const unknown = { ...valid, enemyId: 'unknown-enemy', id: 'enemy-unknown' };
+  const scene = Object.create(BattleScene.prototype);
+  const enemyPool = new ViewPool(createSceneView, { maximum: 2 });
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    cancelViewMotion() {},
+    enemyById: new Map([[valid.id, valid], [unknown.id, unknown]]),
+    enemyPool,
+    enemySprites: new Map(),
+    ironhideMappings: null,
+    lastSnapshot: { enemies: [valid, unknown], tick: 0 },
+    metadata: { enemies: { frame: { height: 256 } }, bosses: { frame: { height: 384 } } },
+    pathMetrics: createGridPathMetrics(LEVELS[0].roadCells),
+    projectionDiagnostics: [],
+    towerSprites: new Map(),
+  });
+
+  scene.projectEnemies({ enemies: [{ ...unknown, enemyId: 'blight-walker' }], tick: 0 });
+  assert.deepEqual([...scene.enemySprites.keys()], ['enemy-unknown']);
+  scene.projectionDiagnostics = [];
+
+  assert.doesNotThrow(() => scene.projectEnemies({ enemies: [unknown, valid], tick: 0 }));
+  assert.deepEqual([...scene.enemySprites.keys()], ['enemy-valid']);
+  assert.equal(enemyPool.getState().active, 1);
+  assert.deepEqual(scene.projectionDiagnostics.map(({ id, reason }) => ({ id, reason })), [
+    { id: 'enemy-unknown', reason: 'unknown-enemy' },
+  ]);
+
+  scene.projectEnemies({ enemies: [], tick: 1 });
+  assert.equal(enemyPool.getState().active, 0);
+  assert.equal(enemyPool.getState().available, 1);
 });
 
 test('fatal defender presentation hides frontline health before its fade starts', async () => {
@@ -945,14 +1179,24 @@ test('actual fatal defender entry hides health before tweening and releases on c
     x: 120,
     y: 260,
   });
+  const defeatView = Object.assign(createSceneView(), {
+    _defenderId: 'bladeguard',
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+  });
   let fadeConfig;
   let healthHiddenWhenTweenAdded = false;
   const defenderPool = new ViewPool(() => defenderView, {
     resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
   });
+  const defenderDefeatPool = new ViewPool(() => defeatView, {
+    maximum: 18,
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
   const leasedView = defenderPool.acquire();
   Object.assign(scene, {
     audioController: { playCue() {} },
+    defenderDefeatPool,
     defenderPool,
     detachedDefenderViews: new Set(),
     hud: { announce() {} },
@@ -963,7 +1207,8 @@ test('actual fatal defender entry hides health before tweening and releases on c
     tweens: {
       add(config) {
         fadeConfig = config;
-        healthHiddenWhenTweenAdded = !healthBackground.visible && !healthFill.visible;
+        healthHiddenWhenTweenAdded = !defeatView._healthBackground.visible
+          && !defeatView._healthFill.visible;
         return { destroy() {}, stop() {} };
       },
       killTweensOf() {},
@@ -976,14 +1221,106 @@ test('actual fatal defender entry hides health before tweening and releases on c
   assert.equal(healthBackground.visible, false);
   assert.equal(healthFill.visible, false);
   assert.equal(scene.towerSprites.has('tower-9'), false);
-  assert.equal(scene.detachedDefenderViews.has(leasedView), true);
-  assert.equal(defenderPool.getState().active, 1);
+  assert.equal(scene.detachedDefenderViews.has(defeatView), true);
+  assert.equal(defenderPool.getState().active, 0);
+  assert.equal(defenderDefeatPool.getState().active, 1);
 
   fadeConfig.onComplete();
 
   assert.equal(scene.detachedDefenderViews.size, 0);
-  assert.equal(defenderPool.getState().active, 0);
+  assert.equal(defenderDefeatPool.getState().active, 0);
   assert.equal(defenderPool.getState().releases, 1);
+  assert.equal(defenderDefeatPool.getState().releases, 1);
+});
+
+test('full occupied defender pool releases immediately while a bounded transient owns defeat fade', async () => {
+  const [{ BattleScene }, { LEVELS }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const makeDefenderView = () => Object.assign(createSceneView(), {
+    _aura: { setAlpha() { return this; }, setScale() { return this; }, setTint() { return this; }, setVisible() { return this; } },
+    _defenderId: 'ranger',
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+    _healthKey: 'hidden',
+    _rank: { setScale() { return this; }, setTint() { return this; }, setVisible() { return this; } },
+  });
+  const scene = Object.create(BattleScene.prototype);
+  const defenderPool = new ViewPool(makeDefenderView, {
+    maximum: 108,
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
+  const defenderDefeatPool = new ViewPool(makeDefenderView, {
+    maximum: 18,
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
+  const towers = LEVELS[0].cells.map((cell, index) => ({
+    cellId: cell.id,
+    combatLayer: 'backline',
+    defenderId: 'ranger',
+    health: 1,
+    id: `tower-${index + 1}`,
+    maxHealth: 1,
+    placementLayer: 'grass',
+    tier: 0,
+  }));
+  const towerSprites = new Map(towers.map((tower) => {
+    const view = defenderPool.acquire();
+    const row = Number(tower.cellId.match(/^r(\d+)c/)[1]);
+    const column = Number(tower.cellId.match(/c(\d+)$/)[1]);
+    view.setPosition((column * 80) + 40, (row * 80) + 72);
+    view._cellId = tower.cellId;
+    return [tower.id, view];
+  }));
+  let fadeConfig;
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    audioController: { playCue() {} },
+    defenderDefeatPool,
+    defenderPool,
+    detachedDefenderViews: new Set(),
+    hud: { announce() {} },
+    level: LEVELS[0],
+    recentDefenderPositions: new Map(),
+    reducedMotion: false,
+    spawnBurst() {},
+    towerSprites,
+    tweens: {
+      add(config) { fadeConfig = config; return { destroy() {}, stop() {} }; },
+      killTweensOf() {},
+    },
+  });
+
+  scene.animateDefenderDefeat({ towerId: 'tower-1' });
+  assert.equal(defenderPool.getState().created, 108);
+  assert.equal(defenderPool.getState().active, 107,
+    'retaining the occupied lease during fade must fail at the 108-view cap');
+  assert.equal(defenderDefeatPool.getState().active, 1);
+  assert.equal(scene.detachedDefenderViews.size, 1);
+
+  const rebuilt = {
+    ...towers[0],
+    defenderId: 'bladeguard',
+    health: 420,
+    id: 'tower-rebuilt',
+    maxHealth: 420,
+    placementLayer: 'road',
+  };
+  const replacementSnapshot = { towers: [...towers.slice(1), rebuilt] };
+  assert.doesNotThrow(() => scene.projectTowers(replacementSnapshot));
+  assert.equal(scene.towerSprites.size, 108);
+  assert.equal(scene.towerSprites.get('tower-rebuilt')._cellId, towers[0].cellId);
+  assert.deepEqual(defenderPool.getState(), {
+    created: 108, active: 108, available: 0, highWater: 108, acquires: 109, releases: 1,
+  });
+  assert.equal(fadeConfig.targets, [...defenderDefeatPool.activeViews][0]._visualRoot);
+
+  fadeConfig.onComplete();
+  assert.equal(defenderDefeatPool.getState().active, 0);
+  assert.equal(defenderDefeatPool.getState().created, 1);
+  assert.equal(scene.detachedDefenderViews.size, 0);
 });
 
 test('reduced motion keeps attack, hit, impact, and defeat cosmetic positions fixed', async () => {
@@ -1080,6 +1417,11 @@ test('actual lane-event entry preserves overlap and stale-motion identity across
     x: 90,
     y: 120,
   });
+  const defeatTransient = Object.assign(createSceneView(), {
+    _defenderId: 'bladeguard',
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+  });
   const chainEntries = [];
   const addEntries = [];
   const makeMotion = (kind, index) => ({
@@ -1097,11 +1439,16 @@ test('actual lane-event entry preserves overlap and stale-motion identity across
     resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
   });
   defenderPool.acquire();
+  const defenderDefeatPool = new ViewPool(() => defeatTransient, {
+    maximum: 18,
+    resetView: (view) => BattleScene.prototype.releasePooledView.call(scene, view),
+  });
   const announcements = [];
   Object.assign(scene, {
     anims: { exists: () => true },
     audioController: { playCue() {} },
     cameras: { main: { shake() {} } },
+    defenderDefeatPool,
     defenderPool,
     detachedDefenderViews: new Set(),
     enemyById: new Map([['enemy-1', { enemyId: 'blight-walker', id: 'enemy-1' }]]),
@@ -1173,7 +1520,9 @@ test('actual lane-event entry preserves overlap and stale-motion identity across
     payload: { towerId: 'tower-2' },
   }]);
   assert.equal(scene.towerSprites.has('tower-2'), false);
-  assert.equal(scene.detachedDefenderViews.has(defeatedView), true);
+  assert.equal(scene.detachedDefenderViews.has(defeatTransient), true);
+  assert.equal(defenderPool.getState().active, 0);
+  assert.equal(defenderDefeatPool.getState().active, 1);
   assert.match(announcements.at(-1), /permanently defeated/);
 });
 
@@ -1626,6 +1975,151 @@ test('queued bodies, projectiles, health, plates, hits, and defeats share one re
   assert.equal(defeat._body.scale, 0.5);
 });
 
+test('enemy attack and defender hit motion move one shared root consumed by health projectiles and effects', async () => {
+  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const makeImage = () => ({
+    setActive() { return this; }, setAlpha() { return this; }, setDepth(value) { this.depth = value; return this; },
+    setFrame() { return this; }, setPosition(x, y) { this.x = x; this.y = y; return this; },
+    setRotation() { return this; }, setScale() { return this; }, setVisible() { return this; },
+  });
+  const enemyView = createSceneView();
+  enemyView.setPosition(360, 40);
+  enemyView._baseScale = 0.4;
+  const defenderView = Object.assign(createSceneView(), {
+    _defenderId: 'bladeguard',
+    _healthBackground: createGraphicsDouble(),
+    _healthFill: createGraphicsDouble(),
+    x: 440,
+    y: 72,
+  });
+  const chainConfigs = [];
+  const addConfigs = [];
+  const labels = [];
+  const bursts = [];
+  const enemy = {
+    attackState: { impactAtTick: 20, targetTowerId: 'tower-1' },
+    displayLaneOffset: 0,
+    displayPathProgress: 0,
+    displayScale: 1,
+    enemyId: 'blight-walker',
+    health: 40,
+    id: 'enemy-1',
+    laneState: 'attacking',
+    maxHealth: 80,
+    pathProgress: 0,
+  };
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    activeEnemyHealthLayer: { ...createGraphicsDouble(), rectangles: [], fillRoundedRect(...args) { this.rectangles.push(args); return this; } },
+    anims: { exists: () => false },
+    audioController: { playCue() {} },
+    cameras: { main: { shake() {} } },
+    damageLabelPool: new ViewPool(makeImage, { maximum: 2 }),
+    enemyById: new Map([[enemy.id, enemy]]),
+    enemySprites: new Map([[enemy.id, enemyView]]),
+    hud: { announce() {} },
+    lastHealthRenderTick: Number.NEGATIVE_INFINITY,
+    lastSnapshot: { enemies: [enemy], tick: 10, timeScale: 1 },
+    metadata: { enemies: { frame: { height: 256 } }, bosses: { frame: { height: 384 } } },
+    pathMetrics: createGridPathMetrics(LEVELS[0].roadCells),
+    presentationLimits: { cameraShake: 0 },
+    projectilePool: new ViewPool(makeImage, { maximum: 2 }),
+    projectileSprites: new Map(),
+    queuedEnemyHealthLayer: { ...createGraphicsDouble(), rectangles: [], fillRoundedRect(...args) { this.rectangles.push(args); return this; } },
+    recentDefenderPositions: new Map(),
+    reducedMotion: false,
+    spawnBurst: (position) => bursts.push(position),
+    spawnDamageLabel: (position) => labels.push(position),
+    towerById: new Map([['tower-1', { cellId: 'r0c5', defenderId: 'bladeguard', id: 'tower-1' }]]),
+    towerSprites: new Map([['tower-1', defenderView]]),
+    tweens: {
+      add(config) { addConfigs.push(config); return { destroy() {}, stop() {} }; },
+      chain(config) { chainConfigs.push(config); return { destroy() {}, stop() {} }; },
+      killTweensOf() {},
+    },
+  });
+
+  scene.beginEnemyAttackProjection(enemyView, enemy, 'tower-1', 20);
+  assert.equal(chainConfigs[0].targets, enemyView._visualRoot,
+    'changing attack tween targets back to _body must fail this assertion');
+  enemyView._visualRoot.setPosition(-12, 6);
+  const movingEnemy = scene.resolveEnemyVisualTransform(enemy);
+  assert.deepEqual(movingEnemy.position, { x: 348, y: 46 });
+
+  scene.projectEnemyHealthBars({ enemies: [enemy], tick: 10 }, true);
+  const healthRect = scene.activeEnemyHealthLayer.rectangles[0];
+  assert.ok(Math.abs(healthRect[0] - (348 - 14.4)) < 1e-9);
+  assert.ok(Math.abs(healthRect[1] - (46 - 43.2)) < 1e-9);
+
+  scene.projectProjectiles({
+    projectiles: [{
+      id: 'projectile-1', impactTick: 10, launchPosition: { x: 0, y: 0 }, launchTick: 0,
+      sourceTowerId: 'tower-missing', targetEnemyIdAtLaunch: enemy.enemyId,
+      targetId: enemy.id, targetPathProgressAtLaunch: 0,
+    }],
+    tick: 10,
+  });
+  const projectile = scene.projectileSprites.get('projectile-1');
+  assert.deepEqual({ x: projectile.x, y: projectile.y }, { x: 348, y: 33.2 });
+
+  scene.consumePresentationEvents([{
+    id: 1, kind: 'enemy-hit', tick: 10,
+    payload: { damage: 9, enemyId: enemy.enemyId, id: enemy.id },
+  }]);
+  assert.deepEqual(labels[0], { x: 348, y: 46 });
+
+  scene.animateDefenderHit({ damage: 5, remainingHealth: 415, sourceId: enemy.id, towerId: 'tower-1' });
+  assert.equal(chainConfigs[1].targets, defenderView._visualRoot,
+    'changing hit tween targets back to _body must fail this assertion');
+  defenderView._visualRoot.setPosition(7, -5);
+  scene.handleEnemyAttackImpact({ id: 2 }, {
+    enemyId: enemy.enemyId, id: enemy.id, targetTowerId: 'tower-1',
+  });
+  assert.deepEqual(bursts.slice(-2), [{ x: 447, y: 67 }, { x: 447, y: 67 }]);
+  const presentationState = scene.getPresentationState();
+  assert.deepEqual(presentationState.enemies[0].motionOffset, { x: -12, y: 6 });
+  assert.deepEqual(presentationState.towers[0].motionOffset, { x: 7, y: -5 });
+});
+
+test('boss projection upgrades the generic enemy overlay to the 384-pixel accent basis', async () => {
+  const [{ BattleScene }, { createGridPathMetrics }, { LEVELS }, { ViewPool }] = await Promise.all([
+    importBattleSceneModule(),
+    import('../public/Games/DefenderChampion/src/core/grid-geometry.js'),
+    import('../public/Games/DefenderChampion/src/config/levels.js'),
+    import('../public/Games/DefenderChampion/src/presentation.js'),
+  ]);
+  const view = createSceneView();
+  view._accent._baseY = -92.16;
+  const boss = {
+    attackState: { targetTowerId: null }, displayLaneOffset: 0, displayPathProgress: 0,
+    displayScale: 1, enemyId: 'dread-colossus', health: 1_000, id: 'enemy-boss',
+    laneState: 'moving', maxHealth: 1_000, pathProgress: 0,
+  };
+  const scene = Object.create(BattleScene.prototype);
+  Object.assign(scene, {
+    anims: { exists: () => false },
+    cancelViewMotion() {},
+    enemyById: new Map([[boss.id, boss]]),
+    enemyPool: new ViewPool(() => view, { maximum: 1 }),
+    enemySprites: new Map(),
+    ironhideMappings: null,
+    lastSnapshot: { enemies: [boss], tick: 0 },
+    metadata: { enemies: { frame: { height: 256 } }, bosses: { frame: { height: 384 } } },
+    pathMetrics: createGridPathMetrics(LEVELS[9].roadCells),
+    towerSprites: new Map(),
+  });
+
+  scene.projectEnemies({ enemies: [boss], tick: 0 });
+  assert.equal(view._accent._baseY, -138.24,
+    'keeping the generic 256-pixel basis must fail this literal boss assertion');
+  assert.ok(Math.abs(view._accent.y - (-138.24 * view._visualTransform.artScale)) < 1e-9);
+});
+
 test('pooled enemy presentation resets queue scale, depth, and overlay transforms before reuse', async () => {
   const { BattleScene } = await importBattleSceneModule();
   const makeOverlay = (baseScale, baseX, baseY) => ({
@@ -1994,6 +2488,7 @@ test('QA runtime hooks expose deterministic controls only for qa=1 and restrict 
   const starts = [];
   const battle = {
     advanceTime: (milliseconds) => ({ advanced: milliseconds }),
+    exerciseMalformedProjection: () => ({ diagnostics: [{ id: 'qa-invalid-cell', reason: 'invalid-cell' }] }),
     getPerformanceState: () => ({ averageFrameMs: 16.6 }),
     getTextSnapshot: () => ({ levelId: 'level-1', tick: 42 }),
     issueBattleCommand: (command) => ({ accepted: command.type === 'build' }),
@@ -2011,6 +2506,9 @@ test('QA runtime hooks expose deterministic controls only for qa=1 and restrict 
   assert.equal(qaWindow.__defenderChampion.startLevel('missing'), false);
   assert.equal(qaWindow.__defenderChampion.startLevel('level-1'), true);
   assert.deepEqual(qaWindow.__defenderChampion.getPerformanceState(), { averageFrameMs: 16.6 });
+  assert.deepEqual(qaWindow.__defenderChampion.exerciseMalformedProjection(), {
+    diagnostics: [{ id: 'qa-invalid-cell', reason: 'invalid-cell' }],
+  });
   assert.deepEqual(qaWindow.__defenderChampion.issueCommand({ type: 'build' }), { accepted: true });
   assert.deepEqual(starts, ['level-1']);
 
@@ -2386,6 +2884,7 @@ test('scene pools cap 18 living enemies, 108 defenders, and reset every released
   scene.createPools();
   assert.equal(scene.enemyPool.maximum, 18);
   assert.equal(scene.defenderPool.maximum, 108);
+  assert.equal(scene.defenderDefeatPool.maximum, 18);
   assert.equal(scene.defeatPool.maximum, 18);
   const enemies = Array.from({ length: 18 }, () => scene.enemyPool.acquire());
   assert.equal(enemies.every(Boolean), true);

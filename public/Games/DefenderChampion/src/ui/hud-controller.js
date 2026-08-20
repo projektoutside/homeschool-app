@@ -12,6 +12,47 @@ const FIXED_STEP_MILLISECONDS = 1_000 / 60;
 const MAX_FRAME_STEPS = 5;
 const MAX_QA_ADVANCE_MILLISECONDS = 60_000;
 
+export const createBattlefieldGridMirror = ({ battlefield, cells = [], documentRef } = {}) => {
+  if (!battlefield || !documentRef?.createElement) {
+    return Object.freeze({ cells: new Map(), rows: [], destroy() {} });
+  }
+  documentRef.getElementById?.('battlefield-grid-rows')?.remove?.();
+  const root = documentRef.createElement('div');
+  root.setAttribute('id', 'battlefield-grid-rows');
+  root.setAttribute('class', 'sr-only');
+  const rowsByIndex = new Map();
+  const cellNodes = new Map();
+  for (const cell of cells) {
+    const match = /^r(\d+)c(\d+)$/.exec(cell?.id ?? '');
+    if (!match) continue;
+    const rowIndex = Number(match[1]);
+    let row = rowsByIndex.get(rowIndex);
+    if (!row) {
+      row = documentRef.createElement('div');
+      row.setAttribute('role', 'row');
+      row.setAttribute('aria-rowindex', rowIndex + 1);
+      rowsByIndex.set(rowIndex, row);
+      root.appendChild(row);
+    }
+    const node = documentRef.createElement('div');
+    node.setAttribute('id', `battlefield-cell-${cell.id}`);
+    node.setAttribute('role', 'gridcell');
+    node.setAttribute('aria-rowindex', rowIndex + 1);
+    node.setAttribute('aria-colindex', Number(match[2]) + 1);
+    row.appendChild(node);
+    cellNodes.set(cell.id, node);
+  }
+  battlefield.appendChild(root);
+  return Object.freeze({
+    cells: cellNodes,
+    rows: [...rowsByIndex.values()],
+    destroy() {
+      root.remove?.();
+      cellNodes.clear();
+    },
+  });
+};
+
 const clampFinite = (value, maximum) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(maximum, Math.max(0, number)) : 0;
@@ -69,6 +110,9 @@ export const installQaRuntimeHooks = ({
   const renderGameToText = () => JSON.stringify(getActiveBattle()?.getTextSnapshot?.() ?? null);
   const advanceTime = (milliseconds) => getActiveBattle()?.advanceTime?.(milliseconds) ?? null;
   const debugApi = Object.freeze({
+    exerciseMalformedProjection() {
+      return getActiveBattle()?.exerciseMalformedProjection?.() ?? null;
+    },
     getPerformanceState() {
       return getActiveBattle()?.getPerformanceState?.() ?? null;
     },

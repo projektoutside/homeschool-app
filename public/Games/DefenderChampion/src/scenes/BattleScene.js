@@ -54,7 +54,7 @@ import {
   resolveSquareRangeCells,
 } from '../grid-presentation.js';
 import { WAVE_GAP_TICKS } from '../core/wave-controller.js';
-import { createFixedStepClock } from '../ui/hud-controller.js';
+import { createBattlefieldGridMirror, createFixedStepClock } from '../ui/hud-controller.js';
 
 const WORLD_WIDTH = GRID.width;
 const WORLD_HEIGHT = GRID.height;
@@ -82,6 +82,9 @@ const ROAD_TILE_FRAME = Object.freeze({
 const stopBody = (view) => {
   view?._body?.removeAllListeners?.('animationcomplete');
   view?._body?.anims?.stop?.();
+  view?._visualRoot?.setPosition?.(0, 0);
+  view?._visualRoot?.setAngle?.(0);
+  view?._visualRoot?.setAlpha?.(1);
   view?._body?.setPosition?.(0, 0);
   view?._body?.setAngle?.(0);
   view?._body?.setAlpha?.(1);
@@ -161,6 +164,7 @@ export class BattleScene extends Phaser.Scene {
     this.destroyed = false;
     this.domCleanups = [];
     this.detachedDefenderViews = new Set();
+    this.projectionDiagnostics = [];
     this.transientTimers = new Set();
     this.frameSamples = [];
     this.lastHudRenderTick = Number.NEGATIVE_INFINITY;
@@ -309,7 +313,8 @@ export class BattleScene extends Phaser.Scene {
     accent._baseScale = 0.34;
     accent._baseX = 0;
     accent._baseY = -frameSize * 0.36;
-    const view = this.add.container(0, 0, [accent, body]);
+    const visualRoot = this.add.container(0, 0, [accent, body]);
+    const view = this.add.container(0, 0, [visualRoot]);
     view._accent = accent;
     view._body = body;
     view._characterKey = null;
@@ -317,6 +322,7 @@ export class BattleScene extends Phaser.Scene {
     view._healthKey = null;
     view._lastX = null;
     view._motion = null;
+    view._visualRoot = visualRoot;
     view._attackPoseReady = false;
     view._attackTargetTowerId = null;
     return view;
@@ -342,7 +348,7 @@ export class BattleScene extends Phaser.Scene {
       accent._baseScale = index === 2 ? 0.13 : 0.115;
       accent._baseX = plate.x;
       accent._baseY = plate.y;
-      view.add(accent);
+      view._visualRoot.add(accent);
       view._plateAccents.set(plate.id, accent);
     }
     return view._plateAccents;
@@ -356,7 +362,8 @@ export class BattleScene extends Phaser.Scene {
     const body = this.add.sprite(0, 0, 'defender-bladeguard-idle').setOrigin(0.5, 1);
     const rank = this.add.image(0, -95, 'environment-gameplay-atlas', GAMEPLAY_FRAME.victoryBurst)
       .setVisible(false);
-    const view = this.add.container(0, 0, [aura, healthBackground, healthFill, body, rank]);
+    const visualRoot = this.add.container(0, 0, [aura, healthBackground, healthFill, body, rank]);
+    const view = this.add.container(0, 0, [visualRoot]);
     view._aura = aura;
     view._body = body;
     view._healthBackground = healthBackground;
@@ -364,12 +371,14 @@ export class BattleScene extends Phaser.Scene {
     view._healthKey = null;
     view._motion = null;
     view._rank = rank;
+    view._visualRoot = visualRoot;
     return view;
   }
 
   releasePooledView(view) {
     this.cancelViewMotion(view);
     this.tweens?.killTweensOf?.(view);
+    this.tweens?.killTweensOf?.(view?._visualRoot);
     stopBody(view);
   }
 
@@ -380,6 +389,10 @@ export class BattleScene extends Phaser.Scene {
     });
     this.defenderPool = new ViewPool(() => preparePooledView(this.createDefenderView(), 4), {
       maximum: DEFENDER_VIEW_CAPACITY,
+      resetView: (view) => this.releasePooledView(view),
+    });
+    this.defenderDefeatPool = new ViewPool(() => preparePooledView(this.createDefenderView(), 4.5), {
+      maximum: ENEMY_VIEW_CAPACITY,
       resetView: (view) => this.releasePooledView(view),
     });
     this.projectilePool = new ViewPool(() => preparePooledView(this.add.image(
@@ -417,6 +430,13 @@ export class BattleScene extends Phaser.Scene {
   bindDomInput() {
     const battlefield = globalThis.document?.getElementById('battlefield');
     if (!battlefield) return;
+    this.battlefieldElement = battlefield;
+    this.semanticGridMirror = createBattlefieldGridMirror({
+      battlefield,
+      cells: this.level.cells,
+      documentRef: globalThis.document,
+    });
+    this.accessibleCellNodes = this.semanticGridMirror.cells;
     const on = (type, listener) => {
       battlefield.addEventListener(type, listener);
       this.domCleanups.push(() => battlefield.removeEventListener(type, listener));
@@ -546,8 +566,8 @@ export class BattleScene extends Phaser.Scene {
         cellId: this.focusedCellId,
         key: event.key,
       });
-      this.announceFocusedTarget();
       this.updateFocusViews();
+      this.announceFocusedTarget();
       return;
     }
     if (event.key === 'Enter') {
@@ -593,15 +613,16 @@ export class BattleScene extends Phaser.Scene {
         selectedLayer: selected?.placementLayer ?? null,
         terrain: cell.terrain,
       });
-    const label = formatCellAccessibleLabel({
+    const label = this.accessibleCellNodes?.get?.(cell.id)?.getAttribute?.('aria-label')
+      ?? formatCellAccessibleLabel({
       acceptsBuild: visualState.acceptsBuild,
       cellId: cell.id,
-      enemyCovered: visualState.fillColor === 0xff6b61 && !tower,
+      danger: visualState.danger,
+      enemyCovered: visualState.enemyCovered,
       occupiedBy: tower ? DEFENDER_PRESENTATION[tower.defenderId].name : null,
       selectedRole: selected ? DEFENDER_PRESENTATION[selected.id].role : null,
       terrain: cell.terrain,
     });
-    globalThis.document?.getElementById?.('battlefield')?.setAttribute?.('aria-label', label);
     this.hud.announce(label);
   }
 
@@ -743,6 +764,19 @@ export class BattleScene extends Phaser.Scene {
     return finishTrackedMotion(view, motion, onComplete);
   }
 
+  resolveSharedViewPosition(view) {
+    return {
+      x: (Number(view?.x) || 0) + (Number(view?._visualRoot?.x) || 0),
+      y: (Number(view?.y) || 0) + (Number(view?._visualRoot?.y) || 0),
+    };
+  }
+
+  recordProjectionDiagnostic(entry, reason) {
+    this.projectionDiagnostics ??= [];
+    this.projectionDiagnostics.push({ id: entry?.id ?? null, reason });
+    if (this.projectionDiagnostics.length > 32) this.projectionDiagnostics.shift();
+  }
+
   cancelViewMotion(view, { preservePose = false } = {}) {
     if (!view) return;
     const motion = view._motion;
@@ -751,10 +785,14 @@ export class BattleScene extends Phaser.Scene {
     motion?.destroy?.();
     this.tweens?.killTweensOf?.(view);
     this.tweens?.killTweensOf?.(view._body);
+    this.tweens?.killTweensOf?.(view._visualRoot);
     view._attackPoseReady = false;
     view._attackTargetTowerId = null;
     if (preservePose) return;
     view.setAlpha?.(1);
+    view._visualRoot?.setPosition?.(0, 0);
+    view._visualRoot?.setAngle?.(0);
+    view._visualRoot?.setAlpha?.(1);
     view._body?.setPosition?.(0, 0);
     view._body?.setAngle?.(0);
     view._body?.setAlpha?.(1);
@@ -764,16 +802,16 @@ export class BattleScene extends Phaser.Scene {
 
   cancelAllPresentationMotion() {
     this.tweens?.killAll?.();
-    for (const pool of [this.enemyPool, this.defenderPool]) {
+    for (const pool of [this.enemyPool, this.defenderPool, this.defenderDefeatPool]) {
       for (const view of pool?.activeViews ?? []) this.cancelViewMotion(view);
     }
     for (const view of [...this.detachedDefenderViews]) {
       this.detachedDefenderViews.delete(view);
-      this.defenderPool?.release(view);
+      this.defenderDefeatPool?.release(view);
     }
     clearPresentationTransients({
       cancelViewMotion: (view) => this.cancelViewMotion(view),
-      pools: [this.defeatPool, this.damageLabelPool, this.particlePool],
+      pools: [this.defenderDefeatPool, this.defeatPool, this.damageLabelPool, this.particlePool],
       timers: this.transientTimers,
     });
     if (this.castleSprite?.frame?.name === 1) {
@@ -789,15 +827,18 @@ export class BattleScene extends Phaser.Scene {
     this.cancelViewMotion(view);
     const body = view._body;
     body.anims?.stop?.();
-    body.setTint(0xffd27a).setAngle(-3);
+    body.setTint(0xffd27a);
+    view._visualRoot?.setAngle?.(-3);
+    const enemyPosition = this.resolveSharedViewPosition(view);
+    const targetPosition = this.resolveSharedViewPosition(targetView);
     const motionState = resolveEnemyAttackMotion({
       bodyScale: view._baseScale ?? ENEMY_PRESENTATION[enemy.enemyId].displayScale,
       boss: BOSS_IDS.has(enemy.enemyId),
       currentTick: this.lastSnapshot.tick,
-      enemyPosition: { x: view.x, y: view.y },
+      enemyPosition,
       impactAtTick,
       reducedMotion: this.reducedMotion,
-      targetPosition: { x: targetView.x, y: targetView.y },
+      targetPosition,
       timeScale: this.lastSnapshot.timeScale,
     });
     view._attackTargetTowerId = targetTowerId;
@@ -806,7 +847,7 @@ export class BattleScene extends Phaser.Scene {
 
     let motion;
     motion = this.tweens.chain({
-      targets: body,
+      targets: view._visualRoot,
       tweens: [
         {
           angle: -5,
@@ -837,7 +878,7 @@ export class BattleScene extends Phaser.Scene {
     body.setTint(0xfff0a3);
     let motion;
     motion = this.tweens.add({
-      targets: body,
+      targets: view._visualRoot,
       angle: 0,
       duration: this.reducedMotion ? 90 : 180,
       ease: 'Cubic.easeOut',
@@ -857,21 +898,23 @@ export class BattleScene extends Phaser.Scene {
     const view = this.towerSprites.get(payload.towerId);
     if (!view?._body) return;
     const sourceView = this.enemySprites.get(payload.sourceId);
-    const directionX = sourceView ? Math.sign(view.x - sourceView.x) : 0;
-    const directionY = sourceView ? Math.sign(view.y - sourceView.y) : 1;
-    this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
+    const defenderPosition = this.resolveSharedViewPosition(view);
+    const sourcePosition = sourceView ? this.resolveSharedViewPosition(sourceView) : null;
+    const directionX = sourcePosition ? Math.sign(defenderPosition.x - sourcePosition.x) : 0;
+    const directionY = sourcePosition ? Math.sign(defenderPosition.y - sourcePosition.y) : 1;
+    this.recentDefenderPositions.set(payload.towerId, defenderPosition);
     this.cancelViewMotion(view);
     const body = view._body;
     body.setTint(0xff8b78);
     const hitMotion = resolveDefenderHitMotion({ directionX, directionY, reducedMotion: this.reducedMotion });
     let motion;
     motion = this.tweens.chain({
-      targets: body,
+      targets: view._visualRoot,
       tweens: hitMotion.steps,
       onComplete: () => this.finishViewMotion(view, motion, () => body.setTint(0xffffff)),
     });
     view._motion = motion;
-    this.spawnDamageLabel({ x: view.x, y: view.y }, payload.damage);
+    this.spawnDamageLabel(defenderPosition, payload.damage);
     const name = DEFENDER_PRESENTATION[view._defenderId]?.name ?? 'Road defender';
     this.hud.announce(`${name} took ${payload.damage} damage. ${payload.remainingHealth} health remains.`);
   }
@@ -880,35 +923,49 @@ export class BattleScene extends Phaser.Scene {
     const view = this.towerSprites.get(payload.towerId);
     if (!view?._body) return;
     this.towerSprites.delete(payload.towerId);
-    this.recentDefenderPositions.set(payload.towerId, { x: view.x, y: view.y });
+    const position = this.resolveSharedViewPosition(view);
+    const defenderId = view._defenderId;
+    const bodyScale = view._baseScale ?? view._body.scale ?? 1;
+    const textureKey = view._body.texture?.key
+      ?? characterAssetId('defender', defenderId, 'idle');
+    const frame = view._body.frame?.name ?? 0;
+    this.recentDefenderPositions.set(payload.towerId, position);
     this.cancelViewMotion(view);
-    const fade = beginDefenderDefeatPresentation(view, { reducedMotion: this.reducedMotion });
-    this.spawnBurst({ x: view.x, y: view.y }, GAMEPLAY_FRAME.defeatCrack, 8, payload.towerId.length);
+    const defeatView = this.defenderDefeatPool?.acquire?.() ?? null;
+    this.defenderPool.release(view);
+    this.spawnBurst(position, GAMEPLAY_FRAME.defeatCrack, 8, payload.towerId.length);
     this.audioController?.playCue?.('defeat');
-    const name = DEFENDER_PRESENTATION[view._defenderId]?.name ?? 'Road defender';
+    const name = DEFENDER_PRESENTATION[defenderId]?.name ?? 'Road defender';
     this.hud.announce(`${name} was permanently defeated. The road guard slot is available again.`);
-    this.detachedDefenderViews.add(view);
-    const body = view._body;
+    if (!defeatView) {
+      this.recordProjectionDiagnostic({ id: payload.towerId }, 'defender-defeat-pool-exhausted');
+      return;
+    }
+    defeatView.setPosition(position.x, position.y);
+    defeatView._defenderId = defenderId;
+    defeatView._baseScale = bodyScale;
+    defeatView._body.setTexture(textureKey, frame).setScale(bodyScale);
+    const fade = beginDefenderDefeatPresentation(defeatView, { reducedMotion: this.reducedMotion });
+    this.detachedDefenderViews.add(defeatView);
     let motion;
     motion = this.tweens.add({
-      targets: body,
+      targets: defeatView._visualRoot,
       ...fade,
       ease: 'Cubic.easeIn',
-      onComplete: () => this.finishViewMotion(view, motion, () => {
-        this.detachedDefenderViews.delete(view);
-        this.defenderPool.release(view);
+      onComplete: () => this.finishViewMotion(defeatView, motion, () => {
+        this.detachedDefenderViews.delete(defeatView);
+        this.defenderDefeatPool.release(defeatView);
       }),
     });
-    view._motion = motion;
+    defeatView._motion = motion;
   }
 
   handleEnemyAttackImpact(event, payload) {
     const view = this.enemySprites.get(payload.id);
-    const targetPosition = this.recentDefenderPositions.get(payload.targetTowerId)
-      ?? (() => {
-        const target = this.towerSprites.get(payload.targetTowerId);
-        return target ? { x: target.x, y: target.y } : null;
-      })();
+    const activeTarget = this.towerSprites.get(payload.targetTowerId);
+    const targetPosition = activeTarget
+      ? this.resolveSharedViewPosition(activeTarget)
+      : this.recentDefenderPositions.get(payload.targetTowerId);
     if (targetPosition) {
       this.spawnBurst(targetPosition, GAMEPLAY_FRAME.shieldBash, 4, event.id);
       this.spawnBurst(targetPosition, GAMEPLAY_FRAME.explosion, 3, event.id + 1);
@@ -1149,7 +1206,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  resolveEnemyVisualTransform(source = {}) {
+  resolveEnemyVisualTransform(source = {}, { includeMotion = true } = {}) {
     const entityId = source.id ?? source.targetId ?? source.bossId
       ?? (this.enemyById?.has?.(source.enemyId) ? source.enemyId : null);
     const liveEnemy = entityId ? this.enemyById?.get?.(entityId) : null;
@@ -1166,17 +1223,22 @@ export class BattleScene extends Phaser.Scene {
       kind: presentation.kind,
       population: this.lastSnapshot?.enemies?.length ?? 1,
     });
+    const projectedPosition = projectGridPathProgress(
+      this.pathMetrics,
+      roadProjection.pathProgress,
+      roadProjection.laneOffset,
+    );
+    const liveView = entityId ? this.enemySprites?.get?.(entityId) : null;
+    const position = includeMotion && liveView
+      ? this.resolveSharedViewPosition(liveView)
+      : projectedPosition;
     return Object.freeze({
       ...roadProjection,
       artScale,
       bodyScale: artScale,
       enemyId: enemy.enemyId ?? null,
       entityId,
-      position: Object.freeze(projectGridPathProgress(
-        this.pathMetrics,
-        roadProjection.pathProgress,
-        roadProjection.laneOffset,
-      )),
+      position: Object.freeze(position),
     });
   }
 
@@ -1187,10 +1249,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   projectEnemies(snapshot) {
-    syncProjectionMap(this.enemySprites, this.enemyPool, snapshot.enemies, (view, enemy) => {
+    const seen = new Set();
+    const validEnemies = [];
+    for (const enemy of snapshot.enemies ?? []) {
+      if (!enemy?.id || seen.has(enemy.id) || !ENEMY_PRESENTATION[enemy.enemyId]) {
+        this.recordProjectionDiagnostic(enemy, ENEMY_PRESENTATION[enemy?.enemyId]
+          ? 'invalid-enemy' : 'unknown-enemy');
+        continue;
+      }
+      seen.add(enemy.id);
+      validEnemies.push(enemy);
+    }
+    syncProjectionMap(this.enemySprites, this.enemyPool, validEnemies, (view, enemy) => {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
       const kind = presentation.kind;
-      const visual = this.resolveEnemyVisualTransform(enemy);
+      const visual = this.resolveEnemyVisualTransform(enemy, { includeMotion: false });
       const position = visual.position;
       const body = view._body;
       const characterKey = characterAssetId(kind, enemy.enemyId, 'walk');
@@ -1208,6 +1281,10 @@ export class BattleScene extends Phaser.Scene {
       view._baseScale = displayScale;
       view.setDepth(visual.depth);
       view._visualTransform = visual;
+      const accentFrameHeight = kind === 'boss'
+        ? this.metadata?.bosses?.frame?.height ?? 384
+        : this.metadata?.enemies?.frame?.height ?? 256;
+      view._accent._baseY = -accentFrameHeight * 0.36;
       const flipX = view._lastX !== null && position.x < view._lastX - 0.15;
       if (flipX !== view._flipX) {
         body.setFlipX(flipX);
@@ -1279,6 +1356,7 @@ export class BattleScene extends Phaser.Scene {
     this.queuedEnemyHealthLayer.clear();
     for (const enemy of snapshot.enemies) {
       const presentation = ENEMY_PRESENTATION[enemy.enemyId];
+      if (!presentation || !this.enemySprites?.has?.(enemy.id)) continue;
       const kind = presentation.kind;
       const ratio = Math.max(0, Math.min(1, enemy.health / enemy.maxHealth));
       const showHealth = kind === 'boss' || ratio < 0.999;
@@ -1305,13 +1383,25 @@ export class BattleScene extends Phaser.Scene {
   }
 
   projectTowers(snapshot) {
-    syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
+    const seen = new Set();
+    const validTowers = [];
+    for (const tower of snapshot.towers ?? []) {
       const projection = this.resolveTowerProjection(tower);
       if (!projection) {
-        view._cellId = null;
-        view.setActive(false).setVisible(false);
-        return;
+        this.recordProjectionDiagnostic(tower, 'invalid-cell');
+        continue;
       }
+      if (!tower?.id || seen.has(tower.id) || !DEFENDERS[tower.defenderId]
+        || !DEFENDER_PRESENTATION[tower.defenderId]) {
+        this.recordProjectionDiagnostic(tower, DEFENDERS[tower?.defenderId]
+          ? 'invalid-defender' : 'unknown-defender');
+        continue;
+      }
+      seen.add(tower.id);
+      validTowers.push(tower);
+    }
+    syncProjectionMap(this.towerSprites, this.defenderPool, validTowers, (view, tower) => {
+      const projection = this.resolveTowerProjection(tower);
       const { cell, position } = projection;
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
@@ -1375,7 +1465,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   projectCells(snapshot) {
-    const occupiedByCell = new Map(snapshot.towers.map((tower) => [tower.cellId, tower]));
+    const occupiedByCell = new Map((snapshot.towers ?? [])
+      .filter((tower) => this.resolveTowerProjection(tower)
+        && DEFENDERS[tower.defenderId] && DEFENDER_PRESENTATION[tower.defenderId])
+      .map((tower) => [tower.cellId, tower]));
     const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
     const selectedTower = this.towerById.get(this.selectedTowerId);
     const selectedDefinition = selectedTower ? DEFENDERS[selectedTower.defenderId] : null;
@@ -1422,7 +1515,29 @@ export class BattleScene extends Phaser.Scene {
       });
       view._visualState = state;
       this.drawCellView(view, state);
+      const accessibleNode = this.accessibleCellNodes?.get?.(cell.id);
+      if (accessibleNode) {
+        accessibleNode.setAttribute('aria-label', formatCellAccessibleLabel({
+          acceptsBuild: state.acceptsBuild,
+          cellId: cell.id,
+          danger: state.danger,
+          enemyCovered: state.enemyCovered,
+          occupiedBy: occupiedTower
+            ? DEFENDER_PRESENTATION[occupiedTower.defenderId]?.name ?? 'defender'
+            : null,
+          selectedRole: this.selectedDefenderId
+            ? DEFENDER_PRESENTATION[this.selectedDefenderId]?.role ?? null
+            : null,
+          terrain: cell.terrain,
+        }));
+        accessibleNode.setAttribute('aria-selected', String(cell.id === this.focusedCellId));
+        accessibleNode.setAttribute('aria-disabled', String(Boolean(selectedLayer) && !state.acceptsBuild));
+      }
     }
+    this.battlefieldElement?.setAttribute?.(
+      'aria-activedescendant',
+      `battlefield-cell-${this.focusedCellId}`,
+    );
   }
 
   projectProjectiles(snapshot) {
@@ -1431,8 +1546,11 @@ export class BattleScene extends Phaser.Scene {
       const defenderId = tower?.defenderId
         ?? this.defenderIdByTowerId?.get?.(projectile.sourceTowerId)
         ?? 'ranger';
+      const sourceView = this.towerSprites?.get?.(projectile.sourceTowerId);
       const sourceProjection = tower ? this.resolveTowerProjection(tower) : null;
-      const sourcePosition = sourceProjection?.position ?? projectile.launchPosition;
+      const sourcePosition = sourceView
+        ? this.resolveSharedViewPosition(sourceView)
+        : sourceProjection?.position ?? projectile.launchPosition;
       const sourceArtScale = this.towerSprites?.get?.(projectile.sourceTowerId)?._baseScale
         ?? DEFENDER_PRESENTATION[defenderId]?.displayScale
         ?? 1;
@@ -1485,6 +1603,36 @@ export class BattleScene extends Phaser.Scene {
 
   updateBetweenWaveCountdown(snapshot) {
     this.betweenWaveCountdown = resolveBetweenWaveCountdown(snapshot, WAVE_GAP_TICKS);
+  }
+
+  exerciseMalformedProjection() {
+    if (!this.qaMode || !this.lastSnapshot) return null;
+    this.projectionDiagnostics = [];
+    const towerSnapshot = {
+      ...this.lastSnapshot,
+      towers: [
+        { id: 'qa-invalid-cell', defenderId: 'ranger', cellId: 'r99c99' },
+        { id: 'qa-unknown-defender', defenderId: 'qa-unknown', cellId: 'r0c0' },
+        ...(this.lastSnapshot.towers ?? []),
+      ],
+    };
+    const enemySnapshot = {
+      ...this.lastSnapshot,
+      enemies: [
+        { id: 'qa-unknown-enemy', enemyId: 'qa-unknown' },
+        ...(this.lastSnapshot.enemies ?? []),
+      ],
+    };
+    this.projectTowers(towerSnapshot);
+    this.projectEnemies(enemySnapshot);
+    const result = {
+      diagnostics: this.projectionDiagnostics.map((entry) => ({ ...entry })),
+      projectedEnemies: this.enemySprites.size,
+      projectedTowers: this.towerSprites.size,
+    };
+    this.projectTowers(this.lastSnapshot);
+    this.projectEnemies(this.lastSnapshot);
+    return result;
   }
 
   updateFocusViews() {
@@ -1551,12 +1699,14 @@ export class BattleScene extends Phaser.Scene {
       p95FrameMs: Number((sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] ?? 0).toFixed(3)),
       pools: {
         damageLabels: this.damageLabelPool?.getState() ?? null,
+        defenderDefeats: this.defenderDefeatPool?.getState() ?? null,
         defeats: this.defeatPool?.getState() ?? null,
         defenders: this.defenderPool?.getState() ?? null,
         enemies: this.enemyPool?.getState() ?? null,
         particles: this.particlePool?.getState() ?? null,
         projectiles: this.projectilePool?.getState() ?? null,
       },
+      projectionDiagnostics: (this.projectionDiagnostics ?? []).map((entry) => ({ ...entry })),
       reducedMotion: this.reducedMotion,
       sampleCount: this.frameSamples.length,
     };
@@ -1568,6 +1718,9 @@ export class BattleScene extends Phaser.Scene {
         acceptsBuild: Boolean(view._visualState?.acceptsBuild),
         borderColor: view._visualState?.borderColor ?? null,
         fillColor: view._visualState?.fillColor ?? null,
+        compatible: view._visualState?.compatible ?? null,
+        danger: Boolean(view._visualState?.danger),
+        enemyCovered: Boolean(view._visualState?.enemyCovered),
         focused: Boolean(view._visualState?.focused),
         id,
         occupied: Boolean(view._visualState?.occupied),
@@ -1579,6 +1732,7 @@ export class BattleScene extends Phaser.Scene {
           enemy,
           ENEMY_PRESENTATION[enemy?.enemyId],
         );
+        const position = this.resolveSharedViewPosition(view);
         return {
           accentVisible: Boolean(view._accent?.visible),
           attackTargetTowerId: view._attackTargetTowerId,
@@ -1588,6 +1742,10 @@ export class BattleScene extends Phaser.Scene {
           id,
           laneOffset: roadProjection.laneOffset,
           laneState: enemy?.laneState ?? null,
+          motionOffset: {
+            x: Number(view._visualRoot?.x) || 0,
+            y: Number(view._visualRoot?.y) || 0,
+          },
           plateAccents: [...(view._plateAccents?.entries?.() ?? [])].map(([plateId, plate]) => ({
             id: plateId,
             visible: Boolean(plate.visible),
@@ -1597,8 +1755,8 @@ export class BattleScene extends Phaser.Scene {
           queueIndex: enemy?.queueIndex ?? null,
           artScale: view._visualTransform?.artScale ?? null,
           scale: roadProjection.scale,
-          x: view.x,
-          y: view.y,
+          x: position.x,
+          y: position.y,
         };
       }),
       roadTiles: [...(this.roadTileViews ?? [])].map(([id, view]) => ({
@@ -1609,6 +1767,7 @@ export class BattleScene extends Phaser.Scene {
       tick: this.lastSnapshot?.tick ?? 0,
       towers: [...this.towerSprites].map(([id, view]) => {
         const body = view._body;
+        const position = this.resolveSharedViewPosition(view);
         return {
           animationKey: body.anims?.currentAnim?.key ?? null,
           frame: body.anims?.currentFrame?.textureFrame ?? body.frame?.name ?? null,
@@ -1616,8 +1775,14 @@ export class BattleScene extends Phaser.Scene {
           id,
           isPlaying: Boolean(body.anims?.isPlaying),
           cellId: view._cellId,
+          motionOffset: {
+            x: Number(view._visualRoot?.x) || 0,
+            y: Number(view._visualRoot?.y) || 0,
+          },
           scale: body.scale,
           textureKey: body.texture?.key ?? null,
+          x: position.x,
+          y: position.y,
         };
       }),
     };
@@ -1692,6 +1857,7 @@ export class BattleScene extends Phaser.Scene {
     for (const pool of [
       this.enemyPool,
       this.defenderPool,
+      this.defenderDefeatPool,
       this.projectilePool,
       this.defeatPool,
       this.damageLabelPool,
@@ -1705,6 +1871,10 @@ export class BattleScene extends Phaser.Scene {
     this.defenderIdByTowerId.clear();
     this.recentDefenderPositions.clear();
     this.detachedDefenderViews.clear();
+    this.semanticGridMirror?.destroy?.();
+    this.semanticGridMirror = null;
+    this.accessibleCellNodes = null;
+    this.battlefieldElement = null;
     for (const view of this.cellViews?.values?.() ?? []) view.destroy?.();
     this.cellViews?.clear?.();
     this.roadTileViews?.clear?.();

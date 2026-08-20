@@ -89,10 +89,20 @@ test('square-cell centers establish the exact ranged coverage floor without rewr
     const firstGrassPad = level.pads.find(({ cellId }) => (
       level.cells.find(({ id }) => id === cellId)?.terrain === 'grass'
     ));
-    assert.ok(
+    assert.equal(
       minimumGrassRoadDistance(level, [{ id: firstGrassPad.cellId }]),
       80,
       `${levelId} first grass translation cell must touch the road by one square edge`,
+    );
+    const nonAdjacentGrass = level.cells.find((cell) => (
+      cell.terrain === 'grass'
+      && minimumGrassRoadDistance(level, [{ id: cell.id }]) > 80
+    ));
+    assert.ok(nonAdjacentGrass, `${levelId} fixture must contain a non-adjacent mutation candidate`);
+    assert.notEqual(
+      minimumGrassRoadDistance(level, [{ id: nonAdjacentGrass.id }]),
+      80,
+      `${levelId} exact equality must reject a grass translation farther than one square edge`,
     );
   }
 });
