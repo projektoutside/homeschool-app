@@ -20,6 +20,7 @@ import {
   createSimulation,
   issueCommand,
 } from '../public/Games/DefenderChampion/src/core/simulation.js';
+import { spawnScheduledEnemies } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
 const testRoadCellId = 'r1c4';
 const testGrassCellId = 'r0c5';
@@ -350,7 +351,7 @@ test('a blocked Hexcaller keeps its exact active-tick support cadence', () => {
   assert.equal(simulation.effects.some(({ sourceId }) => sourceId === source.id), true);
 });
 
-test('a blocked Dread Colossus keeps boss thresholds and enqueues its summons in FIFO order', () => {
+test('a blocked Dread Colossus keeps boss thresholds and spawns its summons in FIFO order', () => {
   const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
     health: 10_000,
     maxHealth: 10_000,
@@ -369,7 +370,7 @@ test('a blocked Dread Colossus keeps boss thresholds and enqueues its summons in
     stepCombat(simulation);
   }
 
-  const summons = simulation.pendingSpawns;
+  const summons = simulation.enemies.filter(({ isSummon }) => isSummon);
   assert.equal(summons.length, ENEMIES['dread-colossus'].summonCount);
   assert.deepEqual(
     summons.map(({ enemyId, isSummon, waveIndex }) => ({ enemyId, isSummon, waveIndex })),
@@ -404,6 +405,97 @@ test('Dread summons wait behind the same living cap', () => {
     simulation.pendingSpawns.map(({ enemyId, isSummon }) => ({ enemyId, isSummon })),
     Array.from({ length: 6 }, () => ({ enemyId: 'swarmkin', isSummon: true })),
   );
+});
+
+test('Dread summons invalidate completed waves while a full living cap retains their requests', () => {
+  const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
+    health: 7_400,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const fillers = Array.from({ length: 17 }, (_, index) => createCombatEnemy(
+    `enemy-${index + 2}`,
+    'blight-walker',
+    { health: 10_000, maxHealth: 10_000, speed: 0 },
+  ));
+  const simulation = createTowerCombat('bladeguard', 0, 0, [boss, ...fillers]);
+  simulation.towers = [];
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  for (let tick = 1; tick <= 60; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+
+  assert.equal(simulation.spawnedAllWaves, false);
+  assert.equal(simulation.pendingSpawns.length, 6);
+});
+
+test('scheduled requests flush before Dread requests after same-tick combat removals', () => {
+  const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
+    health: 7_400,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const fillers = Array.from({ length: 17 }, (_, index) => createCombatEnemy(
+    `enemy-${index + 2}`,
+    'blight-walker',
+    { health: 10_000, maxHealth: 10_000, speed: 0 },
+  ));
+  const simulation = createTowerCombat('bladeguard', 0, 0, [boss, ...fillers]);
+  simulation.towers = [];
+  simulation.waveSchedule = [
+    { enemyId: 'skitter', spawnTick: 0, waveIndex: 0 },
+    { enemyId: 'shellguard', spawnTick: 0, waveIndex: 0 },
+  ];
+  simulation.nextSpawnIndex = 0;
+  simulation.spawnedAllWaves = false;
+  spawnScheduledEnemies(simulation);
+
+  simulation.tick = 0;
+  stepCombat(simulation);
+  for (let tick = 1; tick < 60; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+  fillers[0].health = 0;
+  fillers[1].health = 0;
+  simulation.tick = 60;
+  stepCombat(simulation);
+
+  assert.deepEqual(simulation.enemies.slice(-2).map(({ enemyId }) => enemyId), ['skitter', 'shellguard']);
+  assert.deepEqual(
+    simulation.pendingSpawns.map(({ enemyId, isSummon, sequence }) => ({ enemyId, isSummon, sequence })),
+    Array.from({ length: 6 }, (_, index) => ({ enemyId: 'swarmkin', isSummon: true, sequence: index + 3 })),
+  );
+  assert.equal(simulation.maximumLivingEnemies, 18);
+});
+
+test('under-cap Dread summons enter combat in their telegraph impact tick', () => {
+  const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
+    health: 7_400,
+    maxHealth: 10_000,
+    speed: 0,
+  });
+  const simulation = createTowerCombat('bladeguard', 0, 0, [boss]);
+  simulation.towers = [];
+
+  for (let tick = 0; tick <= 60; tick += 1) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+  }
+
+  assert.deepEqual(simulation.enemies.map(({ enemyId, isSummon }) => ({ enemyId, isSummon })), [
+    { enemyId: 'dread-colossus', isSummon: undefined },
+    { enemyId: 'swarmkin', isSummon: true },
+    { enemyId: 'swarmkin', isSummon: true },
+    { enemyId: 'swarmkin', isSummon: true },
+    { enemyId: 'swarmkin', isSummon: true },
+    { enemyId: 'swarmkin', isSummon: true },
+    { enemyId: 'swarmkin', isSummon: true },
+  ]);
+  assert.deepEqual(simulation.pendingSpawns, []);
 });
 
 test('an enemy cannot hit the castle until the tick after defeating the last blocker', () => {
@@ -662,7 +754,7 @@ test('Ironhide rally warns for one active second before applying its combat effe
   assert.equal(simulation.presentationEvents.filter(({ kind }) => kind === 'ironhide-rally').length, 1);
 });
 
-test('Dread threshold summons warn for one active second before enqueue without duplicate packs', () => {
+test('Dread threshold summons warn for one active second before spawning without duplicate packs', () => {
   assert.equal(ENEMIES['dread-colossus'].summonTelegraphTicks, 60);
   const maxHealth = 10_000;
   const boss = createCombatEnemy('enemy-1', 'dread-colossus', {
@@ -688,7 +780,7 @@ test('Dread threshold summons warn for one active second before enqueue without 
 
   simulation.tick = 60;
   stepCombat(simulation);
-  assert.equal(simulation.pendingSpawns.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
+  assert.equal(simulation.enemies.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
   assert.equal(boss.thresholdFlags.summon75, true);
   assert.equal(boss.thresholdFlags.summon75Pending, undefined);
   const eventKinds = simulation.presentationEvents.map(({ kind }) => kind);
@@ -697,6 +789,6 @@ test('Dread threshold summons warn for one active second before enqueue without 
 
   simulation.tick = 61;
   stepCombat(simulation);
-  assert.equal(simulation.pendingSpawns.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
+  assert.equal(simulation.enemies.filter(({ enemyId }) => enemyId === 'swarmkin').length, 6);
   assert.equal(simulation.presentationEvents.filter(({ kind }) => kind === 'dread-summon').length, 1);
 });

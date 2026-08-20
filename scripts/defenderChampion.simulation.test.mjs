@@ -22,7 +22,7 @@ import {
   selectMeleeTarget,
   selectTarget,
 } from '../public/Games/DefenderChampion/src/core/targeting.js';
-import { WAVE_GAP_TICKS } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
+import { WAVE_GAP_TICKS, spawnScheduledEnemies } from '../public/Games/DefenderChampion/src/core/wave-controller.js';
 
 test('every free road and grass cell accepts exactly its matching defenders', () => {
   for (const level of LEVELS) {
@@ -377,6 +377,8 @@ test('scheduled enemies never exceed 18 living and preserve FIFO order', () => {
 
   assert.equal(simulation.enemies.length, 18);
   assert.equal(simulation.pendingSpawns.length, 12);
+  assert.equal(summarizeSimulation(simulation).maximumLivingEnemies, 18);
+  assert.equal(summarizePresentationSimulation(simulation).maximumLivingEnemies, 18);
   const firstPending = simulation.pendingSpawns[0];
   simulation.enemies.shift();
   advanceSimulation(simulation, 1);
@@ -406,7 +408,7 @@ test('paused ticks keep scheduled requests out of the cap queue until simulation
   assert.equal(simulation.pendingSpawns.length, 1);
 });
 
-test('pending requests prevent terminal victory and summaries expose detached cap state', () => {
+test('pending-only requests prevent terminal victory and summaries expose detached cap state', () => {
   const simulation = createSimulation('level-1', { qa: true });
   simulation.waveSchedule = [];
   simulation.nextSpawnIndex = 0;
@@ -414,6 +416,7 @@ test('pending requests prevent terminal victory and summaries expose detached ca
   simulation.pendingSpawns = [{
     enemyId: 'swarmkin', isSummon: true, pathProgress: 12, requestedTick: 0, sequence: 1, waveIndex: 0,
   }];
+  assert.deepEqual(simulation.enemies, []);
 
   const beforeAdvance = summarizeSimulation(simulation);
   assert.equal(beforeAdvance.pendingSpawnCount, 1);
@@ -426,6 +429,46 @@ test('pending requests prevent terminal victory and summaries expose detached ca
   assert.equal(simulation.terminal, false);
   assert.equal(simulation.enemies.length, 1);
   assert.equal(simulation.enemies[0].enemyId, 'skitter');
+});
+
+test('scheduled spawning replaces an unresolved defeated enemy without exceeding 18 living', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  simulation.enemies = Array.from({ length: 18 }, (_, index) => ({
+    id: `enemy-${index + 1}`,
+    health: index === 0 ? 0 : 10,
+  }));
+  simulation.waveSchedule = [{ enemyId: 'swarmkin', spawnTick: 0, waveIndex: 0 }];
+
+  spawnScheduledEnemies(simulation);
+
+  assert.equal(simulation.enemies.filter(({ health }) => health > 0).length, 18);
+  assert.equal(simulation.enemies.length, 19);
+  assert.equal(simulation.enemies.at(-1).enemyId, 'swarmkin');
+  assert.equal(simulation.maximumLivingEnemies, 18);
+});
+
+test('full and presentation cap summaries are immutable values, not pending request references', () => {
+  const simulation = createSimulation('level-10', { qa: true });
+  simulation.waveSchedule = Array.from({ length: 19 }, () => ({
+    enemyId: 'swarmkin', spawnTick: 0, waveIndex: 0,
+  }));
+  advanceSimulation(simulation, 1);
+
+  const full = summarizeSimulation(simulation);
+  const presentation = summarizePresentationSimulation(simulation);
+  assert.deepEqual(
+    [full.pendingSpawnCount, full.livingEnemyCap, full.maximumLivingEnemies],
+    [1, 18, 18],
+  );
+  assert.deepEqual(
+    [presentation.pendingSpawnCount, presentation.livingEnemyCap, presentation.maximumLivingEnemies],
+    [1, 18, 18],
+  );
+  simulation.pendingSpawns[0].pathProgress = 999;
+  assert.deepEqual(
+    [full.pendingSpawnCount, full.livingEnemyCap, full.maximumLivingEnemies],
+    [1, 18, 18],
+  );
 });
 
 test('authored waves use integer ticks and snapshots are detached and deterministic', () => {
@@ -629,6 +672,9 @@ test('restart and unload cleanup leave no transient combat state', () => {
   tower.engagedEnemyIds = ['enemy-2'];
   simulation.projectiles = [{ id: 'projectile-3' }];
   simulation.effects = [{ id: 'effect-4' }];
+  simulation.pendingSpawns = [{
+    enemyId: 'swarmkin', isSummon: true, pathProgress: 12, requestedTick: 1, sequence: 1, waveIndex: 0,
+  }];
   simulation.presentationEvents = [{ id: 1, kind: 'enemy-attack-start', tick: 1, payload: {} }];
 
   clearPresentationEvents(simulation);
@@ -644,6 +690,7 @@ test('restart and unload cleanup leave no transient combat state', () => {
   assert.deepEqual(tower.engagedEnemyIds, []);
   assert.deepEqual(simulation.projectiles, []);
   assert.deepEqual(simulation.effects, []);
+  assert.deepEqual(simulation.pendingSpawns, []);
   assert.deepEqual(simulation.presentationEvents, []);
 
   const restarted = createSimulation('level-1', { qa: true });
@@ -713,6 +760,17 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   const second = runStrategyFixture('level-1', 'level-1-balanced');
 
   assert.deepEqual(first, second);
+  assert.deepEqual({
+    terminal: first.terminal,
+    tick: first.tick,
+    maximumLivingEnemies: first.maximumLivingEnemies,
+    pendingSpawnCount: first.pendingSpawnCount,
+  }, {
+    terminal: true,
+    tick: 4828,
+    maximumLivingEnemies: 18,
+    pendingSpawnCount: 0,
+  });
   assert.deepEqual(first.towers, [
     {
       id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', placementLayer: 'road', combatLayer: 'frontline',

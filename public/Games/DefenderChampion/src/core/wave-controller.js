@@ -4,6 +4,13 @@ import { emitPresentationEvent } from './presentation-events.js';
 export const WAVE_GAP_TICKS = 180;
 export const MAX_LIVING_ENEMIES = 18;
 
+const livingEnemyCount = (simulation) => simulation.enemies.filter(({ health }) => health > 0).length;
+
+const updateSpawnedAllWaves = (simulation) => {
+  simulation.spawnedAllWaves = simulation.nextSpawnIndex === simulation.waveSchedule.length
+    && simulation.pendingSpawns.length === 0;
+};
+
 export const createWaveController = (level) => {
   let waveStartTick = 0;
   const schedule = [];
@@ -38,6 +45,7 @@ export const enqueueEnemySpawn = (simulation, request) => {
     sequence: simulation.nextSpawnSequence++,
     waveIndex: request.waveIndex,
   });
+  updateSpawnedAllWaves(simulation);
 };
 
 const createEnemy = (simulation, request) => {
@@ -79,13 +87,14 @@ const createEnemy = (simulation, request) => {
 
 export const flushPendingEnemySpawns = (simulation) => {
   simulation.pendingSpawns ??= [];
-  while (simulation.enemies.length < MAX_LIVING_ENEMIES && simulation.pendingSpawns.length > 0) {
+  while (livingEnemyCount(simulation) < MAX_LIVING_ENEMIES && simulation.pendingSpawns.length > 0) {
     simulation.enemies.push(createEnemy(simulation, simulation.pendingSpawns.shift()));
   }
   simulation.maximumLivingEnemies = Math.max(
     simulation.maximumLivingEnemies ?? 0,
-    simulation.enemies.length,
+    livingEnemyCount(simulation),
   );
+  updateSpawnedAllWaves(simulation);
 };
 
 export const spawnScheduledEnemies = (simulation) => {
@@ -110,6 +119,4 @@ export const spawnScheduledEnemies = (simulation) => {
     simulation.nextSpawnIndex += 1;
   }
   flushPendingEnemySpawns(simulation);
-  simulation.spawnedAllWaves = simulation.nextSpawnIndex === simulation.waveSchedule.length
-    && simulation.pendingSpawns.length === 0;
 };

@@ -5,7 +5,7 @@ import { createPathMetrics, resolvePlacementPoint } from './path-geometry.js';
 import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
 import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
-import { enqueueEnemySpawn } from './wave-controller.js';
+import { enqueueEnemySpawn, flushPendingEnemySpawns } from './wave-controller.js';
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const isBoss = (enemy) => enemy.enemyId === 'mossback-brute'
@@ -702,5 +702,6 @@ export const stepCombat = (simulation) => {
   moveEnemies(simulation);
   assignLanePositions(simulation);
   resolveEnemies(simulation);
+  flushPendingEnemySpawns(simulation);
   awardCompletedWaves(simulation);
 };
