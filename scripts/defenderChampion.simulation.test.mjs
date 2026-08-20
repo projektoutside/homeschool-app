@@ -14,6 +14,7 @@ import {
   clearPresentationEvents,
   createSimulation,
   issueCommand,
+  issueStrategyCommand,
   runStrategyFixture,
   summarizePresentationSimulation,
   summarizeSimulation,
@@ -220,7 +221,7 @@ test('reference command fixtures are legal deterministic inputs for every level'
       const firstBuildTickByPlacement = new Map();
       for (const command of commands) {
         const expectedKeys = command.type === 'build'
-          ? (level.id.startsWith('level-') && Number.parseInt(level.id.replace('level-', ''), 10) <= 6
+          ? ('cellId' in command
             ? ['cellId', 'defenderId', 'ref', 'tick', 'type']
             : ['defenderId', 'padId', 'tick', 'type'])
           : (command.type === 'upgrade-ref'
@@ -877,6 +878,79 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
   assert.throws(() => runStrategyFixture('level-1', 'level-2-balanced'), /does not belong to level-1/);
+});
+
+test('upgrade-ref rebinds to a same-ref replacement tower and clears stale refs on rejection', () => {
+  const simulation = createSimulation('level-1', { qa: true });
+  const refs = new Map();
+
+  assert.deepEqual(issueStrategyCommand(simulation, {
+    tick: 0,
+    type: 'build',
+    ref: 'frontline-a',
+    defenderId: 'bladeguard',
+    cellId: 'r2c6',
+  }, refs), { accepted: true, reason: null });
+  const originalTowerId = refs.get('frontline-a');
+  assert.equal(typeof originalTowerId, 'string');
+
+  assert.deepEqual(issueCommand(simulation, { type: 'sell', towerId: originalTowerId }), {
+    accepted: true,
+    reason: null,
+  });
+  assert.equal(simulation.towers.length, 0);
+
+  assert.deepEqual(issueStrategyCommand(simulation, {
+    tick: 0,
+    type: 'upgrade-ref',
+    ref: 'frontline-a',
+  }, refs), { accepted: false, reason: 'missing-tower' });
+  assert.equal(refs.has('frontline-a'), false, 'stale missing ref should be cleared after rejection');
+
+  assert.deepEqual(issueStrategyCommand(simulation, {
+    tick: 0,
+    type: 'build',
+    ref: 'frontline-a',
+    defenderId: 'bladeguard',
+    cellId: 'r2c6',
+  }, refs), { accepted: true, reason: null });
+  const replacementTowerId = refs.get('frontline-a');
+  assert.notEqual(replacementTowerId, originalTowerId);
+
+  assert.deepEqual(issueStrategyCommand(simulation, {
+    tick: 0,
+    type: 'upgrade-ref',
+    ref: 'frontline-a',
+  }, refs), { accepted: true, reason: null });
+  assert.deepEqual(summarizeSimulation(simulation).purchaseHistory.map((purchase) => ({
+    type: purchase.type,
+    towerId: purchase.towerId,
+    defenderId: purchase.defenderId,
+    cellId: purchase.cellId,
+    tier: purchase.tier ?? null,
+  })), [
+    {
+      type: 'build',
+      towerId: originalTowerId,
+      defenderId: 'bladeguard',
+      cellId: 'r2c6',
+      tier: null,
+    },
+    {
+      type: 'build',
+      towerId: replacementTowerId,
+      defenderId: 'bladeguard',
+      cellId: 'r2c6',
+      tier: null,
+    },
+    {
+      type: 'upgrade',
+      towerId: replacementTowerId,
+      defenderId: 'bladeguard',
+      cellId: 'r2c6',
+      tier: 1,
+    },
+  ]);
 });
 
 test('presentation events are deterministic, monotonic, bounded, and expose attack mastery progress', async () => {

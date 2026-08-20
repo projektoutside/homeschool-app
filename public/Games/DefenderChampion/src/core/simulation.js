@@ -240,7 +240,10 @@ export const issueStrategyCommand = (simulation, command, towerRefs = new Map())
     const towerId = towerRefs.get(command.ref);
     if (!towerId) return rejected('missing-tower');
     const tower = findTower(simulation, towerId);
-    if (!tower) return rejected('missing-tower');
+    if (!tower) {
+      towerRefs.delete(command.ref);
+      return rejected('missing-tower');
+    }
     return issueCommand(simulation, { type: 'upgrade', towerId });
   }
 

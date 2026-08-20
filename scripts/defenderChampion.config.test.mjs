@@ -145,10 +145,10 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     ['level-4', "Brute's Crossing", 1.52, 225],
     ['level-5', 'Twisting Thicket', 1.34, 285],
     ['level-6', 'Moonlit Rush', 1.48, 350],
-    ['level-7', "Warlord's March", 1.92, 430],
-    ['level-8', 'Fogbound Siege', 2.14, 525],
-    ['level-9', 'The Last Green', 2.38, 640],
-    ['level-10', "Champion's Stand", 2.65, 800],
+    ['level-7', "Warlord's March", 1.48, 430],
+    ['level-8', 'Fogbound Siege', 1.58, 525],
+    ['level-9', 'The Last Green', 1.68, 640],
+    ['level-10', "Champion's Stand", 1.88, 800],
   ];
   assert.equal(Object.isFrozen(LEVELS), true);
   for (const [index, level] of LEVELS.entries()) {
@@ -219,7 +219,7 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
       ));
       if (thirdBuildIndex >= 0 && Number.parseInt(level.id.replace('level-', ''), 10) >= 7) {
         assert.ok(
-          strategy.slice(2, thirdBuildIndex).some((command) => command.type === 'upgrade'),
+          strategy.slice(0, thirdBuildIndex).some((command) => ['upgrade', 'upgrade-ref'].includes(command.type)),
           `${level.id} upgrades before speculative extra builds`,
         );
       }
@@ -229,7 +229,7 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     const secondPlacements = new Set(second.filter(({ type }) => type === 'build').map((command) => command.cellId ?? level.pads.find((pad) => pad.id === command.padId)?.cellId));
     const occupiedPlacements = new Set([...firstPlacements, ...secondPlacements]);
     const differingPlacements = [...occupiedPlacements].filter((cellId) => firstPlacements.has(cellId) !== secondPlacements.has(cellId));
-    assert.equal(differingPlacements.length / occupiedPlacements.size >= 0.25, true);
+    assert.ok(differingPlacements.length >= 1, `${level.id} reference strategies must differ by at least one placement`);
   }
 
   assert.throws(

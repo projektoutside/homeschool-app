@@ -19,6 +19,60 @@ const METRIC_KEYS = Object.freeze([
   'maxQueueDepth',
   'maxConcurrentAttackers',
 ]);
+const EARLY_FIXTURE_EXPECTATIONS = Object.freeze({
+  'level-1-balanced': Object.freeze({
+    outcome: 'victory', tick: 2086, hearts: 3, score: 958, highest: 'ranger',
+    occupied: Object.freeze(['r1c6', 'r2c6']), maxLiving: 3, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-1-artillery': Object.freeze({
+    outcome: 'victory', tick: 3289, hearts: 3, score: 938, highest: 'ironwarden',
+    occupied: Object.freeze(['r3c3', 'r4c3', 'r7c5']), maxLiving: 14, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-2-balanced': Object.freeze({
+    outcome: 'victory', tick: 14700, hearts: 3, score: 1054, highest: 'ranger',
+    occupied: Object.freeze(['r1c4', 'r2c4']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
+  }),
+  'level-2-artillery': Object.freeze({
+    outcome: 'victory', tick: 34256, hearts: 3, score: 1054, highest: 'rune-artificer',
+    occupied: Object.freeze(['r6c8', 'r7c5', 'r7c8']), maxLiving: 16, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-3-balanced': Object.freeze({
+    outcome: 'victory', tick: 29898, hearts: 3, score: 1235, highest: 'ranger',
+    occupied: Object.freeze(['r1c2', 'r1c3']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
+  }),
+  'level-3-artillery': Object.freeze({
+    outcome: 'victory', tick: 30770, hearts: 3, score: 1235, highest: 'rune-artificer',
+    occupied: Object.freeze(['r4c1', 'r5c1', 'r6c8']), maxLiving: 16, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-4-balanced': Object.freeze({
+    outcome: 'victory', tick: 37972, hearts: 3, score: 1942, highest: 'ranger',
+    occupied: Object.freeze(['r1c4', 'r2c4', 'r7c7', 'r9c4']), maxLiving: 10, maxAttackers: 3, purchaseCount: 5,
+    frontlineDefeats: 1, frontlineRepurchases: 1,
+    replacementPurchase: Object.freeze({
+      tick: 37950, type: 'build', defenderId: 'bladeguard', cellId: 'r2c4', cost: 50,
+    }),
+  }),
+  'level-4-artillery': Object.freeze({
+    outcome: 'victory', tick: 23444, hearts: 3, score: 1942, highest: 'rune-artificer',
+    occupied: Object.freeze(['r2c4', 'r4c2', 'r9c4']), maxLiving: 7, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-5-balanced': Object.freeze({
+    outcome: 'victory', tick: 30299, hearts: 3, score: 1125, highest: 'ranger',
+    occupied: Object.freeze(['r2c1', 'r2c2']), maxLiving: 9, maxAttackers: 3, purchaseCount: 2,
+  }),
+  'level-5-artillery': Object.freeze({
+    outcome: 'victory', tick: 33035, hearts: 3, score: 1125, highest: 'rune-artificer',
+    occupied: Object.freeze(['r2c2', 'r7c2', 'r9c5']), maxLiving: 9, maxAttackers: 3, purchaseCount: 3,
+  }),
+  'level-6-balanced': Object.freeze({
+    outcome: 'victory', tick: 25156, hearts: 3, score: 1412, highest: 'ranger',
+    occupied: Object.freeze(['r0c8', 'r1c8']), maxLiving: 8, maxAttackers: 3, purchaseCount: 2,
+  }),
+  'level-6-artillery': Object.freeze({
+    outcome: 'victory', tick: 41285, hearts: 3, score: 1412, highest: 'rune-artificer',
+    occupied: Object.freeze(['r4c3', 'r5c3', 'r6c6']), maxLiving: 17, maxAttackers: 3, purchaseCount: 3,
+  }),
+});
 
 const deterministicEvidence = (summary) => ({
   outcome: summary.outcome,
@@ -132,13 +186,19 @@ const runMonoRosterFixture = (levelId, defenderId) => {
   const defender = DEFENDERS[defenderId];
   for (let requestedTick = 0; requestedTick < 60 * 720 && !simulation.terminal; requestedTick += 1) {
     while (true) {
-      const openPad = simulation.level.pads.find((pad) => (
-        pad.layer === defender.placementLayer
-        && !simulation.towers.some((tower) => tower.padId === pad.id)
+      const openCell = simulation.level.cells.find((cell) => (
+        cell.terrain === defender.placementLayer
+        && !simulation.towers.some((tower) => tower.cellId === cell.id)
       ));
-      if (openPad && simulation.coins >= defender.costs[0]) {
-        issueCommand(simulation, { type: 'build', defenderId, padId: openPad.id });
-        continue;
+      if (openCell && simulation.coins >= defender.costs[0]) {
+        const result = issueCommand(simulation, {
+          type: 'build',
+          defenderId,
+          cellId: openCell.id,
+        });
+        if (result.accepted) {
+          continue;
+        }
       }
 
       const upgradeableTower = simulation.towers.find((tower) => {
@@ -150,7 +210,7 @@ const runMonoRosterFixture = (levelId, defenderId) => {
         continue;
       }
 
-      if (!openPad || simulation.coins < defender.costs[0]) break;
+      if (!openCell || simulation.coins < defender.costs[0]) break;
       break;
     }
     advanceSimulation(simulation, 1);
@@ -262,10 +322,42 @@ test('Levels 1-6 square-grid campaign preserves distinct legal victories', () =>
       [`${level.id}-balanced`, balanced],
       [`${level.id}-artillery`, artillery],
     ]) {
+      const expected = EARLY_FIXTURE_EXPECTATIONS[strategyId];
       assert.equal(summary.terminal, true, `${strategyId} should terminate`);
-      assert.equal(summary.outcome, 'victory', `${strategyId} should win`);
+      assert.equal(summary.outcome, expected.outcome, `${strategyId} should match authored outcome`);
+      assert.equal(summary.tick, expected.tick, `${strategyId} should match authored terminal tick`);
+      assert.equal(summary.castleHearts, expected.hearts, `${strategyId} should match authored hearts`);
+      assert.equal(summary.score, expected.score, `${strategyId} should match authored score`);
+      assert.equal(summary.highestSpendDefenderId, expected.highest, `${strategyId} should match authored highest spender`);
+      assert.deepEqual(summary.occupiedCellIds, expected.occupied, `${strategyId} should match authored occupied cells`);
+      assert.equal(summary.maximumLivingEnemies, expected.maxLiving, `${strategyId} should match authored max living enemies`);
+      assert.equal(summary.maxConcurrentAttackers, expected.maxAttackers, `${strategyId} should match authored max concurrent attackers`);
+      assert.equal(summary.purchaseHistory.length, expected.purchaseCount, `${strategyId} should match authored purchase count`);
       assert.ok(summary.maximumLivingEnemies <= 18, `${strategyId} exceeded 18 living enemies`);
       assert.ok(summary.maxConcurrentAttackers <= 3, `${strategyId} exceeded 3 attackers`);
+      assert.deepEqual(
+        deterministicEvidence(runInstrumentedStrategyFixture(level.id, strategyId)),
+        deterministicEvidence(summary),
+        `${strategyId} exact evidence must remain deterministic on an independent rerun`,
+      );
+      if (strategyId === 'level-4-balanced') {
+        assert.equal(summary.frontlineDefeats, expected.frontlineDefeats, 'level-4-balanced should record exactly one frontline defeat');
+        assert.equal(summary.frontlineRepurchases, expected.frontlineRepurchases, 'level-4-balanced should record exactly one paid frontline repurchase');
+        const replacementPurchase = summary.purchaseHistory.find((purchase) => (
+          purchase.tick === expected.replacementPurchase.tick
+          && purchase.type === expected.replacementPurchase.type
+          && purchase.defenderId === expected.replacementPurchase.defenderId
+          && purchase.cellId === expected.replacementPurchase.cellId
+          && purchase.cost === expected.replacementPurchase.cost
+        ));
+        assert.deepEqual(replacementPurchase && {
+          tick: replacementPurchase.tick,
+          type: replacementPurchase.type,
+          defenderId: replacementPurchase.defenderId,
+          cellId: replacementPurchase.cellId,
+          cost: replacementPurchase.cost,
+        }, expected.replacementPurchase, 'level-4-balanced should include the exact paid same-cell rebuild evidence');
+      }
     }
 
     assert.notEqual(
@@ -292,4 +384,65 @@ test('Levels 1-6 square-grid campaign preserves distinct legal victories', () =>
     true,
     'level-4 needs a winning fixture with a permanent frontline defeat and repurchase',
   );
+});
+
+test('Levels 7-10 square-grid campaign and mono reinvestment preserve legal late-game losses', () => {
+  const replacementLevels = new Map();
+
+  for (const level of LEVELS.slice(6)) {
+    const balanced = runInstrumentedStrategyFixture(level.id, `${level.id}-balanced`);
+    const artillery = runInstrumentedStrategyFixture(level.id, `${level.id}-artillery`);
+
+    for (const [strategyId, summary] of [
+      [`${level.id}-balanced`, balanced],
+      [`${level.id}-artillery`, artillery],
+    ]) {
+      const commands = REFERENCE_STRATEGIES[strategyId];
+      assert.equal(
+        commands.filter(({ type }) => type === 'build').every((command) => (
+          typeof command.cellId === 'string' && Object.hasOwn(command, 'padId') === false
+        )),
+        true,
+        `${strategyId} should use only direct cell build commands`,
+      );
+      assert.equal(summary.terminal, true, `${strategyId} should terminate`);
+      assert.equal(summary.outcome, 'victory', `${strategyId} should win`);
+      assert.ok(summary.maximumLivingEnemies <= 18, `${strategyId} exceeded 18 living enemies`);
+      assert.ok(summary.maxConcurrentAttackers <= 3, `${strategyId} exceeded 3 attackers`);
+      const dueCommands = commands.filter((command) => command.tick < summary.tick);
+      assert.equal(
+        summary.purchaseHistory.length,
+        dueCommands.length,
+        `${strategyId} should accept every due command before terminal`,
+      );
+    }
+
+    assert.notEqual(
+      balanced.highestSpendDefenderId,
+      artillery.highestSpendDefenderId,
+      `${level.id} should have different highest-spend defenders`,
+    );
+    assert.ok(
+      occupiedDifference(balanced, artillery) >= 0.25,
+      `${level.id} actual occupied-cell difference was ${occupiedDifference(balanced, artillery)}`,
+    );
+    replacementLevels.set(level.id, balanced.frontlineDefeats > 0 && balanced.frontlineRepurchases > 0);
+  }
+
+  for (const levelId of ['level-7', 'level-10']) {
+    assert.equal(
+      replacementLevels.get(levelId),
+      true,
+      `${levelId} balanced needs a winning same-cell frontline repurchase after defeat`,
+    );
+    for (const defenderId of Object.keys(DEFENDERS)) {
+      const summary = runMonoRosterFixture(levelId, defenderId);
+      assert.equal(summary.terminal, true, `${levelId}:${defenderId} should terminate`);
+      assert.equal(summary.outcome, 'defeat', `${levelId}:${defenderId} should not clear`);
+      assert.ok(
+        summary.purchaseHistory.filter((purchase) => purchase.tick > 0).length >= 3,
+        `${levelId}:${defenderId} should make at least three reinvestments after tick 0`,
+      );
+    }
+  }
 });

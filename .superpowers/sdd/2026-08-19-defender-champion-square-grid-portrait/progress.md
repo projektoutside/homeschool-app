@@ -105,3 +105,5 @@ Base before Task 7: `2477c3eec65486429b2aeb2967104540aedb0992`.
 Task 7 Ruling: keep ownership strictly to the early-campaign balance/config/simulation files and the task report/progress ledger. Do not solve the Level 7/10 mono-roster failure introduced by the strengthened balance suite; Task 8 owns that later-campaign behavior.
 
 Task 7: complete (cell-based Levels 1–6 fixtures, stable `upgrade-ref`/same-cell replacement support, Level 4 rebuild-proof wave retune, and owned config/simulation contract updates; review clean).
+
+Task 7: fix round 1 complete (Important test-strength gaps closed without gameplay retune: exact literal expectations for all 12 Levels 1–6 fixtures, explicit Level 4 defeat/repurchase evidence, stale-ref cleanup plus same-ref replacement upgrade regression, one late authored strategy reordered chronologically, and stale config assertions aligned to current immutable levels/strategies; verification green, scoped follow-up commit pending).

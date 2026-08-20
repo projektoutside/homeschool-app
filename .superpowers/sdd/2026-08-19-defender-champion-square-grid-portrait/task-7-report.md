@@ -104,3 +104,14 @@ Result: 72 passed, 0 failed in 650.668 ms.
 - Level 4’s repurchase path was solved without touching combat/lane/targeting code.
 - The winning rebuild window is narrow and evidence-backed; the strategy intentionally delays its replacement until the road cell stops being enemy-occupied.
 - Level 7–10 mono-roster/balance behavior was not investigated or changed here per Task 8 ownership.
+
+## Fix round 1
+
+- Strengthened the Levels 1–6 campaign balance contract from rerun-self-comparison to literal exact expectations for all 12 fixtures: outcome, tick, hearts, score, highest spender, occupied cells, maximum living enemies, maximum concurrent attackers, and accepted purchase counts.
+- Locked the Level 4 balanced frontline defeat/repurchase evidence explicitly: one permanent defeat, one paid same-cell repurchase at `r2c4`, replacement build command accepted on tick `37950`.
+- Added a focused simulation regression proving stale `upgrade-ref` rejection clears the dead ref and a same-ref rebuild upgrades the replacement living tower instead of a stale tower ID.
+- Corrected stale config assertions to match the current immutable late-level metadata and command shapes, and reordered `level-8-artillery` chronologically without gameplay retuning.
+- Verification:
+  - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34707.7879ms`)
+  - `node --test --test-name-pattern="Levels 1-6 square-grid campaign" scripts/defenderChampion.balance.test.mjs` -> pass (`34997.4734ms`)
+  - `node --test scripts/defenderChampion.config.test.mjs scripts/defenderChampion.simulation.test.mjs scripts/defenderChampion.combat.test.mjs` -> pass (`73/73`, `652.7383ms`)
