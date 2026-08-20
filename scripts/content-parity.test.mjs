@@ -10,7 +10,7 @@ import { readLegacyContentEntries } from './content/source-reader.mjs';
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
-test('generated catalog preserves all 82 legacy entries and route aliases deterministically', async (context) => {
+test('generated catalog preserves all 83 legacy entries and route aliases deterministically', async (context) => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'homeschool-content-catalog-'));
   context.after(() => rm(tempDir, { recursive: true, force: true }));
   const firstOutput = path.join(tempDir, 'contentCatalog.ts');
@@ -43,7 +43,7 @@ test('generated catalog preserves all 82 legacy entries and route aliases determ
       .map(([legacyPath, ids]) => [legacyPath, ids.sort()[0]]),
   );
 
-  assert.equal(legacy.length, 82);
+  assert.equal(legacy.length, 83);
   assert.deepEqual(generated.GENERATED_EXPERIENCES, []);
   assert.equal(generated.GENERATED_CONTENT_ITEMS.length, legacy.length);
   assert.deepEqual(
@@ -53,6 +53,25 @@ test('generated catalog preserves all 82 legacy entries and route aliases determ
   assert.equal(new Set(generated.GENERATED_CONTENT_ITEMS.map(({ id }) => id)).size, legacy.length);
   assert.deepEqual(generated.GENERATED_CONTENT_ITEMS, sortedLegacy);
   assert.deepEqual(generated.GENERATED_LEGACY_PATHS, expectedLegacyPaths);
+  assert.deepEqual(
+    generated.GENERATED_CONTENT_ITEMS.find(({ id }) => id === 'animal-champion'),
+    {
+      id: 'animal-champion',
+      title: 'Animal Champion',
+      description: 'Identify 50 animals in fast visual challenge rounds.',
+      type: 'game',
+      category: 'science',
+      subjects: ['Animals', 'Wildlife', 'Visual Recognition'],
+      gradeLevels: ['All'],
+      customHtmlPath: '/Games/Animal Champion/index.html',
+      thumbnail: '/assets/thumbnails/optimized/animal-champion-128.webp',
+      dateAdded: '2026-08-18',
+    },
+  );
+  assert.equal(
+    generated.GENERATED_LEGACY_PATHS['/Games/Animal Champion/index.html'],
+    'animal-champion',
+  );
   assert.deepEqual(
     generated.GENERATED_CONTENT_ITEMS.filter(({ id }) => id === 'defender-champion'),
     [{
