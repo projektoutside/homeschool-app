@@ -76,11 +76,12 @@ const runAnimalBundleInspector = async (archivePath) => {
   const runnerPath = path.join(path.dirname(archivePath), 'invoke-inspector.ps1');
   await writeFile(runnerPath, String.raw`param(
     [Parameter(Mandatory = $true)][string]$InspectorPath,
-    [Parameter(Mandatory = $true)][string]$BundlePath
+    [Parameter(Mandatory = $true)][string]$BundlePath,
+    [switch]$SkipDeliveryMetadataCheck
 )
 $ErrorActionPreference = 'Stop'
 try {
-    & $InspectorPath -BundlePath $BundlePath
+    & $InspectorPath -BundlePath $BundlePath -SkipDeliveryMetadataCheck:$SkipDeliveryMetadataCheck
 }
 catch {
     [Console]::Error.WriteLine($_.Exception.Message)
@@ -93,6 +94,7 @@ catch {
     path.join(repoRoot, 'scripts', 'Inspect-AndroidBundle.ps1'),
     '-BundlePath',
     archivePath,
+    '-SkipDeliveryMetadataCheck',
   );
 };
 
@@ -102,7 +104,7 @@ after(async () => {
   )));
 });
 
-test('Android registers a fast-follow game_assets pack', async () => {
+test('Android registers an on-demand game_assets pack', async () => {
   const settings = await readSource('android/settings.gradle');
   const appBuild = await readSource('android/app/build.gradle');
   const packBuild = await readSource('android/game_assets/build.gradle');
@@ -111,17 +113,31 @@ test('Android registers a fast-follow game_assets pack', async () => {
   assert.match(appBuild, /assetPacks\s*=\s*\[":game_assets"\]/);
   assert.match(packBuild, /id 'com\.android\.asset-pack'/);
   assert.match(packBuild, /packName\s*=\s*"game_assets"/);
-  assert.match(packBuild, /deliveryType\s*=\s*"fast-follow"/);
+  assert.match(packBuild, /deliveryType\s*=\s*"on-demand"/);
+  assert.doesNotMatch(packBuild, /deliveryType\s*=\s*"fast-follow"/);
   assert.match(appBuild, /com\.google\.android\.play:asset-delivery:2\.3\.0/);
 });
 
-test('Android waits for and serves the downloaded game asset pack', async () => {
+test('Android waits for explicit consent before fetching game assets', async () => {
+  const activity = await readSource('android/app/src/main/java/com/lashomeschool/hub/MainActivity.java');
+  const plugin = await readSource('android/app/src/main/java/com/lashomeschool/hub/GameAssetDeliveryPlugin.java');
+
+  assert.match(activity, /registerPlugin\(GameAssetDeliveryPlugin\.class\)/);
+  assert.doesNotMatch(activity, /assetPackManager\.fetch/);
+  assert.match(plugin, /@CapacitorPlugin\(name = "GameAssetDelivery"\)/);
+  assert.match(plugin, /void getStatus\(PluginCall call\)/);
+  assert.match(plugin, /void startDownload\(PluginCall call\)/);
+  assert.match(plugin, /assetPackManager\s*\.\s*getPackStates/);
+  assert.match(plugin, /assetPackManager\s*\.\s*fetch/);
+  assert.match(plugin, /notifyListeners\("downloadStateChanged"/);
+  assert.match(plugin, /showConfirmationDialog/);
+});
+
+test('Android serves the downloaded game asset pack from trusted local paths', async () => {
   const activity = await readSource('android/app/src/main/java/com/lashomeschool/hub/MainActivity.java');
   const client = await readSource('android/app/src/main/java/com/lashomeschool/hub/GameAssetWebViewClient.java');
 
   assert.match(activity, /AssetPackManagerFactory\.getInstance/);
-  assert.match(activity, /assetPackManager\.fetch/);
-  assert.match(activity, /WAITING_FOR_WIFI/);
   assert.match(activity, /setWebViewClient\(new GameAssetWebViewClient/);
   assert.match(client, /getPackLocation\("game_assets"\)/);
   assert.match(client, /assetsPath\(\)/);
@@ -143,12 +159,23 @@ test('Android recovers when a memory-heavy game loses the WebView renderer', asy
   assert.match(client, /activity\.recreate\(\)/);
 });
 
-test('web shell exposes a native game download progress overlay', async () => {
+test('web shell blocks Android boot until the on-demand library is ready', async () => {
   const index = await readSource('index.html');
+  const main = await readSource('src/main.tsx');
+  const gate = await readSource('src/features/gameAssets/gameAssetDelivery.ts');
+  const styles = await readSource('src/features/gameAssets/gameAssetDelivery.css');
 
-  assert.match(index, /window\.__showGameDownload/);
-  assert.match(index, /window\.__hideGameDownload/);
-  assert.match(index, /game-download-progress/);
+  assert.match(index, /id="game-asset-gate"/);
+  assert.match(index, /Download Full Library/);
+  assert.match(index, /Coins collected while waiting/);
+  assert.match(main, /await initializeGameAssetGate\(\)/);
+  assert.match(gate, /registerPlugin<GameAssetDeliveryPlugin>\('GameAssetDelivery'\)/);
+  assert.match(gate, /Capacitor\.getPlatform\(\) !== 'android'/);
+  assert.match(gate, /startDownload\(\)/);
+  assert.match(gate, /downloadStateChanged/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
+  assert.match(styles, /env\(safe-area-inset-bottom/);
+  assert.match(styles, /max\(4\.5rem, calc\(env\(safe-area-inset-top/);
 });
 
 test('Android relative base path does not become a React Router basename', async () => {
@@ -158,11 +185,11 @@ test('Android relative base path does not become a React Router basename', async
   assert.match(app, /\? '' : baseUrl\.replace/);
 });
 
-test('Android release uses a new version after the initial Play upload', async () => {
+test('Android release advances to the on-demand delivery version', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.match(appBuild, /versionCode\s+4/);
-  assert.match(appBuild, /versionName\s+"1\.0\.3"/);
+  assert.match(appBuild, /versionCode\s+5/);
+  assert.match(appBuild, /versionName\s+"1\.0\.4"/);
 });
 
 test('Android release disables the unavailable paid cloud backend', async () => {
@@ -221,6 +248,9 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /shared\/lahsPointsBridge\.js/);
   assert.match(inspector, /expectedAnimalImageCount\s*=\s*100/);
   assert.match(inspector, /StringComparer.*Ordinal/);
+  assert.match(inspector, /bundletool-all-\*\.jar/);
+  assert.match(inspector, /dist:on-demand/);
+  assert.match(inspector, /SkipDeliveryMetadataCheck/);
   assert.match(release, /Inspect-AndroidBundle\.ps1/);
 });
 
