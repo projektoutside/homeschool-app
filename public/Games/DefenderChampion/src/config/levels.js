@@ -1,4 +1,3 @@
-import { createPathMetrics } from '../core/path-geometry.js';
 import { createTerrainCells, expandGridPath } from '../core/grid-geometry.js';
 
 const freeze = (value) => {
@@ -34,38 +33,31 @@ const spawn = (enemyId, count, intervalTicks, delayTicks = 0) => ({
   delayTicks,
 });
 
-const roadPad = (levelNumber, letter, pathProgress) => ({
-  id: `l${levelNumber}-pad-${letter}`,
-  layer: 'road',
-  pathProgress,
+const PAD_CELL_IDS = Object.freeze({
+  1: ['r2c7', 'r0c5', 'r4c4', 'r1c1', 'r7c3', 'r4c1', 'r9c6', 'r5c5'],
+  2: ['r2c4', 'r0c3', 'r5c8', 'r1c6', 'r7c3', 'r1c3', 'r9c7', 'r5c6'],
+  3: ['r1c3', 'r0c3', 'r5c0', 'r2c0', 'r7c5', 'r4c3', 'r9c7', 'r6c6'],
+  4: ['r2c5', 'r0c5', 'r3c3', 'r1c1', 'r5c7', 'r4c4', 'r8c5', 'r4c2'],
+  5: ['r2c2', 'r0c2', 'r4c7', 'r1c7', 'r6c2', 'r2c1', 'r8c6', 'r3c6'],
+  6: ['r2c8', 'r0c7', 'r5c5', 'r2c5', 'r7c3', 'r4c2', 'r9c6', 'r6c5'],
+  7: ['r2c2', 'r0c3', 'r4c4', 'r1c7', 'r6c8', 'r4c0', 'r8c3', 'r5c7'],
+  8: ['r2c4', 'r0c3', 'r4c4', 'r1c6', 'r6c6', 'r3c1', 'r8c5', 'r3c3'],
+  9: ['r2c3', 'r0c2', 'r5c6', 'r3c6', 'r8c3', 'r4c2', 'r10c8', 'r5c5'],
+  10: ['r2c6', 'r0c4', 'r5c4', 'r1c7', 'r8c8', 'r4c0', 'r9c1', 'r5c7'],
 });
 
-const grassPad = (levelNumber, letter, x, y) => ({
-  id: `l${levelNumber}-pad-${letter}`,
-  layer: 'grass',
-  x,
-  y,
-});
-
-const authoredPads = (levelNumber, path, grassPlacements) => {
-  const { total } = createPathMetrics(path);
-  return [
-    roadPad(levelNumber, 'a', total * 0.18),
-    grassPad(levelNumber, 'b', ...grassPlacements[0]),
-    roadPad(levelNumber, 'c', total * 0.39),
-    grassPad(levelNumber, 'd', ...grassPlacements[1]),
-    roadPad(levelNumber, 'e', total * 0.62),
-    grassPad(levelNumber, 'f', ...grassPlacements[2]),
-    roadPad(levelNumber, 'g', total * 0.84),
-    grassPad(levelNumber, 'h', ...grassPlacements[3]),
-  ];
-};
+const authoredPads = (levelNumber) => PAD_CELL_IDS[levelNumber]
+  .map((cellId, index) => ({
+    id: `l${levelNumber}-pad-${String.fromCharCode(97 + index)}`,
+    cellId,
+  }));
 
 const level = ({
   id, name, waveCount, healthScale, bountyCoinCap = null, threatIndex,
-  path, pads, waves, silverScore, goldScore, parSeconds,
+  waves, silverScore, goldScore, parSeconds,
 }) => {
   const roadCells = expandGridPath(waypoints(id));
+  const levelNumber = Number.parseInt(id.replace('level-', ''), 10);
   return freeze({
     id,
     name,
@@ -75,8 +67,7 @@ const level = ({
     threatIndex,
     castleHearts: 3,
     startingCoins: 150,
-    path,
-    pads,
+    pads: authoredPads(levelNumber),
     roadCells,
     cells: createTerrainCells(roadCells),
     waves,
@@ -90,19 +81,6 @@ const level = ({
 export const LEVELS = freeze([
   level({
     id: 'level-1', name: 'Meadow Watch', waveCount: 3, healthScale: 1.00, threatIndex: 100,
-    path: [
-      { x: 238, y: 0 }, { x: 238, y: 72 },
-      { x: 430, y: 72 }, { x: 430, y: 174 },
-      { x: 158, y: 174 }, { x: 158, y: 300 },
-      { x: 414, y: 300 }, { x: 414, y: 392 },
-      { x: 252, y: 392 }, { x: 252, y: 500 },
-      { x: 320, y: 500 },
-    ],
-    pads: authoredPads(1, [
-      { x: 238, y: 0 }, { x: 238, y: 72 }, { x: 430, y: 72 }, { x: 430, y: 174 },
-      { x: 158, y: 174 }, { x: 158, y: 300 }, { x: 414, y: 300 }, { x: 414, y: 392 },
-      { x: 252, y: 392 }, { x: 252, y: 500 }, { x: 320, y: 500 },
-    ], [[480, 10], [150, 100], [160, 374], [404, 466]]),
     waves: [
       [spawn('blight-walker', 6, 84, 0)],
       [spawn('blight-walker', 8, 72, 0)],
@@ -112,16 +90,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-2', name: 'Quickstep Grove', waveCount: 4, healthScale: 1.12, threatIndex: 135,
-    path: [
-      { x: 140, y: 0 }, { x: 140, y: 92 }, { x: 360, y: 92 }, { x: 360, y: 170 },
-      { x: 520, y: 170 }, { x: 520, y: 260 }, { x: 250, y: 260 }, { x: 250, y: 350 },
-      { x: 440, y: 350 }, { x: 440, y: 500 }, { x: 320, y: 500 },
-    ],
-    pads: authoredPads(2, [
-      { x: 140, y: 0 }, { x: 140, y: 92 }, { x: 360, y: 92 }, { x: 360, y: 170 },
-      { x: 520, y: 170 }, { x: 520, y: 260 }, { x: 250, y: 260 }, { x: 250, y: 350 },
-      { x: 440, y: 350 }, { x: 440, y: 500 }, { x: 320, y: 500 },
-    ], [[310, 18], [538, 98], [254, 186], [536, 384]]),
     waves: [
       [spawn('blight-walker', 7, 78, 0)],
       [spawn('skitter', 8, 56, 0)],
@@ -132,16 +100,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-3', name: 'Iron Trail', waveCount: 4, healthScale: 1.25, threatIndex: 175,
-    path: [
-      { x: 500, y: 0 }, { x: 500, y: 74 }, { x: 290, y: 74 }, { x: 290, y: 144 },
-      { x: 110, y: 144 }, { x: 110, y: 240 }, { x: 340, y: 240 }, { x: 340, y: 330 },
-      { x: 520, y: 330 }, { x: 520, y: 420 }, { x: 320, y: 420 }, { x: 320, y: 500 },
-    ],
-    pads: authoredPads(3, [
-      { x: 500, y: 0 }, { x: 500, y: 74 }, { x: 290, y: 74 }, { x: 290, y: 144 },
-      { x: 110, y: 144 }, { x: 110, y: 240 }, { x: 340, y: 240 }, { x: 340, y: 330 },
-      { x: 520, y: 330 }, { x: 520, y: 420 }, { x: 320, y: 420 }, { x: 320, y: 500 },
-    ], [[244, 10], [20, 262], [244, 314], [548, 490]]),
     waves: [
       [spawn('blight-walker', 8, 72, 0)],
       [spawn('shellguard', 4, 108, 0), spawn('skitter', 6, 60, 90)],
@@ -152,16 +110,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-4', name: "Brute's Crossing", waveCount: 5, healthScale: 1.38, threatIndex: 225,
-    path: [
-      { x: 180, y: 0 }, { x: 180, y: 80 }, { x: 400, y: 80 }, { x: 400, y: 155 },
-      { x: 220, y: 155 }, { x: 220, y: 250 }, { x: 480, y: 250 }, { x: 480, y: 335 },
-      { x: 400, y: 335 }, { x: 400, y: 500 }, { x: 320, y: 500 },
-    ],
-    pads: authoredPads(4, [
-      { x: 180, y: 0 }, { x: 180, y: 80 }, { x: 400, y: 80 }, { x: 400, y: 155 },
-      { x: 220, y: 155 }, { x: 220, y: 250 }, { x: 480, y: 250 }, { x: 480, y: 335 },
-      { x: 400, y: 335 }, { x: 400, y: 500 }, { x: 320, y: 500 },
-    ], [[428, 10], [126, 148], [306, 324], [304, 366]]),
     waves: [
       [spawn('blight-walker', 10, 66, 0)],
       [spawn('skitter', 10, 50, 0), spawn('shellguard', 4, 102, 120)],
@@ -177,16 +125,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-5', name: 'Twisting Thicket', waveCount: 5, healthScale: 1.54, threatIndex: 285,
-    path: [
-      { x: 440, y: 0 }, { x: 440, y: 90 }, { x: 210, y: 90 }, { x: 210, y: 175 },
-      { x: 470, y: 175 }, { x: 470, y: 260 }, { x: 160, y: 260 }, { x: 160, y: 350 },
-      { x: 400, y: 350 }, { x: 400, y: 430 }, { x: 300, y: 430 }, { x: 300, y: 500 },
-    ],
-    pads: authoredPads(5, [
-      { x: 440, y: 0 }, { x: 440, y: 90 }, { x: 210, y: 90 }, { x: 210, y: 175 },
-      { x: 470, y: 175 }, { x: 470, y: 260 }, { x: 160, y: 260 }, { x: 160, y: 350 },
-      { x: 400, y: 350 }, { x: 400, y: 430 }, { x: 300, y: 430 }, { x: 300, y: 500 },
-    ], [[234, 16], [530, 118], [118, 194], [492, 334]]),
     waves: [
       [spawn('swarmkin', 18, 32, 0)],
       [spawn('hexcaller', 3, 120, 0), spawn('blight-walker', 10, 60, 84)],
@@ -198,16 +136,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-6', name: 'Moonlit Rush', waveCount: 5, healthScale: 1.72, threatIndex: 350,
-    path: [
-      { x: 280, y: 0 }, { x: 280, y: 65 }, { x: 500, y: 65 }, { x: 500, y: 150 },
-      { x: 320, y: 150 }, { x: 320, y: 230 }, { x: 120, y: 230 }, { x: 120, y: 320 },
-      { x: 460, y: 320 }, { x: 460, y: 410 }, { x: 300, y: 410 }, { x: 300, y: 500 },
-    ],
-    pads: authoredPads(6, [
-      { x: 280, y: 0 }, { x: 280, y: 65 }, { x: 500, y: 65 }, { x: 500, y: 150 },
-      { x: 320, y: 150 }, { x: 320, y: 230 }, { x: 120, y: 230 }, { x: 120, y: 320 },
-      { x: 460, y: 320 }, { x: 460, y: 410 }, { x: 300, y: 410 }, { x: 300, y: 500 },
-    ], [[564, 10], [412, 246], [190, 394], [458, 484]]),
     waves: [
       [spawn('swarmkin', 22, 28, 0)],
       [spawn('skitter', 16, 42, 0), spawn('hexcaller', 3, 108, 96)],
@@ -219,16 +147,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-7', name: "Warlord's March", waveCount: 6, healthScale: 1.92, bountyCoinCap: 550, threatIndex: 430,
-    path: [
-      { x: 360, y: 0 }, { x: 360, y: 80 }, { x: 140, y: 80 }, { x: 140, y: 165 },
-      { x: 390, y: 165 }, { x: 390, y: 250 }, { x: 560, y: 250 }, { x: 560, y: 330 },
-      { x: 260, y: 330 }, { x: 260, y: 420 }, { x: 340, y: 420 }, { x: 340, y: 500 },
-    ],
-    pads: authoredPads(7, [
-      { x: 360, y: 0 }, { x: 360, y: 80 }, { x: 140, y: 80 }, { x: 140, y: 165 },
-      { x: 390, y: 165 }, { x: 390, y: 250 }, { x: 560, y: 250 }, { x: 560, y: 330 },
-      { x: 260, y: 330 }, { x: 260, y: 420 }, { x: 340, y: 420 }, { x: 340, y: 500 },
-    ], [[250, 8.2758], [600, 130], [60, 380], [600, 430]]),
     waves: [
       [spawn('swarmkin', 24, 24, 0)],
       [spawn('hexcaller', 4, 102, 0), spawn('skitter', 16, 42, 72)],
@@ -247,16 +165,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-8', name: 'Fogbound Siege', waveCount: 6, healthScale: 2.14, threatIndex: 525,
-    path: [
-      { x: 160, y: 0 }, { x: 160, y: 95 }, { x: 430, y: 95 }, { x: 430, y: 180 },
-      { x: 240, y: 180 }, { x: 240, y: 265 }, { x: 510, y: 265 }, { x: 510, y: 350 },
-      { x: 400, y: 350 }, { x: 400, y: 435 }, { x: 320, y: 435 }, { x: 320, y: 500 },
-    ],
-    pads: authoredPads(8, [
-      { x: 160, y: 0 }, { x: 160, y: 95 }, { x: 430, y: 95 }, { x: 430, y: 180 },
-      { x: 240, y: 180 }, { x: 240, y: 265 }, { x: 510, y: 265 }, { x: 510, y: 350 },
-      { x: 400, y: 350 }, { x: 400, y: 435 }, { x: 320, y: 435 }, { x: 320, y: 500 },
-    ], [[318, 20], [540, 140], [140, 220], [300, 344]]),
     waves: [
       [spawn('swarmkin', 30, 24, 0), spawn('skitter', 12, 42, 84)],
       [spawn('shellguard', 10, 72, 0), spawn('hexcaller', 4, 96, 90)],
@@ -269,16 +177,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-9', name: 'The Last Green', waveCount: 7, healthScale: 2.38, threatIndex: 640,
-    path: [
-      { x: 480, y: 0 }, { x: 480, y: 70 }, { x: 260, y: 70 }, { x: 260, y: 145 },
-      { x: 450, y: 145 }, { x: 450, y: 235 }, { x: 200, y: 235 }, { x: 200, y: 325 },
-      { x: 500, y: 325 }, { x: 500, y: 410 }, { x: 310, y: 410 }, { x: 310, y: 500 },
-    ],
-    pads: authoredPads(9, [
-      { x: 480, y: 0 }, { x: 480, y: 70 }, { x: 260, y: 70 }, { x: 260, y: 145 },
-      { x: 450, y: 145 }, { x: 450, y: 235 }, { x: 200, y: 235 }, { x: 200, y: 325 },
-      { x: 500, y: 325 }, { x: 500, y: 410 }, { x: 310, y: 410 }, { x: 310, y: 500 },
-    ], [[206, 10], [540, 258], [216, 400], [482, 484]]),
     waves: [
       [spawn('crusher', 5, 120, 0), spawn('shellguard', 8, 66, 96)],
       [spawn('hexcaller', 5, 90, 0), spawn('swarmkin', 20, 26, 84)],
@@ -292,16 +190,6 @@ export const LEVELS = freeze([
   }),
   level({
     id: 'level-10', name: "Champion's Stand", waveCount: 8, healthScale: 2.65, bountyCoinCap: 580, threatIndex: 800,
-    path: [
-      { x: 220, y: 0 }, { x: 220, y: 85 }, { x: 460, y: 85 }, { x: 460, y: 165 },
-      { x: 300, y: 165 }, { x: 300, y: 245 }, { x: 530, y: 245 }, { x: 530, y: 335 },
-      { x: 240, y: 335 }, { x: 240, y: 425 }, { x: 350, y: 425 }, { x: 350, y: 500 },
-    ],
-    pads: authoredPads(10, [
-      { x: 220, y: 0 }, { x: 220, y: 85 }, { x: 460, y: 85 }, { x: 460, y: 165 },
-      { x: 300, y: 165 }, { x: 300, y: 245 }, { x: 530, y: 245 }, { x: 530, y: 335 },
-      { x: 240, y: 335 }, { x: 240, y: 425 }, { x: 350, y: 425 }, { x: 350, y: 500 },
-    ], [[340, 13.2758], [590, 140], [70, 390], [600, 455]]),
     waves: [
       [
         spawn('crusher', 3, 72, 0),

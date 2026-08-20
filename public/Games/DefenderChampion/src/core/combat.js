@@ -1,7 +1,7 @@
 import { DEFENDERS } from '../config/defenders.js';
 import { COMBAT_RULES, EFFECT_LIMITS, ENEMIES } from '../config/enemies.js';
 import { cellCenter } from './grid-geometry.js';
-import { createPathMetrics } from './path-geometry.js';
+import { createGridPathMetrics } from './grid-geometry.js';
 import { advanceEnemyAttacks, assignLanePositions } from './lane-combat.js';
 import { selectMeleeTarget, selectTarget } from './targeting.js';
 import { emitPresentationEvent } from './presentation-events.js';
@@ -679,7 +679,7 @@ const awardCompletedWaves = (simulation) => {
 };
 
 export const stepCombat = (simulation) => {
-  if (!simulation.pathMetrics) simulation.pathMetrics = createPathMetrics(simulation.level.path);
+  if (!simulation.pathMetrics) simulation.pathMetrics = createGridPathMetrics(simulation.level.roadCells);
   for (const enemy of simulation.enemies) initializeSpawnedEnemy(simulation, enemy);
   simulation.effects = simulation.effects.filter((effect) => effect.expiresAtTick > simulation.tick);
   rebuildEffectIndex(simulation);

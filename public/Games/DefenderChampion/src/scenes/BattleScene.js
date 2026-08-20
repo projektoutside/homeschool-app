@@ -1,17 +1,13 @@
 import Phaser from 'phaser';
 import { DEFENDERS } from '../config/defenders.js';
-import { ENEMIES } from '../config/enemies.js';
-import { LEVELS, getLevel } from '../config/levels.js';
+import { getLevel } from '../config/levels.js';
 import {
-  PATH_PRESENTATION_TRANSFORM,
-  createPathMetrics,
-  derivePathPieces,
-  projectPathPoint,
-  projectPathProgress,
-  resolvePlacementPoint,
-} from '../core/path-geometry.js';
-import { cellCenter } from '../core/grid-geometry.js';
-import { getDeprecatedCellPlacements, getGridCell } from '../core/grid-placement.js';
+  GRID,
+  cellCenter,
+  createGridPathMetrics,
+  deriveRoadTiles,
+} from '../core/grid-geometry.js';
+import { evaluateCellBuild, getGridCell } from '../core/grid-placement.js';
 import {
   advanceSimulation,
   clearPresentationEvents,
@@ -24,17 +20,14 @@ import {
   DEFENDER_PRESENTATION,
   ENEMY_PRESENTATION,
   GAMEPLAY_FRAME,
-  PATH_FRAME,
   ViewPool,
   animationKey,
   attemptPlacementBuild,
   beginDefenderDefeatPresentation,
   characterAssetId,
   clearPresentationTransients,
-  deriveCampaignEnemyViewCapacity,
   dispatchLanePresentationEvent,
   finishTrackedMotion,
-  projectCombatRadius,
   resolveBurstMotion,
   resolveBetweenWaveCountdown,
   resolveCommandRejectionMessage,
@@ -44,50 +37,47 @@ import {
   resolveEnemyRoadProjection,
   resolveFrontlineHealthBar,
   resolveIronhidePlatePresentation,
-  resolvePlacementMarkerState,
   resolvePlacementPrompt,
   resolvePresentationLimits,
-  resolveRoadPieceDisplay,
   resolveResultTransitionDelay,
   shouldProjectDefenderIdle,
   syncProjectionMap,
 } from '../presentation.js';
+import {
+  formatCellAccessibleLabel,
+  projectGridPathProgress,
+  resolveCellFromWorldPoint,
+  resolveCellVisualState,
+  resolveContainWorldPoint,
+  resolveGridFocusMove,
+  resolveReadableSpriteScale,
+  resolveSquareRangeCells,
+} from '../grid-presentation.js';
 import { WAVE_GAP_TICKS } from '../core/wave-controller.js';
-import { createFixedStepClock, resolveBattlefieldFocusMove } from '../ui/hud-controller.js';
+import { createFixedStepClock } from '../ui/hud-controller.js';
 
-const WORLD_WIDTH = 720;
-const WORLD_HEIGHT = 960;
-const PATH_X_SCALE = PATH_PRESENTATION_TRANSFORM.xScale;
-const PATH_Y_SCALE = PATH_PRESENTATION_TRANSFORM.yScale;
-const POINTER_HIT_RADIUS = 48;
-const MINIMUM_POINTER_TARGET_CSS = 44;
+const WORLD_WIDTH = GRID.width;
+const WORLD_HEIGHT = GRID.height;
 const HUD_RENDER_INTERVAL_TICKS = 6;
 const ENEMY_HEALTH_RENDER_INTERVAL_TICKS = 3;
-const QUEUE_DENSITY_CUE_SCALE = 0.08;
-const QUEUE_DENSITY_CUE_MINIMUM = 12;
 const KEYBOARD_DEFENDERS = Object.freeze(Object.keys(DEFENDERS));
 const BOSS_IDS = new Set(['mossback-brute', 'ironhide-warlord', 'dread-colossus']);
-const ENEMY_VIEW_CAPACITY = deriveCampaignEnemyViewCapacity(LEVELS, ENEMIES);
-
-const toWorldPoint = projectPathPoint;
-
-const distanceSquared = (first, second) => (
-  ((first.x - second.x) ** 2) + ((first.y - second.y) ** 2)
-);
-
-const pointToSegmentDistanceSquared = (point, start, end) => {
-  const segmentX = end.x - start.x;
-  const segmentY = end.y - start.y;
-  const segmentLengthSquared = (segmentX ** 2) + (segmentY ** 2);
-  if (segmentLengthSquared === 0) return distanceSquared(point, start);
-  const ratio = Math.max(0, Math.min(1,
-    (((point.x - start.x) * segmentX) + ((point.y - start.y) * segmentY)) / segmentLengthSquared,
-  ));
-  return distanceSquared(point, {
-    x: start.x + (segmentX * ratio),
-    y: start.y + (segmentY * ratio),
-  });
-};
+const ENEMY_VIEW_CAPACITY = 18;
+const DEFENDER_VIEW_CAPACITY = GRID.columns * GRID.rows;
+const ROAD_TILE_FRAME = Object.freeze({
+  isolated: 0,
+  horizontal: 1,
+  vertical: 2,
+  cross: 3,
+  northEast: 4,
+  eastSouth: 5,
+  southWest: 6,
+  westNorth: 7,
+  capNorth: 12,
+  capEast: 13,
+  capSouth: 14,
+  capWest: 15,
+});
 
 const stopBody = (view) => {
   view?._body?.removeAllListeners?.('animationcomplete');
@@ -122,7 +112,7 @@ const stopBody = (view) => {
     view._flipX = false;
     view._healthKey = null;
     view._lastX = null;
-    view._padId = null;
+    view._cellId = null;
     view._visualTransform = null;
   }
 };
@@ -154,11 +144,10 @@ export class BattleScene extends Phaser.Scene {
     this.reducedMotion = globalThis.document?.documentElement?.dataset?.reducedMotion === 'true';
     this.presentationLimits = resolvePresentationLimits(this.reducedMotion);
     this.simulation = createSimulation(this.level.id, { qa: this.qaMode });
-    this.pathMetrics = createPathMetrics(this.level.path);
-    this.padById = new Map(this.level.pads.map((pad) => [pad.id, pad]));
+    this.pathMetrics = createGridPathMetrics(this.level.roadCells);
     this.selectedDefenderId = null;
     this.selectedTowerId = null;
-    this.focusIndex = 0;
+    this.focusedCellId = 'r0c0';
     this.battlefieldHasFocus = false;
     this.battleStarted = false;
     this.countdownRemaining = 3;
@@ -179,7 +168,6 @@ export class BattleScene extends Phaser.Scene {
     this.enemySprites = new Map();
     this.towerSprites = new Map();
     this.projectileSprites = new Map();
-    this.telegraphSprites = new Map();
     this.enemyById = new Map();
     this.towerById = new Map();
     this.defenderIdByTowerId = new Map();
@@ -192,9 +180,9 @@ export class BattleScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.handleResume, this);
     this.scale.refresh();
-    this.createMap();
+    this.createBattlefield();
     this.createPools();
-    this.createFocusViews();
+    this.createProjectionLayers();
     this.bindDomInput();
     this.disconnectHud = this.hud.connectBattle({
       issueCommand: (command) => this.issueBattleCommand(command),
@@ -212,48 +200,46 @@ export class BattleScene extends Phaser.Scene {
     this.hud.showLevelIntro(this.level.id, () => this.enterPlacementPhase());
   }
 
-  createMap() {
+  createBattlefield() {
     this.terrain = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'environment-grass')
       .setOrigin(0)
       .setDepth(0)
       .setTileScale(0.62);
 
     this.staticViews = [];
-    const pathPieces = derivePathPieces(this.level.path, toWorldPoint);
-    const orderedPieces = [...pathPieces].sort((first, second) => (
-      (first.kind === 'straight' ? 0 : 1) - (second.kind === 'straight' ? 0 : 1)
-    ));
-    for (const piece of orderedPieces) {
-      const display = resolveRoadPieceDisplay(piece);
-      const path = this.add.image(
-        piece.x,
-        piece.y,
+    this.roadTileViews = new Map();
+    for (const tile of deriveRoadTiles(this.level.roadCells)) {
+      const view = this.add.image(
+        tile.x,
+        tile.y,
         'environment-path-atlas',
-        PATH_FRAME[piece.frame],
+        ROAD_TILE_FRAME[tile.frame],
       )
-        .setDepth(piece.kind === 'straight' ? 1 : 1.1)
-        .setDisplaySize(display.width, display.height)
-        .setRotation(piece.rotation);
-      this.staticViews.push(path);
+        .setDepth(1)
+        .setDisplaySize(GRID.cellSize, GRID.cellSize);
+      view._cellId = tile.cellId;
+      this.roadTileViews.set(tile.cellId, view);
+      this.staticViews.push(view);
     }
 
-    this.padSprites = new Map();
-    for (const pad of this.level.pads) {
-      const position = this.resolvePlacementPosition(pad);
-      const view = this.add.image(
-        position.x,
-        position.y,
-        'environment-gameplay-atlas',
-        GAMEPLAY_FRAME.buildPad,
-      ).setDepth(2).setScale(0.24).setAlpha(0.4);
-      view._placementLayer = pad.layer;
-      view.setData?.('placementLayer', pad.layer);
-      view.setName?.(`${pad.layer}-placement-${pad.id}`);
-      this.padSprites.set(pad.id, view);
+    this.cellViews = new Map();
+    for (const cell of this.level.cells) {
+      const center = cellCenter(cell.id);
+      const view = this.createCellView(cell, center);
+      view.setInteractive(
+        new Phaser.Geom.Rectangle(
+          -GRID.cellSize / 2,
+          -GRID.cellSize / 2,
+          GRID.cellSize,
+          GRID.cellSize,
+        ),
+        Phaser.Geom.Rectangle.Contains,
+      );
+      this.cellViews.set(cell.id, view);
     }
 
     if (this.textures.exists('environment-props-atlas')) this.createOptionalProps();
-    const castlePosition = projectPathProgress(this.pathMetrics, this.pathMetrics.total);
+    const castlePosition = cellCenter(this.level.roadCells.at(-1));
     this.castleSprite = this.add.sprite(
       castlePosition.x,
       castlePosition.y + 18,
@@ -262,28 +248,35 @@ export class BattleScene extends Phaser.Scene {
     ).setOrigin(0.5, 672 / 724).setDepth(3).setScale(0.27);
   }
 
-  resolvePlacementPosition(placement) {
-    return toWorldPoint(resolvePlacementPoint(this.level, placement));
+  createCellView(cell, center) {
+    const view = this.add.graphics().setPosition(center.x, center.y).setDepth(1.8);
+    view._cellId = cell.id;
+    view._terrain = cell.terrain;
+    view._visualState = resolveCellVisualState({ terrain: cell.terrain });
+    this.drawCellView(view, view._visualState);
+    view.setName?.(`${cell.terrain}-cell-${cell.id}`);
+    return view;
   }
 
-  resolveLegacyTowerPad(tower) {
-    const placement = Array.isArray(this.level?.cells) && Array.isArray(this.level?.roadCells)
-      ? getDeprecatedCellPlacements(this.level).find((entry) => entry.cellId === tower?.cellId)
-      : null;
-    const padId = placement?.id ?? tower?.padId ?? null;
-    return this.padById?.get(padId) ?? this.level.pads.find((pad) => pad.id === padId) ?? null;
+  drawCellView(view, state) {
+    view.clear();
+    view.fillStyle(state.fillColor, state.fillAlpha)
+      .fillRect(-GRID.cellSize / 2, -GRID.cellSize / 2, GRID.cellSize, GRID.cellSize);
+    const inset = state.focused ? 3 : 1;
+    view.lineStyle(state.focused ? 5 : 2, state.borderColor, state.borderAlpha)
+      .strokeRect(
+        (-GRID.cellSize / 2) + inset,
+        (-GRID.cellSize / 2) + inset,
+        GRID.cellSize - (inset * 2),
+        GRID.cellSize - (inset * 2),
+      );
   }
 
   resolveTowerProjection(tower) {
-    const pad = this.resolveLegacyTowerPad(tower);
-    if (pad) return { pad, position: this.resolvePlacementPosition(pad) };
     const cell = getGridCell(this.level, tower?.cellId);
     if (!cell) return null;
-    return { pad: null, position: cellCenter(cell.id) };
-  }
-
-  isTowerAtLegacyPad(tower, pad) {
-    return Boolean(pad) && this.resolveLegacyTowerPad(tower)?.id === pad.id;
+    const center = cellCenter(cell.id);
+    return { cell, position: { x: center.x, y: center.y + 32 } };
   }
 
   createOptionalProps() {
@@ -293,18 +286,10 @@ export class BattleScene extends Phaser.Scene {
       [60, 320, 8, 0.20], [664, 330, 9, 0.19], [248, 76, 12, 0.16], [490, 876, 13, 0.17],
     ];
     for (const [x, y, frame, scale] of placements) {
-      const position = { x, y };
-      const outsideRoad = this.level.path.slice(1).every((point, index) => (
-        pointToSegmentDistanceSquared(
-          position,
-          toWorldPoint(this.level.path[index]),
-          toWorldPoint(point),
-        ) >= 84 ** 2
-      ));
-      if (!outsideRoad || distanceSquared(position, projectPathProgress(
-        this.pathMetrics,
-        this.pathMetrics.total,
-      )) < 116 ** 2) continue;
+      const cellId = resolveCellFromWorldPoint({ x, y });
+      const cell = getGridCell(this.level, cellId);
+      const castlePosition = cellCenter(this.level.roadCells.at(-1));
+      if (cell?.terrain !== 'grass' || Math.hypot(x - castlePosition.x, y - castlePosition.y) < 116) continue;
       this.staticViews.push(this.add.image(x, y, 'environment-props-atlas', frame)
         .setDepth(0.6)
         .setScale(scale)
@@ -317,7 +302,7 @@ export class BattleScene extends Phaser.Scene {
     const body = this.add.sprite(0, 0, kind === 'defender'
       ? 'defender-bladeguard-idle'
       : 'enemy-blight-walker-walk').setOrigin(0.5, 1);
-    const accent = this.add.image(0, -frameSize * 0.36, 'environment-gameplay-atlas', GAMEPLAY_FRAME.rangeMarker)
+    const accent = this.add.image(0, -frameSize * 0.36, 'environment-gameplay-atlas', GAMEPLAY_FRAME.slowRune)
       .setAlpha(0.5)
       .setScale(0.34)
       .setVisible(false);
@@ -364,7 +349,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   createDefenderView() {
-    const aura = this.add.image(0, -34, 'environment-gameplay-atlas', GAMEPLAY_FRAME.rangeMarker)
+    const aura = this.add.image(0, -34, 'environment-gameplay-atlas', GAMEPLAY_FRAME.slowRune)
       .setVisible(false);
     const healthBackground = this.add.graphics().setVisible(false);
     const healthFill = this.add.graphics().setVisible(false);
@@ -394,17 +379,14 @@ export class BattleScene extends Phaser.Scene {
       resetView: (view) => this.releasePooledView(view),
     });
     this.defenderPool = new ViewPool(() => preparePooledView(this.createDefenderView(), 4), {
-      maximum: 24,
+      maximum: DEFENDER_VIEW_CAPACITY,
       resetView: (view) => this.releasePooledView(view),
     });
     this.projectilePool = new ViewPool(() => preparePooledView(this.add.image(
       0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.arrow,
     ), 7), { maximum: 640, resetView: (view) => this.releasePooledView(view) });
-    this.telegraphPool = new ViewPool(() => preparePooledView(this.add.image(
-      0, 0, 'environment-gameplay-atlas', GAMEPLAY_FRAME.bossWarning,
-    ), 2.5), { maximum: 48, resetView: (view) => this.releasePooledView(view) });
     this.defeatPool = new ViewPool(() => preparePooledView(this.createCharacterView('enemy'), 5.5), {
-      maximum: 32,
+      maximum: ENEMY_VIEW_CAPACITY,
       resetView: (view) => this.releasePooledView(view),
     });
     this.damageLabelPool = new ViewPool(() => preparePooledView(this.add.text(0, 0, '', {
@@ -426,13 +408,10 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  createFocusViews() {
+  createProjectionLayers() {
     this.queuedEnemyHealthLayer = this.add.graphics().setDepth(3.7);
     this.activeEnemyHealthLayer = this.add.graphics().setDepth(6);
     this.enemyHealthLayer = this.activeEnemyHealthLayer;
-    this.queueDensityLabels = new Map();
-    this.focusRing = this.add.graphics().setDepth(10).setVisible(false);
-    this.rangeRing = this.add.graphics().setDepth(2.2);
   }
 
   bindDomInput() {
@@ -456,7 +435,7 @@ export class BattleScene extends Phaser.Scene {
       battleStarted: false,
       countdownRemaining: 0,
       interactive: true,
-      notice: 'Select a Road melee or Grass ranged defender, choose its matching slot, then start the wave.',
+      notice: 'Select a Road melee or Grass ranged defender, choose its matching square, then start the wave.',
     });
     this.hud.announce(`${this.level.name}. Plan your formation before starting wave one.`);
   }
@@ -494,47 +473,22 @@ export class BattleScene extends Phaser.Scene {
 
   handleBattlefieldFocus(active) {
     this.battlefieldHasFocus = active;
-    if (!active) {
-      this.updateFocusViews();
-      return;
-    }
-    if (!Number.isInteger(this.focusIndex) || this.focusIndex < 0 || this.focusIndex >= this.level.pads.length) {
-      this.focusIndex = 0;
-    }
+    if (!getGridCell(this.level, this.focusedCellId)) this.focusedCellId = 'r0c0';
     this.updateFocusViews();
-    this.announceFocusedTarget();
+    if (active) this.announceFocusedTarget();
   }
 
   pointerToWorld(event, battlefield) {
     const canvas = battlefield.querySelector('canvas');
     if (!canvas) return null;
     const bounds = canvas.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) return null;
-    return {
-      hitRadiusX: Math.max(
-        POINTER_HIT_RADIUS,
-        (MINIMUM_POINTER_TARGET_CSS / 2) * (WORLD_WIDTH / bounds.width),
-      ),
-      hitRadiusY: Math.max(
-        POINTER_HIT_RADIUS,
-        (MINIMUM_POINTER_TARGET_CSS / 2) * (WORLD_HEIGHT / bounds.height),
-      ),
-      x: ((event.clientX - bounds.left) / bounds.width) * WORLD_WIDTH,
-      y: ((event.clientY - bounds.top) / bounds.height) * WORLD_HEIGHT,
-    };
-  }
-
-  resolvePointerPlacement(point) {
-    return this.level.pads
-      .map((pad, index) => {
-        const position = this.resolvePlacementPosition(pad);
-        const horizontal = (point.x - position.x) / point.hitRadiusX;
-        const vertical = (point.y - position.y) / point.hitRadiusY;
-        return { index, pad, proximity: (horizontal ** 2) + (vertical ** 2) };
-      })
-      .filter(({ proximity }) => proximity <= 1)
-      .sort((first, second) => first.proximity - second.proximity || first.index - second.index)[0]
-      ?.pad ?? null;
+    return resolveContainWorldPoint({
+      bounds,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      worldHeight: WORLD_HEIGHT,
+      worldWidth: WORLD_WIDTH,
+    });
   }
 
   handlePointerDown(event, battlefield) {
@@ -548,19 +502,16 @@ export class BattleScene extends Phaser.Scene {
     }
     const point = this.pointerToWorld(event, battlefield);
     if (!point) return;
-    const pad = this.resolvePointerPlacement(point);
-    if (!pad) return;
-    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
-    if (!tower && this.selectedDefenderId && !this.isPlacementCompatible(pad)) {
-      this.attemptBuildAtPad(pad);
-      return;
-    }
-    this.focusIndex = this.level.pads.indexOf(pad);
+    const cellId = resolveCellFromWorldPoint(point);
+    const cell = getGridCell(this.level, cellId);
+    if (!cell) return;
+    this.focusedCellId = cell.id;
+    const tower = [...this.towerById.values()].find((entry) => entry.cellId === cell.id);
     if (tower) {
       this.selectTower(tower.id);
       return;
     }
-    this.attemptBuildAtPad(pad);
+    this.attemptBuildAtCell(cell);
   }
 
   releasePointer(event, battlefield) {
@@ -584,32 +535,17 @@ export class BattleScene extends Phaser.Scene {
       this.issueBattleCommand({
         type: 'set-pause-reason',
         reason: 'manual',
-        active: !this.lastSnapshot.pauseReasons.includes('manual'),
+        active: !(this.lastSnapshot.pauseReasons ?? []).includes('manual'),
       });
-      return;
-    }
-    if (event.key === 'Tab') {
-      const focusMove = resolveBattlefieldFocusMove({
-        currentIndex: this.focusIndex,
-        key: event.key,
-        shiftKey: event.shiftKey,
-        targetCount: this.level.pads.length,
-      });
-      if (focusMove.shouldExit) return;
-      event.preventDefault();
-      this.focusIndex = focusMove.nextIndex;
-      this.announceFocusedTarget();
-      this.updateFocusViews();
       return;
     }
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown'
       || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
-      this.focusIndex = resolveBattlefieldFocusMove({
-        currentIndex: this.focusIndex,
+      this.focusedCellId = resolveGridFocusMove({
+        cellId: this.focusedCellId,
         key: event.key,
-        targetCount: this.level.pads.length,
-      }).nextIndex;
+      });
       this.announceFocusedTarget();
       this.updateFocusViews();
       return;
@@ -622,22 +558,23 @@ export class BattleScene extends Phaser.Scene {
 
   confirmFocusedTarget() {
     if (this.lastSnapshot?.terminal || this.terminalHandled) return;
-    const pad = this.level.pads[this.focusIndex];
-    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
+    const cell = getGridCell(this.level, this.focusedCellId);
+    if (!cell) return;
+    const tower = [...this.towerById.values()].find((entry) => entry.cellId === cell.id);
     if (tower) this.selectTower(tower.id);
-    else this.attemptBuildAtPad(pad);
+    else this.attemptBuildAtCell(cell);
   }
 
-  isPlacementCompatible(pad) {
+  isPlacementCompatible(cell) {
     const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
-    return Boolean(selectedLayer) && pad?.layer === selectedLayer;
+    return Boolean(selectedLayer) && cell?.terrain === selectedLayer;
   }
 
-  attemptBuildAtPad(pad) {
+  attemptBuildAtCell(cell) {
     const result = attemptPlacementBuild({
       announce: (message) => this.hud.announce(message),
+      cell,
       issueCommand: (command) => this.issueBattleCommand(command),
-      pad,
       selectedDefenderId: this.selectedDefenderId,
       selectedLayer: DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null,
     });
@@ -646,17 +583,26 @@ export class BattleScene extends Phaser.Scene {
   }
 
   announceFocusedTarget() {
-    const pad = this.level.pads[this.focusIndex];
-    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
-    if (tower) {
-      this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}. Press Enter to inspect.`);
-      return;
-    }
-    const label = pad.layer === 'road' ? 'Road guard slot' : 'Grass ranged slot';
-    const compatibility = this.selectedDefenderId && !this.isPlacementCompatible(pad)
-      ? ` Not compatible with ${DEFENDER_PRESENTATION[this.selectedDefenderId].name}.`
-      : '';
-    this.hud.announce(`${label} ${this.focusIndex + 1}. Press Enter to build.${compatibility}`);
+    const cell = getGridCell(this.level, this.focusedCellId);
+    if (!cell) return;
+    const tower = [...this.towerById.values()].find((entry) => entry.cellId === cell.id);
+    const selected = DEFENDERS[this.selectedDefenderId];
+    const visualState = this.cellViews?.get(cell.id)?._visualState
+      ?? resolveCellVisualState({
+        occupied: Boolean(tower),
+        selectedLayer: selected?.placementLayer ?? null,
+        terrain: cell.terrain,
+      });
+    const label = formatCellAccessibleLabel({
+      acceptsBuild: visualState.acceptsBuild,
+      cellId: cell.id,
+      enemyCovered: visualState.fillColor === 0xff6b61 && !tower,
+      occupiedBy: tower ? DEFENDER_PRESENTATION[tower.defenderId].name : null,
+      selectedRole: selected ? DEFENDER_PRESENTATION[selected.id].role : null,
+      terrain: cell.terrain,
+    });
+    globalThis.document?.getElementById?.('battlefield')?.setAttribute?.('aria-label', label);
+    this.hud.announce(label);
   }
 
   selectDefender(defenderId) {
@@ -664,10 +610,10 @@ export class BattleScene extends Phaser.Scene {
     this.selectedDefenderId = defenderId;
     this.selectedTowerId = null;
     const layer = DEFENDERS[defenderId].placementLayer;
-    const firstCompatibleIndex = this.level.pads.findIndex((pad) => (
-      pad.layer === layer && ![...this.towerById.values()].some((tower) => this.isTowerAtLegacyPad(tower, pad))
+    const firstCompatible = this.level.cells.find((cell) => (
+      cell.terrain === layer && ![...this.towerById.values()].some((tower) => tower.cellId === cell.id)
     ));
-    if (firstCompatibleIndex >= 0) this.focusIndex = firstCompatibleIndex;
+    if (firstCompatible) this.focusedCellId = firstCompatible.id;
     this.hud.announce(`${DEFENDER_PRESENTATION[defenderId].name} selected. ${resolvePlacementPrompt(layer)}.`);
     this.refreshProjection(true);
   }
@@ -678,7 +624,7 @@ export class BattleScene extends Phaser.Scene {
     if (!tower) return;
     this.selectedTowerId = towerId;
     this.selectedDefenderId = null;
-    this.focusIndex = this.level.pads.findIndex((pad) => this.isTowerAtLegacyPad(tower, pad));
+    this.focusedCellId = tower.cellId;
     this.hud.announce(`${DEFENDER_PRESENTATION[tower.defenderId].name}, tier ${tower.tier + 1}, selected.`);
     this.refreshProjection(true);
   }
@@ -771,14 +717,11 @@ export class BattleScene extends Phaser.Scene {
     this.recentDefenderPositions.clear();
     this.consumePresentationEvents(snapshot.presentationEvents);
     this.projectEnemies(snapshot);
-    this.projectQueueDensityCues(snapshot);
     this.projectEnemyHealthBars(snapshot, forceHud);
     this.projectTowers(snapshot);
-    this.projectPlacementMarkers(snapshot);
+    this.projectCells(snapshot);
     this.projectProjectiles(snapshot);
-    this.projectTelegraphs(snapshot);
     this.updateCastle(snapshot.castleHearts);
-    this.updateFocusViews();
     this.updateBetweenWaveCountdown(snapshot);
     if (forceHud || snapshot.terminal
       || snapshot.tick - this.lastHudRenderTick >= HUD_RENDER_INTERVAL_TICKS) {
@@ -1024,8 +967,8 @@ export class BattleScene extends Phaser.Scene {
         );
         if (kind === 'tower-mastery') {
           const tower = this.towerById.get(payload.towerId);
-          const pad = tower && this.resolveLegacyTowerPad(tower);
-          if (pad) this.spawnBurst(this.resolvePlacementPosition(pad), GAMEPLAY_FRAME.victoryBurst, 7, event.id);
+          const projection = tower && this.resolveTowerProjection(tower);
+          if (projection) this.spawnBurst(projection.position, GAMEPLAY_FRAME.victoryBurst, 7, event.id);
         }
         this.audioController?.playCue?.(kind === 'tower-mastery' ? 'mastery' : 'attack');
       } else if (kind === 'enemy-hit') {
@@ -1105,7 +1048,11 @@ export class BattleScene extends Phaser.Scene {
         this.audioController?.playCue?.('boss-warning');
       } else if (kind === 'castle-impact') {
         this.castleSprite?.setFrame(1);
-        this.spawnBurst(toWorldPoint(payload.position), GAMEPLAY_FRAME.defeatCrack, 9, event.id);
+        const position = payload.position && Number.isFinite(payload.position.x)
+          && Number.isFinite(payload.position.y)
+          ? payload.position
+          : cellCenter(this.level.roadCells.at(-1));
+        this.spawnBurst(position, GAMEPLAY_FRAME.defeatCrack, 9, event.id);
         if (this.presentationLimits.cameraShake > 0) this.cameras.main.shake(220, 0.009);
         this.audioController?.playCue?.('castle-damage');
         const timer = this.time.delayedCall(this.reducedMotion ? 90 : 260, () => {
@@ -1124,7 +1071,7 @@ export class BattleScene extends Phaser.Scene {
   spawnDamageLabel(position, damage, visual = null) {
     const label = this.damageLabelPool.acquire();
     if (!label) return;
-    const visualScale = visual?.scale ?? 1;
+    const visualScale = visual?.artScale ?? 1;
     const labelMotion = resolveDamageLabelMotion({
       position,
       reducedMotion: this.reducedMotion,
@@ -1148,7 +1095,7 @@ export class BattleScene extends Phaser.Scene {
 
   spawnBurst(position, frame, count, seed = 0, visual = null) {
     const visibleCount = Math.min(count, this.presentationLimits.particleCap);
-    const visualScale = visual?.scale ?? 1;
+    const visualScale = visual?.artScale ?? 1;
     for (let index = 0; index < visibleCount; index += 1) {
       const particle = this.particlePool.acquire();
       if (!particle) break;
@@ -1184,7 +1131,7 @@ export class BattleScene extends Phaser.Scene {
     view.setPosition(visual.position.x, visual.position.y).setDepth(visual.depth);
     view._accent.setVisible(false);
     view._body.setTexture(characterAssetId(kind, payload.enemyId, 'defeat'), 0)
-      .setScale(presentation.displayScale * visual.scale);
+      .setScale(visual.artScale);
     const key = animationKey(kind, payload.enemyId, 'defeat');
     const animation = this.anims.exists(key) ? this.anims.get(key) : null;
     const release = () => this.defeatPool.release(view);
@@ -1209,17 +1156,34 @@ export class BattleScene extends Phaser.Scene {
     const enemy = liveEnemy ? { ...liveEnemy, ...source } : source;
     const presentation = ENEMY_PRESENTATION[enemy.enemyId] ?? { displayScale: 1, kind: 'enemy' };
     const roadProjection = resolveEnemyRoadProjection(enemy, presentation);
+    const frameHeight = presentation.kind === 'boss'
+      ? this.metadata?.bosses?.frame?.height ?? 384
+      : this.metadata?.enemies?.frame?.height ?? 256;
+    const artScale = resolveReadableSpriteScale({
+      authoredScale: presentation.displayScale,
+      cssWorldScale: this.resolveCssWorldScale(),
+      frameHeight,
+      kind: presentation.kind,
+      population: this.lastSnapshot?.enemies?.length ?? 1,
+    });
     return Object.freeze({
       ...roadProjection,
-      bodyScale: presentation.displayScale * roadProjection.scale,
+      artScale,
+      bodyScale: artScale,
       enemyId: enemy.enemyId ?? null,
       entityId,
-      position: Object.freeze(projectPathProgress(
+      position: Object.freeze(projectGridPathProgress(
         this.pathMetrics,
         roadProjection.pathProgress,
         roadProjection.laneOffset,
       )),
     });
+  }
+
+  resolveCssWorldScale() {
+    const bounds = this.game?.canvas?.getBoundingClientRect?.();
+    if (!(bounds?.width > 0) || !(bounds?.height > 0)) return 1;
+    return Math.min(bounds.width / WORLD_WIDTH, bounds.height / WORLD_HEIGHT);
   }
 
   projectEnemies(snapshot) {
@@ -1278,24 +1242,24 @@ export class BattleScene extends Phaser.Scene {
         const plateViews = this.ensureIronhidePlateViews(view);
         for (const plate of plateState.plates) {
           plateViews.get(plate.id)?.setPosition(
-            plate.x * visual.scale,
-            plate.y * visual.scale,
+            plate.x * visual.artScale,
+            plate.y * visual.artScale,
           ).setScale(
-            plateViews.get(plate.id)._baseScale * visual.scale,
+            plateViews.get(plate.id)._baseScale * visual.artScale,
           ).setVisible(plate.visible);
         }
         view._accent.setFrame(GAMEPLAY_FRAME.slowRune)
           .setTint(0x58d5ff)
-          .setPosition(view._accent._baseX * visual.scale, view._accent._baseY * visual.scale)
-          .setScale(view._accent._baseScale * visual.scale)
+          .setPosition(view._accent._baseX * visual.artScale, view._accent._baseY * visual.artScale)
+          .setScale(view._accent._baseScale * visual.artScale)
           .setVisible(plateState.vulnerabilityVisible);
       } else if (enemy.enemyId === 'dread-colossus') {
         for (const plate of view._plateAccents?.values?.() ?? []) plate.setVisible(false);
         const ratioPhase = ratio < 0.4 ? 3 : ratio < 0.75 ? 2 : 1;
         view._accent.setFrame(GAMEPLAY_FRAME.slowRune)
           .setTint([0xffffff, 0xa86bff, 0xff6b7a][ratioPhase - 1])
-          .setPosition(view._accent._baseX * visual.scale, view._accent._baseY * visual.scale)
-          .setScale(view._accent._baseScale * visual.scale)
+          .setPosition(view._accent._baseX * visual.artScale, view._accent._baseY * visual.artScale)
+          .setScale(view._accent._baseScale * visual.artScale)
           .setVisible(true);
       } else {
         for (const plate of view._plateAccents?.values?.() ?? []) plate.setVisible(false);
@@ -1322,64 +1286,21 @@ export class BattleScene extends Phaser.Scene {
       const visual = this.resolveEnemyVisualTransform(enemy);
       const position = visual.position;
       const layer = visual.depth < 4 ? this.queuedEnemyHealthLayer : this.activeEnemyHealthLayer;
-      const barY = position.y + ((kind === 'boss' ? -176 : -108) * visual.scale);
-      const barWidth = (kind === 'boss' ? 116 : 72) * visual.scale;
-      const barHeight = 10 * visual.scale;
-      const radius = 5 * visual.scale;
+      const barY = position.y + ((kind === 'boss' ? -176 : -108) * visual.artScale);
+      const barWidth = (kind === 'boss' ? 116 : 72) * visual.artScale;
+      const barHeight = 10 * visual.artScale;
+      const radius = 5 * visual.artScale;
       const barX = position.x - (barWidth / 2);
       layer.fillStyle(0x102f29, 0.85)
         .fillRoundedRect(barX, barY, barWidth, barHeight, radius);
       layer.fillStyle(kind === 'boss' ? 0xff6b61 : 0x8fe36a, 1)
         .fillRoundedRect(
-          barX + (2 * visual.scale),
-          barY + (2 * visual.scale),
-          Math.max(visual.scale, (barWidth - (4 * visual.scale)) * ratio),
-          6 * visual.scale,
-          3 * visual.scale,
+          barX + (2 * visual.artScale),
+          barY + (2 * visual.artScale),
+          Math.max(visual.artScale, (barWidth - (4 * visual.artScale)) * ratio),
+          6 * visual.artScale,
+          3 * visual.artScale,
         );
-    }
-  }
-
-  projectQueueDensityCues(snapshot) {
-    this.queueDensityLabels ??= new Map();
-    const groups = new Map();
-    for (const enemy of snapshot.enemies) {
-      if (enemy.queueIndex === null || enemy.queueIndex === undefined) continue;
-      const group = groups.get(enemy.blockingTowerId) ?? [];
-      group.push(enemy);
-      groups.set(enemy.blockingTowerId, group);
-    }
-    const visibleKeys = new Set();
-    for (const [blockingTowerId, enemies] of groups) {
-      const ordered = [...enemies].sort((first, second) => first.queueIndex - second.queueIndex);
-      const minimumScale = Math.min(...ordered.map((enemy) => enemy.displayScale ?? 1));
-      if (ordered.length < QUEUE_DENSITY_CUE_MINIMUM || minimumScale >= QUEUE_DENSITY_CUE_SCALE) continue;
-      const key = blockingTowerId ?? 'unblocked';
-      let label = this.queueDensityLabels.get(key);
-      if (!label) {
-        label = this.add.text(0, 0, '', {
-          backgroundColor: '#0b352cdd',
-          color: '#fff0a8',
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '16px',
-          fontStyle: 'bold',
-          padding: { x: 6, y: 3 },
-          stroke: '#09251f',
-          strokeThickness: 3,
-        }).setOrigin(0.5, 1).setDepth(3.8);
-        label.setName?.(`queue-density-${key}`);
-        this.queueDensityLabels.set(key, label);
-      }
-      const visual = this.resolveEnemyVisualTransform(ordered[Math.floor(ordered.length / 2)]);
-      label.setText(`×${ordered.length} queued`)
-        .setPosition(visual.position.x, visual.position.y - 8)
-        .setVisible(true);
-      visibleKeys.add(key);
-    }
-    for (const [key, label] of this.queueDensityLabels) {
-      if (visibleKeys.has(key)) continue;
-      label.destroy?.();
-      this.queueDensityLabels.delete(key);
     }
   }
 
@@ -1387,11 +1308,11 @@ export class BattleScene extends Phaser.Scene {
     syncProjectionMap(this.towerSprites, this.defenderPool, snapshot.towers, (view, tower) => {
       const projection = this.resolveTowerProjection(tower);
       if (!projection) {
-        view._padId = null;
+        view._cellId = null;
         view.setActive(false).setVisible(false);
         return;
       }
-      const { pad, position } = projection;
+      const { cell, position } = projection;
       const body = view._body;
       const idleAsset = characterAssetId('defender', tower.defenderId, 'idle');
       const idleAnimationKey = animationKey('defender', tower.defenderId, 'idle');
@@ -1413,50 +1334,94 @@ export class BattleScene extends Phaser.Scene {
         ironwarden: 0x69a7ff,
         'rune-artificer': 0x58d5ff,
       }[tower.defenderId];
-      view.setPosition(position.x, position.y + 20);
-      const bodyScale = DEFENDER_PRESENTATION[tower.defenderId].displayScale * (1 + (tower.tier * 0.05));
+      view.setPosition(position.x, position.y);
+      const bodyScale = resolveReadableSpriteScale({
+        authoredScale: DEFENDER_PRESENTATION[tower.defenderId].displayScale * (1 + (tower.tier * 0.05)),
+        cssWorldScale: this.resolveCssWorldScale(),
+        frameHeight: this.defenderMetadata?.frame?.height ?? 256,
+        kind: 'defender',
+        population: snapshot.towers.length,
+      });
       body.setScale(bodyScale);
       view._baseScale = bodyScale;
       view._defenderId = tower.defenderId;
-      view._padId = pad?.id ?? null;
+      view._cellId = cell.id;
       view._aura.setTint(tint).setAlpha(tower.tier === 2 ? 0.46 : 0.28)
-        .setScale(tower.tier === 2 ? 0.38 : 0.29).setVisible(tower.tier > 0);
-      view._rank.setTint(tint).setScale(0.18).setVisible(tower.tier === 2);
-      this.projectFrontlineHealth(view, tower);
+        .setScale((tower.tier === 2 ? 0.38 : 0.29) * bodyScale).setVisible(tower.tier > 0);
+      view._rank.setTint(tint).setScale(0.18 * bodyScale).setVisible(tower.tier === 2);
+      this.projectFrontlineHealth(view, tower, bodyScale);
     });
   }
 
-  projectFrontlineHealth(view, tower) {
+  projectFrontlineHealth(view, tower, artScale = 1) {
     const health = resolveFrontlineHealthBar(tower);
-    if (view._healthKey === health.key) return;
-    view._healthKey = health.key;
+    const healthKey = `${health.key}:${artScale.toFixed(6)}`;
+    if (view._healthKey === healthKey) return;
+    view._healthKey = healthKey;
     const background = view._healthBackground.clear().setVisible(health.visible);
     const fill = view._healthFill.clear().setVisible(health.visible);
     if (!health.visible) return;
-    background.fillStyle(0x08221c, 0.94).fillRoundedRect(-38, 7, 76, 11, 5);
+    background.fillStyle(0x08221c, 0.94).fillRoundedRect(
+      -38 * artScale, 7 * artScale, 76 * artScale, 11 * artScale, 5 * artScale,
+    );
     fill.fillStyle(health.ratio <= 0.3 ? 0xff6b61 : 0x8fe36a, 1)
-      .fillRoundedRect(-35, 10, Math.max(2, 70 * health.ratio), 5, 2);
+      .fillRoundedRect(
+        -35 * artScale,
+        10 * artScale,
+        Math.max(2 * artScale, 70 * artScale * health.ratio),
+        5 * artScale,
+        2 * artScale,
+      );
   }
 
-  projectPlacementMarkers(snapshot) {
-    const occupiedByPad = new Map(snapshot.towers
-      .map((tower) => [this.resolveLegacyTowerPad(tower)?.id ?? null, tower.id])
-      .filter(([padId]) => padId !== null));
+  projectCells(snapshot) {
+    const occupiedByCell = new Map(snapshot.towers.map((tower) => [tower.cellId, tower]));
     const selectedLayer = DEFENDERS[this.selectedDefenderId]?.placementLayer ?? null;
-    for (const pad of this.level.pads) {
-      const view = this.padSprites.get(pad.id);
-      const occupiedTowerId = occupiedByPad.get(pad.id) ?? null;
-      const state = resolvePlacementMarkerState({
-        markerLayer: view._placementLayer,
-        occupied: Boolean(occupiedTowerId),
-        selected: Boolean(occupiedTowerId) && occupiedTowerId === this.selectedTowerId,
+    const selectedTower = this.towerById.get(this.selectedTowerId);
+    const selectedDefinition = selectedTower ? DEFENDERS[selectedTower.defenderId] : null;
+    const selectedRangeCells = selectedTower && selectedDefinition
+      ? new Set(resolveSquareRangeCells({
+        level: this.level,
+        originCellId: selectedTower.cellId,
+        range: selectedDefinition.range[selectedTower.tier],
+        targetTerrain: 'road',
+      }).map(({ cellId }) => cellId))
+      : new Set();
+    const dangerCells = new Set();
+    for (const effect of snapshot.effects ?? []) {
+      if (!effect.kind?.includes('telegraph')) continue;
+      const source = this.enemyById.get(effect.sourceId);
+      if (!source) continue;
+      const sourcePosition = this.resolveEnemyVisualTransform(source).position;
+      const originCellId = resolveCellFromWorldPoint(sourcePosition);
+      for (const { cellId } of resolveSquareRangeCells({
+        level: this.level,
+        originCellId,
+        range: Number(effect.radius) || GRID.cellSize,
+      })) dangerCells.add(cellId);
+    }
+    for (const cell of this.level.cells) {
+      const view = this.cellViews.get(cell.id);
+      const occupiedTower = occupiedByCell.get(cell.id) ?? null;
+      const buildState = selectedLayer ? evaluateCellBuild({
+        cellId: cell.id,
+        defender: DEFENDERS[this.selectedDefenderId],
+        enemies: snapshot.enemies,
+        level: this.level,
+        towers: snapshot.towers,
+      }) : null;
+      const state = resolveCellVisualState({
+        danger: dangerCells.has(cell.id),
+        enemyCovered: buildState?.reason === 'enemy-occupied',
+        focused: this.battlefieldHasFocus && cell.id === this.focusedCellId,
+        inRange: selectedRangeCells.has(cell.id),
+        masteryCovered: selectedTower?.tier === 2 && selectedRangeCells.has(cell.id),
+        occupied: Boolean(occupiedTower),
         selectedLayer,
+        terrain: cell.terrain,
       });
-      view.setAlpha(state.alpha)
-        .setFrame(state.selectedFrame ? GAMEPLAY_FRAME.selectedBuildPad : GAMEPLAY_FRAME.buildPad)
-        .setScale(state.scale)
-        .setVisible(state.visible);
-      view._acceptsBuild = state.acceptsBuild;
+      view._visualState = state;
+      this.drawCellView(view, state);
     }
   }
 
@@ -1466,7 +1431,15 @@ export class BattleScene extends Phaser.Scene {
       const defenderId = tower?.defenderId
         ?? this.defenderIdByTowerId?.get?.(projectile.sourceTowerId)
         ?? 'ranger';
-      const sourcePosition = toWorldPoint(projectile.launchPosition);
+      const sourceProjection = tower ? this.resolveTowerProjection(tower) : null;
+      const sourcePosition = sourceProjection?.position ?? projectile.launchPosition;
+      const sourceArtScale = this.towerSprites?.get?.(projectile.sourceTowerId)?._baseScale
+        ?? DEFENDER_PRESENTATION[defenderId]?.displayScale
+        ?? 1;
+      const launchPosition = {
+        x: sourcePosition.x,
+        y: sourcePosition.y - (42 * sourceArtScale),
+      };
       const target = this.enemyById.get(projectile.targetId);
       const targetVisual = target
         ? this.resolveEnemyVisualTransform(target)
@@ -1485,45 +1458,23 @@ export class BattleScene extends Phaser.Scene {
       const duration = Math.max(1, projectile.impactTick - projectile.launchTick);
       const progress = Math.max(0, Math.min(1, (snapshot.tick - projectile.launchTick) / duration));
       const frame = DEFENDER_PRESENTATION[defenderId]?.projectileFrame ?? GAMEPLAY_FRAME.arrow;
-      const x = Phaser.Math.Linear(sourcePosition.x, targetPosition.x, progress);
+      const targetBodyPosition = {
+        x: targetPosition.x,
+        y: targetPosition.y - (32 * targetVisual.artScale),
+      };
+      const x = Phaser.Math.Linear(launchPosition.x, targetBodyPosition.x, progress);
       const y = Phaser.Math.Linear(
-        sourcePosition.y - 42,
-        targetPosition.y - (32 * targetVisual.scale),
+        launchPosition.y,
+        targetBodyPosition.y,
         progress,
       );
       view.setFrame(frame).setPosition(x, y).setVisible(true)
         .setDepth(targetVisual.depth + 0.2)
-        .setScale((frame === GAMEPLAY_FRAME.arrow ? 0.14 : 0.17) * targetVisual.scale);
-      view.setRotation(Math.atan2(targetPosition.y - sourcePosition.y, targetPosition.x - sourcePosition.x));
-    });
-  }
-
-  projectTelegraphs(snapshot) {
-    const telegraphs = snapshot.effects.filter((effect) => effect.kind.includes('telegraph'));
-    syncProjectionMap(this.telegraphSprites, this.telegraphPool, telegraphs, (view, effect) => {
-      const source = this.enemyById.get(effect.sourceId);
-      if (!source) {
-        view.setVisible(false);
-        return;
-      }
-      const visual = this.resolveEnemyVisualTransform(source);
-      const position = visual.position;
-      const radius = effect.radius ?? (effect.kind === 'mossback-telegraph'
-        ? ENEMIES['mossback-brute'].abilityRadius
-        : ENEMIES['dread-colossus'].pulseRadius);
-      const geometry = projectCombatRadius({
-        position,
-        radius,
-        xScale: PATH_X_SCALE,
-        yScale: PATH_Y_SCALE,
-      });
-      const remaining = Math.max(0, effect.triggerTick - snapshot.tick);
-      view.setFrame(GAMEPLAY_FRAME.bossWarning)
-        .setPosition(geometry.x, geometry.y)
-        .setDepth(visual.depth - 0.1)
-        .setDisplaySize(geometry.displayWidth, geometry.displayHeight)
-        .setAlpha(0.56 + ((remaining % 20) / 100))
-        .setVisible(this.presentationLimits.telegraphsEnabled);
+        .setScale((frame === GAMEPLAY_FRAME.arrow ? 0.14 : 0.17) * targetVisual.artScale);
+      view.setRotation(Math.atan2(
+        targetBodyPosition.y - launchPosition.y,
+        targetBodyPosition.x - launchPosition.x,
+      ));
     });
   }
 
@@ -1537,26 +1488,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   updateFocusViews() {
-    if (!this.focusRing || !this.rangeRing) return;
-    const pad = this.level.pads[this.focusIndex];
-    if (!pad) return;
-    const position = this.resolvePlacementPosition(pad);
-    const tower = [...this.towerById.values()].find((entry) => this.isTowerAtLegacyPad(entry, pad));
-    this.focusRing.clear();
-    if (!this.battlefieldHasFocus) {
-      this.focusRing.setVisible(false);
-    } else {
-      this.focusRing.setVisible(true);
-      const compatible = !this.selectedDefenderId || this.isPlacementCompatible(pad);
-      this.focusRing.lineStyle(6, compatible ? 0xffffff : 0x879891, compatible ? 0.96 : 0.68);
-      this.focusRing.strokeEllipse(position.x, position.y, 82, 62);
-    }
-    this.rangeRing.clear();
-    if (tower) {
-      const range = DEFENDERS[tower.defenderId].range[tower.tier];
-      this.rangeRing.lineStyle(4, 0xffe59a, 0.5);
-      this.rangeRing.strokeEllipse(position.x, position.y, range * PATH_X_SCALE * 2, range * PATH_Y_SCALE * 2);
-    }
+    if (this.lastSnapshot && this.cellViews) this.projectCells(this.lastSnapshot);
   }
 
   handleTerminalState() {
@@ -1572,7 +1504,7 @@ export class BattleScene extends Phaser.Scene {
         score: this.lastSnapshot.score,
       });
       this.spawnBurst(
-        projectPathProgress(this.pathMetrics, this.pathMetrics.total),
+        projectGridPathProgress(this.pathMetrics, this.pathMetrics.total),
         GAMEPLAY_FRAME.victoryBurst,
         16,
         this.lastSnapshot.tick,
@@ -1624,7 +1556,6 @@ export class BattleScene extends Phaser.Scene {
         enemies: this.enemyPool?.getState() ?? null,
         particles: this.particlePool?.getState() ?? null,
         projectiles: this.projectilePool?.getState() ?? null,
-        telegraphs: this.telegraphPool?.getState() ?? null,
       },
       reducedMotion: this.reducedMotion,
       sampleCount: this.frameSamples.length,
@@ -1633,6 +1564,15 @@ export class BattleScene extends Phaser.Scene {
 
   getPresentationState() {
     return {
+      cells: [...(this.cellViews ?? [])].map(([id, view]) => ({
+        acceptsBuild: Boolean(view._visualState?.acceptsBuild),
+        borderColor: view._visualState?.borderColor ?? null,
+        fillColor: view._visualState?.fillColor ?? null,
+        focused: Boolean(view._visualState?.focused),
+        id,
+        occupied: Boolean(view._visualState?.occupied),
+        terrain: view._terrain,
+      })),
       enemies: [...this.enemySprites].map(([id, view]) => {
         const enemy = this.enemyById.get(id);
         const roadProjection = resolveEnemyRoadProjection(
@@ -1655,24 +1595,16 @@ export class BattleScene extends Phaser.Scene {
             y: plate.y,
           })),
           queueIndex: enemy?.queueIndex ?? null,
+          artScale: view._visualTransform?.artScale ?? null,
           scale: roadProjection.scale,
           x: view.x,
           y: view.y,
         };
       }),
-      telegraphs: [...this.telegraphSprites].map(([id, view]) => ({
-        displayHeight: Number(view.displayHeight.toFixed(3)),
-        displayWidth: Number(view.displayWidth.toFixed(3)),
+      roadTiles: [...(this.roadTileViews ?? [])].map(([id, view]) => ({
+        height: view.displayHeight,
         id,
-        visible: view.visible,
-      })),
-      queueDensityCues: [...(this.queueDensityLabels ?? [])].map(([id, view]) => ({
-        depth: view.depth,
-        id,
-        text: view.text,
-        visible: view.visible,
-        x: view.x,
-        y: view.y,
+        width: view.displayWidth,
       })),
       tick: this.lastSnapshot?.tick ?? 0,
       towers: [...this.towerSprites].map(([id, view]) => {
@@ -1683,23 +1615,25 @@ export class BattleScene extends Phaser.Scene {
           healthKey: view._healthKey,
           id,
           isPlaying: Boolean(body.anims?.isPlaying),
+          cellId: view._cellId,
+          scale: body.scale,
           textureKey: body.texture?.key ?? null,
         };
       }),
-      markers: [...this.padSprites].map(([id, view]) => ({
-        acceptsBuild: Boolean(view._acceptsBuild),
-        alpha: Number(view.alpha.toFixed(3)),
-        id,
-        layer: view._placementLayer,
-        visible: view.visible,
-      })),
     };
   }
 
   getTextSnapshot() {
     if (!this.lastSnapshot) return null;
     const snapshot = summarizeSimulation(this.simulation);
+    const presentation = this.getPresentationState();
     return {
+      battlefield: {
+        cells: presentation.cells,
+        enemies: presentation.enemies,
+        roadTiles: presentation.roadTiles,
+        towers: presentation.towers,
+      },
       battleStarted: this.battleStarted,
       betweenWaveCountdown: this.betweenWaveCountdown,
       castleHearts: snapshot.castleHearts,
@@ -1759,7 +1693,6 @@ export class BattleScene extends Phaser.Scene {
       this.enemyPool,
       this.defenderPool,
       this.projectilePool,
-      this.telegraphPool,
       this.defeatPool,
       this.damageLabelPool,
       this.particlePool,
@@ -1767,17 +1700,14 @@ export class BattleScene extends Phaser.Scene {
     this.enemySprites.clear();
     this.towerSprites.clear();
     this.projectileSprites.clear();
-    this.telegraphSprites.clear();
     this.enemyById.clear();
     this.towerById.clear();
     this.defenderIdByTowerId.clear();
     this.recentDefenderPositions.clear();
     this.detachedDefenderViews.clear();
-    for (const label of this.queueDensityLabels?.values?.() ?? []) label.destroy?.();
-    this.queueDensityLabels?.clear?.();
-    this.padSprites.clear();
-    this.focusRing?.destroy();
-    this.rangeRing?.destroy();
+    for (const view of this.cellViews?.values?.() ?? []) view.destroy?.();
+    this.cellViews?.clear?.();
+    this.roadTileViews?.clear?.();
     this.castleSprite?.destroy();
     this.terrain?.destroy();
     for (const view of this.staticViews ?? []) view.destroy?.();

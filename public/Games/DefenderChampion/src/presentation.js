@@ -1,9 +1,6 @@
-import { ROAD_WIDTH } from './core/path-geometry.js';
+import { GRID } from './core/grid-geometry.js';
 
 export const GAMEPLAY_FRAME = Object.freeze({
-  buildPad: 0,
-  selectedBuildPad: 1,
-  rangeMarker: 2,
   coin: 3,
   fullHeart: 4,
   emptyHeart: 5,
@@ -17,21 +14,6 @@ export const GAMEPLAY_FRAME = Object.freeze({
   bossWarning: 13,
   victoryBurst: 14,
   defeatCrack: 15,
-});
-
-export const PATH_FRAME = Object.freeze({
-  isolated: 0,
-  horizontal: 1,
-  vertical: 2,
-  cross: 3,
-  northEast: 4,
-  eastSouth: 5,
-  southWest: 6,
-  westNorth: 7,
-  capNorth: 12,
-  capEast: 13,
-  capSouth: 14,
-  capWest: 15,
 });
 
 export const DEFENDER_PRESENTATION = Object.freeze({
@@ -59,10 +41,10 @@ export const resolveEnemyRoadProjection = (enemy = {}, presentation = {}) => {
     ? Math.min(1, requestedScale)
     : 1;
   const footprintWidth = Math.min(
-    ROAD_WIDTH,
-    Math.max(0, Number(presentation.roadFootprint) || ROAD_WIDTH) * scale,
+    GRID.cellSize,
+    Math.max(0, Number(presentation.roadFootprint) || GRID.cellSize) * scale,
   );
-  const maximumLateralOffset = Math.max(0, (ROAD_WIDTH - footprintWidth) / 2);
+  const maximumLateralOffset = Math.max(0, (GRID.cellSize - footprintWidth) / 2);
   const requestedLaneOffset = Number(enemy.displayLaneOffset ?? enemy.laneOffset) || 0;
   const queued = enemy.laneState === 'queued'
     || (enemy.queueIndex !== null && enemy.queueIndex !== undefined);
@@ -123,65 +105,6 @@ export const resolvePresentationLimits = (reducedMotion = false) => Object.freez
   telegraphsEnabled: true,
 });
 
-const SQUARE_ROAD_FRAMES = new Set([
-  'isolated', 'cross', 'northEast', 'eastSouth', 'southWest', 'westNorth',
-  'capNorth', 'capEast', 'capSouth', 'capWest',
-]);
-
-export const resolveRoadPieceDisplay = (piece = {}) => {
-  if (piece.kind === 'straight') {
-    if (piece.rotation !== 0) throw new Error('Road straight frames must not be rotated');
-    if (piece.frame === 'horizontal') return { height: ROAD_WIDTH, width: piece.length };
-    if (piece.frame === 'vertical') return { height: piece.length, width: ROAD_WIDTH };
-    throw new Error(`Unsupported road straight frame: ${piece.frame}`);
-  }
-  if (!SQUARE_ROAD_FRAMES.has(piece.frame)) throw new Error(`Unsupported road piece frame: ${piece.frame}`);
-  return { height: ROAD_WIDTH, width: ROAD_WIDTH };
-};
-
-export const resolvePlacementMarkerState = ({
-  markerLayer,
-  occupied = false,
-  selected = false,
-  selectedLayer = null,
-} = {}) => {
-  const compatible = !occupied && Boolean(selectedLayer) && markerLayer === selectedLayer;
-  if (compatible) {
-    return Object.freeze({
-      acceptsBuild: true,
-      alpha: 1,
-      scale: 0.31,
-      selectedFrame: true,
-      visible: true,
-    });
-  }
-  if (selected && occupied) {
-    return Object.freeze({
-      acceptsBuild: false,
-      alpha: 0.92,
-      scale: 0.28,
-      selectedFrame: true,
-      visible: true,
-    });
-  }
-  if (selectedLayer) {
-    return Object.freeze({
-      acceptsBuild: false,
-      alpha: 0.16,
-      scale: 0.22,
-      selectedFrame: false,
-      visible: true,
-    });
-  }
-  return Object.freeze({
-    acceptsBuild: false,
-    alpha: occupied ? 0.24 : 0.4,
-    scale: 0.24,
-    selectedFrame: false,
-    visible: true,
-  });
-};
-
 export const resolvePlacementPrompt = (layer) => (
   layer === 'road'
     ? 'Choose a road square for this melee defender'
@@ -199,7 +122,7 @@ export const attemptPlacementBuild = ({
   const target = cell ?? pad;
   const terrain = target?.terrain ?? target?.layer;
   if (!selectedDefenderId) {
-    announce?.('Open placement slot. Select defender 1 through 4 first.');
+    announce?.('Open battlefield square. Select defender 1 through 4 first.');
     return { accepted: false, reason: 'defender-required' };
   }
   if (!selectedLayer || terrain !== selectedLayer) {
@@ -405,19 +328,6 @@ export const dispatchLanePresentationEvent = (event, handlers = {}) => {
   return true;
 };
 
-export const deriveCampaignEnemyViewCapacity = (levels = [], enemies = {}) => Math.max(
-  0,
-  ...levels.map((level) => level.waves.reduce((levelTotal, wave) => (
-    levelTotal + wave.reduce((waveTotal, group) => {
-      const enemy = enemies[group.enemyId] ?? {};
-      const authoredSummons = Array.isArray(enemy.summonThresholds)
-        ? enemy.summonThresholds.length * Math.max(0, enemy.summonCount ?? 0)
-        : 0;
-      return waveTotal + (group.count * (1 + authoredSummons));
-    }, 0)
-  ), 0)),
-);
-
 export class ViewPool {
   constructor(createView, { maximum = Number.POSITIVE_INFINITY, resetView } = {}) {
     this.availableViews = [];
@@ -500,13 +410,6 @@ export const syncProjectionMap = (projectionMap, pool, entries, applyProjection,
     applyProjection(view, entry);
   }
 };
-
-export const projectCombatRadius = ({ position, radius, xScale, yScale }) => ({
-  displayHeight: 2 * radius * yScale,
-  displayWidth: 2 * radius * xScale,
-  x: position.x,
-  y: position.y,
-});
 
 export const resolveBetweenWaveCountdown = (snapshot, gapTicks, ticksPerSecond = 60) => {
   const startTick = snapshot?.nextWaveStartTick;

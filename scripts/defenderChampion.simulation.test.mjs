@@ -229,10 +229,10 @@ test('reference command fixtures are legal deterministic inputs for every level'
         if (command.type === 'build') {
           assert.ok(DEFENDERS[command.defenderId]);
           assert.equal(padsById.has(command.padId), true);
-          assert.equal(
-            padsById.get(command.padId).layer,
-            DEFENDERS[command.defenderId].placementLayer,
-          );
+          const translationCell = level.cells.find(({ id }) => (
+            id === padsById.get(command.padId).cellId
+          ));
+          assert.equal(translationCell.terrain, DEFENDERS[command.defenderId].placementLayer);
           const firstBuildTick = firstBuildTickByPad.get(command.padId);
           if (firstBuildTick !== undefined) {
             assert.ok(['level-4', 'level-7', 'level-10'].includes(level.id));
@@ -839,15 +839,17 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
 
   assert.deepEqual(first, second);
   assert.deepEqual({
+    outcome: first.outcome,
     terminal: first.terminal,
     tick: first.tick,
     maximumLivingEnemies: first.maximumLivingEnemies,
     maximumConcurrentAttackers: first.maximumConcurrentAttackers,
     pendingSpawnCount: first.pendingSpawnCount,
   }, {
+    outcome: 'victory',
     terminal: true,
-    tick: 4973,
-    maximumLivingEnemies: 8,
+    tick: 2214,
+    maximumLivingEnemies: 4,
     maximumConcurrentAttackers: 3,
     pendingSpawnCount: 0,
   });
@@ -855,13 +857,13 @@ test('strategy fixtures apply exact command ticks and reject unknown or cross-le
   assert.deepEqual(first.towers, [
     {
       id: 'tower-1', defenderId: 'bladeguard', cellId: 'r2c7', placementLayer: 'road', combatLayer: 'frontline',
-      tier: 1, health: 560, maxHealth: 560, armor: 0.14, engagedEnemyIds: [], totalInvested: 110,
+      tier: 0, health: 420, maxHealth: 420, armor: 0.1, engagedEnemyIds: [], totalInvested: 50,
       attackCount: 0, masteryProgress: 0, nextAttackTick: 0,
     },
     {
       id: 'tower-2', defenderId: 'ranger', cellId: 'r0c5', placementLayer: 'grass', combatLayer: 'backline',
       tier: 0, health: 1, maxHealth: 1, armor: 0, engagedEnemyIds: [], totalInvested: 70,
-      attackCount: 48, masteryProgress: 3, nextAttackTick: 5015,
+      attackCount: 48, masteryProgress: 3, nextAttackTick: 2256,
     },
   ]);
   assert.throws(() => runStrategyFixture('level-1', 'missing'), /Unknown strategy: missing/);
@@ -917,7 +919,7 @@ test('projectile snapshots retain launch data after their source tower is sold',
   const [projectile] = summarizeSimulation(simulation).projectiles;
 
   assert.equal(projectile.sourceTowerId, towerId);
-  assert.equal(projectile.launchTick, 1);
+  assert.equal(projectile.launchTick, 0);
   assert.deepEqual(projectile.launchPosition, cellCenter('r1c5'));
   assert.equal(typeof projectile.targetPathProgressAtLaunch, 'number');
   assert.equal(typeof projectile.targetDisplayPathProgressAtLaunch, 'number');

@@ -29,6 +29,10 @@ export const getDeprecatedCellPlacements = (level) => {
   const usedGrassCellIds = new Set();
   const grassCells = level.cells?.filter(({ terrain }) => terrain === 'grass') ?? [];
   for (const placement of level.pads ?? []) {
+    if (typeof placement?.id === 'string' && getGridCell(level, placement.cellId)) {
+      records.push(Object.freeze({ id: placement.id, cellId: placement.cellId }));
+      continue;
+    }
     const letter = placement.id?.split('-').at(-1);
     if (placement.layer === 'road' && Object.hasOwn(ROAD_PAD_FRACTIONS, letter)) {
       const index = Math.round((level.roadCells.length - 1) * ROAD_PAD_FRACTIONS[letter]);

@@ -14,7 +14,7 @@ import {
 import {
   createGridPathMetrics,
 } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
-import { projectPathProgress } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
+import { projectGridPathProgress } from '../public/Games/DefenderChampion/src/grid-presentation.js';
 import * as laneCombat from '../public/Games/DefenderChampion/src/core/lane-combat.js';
 import {
   createSimulation as createGameSimulation,
@@ -162,7 +162,7 @@ test('a road-cell defender owns one whole-lane grid gate with three attackers', 
   ]);
   assert.equal(simulation.enemies.every(({ displayScale }) => displayScale === 1), true);
   assert.equal(new Set(simulation.enemies.map(({ displayPathProgress }) => displayPathProgress)).size, 18);
-  const projectedPositions = simulation.enemies.map((enemy) => projectPathProgress(
+  const projectedPositions = simulation.enemies.map((enemy) => projectGridPathProgress(
     simulation.pathMetrics,
     enemy.displayPathProgress,
     enemy.displayLaneOffset,
@@ -277,7 +277,7 @@ test('a congested early road-cell gate waits for readable capacity without delet
   const queuePositions = simulation.enemies
     .filter(({ queueIndex }) => queueIndex !== null)
     .sort((first, second) => first.queueIndex - second.queueIndex)
-    .map((enemy) => projectPathProgress(
+    .map((enemy) => projectGridPathProgress(
       simulation.pathMetrics,
       enemy.displayPathProgress,
       enemy.displayLaneOffset,
@@ -286,7 +286,7 @@ test('a congested early road-cell gate waits for readable capacity without delet
     queuePositions[0].x - queuePositions[1].x,
     queuePositions[0].y - queuePositions[1].y,
   ) >= 48, true);
-  const projectedPositions = simulation.enemies.map((enemy) => projectPathProgress(
+  const projectedPositions = simulation.enemies.map((enemy) => projectGridPathProgress(
     simulation.pathMetrics,
     enemy.displayPathProgress,
     enemy.displayLaneOffset,

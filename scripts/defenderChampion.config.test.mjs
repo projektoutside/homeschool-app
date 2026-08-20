@@ -4,26 +4,19 @@ import { DEFENDERS } from '../public/Games/DefenderChampion/src/config/defenders
 import { EFFECT_LIMITS, ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js';
 import { LEVELS, getLevel } from '../public/Games/DefenderChampion/src/config/levels.js';
 import { REFERENCE_STRATEGIES } from '../public/Games/DefenderChampion/src/config/reference-strategies.js';
+import { cellCenter } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
+import {
+  createSimulation,
+  issueCommand,
+  summarizeSimulation,
+} from '../public/Games/DefenderChampion/src/core/simulation.js';
 
-const distanceToSegment = (point, start, end) => {
-  const horizontal = end.x - start.x;
-  const vertical = end.y - start.y;
-  const squaredLength = (horizontal ** 2) + (vertical ** 2);
-  const progress = squaredLength === 0
-    ? 0
-    : Math.max(0, Math.min(1, (
-      ((point.x - start.x) * horizontal) + ((point.y - start.y) * vertical)
-    ) / squaredLength));
-  return Math.hypot(
-    point.x - (start.x + (horizontal * progress)),
-    point.y - (start.y + (vertical * progress)),
-  );
-};
-
-const minimumGrassRoadDistance = (level, pads = level.pads.filter(({ layer }) => layer === 'grass')) => (
-  Math.min(...pads.flatMap((pad) => level.path.slice(1).map((point, index) => (
-    distanceToSegment(pad, level.path[index], point)
-  ))))
+const minimumGrassRoadDistance = (level, cells = level.cells.filter(({ terrain }) => terrain === 'grass')) => (
+  Math.min(...cells.flatMap((cell) => level.roadCells.map((roadCellId) => {
+    const first = cellCenter(cell.id);
+    const second = cellCenter(roadCellId);
+    return Math.hypot(first.x - second.x, first.y - second.y);
+  })))
 );
 
 test('defender economy matches the approved contract', () => {
@@ -81,24 +74,25 @@ test('all nested combat config is immutable and Ranger mastery target count is a
   assert.equal(Object.isFrozen(ENEMIES['dread-colossus'].summonThresholds), true);
 });
 
-test('base ranged defenders can engage from the authored legal grass footprint', () => {
+test('square-cell centers establish the exact ranged coverage floor without rewriting balance', () => {
   assert.equal(DEFENDERS.ranger.range[0], 190);
   assert.equal(DEFENDERS['rune-artificer'].range[0], 72);
 
-  for (const defenderId of ['ranger', 'rune-artificer']) {
-    const defender = DEFENDERS[defenderId];
-    assert.ok(
-      Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))) <= defender.range[0],
-      `${defenderId} needs at least one base-tier legal target footprint`,
-    );
-  }
+  assert.equal(Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))), 80);
+  assert.equal(
+    Math.min(...LEVELS.map((level) => minimumGrassRoadDistance(level))) <= DEFENDERS.ranger.range[0],
+    true,
+  );
 
   for (const levelId of ['level-7', 'level-10']) {
     const level = getLevel(levelId);
-    const firstGrassPad = level.pads.find(({ layer }) => layer === 'grass');
+    const firstGrassPad = level.pads.find(({ cellId }) => (
+      level.cells.find(({ id }) => id === cellId)?.terrain === 'grass'
+    ));
     assert.ok(
-      minimumGrassRoadDistance(level, [firstGrassPad]) <= DEFENDERS['rune-artificer'].range[0],
-      `${levelId} first grass pad must fund the mono-roster loss fixture`,
+      minimumGrassRoadDistance(level, [{ id: firstGrassPad.cellId }]),
+      80,
+      `${levelId} first grass translation cell must touch the road by one square edge`,
     );
   }
 });
@@ -155,9 +149,13 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     assert.equal(level.threatIndex, threatIndex);
     assert.equal(Object.isFrozen(level), true);
     assert.equal(getLevel(id), level);
-    assert.equal(level.path.length >= 2, true);
+    assert.equal(Object.hasOwn(level, 'path'), false);
     assert.equal(level.pads.length, 8);
     assert.equal(new Set(level.pads.map((pad) => pad.id)).size, level.pads.length);
+    assert.equal(level.pads.every((pad) => (
+      Object.keys(pad).sort().join(',') === 'cellId,id'
+      && level.cells.some(({ id }) => id === pad.cellId)
+    )), true);
     assert.equal(level.waves.length, level.waveCount);
     assert.equal(level.referenceStrategies.length, 2);
     assert.equal(new Set(level.referenceStrategies).size, 2);
@@ -190,7 +188,11 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
         const pad = pads.get(command.padId);
         assert.ok(defender, `${level.id} has unknown ${command.defenderId}`);
         assert.ok(pad, `${level.id} has unknown ${command.padId}`);
-        assert.equal(pad.layer, defender.placementLayer, `${command.defenderId} cannot use ${command.padId}`);
+        assert.equal(
+          level.cells.find(({ id }) => id === pad.cellId)?.terrain,
+          defender.placementLayer,
+          `${command.defenderId} cannot use ${command.padId}`,
+        );
       }
 
       const thirdBuildIndex = strategy.findIndex((command, index) => (
@@ -216,6 +218,37 @@ test('levels are immutable authored shells with legal mixed strategy fixtures', 
     () => getLevel('missing-level'),
     (error) => error.message === 'Unknown level: missing-level',
   );
+});
+
+test('simplified pad translation accepts legacy strategy commands and snapshots only cell IDs', () => {
+  const level = getLevel('level-1');
+  assert.deepEqual(level.pads.slice(0, 2), [
+    { id: 'l1-pad-a', cellId: 'r2c7' },
+    { id: 'l1-pad-b', cellId: 'r0c5' },
+  ]);
+
+  const simulation = createSimulation('level-1');
+  const firstCommand = REFERENCE_STRATEGIES['level-1-balanced'][0];
+  assert.deepEqual(firstCommand, {
+    type: 'build', tick: 0, defenderId: 'bladeguard', padId: 'l1-pad-a',
+  });
+  assert.deepEqual(issueCommand(simulation, firstCommand), { accepted: true, reason: null });
+  assert.deepEqual(summarizeSimulation(simulation).towers[0], {
+    armor: 0.1,
+    attackCount: 0,
+    cellId: 'r2c7',
+    combatLayer: 'frontline',
+    defenderId: 'bladeguard',
+    engagedEnemyIds: [],
+    health: 420,
+    id: 'tower-1',
+    masteryProgress: 0,
+    maxHealth: 420,
+    nextAttackTick: 0,
+    placementLayer: 'road',
+    tier: 0,
+    totalInvested: 50,
+  });
 });
 
 test('reference strategies are immutable and commands are chronologically authored', () => {

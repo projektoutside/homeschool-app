@@ -13,8 +13,8 @@ import { ENEMIES } from '../public/Games/DefenderChampion/src/config/enemies.js'
 import { LEVELS } from '../public/Games/DefenderChampion/src/config/levels.js';
 import {
   cellCenter,
+  createGridPathMetrics,
 } from '../public/Games/DefenderChampion/src/core/grid-geometry.js';
-import { createPathMetrics } from '../public/Games/DefenderChampion/src/core/path-geometry.js';
 import {
   advanceSimulation,
   createSimulation,
@@ -151,7 +151,7 @@ test('enemy hit and defeat events retain the resolved queue presentation fallbac
     queueIndex: 5,
   });
   const simulation = createSimulation('level-1', { qa: true });
-  simulation.pathMetrics = createPathMetrics(simulation.level.path);
+  simulation.pathMetrics = createGridPathMetrics(simulation.level.roadCells);
   simulation.enemies = [enemy];
 
   applyHit(simulation, enemy, {
@@ -609,7 +609,7 @@ test('under-cap Dread summons enter combat in their telegraph impact tick', () =
   assert.deepEqual(simulation.pendingSpawns, []);
 });
 
-test('an enemy cannot hit the castle until the tick after defeating the last blocker', () => {
+test('an enemy cannot hit the castle until it crosses the remaining grid distance after the last blocker', () => {
   const enemy = createCombatEnemy('enemy-1', 'blight-walker', {
     attackDamage: 500,
     attackCooldownTicks: 10,
@@ -636,11 +636,18 @@ test('an enemy cannot hit the castle until the tick after defeating the last blo
   assert.equal(enemy.pathProgress, stoppedProgress);
   assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'castle-impact'), false);
 
-  simulation.tick = 1;
+  for (const tick of [1, 2]) {
+    simulation.tick = tick;
+    stepCombat(simulation);
+    assert.equal(simulation.castleHearts, 3);
+    assert.equal(simulation.presentationEvents.some(({ kind }) => kind === 'castle-impact'), false);
+  }
+
+  simulation.tick = 3;
   stepCombat(simulation);
   assert.equal(simulation.castleHearts, 2);
   assert.equal(simulation.enemies.length, 0);
-  assert.equal(simulation.presentationEvents.some(({ kind, tick }) => kind === 'castle-impact' && tick === 1), true);
+  assert.equal(simulation.presentationEvents.some(({ kind, tick }) => kind === 'castle-impact' && tick === 3), true);
 });
 
 test('armor and control effects respect hard ceilings', () => {

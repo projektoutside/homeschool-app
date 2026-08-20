@@ -10,9 +10,9 @@ export const RUNTIME_METADATA_REQUESTS = Object.freeze([
 
 export const ASSET_USAGE_BY_ID = Object.freeze({
   'environment-grass': 'BattleScene terrain tile',
-  'environment-path-atlas': 'BattleScene authored path composition',
+  'environment-path-atlas': 'BattleScene square road tiles',
   'environment-props-atlas': 'BattleScene optional ambient props',
-  'environment-gameplay-atlas': 'BattleScene pads, projectiles, effects, telegraphs, and ResultScene art',
+  'environment-gameplay-atlas': 'BattleScene projectiles and effects, plus ResultScene art',
   'environment-title-emblem': 'MenuScene title emblem',
   'castle-states': 'BattleScene castle heart-state projection',
   'catalog-thumbnail': 'MenuScene campaign key art',
