@@ -423,6 +423,46 @@ button:disabled {
   white-space: nowrap;
 }
 
+.input-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.input-toggle button {
+  display: grid;
+  place-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgb(255 249 232 / 16%);
+  border-radius: 16px;
+  color: var(--muted);
+  background: rgb(255 255 255 / 4%);
+  line-height: 1.15;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.input-toggle button:hover {
+  border-color: rgb(49 215 155 / 58%);
+  color: var(--ivory-100);
+  transform: translateY(-2px);
+}
+
+.input-toggle button[aria-pressed="true"] {
+  border-color: var(--emerald-400);
+  color: var(--ivory-100);
+  background: rgb(20 92 67 / 88%);
+  box-shadow: 0 9px 24px rgb(49 215 155 / 18%);
+}
+
+.input-toggle small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
 .primary-action,
 .secondary-action,
 .quiet-action {
@@ -573,6 +613,8 @@ button:disabled {
 }
 
 .question-block {
+  grid-column: 2;
+  grid-row: 2;
   align-self: end;
   min-width: 0;
   padding-top: 0.3rem;
@@ -590,6 +632,8 @@ button:disabled {
 }
 
 .timer-track {
+  grid-column: 2;
+  grid-row: 3;
   position: relative;
   height: 10px;
   overflow: hidden;
@@ -614,10 +658,97 @@ button:disabled {
 }
 
 .choice-grid {
+  grid-column: 2;
+  grid-row: 4;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.72rem;
   align-self: start;
+}
+
+.voice-answer-panel {
+  grid-column: 2;
+  grid-row: 4;
+  display: grid;
+  gap: 0.75rem;
+  align-self: start;
+  padding: clamp(0.85rem, 2vw, 1.15rem);
+  border: 1px solid rgb(49 215 155 / 28%);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgb(49 215 155 / 8%), transparent 52%),
+    var(--glass);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 22%);
+  text-align: center;
+}
+
+.voice-answer-panel[data-listening="true"] {
+  border-color: rgb(49 215 155 / 72%);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 22%), 0 0 24px rgb(49 215 155 / 16%);
+}
+
+.voice-answer-panel__mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  height: 24px;
+}
+
+.voice-answer-panel__mic span {
+  width: 4px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--emerald-400);
+  opacity: 0.46;
+}
+
+.voice-answer-panel[data-listening="true"] .voice-answer-panel__mic span {
+  opacity: 1;
+  animation: mic-wave 760ms ease-in-out infinite alternate;
+}
+
+.voice-answer-panel[data-listening="true"] .voice-answer-panel__mic span:nth-child(2),
+.voice-answer-panel[data-listening="true"] .voice-answer-panel__mic span:nth-child(4) {
+  animation-delay: 160ms;
+}
+
+.voice-answer-panel[data-listening="true"] .voice-answer-panel__mic span:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+.mic-status-text,
+.voice-transcript {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.mic-status-text {
+  color: var(--ivory-100);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.voice-transcript {
+  display: block;
+  min-height: 1.35rem;
+  color: var(--gold-300);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.voice-answer-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.voice-answer-panel__actions button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.15;
 }
 
 .choice-grid:empty::before {
@@ -712,12 +843,19 @@ button:disabled {
 }
 
 .feedback {
+  grid-column: 2;
+  grid-row: 5;
   min-height: 1.5rem;
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 720;
   line-height: 1.35;
+}
+
+@keyframes mic-wave {
+  from { height: 7px; }
+  to { height: 22px; }
 }
 
 .feedback[data-result="correct"],
@@ -897,6 +1035,7 @@ button:disabled {
   .question-block,
   .timer-track,
   .choice-grid,
+  .voice-answer-panel,
   .feedback {
     grid-column: 1;
     grid-row: auto;
@@ -952,6 +1091,11 @@ button:disabled {
     padding-inline: 0.5rem;
   }
 
+  .input-toggle button {
+    padding-inline: 0.45rem;
+    font-size: 0.78rem;
+  }
+
   .screen--game {
     gap: 0.52rem;
   }
@@ -1003,6 +1147,10 @@ button:disabled {
 
   .choice-grid {
     gap: 0.55rem;
+  }
+
+  .voice-answer-panel__actions {
+    grid-template-columns: 1fr;
   }
 
   .choice-grid:empty::before {
@@ -1131,6 +1279,10 @@ button:disabled {
     gap: 0.45rem;
   }
 
+  .input-toggle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .mode-toggle button {
     min-height: 48px;
     padding: 0.4rem;
@@ -1139,6 +1291,16 @@ button:disabled {
   }
 
   .mode-toggle small {
+    display: none;
+  }
+
+  .input-toggle button {
+    min-height: 44px;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.7rem;
+  }
+
+  .input-toggle small {
     display: none;
   }
 
@@ -1165,6 +1327,7 @@ button:disabled {
   .question-block,
   .timer-track,
   .choice-grid,
+  .voice-answer-panel,
   .feedback {
     grid-column: 2;
     grid-row: auto;
@@ -1263,6 +1426,7 @@ button:disabled {
   .menu-reveal:hover .menu-reveal__prompt,
   .menu-reveal:focus-visible .menu-reveal__prompt,
   .mode-toggle button:hover,
+  .input-toggle button:hover,
   .primary-action:hover,
   .secondary-action:hover,
   .quiet-action:hover,
@@ -1325,6 +1489,9 @@ button:disabled {
   .menu-panel__label,
   .menu-hero__intro,
   .mode-toggle small,
+  .input-toggle small,
+  .mic-status-text,
+  .voice-transcript,
   .hud-stat span,
   .hud-stat strong,
   .question-block h2,
@@ -1365,6 +1532,12 @@ button:disabled {
     color: ButtonText;
     background: ButtonFace;
     box-shadow: none;
+  }
+
+  .input-toggle button[aria-pressed="true"] {
+    color: ButtonText;
+    background: ButtonFace;
+    border-color: ButtonText;
   }
 
   .choice-grid button[data-result="correct"],

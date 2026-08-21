@@ -36,6 +36,17 @@
             <small>Keep exploring</small>
           </button>
         </div>
+        <p class="menu-panel__label">Choose how to answer</p>
+        <div class="input-toggle" role="group" aria-label="Answer method">
+          <button id="inputVoice" type="button" aria-pressed="true">
+            <span>🎤 Voice</span>
+            <small>Say the animal name</small>
+          </button>
+          <button id="inputChoice" type="button" aria-pressed="false">
+            <span>No microphone / Multiple choice</span>
+            <small>Pick from four answers</small>
+          </button>
+        </div>
         <button id="startButton" class="primary-action" type="button">Start Game</button>
       </div>
     </section>
@@ -73,7 +84,18 @@
       <div id="timerRegion" class="timer-track" role="progressbar" aria-label="Time remaining" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15">
         <span id="timerBar"></span>
       </div>
-      <div id="choiceGrid" class="choice-grid" aria-label="Animal choices"></div>
+      <div id="choiceGrid" class="choice-grid" aria-label="Animal choices" hidden></div>
+      <section id="voiceAnswerPanel" class="voice-answer-panel" aria-labelledby="micStatusText" hidden>
+        <div class="voice-answer-panel__mic" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p id="micStatusText" class="mic-status-text" role="status" aria-live="polite">Get ready to say the animal name.</p>
+        <output id="voiceTranscript" class="voice-transcript" aria-live="polite">Your answer will appear here.</output>
+        <div class="voice-answer-panel__actions">
+          <button id="micButton" class="primary-action" type="button">🎤 Listen again</button>
+          <button id="useChoicesButton" class="secondary-action" type="button">Use Multiple Choice</button>
+        </div>
+      </section>
       <p id="feedback" class="feedback" aria-live="polite"></p>
     </section>
 

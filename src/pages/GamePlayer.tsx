@@ -34,8 +34,11 @@ import {
     sanitizePointValue,
 } from '../utils/gamePoints';
 import {
+    ANIMAL_CHAMPION_SPEECH_CONTROL,
     CAR_KING_SPEECH_CONTROL,
+    createAnimalChampionSpeechEvent,
     createCarKingSpeechEvent,
+    isAnimalChampionSpeechControlMessage,
     isCarKingSpeechControlMessage,
 } from '../features/speech/speechBridge';
 import { CarKingNativeFirstSpeechController } from '../features/speech/nativeSpeechController';
@@ -46,6 +49,7 @@ const GAME_ORIENTATION_REQUEST_MESSAGE = 'LAHS_GAME_ORIENTATION_REQUEST';
 const GAME_ORIENTATION_RESULT_MESSAGE = 'LAHS_GAME_ORIENTATION_RESULT';
 const DEFENDER_CHAMPION_GAME_ID = 'defender-champion';
 const CAR_KING_GAME_ID = 'math-car-king';
+const ANIMAL_CHAMPION_GAME_ID = 'animal-champion';
 const WORD_PUZZLE_GAME_ID = 'word-puzzle-game';
 const CAR_KING_MIC_PREF_SYNC = 'LAHS_CAR_KING_MIC_PREF_SYNC';
 const CAR_KING_MIC_PREF_REQUEST = 'LAHS_CAR_KING_MIC_PREF_REQUEST';
@@ -147,7 +151,7 @@ const GamePlayer: React.FC = () => {
     const navigate = useNavigate();
     const containerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const carKingSpeechControllerRef = useRef<CarKingNativeFirstSpeechController | null>(null);
+    const speechControllerRef = useRef<CarKingNativeFirstSpeechController | null>(null);
     const defenderOrientationActiveRef = useRef(false);
     const zoomLockIframes = useMemo(() => [iframeRef], []);
     const [loadedLaunchPath, setLoadedLaunchPath] = useState<string | null>(null);
@@ -231,6 +235,8 @@ const GamePlayer: React.FC = () => {
     useZoomLock({ enabled: gameHostPolicy.lockZoom, iframeRefs: zoomLockIframes });
     const isGameItem = item?.type === 'game';
     const isCarKingGame = currentGameId === CAR_KING_GAME_ID;
+    const isAnimalChampionGame = currentGameId === ANIMAL_CHAMPION_GAME_ID;
+    const isSpeechRecognitionGame = isCarKingGame || isAnimalChampionGame;
     const isWordPuzzleGame = currentGameId === WORD_PUZZLE_GAME_ID;
     const isSinglePlayerPointsGame = item?.type === 'game' && isSinglePlayerPointsGameId(currentGameId);
     const carKingMicPreference = useMemo(() => getUserCarKingMicPreference(user), [user]);
@@ -294,26 +300,30 @@ const GamePlayer: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!isCarKingGame) {
-            const activeController = carKingSpeechControllerRef.current;
-            carKingSpeechControllerRef.current = null;
+        if (!isSpeechRecognitionGame) {
+            const activeController = speechControllerRef.current;
+            speechControllerRef.current = null;
             void activeController?.dispose();
             return;
         }
 
         const controller = new CarKingNativeFirstSpeechController((message) => {
-            postMessageToGame(createCarKingSpeechEvent(message));
+            postMessageToGame(
+                isAnimalChampionGame
+                    ? createAnimalChampionSpeechEvent(message)
+                    : createCarKingSpeechEvent(message),
+            );
         });
 
-        carKingSpeechControllerRef.current = controller;
+        speechControllerRef.current = controller;
 
         return () => {
-            if (carKingSpeechControllerRef.current === controller) {
-                carKingSpeechControllerRef.current = null;
+            if (speechControllerRef.current === controller) {
+                speechControllerRef.current = null;
             }
             void controller.dispose();
         };
-    }, [isCarKingGame, postMessageToGame]);
+    }, [isAnimalChampionGame, isSpeechRecognitionGame, postMessageToGame]);
 
     useEffect(() => {
         processedPointEventsRef.current.clear();
@@ -352,14 +362,14 @@ const GamePlayer: React.FC = () => {
         syncCarKingMicPreference();
     }, [syncCarKingMicPreference]);
 
-    const syncCarKingSpeechAvailability = useCallback(() => {
-        if (!isCarKingGame) return;
-        void carKingSpeechControllerRef.current?.syncAvailability();
-    }, [isCarKingGame]);
+    const syncSpeechAvailability = useCallback(() => {
+        if (!isSpeechRecognitionGame) return;
+        void speechControllerRef.current?.syncAvailability();
+    }, [isSpeechRecognitionGame]);
 
     useEffect(() => {
-        syncCarKingSpeechAvailability();
-    }, [syncCarKingSpeechAvailability]);
+        syncSpeechAvailability();
+    }, [syncSpeechAvailability]);
 
     useEffect(() => {
         const nextBootstrapStamp = !isWordPuzzleGame ? WORD_PUZZLE_GAME_ID : wordPuzzleBootstrapKey;
@@ -514,13 +524,20 @@ const GamePlayer: React.FC = () => {
                 return;
             }
 
-            if (isCarKingGame && isCarKingSpeechControlMessage(message)) {
-                const controller = carKingSpeechControllerRef.current;
+            const isCurrentGameSpeechControl = (
+                (isCarKingGame && isCarKingSpeechControlMessage(message))
+                || (isAnimalChampionGame && isAnimalChampionSpeechControlMessage(message))
+            );
+            if (isCurrentGameSpeechControl) {
+                const controller = speechControllerRef.current;
                 if (!controller) {
                     return;
                 }
 
-                if (message.type !== CAR_KING_SPEECH_CONTROL) {
+                if (
+                    message.type !== CAR_KING_SPEECH_CONTROL
+                    && message.type !== ANIMAL_CHAMPION_SPEECH_CONTROL
+                ) {
                     return;
                 }
 
@@ -710,7 +727,7 @@ const GamePlayer: React.FC = () => {
 
         window.addEventListener('message', handleGameMessage);
         return () => window.removeEventListener('message', handleGameMessage);
-    }, [awardPoints, currentGameId, isCarKingGame, isGuest, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
+    }, [awardPoints, currentGameId, isAnimalChampionGame, isCarKingGame, isGuest, isSinglePlayerPointsGame, isWordPuzzleGame, navigate, pointsSessionId, postMessageToGame, stars, syncCarKingMicPreference, syncGamePointsContext, syncWordPuzzleUserContext, totalPoints, user]);
 
     const attemptGameFullscreen = useCallback(async (force = false): Promise<boolean> => {
         if (!requiresRouteFullscreen || typeof document === 'undefined') {
@@ -897,7 +914,7 @@ const GamePlayer: React.FC = () => {
                             soundSettings,
                         });
                         syncCarKingMicPreference();
-                        syncCarKingSpeechAvailability();
+                        syncSpeechAvailability();
                         syncWordPuzzleUserContext();
                         syncGamePointsContext();
                         window.setTimeout(() => {

@@ -10,6 +10,8 @@ const REQUIRED_IDS = [
   'menuPanel',
   'modeChallenger',
   'modeContinuous',
+  'inputVoice',
+  'inputChoice',
   'startButton',
   'countdownScreen',
   'countdownValue',
@@ -23,6 +25,11 @@ const REQUIRED_IDS = [
   'timerBar',
   'timerRegion',
   'choiceGrid',
+  'voiceAnswerPanel',
+  'voiceTranscript',
+  'micStatusText',
+  'micButton',
+  'useChoicesButton',
   'feedback',
   'gameOverScreen',
   'finalScore',
@@ -39,6 +46,8 @@ const CONTROL_IDS = [
   'menuReveal',
   'modeChallenger',
   'modeContinuous',
+  'inputVoice',
+  'inputChoice',
   'startButton',
   'soundToggle',
   'newGameButton',
@@ -46,6 +55,8 @@ const CONTROL_IDS = [
   'mainMenuButton',
   'retryButton',
   'errorMenuButton',
+  'micButton',
+  'useChoicesButton',
 ];
 
 const HIDDEN_IDS = [
@@ -54,6 +65,8 @@ const HIDDEN_IDS = [
   'gameScreen',
   'gameOverScreen',
   'errorScreen',
+  'choiceGrid',
+  'voiceAnswerPanel',
 ];
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -222,7 +235,7 @@ class FakeDocument {
   }
 }
 
-function createFakeWindow({ ImageClass, localStorage, pointsBridge } = {}) {
+function createFakeWindow({ ImageClass, localStorage, pointsBridge, SpeechRecognition, navigator, parent } = {}) {
   let now = 0;
   let nextFrameId = 1;
   let nextTimerId = 1;
@@ -240,6 +253,10 @@ function createFakeWindow({ ImageClass, localStorage, pointsBridge } = {}) {
     AbortController,
     Image: ImageClass ?? DefaultImage,
     LAHSPointsBridge: pointsBridge,
+    SpeechRecognition,
+    navigator: navigator ?? {},
+    parent: parent ?? null,
+    location: { origin: 'https://example.test' },
     performance: { now: () => now },
     localStorage: localStorage ?? {
       getItem: (key) => storageValues.get(key) ?? null,
@@ -270,6 +287,7 @@ function createFakeWindow({ ImageClass, localStorage, pointsBridge } = {}) {
       listeners.set(type, registered);
     },
   };
+  window.parent ??= window;
 
   return {
     window,
@@ -289,6 +307,9 @@ function createFakeWindow({ ImageClass, localStorage, pointsBridge } = {}) {
       const callbacks = [...timers.values()].map((timer) => timer.callback);
       timers.clear();
       callbacks.forEach((callback) => callback());
+    },
+    dispatchWindow(type, event = {}) {
+      for (const listener of listeners.get(type) ?? []) listener(event);
     },
   };
 }
@@ -357,7 +378,9 @@ test('Animal Champion shell has the exact stable semantic contract', async () =>
   ]);
 
   assert.doesNotMatch(html, /<(?:audio|input|textarea)\b/i);
-  assert.doesNotMatch(html, /\b(?:microphone|speech|fullscreen|requestFullscreen|webkitRequestFullscreen|settings?)\b/i);
+  assert.match(html, /No microphone\s*\/\s*Multiple choice/i);
+  assert.match(html, /aria-label="Answer method"/i);
+  assert.doesNotMatch(html, /\b(?:fullscreen|requestFullscreen|webkitRequestFullscreen)\b/i);
   assert.doesNotMatch(html, /\b(?:src|href)="https?:\/\//i);
 });
 
@@ -366,15 +389,18 @@ test('Animal Champion controller exposes the playable runtime contract', async (
   const controllerModule = await import(`${controllerUrl.href}?contract=${Date.now()}`);
 
   assert.equal(typeof controllerModule.AnimalChampionController, 'function');
-  const methods = Object.getOwnPropertyNames(controllerModule.AnimalChampionController.prototype).sort();
-  assert.deepEqual(methods, [
+  const methods = new Set(Object.getOwnPropertyNames(controllerModule.AnimalChampionController.prototype));
+  for (const method of [
     'acceptChoice',
+    'acceptSpeechCandidates',
     'beginRound',
     'beginFreshRun',
     'constructor',
+    'createRecognition',
     'delay',
     'finishFeedback',
     'handleTimeout',
+    'handleSpeechMessage',
     'invalidateRun',
     'isCurrent',
     'lockChoices',
@@ -383,6 +409,7 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     'playAgain',
     'readLeaderboard',
     'renderChoices',
+    'renderAnswerControls',
     'renderFeedback',
     'renderLeaderboard',
     'resetRoundView',
@@ -391,24 +418,36 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     'revealMenu',
     'scheduleFeedbackCompletion',
     'selectMode',
+    'selectInputMode',
     'showScreen',
     'showFatalError',
     'showGameOver',
     'start',
     'startCountdown',
     'startRun',
+    'startVoiceInput',
+    'stopVoiceInput',
+    'switchToChoicesForRound',
     'teardown',
     'toggleSound',
     'updateHud',
+    'updateInputModeControls',
+    'updateMicStatus',
     'updateSoundControl',
     'updateTimer',
-  ].sort());
+  ]) {
+    assert.equal(methods.has(method), true, `expected controller method ${method}`);
+  }
 
   const imports = [...game.matchAll(/^import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"];?$/gm)]
     .map(([, bindings, source]) => ({ bindings: bindings.replace(/\s+/g, ' ').trim(), source }));
   assert.deepEqual(imports, [
     { bindings: '{ ANIMAL_DATABASE }', source: './animal-data.js' },
     { bindings: '{ AnimalChampionAudio }', source: './audio-system.js' },
+    {
+      bindings: '{ buildSpeechCandidatesFromEvent, matchAnimalSpeech, }',
+      source: './animal-speech.js',
+    },
     {
       bindings: '{ ANSWER_WINDOW_MS, FEEDBACK_DELAY_MS, MODES, OUTCOMES, POINTS_PER_CORRECT, AnimalChampionEngine, createPausableDeadline, normalizeLeaderboard, recordLeaderboardScore, }',
       source: './game-engine.js',
@@ -434,7 +473,9 @@ test('Animal Champion controller exposes the playable runtime contract', async (
   assert.match(game, /this\.audio\.playPrompt\(\)/);
   assert.match(game, /this\.audio\.playFeedback\(\{/);
   assert.match(game, /this\.audio\.playGameOver\(state\.score\)/);
-  assert.doesNotMatch(game, /AudioContext|new\s+Audio\b|microphone|SpeechRecognition|getUserMedia|requestFullscreen|webkitRequestFullscreen|<input/i);
+  assert.match(game, /SpeechRecognition|webkitSpeechRecognition/);
+  assert.match(game, /LAHS_ANIMAL_CHAMPION_SPEECH_CONTROL/);
+  assert.doesNotMatch(game, /AudioContext|new\s+Audio\b|requestFullscreen|webkitRequestFullscreen|<input/i);
 });
 
 test('Animal Champion exposes one accessible persistent narration control', async () => {
@@ -455,7 +496,7 @@ test('Animal Champion controller guards async work and centralizes run invalidat
   assertEveryAwaitIsTokenGuarded(game, 'beginRound');
   assertEveryAwaitIsTokenGuarded(game, 'loadImageCandidate');
   assert.match(
-    controllerMethod(game, 'beginRound'),
+    controllerMethod(game, 'startAnswerDeadline'),
     /this\.deadline\.start\(\);\s*if \(this\.document\.hidden\) this\.deadline\.pause\(\);/,
     'an image that decodes while hidden must not start consuming answer time',
   );
@@ -560,6 +601,7 @@ test('controller hands focus from Start to the countdown and first ready answer'
   };
   harness.controller.start();
   harness.controller.revealMenu();
+  harness.controller.selectInputMode('choice');
 
   const startButton = harness.document.getElementById('startButton');
   startButton.focus();
@@ -587,6 +629,7 @@ test('controller falls back after one decode failure and starts choices and time
     }
   }
   const harness = await createControllerHarness({ window: { ImageClass: FallbackImage } });
+  harness.controller.selectInputMode('choice');
   const events = [];
   harness.controller.engine = {
     beginRound: () => structuredClone(FIXED_ROUND),
@@ -609,6 +652,303 @@ test('controller falls back after one decode failure and starts choices and time
   assert.equal(harness.document.getElementById('choiceGrid').children.length, 4);
   assert.ok(harness.controller.deadline);
   assert.equal(harness.document.getElementById('timerRegion').getAttribute('aria-valuenow'), '15');
+});
+
+test('voice is the default and the four answers appear only after selecting no microphone mode', async () => {
+  const harness = await createControllerHarness();
+  harness.controller.start();
+
+  assert.equal(harness.document.getElementById('inputVoice').getAttribute('aria-pressed'), 'true');
+  assert.equal(harness.document.getElementById('inputChoice').getAttribute('aria-pressed'), 'false');
+
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.phase = 'answering';
+  harness.controller.renderAnswerControls(FIXED_ROUND);
+  assert.equal(harness.document.getElementById('choiceGrid').hidden, true);
+  assert.equal(harness.document.getElementById('choiceGrid').children.length, 0);
+  assert.equal(harness.document.getElementById('voiceAnswerPanel').hidden, false);
+
+  harness.document.getElementById('useChoicesButton').dispatch('click');
+  assert.equal(harness.document.getElementById('inputVoice').getAttribute('aria-pressed'), 'false');
+  assert.equal(harness.document.getElementById('inputChoice').getAttribute('aria-pressed'), 'true');
+  assert.equal(harness.document.getElementById('voiceAnswerPanel').hidden, true);
+  assert.equal(harness.document.getElementById('choiceGrid').hidden, false);
+  assert.equal(harness.document.getElementById('choiceGrid').children.length, 4);
+});
+
+test('voice mode waits for prompt narration before opening its full answer timer and microphone', async () => {
+  let finishPrompt;
+  class FakeRecognition {
+    static instances = [];
+
+    constructor() {
+      this.startCalls = 0;
+      this.abortCalls = 0;
+      FakeRecognition.instances.push(this);
+    }
+
+    start() {
+      this.startCalls += 1;
+      this.onstart?.();
+    }
+
+    abort() {
+      this.abortCalls += 1;
+      this.onend?.();
+    }
+  }
+
+  const harness = await createControllerHarness({ window: { SpeechRecognition: FakeRecognition } });
+  harness.controller.audio = {
+    enabled: true,
+    playPrompt: () => new Promise((resolve) => { finishPrompt = resolve; }),
+    cancel() {},
+    setVisibilityHidden() {},
+  };
+  harness.controller.engine = {
+    beginRound: () => structuredClone(FIXED_ROUND),
+    activateRound: () => true,
+    getState: () => ({ mode: 'challenger', score: 0, streak: 0 }),
+  };
+
+  await harness.controller.beginRound();
+  assert.equal(harness.controller.deadline, null);
+  assert.equal(FakeRecognition.instances[0]?.startCalls ?? 0, 0);
+  assert.equal(harness.document.getElementById('choiceGrid').children.length, 0);
+  assert.equal(harness.document.getElementById('voiceAnswerPanel').hidden, false);
+
+  finishPrompt(true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(harness.controller.deadline);
+  assert.equal(harness.document.getElementById('timerRegion').getAttribute('aria-valuenow'), '15');
+  assert.equal(FakeRecognition.instances[0].startCalls, 1);
+});
+
+test('voice mode also waits for the pending microphone permission before spending answer time', async () => {
+  let finishPermission;
+  class PreparedRecognition {
+    static instance = null;
+
+    constructor() {
+      this.startCalls = 0;
+      PreparedRecognition.instance = this;
+    }
+
+    start() {
+      this.startCalls += 1;
+    }
+
+    abort() {}
+  }
+
+  const harness = await createControllerHarness({ window: { SpeechRecognition: PreparedRecognition } });
+  harness.controller.audio = {
+    enabled: false,
+    playPrompt: async () => false,
+    cancel() {},
+    setVisibilityHidden() {},
+  };
+  harness.controller.engine = {
+    beginRound: () => structuredClone(FIXED_ROUND),
+    activateRound: () => true,
+    getState: () => ({ mode: 'challenger', score: 0, streak: 0 }),
+  };
+  harness.controller.voicePreparation = new Promise((resolve) => { finishPermission = resolve; });
+
+  await harness.controller.beginRound();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.controller.deadline, null);
+  assert.equal(PreparedRecognition.instance?.startCalls ?? 0, 0);
+
+  finishPermission(true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(harness.controller.deadline);
+  assert.equal(PreparedRecognition.instance.startCalls, 1);
+  assert.equal(harness.document.getElementById('timerRegion').getAttribute('aria-valuenow'), '15');
+});
+
+test('wrong animal speech stays retryable and a later matching alternative submits once', async () => {
+  const harness = await createControllerHarness();
+  let submissions = 0;
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.selectedInputMode = 'voice';
+  harness.controller.engine = {
+    submitChoice(roundId, animalId) {
+      submissions += 1;
+      assert.equal(roundId, FIXED_ROUND.roundId);
+      assert.equal(animalId, 'bat');
+      return { accepted: false };
+    },
+  };
+
+  assert.equal(harness.controller.acceptSpeechCandidates(['cat']), false);
+  assert.equal(submissions, 0);
+  assert.match(harness.document.getElementById('voiceTranscript').textContent, /cat/i);
+  assert.match(harness.document.getElementById('micStatusText').textContent, /keep trying/i);
+
+  assert.equal(harness.controller.acceptSpeechCandidates(['unrelated', 'bat']), true);
+  assert.equal(submissions, 1);
+});
+
+test('host speech uses Animal Champion messages and accepts a matching final transcript', async () => {
+  const posted = [];
+  const parent = { postMessage: (message, origin) => posted.push({ message, origin }) };
+  const harness = await createControllerHarness({ window: { parent } });
+  let submissions = 0;
+  harness.controller.engine = {
+    getState: () => ({ mode: 'challenger', score: 0, streak: 0 }),
+    submitChoice() {
+      submissions += 1;
+      return { accepted: false };
+    },
+  };
+  harness.controller.start();
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+
+  harness.dispatchWindow('message', {
+    source: parent,
+    origin: 'https://example.test',
+    data: {
+      type: 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT',
+      gameId: 'animal-champion',
+      event: 'availability',
+      available: true,
+      engine: 'native',
+    },
+  });
+  harness.controller.startVoiceInput();
+
+  const startMessage = posted.find(({ message }) => message.command === 'start');
+  assert.equal(startMessage.origin, 'https://example.test');
+  assert.equal(startMessage.message.type, 'LAHS_ANIMAL_CHAMPION_SPEECH_CONTROL');
+  assert.equal(startMessage.message.gameId, 'animal-champion');
+  assert.equal(startMessage.message.options.roundId, FIXED_ROUND.roundId);
+  assert.ok(startMessage.message.options.contextualPhrases.includes('Bat'));
+
+  harness.dispatchWindow('message', {
+    source: parent,
+    origin: 'https://example.test',
+    data: {
+      type: 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT',
+      gameId: 'animal-champion',
+      event: 'final',
+      roundId: FIXED_ROUND.roundId,
+      matches: ['bat'],
+      text: 'bat',
+    },
+  });
+  assert.equal(submissions, 1);
+});
+
+test('a native speech error leaves Listen Again able to start the same round', async () => {
+  const posted = [];
+  const parent = { postMessage: (message) => posted.push(message) };
+  const harness = await createControllerHarness({ window: { parent } });
+  harness.controller.start();
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.dispatchWindow('message', {
+    source: parent,
+    origin: 'https://example.test',
+    data: {
+      type: 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT',
+      gameId: 'animal-champion',
+      event: 'availability',
+      available: true,
+      engine: 'native',
+    },
+  });
+  assert.equal(posted.filter((message) => message.command === 'start').length, 1);
+
+  harness.dispatchWindow('message', {
+    source: parent,
+    origin: 'https://example.test',
+    data: {
+      type: 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT',
+      gameId: 'animal-champion',
+      event: 'error',
+      roundId: FIXED_ROUND.roundId,
+      message: 'Speech service stopped.',
+    },
+  });
+  harness.document.getElementById('micButton').dispatch('click');
+  assert.equal(posted.filter((message) => message.command === 'start').length, 2);
+});
+
+test('blocked microphone permission never auto-loops but remains manually retryable', async () => {
+  class PermissionRecognition {
+    static instance = null;
+
+    constructor() {
+      this.startCalls = 0;
+      PermissionRecognition.instance = this;
+    }
+
+    start() {
+      this.startCalls += 1;
+    }
+
+    abort() {}
+  }
+
+  const harness = await createControllerHarness({ window: { SpeechRecognition: PermissionRecognition } });
+  harness.controller.start();
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.startVoiceInput();
+  assert.equal(PermissionRecognition.instance.startCalls, 1);
+
+  PermissionRecognition.instance.onerror({ error: 'not-allowed' });
+  PermissionRecognition.instance.onend();
+  harness.flushTimers();
+  assert.equal(PermissionRecognition.instance.startCalls, 1, 'permission errors must not auto-retry');
+  assert.match(harness.document.getElementById('micStatusText').textContent, /permission is blocked/i);
+
+  harness.document.getElementById('micButton').dispatch('click');
+  assert.equal(PermissionRecognition.instance.startCalls, 2, 'player can retry after changing permission');
+});
+
+test('late native speech availability activates the current voice round automatically', async () => {
+  const posted = [];
+  const parent = { postMessage: (message) => posted.push(message) };
+  const harness = await createControllerHarness({ window: { parent } });
+  harness.controller.start();
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  assert.equal(harness.controller.startVoiceInput(), false);
+
+  harness.dispatchWindow('message', {
+    source: parent,
+    origin: 'https://example.test',
+    data: {
+      type: 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT',
+      gameId: 'animal-champion',
+      event: 'availability',
+      available: true,
+      engine: 'native',
+    },
+  });
+
+  assert.equal(posted.filter((message) => message.command === 'start').length, 1);
+});
+
+test('the shared answer deadline expires the exact active round without a stale closure', async () => {
+  const harness = await createControllerHarness();
+  const expiredRoundIds = [];
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.engine = {
+    timeout(roundId) {
+      expiredRoundIds.push(roundId);
+      return { accepted: false };
+    },
+  };
+
+  harness.controller.startAnswerDeadline();
+  assert.doesNotThrow(() => harness.stepAnimationFrame(15_000));
+  assert.deepEqual(expiredRoundIds, [FIXED_ROUND.roundId]);
 });
 
 test('controller ignores a stale image decode completion after reset', async () => {

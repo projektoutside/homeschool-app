@@ -19,7 +19,7 @@ const DEFAULT_POLICY: GameHostPolicy = Object.freeze({
 const ANIMAL_CHAMPION_POLICY: GameHostPolicy = Object.freeze({
     lockZoom: false,
     requiresNativeFullscreen: false,
-    iframeAllow: undefined,
+    iframeAllow: 'microphone',
     allowFullScreen: false,
     iframeSandbox: 'allow-same-origin allow-scripts',
 });

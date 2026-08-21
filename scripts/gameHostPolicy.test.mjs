@@ -9,6 +9,7 @@ import {
 
 const LEGACY_IFRAME_ALLOW = 'autoplay; fullscreen; camera; microphone; geolocation';
 const LEGACY_IFRAME_SANDBOX = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation';
+const ANIMAL_CHAMPION_IFRAME_ALLOW = 'microphone';
 const ANIMAL_CHAMPION_IFRAME_SANDBOX = 'allow-same-origin allow-scripts';
 const appSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const mainLayoutSource = readFileSync(new URL('../src/layouts/MainLayout.tsx', import.meta.url), 'utf8');
@@ -21,7 +22,7 @@ test('Animal Champion receives the frozen least-privilege host policy', () => {
   assert.deepEqual(policy, {
     lockZoom: false,
     requiresNativeFullscreen: false,
-    iframeAllow: undefined,
+    iframeAllow: ANIMAL_CHAMPION_IFRAME_ALLOW,
     allowFullScreen: false,
     iframeSandbox: ANIMAL_CHAMPION_IFRAME_SANDBOX,
   });

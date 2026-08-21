@@ -203,7 +203,9 @@ test('runtime records, images, and export are immutable and have only the approv
   for (const record of ANIMAL_DATABASE) {
     assert.ok(Object.isFrozen(record));
     assert.ok(Object.isFrozen(record.images));
-    assert.deepEqual(Object.keys(record).sort(), ['alt', 'id', 'images', 'name']);
+    assert.ok(Object.isFrozen(record.speechAliases));
+    assert.deepEqual(Object.keys(record).sort(), ['alt', 'id', 'images', 'name', 'speechAliases']);
+    assert.ok(record.speechAliases.every((alias) => typeof alias === 'string' && alias.trim() === alias));
     assert.match(record.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.equal(
       record.alt,

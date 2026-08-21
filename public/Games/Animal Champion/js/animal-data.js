@@ -1,8 +1,9 @@
-const animal = (id, name, images) => Object.freeze({
+const animal = (id, name, images, speechAliases = []) => Object.freeze({
   id,
   name,
   alt: `${/^[aeiou]/i.test(name) ? 'An' : 'A'} ${name.toLowerCase()} in its natural habitat`,
   images: Object.freeze(images),
+  speechAliases: Object.freeze(speechAliases),
 });
 
 export const ANIMAL_DATABASE = Object.freeze([
@@ -21,19 +22,19 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('cat', 'Cat', [
     'Animals/Cat/chatgpt-generated.webp',
     'Animals/Cat/chatgpt-anime.webp',
-  ]),
+  ], ['kitten']),
   animal('cheetah', 'Cheetah', [
     'Animals/Cheetah/93ff7ae1-90a0-428d-8db7-fd4b3a9f54b0.webp',
     'Animals/Cheetah/animal-champion-secondary.webp',
-  ]),
+  ], ['cheater']),
   animal('chicken', 'Chicken', [
     'Animals/Chicken/chatgpt-generated.webp',
     'Animals/Chicken/chatgpt-anime.webp',
-  ]),
+  ], ['hen', 'rooster', 'chick']),
   animal('chimpanzee', 'Chimpanzee', [
     'Animals/Chimpanzee/chatgpt-generated.webp',
     'Animals/Chimpanzee/chatgpt-anime.webp',
-  ]),
+  ], ['chimp']),
   animal('cow', 'Cow', [
     'Animals/Cow/chatgpt-generated.webp',
     'Animals/Cow/chatgpt-anime.webp',
@@ -41,7 +42,7 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('crocodile', 'Crocodile', [
     'Animals/Crocodile/animal-champion-primary.webp',
     'Animals/Crocodile/animal-champion-secondary.webp',
-  ]),
+  ], ['croc']),
   animal('deer', 'Deer', [
     'Animals/Deer/chatgpt-generated.webp',
     'Animals/Deer/chatgpt-anime.webp',
@@ -49,7 +50,7 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('dog', 'Dog', [
     'Animals/Dog/chatgpt-generated.webp',
     'Animals/Dog/chatgpt-anime.webp',
-  ]),
+  ], ['puppy']),
   animal('dolphin', 'Dolphin', [
     'Animals/Dolphin/chatgpt-generated.webp',
     'Animals/Dolphin/chatgpt-anime.webp',
@@ -101,7 +102,7 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('hippopotamus', 'Hippopotamus', [
     'Animals/Hippopotamus/chatgpt-generated.webp',
     'Animals/Hippopotamus/animal-champion-secondary.webp',
-  ]),
+  ], ['hippo']),
   animal('horse', 'Horse', [
     'Animals/Horse/chatgpt-generated.webp',
     'Animals/Horse/chatgpt-anime.webp',
@@ -125,7 +126,7 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('mouse', 'Mouse', [
     'Animals/Mouse/chatgpt-generated.webp',
     'Animals/Mouse/chatgpt-anime.webp',
-  ]),
+  ], ['mice']),
   animal('octopus', 'Octopus', [
     'Animals/Octopus/animal-champion-primary.webp',
     'Animals/Octopus/animal-champion-secondary.webp',
@@ -153,19 +154,19 @@ export const ANIMAL_DATABASE = Object.freeze([
   animal('pig', 'Pig', [
     'Animals/Pig/chatgpt-generated.webp',
     'Animals/Pig/animal-champion-secondary.webp',
-  ]),
+  ], ['piggy']),
   animal('polar-bear', 'Polar Bear', [
     'Animals/Polar Bear/chatgpt-generated.webp',
     'Animals/Polar Bear/chatgpt-anime.webp',
-  ]),
+  ], ['polar beer']),
   animal('rabbit', 'Rabbit', [
     'Animals/Rabbit/chatgpt-generated.webp',
     'Animals/Rabbit/animal-champion-secondary.webp',
-  ]),
+  ], ['bunny']),
   animal('rhinoceros', 'Rhinoceros', [
     'Animals/Rhinoceros/chatgpt-generated.webp',
     'Animals/Rhinoceros/chatgpt-anime.webp',
-  ]),
+  ], ['rhino']),
   animal('seal', 'Seal', [
     'Animals/Seal/chatgpt-generated.webp',
     'Animals/Seal/chatgpt-anime.webp',
