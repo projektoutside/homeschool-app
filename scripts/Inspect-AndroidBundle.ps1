@@ -46,6 +46,7 @@ $requiredAnimalEntries = @(
     'game_assets/assets/Games/Animal Champion/index.html',
     'game_assets/assets/Games/Animal Champion/css/style.css',
     'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+    'game_assets/assets/Games/Animal Champion/js/animal-speech.js',
     'game_assets/assets/Games/Animal Champion/js/audio-system.js',
     'game_assets/assets/Games/Animal Champion/js/game-engine.js',
     'game_assets/assets/Games/Animal Champion/js/game.js',
