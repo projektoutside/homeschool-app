@@ -36,6 +36,21 @@
             <small>Keep exploring</small>
           </button>
         </div>
+        <p class="menu-panel__label">Choose your difficulty</p>
+        <div class="difficulty-toggle" role="group" aria-label="Animal difficulty">
+          <button id="difficultyEasy" type="button" aria-pressed="true">
+            <span>Easy</span>
+            <small>Everyday favorites</small>
+          </button>
+          <button id="difficultyHard" type="button" aria-pressed="false">
+            <span>Hard</span>
+            <small>Wild explorers</small>
+          </button>
+          <button id="difficultyExpert" type="button" aria-pressed="false">
+            <span>Expert</span>
+            <small>Tricky wildlife</small>
+          </button>
+        </div>
         <p class="menu-panel__label">Choose how to answer</p>
         <div class="input-toggle" role="group" aria-label="Answer method">
           <button id="inputVoice" type="button" aria-pressed="true">
@@ -78,7 +93,7 @@
       </figure>
 
       <div class="question-block">
-        <span class="eyebrow">Wildlife identification</span>
+        <span id="questionEyebrow" class="eyebrow">Easy wildlife identification</span>
         <h2 id="questionText">Which animal is this?</h2>
       </div>
       <div id="timerRegion" class="timer-track" role="progressbar" aria-label="Time remaining" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15">

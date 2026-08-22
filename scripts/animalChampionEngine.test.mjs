@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.js';
+import { DIFFICULTIES } from '../public/Games/Animal Champion/js/difficulty.js';
 import {
   ANSWER_WINDOW_MS,
   AnimalChampionEngine,
@@ -46,6 +47,32 @@ test('one shuffled deck shows all 50 animals before any repeat and prevents a bo
   }
   assert.equal(new Set(seen).size, 50);
   assert.notEqual(engine.beginRound().correctAnimalId, seen.at(-1));
+});
+
+test('difficulty decks contain only their assigned animals and keep all distractors in the same tier', () => {
+  const expectedCounts = new Map([
+    [DIFFICULTIES.EASY, 17],
+    [DIFFICULTIES.HARD, 17],
+    [DIFFICULTIES.EXPERT, 16],
+  ]);
+  for (const [difficulty, expectedCount] of expectedCounts) {
+    const engine = buildEngine();
+    const started = engine.startRun(MODES.CONTINUOUS, difficulty);
+    assert.equal(started.difficulty, difficulty);
+    const allowedIds = new Set(
+      ANIMAL_DATABASE.filter((animal) => animal.difficulty === difficulty).map(({ id }) => id),
+    );
+    assert.equal(allowedIds.size, expectedCount);
+    const seen = new Set();
+    for (let index = 0; index < expectedCount; index += 1) {
+      const round = engine.beginRound();
+      seen.add(round.correctAnimalId);
+      assert.ok(round.choiceIds.every((id) => allowedIds.has(id)));
+      answerCorrectly(engine, round);
+      engine.finishFeedback();
+    }
+    assert.deepEqual(seen, allowedIds);
+  }
 });
 
 test('start and reset create fresh decks, clear run state, and invalidate old round IDs', () => {
@@ -282,6 +309,7 @@ test('public snapshots cannot mutate engine state', () => {
 test('illegal phase transitions and invalid random outputs are rejected safely', () => {
   assert.throws(() => new AnimalChampionEngine({ animals: ANIMAL_DATABASE.slice(0, 3) }), /At least four animals/);
   assert.throws(() => buildEngine().startRun('survival'), /Invalid game mode/);
+  assert.throws(() => buildEngine().startRun(MODES.CONTINUOUS, 'legendary'), /Invalid difficulty/);
   assert.throws(() => buildEngine({ random: () => Number.NaN }).startRun(MODES.CONTINUOUS), /random.*finite/i);
   assert.throws(() => buildEngine({ random: () => 1 }).startRun(MODES.CONTINUOUS), /random.*less than 1/i);
 

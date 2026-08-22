@@ -1,5 +1,6 @@
 import { ANIMAL_DATABASE } from './animal-data.js';
 import { AnimalChampionAudio } from './audio-system.js';
+import { DIFFICULTIES, isValidDifficulty } from './difficulty.js';
 import {
   buildSpeechCandidatesFromEvent,
   matchAnimalSpeech,
@@ -22,6 +23,11 @@ const SPEECH_RESTART_DELAY_MS = 350;
 const ANIMAL_CHAMPION_SPEECH_CONTROL = 'LAHS_ANIMAL_CHAMPION_SPEECH_CONTROL';
 const ANIMAL_CHAMPION_SPEECH_EVENT = 'LAHS_ANIMAL_CHAMPION_SPEECH_EVENT';
 export const INPUT_MODES = Object.freeze({ VOICE: 'voice', CHOICE: 'choice' });
+const DIFFICULTY_LABELS = Object.freeze({
+  [DIFFICULTIES.EASY]: 'Easy',
+  [DIFFICULTIES.HARD]: 'Hard',
+  [DIFFICULTIES.EXPERT]: 'Expert',
+});
 
 const REQUIRED_ELEMENT_IDS = Object.freeze([
   'menuScreen',
@@ -29,6 +35,9 @@ const REQUIRED_ELEMENT_IDS = Object.freeze([
   'menuPanel',
   'modeChallenger',
   'modeContinuous',
+  'difficultyEasy',
+  'difficultyHard',
+  'difficultyExpert',
   'inputVoice',
   'inputChoice',
   'startButton',
@@ -37,6 +46,7 @@ const REQUIRED_ELEMENT_IDS = Object.freeze([
   'gameScreen',
   'scoreValue',
   'streakValue',
+  'questionEyebrow',
   'soundToggle',
   'newGameButton',
   'animalBackdrop',
@@ -105,6 +115,7 @@ export class AnimalChampionController {
     this.engine = new AnimalChampionEngine({ animals: ANIMAL_DATABASE });
     this.audio = new AnimalChampionAudio({ window });
     this.selectedMode = MODES.CHALLENGER;
+    this.selectedDifficulty = DIFFICULTIES.EASY;
     this.selectedInputMode = INPUT_MODES.VOICE;
     this.phase = 'menu-locked';
     this.deadline = null;
@@ -141,6 +152,21 @@ export class AnimalChampionController {
     this.elements.modeContinuous.addEventListener(
       'click',
       () => this.selectMode(MODES.CONTINUOUS),
+      listenerOptions,
+    );
+    this.elements.difficultyEasy.addEventListener(
+      'click',
+      () => this.selectDifficulty(DIFFICULTIES.EASY),
+      listenerOptions,
+    );
+    this.elements.difficultyHard.addEventListener(
+      'click',
+      () => this.selectDifficulty(DIFFICULTIES.HARD),
+      listenerOptions,
+    );
+    this.elements.difficultyExpert.addEventListener(
+      'click',
+      () => this.selectDifficulty(DIFFICULTIES.EXPERT),
       listenerOptions,
     );
     this.elements.inputVoice.addEventListener(
@@ -184,6 +210,7 @@ export class AnimalChampionController {
     }, listenerOptions);
 
     this.selectMode(this.selectedMode);
+    this.selectDifficulty(this.selectedDifficulty);
     this.updateInputModeControls();
     this.createRecognition();
     this.phase = 'menu-locked';
@@ -216,7 +243,7 @@ export class AnimalChampionController {
     this.elements.menuReveal.setAttribute('aria-expanded', 'true');
     this.elements.menuReveal.hidden = true;
     this.elements.menuPanel.hidden = false;
-    this.elements.modeChallenger.focus();
+    this.elements.modeChallenger.focus({ preventScroll: true });
     this.audio.playMenu();
   }
 
@@ -225,6 +252,24 @@ export class AnimalChampionController {
     this.selectedMode = mode;
     this.elements.modeChallenger.setAttribute('aria-pressed', String(mode === MODES.CHALLENGER));
     this.elements.modeContinuous.setAttribute('aria-pressed', String(mode === MODES.CONTINUOUS));
+  }
+
+  selectDifficulty(difficulty) {
+    if (!isValidDifficulty(difficulty)) throw new TypeError(`Invalid difficulty: ${difficulty}`);
+    this.selectedDifficulty = difficulty;
+    this.elements.difficultyEasy.setAttribute(
+      'aria-pressed',
+      String(difficulty === DIFFICULTIES.EASY),
+    );
+    this.elements.difficultyHard.setAttribute(
+      'aria-pressed',
+      String(difficulty === DIFFICULTIES.HARD),
+    );
+    this.elements.difficultyExpert.setAttribute(
+      'aria-pressed',
+      String(difficulty === DIFFICULTIES.EXPERT),
+    );
+    this.elements.questionEyebrow.textContent = `${DIFFICULTY_LABELS[difficulty]} wildlife identification`;
   }
 
   selectInputMode(mode) {
@@ -505,7 +550,7 @@ export class AnimalChampionController {
   }
 
   beginFreshRun() {
-    this.engine.startRun(this.selectedMode);
+    this.engine.startRun(this.selectedMode, this.selectedDifficulty);
     this.phase = 'countdown';
     this.updateHud();
     this.resetRoundView();
@@ -714,7 +759,11 @@ export class AnimalChampionController {
         const platformAward = this.window.LAHSPointsBridge?.awardPoints(POINTS_PER_CORRECT, {
           eventId: result.eventId,
           label: 'Correct animal identification',
-          meta: { animalName: correctAnimal.name, gameMode: this.engine.getState().mode },
+          meta: {
+            animalName: correctAnimal.name,
+            gameMode: this.engine.getState().mode,
+            gameDifficulty: this.engine.getState().difficulty,
+          },
         });
         platformAward?.catch?.(() => {});
       } catch {
@@ -875,7 +924,7 @@ export class AnimalChampionController {
     this.elements.menuReveal.hidden = true;
     this.elements.menuReveal.setAttribute('aria-expanded', 'true');
     this.elements.menuPanel.hidden = false;
-    this.elements.modeChallenger.focus();
+    this.elements.modeChallenger.focus({ preventScroll: true });
     this.audio.playMenu();
   }
 

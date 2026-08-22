@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 $resolvedBundlePath = (Resolve-Path -LiteralPath $BundlePath).Path
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$expectedAnimalImageCount = 100
+$expectedAnimalImageCount = 150
 $expectedAnimalVoiceCount = 154
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $animalDataPath = Join-Path $repoRoot 'public\Games\Animal Champion\js\animal-data.js'
@@ -46,6 +46,7 @@ $requiredAnimalEntries = @(
     'game_assets/assets/Games/Animal Champion/index.html',
     'game_assets/assets/Games/Animal Champion/css/style.css',
     'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+    'game_assets/assets/Games/Animal Champion/js/difficulty.js',
     'game_assets/assets/Games/Animal Champion/js/animal-speech.js',
     'game_assets/assets/Games/Animal Champion/js/audio-system.js',
     'game_assets/assets/Games/Animal Champion/js/game-engine.js',

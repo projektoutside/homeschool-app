@@ -381,13 +381,21 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.mode-toggle {
+.mode-toggle,
+.difficulty-toggle {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.7rem;
 }
 
-.mode-toggle button {
+.mode-toggle {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.difficulty-toggle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+:is(.mode-toggle, .difficulty-toggle) button {
   display: grid;
   place-content: center;
   gap: 0.17rem;
@@ -400,20 +408,20 @@ button:disabled {
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.mode-toggle button:hover {
+:is(.mode-toggle, .difficulty-toggle) button:hover {
   border-color: rgb(246 207 114 / 48%);
   color: var(--ivory-100);
   transform: translateY(-2px);
 }
 
-.mode-toggle button[aria-pressed="true"] {
+:is(.mode-toggle, .difficulty-toggle) button[aria-pressed="true"] {
   border-color: var(--gold-300);
   color: var(--ink-950);
   background: linear-gradient(135deg, var(--gold-300), var(--gold-500));
   box-shadow: 0 9px 24px rgb(215 154 43 / 22%);
 }
 
-.mode-toggle small {
+:is(.mode-toggle, .difficulty-toggle) small {
   overflow: hidden;
   font-size: 0.68rem;
   font-weight: 650;
@@ -1087,8 +1095,46 @@ button:disabled {
     border-radius: 22px;
   }
 
-  .mode-toggle button {
+  .screen--menu:has(.menu-panel:not([hidden])) {
+    grid-template-rows: auto auto;
+    align-content: start;
+    gap: 0.45rem;
+    overflow-y: auto;
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden]))::before {
+    bottom: 0;
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden])) .menu-hero {
+    align-self: start;
+    padding: 0.25rem 0.4rem 0.55rem;
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden])) .menu-hero h1 {
+    font-size: clamp(2.8rem, 15vw, 4rem);
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden])) .menu-hero__intro {
+    margin-top: 0.75rem;
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden])) .menu-panel {
+    align-self: start;
+    gap: 0.7rem;
+    padding: 0.85rem;
+  }
+
+  .screen--menu:has(.menu-panel:not([hidden])) ~ .sound-toggle {
+    bottom: max(14px, var(--safe-bottom));
+  }
+
+  :is(.mode-toggle, .difficulty-toggle) button {
     padding-inline: 0.5rem;
+  }
+
+  .difficulty-toggle small {
+    white-space: normal;
   }
 
   .input-toggle button {
@@ -1275,7 +1321,14 @@ button:disabled {
     transform: none;
   }
 
-  .mode-toggle {
+  .screen--menu:has(.menu-panel:not([hidden])) ~ .sound-toggle {
+    right: auto;
+    bottom: max(8px, var(--safe-bottom));
+    left: max(8px, var(--safe-left));
+  }
+
+  .mode-toggle,
+  .difficulty-toggle {
     gap: 0.45rem;
   }
 
@@ -1283,14 +1336,14 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mode-toggle button {
+  :is(.mode-toggle, .difficulty-toggle) button {
     min-height: 48px;
     padding: 0.4rem;
     border-radius: 13px;
     font-size: 0.78rem;
   }
 
-  .mode-toggle small {
+  :is(.mode-toggle, .difficulty-toggle) small {
     display: none;
   }
 
@@ -1426,6 +1479,7 @@ button:disabled {
   .menu-reveal:hover .menu-reveal__prompt,
   .menu-reveal:focus-visible .menu-reveal__prompt,
   .mode-toggle button:hover,
+  .difficulty-toggle button:hover,
   .input-toggle button:hover,
   .primary-action:hover,
   .secondary-action:hover,
@@ -1489,6 +1543,7 @@ button:disabled {
   .menu-panel__label,
   .menu-hero__intro,
   .mode-toggle small,
+  .difficulty-toggle small,
   .input-toggle small,
   .mic-status-text,
   .voice-transcript,
@@ -1527,7 +1582,8 @@ button:disabled {
 
   .primary-action,
   .primary-action:hover,
-  .mode-toggle button[aria-pressed="true"] {
+  .mode-toggle button[aria-pressed="true"],
+  .difficulty-toggle button[aria-pressed="true"] {
     border-color: Highlight;
     color: ButtonText;
     background: ButtonFace;

@@ -10,6 +10,9 @@ const REQUIRED_IDS = [
   'menuPanel',
   'modeChallenger',
   'modeContinuous',
+  'difficultyEasy',
+  'difficultyHard',
+  'difficultyExpert',
   'inputVoice',
   'inputChoice',
   'startButton',
@@ -18,6 +21,7 @@ const REQUIRED_IDS = [
   'gameScreen',
   'scoreValue',
   'streakValue',
+  'questionEyebrow',
   'soundToggle',
   'newGameButton',
   'animalBackdrop',
@@ -46,6 +50,9 @@ const CONTROL_IDS = [
   'menuReveal',
   'modeChallenger',
   'modeContinuous',
+  'difficultyEasy',
+  'difficultyHard',
+  'difficultyExpert',
   'inputVoice',
   'inputChoice',
   'startButton',
@@ -418,6 +425,7 @@ test('Animal Champion controller exposes the playable runtime contract', async (
     'revealMenu',
     'scheduleFeedbackCompletion',
     'selectMode',
+    'selectDifficulty',
     'selectInputMode',
     'showScreen',
     'showFatalError',
@@ -444,6 +452,7 @@ test('Animal Champion controller exposes the playable runtime contract', async (
   assert.deepEqual(imports, [
     { bindings: '{ ANIMAL_DATABASE }', source: './animal-data.js' },
     { bindings: '{ AnimalChampionAudio }', source: './audio-system.js' },
+    { bindings: '{ DIFFICULTIES, isValidDifficulty }', source: './difficulty.js' },
     {
       bindings: '{ buildSpeechCandidatesFromEvent, matchAnimalSpeech, }',
       source: './animal-speech.js',
@@ -510,7 +519,7 @@ test('Animal Champion controller guards async work and centralizes run invalidat
   }
 
   const start = controllerMethod(game, 'start');
-  for (const id of ['menuReveal', 'modeChallenger', 'modeContinuous', 'startButton', 'newGameButton', 'playAgainButton', 'mainMenuButton', 'retryButton', 'errorMenuButton']) {
+  for (const id of ['menuReveal', 'modeChallenger', 'modeContinuous', 'difficultyEasy', 'difficultyHard', 'difficultyExpert', 'startButton', 'newGameButton', 'playAgainButton', 'mainMenuButton', 'retryButton', 'errorMenuButton']) {
     assert.match(start, new RegExp(`this\\.elements\\.${id}\\.addEventListener\\(\\s*['"]click['"]`));
   }
   assert.match(start, /this\.document\.addEventListener\(['"]visibilitychange['"]/);
@@ -674,6 +683,28 @@ test('voice is the default and the four answers appear only after selecting no m
   assert.equal(harness.document.getElementById('voiceAnswerPanel').hidden, true);
   assert.equal(harness.document.getElementById('choiceGrid').hidden, false);
   assert.equal(harness.document.getElementById('choiceGrid').children.length, 4);
+});
+
+test('Easy is the default difficulty and menu selections start isolated difficulty decks', async () => {
+  const harness = await createControllerHarness();
+  harness.controller.start();
+
+  assert.equal(harness.controller.selectedDifficulty, 'easy');
+  assert.equal(harness.document.getElementById('difficultyEasy').getAttribute('aria-pressed'), 'true');
+  assert.equal(harness.document.getElementById('difficultyHard').getAttribute('aria-pressed'), 'false');
+  assert.equal(harness.document.getElementById('difficultyExpert').getAttribute('aria-pressed'), 'false');
+  assert.equal(harness.document.getElementById('questionEyebrow').textContent, 'Easy wildlife identification');
+
+  harness.document.getElementById('difficultyExpert').dispatch('click');
+  assert.equal(harness.controller.selectedDifficulty, 'expert');
+  assert.equal(harness.document.getElementById('difficultyExpert').getAttribute('aria-pressed'), 'true');
+  assert.equal(harness.document.getElementById('difficultyEasy').getAttribute('aria-pressed'), 'false');
+  assert.equal(harness.document.getElementById('questionEyebrow').textContent, 'Expert wildlife identification');
+
+  const calls = [];
+  harness.controller.engine.startRun = (...args) => calls.push(args);
+  harness.controller.beginFreshRun();
+  assert.deepEqual(calls, [['challenger', 'expert']]);
 });
 
 test('voice mode waits for prompt narration before opening its full answer timer and microphone', async () => {
@@ -1248,7 +1279,7 @@ test('Animal Champion uses emerald primary actions and robust forced colors', as
   }
   const forcedPrimary = cssRule(
     forcedColors,
-    '.primary-action,\n  .primary-action:hover,\n  .mode-toggle button[aria-pressed="true"]',
+    '.primary-action,\n  .primary-action:hover,\n  .mode-toggle button[aria-pressed="true"],\n  .difficulty-toggle button[aria-pressed="true"]',
   );
   assert.match(forcedPrimary, /color:\s*ButtonText/);
   assert.match(forcedPrimary, /background:\s*ButtonFace/);

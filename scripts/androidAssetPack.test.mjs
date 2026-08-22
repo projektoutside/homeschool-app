@@ -248,7 +248,7 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /animal-speech\.js/);
   assert.match(inspector, /animal-champion-128\.webp/);
   assert.match(inspector, /shared\/lahsPointsBridge\.js/);
-  assert.match(inspector, /expectedAnimalImageCount\s*=\s*100/);
+  assert.match(inspector, /expectedAnimalImageCount\s*=\s*150/);
   assert.match(inspector, /expectedAnimalVoiceCount\s*=\s*154/);
   assert.match(inspector, /StringComparer.*Ordinal/);
   assert.match(inspector, /bundletool-all-\*\.jar/);
@@ -261,6 +261,7 @@ const fixedAnimalBundleEntries = [
   'game_assets/assets/Games/Animal Champion/index.html',
   'game_assets/assets/Games/Animal Champion/css/style.css',
   'game_assets/assets/Games/Animal Champion/js/animal-data.js',
+  'game_assets/assets/Games/Animal Champion/js/difficulty.js',
   'game_assets/assets/Games/Animal Champion/js/animal-speech.js',
   'game_assets/assets/Games/Animal Champion/js/audio-system.js',
   'game_assets/assets/Games/Animal Champion/js/game-engine.js',
@@ -285,8 +286,8 @@ const requiredAnimalBundleEntries = [
 ];
 
 test('Android bundle inspector accepts a complete exact Animal Champion archive', async () => {
-  assert.equal(requiredAnimalBundleEntries.length, 267);
-  assert.equal(new Set(requiredAnimalBundleEntries).size, 267);
+  assert.equal(requiredAnimalBundleEntries.length, 318);
+  assert.equal(new Set(requiredAnimalBundleEntries).size, 318);
 
   const archivePath = await createSyntheticAnimalBundle(requiredAnimalBundleEntries);
   const { stdout } = await runAnimalBundleInspector(archivePath);

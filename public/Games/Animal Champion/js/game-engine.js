@@ -1,3 +1,5 @@
+import { isValidDifficulty } from './difficulty.js';
+
 export const MODES = Object.freeze({ CHALLENGER: 'challenger', CONTINUOUS: 'continuous' });
 export const OUTCOMES = Object.freeze({ CORRECT: 'correct', WRONG: 'wrong', TIMEOUT: 'timeout' });
 export const ANSWER_WINDOW_MS = 15_000;
@@ -63,15 +65,18 @@ export class AnimalChampionEngine {
     this.runSequence = 0;
     this.roundSequence = 0;
     this.imagePreference = new Map();
+    this.activeAnimals = animals;
     this.reset();
   }
 
   reset() {
     this.deck = [];
+    this.activeAnimals = this.animals;
     this.previousAnimalId = null;
     this.state = {
       phase: 'idle',
       mode: null,
+      difficulty: null,
       runId: null,
       score: 0,
       streak: 0,
@@ -86,14 +91,25 @@ export class AnimalChampionEngine {
     return clone(this.state);
   }
 
-  startRun(mode) {
+  startRun(mode, difficulty = null) {
     if (!isValidMode(mode)) throw new TypeError(`Invalid game mode: ${mode}`);
+    if (difficulty !== null && !isValidDifficulty(difficulty)) {
+      throw new TypeError(`Invalid difficulty: ${difficulty}`);
+    }
+    const activeAnimals = difficulty === null
+      ? this.animals
+      : this.animals.filter((animal) => animal.difficulty === difficulty);
+    if (activeAnimals.length < 4) {
+      throw new TypeError(`At least four animals are required for difficulty: ${difficulty}`);
+    }
     this.deck = [];
+    this.activeAnimals = activeAnimals;
     this.previousAnimalId = null;
     this.runSequence += 1;
     this.state = {
       phase: 'ready',
       mode,
+      difficulty,
       runId: `run-${this.runSequence}`,
       score: 0,
       streak: 0,
@@ -123,7 +139,7 @@ export class AnimalChampionEngine {
 
   refillDeck() {
     const broken = new Set(this.state.brokenAnimalIds);
-    this.deck = this.shuffle(this.animals.map(({ id }) => id).filter((id) => !broken.has(id)));
+    this.deck = this.shuffle(this.activeAnimals.map(({ id }) => id).filter((id) => !broken.has(id)));
     if (this.deck.length > 1 && this.deck.at(-1) === this.previousAnimalId) {
       [this.deck[0], this.deck[this.deck.length - 1]] = [this.deck.at(-1), this.deck[0]];
     }
@@ -149,7 +165,7 @@ export class AnimalChampionEngine {
     this.previousAnimalId = correctAnimalId;
     const animal = this.animalById.get(correctAnimalId);
     const wrongIds = this.shuffle(
-      this.animals
+      this.activeAnimals
         .map(({ id }) => id)
         .filter((id) => id !== correctAnimalId),
     ).slice(0, 3);
@@ -226,7 +242,7 @@ export class AnimalChampionEngine {
     }
     this.deck = this.deck.filter((id) => id !== round.correctAnimalId);
     this.state.currentRound = null;
-    const exhausted = this.state.brokenAnimalIds.length === this.animals.length;
+    const exhausted = this.state.brokenAnimalIds.length === this.activeAnimals.length;
     this.state.phase = exhausted ? 'content-error' : 'ready';
     return { accepted: true, exhausted };
   }

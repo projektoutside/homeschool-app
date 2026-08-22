@@ -50,8 +50,8 @@ test('Animal Champion legacy document and every selected asset are launchable', 
 
   assert.equal(ANIMAL_DATABASE.length, 50);
   const selectedImages = ANIMAL_DATABASE.flatMap(({ images }) => images);
-  assert.equal(selectedImages.length, 100);
-  assert.equal(new Set(selectedImages).size, 100);
+  assert.equal(selectedImages.length, 150);
+  assert.equal(new Set(selectedImages).size, 150);
   for (const relativePath of selectedImages) {
     await access(path.join(gameRoot, relativePath));
   }
