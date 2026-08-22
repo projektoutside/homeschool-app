@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { ANIMAL_DATABASE } from '../public/Games/Animal Champion/js/animal-data.js';
@@ -14,6 +15,27 @@ import {
   createAnimalChampionSpeechEvent,
   isAnimalChampionSpeechControlMessage,
 } from '../src/features/speech/speechBridge.ts';
+import { getSpeechAnswerCopy } from '../src/features/speech/speechCopy.ts';
+
+const animalChampionRoot = new URL('../public/Games/Animal Champion/', import.meta.url);
+const gamePlayerUrl = new URL('../src/pages/GamePlayer.tsx', import.meta.url);
+const textExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.txt']);
+const carThemePattern = /\b(?:automobile|automobiles|car|cars|convertible|convertibles|coupe|coupes|dealership|dealerships|horsepower|mph|sedan|sedans|suv|suvs|truck|trucks|vehicle|vehicles)\b/i;
+
+const collectTextFiles = async (directoryUrl) => {
+  const entries = await readdir(directoryUrl, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const entryUrl = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directoryUrl);
+    if (entry.isDirectory()) {
+      files.push(...await collectTextFiles(entryUrl));
+      continue;
+    }
+    const extension = entry.name.slice(entry.name.lastIndexOf('.')).toLowerCase();
+    if (textExtensions.has(extension)) files.push(entryUrl);
+  }
+  return files;
+};
 
 const animalById = new Map(ANIMAL_DATABASE.map((animal) => [animal.id, animal]));
 
@@ -106,4 +128,28 @@ test('Animal Champion speech bridge accepts only its exact message type and game
     event: 'final',
     text: 'Lion',
   });
+});
+
+test('Animal Champion host speech copy always asks for an animal name', async () => {
+  assert.deepEqual(getSpeechAnswerCopy('animal'), {
+    listening: 'Listening... say the animal name.',
+    noSpeech: 'No speech was detected yet. Try saying the animal name again.',
+  });
+  assert.deepEqual(getSpeechAnswerCopy('car'), {
+    listening: 'Listening... say the car name.',
+    noSpeech: 'No speech was detected yet. Try saying the car name again.',
+  });
+
+  const gamePlayer = await readFile(gamePlayerUrl, 'utf8');
+  assert.match(gamePlayer, /answerSubject:\s*isAnimalChampionGame\s*\?\s*['"]animal['"]\s*:\s*['"]car['"]/);
+});
+
+test('Animal Champion text assets contain no car-themed terminology', async () => {
+  const files = await collectTextFiles(animalChampionRoot);
+  assert.ok(files.length > 0);
+
+  for (const file of files) {
+    const source = await readFile(file, 'utf8');
+    assert.doesNotMatch(source, carThemePattern, file.pathname);
+  }
 });

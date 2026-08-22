@@ -313,6 +313,8 @@ const GamePlayer: React.FC = () => {
                     ? createAnimalChampionSpeechEvent(message)
                     : createCarKingSpeechEvent(message),
             );
+        }, {
+            answerSubject: isAnimalChampionGame ? 'animal' : 'car',
         });
 
         speechControllerRef.current = controller;

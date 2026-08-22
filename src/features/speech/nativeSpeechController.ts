@@ -2,6 +2,11 @@ import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
 import type { CarKingSpeechEventMessage, CarKingSpeechState, SpeechSessionOptions } from './speechBridge';
 import {
+    getSpeechAnswerCopy,
+    type SpeechAnswerCopy,
+    type SpeechAnswerSubject,
+} from './speechCopy';
+import {
     createTranscriptSnapshot,
     isLikelyDesktopDevice,
     type SpeechEngineAvailability,
@@ -381,6 +386,11 @@ class WebSpeechEngine implements SpeechEngineController {
 
     private recognition: InstanceType<WebSpeechRecognitionConstructor> | null = null;
     private ctor: WebSpeechRecognitionConstructor | null = null;
+    private readonly speechCopy: SpeechAnswerCopy;
+
+    constructor(speechCopy: SpeechAnswerCopy) {
+        this.speechCopy = speechCopy;
+    }
 
     async initialize() {
         this.ctor = this.getConstructor();
@@ -584,7 +594,7 @@ class WebSpeechEngine implements SpeechEngineController {
             case 'network':
                 return 'Browser speech recognition lost its network connection.';
             case 'no-speech':
-                return 'No speech was detected yet. Try saying the car name again.';
+                return this.speechCopy.noSpeech;
             default:
                 return 'Browser speech recognition ran into an error.';
         }
@@ -648,6 +658,7 @@ class ExperimentalMoonshineEngine implements SpeechEngineController {
 
 export class CarKingNativeFirstSpeechController {
     private readonly postEvent: PostEvent;
+    private readonly speechCopy: SpeechAnswerCopy;
     private engine: SpeechEngineController = new UnsupportedSpeechEngine();
     private activeRoundId: string | null = null;
     private gateOpen = false;
@@ -666,8 +677,12 @@ export class CarKingNativeFirstSpeechController {
     private engineSessionActive = false;
     private captureHeld = false;
 
-    constructor(postEvent: PostEvent) {
+    constructor(
+        postEvent: PostEvent,
+        { answerSubject = 'car' }: { answerSubject?: SpeechAnswerSubject } = {},
+    ) {
         this.postEvent = postEvent;
+        this.speechCopy = getSpeechAnswerCopy(answerSubject);
     }
 
     async initialize() {
@@ -692,7 +707,7 @@ export class CarKingNativeFirstSpeechController {
         if (Capacitor.isNativePlatform()) {
             candidates.push(new NativeSpeechEngine());
         }
-        candidates.push(new WebSpeechEngine(), new ExperimentalMoonshineEngine());
+        candidates.push(new WebSpeechEngine(this.speechCopy), new ExperimentalMoonshineEngine());
 
         for (const candidate of candidates) {
             const availability = await candidate.initialize().catch((error) => ({
@@ -1060,7 +1075,7 @@ export class CarKingNativeFirstSpeechController {
             state,
             reason,
             message: state === 'listening'
-                ? 'Listening... say the car name.'
+                ? this.speechCopy.listening
                 : state === 'prewarming'
                     ? 'Get ready... listening starts right after the question.'
                     : state === 'stopping'
