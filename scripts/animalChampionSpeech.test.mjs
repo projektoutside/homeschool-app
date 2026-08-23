@@ -76,8 +76,8 @@ test('animal speech matching rejects partial multiword and unrelated answers', (
   }
 });
 
-test('all 50 official animal names match themselves and never another roster animal', () => {
-  assert.equal(ANIMAL_DATABASE.length, 50);
+test('all 75 official animal names match themselves and never another roster animal', () => {
+  assert.equal(ANIMAL_DATABASE.length, 75);
   for (const target of ANIMAL_DATABASE) {
     assert.equal(matchAnimalSpeech([target.name], target).matched, true, target.name);
     for (const spokenAnimal of ANIMAL_DATABASE) {

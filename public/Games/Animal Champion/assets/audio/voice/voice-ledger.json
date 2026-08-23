@@ -10,7 +10,7 @@
     "similarityBoost": 0.75,
     "outputFormat": "MP3 44.1 kHz (128kbps)"
   },
-  "clipCount": 154,
+  "clipCount": 179,
   "clips": [
     {
       "id": "menu-01",
@@ -40,7 +40,7 @@
       "id": "menu-04",
       "path": "assets/audio/voice/menu/menu-04.mp3",
       "persona": "dramatic-commentator",
-      "script": "[dramatically] Fifty animals. One champion. Countless wild surprises. Your expedition starts now!",
+      "script": "[dramatically] Seventy-five animals. One champion. Countless wild surprises. Your expedition starts now!",
       "bytes": 116958,
       "sha256": "db23ee5f6a087c9bcefc44cdf6ad886d5d5a3bc4de099ea8db22335889a8b68f"
     },
@@ -845,6 +845,38 @@
       "sha256": "8bd64fe2899dab89ba27ca43c01aebaf952ea3fb8ea5dcae78a140e45d206b89"
     },
     {
+      "id": "animal-aardvark",
+      "path": "assets/audio/voice/animals/aardvark.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] It is an aardvark! That long snout and powerful claws make it an expert termite hunter.",
+      "bytes": 145379,
+      "sha256": "d96345fbfc920106c808f6c9e1d67146755e4471a3c4cc0927524dd7933709d2"
+    },
+    {
+      "id": "animal-armadillo",
+      "path": "assets/audio/voice/animals/armadillo.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is an armadillo! Its flexible armor bands protect it while still letting it walk and dig.",
+      "bytes": 132422,
+      "sha256": "933c9ce04def47967edbd272e07b50b202d463dd378ed9c586bc91ed3e4606b6"
+    },
+    {
+      "id": "animal-axolotl",
+      "path": "assets/audio/voice/animals/axolotl.mp3",
+      "persona": "whimsical-guide",
+      "script": "[amazed] It is an axolotl! Those feathery gills help this remarkable salamander breathe underwater.",
+      "bytes": 113196,
+      "sha256": "8a108831d15e20aac7d1db996a1635213349f539fdaead19ee736d326f59936c"
+    },
+    {
+      "id": "animal-badger",
+      "path": "assets/audio/voice/animals/badger.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a badger! Strong claws and a sturdy body make it a champion underground builder.",
+      "bytes": 145379,
+      "sha256": "0c2cdb47a6df8bbaf5fe80c7845a9f1e666e32618cde27b071da5e137c41110b"
+    },
+    {
       "id": "animal-bat",
       "path": "assets/audio/voice/animals/bat.mp3",
       "persona": "whimsical-guide",
@@ -861,6 +893,14 @@
       "sha256": "050c41c092d1ff3c785b2b72c509610cbfbc597dda25b66a04d084df163184ea"
     },
     {
+      "id": "animal-bison",
+      "path": "assets/audio/voice/animals/bison.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a bison! That enormous shoulder hump powers a true heavyweight of the prairie.",
+      "bytes": 126153,
+      "sha256": "8d64bb2759fedcc17d3d47685978e8f7483e60f8f75ae2faec226e8d15a3365b"
+    },
+    {
       "id": "animal-camel",
       "path": "assets/audio/voice/animals/camel.mp3",
       "persona": "curious-naturalist",
@@ -869,12 +909,44 @@
       "sha256": "be596b237d6e19086d8e7d94d958be07d64913321a6a2e44c0f6cb9d5b5b834d"
     },
     {
+      "id": "animal-capybara",
+      "path": "assets/audio/voice/animals/capybara.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a capybara! The world's largest rodent is also an excellent swimmer.",
+      "bytes": 106927,
+      "sha256": "755b63b06c3b956b040eab248a0e4004c47adbe293481b9537db801b5137e032"
+    },
+    {
+      "id": "animal-caracal",
+      "path": "assets/audio/voice/animals/caracal.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a caracal! Those long black ear tufts give this wild cat a spectacular silhouette.",
+      "bytes": 141617,
+      "sha256": "706ee28add295cc726708af4515cf65aa42078e6b9da264884b604fab38079b2"
+    },
+    {
+      "id": "animal-cassowary",
+      "path": "assets/audio/voice/animals/cassowary.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a cassowary! Its helmet-like casque helps this rainforest bird stand tall.",
+      "bytes": 105673,
+      "sha256": "0b28a49d40875142b1da09ca593965a37f8dc40d59f0623e2407144b5d6339ba"
+    },
+    {
       "id": "animal-cat",
       "path": "assets/audio/voice/animals/cat.mp3",
       "persona": "whimsical-guide",
       "script": "[playfully] It is a cat! Whiskers help it judge tight spaces. Very handy for sneaky adventures!",
       "bytes": 115704,
       "sha256": "f47e7793eea5011da4caf25c218cd894114c341fbe1c2ff60ba58fc1d26eb971"
+    },
+    {
+      "id": "animal-chameleon",
+      "path": "assets/audio/voice/animals/chameleon.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] It is a chameleon! Its eyes can look in different directions while its curled tail grips branches.",
+      "bytes": 132422,
+      "sha256": "580765e223de32eb2b02bac3d55489804bb1a1c37dbe236bdb7ce710eda33353"
     },
     {
       "id": "animal-cheetah",
@@ -973,6 +1045,14 @@
       "sha256": "d7d46ed696c792a453968fccc812b0064372ebc9e3300e7e8257b59d4698cbb6"
     },
     {
+      "id": "animal-emu",
+      "path": "assets/audio/voice/animals/emu.mp3",
+      "persona": "bubbly-host",
+      "script": "[brightly] It is an emu! Powerful legs help this tall Australian bird race across open country.",
+      "bytes": 122391,
+      "sha256": "2feee48d4318863bfb695ba87e687275a444ac57b16e27dde7771c4f44102761"
+    },
+    {
       "id": "animal-flamingo",
       "path": "assets/audio/voice/animals/flamingo.mp3",
       "persona": "bubbly-host",
@@ -1045,6 +1125,14 @@
       "sha256": "c1ec6616cf9e8ad26bc75f018a986d33d3ae53c27296f91198a02cdf6b1b123c"
     },
     {
+      "id": "animal-ibex",
+      "path": "assets/audio/voice/animals/ibex.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[triumphantly] It is an ibex! Huge ridged horns and gripping hooves suit life high in the mountains.",
+      "bytes": 136184,
+      "sha256": "a05200e4e88079126332d10f6e9cdedc96b9e0e28db40f2df4a0cfdb30a93ae6"
+    },
+    {
       "id": "animal-kangaroo",
       "path": "assets/audio/voice/animals/kangaroo.mp3",
       "persona": "bubbly-host",
@@ -1061,12 +1149,52 @@
       "sha256": "87add7e567a98e9e24f99c79089768d000cf65b2e0d6802abba1fa817e34c2d6"
     },
     {
+      "id": "animal-komodo-dragon",
+      "path": "assets/audio/voice/animals/komodo-dragon.mp3",
+      "persona": "dramatic-commentator",
+      "script": "[dramatically] It is a Komodo dragon! This giant monitor lizard explores its island with a forked tongue.",
+      "bytes": 121137,
+      "sha256": "5a59ff175892633c0ff6c218cd87ceea2307f4748f241df8f9e2ba632fa0091a"
+    },
+    {
+      "id": "animal-lemur",
+      "path": "assets/audio/voice/animals/lemur.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a lemur! That striped tail works like a bright flag when the troop travels.",
+      "bytes": 106927,
+      "sha256": "98246ead502b78d51ea60bcfb74e39afc1f4448743ad7415dc979c761d2ba1da"
+    },
+    {
       "id": "animal-lion",
       "path": "assets/audio/voice/animals/lion.mp3",
       "persona": "dramatic-commentator",
       "script": "[triumphantly] It is a lion! A powerful roar can carry across miles of open land.",
       "bytes": 101911,
       "sha256": "6b83c3d35b4dfa4f3e95c1b4f7dec26d962c5117acc31c6a13a1d810a9786341"
+    },
+    {
+      "id": "animal-lynx",
+      "path": "assets/audio/voice/animals/lynx.mp3",
+      "persona": "whimsical-guide",
+      "script": "[softly] It is a lynx! Furry paws and tufted ears help this quiet cat thrive in cold forests.",
+      "bytes": 129914,
+      "sha256": "131f5ae428c50732662219817713568d96aafa488005245140059adb2171d800"
+    },
+    {
+      "id": "animal-manatee",
+      "path": "assets/audio/voice/animals/manatee.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a manatee! This gentle plant-eater steers through warm water with paddle flippers.",
+      "bytes": 122391,
+      "sha256": "689d10574a7de0436bf79dbcf53f1499d148a32bd1e0365a68058e2333ec21ea"
+    },
+    {
+      "id": "animal-meerkat",
+      "path": "assets/audio/voice/animals/meerkat.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a meerkat! Standing tall helps this little lookout scan the desert for danger.",
+      "bytes": 96593,
+      "sha256": "bcb7dc94f0435390986b9f5aa8edd0b88b748a6f8c3830abba7ebaa256fe44b4"
     },
     {
       "id": "animal-monkey",
@@ -1085,6 +1213,14 @@
       "sha256": "444e574a41c8e388972ef0f69ede1fb867bb126a4b69bd213f70a5ec14b1d0d6"
     },
     {
+      "id": "animal-narwhal",
+      "path": "assets/audio/voice/animals/narwhal.mp3",
+      "persona": "whimsical-guide",
+      "script": "[amazed] It is a narwhal! Its famous spiral tusk is actually one extraordinary long tooth.",
+      "bytes": 141617,
+      "sha256": "7dfd95de39ac60824b56a547ca7bb079b7734d709aafcf20ad38a06563ed9f79"
+    },
+    {
       "id": "animal-octopus",
       "path": "assets/audio/voice/animals/octopus.mp3",
       "persona": "curious-naturalist",
@@ -1093,12 +1229,36 @@
       "sha256": "0c9ac26a29452aa4dc5b4c7efa17793e24ae91dd5e76e431d6d524a2994aef44"
     },
     {
+      "id": "animal-okapi",
+      "path": "assets/audio/voice/animals/okapi.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] It is an okapi! Striped legs and a giraffe relative's face make one unforgettable forest animal.",
+      "bytes": 142871,
+      "sha256": "aceeb0cab4d3b3b9a4adb8b8b94fe8c929a856b1cbde8d85309aff8c5a570083"
+    },
+    {
+      "id": "animal-orangutan",
+      "path": "assets/audio/voice/animals/orangutan.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is an orangutan! Long powerful arms carry this clever great ape through rainforest trees.",
+      "bytes": 131168,
+      "sha256": "4acfda04e1693d039df3e06cec21f6c7fb40dcb53fcd172e6bbe3c8b00f030a5"
+    },
+    {
       "id": "animal-owl",
       "path": "assets/audio/voice/animals/owl.mp3",
       "persona": "whimsical-guide",
       "script": "[whispers] It is an owl! Special feathers help it fly with barely a sound. Who knew?",
       "bytes": 115704,
       "sha256": "eac1a5715f331c8ee282b1c66b93b8dfd81f63ad6107e641c6ce6bd38f08245b"
+    },
+    {
+      "id": "animal-pangolin",
+      "path": "assets/audio/voice/animals/pangolin.mp3",
+      "persona": "curious-naturalist",
+      "script": "[amazed] It is a pangolin! Protective scales and giant digging claws make this mammal truly unique.",
+      "bytes": 118212,
+      "sha256": "9afa80edfc73ba272381c1ef8273f1110a629c40dba9a4f66c0c576dbf696941"
     },
     {
       "id": "animal-panda",
@@ -1141,6 +1301,14 @@
       "sha256": "2410eca530427bc4c939580b45037733ccbbd90268475e4eac2640c867ee24bc"
     },
     {
+      "id": "animal-platypus",
+      "path": "assets/audio/voice/animals/platypus.mp3",
+      "persona": "whimsical-guide",
+      "script": "[playfully] It is a platypus! A bill, webbed feet, and a flat tail make one wonderfully puzzling mammal.",
+      "bytes": 131168,
+      "sha256": "64b2b5f29b5bde2d0632fe3b0fb4ef26378ca068564b7ec6a368162e473b274d"
+    },
+    {
       "id": "animal-polar-bear",
       "path": "assets/audio/voice/animals/polar-bear.mp3",
       "persona": "curious-naturalist",
@@ -1149,12 +1317,28 @@
       "sha256": "7f7614b8eec2d889671a2ebfaaf1cd572840d683ca8ce870042a73700841bfa3"
     },
     {
+      "id": "animal-porcupine",
+      "path": "assets/audio/voice/animals/porcupine.mp3",
+      "persona": "bubbly-host",
+      "script": "[cheerfully] It is a porcupine! Those sharp quills are modified hairs built for protection.",
+      "bytes": 104419,
+      "sha256": "84d87b1081034d84b0c8c39f07014e12c823a902df2d6accaf017389ce045600"
+    },
+    {
       "id": "animal-rabbit",
       "path": "assets/audio/voice/animals/rabbit.mp3",
       "persona": "cheeky-ranger",
       "script": "[playfully] It is a rabbit! Nearly panoramic vision helps it watch for danger while it munches.",
       "bytes": 104419,
       "sha256": "9e861aeaf1520e29f8368eb8d838885d650c33983a3a850b7f515da840a09211"
+    },
+    {
+      "id": "animal-red-panda",
+      "path": "assets/audio/voice/animals/red-panda.mp3",
+      "persona": "cheeky-ranger",
+      "script": "[playfully] It is a red panda! A ringed tail helps this nimble climber balance among bamboo branches.",
+      "bytes": 128661,
+      "sha256": "5a87a5baf6688e427e99d32f422de75c0428e46b2e3a9bf57778145e20ee71ff"
     },
     {
       "id": "animal-rhinoceros",
@@ -1205,6 +1389,14 @@
       "sha256": "a6d94de8c600563d341c5372bcdc7a4847d83bfb88999aa2eff139c238eb6dc0"
     },
     {
+      "id": "animal-tapir",
+      "path": "assets/audio/voice/animals/tapir.mp3",
+      "persona": "curious-naturalist",
+      "script": "[curiously] It is a tapir! Its short flexible snout works like a tiny trunk for gathering leaves.",
+      "bytes": 123645,
+      "sha256": "c64fe5caf788f8f986a3168ccafcbfe1a0cc7e9351392c0e1c6f7be4925b9076"
+    },
+    {
       "id": "animal-tiger",
       "path": "assets/audio/voice/animals/tiger.mp3",
       "persona": "dramatic-commentator",
@@ -1235,6 +1427,14 @@
       "script": "[dramatically] It is a wolf! Pack members communicate with howls, posture, scent, and expression.",
       "bytes": 119465,
       "sha256": "9a1d30b9d7ab0b8f9a50100249601f51e736838e5d44bb6b06d3da1d83b9bd0d"
+    },
+    {
+      "id": "animal-wombat",
+      "path": "assets/audio/voice/animals/wombat.mp3",
+      "persona": "warm-coach",
+      "script": "[warmly] It is a wombat! Strong legs and broad claws make this stocky marsupial an expert digger.",
+      "bytes": 134930,
+      "sha256": "ea0fdbbd42e94b23fff1735aa622d301b5de3bc7005fa13b697e46a26627bc17"
     },
     {
       "id": "animal-zebra",

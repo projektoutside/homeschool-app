@@ -58,7 +58,7 @@ test('generated catalog preserves all 83 legacy entries and route aliases determ
     {
       id: 'animal-champion',
       title: 'Animal Champion',
-      description: 'Identify 50 animals in fast visual challenge rounds.',
+      description: 'Identify 75 animals in fast visual challenge rounds.',
       type: 'game',
       category: 'science',
       subjects: ['Animals', 'Wildlife', 'Visual Recognition'],

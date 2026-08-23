@@ -48,16 +48,16 @@ test('Animal Champion legacy document and every selected asset are launchable', 
     await access(path.join(gameRoot, relativePath));
   }
 
-  assert.equal(ANIMAL_DATABASE.length, 50);
+  assert.equal(ANIMAL_DATABASE.length, 75);
   const selectedImages = ANIMAL_DATABASE.flatMap(({ images }) => images);
-  assert.equal(selectedImages.length, 150);
-  assert.equal(new Set(selectedImages).size, 150);
+  assert.equal(selectedImages.length, 200);
+  assert.equal(new Set(selectedImages).size, 200);
   for (const relativePath of selectedImages) {
     await access(path.join(gameRoot, relativePath));
   }
 
-  assert.equal(ALL_VOICE_CLIPS.length, 154);
-  assert.equal(new Set(ALL_VOICE_CLIPS.map(({ path: voicePath }) => voicePath)).size, 154);
+  assert.equal(ALL_VOICE_CLIPS.length, 179);
+  assert.equal(new Set(ALL_VOICE_CLIPS.map(({ path: voicePath }) => voicePath)).size, 179);
   for (const { path: voicePath } of ALL_VOICE_CLIPS) {
     await access(path.join(gameRoot, voicePath));
   }
@@ -91,7 +91,7 @@ test('generated catalog registers the exact Animal Champion record and legacy al
   assert.deepEqual(animalRecords[0], {
     id: 'animal-champion',
     title: 'Animal Champion',
-    description: 'Identify 50 animals in fast visual challenge rounds.',
+    description: 'Identify 75 animals in fast visual challenge rounds.',
     type: 'game',
     category: 'science',
     subjects: ['Animals', 'Wildlife', 'Visual Recognition'],

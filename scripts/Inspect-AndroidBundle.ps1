@@ -9,8 +9,8 @@ $ErrorActionPreference = 'Stop'
 $resolvedBundlePath = (Resolve-Path -LiteralPath $BundlePath).Path
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$expectedAnimalImageCount = 150
-$expectedAnimalVoiceCount = 154
+$expectedAnimalImageCount = 200
+$expectedAnimalVoiceCount = 179
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $animalDataPath = Join-Path $repoRoot 'public\Games\Animal Champion\js\animal-data.js'
 $animalVoiceLedgerPath = Join-Path $repoRoot 'public\Games\Animal Champion\assets\audio\voice\voice-ledger.json'

@@ -186,11 +186,11 @@ test('Android relative base path does not become a React Router basename', async
   assert.match(app, /\? '' : baseUrl\.replace/);
 });
 
-test('Android release advances to the Animal Champion voice-update version', async () => {
+test('Android release advances to the 75-animal Animal Champion version', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.match(appBuild, /versionCode\s+6/);
-  assert.match(appBuild, /versionName\s+"1\.0\.5"/);
+  assert.match(appBuild, /versionCode\s+7/);
+  assert.match(appBuild, /versionName\s+"1\.0\.6"/);
 });
 
 test('Android release disables the unavailable paid cloud backend', async () => {
@@ -248,8 +248,8 @@ test('release build inspects both bundle modules and enforces the base size limi
   assert.match(inspector, /animal-speech\.js/);
   assert.match(inspector, /animal-champion-128\.webp/);
   assert.match(inspector, /shared\/lahsPointsBridge\.js/);
-  assert.match(inspector, /expectedAnimalImageCount\s*=\s*150/);
-  assert.match(inspector, /expectedAnimalVoiceCount\s*=\s*154/);
+  assert.match(inspector, /expectedAnimalImageCount\s*=\s*200/);
+  assert.match(inspector, /expectedAnimalVoiceCount\s*=\s*179/);
   assert.match(inspector, /StringComparer.*Ordinal/);
   assert.match(inspector, /bundletool-all-\*\.jar/);
   assert.match(inspector, /dist:on-demand/);
@@ -286,8 +286,8 @@ const requiredAnimalBundleEntries = [
 ];
 
 test('Android bundle inspector accepts a complete exact Animal Champion archive', async () => {
-  assert.equal(requiredAnimalBundleEntries.length, 318);
-  assert.equal(new Set(requiredAnimalBundleEntries).size, 318);
+  assert.equal(requiredAnimalBundleEntries.length, 393);
+  assert.equal(new Set(requiredAnimalBundleEntries).size, 393);
 
   const archivePath = await createSyntheticAnimalBundle(requiredAnimalBundleEntries);
   const { stdout } = await runAnimalBundleInspector(archivePath);

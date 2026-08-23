@@ -31,7 +31,7 @@ test('voice manifest is a complete ElevenLabs Animal Champion MP3 contract', () 
     similarityBoost: 0.75,
     outputFormat: 'MP3 44.1 kHz (128kbps)',
   });
-  assert.equal(ALL_VOICE_CLIPS.length, 154);
+  assert.equal(ALL_VOICE_CLIPS.length, 179);
   assert.equal(VOICE_LIBRARY.menu.length, 6);
   assert.equal(VOICE_LIBRARY.start.length, 5);
   assert.equal(VOICE_LIBRARY.prompt.length, 24);
@@ -39,7 +39,7 @@ test('voice manifest is a complete ElevenLabs Animal Champion MP3 contract', () 
   assert.equal(VOICE_LIBRARY.wrong.length, 18);
   assert.equal(VOICE_LIBRARY.timeout.length, 12);
   assert.equal(Object.values(VOICE_LIBRARY.gameOver).flat().length, 12);
-  assert.equal(Object.keys(VOICE_LIBRARY.animals).length, 50);
+  assert.equal(Object.keys(VOICE_LIBRARY.animals).length, 75);
 
   const animalIds = ANIMAL_DATABASE.map(({ id }) => id).sort();
   assert.deepEqual(Object.keys(VOICE_LIBRARY.animals).sort(), animalIds);
@@ -74,7 +74,7 @@ test('voice manifest is a complete ElevenLabs Animal Champion MP3 contract', () 
   }
 });
 
-test('all 154 selected voice clips exist and contain MP3 data', async () => {
+test('all 179 selected voice clips exist and contain MP3 data', async () => {
   await Promise.all(ALL_VOICE_CLIPS.map(async ({ id, path }) => {
     const url = new URL(path, gameRoot);
     const details = await stat(url);
@@ -93,7 +93,7 @@ test('voice ledger records the exact generation script and SHA-256 for every MP3
   ), 'utf8'));
   assert.equal(ledger.schemaVersion, 1);
   assert.deepEqual(ledger.profile, VOICE_GENERATION_PROFILE);
-  assert.equal(ledger.clipCount, 154);
+  assert.equal(ledger.clipCount, 179);
   assert.deepEqual(ledger.clips.map(({ id }) => id), ALL_VOICE_CLIPS.map(({ id }) => id));
   await Promise.all(ledger.clips.map(async (entry, index) => {
     const expected = ALL_VOICE_CLIPS[index];

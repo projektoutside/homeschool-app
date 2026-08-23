@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "generator": "openai-imagegen",
+  "mode": "built-in",
+  "promptTemplates": {
+    "cartoon": "Use case: stylized-concept. Create a premium, polished realistic-cartoon 3D wildlife illustration of exactly one {animal}. Preserve believable species anatomy, natural surface texture, and defining features while giving the animal a friendly, curious presence without humanizing it. Show the full body in {habitat}, vertical 2:3 game-card composition, clean silhouette, cinematic soft natural light, no other animals, people, text, logo, watermark, border, collage, costumes, chibi proportions, fantasy features, crops, or duplicate limbs.",
+    "realistic": "Use case: photorealistic-natural. Create a high-end wildlife photograph of exactly one {animal}, with true species anatomy, realistic surface detail, and every defining feature visible. Show the full body in {habitat}, vertical 2:3 game-card composition, natural environmental light, no other animals, people, text, logo, watermark, border, collage, fantasy features, crops, or duplicate limbs."
+  },
+  "output": {
+    "format": "webp",
+    "width": 853,
+    "height": 1280,
+    "qa": "approved-contact-sheet"
+  },
+  "animals": [
+    {
+      "id": "aardvark",
+      "name": "Aardvark",
+      "difficulty": "expert",
+      "features": "long tubular snout, upright ears, arched back, powerful digging claws, and thick tail",
+      "habitat": "an African savanna",
+      "assets": ["Animals/Aardvark/animal-champion-cartoon.webp", "Animals/Aardvark/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "armadillo",
+      "name": "Armadillo",
+      "difficulty": "hard",
+      "features": "nine-banded armor, flexible bands, pointed snout, digging claws, and armored tail",
+      "habitat": "dry scrubland",
+      "assets": ["Animals/Armadillo/animal-champion-cartoon.webp", "Animals/Armadillo/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "axolotl",
+      "name": "Axolotl",
+      "difficulty": "expert",
+      "features": "broad head, three feathery external gills on each side, four legs, and finned tail",
+      "habitat": "a clear freshwater lake",
+      "assets": ["Animals/Axolotl/animal-champion-cartoon.webp", "Animals/Axolotl/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "badger",
+      "name": "Badger",
+      "difficulty": "hard",
+      "features": "European badger black-and-white facial stripes, low muscular body, and strong digging claws",
+      "habitat": "temperate woodland",
+      "assets": ["Animals/Badger/animal-champion-cartoon.webp", "Animals/Badger/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "bison",
+      "name": "Bison",
+      "difficulty": "hard",
+      "features": "American bison shoulder hump, shaggy forequarters, beard, and short curved horns",
+      "habitat": "a North American prairie",
+      "assets": ["Animals/Bison/animal-champion-cartoon.webp", "Animals/Bison/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "capybara",
+      "name": "Capybara",
+      "difficulty": "hard",
+      "features": "barrel body, blunt muzzle, small ears, short legs, and partially webbed feet",
+      "habitat": "a South American wetland",
+      "assets": ["Animals/Capybara/animal-champion-cartoon.webp", "Animals/Capybara/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "caracal",
+      "name": "Caracal",
+      "difficulty": "expert",
+      "features": "tawny coat, long legs, black-backed ears, and unmistakable long black ear tufts",
+      "habitat": "dry African scrub",
+      "assets": ["Animals/Caracal/animal-champion-cartoon.webp", "Animals/Caracal/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "cassowary",
+      "name": "Cassowary",
+      "difficulty": "expert",
+      "features": "Southern cassowary black feathers, blue neck, red wattles, tall casque, and powerful legs",
+      "habitat": "a tropical rainforest",
+      "assets": ["Animals/Cassowary/animal-champion-cartoon.webp", "Animals/Cassowary/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "chameleon",
+      "name": "Chameleon",
+      "difficulty": "hard",
+      "features": "veiled casque, independently rotating turret eyes, split grasping feet, and curled prehensile tail",
+      "habitat": "a leafy woodland branch",
+      "assets": ["Animals/Chameleon/animal-champion-cartoon.webp", "Animals/Chameleon/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "emu",
+      "name": "Emu",
+      "difficulty": "hard",
+      "features": "tall shaggy brown body, long neck, powerful long legs, and three-toed feet",
+      "habitat": "Australian grassland",
+      "assets": ["Animals/Emu/animal-champion-cartoon.webp", "Animals/Emu/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "ibex",
+      "name": "Ibex",
+      "difficulty": "expert",
+      "features": "Alpine ibex huge ridged backward-curving horns, beard, and gripping cloven hooves",
+      "habitat": "a steep Alpine mountainside",
+      "assets": ["Animals/Ibex/animal-champion-cartoon.webp", "Animals/Ibex/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "komodo-dragon",
+      "name": "Komodo Dragon",
+      "difficulty": "expert",
+      "features": "heavy monitor-lizard body, rough scales, powerful claws, muscular tail, and forked tongue",
+      "habitat": "a dry Indonesian island",
+      "assets": ["Animals/Komodo Dragon/animal-champion-cartoon.webp", "Animals/Komodo Dragon/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "lemur",
+      "name": "Lemur",
+      "difficulty": "hard",
+      "features": "ring-tailed lemur white face, black eye patches, orange eyes, and long striped tail",
+      "habitat": "a Madagascar dry forest",
+      "assets": ["Animals/Lemur/animal-champion-cartoon.webp", "Animals/Lemur/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "lynx",
+      "name": "Lynx",
+      "difficulty": "expert",
+      "features": "Eurasian lynx spotted coat, cheek ruffs, black ear tufts, furry paws, and short black-tipped tail",
+      "habitat": "a snowy northern forest",
+      "assets": ["Animals/Lynx/animal-champion-cartoon.webp", "Animals/Lynx/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "manatee",
+      "name": "Manatee",
+      "difficulty": "hard",
+      "features": "West Indian manatee rounded wrinkled body, bristled muzzle, front flippers, and broad paddle tail",
+      "habitat": "a clear warm freshwater spring",
+      "assets": ["Animals/Manatee/animal-champion-cartoon.webp", "Animals/Manatee/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "meerkat",
+      "name": "Meerkat",
+      "difficulty": "hard",
+      "features": "sandy coat, dark eye patches, back bands, long tail, and digging claws in an upright lookout pose",
+      "habitat": "the Kalahari Desert",
+      "assets": ["Animals/Meerkat/animal-champion-cartoon.webp", "Animals/Meerkat/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "narwhal",
+      "name": "Narwhal",
+      "difficulty": "expert",
+      "features": "male mottled gray body, rounded head, no dorsal fin, and one long spiral tusk",
+      "habitat": "clear Arctic water beneath sea ice",
+      "assets": ["Animals/Narwhal/animal-champion-cartoon.webp", "Animals/Narwhal/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "okapi",
+      "name": "Okapi",
+      "difficulty": "expert",
+      "features": "chestnut body, long neck, large ears, and bold zebra-like stripes on the legs and rump",
+      "habitat": "the Congo rainforest",
+      "assets": ["Animals/Okapi/animal-champion-cartoon.webp", "Animals/Okapi/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "orangutan",
+      "name": "Orangutan",
+      "difficulty": "expert",
+      "features": "Bornean orangutan long powerful arms, reddish hair, and grasping hands and feet",
+      "habitat": "a Bornean rainforest canopy",
+      "assets": ["Animals/Orangutan/animal-champion-cartoon.webp", "Animals/Orangutan/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "pangolin",
+      "name": "Pangolin",
+      "difficulty": "expert",
+      "features": "overlapping keratin scales, small pointed head, long scaled tail, and huge curved digging claws",
+      "habitat": "a tropical forest floor",
+      "assets": ["Animals/Pangolin/animal-champion-cartoon.webp", "Animals/Pangolin/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "platypus",
+      "name": "Platypus",
+      "difficulty": "hard",
+      "features": "duck-like bill, dense brown fur, webbed feet, and broad flat tail",
+      "habitat": "a clear Australian forest stream",
+      "assets": ["Animals/Platypus/animal-champion-cartoon.webp", "Animals/Platypus/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "porcupine",
+      "name": "Porcupine",
+      "difficulty": "hard",
+      "features": "African crested porcupine black-and-white quills, stout body, and short legs",
+      "habitat": "rocky African scrub",
+      "assets": ["Animals/Porcupine/animal-champion-cartoon.webp", "Animals/Porcupine/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "red-panda",
+      "name": "Red Panda",
+      "difficulty": "expert",
+      "features": "rust-red coat, white face mask, dark legs, and long bushy ringed tail",
+      "habitat": "a Himalayan bamboo forest",
+      "assets": ["Animals/Red Panda/animal-champion-cartoon.webp", "Animals/Red Panda/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "tapir",
+      "name": "Tapir",
+      "difficulty": "expert",
+      "features": "Malayan tapir black-and-white saddle pattern, flexible trunk-like snout, and four-toed front feet",
+      "habitat": "a Southeast Asian rainforest",
+      "assets": ["Animals/Tapir/animal-champion-cartoon.webp", "Animals/Tapir/animal-champion-realistic.webp"]
+    },
+    {
+      "id": "wombat",
+      "name": "Wombat",
+      "difficulty": "hard",
+      "features": "stocky coarse-furred body, broad blunt snout, short legs, and strong digging claws",
+      "habitat": "an Australian eucalyptus woodland",
+      "assets": ["Animals/Wombat/animal-champion-cartoon.webp", "Animals/Wombat/animal-champion-realistic.webp"]
+    }
+  ]
+}

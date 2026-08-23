@@ -1,5 +1,37 @@
 [
   {
+    "name": "Aardvark",
+    "folder": "Animals/Aardvark",
+    "images": [
+      "Animals/Aardvark/animal-champion-cartoon.webp",
+      "Animals/Aardvark/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Armadillo",
+    "folder": "Animals/Armadillo",
+    "images": [
+      "Animals/Armadillo/animal-champion-cartoon.webp",
+      "Animals/Armadillo/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Axolotl",
+    "folder": "Animals/Axolotl",
+    "images": [
+      "Animals/Axolotl/animal-champion-cartoon.webp",
+      "Animals/Axolotl/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Badger",
+    "folder": "Animals/Badger",
+    "images": [
+      "Animals/Badger/animal-champion-cartoon.webp",
+      "Animals/Badger/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Bat",
     "folder": "Animals/Bat",
     "images": [
@@ -22,6 +54,14 @@
     ]
   },
   {
+    "name": "Bison",
+    "folder": "Animals/Bison",
+    "images": [
+      "Animals/Bison/animal-champion-cartoon.webp",
+      "Animals/Bison/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Camel",
     "folder": "Animals/Camel",
     "images": [
@@ -33,6 +73,30 @@
     ]
   },
   {
+    "name": "Capybara",
+    "folder": "Animals/Capybara",
+    "images": [
+      "Animals/Capybara/animal-champion-cartoon.webp",
+      "Animals/Capybara/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Caracal",
+    "folder": "Animals/Caracal",
+    "images": [
+      "Animals/Caracal/animal-champion-cartoon.webp",
+      "Animals/Caracal/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Cassowary",
+    "folder": "Animals/Cassowary",
+    "images": [
+      "Animals/Cassowary/animal-champion-cartoon.webp",
+      "Animals/Cassowary/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Cat",
     "folder": "Animals/Cat",
     "images": [
@@ -41,6 +105,14 @@
       "Animals/Cat/chatgpt-fourth.webp",
       "Animals/Cat/chatgpt-generated.webp",
       "Animals/Cat/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Chameleon",
+    "folder": "Animals/Chameleon",
+    "images": [
+      "Animals/Chameleon/animal-champion-cartoon.webp",
+      "Animals/Chameleon/animal-champion-realistic.webp"
     ]
   },
   {
@@ -178,6 +250,14 @@
     ]
   },
   {
+    "name": "Emu",
+    "folder": "Animals/Emu",
+    "images": [
+      "Animals/Emu/animal-champion-cartoon.webp",
+      "Animals/Emu/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Flamingo",
     "folder": "Animals/Flamingo",
     "images": [
@@ -279,6 +359,14 @@
     ]
   },
   {
+    "name": "Ibex",
+    "folder": "Animals/Ibex",
+    "images": [
+      "Animals/Ibex/animal-champion-cartoon.webp",
+      "Animals/Ibex/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Kangaroo",
     "folder": "Animals/Kangaroo",
     "images": [
@@ -301,6 +389,22 @@
     ]
   },
   {
+    "name": "Komodo Dragon",
+    "folder": "Animals/Komodo Dragon",
+    "images": [
+      "Animals/Komodo Dragon/animal-champion-cartoon.webp",
+      "Animals/Komodo Dragon/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Lemur",
+    "folder": "Animals/Lemur",
+    "images": [
+      "Animals/Lemur/animal-champion-cartoon.webp",
+      "Animals/Lemur/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Lion",
     "folder": "Animals/Lion",
     "images": [
@@ -309,6 +413,30 @@
       "Animals/Lion/chatgpt-fourth.webp",
       "Animals/Lion/chatgpt-generated.webp",
       "Animals/Lion/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Lynx",
+    "folder": "Animals/Lynx",
+    "images": [
+      "Animals/Lynx/animal-champion-cartoon.webp",
+      "Animals/Lynx/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Manatee",
+    "folder": "Animals/Manatee",
+    "images": [
+      "Animals/Manatee/animal-champion-cartoon.webp",
+      "Animals/Manatee/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Meerkat",
+    "folder": "Animals/Meerkat",
+    "images": [
+      "Animals/Meerkat/animal-champion-cartoon.webp",
+      "Animals/Meerkat/animal-champion-realistic.webp"
     ]
   },
   {
@@ -333,6 +461,14 @@
     ]
   },
   {
+    "name": "Narwhal",
+    "folder": "Animals/Narwhal",
+    "images": [
+      "Animals/Narwhal/animal-champion-cartoon.webp",
+      "Animals/Narwhal/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Octopus",
     "folder": "Animals/Octopus",
     "images": [
@@ -343,6 +479,22 @@
       "Animals/Octopus/chatgpt-fourth.webp",
       "Animals/Octopus/chatgpt-generated.webp",
       "Animals/Octopus/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Okapi",
+    "folder": "Animals/Okapi",
+    "images": [
+      "Animals/Okapi/animal-champion-cartoon.webp",
+      "Animals/Okapi/animal-champion-realistic.webp"
+    ]
+  },
+  {
+    "name": "Orangutan",
+    "folder": "Animals/Orangutan",
+    "images": [
+      "Animals/Orangutan/animal-champion-cartoon.webp",
+      "Animals/Orangutan/animal-champion-realistic.webp"
     ]
   },
   {
@@ -365,6 +517,14 @@
       "Animals/Panda/chatgpt-fourth.webp",
       "Animals/Panda/chatgpt-generated.webp",
       "Animals/Panda/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Pangolin",
+    "folder": "Animals/Pangolin",
+    "images": [
+      "Animals/Pangolin/animal-champion-cartoon.webp",
+      "Animals/Pangolin/animal-champion-realistic.webp"
     ]
   },
   {
@@ -413,6 +573,14 @@
     ]
   },
   {
+    "name": "Platypus",
+    "folder": "Animals/Platypus",
+    "images": [
+      "Animals/Platypus/animal-champion-cartoon.webp",
+      "Animals/Platypus/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Polar Bear",
     "folder": "Animals/Polar Bear",
     "images": [
@@ -421,6 +589,14 @@
       "Animals/Polar Bear/chatgpt-fourth.webp",
       "Animals/Polar Bear/chatgpt-generated.webp",
       "Animals/Polar Bear/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Porcupine",
+    "folder": "Animals/Porcupine",
+    "images": [
+      "Animals/Porcupine/animal-champion-cartoon.webp",
+      "Animals/Porcupine/animal-champion-realistic.webp"
     ]
   },
   {
@@ -433,6 +609,14 @@
       "Animals/Rabbit/chatgpt-fourth.webp",
       "Animals/Rabbit/chatgpt-generated.webp",
       "Animals/Rabbit/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Red Panda",
+    "folder": "Animals/Red Panda",
+    "images": [
+      "Animals/Red Panda/animal-champion-cartoon.webp",
+      "Animals/Red Panda/animal-champion-realistic.webp"
     ]
   },
   {
@@ -502,6 +686,14 @@
     ]
   },
   {
+    "name": "Tapir",
+    "folder": "Animals/Tapir",
+    "images": [
+      "Animals/Tapir/animal-champion-cartoon.webp",
+      "Animals/Tapir/animal-champion-realistic.webp"
+    ]
+  },
+  {
     "name": "Tiger",
     "folder": "Animals/Tiger",
     "images": [
@@ -543,6 +735,14 @@
       "Animals/Wolf/chatgpt-fourth.webp",
       "Animals/Wolf/chatgpt-generated.webp",
       "Animals/Wolf/chatgpt-third.webp"
+    ]
+  },
+  {
+    "name": "Wombat",
+    "folder": "Animals/Wombat",
+    "images": [
+      "Animals/Wombat/animal-champion-cartoon.webp",
+      "Animals/Wombat/animal-champion-realistic.webp"
     ]
   },
   {

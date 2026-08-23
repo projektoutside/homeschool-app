@@ -29,7 +29,7 @@ export const scienceContent: ContentItem[] = [
   {
     id: 'animal-champion',
     title: 'Animal Champion',
-    description: 'Identify 50 animals in fast visual challenge rounds.',
+    description: 'Identify 75 animals in fast visual challenge rounds.',
     type: 'game',
     category: 'science',
     subjects: ['Animals', 'Wildlife', 'Visual Recognition'],

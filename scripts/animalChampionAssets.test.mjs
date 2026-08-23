@@ -26,7 +26,34 @@ const generatedGameplay = [
   'Animals/Tiger/animal-champion-secondary.webp',
   'Animals/Zebra/animal-champion-secondary.webp',
 ];
-const expectedRuntimeRoster = [
+const challengingRuntimeRoster = [
+  { id: 'aardvark', name: 'Aardvark', images: ['Animals/Aardvark/animal-champion-cartoon.webp', 'Animals/Aardvark/animal-champion-realistic.webp'] },
+  { id: 'armadillo', name: 'Armadillo', images: ['Animals/Armadillo/animal-champion-cartoon.webp', 'Animals/Armadillo/animal-champion-realistic.webp'] },
+  { id: 'axolotl', name: 'Axolotl', images: ['Animals/Axolotl/animal-champion-cartoon.webp', 'Animals/Axolotl/animal-champion-realistic.webp'] },
+  { id: 'badger', name: 'Badger', images: ['Animals/Badger/animal-champion-cartoon.webp', 'Animals/Badger/animal-champion-realistic.webp'] },
+  { id: 'bison', name: 'Bison', images: ['Animals/Bison/animal-champion-cartoon.webp', 'Animals/Bison/animal-champion-realistic.webp'] },
+  { id: 'capybara', name: 'Capybara', images: ['Animals/Capybara/animal-champion-cartoon.webp', 'Animals/Capybara/animal-champion-realistic.webp'] },
+  { id: 'caracal', name: 'Caracal', images: ['Animals/Caracal/animal-champion-cartoon.webp', 'Animals/Caracal/animal-champion-realistic.webp'] },
+  { id: 'cassowary', name: 'Cassowary', images: ['Animals/Cassowary/animal-champion-cartoon.webp', 'Animals/Cassowary/animal-champion-realistic.webp'] },
+  { id: 'chameleon', name: 'Chameleon', images: ['Animals/Chameleon/animal-champion-cartoon.webp', 'Animals/Chameleon/animal-champion-realistic.webp'] },
+  { id: 'emu', name: 'Emu', images: ['Animals/Emu/animal-champion-cartoon.webp', 'Animals/Emu/animal-champion-realistic.webp'] },
+  { id: 'ibex', name: 'Ibex', images: ['Animals/Ibex/animal-champion-cartoon.webp', 'Animals/Ibex/animal-champion-realistic.webp'] },
+  { id: 'komodo-dragon', name: 'Komodo Dragon', images: ['Animals/Komodo Dragon/animal-champion-cartoon.webp', 'Animals/Komodo Dragon/animal-champion-realistic.webp'] },
+  { id: 'lemur', name: 'Lemur', images: ['Animals/Lemur/animal-champion-cartoon.webp', 'Animals/Lemur/animal-champion-realistic.webp'] },
+  { id: 'lynx', name: 'Lynx', images: ['Animals/Lynx/animal-champion-cartoon.webp', 'Animals/Lynx/animal-champion-realistic.webp'] },
+  { id: 'manatee', name: 'Manatee', images: ['Animals/Manatee/animal-champion-cartoon.webp', 'Animals/Manatee/animal-champion-realistic.webp'] },
+  { id: 'meerkat', name: 'Meerkat', images: ['Animals/Meerkat/animal-champion-cartoon.webp', 'Animals/Meerkat/animal-champion-realistic.webp'] },
+  { id: 'narwhal', name: 'Narwhal', images: ['Animals/Narwhal/animal-champion-cartoon.webp', 'Animals/Narwhal/animal-champion-realistic.webp'] },
+  { id: 'okapi', name: 'Okapi', images: ['Animals/Okapi/animal-champion-cartoon.webp', 'Animals/Okapi/animal-champion-realistic.webp'] },
+  { id: 'orangutan', name: 'Orangutan', images: ['Animals/Orangutan/animal-champion-cartoon.webp', 'Animals/Orangutan/animal-champion-realistic.webp'] },
+  { id: 'pangolin', name: 'Pangolin', images: ['Animals/Pangolin/animal-champion-cartoon.webp', 'Animals/Pangolin/animal-champion-realistic.webp'] },
+  { id: 'platypus', name: 'Platypus', images: ['Animals/Platypus/animal-champion-cartoon.webp', 'Animals/Platypus/animal-champion-realistic.webp'] },
+  { id: 'porcupine', name: 'Porcupine', images: ['Animals/Porcupine/animal-champion-cartoon.webp', 'Animals/Porcupine/animal-champion-realistic.webp'] },
+  { id: 'red-panda', name: 'Red Panda', images: ['Animals/Red Panda/animal-champion-cartoon.webp', 'Animals/Red Panda/animal-champion-realistic.webp'] },
+  { id: 'tapir', name: 'Tapir', images: ['Animals/Tapir/animal-champion-cartoon.webp', 'Animals/Tapir/animal-champion-realistic.webp'] },
+  { id: 'wombat', name: 'Wombat', images: ['Animals/Wombat/animal-champion-cartoon.webp', 'Animals/Wombat/animal-champion-realistic.webp'] },
+];
+const legacyRuntimeRoster = [
   { id: 'bat', name: 'Bat', images: ['Animals/Bat/chatgpt-generated.webp', 'Animals/Bat/animal-champion-secondary.webp'] },
   { id: 'bear', name: 'Bear', images: ['Animals/Bear/chatgpt-generated.webp', 'Animals/Bear/chatgpt-anime.webp'] },
   { id: 'camel', name: 'Camel', images: ['Animals/Camel/chatgpt-generated.webp', 'Animals/Camel/chatgpt-anime.webp'] },
@@ -78,7 +105,10 @@ const expectedRuntimeRoster = [
   { id: 'wolf', name: 'Wolf', images: ['Animals/Wolf/chatgpt-generated.webp', 'Animals/Wolf/chatgpt-anime.webp'] },
   { id: 'zebra', name: 'Zebra', images: ['Animals/Zebra/chatgpt-generated.webp', 'Animals/Zebra/animal-champion-secondary.webp'] },
 ];
-const cartoonGameplay = expectedRuntimeRoster.map(
+const expectedRuntimeRoster = [...challengingRuntimeRoster, ...legacyRuntimeRoster];
+const challengingGameplay = challengingRuntimeRoster.flatMap(({ images }) => images);
+const challengingIds = new Set(challengingRuntimeRoster.map(({ id }) => id));
+const cartoonGameplay = legacyRuntimeRoster.map(
   ({ name }) => `Animals/${name}/animal-champion-cartoon.webp`,
 );
 const expectedDifficultyAnimals = {
@@ -87,10 +117,14 @@ const expectedDifficultyAnimals = {
     'Mouse', 'Penguin', 'Pig', 'Rabbit', 'Sheep', 'Tiger', 'Turtle', 'Zebra',
   ],
   [DIFFICULTIES.HARD]: [
+    'Armadillo', 'Badger', 'Bison', 'Capybara', 'Chameleon', 'Emu', 'Lemur',
+    'Manatee', 'Meerkat', 'Platypus', 'Porcupine', 'Wombat',
     'Bear', 'Camel', 'Deer', 'Dolphin', 'Donkey', 'Eagle', 'Fox', 'Frog', 'Giraffe',
     'Goat', 'Hamster', 'Kangaroo', 'Panda', 'Parrot', 'Polar Bear', 'Squirrel', 'Wolf',
   ],
   [DIFFICULTIES.EXPERT]: [
+    'Aardvark', 'Axolotl', 'Caracal', 'Cassowary', 'Ibex', 'Komodo Dragon', 'Lynx',
+    'Narwhal', 'Okapi', 'Orangutan', 'Pangolin', 'Red Panda', 'Tapir',
     'Bat', 'Cheetah', 'Chimpanzee', 'Crocodile', 'Flamingo', 'Gorilla', 'Hippopotamus',
     'Koala', 'Octopus', 'Owl', 'Peacock', 'Rhinoceros', 'Seal', 'Shark', 'Snake', 'Whale',
   ],
@@ -178,6 +212,9 @@ test('all approved generated originals and their prompt records exist', async ()
   const cartoonLedger = JSON.parse(
     await readFile(path.join(gameRoot, 'assets', 'cartoon-image-generation.json'), 'utf8'),
   );
+  const challengingLedger = JSON.parse(
+    await readFile(path.join(gameRoot, 'assets', 'challenging-image-generation.json'), 'utf8'),
+  );
   assert.equal(ledger.schemaVersion, 1);
   assert.equal(ledger.assets.length, 18);
   assert.equal(new Set(ledger.assets.map(({ finalPath }) => finalPath)).size, 18);
@@ -200,6 +237,24 @@ test('all approved generated originals and their prompt records exist', async ()
   assert.deepEqual(cartoonLedger.assets.slice().sort(), cartoonGameplay.slice().sort());
   assert.equal(new Set(cartoonLedger.assets).size, 50);
 
+  assert.equal(challengingLedger.schemaVersion, 1);
+  assert.equal(challengingLedger.generator, 'openai-imagegen');
+  assert.equal(challengingLedger.mode, 'built-in');
+  assert.match(challengingLedger.promptTemplates.cartoon, /realistic-cartoon 3D wildlife illustration/);
+  assert.match(challengingLedger.promptTemplates.realistic, /high-end wildlife photograph/);
+  assert.deepEqual(challengingLedger.output, {
+    format: 'webp',
+    width: 853,
+    height: 1280,
+    qa: 'approved-contact-sheet',
+  });
+  assert.equal(challengingLedger.animals.length, 25);
+  assert.deepEqual(
+    challengingLedger.animals.flatMap(({ assets }) => assets).slice().sort(),
+    challengingGameplay.slice().sort(),
+  );
+  assert.equal(new Set(challengingGameplay).size, 50);
+
   assert.ok((await stat(derivedCatalogThumbnail)).size > 0);
   assert.ok(
     !ledger.assets.some(
@@ -210,25 +265,30 @@ test('all approved generated originals and their prompt records exist', async ()
   );
 });
 
-test('runtime data selects exactly 50 animals and 150 unique images across balanced difficulties', async () => {
+test('runtime data selects exactly 75 animals and 200 unique images across the approved difficulties', async () => {
   const { ANIMAL_DATABASE } = await loadRuntimeData();
   const ids = ANIMAL_DATABASE.map(({ id }) => id);
   const names = ANIMAL_DATABASE.map(({ name }) => name);
   const paths = ANIMAL_DATABASE.flatMap(({ images }) => images);
 
-  assert.equal(ANIMAL_DATABASE.length, 50);
-  assert.equal(new Set(ids).size, 50);
-  assert.equal(new Set(names).size, 50);
-  assert.ok(ANIMAL_DATABASE.every(({ images }) => images.length === 3 && new Set(images).size === 3));
-  assert.equal(paths.length, 150);
-  assert.equal(new Set(paths).size, 150);
+  assert.equal(ANIMAL_DATABASE.length, 75);
+  assert.equal(new Set(ids).size, 75);
+  assert.equal(new Set(names).size, 75);
+  assert.ok(ANIMAL_DATABASE.every(({ id, images }) => (
+    images.length === (challengingIds.has(id) ? 2 : 3) && new Set(images).size === images.length
+  )));
+  assert.equal(paths.length, 200);
+  assert.equal(new Set(paths).size, 200);
   assert.ok(paths.every((value) => value.endsWith('.webp')));
   assert.ok(paths.every((value) => !value.includes('chatgpt-third') && !value.includes('chatgpt-fourth')));
   assert.deepEqual(
     ANIMAL_DATABASE.map(({ id, name, images }) => ({ id, name, images: images.slice(0, 2) })),
     expectedRuntimeRoster,
   );
-  assert.deepEqual(ANIMAL_DATABASE.map(({ images }) => images[2]), cartoonGameplay);
+  assert.deepEqual(
+    ANIMAL_DATABASE.filter(({ id }) => !challengingIds.has(id)).map(({ images }) => images[2]),
+    cartoonGameplay,
+  );
   for (const [difficulty, expectedNames] of Object.entries(expectedDifficultyAnimals)) {
     assert.deepEqual(
       ANIMAL_DATABASE.filter((animal) => animal.difficulty === difficulty).map(({ name }) => name),
@@ -269,7 +329,7 @@ test('every selected path exists with exact casing and is included in the source
   }
 });
 
-test('selected images have real WebP signatures, unique SHA-256 content, and the 84/16/50 source split', async () => {
+test('selected images have real WebP signatures, unique SHA-256 content, and the approved source split', async () => {
   const { ANIMAL_DATABASE } = await loadRuntimeData();
   const paths = ANIMAL_DATABASE.flatMap(({ images }) => images);
   const ledger = JSON.parse(
@@ -284,8 +344,12 @@ test('selected images have real WebP signatures, unique SHA-256 content, and the
   const generatedPaths = paths.filter((relativePath) => ledgerGeneratedGameplaySet.has(relativePath));
   const cartoonGameplaySet = new Set(cartoonGameplay);
   const newCartoonPaths = paths.filter((relativePath) => cartoonGameplaySet.has(relativePath));
+  const challengingGameplaySet = new Set(challengingGameplay);
+  const challengingPaths = paths.filter((relativePath) => challengingGameplaySet.has(relativePath));
   const existingPaths = paths.filter(
-    (relativePath) => !ledgerGeneratedGameplaySet.has(relativePath) && !cartoonGameplaySet.has(relativePath),
+    (relativePath) => !ledgerGeneratedGameplaySet.has(relativePath)
+      && !cartoonGameplaySet.has(relativePath)
+      && !challengingGameplaySet.has(relativePath),
   );
   const hashes = [];
 
@@ -293,6 +357,8 @@ test('selected images have real WebP signatures, unique SHA-256 content, and the
   assert.equal(new Set(generatedPaths).size, 16);
   assert.equal(newCartoonPaths.length, 50);
   assert.equal(new Set(newCartoonPaths).size, 50);
+  assert.equal(challengingPaths.length, 50);
+  assert.equal(new Set(challengingPaths).size, 50);
   assert.equal(existingPaths.length, 84);
   assert.deepEqual(generatedPaths.slice().sort(), generatedGameplay.slice().sort());
   for (const relativePath of paths) {
@@ -300,11 +366,15 @@ test('selected images have real WebP signatures, unique SHA-256 content, and the
     const dimensions = readWebpDimensions(buffer);
     assert.ok(dimensions.width > 0 && dimensions.height > 0, `Invalid dimensions: ${relativePath}`);
     hashes.push(createHash('sha256').update(buffer).digest('hex'));
-    if (ledgerGeneratedGameplaySet.has(relativePath) || cartoonGameplaySet.has(relativePath)) {
+    if (
+      ledgerGeneratedGameplaySet.has(relativePath)
+      || cartoonGameplaySet.has(relativePath)
+      || challengingGameplaySet.has(relativePath)
+    ) {
       assert.deepEqual(dimensions, { width: 853, height: 1280 }, `Generated dimensions: ${relativePath}`);
     }
   }
-  assert.equal(new Set(hashes).size, 150);
+  assert.equal(new Set(hashes).size, 200);
 });
 
 test('generated gameplay and UI assets have approved dimensions and complete ledger coverage', async () => {
@@ -327,6 +397,13 @@ test('generated gameplay and UI assets have approved dimensions and complete led
   }
   for (const relativePath of cartoonGameplay) {
     assert.ok(paths.includes(relativePath), `Cartoon gameplay path is not selected: ${relativePath}`);
+    assert.deepEqual(
+      readWebpDimensions(await readFile(path.join(gameRoot, relativePath))),
+      { width: 853, height: 1280 },
+    );
+  }
+  for (const relativePath of challengingGameplay) {
+    assert.ok(paths.includes(relativePath), `Challenging gameplay path is not selected: ${relativePath}`);
     assert.deepEqual(
       readWebpDimensions(await readFile(path.join(gameRoot, relativePath))),
       { width: 853, height: 1280 },

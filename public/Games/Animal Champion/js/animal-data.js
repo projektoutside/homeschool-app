@@ -10,6 +10,106 @@ const animal = (id, name, images, difficulty, speechAliases = []) => Object.free
 });
 
 export const ANIMAL_DATABASE = Object.freeze([
+  animal('aardvark', 'Aardvark', [
+    'Animals/Aardvark/animal-champion-cartoon.webp',
+    'Animals/Aardvark/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('armadillo', 'Armadillo', [
+    'Animals/Armadillo/animal-champion-cartoon.webp',
+    'Animals/Armadillo/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('axolotl', 'Axolotl', [
+    'Animals/Axolotl/animal-champion-cartoon.webp',
+    'Animals/Axolotl/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('badger', 'Badger', [
+    'Animals/Badger/animal-champion-cartoon.webp',
+    'Animals/Badger/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('bison', 'Bison', [
+    'Animals/Bison/animal-champion-cartoon.webp',
+    'Animals/Bison/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD, ['buffalo']),
+  animal('capybara', 'Capybara', [
+    'Animals/Capybara/animal-champion-cartoon.webp',
+    'Animals/Capybara/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('caracal', 'Caracal', [
+    'Animals/Caracal/animal-champion-cartoon.webp',
+    'Animals/Caracal/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('cassowary', 'Cassowary', [
+    'Animals/Cassowary/animal-champion-cartoon.webp',
+    'Animals/Cassowary/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('chameleon', 'Chameleon', [
+    'Animals/Chameleon/animal-champion-cartoon.webp',
+    'Animals/Chameleon/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('emu', 'Emu', [
+    'Animals/Emu/animal-champion-cartoon.webp',
+    'Animals/Emu/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('ibex', 'Ibex', [
+    'Animals/Ibex/animal-champion-cartoon.webp',
+    'Animals/Ibex/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('komodo-dragon', 'Komodo Dragon', [
+    'Animals/Komodo Dragon/animal-champion-cartoon.webp',
+    'Animals/Komodo Dragon/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT, ['komodo']),
+  animal('lemur', 'Lemur', [
+    'Animals/Lemur/animal-champion-cartoon.webp',
+    'Animals/Lemur/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD, ['ring tailed lemur']),
+  animal('lynx', 'Lynx', [
+    'Animals/Lynx/animal-champion-cartoon.webp',
+    'Animals/Lynx/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT, ['links']),
+  animal('manatee', 'Manatee', [
+    'Animals/Manatee/animal-champion-cartoon.webp',
+    'Animals/Manatee/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD, ['sea cow']),
+  animal('meerkat', 'Meerkat', [
+    'Animals/Meerkat/animal-champion-cartoon.webp',
+    'Animals/Meerkat/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('narwhal', 'Narwhal', [
+    'Animals/Narwhal/animal-champion-cartoon.webp',
+    'Animals/Narwhal/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('okapi', 'Okapi', [
+    'Animals/Okapi/animal-champion-cartoon.webp',
+    'Animals/Okapi/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('orangutan', 'Orangutan', [
+    'Animals/Orangutan/animal-champion-cartoon.webp',
+    'Animals/Orangutan/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT, ['orangutang']),
+  animal('pangolin', 'Pangolin', [
+    'Animals/Pangolin/animal-champion-cartoon.webp',
+    'Animals/Pangolin/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('platypus', 'Platypus', [
+    'Animals/Platypus/animal-champion-cartoon.webp',
+    'Animals/Platypus/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('porcupine', 'Porcupine', [
+    'Animals/Porcupine/animal-champion-cartoon.webp',
+    'Animals/Porcupine/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
+  animal('red-panda', 'Red Panda', [
+    'Animals/Red Panda/animal-champion-cartoon.webp',
+    'Animals/Red Panda/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('tapir', 'Tapir', [
+    'Animals/Tapir/animal-champion-cartoon.webp',
+    'Animals/Tapir/animal-champion-realistic.webp',
+  ], DIFFICULTIES.EXPERT),
+  animal('wombat', 'Wombat', [
+    'Animals/Wombat/animal-champion-cartoon.webp',
+    'Animals/Wombat/animal-champion-realistic.webp',
+  ], DIFFICULTIES.HARD),
   animal('bat', 'Bat', [
     'Animals/Bat/chatgpt-generated.webp',
     'Animals/Bat/animal-champion-secondary.webp',

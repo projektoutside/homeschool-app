@@ -35,25 +35,25 @@ test('exports the gameplay constants consumed by the controller', () => {
   assert.ok(Object.isFrozen(OUTCOMES));
 });
 
-test('one shuffled deck shows all 50 animals before any repeat and prevents a boundary repeat', () => {
+test('one shuffled deck shows all 75 animals before any repeat and prevents a boundary repeat', () => {
   const engine = buildEngine();
   engine.startRun(MODES.CONTINUOUS);
   const seen = [];
-  for (let index = 0; index < 50; index += 1) {
+  for (let index = 0; index < 75; index += 1) {
     const round = engine.beginRound();
     seen.push(round.correctAnimalId);
     answerCorrectly(engine, round);
     engine.finishFeedback();
   }
-  assert.equal(new Set(seen).size, 50);
+  assert.equal(new Set(seen).size, 75);
   assert.notEqual(engine.beginRound().correctAnimalId, seen.at(-1));
 });
 
 test('difficulty decks contain only their assigned animals and keep all distractors in the same tier', () => {
   const expectedCounts = new Map([
     [DIFFICULTIES.EASY, 17],
-    [DIFFICULTIES.HARD, 17],
-    [DIFFICULTIES.EXPERT, 16],
+    [DIFFICULTIES.HARD, 29],
+    [DIFFICULTIES.EXPERT, 29],
   ]);
   for (const [difficulty, expectedCount] of expectedCounts) {
     const engine = buildEngine();
