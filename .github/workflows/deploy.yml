@@ -30,16 +30,14 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Get repository name
-        id: repo
-        run: echo "name=${{ github.repository }}" >> $GITHUB_OUTPUT
-  
       - name: Extract repository name
         id: repo-name
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           echo "name=$REPO_NAME" >> $GITHUB_OUTPUT
-      
+      - name: Validate source and assets
+        run: npm run check:foundations && npm run audit:assets && npm audit --audit-level=high
+
       - name: Build
         run: npm run build
         env:

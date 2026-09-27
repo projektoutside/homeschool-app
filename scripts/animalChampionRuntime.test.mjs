@@ -89,7 +89,9 @@ function attribute(tag, name) {
 }
 
 function cssRule(css, selector) {
-  const match = css.match(new RegExp(`(?:^|})\\s*${escapeRegExp(selector)}\\s*\\{([^}]*)}`, 'm'));
+  const normalizedCss = css.replace(/\r\n?/g, '\n');
+  const normalizedSelector = selector.replace(/\r\n?/g, '\n');
+  const match = normalizedCss.match(new RegExp(`(?:^|})\\s*${escapeRegExp(normalizedSelector)}\\s*\\{([^}]*)}`, 'm'));
   assert.ok(match, `expected CSS rule for ${selector}`);
   return match[1];
 }

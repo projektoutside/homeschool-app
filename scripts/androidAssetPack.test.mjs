@@ -186,11 +186,11 @@ test('Android relative base path does not become a React Router basename', async
   assert.match(app, /\? '' : baseUrl\.replace/);
 });
 
-test('Android release advances to the 75-animal Animal Champion version', async () => {
+test('Android release version advances beyond the published internal test', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.match(appBuild, /versionCode\s+7/);
-  assert.match(appBuild, /versionName\s+"1\.0\.6"/);
+  assert.match(appBuild, /versionCode\s+8/);
+  assert.match(appBuild, /versionName\s+"1\.0\.7"/);
 });
 
 test('Android release disables the unavailable paid cloud backend', async () => {

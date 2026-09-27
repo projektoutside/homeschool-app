@@ -1,5 +1,15 @@
 import type { FullscreenDocumentType, FullscreenHTMLElementType } from '../types/fullscreen';
 
+export const supportsElementFullscreenOnPlatform = (
+  platform: string,
+  doc: Document | null,
+): boolean => {
+  if (platform !== 'ios') return true;
+  const fullscreenDocument = doc as FullscreenDocumentType | null;
+  return fullscreenDocument?.fullscreenEnabled === true
+    || fullscreenDocument?.webkitFullscreenEnabled === true;
+};
+
 export const getFullscreenElement = (doc: Document = document): Element | null => {
   const fullscreenDocument = doc as FullscreenDocumentType;
   return (
