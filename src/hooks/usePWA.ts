@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { HOMEPAGE_BOOT_STABLE_EVENT } from '../constants/runtimeEvents';
-import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen } from '../utils/fullscreen';
+import { exitDocumentFullscreen, getFullscreenElement, requestElementFullscreen, supportsElementFullscreenOnPlatform } from '../utils/fullscreen';
 
 const LIVE_UPDATE_POLL_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -222,7 +222,13 @@ export function usePWA(): UsePWAReturn {
   const isAndroid = installContext.platform === 'android' || nativePlatform === 'android';
   const isStandaloneShell = isStandalone || isNativeApp;
   const requiresInstalledShell = isAndroid && !isStandaloneShell && !bypassInstalledShellGate;
-  const shouldUseNativeFullscreenFallback = !isStandaloneShell && !requiresInstalledShell;
+  const iosElementFullscreenAvailable = supportsElementFullscreenOnPlatform(
+    installContext.platform,
+    typeof document === 'undefined' ? null : document,
+  );
+  const shouldUseNativeFullscreenFallback = !isStandaloneShell
+    && !requiresInstalledShell
+    && iosElementFullscreenAvailable;
 
   // Check for updates via service worker - defined early for use in effects
   const checkForUpdatesFromSW = useCallback(() => {

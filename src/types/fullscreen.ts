@@ -4,6 +4,7 @@
  */
 
 interface FullscreenDocument extends Document {
+    webkitFullscreenEnabled?: boolean;
     webkitFullscreenElement?: Element | null;
     mozFullScreenElement?: Element | null;
     msFullscreenElement?: Element | null;

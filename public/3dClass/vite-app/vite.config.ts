@@ -153,7 +153,7 @@ const writeClassroomEmbeddedState = async (state: ClassroomEmbeddedState): Promi
 
   const replacementBlock = `${CLASSROOM_STATE_START_MARKER}
   <script id="classroomEmbeddedState" type="application/json">
-${JSON.stringify(state, null, 2)}
+${JSON.stringify(state, null, 2).replace(/</g, '\\u003c')}
   </script>
   ${CLASSROOM_STATE_END_MARKER}`;
 

@@ -73,7 +73,7 @@ const injectClassroomStateIntoIndex = (
 ): string => {
   const replacementBlock = `${CLASSROOM_EMBEDDED_STATE_START}
   <script id="classroomEmbeddedState" type="application/json">
-${JSON.stringify(state, null, 2)}
+${JSON.stringify(state, null, 2).replace(/</g, '\\u003c')}
   </script>
   ${CLASSROOM_EMBEDDED_STATE_END}`;
 
