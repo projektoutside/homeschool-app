@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const output = 'output/birds-flight-challenge';
+const output = process.env.BIRDS_FLIGHT_OUTPUT || 'output/birds-flight-challenge';
 const base = process.env.GAMES_TEST_URL || 'http://127.0.0.1:5186';
 const url = `${base}/Games/Many%20Birds%20One%20Stone/index.html`;
 await mkdir(output, { recursive: true });
@@ -38,6 +38,7 @@ try {
     try {
       await seed(page); await page.goto(url);
       await page.waitForFunction(() => window.WoodlandBirds && window.render_game_to_text, undefined, { polling: 50 });
+      await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).birdArt.loaded, undefined, { polling: 50 });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForFunction(() => [...document.images].every(image => image.complete), undefined, { polling: 50 });
       await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
@@ -51,7 +52,7 @@ try {
         const positions = prior.birds.map(bird => ({ x: bird.x, y: bird.y }));
         let maxHeadingStep = 0, maxWingStep = 0;
         const signs = new Set();
-        const rig = new window.WoodlandBirds({ reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+        const rig = { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, pose: window.WoodlandBirds.prototype.pose };
         const representative = { index: 0, range: 32, speed: 1.24, phase: .3, bobAmp: 8 };
         let priorPose = rig.pose(representative, 0);
         for (let i = 1; i <= 1440; i++) {
@@ -75,7 +76,7 @@ try {
         return { maxHeadingStep, maxWingStep, signs: [...signs], positions, final: prior.birds,
           meanMs: costs.reduce((sum, value) => sum + value, 0) / costs.length, p95Ms: costs[Math.floor(costs.length * .95)] };
       });
-      assert.ok(motion.maxHeadingStep < .12, 'turns have no mirror snap');
+      assert.ok(motion.maxHeadingStep < .12, 'analytic heading changes continuously');
       assert.ok(motion.maxWingStep < .62, 'continuous wingbeats');
       assert.ok(motion.signs.includes(-1) && motion.signs.includes(1), 'both banked directions exercised');
       assert.notDeepEqual(motion.positions, motion.final.map(({ x, y }) => ({ x, y })), 'essential target movement remains active');
@@ -84,7 +85,9 @@ try {
         for (const bird of motion.final) assert.equal(bird.flight.bank + bird.flight.pitch + bird.flight.tail, 0);
       } else assert.ok(motion.maxWingStep > .1);
       assert.ok(requests.some(request => request.endsWith('/birds.js')));
-      assert.equal(requests.some(request => request.includes('EnemyBird16-strip')), false, 'no old strip or image fallback');
+      assert.equal(requests.some(request => request.includes('EnemyBird16-strip')), true, 'original bird artwork is loaded');
+      const art = (await snapshot(page)).birdArt;
+      assert.equal(art.source, 'EnemyBird16-strip.png'); assert.equal(art.loaded, true); assert.equal(art.interpolated, true);
       await page.evaluate(() => window.postMessage({ type: 'LAHS_HOST_LIFECYCLE', phase: 'pause' }, location.origin));
       await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).paused, undefined, { polling: 50 });
       const paused = await snapshot(page);
@@ -105,7 +108,55 @@ try {
       const layout = await page.evaluate(() => ({ width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, fullscreen: Boolean(document.fullscreenElement) }));
       assert.ok(layout.scrollWidth <= layout.width + 2 && layout.scrollHeight <= layout.height + 2);
       assert.equal(layout.fullscreen, false); assert.deepEqual(errors, []);
-      return { motion, layout, physical: false };
+      return { art, motion, layout, physical: false };
+    } finally { await context.close(); }
+  });
+
+  await record('sprite-load-failure', async () => {
+    const context = await chrome.newContext(); const page = await context.newPage();
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    try {
+      await seed(page);
+      await page.route('**/assets/birds/EnemyBird16-strip.png', route => route.abort());
+      await page.goto(url);
+      await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).birdArt.failed, undefined, { polling: 50 });
+      const fallbackDraws = await page.evaluate(() => {
+        let calls = 0; const original = window.WoodlandBirds.prototype.drawFallback;
+        window.WoodlandBirds.prototype.drawFallback = function (...args) { calls++; return original.apply(this, args); };
+        window.advanceTime(0); window.WoodlandBirds.prototype.drawFallback = original;
+        return calls;
+      });
+      assert.equal(fallbackDraws, 3, 'missing artwork retains visible targets'); assert.deepEqual(errors, []);
+      return { fallbackDraws, art: (await snapshot(page)).birdArt };
+    } finally { await context.close(); }
+  });
+
+  await record('sprite-opacity', async () => {
+    const context = await chrome.newContext(); const page = await context.newPage();
+    try {
+      await seed(page); await page.goto(url);
+      const result = await page.evaluate(async () => {
+        const rig = new window.WoodlandBirds(); await rig.ready;
+        const canvas = document.createElement('canvas'); canvas.width = 180; canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+        const bird = { index: 0, x: 80, y: 80, alive: true, range: 22, speed: 1, phase: .3, bobAmp: 8, tint: ['#c96f5e', '#7f3d35'] };
+        let minAlpha = 255, opaqueSamples = 0;
+        const originalPose = rig.pose.bind(rig);
+        const pixels = pose => { const texture = rig.frameTexture(0, pose); return texture.getContext('2d').getImageData(0, 0, texture.width, texture.height).data; };
+        for (let i = 0; i < 25; i++) {
+          const pose = originalPose(bird, (i + .5) / 42);
+          rig.pose = () => ({ ...pose, blend: 0 }); rig.draw(ctx, bird, 0); const first = pixels(rig.pose());
+          rig.pose = () => ({ ...pose, frame: pose.nextFrame, blend: 0 }); rig.draw(ctx, bird, 0); const second = pixels(rig.pose());
+          rig.pose = () => pose; rig.draw(ctx, bird, 0); const blended = pixels(rig.pose());
+          for (let j = 3; j < blended.length; j += 4) {
+            if (first[j] >= 252 && second[j] >= 252) { opaqueSamples++; minAlpha = Math.min(minAlpha, blended[j]); }
+          }
+        }
+        return { minAlpha, opaqueSamples, samples: 25, loaded: rig.loaded };
+      });
+      assert.equal(result.loaded, true); assert.ok(result.opaqueSamples > 1000);
+      assert.ok(result.minAlpha >= 250, `interpolation preserves opaque overlapping artwork: ${JSON.stringify(result)}`);
+      return result;
     } finally { await context.close(); }
   });
 

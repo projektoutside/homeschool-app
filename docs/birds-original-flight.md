@@ -1,0 +1,24 @@
+# Many Birds: restore original birds, smooth flight
+
+2026-10-21. Local follow-up on `codex/games-touch-voice-birds-v2`, base `a40adc6`. Tier 3: sprite loading, animation, Canvas blending, reduced motion, and lifecycle. Explicit: restore the previous birds and improve only their flight animation. Keep the harder 18-level campaign and all progress, controls, collision targets, rewards, and sound.
+
+Use the unchanged `EnemyBird16-strip.png` and the original three color treatments/60-unit draw height. The sprite contact sheet shows abrupt wing-pose ordering and roughly 28 source pixels of vertical chest displacement. Reorder the existing poses into a downstroke/recovery loop, align each chest to one anchor, interpolate neighboring frames with premultiplied alpha, and bake the original filters once. Preserve readable side-facing sprites and gentle banking. Reduced motion uses the original gliding frame. Keep a visible fallback for asset failure.
+
+Visual authority is the user's preferred original sprite, not the newer procedural bird. Rubric: artwork fidelity, proportions/alignment, detail/finish, color consistency, motion/readability; minimum 8/10 each, two candidates maximum. Self-assessment, DEGRADED: single-context. No layout or scrolling change. Source contact sheet and measured anchors are in `output/birds-original-flight/`.
+
+## Result and validation
+
+Restored the original PNG, original color treatments, and original particle tints. The PNG's Git blob remains `d069289580f4dbe6cd2b895c2acb9ed10cd38293`, identical to `54160db`. Level definitions, patrols/collisions, progress, points, and controls are unchanged from `a40adc6`.
+
+The animation now follows 25 ordered key poses at 42 key intervals/second. Each interval has four cached blend steps, giving 168 available phase increments/second sampled by the existing render loop. Chest alignment removes frame-to-frame position jumps. Premultiplied addition preserves the opaque body where two wing poses overlap. Blended textures are immutable and bounded to 180 entries (about 40 MB maximum pixel storage); this avoids redrawing/uploading a changed offscreen Canvas for every bird on every frame. Existing side-facing reversal behavior remains; no new bird artwork was generated.
+
+Two implementation candidates: initial live blending, then the same artwork with cached quarter-step blends after measuring excessive Windows WebKit drawing cost. Actual multi-phase desktop/phone/tablet screenshots were reviewed. Self-assessment: artwork fidelity 10, proportions/alignment 8.5, detail/finish 9, color consistency 9, local motion/readability 8.5. Motion assessment concerns the corrected sequence, alignment, and Chromium preview; it does not establish physical Safari frame stability.
+
+Final source fingerprint: `232664874f95c908048bbc5dcd92dc856bae5db934ea4791ef1e3a7a4d01ce0f` (renderer, HTML, and affected browser test). Source HTML/renderer match the production build byte for byte. Manifest: `output/birds-original-flight/source-sha256.json`.
+
+- `scripts/birdsFlight.browser.mjs`: seven final cases passed: desktop Chromium 1440x1000, Android viewport Chromium 393x852, phone WebKit 390x844, tablet WebKit 1024x1366, reduced motion, sprite-load failure, and sprite opacity. Verified original art loading, finite/continuous phase values, flight/lifecycle pause and resume, orientation recovery, no automatic fullscreen/page overflow or page errors, visible fallback targets when the image fails, and preserved opacity across 25 blended pose pairs. Report: `output/birds-original-flight/cached-browser-report.json`.
+- `scripts/birdsStarterLevels.browser.mjs`, desktop filter: all six harder starters cleared through actual drawing/collisions, with score saving, reload, and transition into the three-bird campaign. Report: `output/birds-starter-levels/original-birds-campaign.json`. Other-device collision paths were not repeated because level and physics code were not changed.
+- Targeted ESLint, renderer syntax, `npm run audit:games` (83 entries), `git diff --check`, and `node node_modules/vite/bin/vite.js build` passed. Existing large-chunk advisory remains. Build: `output/birds-original-flight/build-final.log`.
+- Design detector ran once; its findings concern the unchanged palette, HUD dividers, panels/dialogs, and shadows. No detector suppression or configuration was changed. Report: `output/birds-original-flight/design-detect.json`.
+
+Cached-run mean update/draw costs were about 1.1-1.4 ms in Chromium and 39/72 ms for the Windows WebKit phone/tablet cases, including cache creation. WebKit remained variable and substantially slower on this host; these measurements do not prove hardware frame rates. Physical Android/iPhone/iPad smoothness and native shells remain unverified; the existing BrowserStack entitlement blocker was not retried. The local side-panel preview stays open. No push, deployment, provider, database, or permission changes were performed.

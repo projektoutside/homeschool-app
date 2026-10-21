@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="preload" href="assets/fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/woodland-v2.webp" as="image">
+  <link rel="preload" href="assets/birds/EnemyBird16-strip.png" as="image">
 </head>
 <body>
   <div id="app">
@@ -835,7 +836,7 @@
             bobAmp: 8 + index * 1.5,
             bodyRadius: 11,
             alive: true,
-            tint: index === 0 ? ['#c77b48', '#627f78'] : index === 1 ? ['#c7a55f', '#686c51'] : ['#ad8363', '#4f6877'],
+            tint: index === 0 ? ['#c96f5e', '#7f3d35'] : index === 1 ? ['#8c6b86', '#56394e'] : ['#ad815e', '#6a4732'],
             facing: Math.cos(base.birdPhases[index]) >= 0 ? 1 : -1,
           };
         });
@@ -1930,6 +1931,7 @@
           birdTarget: state.level ? state.level.birds.length : 0,
           title: state.level ? state.level.title : null,
           elapsed: Number(state.elapsed.toFixed(4)),
+          birdArt: woodlandBirds.describe(),
           overlayVisible: state.overlayVisible,
           outcome: state.outcome,
           resultPending: Boolean(state.pendingResult),
