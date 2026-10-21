@@ -130,15 +130,19 @@ try {
         await page.locator('#restartButton').click();
         const levels = await page.evaluate(() => {
           const results = [];
-          for (let i = 0; i < 12; i++) {
+          const total = JSON.parse(window.render_game_to_text()).totalLevels;
+          for (let i = 0; i < total; i++) {
             window.__manyBirdsDebug.reset(); window.__manyBirdsDebug.forceWin(); window.__manyBirdsDebug.setLevel(i);
             const game = JSON.parse(window.render_game_to_text());
-            results.push({ level: game.level, floorY: game.floorY, platforms: game.platforms });
+            results.push({ level: game.level, birdCount: game.birdTarget, floorY: game.floorY, platforms: game.platforms });
           }
           return results;
         });
-        assert.equal(new Set(levels.map(level => level.level)).size, 12);
-        for (const level of levels) assert.ok(level.platforms.every(platform => platform.kind === 'blocker'), 'every collider platform has visible material');
+        assert.equal(new Set(levels.map(level => level.level)).size, 18);
+        for (const level of levels) {
+          assert.ok(level.platforms.every(platform => platform.kind === 'blocker'), 'every collider platform has visible material');
+          assert.equal(level.birdCount, level.level <= 3 ? 1 : level.level <= 6 ? 2 : 3);
+        }
       }
       const layout = await page.evaluate(() => ({ viewport: [innerWidth, innerHeight], document: [document.documentElement.scrollWidth, document.documentElement.scrollHeight], fullscreen: Boolean(document.fullscreenElement) }));
       assert.ok(layout.document[0] <= layout.viewport[0] + 2 && layout.document[1] <= layout.viewport[1] + 2);

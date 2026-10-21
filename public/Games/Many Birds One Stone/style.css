@@ -50,6 +50,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .meter-fill { width: 100%; height: 100%; border-radius: inherit; background: #28725c; transform-origin: left; transition: transform 140ms; }
 .flock-progress { display: flex; align-items: center; gap: 9px; }
 .bird-token { width: 30px; height: 30px; display: grid; place-items: center; background: #e0e5d5; border-radius: 50%; color: #536f60; transition: color 180ms, background 180ms; }
+.bird-token[hidden] { display: none; }
 .bird-token svg { width: 18px; height: 18px; }
 .bird-token.is-cleared { color: #fff; background: var(--forest); }
 #birdProgress { font-size: .875rem; font-weight: 800; margin-left: auto; }

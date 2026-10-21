@@ -42,7 +42,7 @@
             <div class="meter-fill" id="inkFill"></div>
           </div>
         </div>
-        <div class="flock-progress" aria-live="polite"><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span id="birdProgress">0 / 3 birds</span></div>
+        <div class="flock-progress" aria-live="polite"><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span id="birdProgress">0 / 1 bird</span></div>
       </header>
 
       <main class="stage-panel">
@@ -99,6 +99,9 @@
 
       const GAME_ID = 'many-birds-one-stone';
       const STORAGE_KEY = 'lahs-many-birds-one-stone-v1';
+      const LEGACY_BACKUP_KEY = `${STORAGE_KEY}:before-starter-levels`;
+      const CAMPAIGN_VERSION = 2;
+      const INTRO_LEVEL_COUNT = 6;
       const HOST_LIFECYCLE_MESSAGE = 'LAHS_HOST_LIFECYCLE';
       const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
       const SOUND_SETTINGS_MESSAGE = 'APP_SOUND_SETTINGS_UPDATE';
@@ -231,6 +234,60 @@
       }
 
       const LEVELS = [
+        {
+          title: 'First Feather',
+          note: 'One bird, one easy drop. Aim down the center and let the stone fall.',
+          inkBudget: 320,
+          blockers: [],
+          hint: [[point(180, 118), point(180, 350)]],
+          birdLaneYs: [340], birdXs: [180],
+          birdRanges: [10], birdSpeeds: [.65], birdPhases: [.3],
+        },
+        {
+          title: 'Little Drift',
+          note: 'Slide the claw right to line up with your bird. Draw a runway if you need one.',
+          inkBudget: 300,
+          blockers: [seg(64, 214, 133, 226)],
+          hint: [[point(180, 118), point(210, 220), point(224, 352)]],
+          birdLaneYs: [350], birdXs: [224],
+          birdRanges: [12], birdSpeeds: [.72], birdPhases: [1.1],
+        },
+        {
+          title: 'Brass Bend',
+          note: 'Aim left of the steel platform, then curve a runway toward your bird.',
+          inkBudget: 290,
+          blockers: [seg(164, 206, 256, 224)],
+          hint: [[point(178, 130), point(126, 190), point(126, 360)]],
+          birdLaneYs: [390], birdXs: [126],
+          birdRanges: [14], birdSpeeds: [.8], birdPhases: [.5],
+        },
+        {
+          title: 'Twin Feathers',
+          note: 'Two birds share the center lane. Keep one stone moving through both.',
+          inkBudget: 310,
+          blockers: [],
+          hint: [[point(180, 118), point(180, 432)]],
+          birdLaneYs: [310, 430], birdXs: [180, 180],
+          birdRanges: [12, 12], birdSpeeds: [.65, .8], birdPhases: [.2, 1.5],
+        },
+        {
+          title: 'Paired Perches',
+          note: 'Aim right and guide the stone through both birds before it reaches the floor.',
+          inkBudget: 290,
+          blockers: [seg(70, 216, 144, 234)],
+          hint: [[point(180, 118), point(226, 204), point(238, 438)]],
+          birdLaneYs: [310, 444], birdXs: [238, 238],
+          birdRanges: [14, 12], birdSpeeds: [.75, .82], birdPhases: [.4, 1.7],
+        },
+        {
+          title: 'Split Flight',
+          note: 'Aim at the first bird on the left, then add a short runway toward the second.',
+          inkBudget: 280,
+          blockers: [seg(270, 214, 320, 228)],
+          hint: [[point(112, 294), point(200, 328)]],
+          birdLaneYs: [300, 440], birdXs: [148, 270],
+          birdRanges: [10, 10], birdSpeeds: [.74, .82], birdPhases: [.2, .8],
+        },
         {
           title: 'Breeze Bowl',
           note: 'Sketch a smooth runway toward the right flock.',
@@ -448,6 +505,7 @@
 
       function defaultProgress() {
         return {
+          campaignVersion: CAMPAIGN_VERSION,
           highestUnlocked: 1,
           selectedLevel: 1,
           bestStats: {},
@@ -456,18 +514,31 @@
       }
 
       function loadProgress() {
+        let raw = null;
         try {
-          const raw = window.localStorage.getItem(STORAGE_KEY);
+          raw = window.localStorage.getItem(STORAGE_KEY);
           if (!raw) return defaultProgress();
           const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ...defaultProgress(), legacyBackup: raw };
+          const bestStats = parsed.bestStats && typeof parsed.bestStats === 'object' && !Array.isArray(parsed.bestStats) ? parsed.bestStats : {};
+          const legacy = (Number(parsed.campaignVersion) || 1) < CAMPAIGN_VERSION;
+          const oldCount = LEVELS.length - INTRO_LEVEL_COUNT;
+          const priorUnlocked = clamp(Math.floor(Number(parsed.highestUnlocked)) || 1, 1, legacy ? oldCount : LEVELS.length);
+          const priorSelected = clamp(Math.floor(Number(parsed.selectedLevel)) || 1, 1, legacy ? oldCount : LEVELS.length);
+          const hasPlayed = Boolean(parsed.onboarded) || priorUnlocked > 1 || Object.keys(bestStats).length > 0;
+          const offset = legacy && hasPlayed ? INTRO_LEVEL_COUNT : 0;
           return {
-            highestUnlocked: clamp(Number(parsed.highestUnlocked) || 1, 1, LEVELS.length),
-            selectedLevel: clamp(Number(parsed.selectedLevel) || 1, 1, LEVELS.length),
-            bestStats: parsed.bestStats && typeof parsed.bestStats === 'object' ? parsed.bestStats : {},
+            campaignVersion: CAMPAIGN_VERSION,
+            highestUnlocked: priorUnlocked + offset,
+            selectedLevel: priorSelected + offset,
+            bestStats: offset ? Object.fromEntries(Object.entries(bestStats).map(([key, stats]) => [
+              /^([1-9]|1[0-2])$/.test(key) ? String(Number(key) + offset) : key, stats,
+            ])) : bestStats,
             onboarded: Boolean(parsed.onboarded),
+            legacyBackup: legacy ? raw : null,
           };
         } catch (_error) {
-          return defaultProgress();
+          return { ...defaultProgress(), legacyBackup: raw };
         }
       }
 
@@ -531,7 +602,11 @@
 
       function saveProgress() {
         try {
+          if (storedProgress.legacyBackup && !window.localStorage.getItem(LEGACY_BACKUP_KEY)) {
+            window.localStorage.setItem(LEGACY_BACKUP_KEY, storedProgress.legacyBackup);
+          }
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            campaignVersion: CAMPAIGN_VERSION,
             highestUnlocked: state.highestUnlocked,
             selectedLevel: state.levelIndex + 1,
             bestStats: state.bestStats,
@@ -745,14 +820,15 @@
 
       function hydrateLevel(levelIndex) {
         const base = LEVELS[levelIndex];
+        const target = base.pocket || { x: WORLD_W / 2, topY: 400, width: 80, depth: 140 };
         const pocket = {
-          ...base.pocket,
-          topY: clamp(base.pocket.topY + PLAYFIELD_SHIFT_Y, 364, WORLD_H - base.pocket.depth - 18),
+          ...target,
+          topY: clamp(target.topY + PLAYFIELD_SHIFT_Y, 364, WORLD_H - target.depth - 18),
         };
         const hintSegments = base.hint.map((stroke) => stroke.map((hintPoint) => shiftPointY(hintPoint, PLAYFIELD_SHIFT_Y)));
         const blockers = base.blockers.map((line) => shiftSegmentY(line, PLAYFIELD_SHIFT_Y));
         const staticLines = blockers;
-        const laneYs = [
+        const laneYs = base.birdLaneYs || [
           clamp(pocket.topY - 136, DRAW_TOP + 150, DRAW_BOTTOM - 166),
           clamp(pocket.topY - 74, DRAW_TOP + 214, DRAW_BOTTOM - 92),
           clamp(pocket.topY - 14, DRAW_TOP + 278, DRAW_BOTTOM - 18),
@@ -760,7 +836,7 @@
 
         const birds = laneYs.map((laneY, index) => {
           const range = base.birdRanges[index];
-          const sampledX = sampleHintX(hintSegments, laneY, pocket.x);
+          const sampledX = base.birdXs?.[index] ?? sampleHintX(hintSegments, laneY, pocket.x);
           const baseX = clamp(sampledX, 56 + range, WORLD_W - 56 - range);
           return {
             index,
@@ -821,12 +897,19 @@
         return clamp((state.level.inkBudget - state.inkUsed) / state.level.inkBudget, 0, 1);
       }
 
+      function birdLabel(count) {
+        return `${count} ${count === 1 ? 'bird' : 'birds'}`;
+      }
+
       function refreshHud() {
         dom.levelValue.textContent = state.level.title;
         dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
-        dom.birdProgress.textContent = `${cleared} / ${state.level.birds.length} birds`;
-        document.querySelectorAll('.bird-token').forEach((token, index) => token.classList.toggle('is-cleared', index < cleared));
+        dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
+        document.querySelectorAll('.bird-token').forEach((token, index) => {
+          token.hidden = index >= state.level.birds.length;
+          token.classList.toggle('is-cleared', index < cleared);
+        });
         dom.inkLabel.textContent = fmtPercent(remainingInkRatio());
         dom.inkFill.style.transform = `scaleX(${remainingInkRatio().toFixed(3)})`;
       }
@@ -1323,7 +1406,7 @@
           state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
         }
         saveProgress();
-        setStatus('All three birds cleared! Watch the stone finish its descent.');
+        setStatus(`${birdLabel(state.level.birds.length)} cleared! Watch the stone finish its descent.`);
         playTone('win');
         announce(`Level ${state.level.id} cleared.`);
 
@@ -1338,7 +1421,7 @@
           title: state.levelIndex === LEVELS.length - 1 ? 'Every bird fell in one run' : `Level ${state.level.id} complete`,
           body: state.levelIndex === LEVELS.length - 1
             ? 'The last flock was cleared with one stone. Replay any stage to refine your linework or head back to the Games shelf.'
-            : 'A beautiful chain reaction! Try the next woodland puzzle, or replay to save more ink and earn three stars.',
+            : `You cleared ${birdLabel(state.level.birds.length)} with one stone! Try the next puzzle, or replay to save more ink and earn three stars.`,
           primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
           primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
           secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Games' : 'Retry',
@@ -1363,7 +1446,7 @@
           secondaryLabel: 'Edit Lines',
           secondaryAction: 'edit-lines',
           stats: [
-            { label: 'Birds cleared', value: `${state.level.birds.filter((bird) => !bird.alive).length}/3` },
+            { label: 'Birds cleared', value: `${state.level.birds.filter((bird) => !bird.alive).length}/${state.level.birds.length}` },
             { label: 'Ink used', value: fmtPercent(1 - remainingInkRatio()) },
           ],
         });
@@ -1380,7 +1463,7 @@
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
-          setStatus(`${state.level.birds.filter((candidate) => !candidate.alive).length} of 3 birds cleared. Keep the stone moving.`);
+          setStatus(`${state.level.birds.filter((candidate) => !candidate.alive).length} of ${birdLabel(state.level.birds.length)} cleared. Keep the stone moving.`);
         }
       }
 
@@ -1433,7 +1516,7 @@
           state.stoneTrail = [];
           if (state.runEnded) showPendingResult();
           else handleLose(state.stone.onFloor
-            ? 'The stone reached the forest floor before all three birds were cleared.'
+            ? 'The stone reached the forest floor before every bird was cleared.'
             : 'The stone settled on a runway before the last birds crossed its path.');
           return;
         }
@@ -1975,6 +2058,8 @@
         window.setSfxVolume = setSfxVolume;
         window.render_game_to_text = () => JSON.stringify({
           level: state.level ? state.level.id : null,
+          totalLevels: LEVELS.length,
+          birdTarget: state.level ? state.level.birds.length : 0,
           title: state.level ? state.level.title : null,
           overlayVisible: state.overlayVisible,
           outcome: state.outcome,
@@ -2115,17 +2200,18 @@
         state.levelIndex = clamp(state.levelIndex, 0, Math.min(state.highestUnlocked - 1, LEVELS.length - 1));
         beginAttempt(true, false);
         updateRotateNotice();
+        saveProgress();
         if (state.onboardingPending) {
           showOverlay({
             eyebrow: 'Draw. Drop. Clear.',
             title: 'A little ink. One clever drop.',
-            body: 'Draw paths to guide your stone through all three birds. Slide the claw to aim, then tap the stone or Drop. Use as many lines as your ink allows.',
+            body: 'Start with one bird, then two, before taking on a flock of three. Draw paths, slide the claw to aim, and tap the stone or Drop.',
             primaryLabel: 'Let’s play',
             primaryAction: 'begin',
             secondaryLabel: 'Games',
             secondaryAction: 'home',
             stats: [
-              { label: 'Goal', value: '3 birds, 1 stone' },
+              { label: 'Goal', value: `${birdLabel(state.level.birds.length)}, 1 stone` },
               { label: 'Controls', value: 'Draw • Slide Claw • Drop' },
             ],
           });

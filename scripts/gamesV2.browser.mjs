@@ -83,7 +83,8 @@ try {
         const details = page.locator('.overlay-content');
         await details.evaluate((element) => { element.scrollTop = element.scrollHeight; });
         assert.ok(await page.locator('#overlayStats').isVisible());
-        assert.equal(await page.locator('#birdProgress').textContent(), '3 / 3 birds');
+        const target = (await snapshot(page)).birds.length;
+        assert.equal(await page.locator('#birdProgress').textContent(), `${target} / ${target} ${target === 1 ? 'bird' : 'birds'}`);
         await details.evaluate((element) => { element.scrollTop = 0; });
         await page.screenshot({ path: `${output}/birds-${name}-result.png` });
         assert.equal(await page.locator('.reward-stars .is-earned').count(), 3);
