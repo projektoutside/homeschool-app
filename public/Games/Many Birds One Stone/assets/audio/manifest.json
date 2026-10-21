@@ -1,0 +1,15 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "generatedOn": "2026-10-21",
+  "sounds": [
+    { "id": "tap", "file": "tap.mp3", "duration": 0.5, "prompt": "A single delightful soft wooden marimba plink with a tiny bubbly pop, polished cozy woodland puzzle game UI button, close and dry, no voice, no music, clean short decay." },
+    { "id": "draw", "file": "draw.mp3", "duration": 0.8, "prompt": "One gentle magical pencil swish, soft chalk brushing paper with a tiny twinkling finish, charming colorful family puzzle game drawing a path, no voice, no music, quiet and tactile." },
+    { "id": "drop", "file": "drop.mp3", "duration": 0.8, "prompt": "One playful mechanical click releasing a small smooth stone followed by a light descending airy whoosh, cheerful polished woodland puzzle game, gentle and satisfying, no voice, no music." },
+    { "id": "bounce", "file": "bounce.mp3", "duration": 0.5, "prompt": "Single small rounded stone bouncing on a hollow wooden branch, warm soft tok with a subtle rubbery boing, charming casual physics puzzle, no voice, no music, short clean tail." },
+    { "id": "bird", "file": "bird.mp3", "duration": 0.8, "prompt": "One cute happy bird chirrup with a soft flutter and tiny sparkling pop, friendly cartoon bird flying away, positive collectible sound for a premium family puzzle game, no distress, no voice, no music." },
+    { "id": "win", "file": "win.mp3", "duration": 2.5, "prompt": "A bright joyful puzzle level complete flourish, four ascending warm marimba notes with celesta sparkles and a soft celebratory bird chirp, elegant cheerful cozy woodland arcade game, no voice, clean ending." },
+    { "id": "lose", "file": "retry.mp3", "duration": 1.1, "prompt": "A gentle encouraging try again sound, two soft descending wooden xylophone notes and a tiny whimsical bubble, cozy friendly family puzzle game, lighthearted not sad or harsh, no voice, clean ending." },
+    { "id": "ambience", "file": "woodland.mp3", "duration": 20, "loop": true, "prompt": "Seamless quiet sunny woodland ambience for a cozy colorful puzzle game: soft leafy breeze, a few distant songbird chirps, delicate airy treetop rustle, peaceful and inviting, no voices, no footsteps, no music, no loud foreground sounds, consistent volume, seamless loop." }
+  ]
+}

@@ -8,529 +8,28 @@
   >
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#f7efe4">
+  <meta name="theme-color" content="#f3f0e3">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23f0d8b6'/%3E%3Ccircle cx='24' cy='25' r='12' fill='%23c98a55'/%3E%3Ccircle cx='37' cy='35' r='15' fill='%23f6eddc'/%3E%3Ccircle cx='42' cy='25' r='4' fill='%232b241d'/%3E%3Cpath d='M46 26l10 3-10 4z' fill='%236e5a4a'/%3E%3C/svg%3E">
   <title>Many Birds One Stone</title>
-  <style>
-    :root {
-      --bg-top: #f7efe4;
-      --bg-mid: #eef5fb;
-      --bg-bottom: #d7eadf;
-      --panel: rgba(255, 251, 245, 0.82);
-      --panel-strong: rgba(255, 249, 240, 0.96);
-      --stroke: #2b241d;
-      --shadow: rgba(56, 41, 29, 0.16);
-      --deep-shadow: rgba(56, 41, 29, 0.26);
-      --font-ui: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
-      --font-display: "Gill Sans", "Avenir Next", "Trebuchet MS", sans-serif;
-      --stage-reserve: 9.95rem;
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    html,
-    body {
-      margin: 0;
-      min-height: 100%;
-      background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 38%),
-        linear-gradient(180deg, var(--bg-top), var(--bg-mid) 52%, var(--bg-bottom));
-      color: var(--stroke);
-      font-family: var(--font-ui);
-      overflow: hidden;
-    }
-
-    body {
-      min-height: 100vh;
-      padding:
-        calc(env(safe-area-inset-top, 0px) + 8px)
-        calc(env(safe-area-inset-right, 0px) + 10px)
-        calc(env(safe-area-inset-bottom, 0px) + 10px)
-        calc(env(safe-area-inset-left, 0px) + 10px);
-    }
-
-    button {
-      border: 0;
-      font: inherit;
-      color: inherit;
-      cursor: pointer;
-    }
-
-    button:focus-visible {
-      outline: 3px solid rgba(123, 166, 202, 0.55);
-      outline-offset: 2px;
-    }
-
-    #app {
-      height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 18px);
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      position: relative;
-    }
-
-    #shell {
-      width: min(100%, 30rem);
-      height: 100%;
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      gap: 0.58rem;
-      position: relative;
-    }
-
-    .hud {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .hud-cluster {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      min-width: 0;
-    }
-
-    .hud-card,
-    .hud-button,
-    .control-button,
-    .status-card,
-    .overlay-card {
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      box-shadow:
-        0 0.35rem 1rem rgba(255, 255, 255, 0.24) inset,
-        0 0.7rem 1.6rem var(--shadow);
-    }
-
-    .hud-button,
-    .control-button {
-      min-height: 2.65rem;
-      border-radius: 999px;
-      padding: 0 0.92rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-    }
-
-    .hud-button:active,
-    .control-button:active {
-      transform: translateY(1px) scale(0.985);
-    }
-
-    .hud-button[disabled],
-    .control-button[disabled] {
-      opacity: 0.46;
-      cursor: default;
-      transform: none;
-    }
-
-    .hud-button {
-      min-width: 2.95rem;
-      padding: 0 0.88rem;
-    }
-
-    .hud-card {
-      min-height: 2.7rem;
-      border-radius: 1.1rem;
-      padding: 0.42rem 0.66rem;
-      display: grid;
-      align-items: center;
-    }
-
-    .level-card {
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 0.42rem;
-      min-width: 0;
-    }
-
-    .level-main {
-      display: grid;
-      gap: 0.1rem;
-      text-align: center;
-      min-width: 0;
-    }
-
-    .level-label {
-      font-size: 0.72rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: rgba(43, 36, 29, 0.62);
-    }
-
-    .level-value {
-      font-family: var(--font-display);
-      font-size: 1.03rem;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .mini-button {
-      width: 2rem;
-      height: 2rem;
-      min-height: 2rem;
-      padding: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.55);
-    }
-
-    .meter-card {
-      min-width: 6.25rem;
-      gap: 0.3rem;
-    }
-
-    .meter-label-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.4rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .meter-track {
-      position: relative;
-      height: 0.6rem;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(44, 34, 27, 0.1);
-      box-shadow: inset 0 0.08rem 0.22rem rgba(0, 0, 0, 0.12);
-    }
-
-    .meter-fill {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #88bb9f, #ebc786, #da8c73);
-      transform-origin: left center;
-      transition: transform 0.2s ease;
-    }
-
-    .stage-panel {
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.05rem 0;
-    }
-
-    .stage-frame {
-      position: relative;
-      width: min(100%, calc((100vh - var(--stage-reserve)) * 0.5625));
-      max-height: min(100%, calc(100vh - var(--stage-reserve)));
-      aspect-ratio: 9 / 16;
-      border-radius: 2rem;
-      overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12)),
-        linear-gradient(180deg, rgba(245, 237, 228, 0.8), rgba(226, 240, 234, 0.75));
-      box-shadow:
-        0 1rem 2.4rem var(--deep-shadow),
-        0 0.25rem 0.8rem rgba(255, 255, 255, 0.7) inset;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      isolation: isolate;
-    }
-
-    .stage-frame::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 34%),
-        radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    #gameCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      position: relative;
-      z-index: 0;
-      touch-action: none;
-    }
-
-    .canvas-shine {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 2;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 30%),
-        linear-gradient(315deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 28%);
-      mix-blend-mode: screen;
-    }
-
-    .controls {
-      display: grid;
-      gap: 0.58rem;
-    }
-
-    .status-card {
-      border-radius: 1.35rem;
-      padding: 0.68rem 0.88rem;
-      display: grid;
-      gap: 0.22rem;
-    }
-
-    .status-title {
-      font-family: var(--font-display);
-      font-size: 0.88rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(43, 36, 29, 0.64);
-    }
-
-    .status-copy {
-      font-size: 0.93rem;
-      line-height: 1.32;
-      min-height: 2.2em;
-    }
-
-    .action-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.5rem;
-    }
-
-    .control-button {
-      min-height: 2.95rem;
-      background: var(--panel-strong);
-    }
-
-    .control-button--primary {
-      background:
-        linear-gradient(180deg, rgba(255, 239, 215, 0.98), rgba(244, 206, 155, 0.98));
-      box-shadow:
-        0 0.35rem 1rem rgba(255, 250, 240, 0.28) inset,
-        0 0.8rem 1.4rem rgba(176, 126, 76, 0.18);
-    }
-
-    .overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 4;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.22s ease;
-      background: rgba(232, 242, 240, 0.18);
-      backdrop-filter: blur(6px);
-    }
-
-    .overlay.is-visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .overlay-card {
-      width: min(100%, 20rem);
-      border-radius: 1.7rem;
-      padding: 1rem 1rem 0.95rem;
-      display: grid;
-      gap: 0.68rem;
-      position: relative;
-      z-index: 1;
-    }
-
-    .overlay-eyebrow {
-      font-size: 0.74rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(43, 36, 29, 0.58);
-    }
-
-    .overlay-title {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      line-height: 1.04;
-      margin: 0;
-    }
-
-    .overlay-body {
-      margin: 0;
-      font-size: 0.97rem;
-      line-height: 1.46;
-      color: rgba(43, 36, 29, 0.92);
-    }
-
-    .overlay-stats {
-      display: grid;
-      gap: 0.42rem;
-      padding: 0.65rem 0.8rem;
-      border-radius: 1.1rem;
-      background: rgba(255, 255, 255, 0.52);
-      border: 1px solid rgba(255, 255, 255, 0.68);
-    }
-
-    .overlay-stats:empty {
-      display: none;
-    }
-
-    .overlay-stat-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.8rem;
-      font-size: 0.88rem;
-    }
-
-    .overlay-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.55rem;
-    }
-
-    .overlay-button {
-      min-height: 3rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.7);
-      font-weight: 700;
-    }
-
-    .overlay-button--primary {
-      background: linear-gradient(180deg, #fff4df, #efc685);
-    }
-
-    .rotate-notice {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.25rem;
-      background: rgba(237, 244, 245, 0.9);
-      backdrop-filter: blur(14px);
-      z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-
-    .rotate-notice.is-visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .rotate-card {
-      width: min(100%, 22rem);
-      border-radius: 1.8rem;
-      padding: 1.2rem 1.25rem;
-      background: rgba(255, 250, 244, 0.94);
-      border: 1px solid rgba(255, 255, 255, 0.78);
-      box-shadow:
-        0 0.4rem 1rem rgba(255, 255, 255, 0.24) inset,
-        0 0.8rem 2rem rgba(56, 41, 29, 0.16);
-      text-align: center;
-    }
-
-    .rotate-card h2 {
-      margin: 0 0 0.45rem;
-      font-family: var(--font-display);
-      font-size: 1.35rem;
-    }
-
-    .rotate-card p {
-      margin: 0;
-      line-height: 1.5;
-      font-size: 0.96rem;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    @media (max-width: 420px) {
-      :root {
-        --stage-reserve: 9.1rem;
-      }
-
-      #shell {
-        width: 100%;
-      }
-
-      .hud {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .hud-cluster {
-        justify-content: space-between;
-      }
-
-      .hud-card.meter-card {
-        min-width: 0;
-      }
-    }
-
-    @media (max-height: 760px) {
-      :root {
-        --stage-reserve: 8.7rem;
-      }
-
-      body {
-        padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
-      }
-
-      #shell {
-        gap: 0.46rem;
-      }
-
-      .controls {
-        gap: 0.44rem;
-      }
-
-      .status-card {
-        padding-block: 0.56rem;
-      }
-
-      .status-copy {
-        min-height: 1.95em;
-        font-size: 0.88rem;
-      }
-
-      .control-button {
-        min-height: 2.8rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preload" href="assets/fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="assets/woodland-v2.webp" as="image">
 </head>
 <body>
   <div id="app">
     <div id="shell">
       <header class="hud">
+        <div class="game-brand"><svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M11 36c-4-12 1-25 18-28 6-1 10 0 10 0s1 4 0 10C36 35 23 40 11 36Z"/><path d="m7 41 23-24M12 35l1-11m5 5 12-1m-6-5 1-9"/></svg><h1><span>Many Birds</span> <span>One Stone</span></h1><p>A little ink. A clever path.<br>One wonderfully satisfying drop.</p></div>
         <div class="hud-cluster">
-          <button class="hud-button" id="homeButton" type="button" aria-label="Back to Games">Home</button>
-          <button class="hud-button" id="restartButton" type="button" aria-label="Restart level">Retry</button>
+          <button class="hud-button" id="homeButton" type="button" aria-label="Back to Games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span class="button-label">Games</span></button>
+          <button class="hud-button" id="restartButton" type="button" aria-label="Restart level"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/></svg><span class="button-label">Retry</span></button>
+          <button class="hud-button" id="soundButton" type="button" aria-label="Mute sound" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
         </div>
         <div class="hud-card level-card">
           <button class="mini-button" id="prevLevelButton" type="button" aria-label="Previous level">‹</button>
           <div class="level-main">
-            <div class="level-label">Level</div>
-            <div class="level-value" id="levelValue">1. Breeze Bowl</div>
+            <div class="level-label" id="levelCount">Level 1</div>
+            <div class="level-value" id="levelValue">Breeze Bowl</div>
           </div>
           <button class="mini-button" id="nextLevelButton" type="button" aria-label="Next level">›</button>
         </div>
@@ -543,18 +42,22 @@
             <div class="meter-fill" id="inkFill"></div>
           </div>
         </div>
+        <div class="flock-progress" aria-live="polite"><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span id="birdProgress">0 / 3 birds</span></div>
       </header>
 
       <main class="stage-panel">
         <div class="stage-frame">
-          <canvas id="gameCanvas" width="360" height="640" aria-label="Many Birds One Stone playfield"></canvas>
+          <canvas id="gameCanvas" width="360" height="640" tabindex="0" aria-label="Many Birds One Stone playfield. Draw paths by dragging, move the claw with arrow keys, and press Space to drop."></canvas>
           <div class="canvas-shine"></div>
           <div class="overlay" id="overlay" aria-live="polite" aria-hidden="true">
-            <div class="overlay-card">
-              <div class="overlay-eyebrow" id="overlayEyebrow">Draw. Drop. Clear.</div>
+            <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlayTitle" aria-describedby="overlayBody" tabindex="-1">
+              <div class="overlay-content" tabindex="0" aria-label="Instructions and results">
+              <div class="overlay-emblem"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 36c-4-12 1-25 18-28 6-1 10 0 10 0s1 4 0 10C36 35 23 40 11 36Z"/><path d="m7 41 23-24M12 35l1-11m5 5 12-1m-6-5 1-9"/></svg></div>
+              <div class="reward-stars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg></div>
               <h1 class="overlay-title" id="overlayTitle">Many Birds One Stone</h1>
               <p class="overlay-body" id="overlayBody"></p>
               <div class="overlay-stats" id="overlayStats"></div>
+              </div>
               <div class="overlay-actions">
                 <button class="overlay-button" id="overlaySecondary" type="button">Games</button>
                 <button class="overlay-button overlay-button--primary" id="overlayPrimary" type="button">Begin</button>
@@ -566,13 +69,13 @@
 
       <footer class="controls">
         <div class="status-card">
-          <div class="status-title">Flight Plan</div>
+          <div class="status-title">Your flight plan</div>
           <div class="status-copy" id="statusCopy"></div>
         </div>
         <div class="action-row">
-          <button class="control-button" id="hintButton" type="button">Hint</button>
-          <button class="control-button" id="clearButton" type="button">Clear Lines</button>
-          <button class="control-button control-button--primary" id="dropButton" type="button">Drop</button>
+          <button class="control-button" id="hintButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-6 3h6M8 14a6 6 0 1 1 8 0l-1 3H9Z"/></svg>Hint</button>
+          <button class="control-button" id="clearButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 9-11 7 6-9 11H8Zm7 6h10M8 10l7 6"/></svg>Clear lines</button>
+          <button class="control-button control-button--primary" id="dropButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14m-6-6 6 6 6-6M4 21h16"/></svg>Drop stone <small>Space</small></button>
         </div>
       </footer>
     </div>
@@ -580,13 +83,14 @@
     <div class="rotate-notice" id="rotateNotice" aria-hidden="true">
       <div class="rotate-card">
         <h2>Rotate back to portrait</h2>
-        <p>Many Birds One Stone is tuned for a tall playfield. Turn the device upright to keep the claw, drawing band, and bird lanes aligned.</p>
+        <p>Turn your device upright for the full woodland playfield. Your game is paused and your lines are safe.</p><button id="rotateHomeButton" class="hud-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg>Back to Games</button>
       </div>
     </div>
 
     <div class="sr-only" id="srStatus" aria-live="polite"></div>
   </div>
   <script src="../shared/lahsPointsBridge.js"></script>
+  <script src="audio.js"></script>
   <script>
     (() => {
       'use strict';
@@ -641,7 +145,9 @@
         inkFill: document.getElementById('inkFill'),
         statusCopy: document.getElementById('statusCopy'),
         overlay: document.getElementById('overlay'),
-        overlayEyebrow: document.getElementById('overlayEyebrow'),
+        soundButton: document.getElementById('soundButton'),
+        levelCount: document.getElementById('levelCount'),
+        birdProgress: document.getElementById('birdProgress'),
         overlayTitle: document.getElementById('overlayTitle'),
         overlayBody: document.getElementById('overlayBody'),
         overlayStats: document.getElementById('overlayStats'),
@@ -652,6 +158,10 @@
       };
 
       const ctx = dom.canvas.getContext('2d');
+      const woodlandAudio = new WoodlandAudio();
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const scenery = new Image();
+      scenery.src = './assets/woodland-v2.webp';
       const assets = {
         birdStrip: {
           image: new Image(),
@@ -976,6 +486,7 @@
         drawnStrokes: [],
         drawnColliders: [],
         particles: [],
+        stoneTrail: [],
         pointer: {
           active: false,
           pointerId: null,
@@ -1081,6 +592,7 @@
 
       function syncPauseState() {
         const paused = state.hostPaused || state.hiddenPause || state.rotatePaused;
+        woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
           state.audio.context.resume().catch(() => {});
         }
@@ -1100,27 +612,26 @@
 
       function setAudioMuted(muted) {
         state.audio.muted = Boolean(muted);
+        woodlandAudio.setMuted(state.audio.muted);
+        dom.soundButton.setAttribute('aria-pressed', String(state.audio.muted));
+        dom.soundButton.setAttribute('aria-label', state.audio.muted ? 'Unmute sound' : 'Mute sound');
         syncPauseState();
       }
 
       function setSfxVolume(volume) {
         state.audio.sfxVolume = clamp(Number(volume) || 0, 0, 1);
+        woodlandAudio.setVolume(state.audio.sfxVolume);
       }
 
       function ensureAudioContext() {
-        if (state.audio.muted) return null;
-        const AudioCtor = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtor) return null;
-        if (!state.audio.context) {
-          state.audio.context = new AudioCtor();
-        }
-        if (state.audio.context.state === 'suspended' && !state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
-          state.audio.context.resume().catch(() => {});
-        }
-        return state.audio.context;
+        woodlandAudio.setMuted(state.audio.muted);
+        woodlandAudio.setVolume(state.audio.sfxVolume);
+        state.audio.context = woodlandAudio.unlock();
+        return state.audio.muted ? null : state.audio.context;
       }
 
       function playTone(kind) {
+        if (woodlandAudio.play(kind)) return;
         const audioContext = ensureAudioContext();
         if (!audioContext) return;
 
@@ -1157,7 +668,9 @@
         state.overlayVisible = true;
         state.overlayPrimaryAction = config.primaryAction || 'begin';
         state.overlaySecondaryAction = config.secondaryAction || 'home';
-        dom.overlayEyebrow.textContent = config.eyebrow || '';
+        dom.overlay.dataset.outcome = state.outcome;
+        const stars = 1 + Number(!state.hintUsed) + Number(remainingInkRatio() >= 0.4);
+        dom.overlay.querySelectorAll('.reward-stars svg').forEach((star, index) => star.classList.toggle('is-earned', index < stars));
         dom.overlayTitle.textContent = config.title || '';
         dom.overlayBody.textContent = config.body || '';
         dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
@@ -1176,6 +689,7 @@
         }
         dom.overlay.classList.add('is-visible');
         dom.overlay.setAttribute('aria-hidden', 'false');
+        dom.overlayPrimary.focus({ preventScroll: true });
         refreshButtons();
       }
 
@@ -1187,6 +701,7 @@
         state.overlayVisible = false;
         dom.overlay.classList.remove('is-visible');
         dom.overlay.setAttribute('aria-hidden', 'true');
+        refreshButtons();
         const nextFocusTarget = !dom.dropButton.disabled ? dom.dropButton : dom.homeButton;
         nextFocusTarget.focus({ preventScroll: true });
         refreshButtons();
@@ -1307,7 +822,11 @@
       }
 
       function refreshHud() {
-        dom.levelValue.textContent = `${state.level.id}. ${state.level.title}`;
+        dom.levelValue.textContent = state.level.title;
+        dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
+        const cleared = state.level.birds.filter((bird) => !bird.alive).length;
+        dom.birdProgress.textContent = `${cleared} / ${state.level.birds.length} birds`;
+        document.querySelectorAll('.bird-token').forEach((token, index) => token.classList.toggle('is-cleared', index < cleared));
         dom.inkLabel.textContent = fmtPercent(remainingInkRatio());
         dom.inkFill.style.transform = `scaleX(${remainingInkRatio().toFixed(3)})`;
       }
@@ -1323,6 +842,7 @@
       }
 
       function resetStone() {
+        state.stoneTrail = [];
         state.stone = createStone();
         const clawPose = getClawPose(state.elapsed);
         state.stone.x = clawPose.x;
@@ -1536,6 +1056,7 @@
             width: DRAWN_LINE_WIDTH,
           });
           rebuildDrawnColliders();
+          playTone('draw');
           if (state.stone.attached) {
             setStatus('Path set. Add another line, slide the claw, then tap the stone or Drop.');
           }
@@ -1551,7 +1072,7 @@
       }
 
       function handleCanvasPointerDown(event) {
-        if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded) return;
+        if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.pointer.active || state.clawControl.active) return;
         unlockAudio();
         const rawPoint = pointerToWorld(event);
         const shouldGrabClaw = pointHitsStoneDropTarget(rawPoint)
@@ -1657,6 +1178,7 @@
           state.stone.vx = tx * nextTangentVelocity + nx * nextNormalVelocity;
           state.stone.vy = ty * nextTangentVelocity + ny * nextNormalVelocity;
           state.stone.hitPulse = 1;
+          if (normalVelocity < -100) playTone('bounce');
         }
 
         return true;
@@ -1762,6 +1284,7 @@
 
       function handleWin() {
         if (state.runEnded) return;
+        refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
         const clearTimeMs = Math.round(performance.now() - state.runStartAt);
@@ -1774,7 +1297,9 @@
           clearTimeMs,
           remainingInkRatio: Number(remainingInk.toFixed(3)),
         };
+        summary.stars = 1 + Number(!state.hintUsed) + Number(remainingInk >= 0.4);
         saveBestStats(summary);
+        createParticles(WORLD_W / 2, WORLD_H / 3, reducedMotion ? 6 : 48, ['#ffd06b', '#f48a64', '#ffffff', '#72cda1']);
         awardPointsForClear(summary);
         if (state.levelIndex + 1 < LEVELS.length) {
           state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
@@ -1795,7 +1320,7 @@
           title: state.levelIndex === LEVELS.length - 1 ? 'Every bird fell in one run' : `Level ${state.level.id} complete`,
           body: state.levelIndex === LEVELS.length - 1
             ? 'The last flock folded into the trap. Replay any stage to refine your linework or head back to the Games shelf.'
-            : 'The stone found every target before it ran out of motion. Move on or replay for a tighter ink bonus.',
+            : 'A beautiful chain reaction! Try the next woodland puzzle, or replay to save more ink and earn three stars.',
           primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
           primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
           secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Games' : 'Retry',
@@ -1813,7 +1338,7 @@
         announce(reason);
         showOverlay({
           eyebrow: 'Attempt Lost',
-          title: 'One stone fell short',
+          title: 'So close. Try a new path!',
           body: `${reason} Adjust the linework, then try the same drop again.`,
           primaryLabel: 'Retry',
           primaryAction: 'retry-level',
@@ -1833,6 +1358,7 @@
         state.stone.vx *= 0.95;
         state.stone.vy = Math.min(state.stone.vy, 180);
         playTone('bird');
+        refreshHud();
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
@@ -1841,6 +1367,10 @@
       }
 
       function updateStone(dt) {
+        if (!state.stone.attached) {
+          state.stoneTrail.push({ x: state.stone.x, y: state.stone.y });
+          if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
+        }
         const clawPose = getClawPose(state.elapsed);
         if (state.stone.attached) {
           state.stone.x = clawPose.x;
@@ -1911,71 +1441,43 @@
       }
 
       function drawBackground() {
-        const sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
-        sky.addColorStop(0, '#f7efe4');
-        sky.addColorStop(0.46, '#edf4fb');
-        sky.addColorStop(1, '#d7eadf');
-        ctx.fillStyle = sky;
+        ctx.fillStyle = '#b9e6df';
         ctx.fillRect(0, 0, WORLD_W, WORLD_H);
-
-        const sunGlow = ctx.createRadialGradient(290, 88, 10, 290, 88, 160);
-        sunGlow.addColorStop(0, 'rgba(255, 245, 219, 0.82)');
-        sunGlow.addColorStop(0.45, 'rgba(255, 245, 219, 0.22)');
-        sunGlow.addColorStop(1, 'rgba(255, 245, 219, 0)');
-        ctx.fillStyle = sunGlow;
+        if (scenery.complete && scenery.naturalWidth) ctx.drawImage(scenery, 0, 0, WORLD_W, WORLD_H);
+        // A restrained wash keeps the interactive silhouette legible over the scenery.
+        const wash = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+        wash.addColorStop(0, 'rgba(240,255,239,.05)');
+        wash.addColorStop(.65, 'rgba(236,255,245,.20)');
+        wash.addColorStop(1, 'rgba(45,102,65,.06)');
+        ctx.fillStyle = wash;
         ctx.fillRect(0, 0, WORLD_W, WORLD_H);
-
-        const cloudSets = [
-          [58, 94, 30],
-          [118, 76, 20],
-          [230, 108, 25],
-          [280, 152, 19],
-        ];
-        cloudSets.forEach(([x, y, r]) => {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.46)';
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.arc(x + r * 0.8, y + 6, r * 0.78, 0, Math.PI * 2);
-          ctx.arc(x - r * 0.8, y + 8, r * 0.65, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.fillRect(18, DRAW_TOP - 16, WORLD_W - 36, DRAW_BOTTOM - DRAW_TOP + 28);
-
-        ctx.strokeStyle = 'rgba(84, 109, 103, 0.18)';
-        ctx.setLineDash([8, 8]);
-        ctx.lineWidth = 2;
-        ctx.strokeRect(DRAW_LEFT, DRAW_TOP, DRAW_RIGHT - DRAW_LEFT, DRAW_BOTTOM - DRAW_TOP);
-        ctx.setLineDash([]);
-
-        ctx.fillStyle = 'rgba(223, 235, 225, 0.72)';
-        ctx.fillRect(0, DRAW_BOTTOM, WORLD_W, WORLD_H - DRAW_BOTTOM);
-
-        ctx.beginPath();
-        ctx.moveTo(0, WORLD_H);
-        ctx.quadraticCurveTo(84, 474, 178, WORLD_H);
-        ctx.quadraticCurveTo(286, 476, WORLD_W, WORLD_H);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(158, 196, 170, 0.32)';
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(0, WORLD_H);
-        ctx.quadraticCurveTo(122, 520, 236, WORLD_H);
-        ctx.quadraticCurveTo(308, 524, WORLD_W, WORLD_H);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(112, 166, 127, 0.2)';
-        ctx.fill();
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,.6)';
+        ctx.lineWidth = 1.5;
+        const corners = [[DRAW_LEFT, DRAW_TOP, 1, 1], [DRAW_RIGHT, DRAW_TOP, -1, 1], [DRAW_LEFT, DRAW_BOTTOM, 1, -1], [DRAW_RIGHT, DRAW_BOTTOM, -1, -1]];
+        for (const [x, y, dx, dy] of corners) {
+          ctx.beginPath(); ctx.moveTo(x, y + dy * 12); ctx.lineTo(x, y); ctx.lineTo(x + dx * 12, y); ctx.stroke();
+        }
+        if (!reducedMotion) {
+          ctx.fillStyle = '#fff8c4';
+          for (let i = 0; i < 9; i++) {
+            const y = (i * 83 + state.elapsed * (4 + i % 3)) % WORLD_H;
+            const x = i % 2 ? WORLD_W - 12 - Math.sin(y * .02 + i) * 8 : 12 + Math.sin(y * .02 + i) * 8;
+            ctx.globalAlpha = .25 + Math.sin(state.elapsed + i) * .15;
+            ctx.beginPath(); ctx.ellipse(x, y, 1.5, 3, .4, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+        ctx.restore();
       }
 
       function drawPlayBandLabels() {
         ctx.save();
-        ctx.fillStyle = 'rgba(43, 36, 29, 0.32)';
-        ctx.font = '600 12px "Avenir Next", "Trebuchet MS", sans-serif';
+        ctx.font = '800 10px Nunito, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('DRAW HERE', WORLD_W / 2, DRAW_TOP + 18);
-        ctx.fillText('BIRD FLIGHT', WORLD_W / 2, DRAW_BOTTOM + 24);
+        ctx.fillStyle = '#fffaf0e8';
+        ctx.beginPath(); ctx.roundRect(WORLD_W / 2 - 48, DRAW_TOP + 5, 96, 23, 11); ctx.fill();
+        ctx.fillStyle = '#245446';
+        ctx.fillText(state.drawnStrokes.length ? 'YOUR FLIGHT PATH' : 'DRAW A PATH', WORLD_W / 2, DRAW_TOP + 20);
         ctx.restore();
       }
 
@@ -2152,7 +1654,7 @@
       function drawDrawnStrokes() {
         state.drawnStrokes.forEach((stroke) => {
           drawRoundedPolyline(stroke.points, stroke.width + 5, 'rgba(255, 255, 255, 0.38)', null, 0, null);
-          drawRoundedPolyline(stroke.points, stroke.width, '#26201a', 'rgba(255, 255, 255, 0.34)', 10, null);
+          drawRoundedPolyline(stroke.points, stroke.width, '#285548', 'rgba(255, 255, 255, 0.34)', 10, null);
         });
         if (state.pointer.active && state.pointer.points.length >= 2) {
           const pulse = 0.22 + state.linePreviewPulse * 0.22;
@@ -2305,6 +1807,10 @@
       }
 
       function drawStone() {
+        state.stoneTrail.forEach((point, index) => {
+          ctx.fillStyle = `rgba(255, 226, 153, ${index / state.stoneTrail.length * .42})`;
+          ctx.beginPath(); ctx.arc(point.x, point.y, state.stone.radius * index / state.stoneTrail.length * .7, 0, Math.PI * 2); ctx.fill();
+        });
         ctx.save();
         ctx.translate(state.stone.x, state.stone.y);
         ctx.fillStyle = 'rgba(43, 36, 29, 0.14)';
@@ -2313,9 +1819,9 @@
         ctx.fill();
 
         const stoneGradient = ctx.createRadialGradient(-5, -7, 4, 2, 2, 22);
-        stoneGradient.addColorStop(0, '#f9f4ef');
-        stoneGradient.addColorStop(0.45, '#d6cec5');
-        stoneGradient.addColorStop(1, '#9f9589');
+        stoneGradient.addColorStop(0, '#fff6cd');
+        stoneGradient.addColorStop(0.45, '#edbb5c');
+        stoneGradient.addColorStop(1, '#a77526');
         ctx.fillStyle = stoneGradient;
         ctx.beginPath();
         ctx.arc(0, 0, state.stone.radius, 0, Math.PI * 2);
@@ -2451,6 +1957,7 @@
       function handleHostMessage(event) {
         const data = event && event.data;
         if (!data || typeof data !== 'object') return;
+        if (event.source !== window.parent || (TARGET_ORIGIN !== '*' && event.origin !== TARGET_ORIGIN)) return;
 
         if (data.type === SOUND_SETTINGS_MESSAGE) {
           const payload = data.payload || {};
@@ -2473,6 +1980,14 @@
       }
 
       function handleKeyboard(event) {
+        if (state.overlayVisible && event.key === 'Tab') {
+          const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary].filter((button) => !button.hidden && !button.disabled);
+          const next = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+          if (document.activeElement === next) { event.preventDefault(); (event.shiftKey ? buttons[buttons.length - 1] : buttons[0]).focus(); }
+          return;
+        }
+        if (state.overlayVisible) return;
+        if (event.target instanceof Element && event.target.closest('button, input, select, textarea')) return;
         if (event.key === ' ' || event.key === 'Enter') {
           if (!state.overlayVisible && state.stone.attached) {
             event.preventDefault();
@@ -2533,7 +2048,24 @@
         window.requestAnimationFrame(frame);
       }
 
+      function fitCanvas() {
+        const frame = dom.canvas.parentElement;
+        const panel = frame.parentElement;
+        const height = Math.min(panel.clientHeight, panel.clientWidth * WORLD_H / WORLD_W);
+        frame.style.height = `${height}px`;
+        frame.style.width = `${height * WORLD_W / WORLD_H}px`;
+        const pixelScale = Math.min(2.5, Math.max(1, dom.canvas.getBoundingClientRect().width / WORLD_W * (window.devicePixelRatio || 1)));
+        const w = Math.round(WORLD_W * pixelScale), h = Math.round(WORLD_H * pixelScale);
+        if (dom.canvas.width !== w || dom.canvas.height !== h) { dom.canvas.width = w; dom.canvas.height = h; }
+        ctx.setTransform(w / WORLD_W, 0, 0, h / WORLD_H, 0, 0);
+      }
+
       function bindEvents() {
+        dom.soundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
+        document.getElementById('rotateHomeButton').addEventListener('click', exitToGames);
+        window.addEventListener('pagehide', (event) => { if (!event.persisted) woodlandAudio.dispose(); });
+        if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(dom.canvas.parentElement.parentElement);
+        fitCanvas();
         dom.canvas.addEventListener('pointerdown', handleCanvasPointerDown);
         dom.canvas.addEventListener('pointermove', handleCanvasPointerMove);
         dom.canvas.addEventListener('pointerup', handleCanvasPointerFinish);
@@ -2627,6 +2159,8 @@
             : [],
           lines: state.drawnStrokes.map((stroke) => stroke.points.length),
           status: state.statusText,
+          paused: state.hostPaused || state.hiddenPause || state.rotatePaused,
+          sound: { muted: state.audio.muted, volume: state.audio.sfxVolume, loaded: [...woodlandAudio.buffers.keys()], context: woodlandAudio.context?.state || 'locked' },
         });
         window.advanceTime = (ms) => {
           const total = Math.max(0, Number(ms) || 0);
@@ -2744,9 +2278,9 @@
         if (state.onboardingPending) {
           showOverlay({
             eyebrow: 'Draw. Drop. Clear.',
-            title: 'Many Birds One Stone',
-            body: 'Drag to draw dark branches inside the center band. You can place as many separate lines as the ink budget allows, then slide the claw left or right for a better angle and tap the stone or use Drop to release a single stone.',
-            primaryLabel: 'Begin',
+            title: 'A little ink. One clever drop.',
+            body: 'Draw paths to guide your stone through all three birds. Slide the claw to aim, then tap the stone or Drop. Use as many lines as your ink allows.',
+            primaryLabel: 'Let’s play',
             primaryAction: 'begin',
             secondaryLabel: 'Games',
             secondaryAction: 'home',
