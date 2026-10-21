@@ -84,6 +84,32 @@ const createLiveUpdateMetadataPlugin = (): Plugin => ({
   },
 });
 
+const createPublicPreviewReloadPlugin = (): Plugin => ({
+  name: 'public-preview-reload',
+  apply: 'serve',
+  configureServer(server) {
+    const publicPrefix = `${server.config.publicDir.replaceAll('\\', '/')}/`;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const reloadPublicFile = (file: string) => {
+      if (!file.replaceAll('\\', '/').startsWith(publicPrefix)) return;
+      clearTimeout(pending);
+      pending = setTimeout(() => {
+        // Embedded legacy games have no Vite client; reloading their host refreshes them too.
+        server.ws.send({ type: 'full-reload', path: '*' });
+      }, 150);
+    };
+    server.watcher.on('add', reloadPublicFile);
+    server.watcher.on('change', reloadPublicFile);
+    server.watcher.on('unlink', reloadPublicFile);
+    server.httpServer?.once('close', () => {
+      clearTimeout(pending);
+      server.watcher.off('add', reloadPublicFile);
+      server.watcher.off('change', reloadPublicFile);
+      server.watcher.off('unlink', reloadPublicFile);
+    });
+  },
+});
+
 // https://vite.dev/config/
 export default defineConfig({
   base,
@@ -92,6 +118,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    createPublicPreviewReloadPlugin(),
     createContentManagerPlugin(__dirname),
     createLiveUpdateMetadataPlugin(),
     // Temporarily disabled VitePWA plugin due to path issues with spaces/apostrophes in directory name

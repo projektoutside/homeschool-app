@@ -6,6 +6,8 @@
 - Keep code compatible with browser deployment and GitHub Pages when applicable.
 - Reuse existing utilities and patterns before introducing new abstractions.
 - For UI changes, protect responsive layouts and visual consistency.
+- Keep primary screens within the viewport without unnecessary page scrolling; reorganize before shrinking and preserve readable text, usable controls, and complete content.
+- Allow accessible contained scrolling when required for long content, keyboards, expanded panels, small screens, or zoom; document exceptions and verify responsive layouts without horizontal page overflow.
 - For 3D changes, protect render loop stability, object hierarchy, and performance.
 
 ## Working sequence
