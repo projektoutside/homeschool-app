@@ -92,6 +92,7 @@
   <script src="../shared/lahsPointsBridge.js"></script>
   <script src="audio.js"></script>
   <script src="drop-mechanism.js"></script>
+  <script src="runways.js"></script>
   <script>
     (() => {
       'use strict';
@@ -103,6 +104,7 @@
       const SOUND_SETTINGS_MESSAGE = 'APP_SOUND_SETTINGS_UPDATE';
       const WORLD_W = 360;
       const WORLD_H = 640;
+      const FLOOR_Y = WORLD_H - 14;
       const DRAW_TOP = 110;
       const DRAW_BOTTOM = 522;
       const DRAW_LEFT = 22;
@@ -162,6 +164,7 @@
       const woodlandAudio = new WoodlandAudio();
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const dropMechanism = new WoodlandDropMechanism({ width: WORLD_W, radius: STONE_RADIUS, reducedMotion });
+      const runways = new WoodlandRunways(WORLD_W, WORLD_H, FLOOR_Y);
       const scenery = new Image();
       scenery.src = './assets/woodland-v2.webp';
       const assets = {
@@ -227,21 +230,10 @@
         );
       }
 
-      function makePocket(cx, topY, width, depth) {
-        const half = width / 2;
-        return [
-          seg(cx - half - 16, topY + 13, cx - half, topY, 'pocket', 5),
-          seg(cx - half, topY, cx - half, topY + depth, 'pocket', 7),
-          seg(cx - half, topY + depth, cx + half, topY + depth, 'pocket', 8),
-          seg(cx + half, topY + depth, cx + half, topY, 'pocket', 7),
-          seg(cx + half, topY, cx + half + 16, topY + 13, 'pocket', 5),
-        ];
-      }
-
       const LEVELS = [
         {
           title: 'Breeze Bowl',
-          note: 'Sketch a soft runway into the right nest.',
+          note: 'Sketch a smooth runway toward the right flock.',
           inkBudget: 280,
           pocket: { x: 266, topY: 392, width: 82, depth: 148 },
           blockers: [seg(214, 206, 312, 234), seg(300, 260, 330, 342)],
@@ -252,7 +244,7 @@
         },
         {
           title: 'Quiet Left Turn',
-          note: 'Use one long branch to drift toward the left nest.',
+          note: 'Curve one long runway toward the left flock.',
           inkBudget: 290,
           pocket: { x: 96, topY: 396, width: 84, depth: 148 },
           blockers: [seg(48, 258, 60, 344), seg(52, 220, 150, 238)],
@@ -263,7 +255,7 @@
         },
         {
           title: 'Lantern Pocket',
-          note: 'A center nest waits below the hanging lantern rail.',
+          note: 'The center flock waits below the hanging steel rail.',
           inkBudget: 260,
           pocket: { x: 180, topY: 406, width: 86, depth: 144 },
           blockers: [seg(110, 210, 248, 228), seg(156, 228, 146, 332), seg(214, 230, 224, 336)],
@@ -274,7 +266,7 @@
         },
         {
           title: 'Wallflower',
-          note: 'Bounce wide, then tuck the stone into the right pocket.',
+          note: 'Bounce wide, then guide the stone through the right flock.',
           inkBudget: 320,
           pocket: { x: 274, topY: 404, width: 78, depth: 146 },
           blockers: [seg(114, 170, 226, 188), seg(116, 188, 94, 314), seg(250, 232, 338, 250)],
@@ -316,7 +308,7 @@
         },
         {
           title: 'High Swoop',
-          note: 'Use two short lines to vault the stone into the right nest.',
+          note: 'Use two short runways to reach the right flock.',
           inkBudget: 255,
           pocket: { x: 268, topY: 414, width: 76, depth: 138 },
           blockers: [
@@ -391,7 +383,7 @@
         },
         {
           title: 'Moon Gate',
-          note: 'The left pocket stays open only if the stone bends low.',
+          note: 'A low bend reaches the left flock below the platforms.',
           inkBudget: 215,
           pocket: { x: 88, topY: 428, width: 70, depth: 126 },
           blockers: [
@@ -433,6 +425,7 @@
       const WORLD_COLLIDERS = [
         createStaticCollider(seg(10, 96, 10, WORLD_H + 24, 'wall', 10)),
         createStaticCollider(seg(WORLD_W - 10, 96, WORLD_W - 10, WORLD_H + 24, 'wall', 10)),
+        { ax: 10, ay: FLOOR_Y, bx: WORLD_W - 10, by: FLOOR_Y, radius: 0, kind: 'floor' },
       ];
 
       function createStone() {
@@ -445,6 +438,9 @@
           rotation: 0,
           attached: true,
           active: false,
+          onFloor: false,
+          supported: false,
+          floorHit: false,
           sleepMs: 0,
           hitPulse: 0,
         };
@@ -504,6 +500,7 @@
         runReleasedAt: null,
         runEnded: false,
         outcome: 'ready',
+        pendingResult: null,
         currentAttemptId: 0,
         awardedForAttempt: false,
         statusText: '',
@@ -754,7 +751,7 @@
         };
         const hintSegments = base.hint.map((stroke) => stroke.map((hintPoint) => shiftPointY(hintPoint, PLAYFIELD_SHIFT_Y)));
         const blockers = base.blockers.map((line) => shiftSegmentY(line, PLAYFIELD_SHIFT_Y));
-        const staticLines = [...blockers, ...makePocket(pocket.x, pocket.topY, pocket.width, pocket.depth)];
+        const staticLines = blockers;
         const laneYs = [
           clamp(pocket.topY - 136, DRAW_TOP + 150, DRAW_BOTTOM - 166),
           clamp(pocket.topY - 74, DRAW_TOP + 214, DRAW_BOTTOM - 92),
@@ -899,6 +896,7 @@
         state.runReleasedAt = null;
         state.runEnded = false;
         state.outcome = 'ready';
+        state.pendingResult = null;
         state.currentAttemptId += 1;
         state.awardedForAttempt = false;
         state.linePreviewPulse = 0;
@@ -1155,6 +1153,10 @@
         let dy = state.stone.y - nearest.y;
         let dist = Math.hypot(dx, dy);
         const minDist = state.stone.radius + collider.radius;
+        if (dist <= minDist + .15 && dy < -dist * .35 && collider.kind !== 'wall') {
+          state.stone.supported = true;
+          if (collider.kind === 'floor') state.stone.onFloor = true;
+        }
         if (dist >= minDist) {
           return false;
         }
@@ -1171,18 +1173,26 @@
         state.stone.x += nx * push;
         state.stone.y += ny * push;
 
+        if (collider.kind === 'floor' && ny < -.5) {
+          state.stone.onFloor = true;
+          if (!state.stone.floorHit) {
+            state.stone.floorHit = true;
+            if (!reducedMotion) createParticles(state.stone.x, FLOOR_Y - 1, 7, ['#c8b985', '#a09e6e', '#e2d5a6']);
+          }
+        }
+        if (ny < -.35 && collider.kind !== 'wall') state.stone.supported = true;
         const tx = nearest.tx;
         const ty = nearest.ty;
         const normalVelocity = state.stone.vx * nx + state.stone.vy * ny;
         const tangentVelocity = state.stone.vx * tx + state.stone.vy * ty;
         if (normalVelocity < 0) {
-          const restitution = collider.kind === 'drawn' ? 0.32 : collider.kind === 'pocket' ? 0.18 : 0.24;
-          const friction = collider.kind === 'drawn' ? 0.97 : collider.kind === 'pocket' ? 0.9 : 0.94;
+          const restitution = collider.kind === 'drawn' ? 0.32 : collider.kind === 'floor' ? 0.16 : 0.24;
+          const friction = collider.kind === 'drawn' ? 0.97 : collider.kind === 'floor' ? 0.78 : 0.94;
           const nextNormalVelocity = -normalVelocity * restitution;
           const nextTangentVelocity = tangentVelocity * friction;
           state.stone.vx = tx * nextTangentVelocity + nx * nextNormalVelocity;
           state.stone.vy = ty * nextTangentVelocity + ny * nextNormalVelocity;
-          state.stone.hitPulse = 1;
+          if (normalVelocity < -70 && collider.kind !== 'floor') state.stone.hitPulse = 1;
           if (normalVelocity < -100) playTone('bounce');
         }
 
@@ -1278,6 +1288,18 @@
         }
       }
 
+      function showPendingResult() {
+        if (!state.pendingResult) return;
+        const result = state.pendingResult;
+        state.pendingResult = null;
+        showOverlay(result);
+      }
+
+      function queueRoundResult(config) {
+        state.pendingResult = config;
+        if (!state.stone.active) showPendingResult();
+      }
+
       function handleWin() {
         if (state.runEnded) return;
         refreshHud();
@@ -1301,7 +1323,7 @@
           state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
         }
         saveProgress();
-        setStatus('All three birds cleared with one stone.');
+        setStatus('All three birds cleared! Watch the stone finish its descent.');
         playTone('win');
         announce(`Level ${state.level.id} cleared.`);
 
@@ -1311,11 +1333,11 @@
           { label: 'Points', value: String(points) },
         ];
 
-        showOverlay({
+        queueRoundResult({
           eyebrow: state.levelIndex === LEVELS.length - 1 ? 'Campaign Complete' : 'Level Cleared',
           title: state.levelIndex === LEVELS.length - 1 ? 'Every bird fell in one run' : `Level ${state.level.id} complete`,
           body: state.levelIndex === LEVELS.length - 1
-            ? 'The last flock folded into the trap. Replay any stage to refine your linework or head back to the Games shelf.'
+            ? 'The last flock was cleared with one stone. Replay any stage to refine your linework or head back to the Games shelf.'
             : 'A beautiful chain reaction! Try the next woodland puzzle, or replay to save more ink and earn three stars.',
           primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
           primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
@@ -1332,7 +1354,7 @@
         setStatus(reason);
         playTone('lose');
         announce(reason);
-        showOverlay({
+        queueRoundResult({
           eyebrow: 'Attempt Lost',
           title: 'So close. Try a new path!',
           body: `${reason} Adjust the linework, then try the same drop again.`,
@@ -1363,10 +1385,6 @@
       }
 
       function updateStone(dt) {
-        if (!state.stone.attached) {
-          state.stoneTrail.push({ x: state.stone.x, y: state.stone.y });
-          if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
-        }
         const clawPose = getClawPose();
         if (state.stone.attached) {
           state.stone.x = clawPose.x;
@@ -1375,11 +1393,12 @@
           state.stone.vy = 0;
           return;
         }
+        if (!state.stone.active) return;
 
-        if (state.runEnded) {
-          return;
-        }
-
+        state.stoneTrail.push({ x: state.stone.x, y: state.stone.y });
+        if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
+        state.stone.onFloor = false;
+        state.stone.supported = false;
         const subDt = dt / COLLISION_SUBSTEPS;
         for (let i = 0; i < COLLISION_SUBSTEPS; i += 1) {
           state.stone.vy += GRAVITY * subDt;
@@ -1389,31 +1408,36 @@
           state.stone.y += state.stone.vy * subDt;
           resolveStoneAgainstWorld();
 
-          state.level.birds.forEach((bird) => {
-            if (!bird.alive) return;
-            if (Math.hypot(state.stone.x - bird.x, state.stone.y - bird.y) <= state.stone.radius + bird.bodyRadius + 3) {
-              hitBird(bird);
-            }
-          });
-
+          if (!state.runEnded) {
+            state.level.birds.forEach((bird) => {
+              if (bird.alive && Math.hypot(state.stone.x - bird.x, state.stone.y - bird.y) <= state.stone.radius + bird.bodyRadius + 3) hitBird(bird);
+            });
+          }
           if (state.stone.y > WORLD_H + 56 || state.stone.x < -50 || state.stone.x > WORLD_W + 50) {
-            handleLose('The stone drifted away before the flock was cleared.');
+            state.stone.active = false;
+            if (state.runEnded) showPendingResult();
+            else handleLose('The stone drifted away before the flock was cleared.');
             return;
           }
         }
 
         if (!reducedMotion) state.stone.rotation += (state.stone.vx * .015 + state.stone.vy * .003) * dt;
         const speed = Math.hypot(state.stone.vx, state.stone.vy);
-        if (speed < FAIL_SLEEP_SPEED && state.stone.y > 220) {
-          state.stone.sleepMs += dt * 1000;
-        } else {
-          state.stone.sleepMs = 0;
-        }
-        if (state.stone.sleepMs >= FAIL_SLEEP_MS) {
-          handleLose('The stone settled before the last birds crossed its path.');
+        if (speed < FAIL_SLEEP_SPEED && state.stone.supported) state.stone.sleepMs += dt * 1000;
+        else state.stone.sleepMs = 0;
+        const settleTime = state.stone.onFloor ? 420 : FAIL_SLEEP_MS;
+        if (state.stone.sleepMs >= settleTime) {
+          state.stone.active = false;
+          state.stone.vx = 0;
+          state.stone.vy = 0;
+          state.stoneTrail = [];
+          if (state.runEnded) showPendingResult();
+          else handleLose(state.stone.onFloor
+            ? 'The stone reached the forest floor before all three birds were cleared.'
+            : 'The stone settled on a runway before the last birds crossed its path.');
           return;
         }
-        if (performance.now() - state.runStartAt >= FAIL_MAX_TIME_MS) {
+        if (!state.runEnded && performance.now() - state.runReleasedAt >= FAIL_MAX_TIME_MS) {
           handleLose('The run lasted too long. Try a shorter route.');
         }
       }
@@ -1482,40 +1506,8 @@
         dropMechanism.drawBehind(ctx);
       }
 
-      function drawNestGlow() {
-        const { pocket } = state.level;
-        const glow = ctx.createRadialGradient(pocket.x, pocket.topY + 86, 10, pocket.x, pocket.topY + 86, 90);
-        glow.addColorStop(0, 'rgba(255, 243, 214, 0.5)');
-        glow.addColorStop(0.55, 'rgba(255, 243, 214, 0.2)');
-        glow.addColorStop(1, 'rgba(255, 243, 214, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(pocket.x - 100, pocket.topY - 30, 200, 210);
-      }
-
       function drawStaticLines() {
-        state.level.staticLines.forEach((line) => {
-          const width = (line.radius || STATIC_LINE_WIDTH / 2) * 2;
-          const isPocket = line.kind === 'pocket';
-          if (isPocket) {
-            return;
-          }
-          drawRoundedPolyline(
-            [point(line.x1, line.y1), point(line.x2, line.y2)],
-            width + 4,
-            isPocket ? 'rgba(255, 255, 255, 0.3)' : 'rgba(66, 49, 37, 0.12)',
-            null,
-            0,
-            null
-          );
-          drawRoundedPolyline(
-            [point(line.x1, line.y1), point(line.x2, line.y2)],
-            width,
-            isPocket ? '#8fa676' : '#5f4c3d',
-            isPocket ? 'rgba(143, 166, 118, 0.22)' : 'rgba(43, 36, 29, 0.12)',
-            isPocket ? 8 : 4,
-            null
-          );
-        });
+        runways.drawPlatforms(ctx, state.level.staticLines);
       }
 
       function drawHint() {
@@ -1542,29 +1534,7 @@
       }
 
       function drawDrawnStrokes() {
-        state.drawnStrokes.forEach((stroke) => {
-          drawRoundedPolyline(stroke.points, stroke.width + 5, 'rgba(255, 255, 255, 0.38)', null, 0, null);
-          drawRoundedPolyline(stroke.points, stroke.width, '#285548', 'rgba(255, 255, 255, 0.34)', 10, null);
-        });
-        if (state.pointer.active && state.pointer.points.length >= 2) {
-          const pulse = 0.22 + state.linePreviewPulse * 0.22;
-          drawRoundedPolyline(
-            state.pointer.points,
-            DRAWN_LINE_WIDTH + 4,
-            `rgba(255, 255, 255, ${0.28 + pulse})`,
-            null,
-            0,
-            null
-          );
-          drawRoundedPolyline(
-            state.pointer.points,
-            DRAWN_LINE_WIDTH,
-            '#26201a',
-            `rgba(255, 255, 255, ${0.25 + pulse})`,
-            14,
-            null
-          );
-        }
+        runways.drawLines(ctx, state.drawnStrokes, state.pointer.active ? state.pointer.points : null, DRAWN_LINE_WIDTH);
       }
 
       function drawGuides() {
@@ -1741,6 +1711,7 @@
       function draw() {
         ctx.clearRect(0, 0, WORLD_W, WORLD_H);
         drawBackground();
+        runways.drawGroundContact(ctx, state.stone);
         drawPlayBandLabels();
         drawBirdLanes();
         drawClaw();
@@ -2007,11 +1978,14 @@
           title: state.level ? state.level.title : null,
           overlayVisible: state.overlayVisible,
           outcome: state.outcome,
+          resultPending: Boolean(state.pendingResult),
+          floorY: FLOOR_Y,
+          platforms: state.level ? state.level.staticLines.map(({ x1, y1, x2, y2, kind }) => ({ x1, y1, x2, y2, kind })) : [],
           attached: state.stone.attached,
           clawX: Number(state.clawBaseX.toFixed(1)),
           clawDragging: state.clawControl.active,
           mechanism: dropMechanism.describe(),
-          stone: { x: +state.stone.x.toFixed(2), y: +state.stone.y.toFixed(2), radius: state.stone.radius, rotation: +state.stone.rotation.toFixed(3) },
+          stone: { x: +state.stone.x.toFixed(2), y: +state.stone.y.toFixed(2), radius: state.stone.radius, rotation: +state.stone.rotation.toFixed(3), onFloor: state.stone.onFloor, active: state.stone.active },
           inkLeftRatio: state.level ? Number(remainingInkRatio().toFixed(3)) : null,
           hintUsed: state.hintUsed,
           birds: state.level
