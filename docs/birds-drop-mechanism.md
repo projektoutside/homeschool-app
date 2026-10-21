@@ -1,0 +1,23 @@
+# Many Birds: dropping mechanism refinement
+
+2026-10-21. Local work on `codex/games-touch-voice-birds-v2`, based on `df9dca3`. Tier 3: canvas animation, touch positioning, drop timing, pause/resume, reduced motion, and embedded rendering.
+
+Explicit request: make the complete upper dropping tool and ball look and animate more realistically. Observed: the woodland canvas uses a small flat carriage, rigid curved jaws, a glowing gold ball, and continuous sinusoidal movement. Delegated direction: a machined steel rail, aged brass wheeled trolley, braided suspension cable, articulated steel fingers with contact pads, and a shaded mineral stone with surface detail. Preserve the woodland world, controls, puzzle dimensions, immediate release, collision physics, 12 levels, rewards, saved progress, sounds, and optional fullscreen.
+
+Implementation plan: isolate the drop rig artwork and damped motion in a small browser module; integrate it with the existing fixed simulation step and lifecycle; inspect movement, opening, falling, reset, and pause at desktop and mobile sizes. Static rail and stone texture are cached. No new dependency or generated asset is necessary.
+
+Fixed visual rubric (all dimensions apply, minimum 8/10 each): brief/realism fidelity, composition/proportions, detail/finish, materials/lighting, usability/motion. Two candidates maximum; inspect actual motion at multiple times. Review is a self-assessment, DEGRADED: single-context (user requested direct execution without delegation). No layout or scrolling change is intended.
+
+## Validation and review
+
+One visual candidate, accepted by self-assessment: realism/brief 8, composition 8.5, detail 8.5, materials/lighting 8, usability/motion 8.5. The actual desktop/tablet close-ups show bevelled steel, brass fittings, braided cable, jointed fingers and contact pads, and a textured sphere with directional light and reflected green. Ready/swing/60 ms/180 ms captures and a real-time recorded drag/drop show opening clearance, falling weight, and settling suspension. This remains a rendered 2D game mechanism; the scores are a scoped visual assessment, not a certification.
+
+`scripts/birdsMechanism.browser.mjs` passed desktop Chromium 1440x1000, Android viewport Chromium 393x852, iPhone viewport WebKit 390x844, tablet WebKit 1024x1366, small phone Chromium 320x568, and reduced-motion Chromium 1280x900. The first tablet launch timed out waiting for Playwright's click stability; waiting for the existing intro transition to finish made the targeted tablet confirmation pass without changing the game. `browser-report.json` retains that first failure, superseded by `tablet-confirmation.json` for that case.
+
+Verified: carriage dragging does not drop the ball, inertia settles, the ball tracks the grip, release remains immediate, jaws open within 180 ms, gravity moves the stone, collision radius remains 12, pause freezes the mechanism and stone, retry closes/resets the rig, A/D/Space work, and phone touch release works. No document overflow or automatic fullscreen occurred. Reduced motion removes pendulum/recoil and shows open jaws immediately. The existing embedded lifecycle/sound smoke also passed. Mean measured fixed-step update/draw costs were approximately 0.23–0.37 ms, with sampled p95 at or below 1 ms on this host; these isolated browser measurements do not establish physical-device frame rate.
+
+Checks passed: inline/external JavaScript syntax, targeted ESLint, `npm run audit:games`, and `vite build`. Both changed game files match the production output byte-for-byte. The build retained its existing large-chunk advisory. Source fingerprint (HTML, mechanism module, browser test): `1cb483ff1099445f1f62d11e1e4f063cb9b0be05800bd992dfb5f205efd84bd7`; detailed hashes, screenshots, motion review, video, and test results are in `output/birds-mechanism/`. Embedded smoke evidence is `output/games-v2/browser-drop-mechanism-iframe.json`.
+
+The single design-detector pass found the existing cream palette, HUD dividers, and gameplay/dialog surfaces. Those unchanged layout findings do not concern the canvas mechanism; no suppressions or hook changes were made. The context tool also noted the Android wrapper alongside the web product documentation; this refinement targets the existing web game and does not change project platform metadata.
+
+No new scrolling exception or layout change. Physical Android/iPhone/iPad and Capacitor animation/performance remain untested; the prior same-day BrowserStack attempt was blocked by expired testing time. No physical session or native artifact was produced here. No push, deployment, or release. The user-requested visible live preview/server remain open, and task-owned test browsers are closed.

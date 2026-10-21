@@ -47,7 +47,7 @@
 
       <main class="stage-panel">
         <div class="stage-frame">
-          <canvas id="gameCanvas" width="360" height="640" tabindex="0" aria-label="Many Birds One Stone playfield. Draw paths by dragging, move the claw with arrow keys, and press Space to drop."></canvas>
+          <canvas id="gameCanvas" width="360" height="640" tabindex="0" aria-label="Many Birds One Stone playfield. Draw paths by dragging, move the claw with A and D, and press Space to drop."></canvas>
           <div class="canvas-shine"></div>
           <div class="overlay" id="overlay" aria-live="polite" aria-hidden="true">
             <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlayTitle" aria-describedby="overlayBody" tabindex="-1">
@@ -91,6 +91,7 @@
   </div>
   <script src="../shared/lahsPointsBridge.js"></script>
   <script src="audio.js"></script>
+  <script src="drop-mechanism.js"></script>
   <script>
     (() => {
       'use strict';
@@ -160,6 +161,7 @@
       const ctx = dom.canvas.getContext('2d');
       const woodlandAudio = new WoodlandAudio();
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const dropMechanism = new WoodlandDropMechanism({ width: WORLD_W, radius: STONE_RADIUS, reducedMotion });
       const scenery = new Image();
       scenery.src = './assets/woodland-v2.webp';
       const assets = {
@@ -440,6 +442,7 @@
           vx: 0,
           vy: 0,
           radius: STONE_RADIUS,
+          rotation: 0,
           attached: true,
           active: false,
           sleepMs: 0,
@@ -554,7 +557,7 @@
       function setClawBaseX(nextX) {
         state.clawBaseX = clamp(nextX, CLAW_MIN_X, CLAW_MAX_X);
         if (state.stone.attached) {
-          const clawPose = getClawPose(state.elapsed);
+          const clawPose = getClawPose();
           state.stone.x = clawPose.x;
           state.stone.y = clawPose.stoneY;
         }
@@ -842,9 +845,10 @@
       }
 
       function resetStone() {
+        dropMechanism.reset(state.clawBaseX);
         state.stoneTrail = [];
         state.stone = createStone();
-        const clawPose = getClawPose(state.elapsed);
+        const clawPose = getClawPose();
         state.stone.x = clawPose.x;
         state.stone.y = clawPose.stoneY;
       }
@@ -945,7 +949,7 @@
 
       function pointHitsClawControl(point) {
         if (!state.stone.attached) return false;
-        const clawPose = getClawPose(state.elapsed);
+        const clawPose = getClawPose();
         const inStoneZone = distance(point, state.stone) <= CLAW_CONTROL_RADIUS;
         const inCarriageZone = Math.abs(point.x - clawPose.x) <= 40
           && point.y >= clawPose.y - 28
@@ -1114,6 +1118,7 @@
       function releaseStone() {
         if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
         resetClawControl();
+        dropMechanism.release();
         state.stone.attached = false;
         state.stone.active = true;
         state.stone.vx = 0;
@@ -1235,17 +1240,8 @@
         });
       }
 
-      function getClawPose(elapsed) {
-        const sway = state.clawControl.active ? 0 : Math.sin(elapsed * 1.3) * 4.5;
-        const bob = Math.sin(elapsed * 2.3) * 1.6;
-        const x = clamp(state.clawBaseX + sway, CLAW_MIN_X, CLAW_MAX_X);
-        return {
-          x,
-          railY: 18,
-          y: 38 + bob,
-          stoneY: 92 + bob,
-          sway,
-        };
+      function getClawPose() {
+        return dropMechanism.pose();
       }
 
       function awardPointsForClear(summary) {
@@ -1371,7 +1367,7 @@
           state.stoneTrail.push({ x: state.stone.x, y: state.stone.y });
           if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
         }
-        const clawPose = getClawPose(state.elapsed);
+        const clawPose = getClawPose();
         if (state.stone.attached) {
           state.stone.x = clawPose.x;
           state.stone.y = clawPose.stoneY;
@@ -1406,6 +1402,7 @@
           }
         }
 
+        if (!reducedMotion) state.stone.rotation += (state.stone.vx * .015 + state.stone.vy * .003) * dt;
         const speed = Math.hypot(state.stone.vx, state.stone.vy);
         if (speed < FAIL_SLEEP_SPEED && state.stone.y > 220) {
           state.stone.sleepMs += dt * 1000;
@@ -1482,114 +1479,7 @@
       }
 
       function drawClaw() {
-        const clawPose = getClawPose(state.elapsed);
-        const hangerBottom = clawPose.stoneY - STONE_RADIUS - 8;
-        const controlGlow = state.clawControl.active ? 0.92 : 0.56;
-
-        ctx.save();
-        ctx.shadowColor = 'rgba(70, 54, 40, 0.12)';
-        ctx.shadowBlur = 18;
-        const railGradient = ctx.createLinearGradient(30, 0, WORLD_W - 30, 0);
-        railGradient.addColorStop(0, '#8f7967');
-        railGradient.addColorStop(0.48, '#f1dfc6');
-        railGradient.addColorStop(1, '#947b67');
-        ctx.fillStyle = railGradient;
-        ctx.beginPath();
-        ctx.roundRect(34, clawPose.railY - 6, WORLD_W - 68, 12, 7);
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = 'rgba(104, 82, 64, 0.56)';
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(44, clawPose.railY - 0.5);
-        ctx.lineTo(WORLD_W - 44, clawPose.railY - 0.5);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
-        for (let x = 52; x <= WORLD_W - 52; x += 16) {
-          ctx.fillRect(x, clawPose.railY - 2, 6, 4);
-        }
-
-        [[50, 12], [WORLD_W - 50, 12]].forEach(([x, y]) => {
-          ctx.fillStyle = '#d4bfaa';
-          ctx.beginPath();
-          ctx.roundRect(x - 8, y, 16, 15, 5);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(94, 73, 57, 0.4)';
-          ctx.lineWidth = 1.2;
-          ctx.stroke();
-        });
-
-        ctx.save();
-        ctx.translate(clawPose.x, clawPose.y);
-
-        ctx.fillStyle = 'rgba(62, 47, 34, 0.12)';
-        ctx.beginPath();
-        ctx.ellipse(0, 5, 34, 8, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = 'rgba(116, 96, 78, 0.8)';
-        ctx.lineWidth = 3.2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(-4, clawPose.railY - clawPose.y + 7);
-        ctx.lineTo(-4, hangerBottom - clawPose.y);
-        ctx.moveTo(4, clawPose.railY - clawPose.y + 7);
-        ctx.lineTo(4, hangerBottom - clawPose.y);
-        ctx.stroke();
-
-        const carriageGradient = ctx.createLinearGradient(0, -14, 0, 18);
-        carriageGradient.addColorStop(0, '#fbf1de');
-        carriageGradient.addColorStop(0.55, '#ddc8b0');
-        carriageGradient.addColorStop(1, '#a78669');
-        ctx.fillStyle = carriageGradient;
-        ctx.beginPath();
-        ctx.roundRect(-32, -14, 64, 28, 12);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(101, 79, 61, 0.48)';
-        ctx.lineWidth = 1.6;
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
-        ctx.beginPath();
-        ctx.roundRect(-22, -9, 44, 8, 5);
-        ctx.fill();
-
-        ctx.fillStyle = `rgba(229, 184, 108, ${controlGlow})`;
-        ctx.beginPath();
-        ctx.arc(0, 1, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f0e0ca';
-        [-18, 18].forEach((x) => {
-          ctx.beginPath();
-          ctx.arc(x, 8, 3.2, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        ctx.strokeStyle = '#725b48';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(-19, 10);
-        ctx.quadraticCurveTo(-31, 24, -21, 40);
-        ctx.quadraticCurveTo(-16, 49, -10, hangerBottom - clawPose.y + 6);
-        ctx.moveTo(19, 10);
-        ctx.quadraticCurveTo(31, 24, 21, 40);
-        ctx.quadraticCurveTo(16, 49, 10, hangerBottom - clawPose.y + 6);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(248, 240, 228, 0.54)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(-15, 12);
-        ctx.quadraticCurveTo(-22, 22, -16, 34);
-        ctx.moveTo(15, 12);
-        ctx.quadraticCurveTo(22, 22, 16, 34);
-        ctx.stroke();
-
-        ctx.restore();
-        ctx.restore();
+        dropMechanism.drawBehind(ctx);
       }
 
       function drawNestGlow() {
@@ -1679,7 +1569,7 @@
 
       function drawGuides() {
         if (!state.stone.attached) return;
-        const clawPose = getClawPose(state.elapsed);
+        const clawPose = getClawPose();
         ctx.save();
         ctx.strokeStyle = 'rgba(43, 36, 29, 0.18)';
         ctx.lineWidth = 2;
@@ -1811,37 +1701,9 @@
           ctx.fillStyle = `rgba(255, 226, 153, ${index / state.stoneTrail.length * .42})`;
           ctx.beginPath(); ctx.arc(point.x, point.y, state.stone.radius * index / state.stoneTrail.length * .7, 0, Math.PI * 2); ctx.fill();
         });
+        dropMechanism.drawStone(ctx, state.stone);
         ctx.save();
         ctx.translate(state.stone.x, state.stone.y);
-        ctx.fillStyle = 'rgba(43, 36, 29, 0.14)';
-        ctx.beginPath();
-        ctx.ellipse(0, 16, 13, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const stoneGradient = ctx.createRadialGradient(-5, -7, 4, 2, 2, 22);
-        stoneGradient.addColorStop(0, '#fff6cd');
-        stoneGradient.addColorStop(0.45, '#edbb5c');
-        stoneGradient.addColorStop(1, '#a77526');
-        ctx.fillStyle = stoneGradient;
-        ctx.beginPath();
-        ctx.arc(0, 0, state.stone.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = 'rgba(112, 97, 84, 0.44)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(-1, -1, state.stone.radius - 2, -2.5, 0.6);
-        ctx.stroke();
-
-        if (state.stone.attached) {
-          const pulse = 0.5 + Math.sin(state.elapsed * 4.4) * 0.5;
-          ctx.strokeStyle = `rgba(218, 176, 116, ${0.22 + pulse * 0.18})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(0, 0, STONE_DROP_TAP_RADIUS - 7 + pulse * 2, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-
         if (state.stone.hitPulse > 0.01) {
           ctx.strokeStyle = `rgba(255, 255, 255, ${state.stone.hitPulse * 0.42})`;
           ctx.lineWidth = 3;
@@ -1888,6 +1750,7 @@
         drawGuides();
         state.level.birds.forEach(drawBird);
         drawStone();
+        dropMechanism.drawFront(ctx);
         drawParticles();
       }
 
@@ -2033,6 +1896,7 @@
           return;
         }
 
+        dropMechanism.update(dt, state.clawBaseX);
         updateStone(dt);
       }
 
@@ -2146,6 +2010,8 @@
           attached: state.stone.attached,
           clawX: Number(state.clawBaseX.toFixed(1)),
           clawDragging: state.clawControl.active,
+          mechanism: dropMechanism.describe(),
+          stone: { x: +state.stone.x.toFixed(2), y: +state.stone.y.toFixed(2), radius: state.stone.radius, rotation: +state.stone.rotation.toFixed(3) },
           inkLeftRatio: state.level ? Number(remainingInkRatio().toFixed(3)) : null,
           hintUsed: state.hintUsed,
           birds: state.level
