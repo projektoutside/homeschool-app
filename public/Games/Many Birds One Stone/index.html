@@ -96,6 +96,7 @@
   <script src="runways.js"></script>
   <script src="birds.js"></script>
   <script src="physics.js"></script>
+  <script src="campaign.js"></script>
   <script>
     (() => {
       'use strict';
@@ -121,12 +122,10 @@
       const CLAW_MIN_X = 54;
       const CLAW_MAX_X = WORLD_W - 54;
       const CLAW_DRAG_THRESHOLD = 8;
-      const PLAYFIELD_SHIFT_Y = 36;
       const DRAWN_LINE_WIDTH = 11;
       const STATIC_LINE_WIDTH = 14;
       const GRAVITY = 980;
       const STEP = 1 / 60;
-      const HINT_DISPLAY_MS = 2900;
       const FAIL_SLEEP_SPEED = 22;
       const FAIL_SLEEP_MS = 1050;
       const FAIL_MAX_TIME_MS = 16500;
@@ -189,10 +188,6 @@
         return Math.hypot(dx, dy);
       }
 
-      function point(x, y) {
-        return { x, y };
-      }
-
       function seg(x1, y1, x2, y2, kind, radius) {
         return {
           x1,
@@ -204,266 +199,7 @@
         };
       }
 
-      function shiftPointY(rawPoint, amount) {
-        return point(rawPoint.x, clamp(rawPoint.y + amount, 0, WORLD_H - 12));
-      }
-
-      function shiftSegmentY(rawSegment, amount) {
-        return seg(
-          rawSegment.x1,
-          clamp(rawSegment.y1 + amount, 0, WORLD_H - 4),
-          rawSegment.x2,
-          clamp(rawSegment.y2 + amount, 0, WORLD_H - 4),
-          rawSegment.kind,
-          rawSegment.radius
-        );
-      }
-
-      const LEVELS = [
-        {
-          title: 'First Feather',
-          note: 'The steel shelf blocks a straight drop. Aim left and draw a runway toward the bird.',
-          inkBudget: 200,
-          blockers: [seg(114, 210, 270, 210)],
-          hint: [[point(68, 254), point(154, 284)]],
-          birdLaneYs: [410], birdXs: [245],
-          birdRanges: [22], birdSpeeds: [.95], birdPhases: [.3],
-        },
-        {
-          title: 'Little Drift',
-          note: 'Approach from the right. Watch the patrol and slope a runway back toward the bird.',
-          inkBudget: 190,
-          blockers: [seg(60, 208, 246, 208)],
-          hint: [[point(292, 248), point(184, 298)]],
-          birdLaneYs: [405], birdXs: [110],
-          birdRanges: [26], birdSpeeds: [1.05], birdPhases: [1.1],
-        },
-        {
-          title: 'Brass Bend',
-          note: 'Thread the gap between the shelves. Keep your runway short and lead the moving bird.',
-          inkBudget: 175,
-          blockers: [seg(114, 180, 270, 180), seg(268, 358, 324, 346)],
-          hint: [[point(68, 254), point(142, 320)]],
-          birdLaneYs: [420], birdXs: [228],
-          birdRanges: [32], birdSpeeds: [1.2], birdPhases: [.5],
-        },
-        {
-          title: 'Twin Feathers',
-          note: 'Catch the left bird first, then turn the stone right with a runway below it.',
-          inkBudget: 210,
-          blockers: [seg(200, 190, 306, 204)],
-          hint: [[point(96, 290), point(188, 324)]],
-          birdLaneYs: [285, 450], birdXs: [132, 258],
-          birdRanges: [18, 24], birdSpeeds: [1, 1.12], birdPhases: [.2, 1.5],
-        },
-        {
-          title: 'Paired Perches',
-          note: 'Start at the right bird, then bend left. The two patrols cross your route at different times.',
-          inkBudget: 200,
-          blockers: [seg(54, 196, 170, 210)],
-          hint: [[point(266, 304), point(174, 338)]],
-          birdLaneYs: [295, 466], birdXs: [234, 102],
-          birdRanges: [22, 26], birdSpeeds: [1.08, 1.18], birdPhases: [.4, 1.7],
-        },
-        {
-          title: 'Split Flight',
-          note: 'Plan two turns: left around the shelf, through the first bird, then right toward the second.',
-          inkBudget: 270,
-          blockers: [seg(66, 174, 202, 174)],
-          hint: [[point(266, 208), point(196, 244)], [point(40, 319), point(50, 364), point(140, 394)]],
-          birdLaneYs: [314, 488], birdXs: [118, 250],
-          birdRanges: [24, 30], birdSpeeds: [1.12, 1.24], birdPhases: [.2, .8],
-        },
-        {
-          title: 'Breeze Bowl',
-          note: 'Sketch a smooth runway toward the right flock.',
-          inkBudget: 280,
-          pocket: { x: 266, topY: 392, width: 82, depth: 148 },
-          blockers: [seg(214, 206, 312, 234), seg(300, 260, 330, 342)],
-          hint: [[point(180, 118), point(236, 176), point(284, 286), point(298, 392)]],
-          birdRanges: [44, 54, 40],
-          birdSpeeds: [1.06, 0.88, 1.14],
-          birdPhases: [0.2, 1.8, 3.7],
-        },
-        {
-          title: 'Quiet Left Turn',
-          note: 'Curve one long runway toward the left flock.',
-          inkBudget: 290,
-          pocket: { x: 96, topY: 396, width: 84, depth: 148 },
-          blockers: [seg(48, 258, 60, 344), seg(52, 220, 150, 238)],
-          hint: [[point(180, 118), point(128, 182), point(82, 284), point(68, 394)]],
-          birdRanges: [42, 54, 40],
-          birdSpeeds: [1.1, 0.84, 1.18],
-          birdPhases: [0.8, 2.3, 4.2],
-        },
-        {
-          title: 'Lantern Pocket',
-          note: 'The center flock waits below the hanging steel rail.',
-          inkBudget: 260,
-          pocket: { x: 180, topY: 406, width: 86, depth: 144 },
-          blockers: [seg(110, 210, 248, 228), seg(156, 228, 146, 332), seg(214, 230, 224, 336)],
-          hint: [[point(180, 118), point(116, 190), point(120, 292), point(146, 390), point(174, 406)]],
-          birdRanges: [34, 44, 32],
-          birdSpeeds: [0.96, 0.82, 1.06],
-          birdPhases: [0.1, 2.0, 3.5],
-        },
-        {
-          title: 'Wallflower',
-          note: 'Bounce wide, then guide the stone through the right flock.',
-          inkBudget: 320,
-          pocket: { x: 274, topY: 404, width: 78, depth: 146 },
-          blockers: [seg(114, 170, 226, 188), seg(116, 188, 94, 314), seg(250, 232, 338, 250)],
-          hint: [
-            [point(180, 118), point(122, 164), point(94, 266), point(150, 362)],
-            [point(150, 362), point(244, 376), point(294, 406)],
-          ],
-          birdRanges: [34, 48, 34],
-          birdSpeeds: [1.04, 0.92, 1.1],
-          birdPhases: [0.5, 2.7, 4.4],
-        },
-        {
-          title: 'Petal Drift',
-          note: 'A gentle slide left clears the blossom rails.',
-          inkBudget: 300,
-          pocket: { x: 86, topY: 408, width: 82, depth: 146 },
-          blockers: [seg(210, 180, 300, 214), seg(268, 214, 294, 324), seg(38, 250, 126, 266)],
-          hint: [[point(180, 118), point(130, 202), point(88, 314), point(70, 408)]],
-          birdRanges: [36, 46, 34],
-          birdSpeeds: [1.02, 0.78, 1.08],
-          birdPhases: [0.4, 1.9, 3.4],
-        },
-        {
-          title: 'Twin Perches',
-          note: 'Thread the stone between two center rails.',
-          inkBudget: 260,
-          pocket: { x: 184, topY: 418, width: 78, depth: 136 },
-          blockers: [
-            seg(102, 186, 258, 202),
-            seg(140, 202, 128, 340),
-            seg(228, 204, 240, 340),
-            seg(64, 328, 124, 346),
-            seg(238, 328, 298, 346),
-          ],
-          hint: [[point(180, 118), point(228, 186), point(232, 286), point(214, 392), point(188, 418)]],
-          birdRanges: [28, 38, 28],
-          birdSpeeds: [1.12, 0.92, 1.18],
-          birdPhases: [0.2, 2.1, 4.1],
-        },
-        {
-          title: 'High Swoop',
-          note: 'Use two short runways to reach the right flock.',
-          inkBudget: 255,
-          pocket: { x: 268, topY: 414, width: 76, depth: 138 },
-          blockers: [
-            seg(104, 184, 206, 198),
-            seg(200, 198, 176, 298),
-            seg(224, 230, 322, 246),
-            seg(232, 246, 250, 358),
-          ],
-          hint: [
-            [point(180, 118), point(138, 168), point(134, 260), point(176, 334)],
-            [point(176, 334), point(244, 352), point(288, 414)],
-          ],
-          birdRanges: [28, 42, 28],
-          birdSpeeds: [1.16, 0.94, 1.2],
-          birdPhases: [0.6, 2.5, 4.6],
-        },
-        {
-          title: 'Moss Switchback',
-          note: 'Guide the stone left after the center ramp turns it away.',
-          inkBudget: 260,
-          pocket: { x: 92, topY: 418, width: 76, depth: 138 },
-          blockers: [
-            seg(154, 180, 256, 196),
-            seg(188, 196, 210, 314),
-            seg(42, 228, 138, 244),
-            seg(106, 244, 88, 356),
-          ],
-          hint: [
-            [point(180, 118), point(232, 180), point(240, 284), point(194, 352)],
-            [point(194, 352), point(126, 370), point(72, 418)],
-          ],
-          birdRanges: [28, 42, 28],
-          birdSpeeds: [1.14, 0.88, 1.22],
-          birdPhases: [0.3, 2.3, 4.1],
-        },
-        {
-          title: 'Hourglass Nest',
-          note: 'Split the fall into a center squeeze with very little ink.',
-          inkBudget: 220,
-          pocket: { x: 180, topY: 430, width: 74, depth: 128 },
-          blockers: [
-            seg(92, 184, 270, 198),
-            seg(128, 198, 104, 310),
-            seg(232, 198, 256, 310),
-            seg(118, 316, 170, 338),
-            seg(242, 316, 190, 338),
-          ],
-          hint: [[point(180, 118), point(130, 192), point(132, 278), point(170, 358), point(180, 430)]],
-          birdRanges: [24, 32, 22],
-          birdSpeeds: [1.18, 0.98, 1.2],
-          birdPhases: [0.1, 2.2, 4.0],
-        },
-        {
-          title: 'Needle Branch',
-          note: 'A tiny right lane rewards careful ink use.',
-          inkBudget: 210,
-          pocket: { x: 274, topY: 428, width: 70, depth: 126 },
-          blockers: [
-            seg(88, 174, 196, 194),
-            seg(190, 194, 166, 322),
-            seg(214, 214, 320, 232),
-            seg(214, 232, 214, 362),
-            seg(310, 232, 326, 350),
-          ],
-          hint: [
-            [point(180, 118), point(126, 166), point(118, 262), point(168, 348)],
-            [point(168, 348), point(242, 362), point(290, 428)],
-          ],
-          birdRanges: [22, 30, 22],
-          birdSpeeds: [1.22, 1.02, 1.28],
-          birdPhases: [0.5, 2.6, 4.4],
-        },
-        {
-          title: 'Moon Gate',
-          note: 'A low bend reaches the left flock below the platforms.',
-          inkBudget: 215,
-          pocket: { x: 88, topY: 428, width: 70, depth: 126 },
-          blockers: [
-            seg(164, 176, 274, 194),
-            seg(194, 194, 218, 322),
-            seg(40, 214, 146, 232),
-            seg(146, 232, 146, 364),
-            seg(34, 232, 18, 350),
-          ],
-          hint: [
-            [point(180, 118), point(236, 166), point(248, 264), point(198, 350)],
-            [point(198, 350), point(124, 364), point(68, 428)],
-          ],
-          birdRanges: [22, 30, 22],
-          birdSpeeds: [1.2, 0.98, 1.3],
-          birdPhases: [0.2, 2.3, 4.2],
-        },
-        {
-          title: 'Crown Pocket',
-          note: 'Final flight. Save ink, then let the birds come to you.',
-          inkBudget: 200,
-          pocket: { x: 180, topY: 438, width: 68, depth: 118 },
-          blockers: [
-            seg(90, 170, 270, 186),
-            seg(128, 186, 110, 304),
-            seg(232, 186, 250, 304),
-            seg(118, 316, 162, 338),
-            seg(242, 316, 198, 338),
-            seg(164, 344, 146, 420),
-            seg(196, 344, 214, 420),
-          ],
-          hint: [[point(180, 118), point(132, 184), point(140, 280), point(174, 350), point(180, 438)]],
-          birdRanges: [20, 28, 20],
-          birdSpeeds: [1.26, 1.04, 1.32],
-          birdPhases: [0.1, 2.0, 4.1],
-        },
-      ];
+      const LEVELS = window.WoodlandCampaign.levels;
 
       const WORLD_COLLIDERS = [
         createStaticCollider(seg(10, 96, 10, WORLD_H + 24, 'wall', 10)),
@@ -779,50 +515,15 @@
         };
       }
 
-      function sampleHintX(hintSegments, targetY, fallbackX) {
-        let candidate = null;
-        hintSegments.forEach((stroke) => {
-          for (let i = 1; i < stroke.length; i += 1) {
-            const a = stroke[i - 1];
-            const b = stroke[i];
-            if ((targetY >= a.y && targetY <= b.y) || (targetY >= b.y && targetY <= a.y)) {
-              if (Math.abs(b.y - a.y) < 0.001) {
-                candidate = { x: a.x, diff: 0 };
-                return;
-              }
-              const t = (targetY - a.y) / (b.y - a.y);
-              candidate = { x: lerp(a.x, b.x, t), diff: 0 };
-              return;
-            }
-            const midpointY = (a.y + b.y) * 0.5;
-            const diff = Math.abs(midpointY - targetY);
-            if (!candidate || diff < candidate.diff) {
-              candidate = { x: lerp(a.x, b.x, 0.5), diff };
-            }
-          }
-        });
-        return candidate ? candidate.x : fallbackX;
-      }
-
       function hydrateLevel(levelIndex) {
         const base = LEVELS[levelIndex];
-        const target = base.pocket || { x: WORLD_W / 2, topY: 400, width: 80, depth: 140 };
-        const pocket = {
-          ...target,
-          topY: clamp(target.topY + PLAYFIELD_SHIFT_Y, 364, WORLD_H - target.depth - 18),
-        };
-        const hintSegments = base.hint.map((stroke) => stroke.map((hintPoint) => shiftPointY(hintPoint, PLAYFIELD_SHIFT_Y)));
-        const blockers = base.blockers.map((line) => shiftSegmentY(line, PLAYFIELD_SHIFT_Y));
-        const staticLines = blockers;
-        const laneYs = base.birdLaneYs || [
-          clamp(pocket.topY - 136, DRAW_TOP + 150, DRAW_BOTTOM - 166),
-          clamp(pocket.topY - 74, DRAW_TOP + 214, DRAW_BOTTOM - 92),
-          clamp(pocket.topY - 14, DRAW_TOP + 278, DRAW_BOTTOM - 18),
-        ];
+        const hintSegments = base.hint.map(stroke => stroke.map(p => ({ ...p })));
+        const staticLines = base.blockers.map(line => ({ ...line }));
+        const laneYs = base.birdLaneYs;
 
         const birds = laneYs.map((laneY, index) => {
           const range = base.birdRanges[index];
-          const sampledX = base.birdXs?.[index] ?? sampleHintX(hintSegments, laneY, pocket.x);
+          const sampledX = base.birdXs[index];
           const baseX = clamp(sampledX, 56 + range, WORLD_W - 56 - range);
           return {
             index,
@@ -847,7 +548,9 @@
           title: base.title,
           note: base.note,
           inkBudget: base.inkBudget,
-          pocket,
+          chapter: base.chapter,
+          skill: base.skill,
+          hintAim: base.hintAim,
           hintSegments,
           staticLines,
           birds,
@@ -895,7 +598,7 @@
         const attached = state.stone.attached;
         dom.prevLevelButton.disabled = state.levelIndex <= 0 || state.overlayVisible;
         dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || state.overlayVisible;
-        dom.hintButton.disabled = state.overlayVisible || state.rotatePaused || state.hintUsed || !attached;
+        dom.hintButton.disabled = state.overlayVisible || state.rotatePaused || !attached;
         dom.clearButton.disabled = state.overlayVisible || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
         dom.dropButton.disabled = state.overlayVisible || state.rotatePaused || !attached;
       }
@@ -926,6 +629,7 @@
             state.hintVisibleUntil = 0;
           }
         }
+        state.elapsed = 0;
         state.level = hydrateLevel(state.levelIndex);
         state.staticColliders = state.level.staticLines.map(createStaticCollider);
         resetClawControl();
@@ -1161,6 +865,7 @@
         if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
         resetClawControl();
         dropMechanism.release();
+        state.hintVisibleUntil = 0;
         state.stone.attached = false;
         state.stone.active = true;
         state.stone.vx = 0;
@@ -1247,7 +952,7 @@
           label: 'Level Clear',
           meta: {
             level: state.level.id,
-            birdsHit: 3,
+            birdsHit: state.level.birds.length,
             hintUsed: state.hintUsed,
             remainingInkRatio: Number(remainingInk.toFixed(3)),
             clearTimeMs: Math.round(summary.clearTimeMs),
@@ -1309,13 +1014,15 @@
           { label: 'Ink left', value: fmtPercent(remainingInk) },
           { label: 'Points', value: String(points) },
         ];
+        const nextLevel = LEVELS[state.levelIndex + 1];
+        const chapterComplete = nextLevel && nextLevel.chapter !== state.level.chapter;
 
         queueRoundResult({
           eyebrow: state.levelIndex === LEVELS.length - 1 ? 'Campaign Complete' : 'Level Cleared',
-          title: state.levelIndex === LEVELS.length - 1 ? 'Every bird fell in one run' : `Level ${state.level.id} complete`,
+          title: !nextLevel ? 'The crown is yours!' : chapterComplete ? `${state.level.chapter} complete` : `Level ${state.level.id} complete`,
           body: state.levelIndex === LEVELS.length - 1
-            ? 'The last flock was cleared with one stone. Replay any stage to refine your linework or head back to the Games shelf.'
-            : `You cleared ${birdLabel(state.level.birds.length)} with one stone! Try the next puzzle, or replay to save more ink and earn three stars.`,
+            ? 'You mastered all 18 woodland puzzles. Replay a favorite to refine your linework and earn three stars.'
+            : `You cleared ${birdLabel(state.level.birds.length)} with one stone! ${chapterComplete ? `Next chapter: ${nextLevel.chapter}.` : `Up next: ${nextLevel.title}.`} Replay any stage to save ink and earn three stars.`,
           primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
           primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
           secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Games' : 'Retry',
@@ -1490,7 +1197,7 @@
       }
 
       function drawHint() {
-        if (!state.hintVisibleUntil || performance.now() > state.hintVisibleUntil) return;
+        if (!state.stone.attached || !state.hintVisibleUntil) return;
         const alpha = 0.42 + Math.sin(state.elapsed * 8) * 0.1;
         state.level.hintSegments.forEach((stroke) => {
           drawRoundedPolyline(
@@ -1599,11 +1306,12 @@
       }
 
       function useHint() {
-        if (state.hintUsed || state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
+        if (state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
         state.hintUsed = true;
-        state.hintVisibleUntil = performance.now() + HINT_DISPLAY_MS;
+        state.hintVisibleUntil = Infinity;
+        setClawBaseX(state.level.hintAim);
         refreshButtons();
-        setStatus('Ghost guide revealed. Following it forfeits the no-hint bonus.');
+        setStatus('Claw aligned. Trace the guide; the no-hint bonus is waived.');
         announce('Hint shown.');
         playTone('tap');
       }
@@ -1814,6 +1522,14 @@
           unlockAudio();
           releaseStone();
         });
+        dom.dropButton.addEventListener('pointerup', (event) => {
+          if (event.pointerType !== 'touch' || !event.isPrimary || dom.dropButton.disabled) return;
+          const bounds = dom.dropButton.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+          // Touch can omit its compatibility click after drawing. Release remains idempotent.
+          unlockAudio();
+          releaseStone();
+        });
         dom.overlayPrimary.addEventListener('click', () => {
           unlockAudio();
           playTone('tap');
@@ -1849,6 +1565,9 @@
         window.render_game_to_text = () => JSON.stringify({
           level: state.level ? state.level.id : null,
           totalLevels: LEVELS.length,
+          campaignRevision: window.WoodlandCampaign.revision,
+          chapter: state.level ? state.level.chapter : null,
+          skill: state.level ? state.level.skill : null,
           birdTarget: state.level ? state.level.birds.length : 0,
           title: state.level ? state.level.title : null,
           elapsed: Number(state.elapsed.toFixed(4)),
@@ -1865,6 +1584,7 @@
           stone: { x: +state.stone.x.toFixed(2), y: +state.stone.y.toFixed(2), radius: state.stone.radius, rotation: +state.stone.rotation.toFixed(3), onFloor: state.stone.onFloor, active: state.stone.active },
           inkLeftRatio: state.level ? Number(remainingInkRatio().toFixed(3)) : null,
           hintUsed: state.hintUsed,
+          hintVisible: state.stone.attached && Boolean(state.hintVisibleUntil),
           birds: state.level
             ? state.level.birds.map((bird) => ({
               index: bird.index,

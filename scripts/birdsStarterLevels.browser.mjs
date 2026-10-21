@@ -100,7 +100,7 @@ async function runCampaign(browser, name, viewport, mobile) {
       await freeze(page);
     }
     const original = await snapshot(page);
-    assert.equal(original.level, 7); assert.equal(original.title, 'Breeze Bowl'); assert.equal(original.birds.length, 3);
+    assert.equal(original.level, 7); assert.equal(original.title, 'Feather Trail'); assert.equal(original.birds.length, 3);
     assert.equal(await page.locator('.bird-token:not([hidden])').count(), 3);
     await step(page, 16);
     await page.screenshot({ path: `${output}/${name}-level-7.png`, animations: 'disabled' });
