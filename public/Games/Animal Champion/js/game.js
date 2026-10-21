@@ -128,6 +128,8 @@ export class AnimalChampionController {
     this.listenerController = null;
     this.recognition = null;
     this.recognitionActive = false;
+    this.recognitionStarting = false;
+    this.speechStartTimer = null;
     this.recognitionStopIntentional = false;
     this.speechRestartTimer = null;
     this.hostSpeechAvailable = false;
@@ -329,22 +331,30 @@ export class AnimalChampionController {
     if (!SpeechRecognition) return null;
     const recognition = new SpeechRecognition();
     const userAgent = `${this.window.navigator?.userAgent ?? ''}`;
-    recognition.continuous = !/(?:iPhone|iPad|iPod)/i.test(userAgent);
+    recognition.continuous = !/(?:iPhone|iPad|iPod)/i.test(userAgent)
+      && !(this.window.navigator?.platform === 'MacIntel' && this.window.navigator?.maxTouchPoints > 1);
     recognition.interimResults = true;
     recognition.maxAlternatives = 3;
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
+      if (this.recognition !== recognition) return;
+      this.clearSpeechStartTimer();
+      this.recognitionStarting = false;
       this.recognitionActive = true;
       this.elements.voiceAnswerPanel.dataset.listening = 'true';
       this.updateMicStatus('Listening... say the animal name.');
     };
     recognition.onresult = (event) => {
+      if (this.recognition !== recognition) return;
       if (this.phase !== 'answering' || this.selectedInputMode !== INPUT_MODES.VOICE) return;
       const snapshot = buildSpeechCandidatesFromEvent(event);
       this.acceptSpeechCandidates(snapshot.candidates, snapshot.displayText);
     };
     recognition.onerror = (event) => {
+      if (this.recognition !== recognition) return;
+      this.clearSpeechStartTimer();
+      this.recognitionStarting = false;
       const error = event?.error ?? 'unknown';
       if (error === 'aborted' && this.recognitionStopIntentional) return;
       this.recognitionActive = false;
@@ -362,10 +372,14 @@ export class AnimalChampionController {
       this.updateMicStatus('I did not catch that. Keep trying.');
     };
     recognition.onend = () => {
+      if (this.recognition !== recognition) return;
+      this.clearSpeechStartTimer();
+      this.recognitionStarting = false;
       const intentional = this.recognitionStopIntentional;
       this.recognitionStopIntentional = false;
       this.recognitionActive = false;
       this.elements.voiceAnswerPanel.dataset.listening = 'false';
+      this.recognition = null;
       if (
         !intentional
         && this.phase === 'answering'
@@ -380,6 +394,11 @@ export class AnimalChampionController {
     };
     this.recognition = recognition;
     return recognition;
+  }
+
+  clearSpeechStartTimer() {
+    if (this.speechStartTimer !== null) this.window.clearTimeout(this.speechStartTimer);
+    this.speechStartTimer = null;
   }
 
   startVoiceInput() {
@@ -428,7 +447,7 @@ export class AnimalChampionController {
       this.updateMicStatus('Voice answers are unavailable on this device. Use Multiple Choice below.', true);
       return false;
     }
-    if (this.recognitionActive) return true;
+    if (this.recognitionActive || this.recognitionStarting) return true;
     if (this.speechRestartTimer !== null) {
       this.window.clearTimeout(this.speechRestartTimer);
       this.speechRestartTimer = null;
@@ -436,16 +455,27 @@ export class AnimalChampionController {
     this.recognitionStopIntentional = false;
     try {
       this.updateMicStatus('Starting microphone...');
+      this.recognitionStarting = true;
+      this.speechStartTimer = this.window.setTimeout(() => {
+        this.speechStartTimer = null;
+        if (this.recognition !== recognition || this.recognitionActive) return;
+        this.stopVoiceInput();
+        this.updateMicStatus('The microphone did not start. Tap Listen Again or use Multiple Choice.', true);
+      }, 4_000);
       recognition.start();
       return true;
     } catch (error) {
-      if (error?.name === 'InvalidStateError') return true;
+      this.recognitionStarting = false;
+      this.clearSpeechStartTimer();
+      this.stopVoiceInput();
       this.updateMicStatus('The microphone could not start. Tap Listen Again or use Multiple Choice.', true);
       return false;
     }
   }
 
   stopVoiceInput({ notifyHost = 'stop' } = {}) {
+    this.clearSpeechStartTimer();
+    this.recognitionStarting = false;
     if (this.speechRestartTimer !== null) {
       this.window.clearTimeout(this.speechRestartTimer);
       this.speechRestartTimer = null;
@@ -460,15 +490,13 @@ export class AnimalChampionController {
       }, this.window.location?.origin && this.window.location.origin !== 'null' ? this.window.location.origin : '*');
     }
     this.hostSpeechRoundId = null;
-    if (this.recognition && (this.recognitionActive || this.phase === 'answering')) {
-      this.recognitionStopIntentional = true;
-      try {
-        this.recognition.abort();
-      } catch {
-        this.recognitionStopIntentional = false;
-      }
-    }
+    const recognition = this.recognition;
+    this.recognition = null;
     this.recognitionActive = false;
+    this.recognitionStopIntentional = false;
+    if (recognition) {
+      try { recognition.abort(); } catch { /* Already stopped. */ }
+    }
   }
 
   updateMicStatus(message, isError = false) {
@@ -831,7 +859,7 @@ export class AnimalChampionController {
 
     if (result.outcome === OUTCOMES.CORRECT) {
       this.elements.feedback.dataset.result = 'correct';
-      this.elements.feedback.textContent = `✓ Correct! That's a ${correctAnimal.name}.`;
+      this.elements.feedback.textContent = `Correct!! ${correctAnimal.name}`;
     } else if (result.outcome === OUTCOMES.TIMEOUT) {
       this.elements.feedback.dataset.result = 'wrong';
       this.elements.feedback.textContent = `⌛ Time's up. The correct answer is ${correctAnimal.name}.`;

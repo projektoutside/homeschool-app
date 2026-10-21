@@ -1901,3 +1901,33 @@ body.size-xl .car-image-container {
         transform: translateX(3px);
     }
 }
+
+/* Correct answer remains visible over the picture without blocking controls. */
+.feedback.correct {
+  position: fixed;
+  z-index: 100;
+  left: 50%;
+  top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 16%);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  padding: 1rem 1.5rem;
+  border: 0;
+  border-radius: 16px;
+  background: #065f46;
+  color: #fff;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 12px 36px #022c2266;
+  pointer-events: none;
+  animation: answer-celebrate 240ms ease-out;
+}
+@keyframes answer-celebrate {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(.96); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feedback.correct { animation: none; }
+}

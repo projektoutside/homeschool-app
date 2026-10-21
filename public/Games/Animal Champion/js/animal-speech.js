@@ -90,14 +90,19 @@ export const buildSpeechCandidatesFromEvent = (event) => {
   for (let index = event?.resultIndex ?? 0; index < (event?.results?.length ?? 0); index += 1) {
     const result = event.results[index];
     if (!result?.length) continue;
+    const prefix = Array.from(event.results).slice(Math.max(0, index - 2), index)
+      .map((part) => `${part?.[0]?.transcript ?? ''}`.trim()).filter(Boolean).join(' ');
     const topTranscript = `${result[0]?.transcript ?? ''}`.trim();
     if (topTranscript) {
-      displayParts.push(topTranscript);
+      displayParts.push(prefix ? `${prefix} ${topTranscript}` : topTranscript);
       candidates.add(topTranscript);
     }
     for (let alternativeIndex = 0; alternativeIndex < Math.min(result.length, 3); alternativeIndex += 1) {
       const transcript = `${result[alternativeIndex]?.transcript ?? ''}`.trim();
-      if (transcript) candidates.add(transcript);
+      if (transcript) {
+        candidates.add(transcript);
+        if (prefix) candidates.add(`${prefix} ${transcript}`);
+      }
     }
     isFinal ||= Boolean(result.isFinal);
   }

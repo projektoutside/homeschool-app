@@ -442,7 +442,8 @@ class WebSpeechEngine implements SpeechEngineController {
 
         const recognition = new this.ctor();
         recognition.lang = options.language || 'en-US';
-        recognition.continuous = true;
+        recognition.continuous = !/(iPhone|iPad|iPod)/i.test(navigator.userAgent)
+            && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         recognition.interimResults = true;
         recognition.maxAlternatives = 5;
 
@@ -458,37 +459,45 @@ class WebSpeechEngine implements SpeechEngineController {
         }
 
         recognition.onstart = () => {
+            if (this.recognition !== recognition) return;
             events.onStateChange('prewarming', 'web-speech-start');
         };
 
         recognition.onaudiostart = () => {
+            if (this.recognition !== recognition) return;
             events.onLevel?.(0.6);
         };
 
         recognition.onspeechstart = () => {
+            if (this.recognition !== recognition) return;
             events.onLevel?.(0.9);
         };
 
         recognition.onspeechend = () => {
+            if (this.recognition !== recognition) return;
             events.onLevel?.(0.25);
         };
 
         recognition.onaudioend = () => {
+            if (this.recognition !== recognition) return;
             events.onLevel?.(0);
         };
 
         recognition.onend = () => {
+            if (this.recognition !== recognition) return;
             events.onStateChange('idle', 'web-speech-ended');
             events.onLevel?.(0);
         };
 
         recognition.onerror = (event) => {
+            if (this.recognition !== recognition) return;
             const code = event.error || 'web-speech-error';
             events.onError(code, this.describeWebSpeechError(code));
             events.onStateChange('error', code);
         };
 
         recognition.onresult = (event) => {
+            if (this.recognition !== recognition) return;
             const snapshot = this.buildSnapshotFromResult(event);
             if (!snapshot) {
                 return;
@@ -521,8 +530,10 @@ class WebSpeechEngine implements SpeechEngineController {
             return;
         }
 
+        const recognition = this.recognition;
+        this.recognition = null;
         try {
-            this.recognition.abort();
+            recognition.abort();
         } catch {
             // noop
         } finally {
@@ -555,16 +566,18 @@ class WebSpeechEngine implements SpeechEngineController {
         let displayText = '';
         let isFinal = false;
 
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        for (let index = event.resultIndex ?? 0; index < event.results.length; index += 1) {
             const result = event.results[index];
             if (!result || result.length === 0) {
                 continue;
             }
 
             isFinal = Boolean(result.isFinal) || isFinal;
+            const prefix = Array.from(event.results).slice(Math.max(0, index - 2), index)
+                .map(part => `${part?.[0]?.transcript || ''}`.trim()).filter(Boolean).join(' ');
             const topTranscript = `${result[0]?.transcript || ''}`.trim();
             if (topTranscript) {
-                displayText = topTranscript;
+                displayText = prefix ? `${prefix} ${topTranscript}` : topTranscript;
                 phrases.push(topTranscript);
             }
 
@@ -573,6 +586,7 @@ class WebSpeechEngine implements SpeechEngineController {
                 const transcript = `${result[altIndex]?.transcript || ''}`.trim();
                 if (transcript) {
                     phrases.push(transcript);
+                    if (prefix) phrases.push(`${prefix} ${transcript}`);
                 }
             }
         }
@@ -922,6 +936,10 @@ export class CarKingNativeFirstSpeechController {
 
                 if (state === 'idle') {
                     this.captureHeld = false;
+                    if (!this.gateOpen && this.currentState === 'error') {
+                        this.engineSessionActive = false;
+                        return;
+                    }
                     if (!this.gateOpen) {
                         this.engineSessionActive = false;
                     }
@@ -979,7 +997,14 @@ export class CarKingNativeFirstSpeechController {
                     }
                 }
 
-                if (this.gateOpen && code !== 'permission-denied') {
+                const terminalCodes = new Set(['permission-denied', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported']);
+                if (terminalCodes.has(code)) {
+                    this.gateOpen = false;
+                    this.captureHeld = false;
+                    this.engineSessionActive = false;
+                    this.bufferedSnapshots = [];
+                }
+                if (this.gateOpen && !terminalCodes.has(code)) {
                     this.setState('prewarming', code);
                     this.scheduleRoundRearm(roundId, code);
                     return;

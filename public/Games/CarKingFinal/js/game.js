@@ -1639,7 +1639,9 @@ class CarGuessingGame {
     }
 
     setupRecognitionHandlers(micBtn, guessInput) {
+        const recognition = this.recognition;
         this.recognition.onstart = () => {
+            if (this.recognition !== recognition) return;
             console.log("🎤 Mic started");
             this.recognitionAbortRequested = false;
             this.isRecognitionActive = true;
@@ -1671,14 +1673,17 @@ class CarGuessingGame {
         };
 
         this.recognition.onaudiostart = () => {
+            if (this.recognition !== recognition) return;
             this.lastRecognitionAudioAt = Date.now();
         };
 
         this.recognition.onaudioend = () => {
+            if (this.recognition !== recognition) return;
             this.lastRecognitionAudioEndAt = Date.now();
         };
 
         this.recognition.onspeechstart = () => {
+            if (this.recognition !== recognition) return;
             const now = Date.now();
             this.lastRecognitionSpeechAt = now;
             if (this.isAnswerAcceptanceOpen) {
@@ -1687,10 +1692,12 @@ class CarGuessingGame {
         };
 
         this.recognition.onspeechend = () => {
+            if (this.recognition !== recognition) return;
             this.lastRecognitionSpeechAt = Date.now();
         };
 
         this.recognition.onend = () => {
+            if (this.recognition !== recognition) return;
             console.log("🎤 Mic stopped");
             const intentionalAbort = this.recognitionAbortRequested;
             this.recognitionAbortRequested = false;
@@ -1714,6 +1721,7 @@ class CarGuessingGame {
         };
 
         this.recognition.onresult = (event) => {
+            if (this.recognition !== recognition) return;
             if (!this.isListeningForAnswer) return;
             const speechSnapshot = this.buildSpeechCandidatesFromEvent(event);
             const displayedSpeech = speechSnapshot.displayText || speechSnapshot.candidates[0] || '';
@@ -1760,6 +1768,7 @@ class CarGuessingGame {
         };
 
         this.recognition.onerror = (event) => {
+            if (this.recognition !== recognition) return;
             this.releaseRecognitionStartLock();
             if (event.error !== 'no-speech') {
                 console.warn("Mic Error:", event.error);
@@ -2777,6 +2786,8 @@ class CarGuessingGame {
     }
 
     loadNextCar() {
+        clearTimeout(this.feedbackTimer);
+        document.getElementById('feedback')?.classList.add('hidden');
         if (!this.isGameRunning) return;
 
         // Show loading state
@@ -3003,13 +3014,15 @@ class CarGuessingGame {
         const candidates = new Set();
         const displayParts = [];
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        for (let i = event.resultIndex ?? 0; i < event.results.length; ++i) {
             const result = event.results[i];
             if (!result || result.length === 0) continue;
 
+            const prefix = Array.from(event.results).slice(Math.max(0, i - 2), i)
+                .map(part => (part?.[0]?.transcript || '').trim()).filter(Boolean).join(' ');
             const topTranscript = (result[0]?.transcript || '').trim();
             if (topTranscript) {
-                displayParts.push(topTranscript);
+                displayParts.push(prefix ? `${prefix} ${topTranscript}` : topTranscript);
                 candidates.add(topTranscript);
             }
 
@@ -3018,6 +3031,7 @@ class CarGuessingGame {
                 const transcript = (result[altIndex]?.transcript || '').trim();
                 if (transcript) {
                     candidates.add(transcript);
+                    if (prefix) candidates.add(`${prefix} ${transcript}`);
                 }
             }
         }
@@ -3329,7 +3343,7 @@ class CarGuessingGame {
         });
 
         this.updateScore();
-        this.showFeedback("🎉 Amazing! It IS a " + this.currentCar.name + "! 🎉", 'correct');
+        this.showFeedback(`Correct!! ${this.currentCar.name}`, 'correct');
 
         // Use new sequence: Random Correct -> Car Voice
         if (this.voiceSystem) {
@@ -3386,8 +3400,9 @@ class CarGuessingGame {
         feedback.className = `feedback ${type}`;
         feedback.classList.remove('hidden');
 
-        // Hide feedback after 3 seconds
-        setTimeout(() => {
+        // A previous answer must not hide the next answer's celebration.
+        clearTimeout(this.feedbackTimer);
+        this.feedbackTimer = setTimeout(() => {
             feedback.classList.add('hidden');
         }, 3000);
     }

@@ -933,6 +933,7 @@ test('blocked microphone permission never auto-loops but remains manually retrya
   harness.controller.startVoiceInput();
   assert.equal(PermissionRecognition.instance.startCalls, 1);
 
+  const deniedEngine = PermissionRecognition.instance;
   PermissionRecognition.instance.onerror({ error: 'not-allowed' });
   PermissionRecognition.instance.onend();
   harness.flushTimers();
@@ -940,7 +941,8 @@ test('blocked microphone permission never auto-loops but remains manually retrya
   assert.match(harness.document.getElementById('micStatusText').textContent, /permission is blocked/i);
 
   harness.document.getElementById('micButton').dispatch('click');
-  assert.equal(PermissionRecognition.instance.startCalls, 2, 'player can retry after changing permission');
+  assert.notEqual(PermissionRecognition.instance, deniedEngine, 'retry replaces the denied engine');
+  assert.equal(PermissionRecognition.instance.startCalls, 1, 'a fresh engine starts when the player retries after changing permission');
 });
 
 test('late native speech availability activates the current voice round automatically', async () => {
@@ -1070,7 +1072,7 @@ test('controller accepts a correct choice once, absorbs award rejection, and can
   assert.equal(awards.length, 1);
   assert.equal(awards[0].points, 10);
   assert.equal(awards[0].payload.eventId, 'run-harness:round-harness:correct');
-  assert.match(harness.document.getElementById('feedback').textContent, /✓ Correct! That's a Bat\./);
+  assert.match(harness.document.getElementById('feedback').textContent, /Correct!! Bat/);
   assert.equal([...harness.timers.values()][0].delay, 2_000);
   harness.flushTimers();
   assert.equal(progressions, 1);
@@ -1292,4 +1294,57 @@ test('Animal Champion uses emerald primary actions and robust forced colors', as
   assert.match(forcedColors, /filter:\s*none/);
   assert.match(forcedColors, /text-shadow:\s*none/);
   assert.match(forcedColors, /box-shadow:\s*none/);
+});
+
+
+test('a stale recognition end cannot stop a replacement session after resume', async () => {
+  class Recognition {
+    start() { this.onstart?.(); }
+    abort() {}
+  }
+  const harness = await createControllerHarness({ window: { SpeechRecognition: Recognition } });
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.startVoiceInput();
+  const old = harness.controller.recognition;
+  const lateEnd = old.onend;
+  const lateError = old.onerror;
+  harness.controller.stopVoiceInput();
+  harness.controller.startVoiceInput();
+  const current = harness.controller.recognition;
+  lateEnd();
+  lateError({ error: 'no-speech' });
+  assert.equal(harness.controller.recognition, current);
+  assert.equal(harness.controller.recognitionActive, true);
+  assert.equal(harness.document.getElementById('voiceAnswerPanel').dataset.listening, 'true');
+});
+
+test('a microphone that never starts times out visibly and permits a fresh manual retry', async () => {
+  class StalledRecognition { start() {} abort() {} }
+  const harness = await createControllerHarness({ window: { SpeechRecognition: StalledRecognition } });
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.startVoiceInput();
+  const old = harness.controller.recognition;
+  harness.flushTimers();
+  assert.match(harness.document.getElementById('micStatusText').textContent, /did not start/);
+  assert.equal(harness.controller.recognitionStarting, false);
+  harness.controller.startVoiceInput();
+  assert.notEqual(harness.controller.recognition, old);
+  assert.equal(harness.controller.recognitionStarting, true);
+});
+
+
+test('transient no-speech errors restart with a fresh engine after the old session ends', async () => {
+  class Recognition { start() { this.onstart?.(); } abort() {} }
+  const harness = await createControllerHarness({ window: { SpeechRecognition: Recognition } });
+  harness.controller.phase = 'answering';
+  harness.controller.currentRound = structuredClone(FIXED_ROUND);
+  harness.controller.startVoiceInput();
+  const previous = harness.controller.recognition;
+  previous.onerror({ error: 'no-speech' });
+  previous.onend();
+  harness.flushTimers();
+  assert.notEqual(harness.controller.recognition, previous);
+  assert.equal(harness.controller.recognitionActive, true);
 });
