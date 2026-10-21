@@ -146,7 +146,14 @@ const CNN_MODEL_URLS = [
 ];
 let cnnModel = null;
 
-async function loadCnnModel() {
+let cnnLoading = null;
+function loadCnnModel() {
+  if (cnnModel) return Promise.resolve();
+  if (!cnnLoading) cnnLoading = loadCnnModelOnce().finally(() => { cnnLoading = null; });
+  return cnnLoading;
+}
+
+async function loadCnnModelOnce() {
   if (cnnModel) return;
   modelLoading = true;
   const statusDiv = document.getElementById('model-status');

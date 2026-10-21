@@ -3029,3 +3029,7 @@ canvas.pulse-wrong,
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
+
+/* Suppress browser gestures only within the active competitive surface. */
+body.vs-mode-active, body.vs-mode-active #vs-screen { touch-action: none; overscroll-behavior: none; }
+body.vs-mode-active canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

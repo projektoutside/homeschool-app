@@ -606,6 +606,7 @@ function startNextLineupMatch() {
 function showScreen(screen) {
   Object.values(screens).forEach(s => s.classList.add('hidden'));
   screens[screen].classList.remove('hidden');
+  document.body.classList.toggle('vs-mode-active', screen === 'vs');
   handleScreenMusic(screen);
 }
 
@@ -2418,261 +2419,90 @@ function addConfetti(container, count = 40) {
 }
 
 function setupPlayerCanvas(player, id) {
+  if (player.handwritingInput) { player.handwritingInput.clear(); return; }
   const canvas = player.canvas;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  let drawing = false; let lastX = 0, lastY = 0;
-  const SUBMIT_DELAY_MS = 800; // Reduced for faster response
+  const SUBMIT_DELAY_MS = 800;
   let idleTimer = null;
+  let revision = 0;
+  let recognizing = false;
+  let input = null;
 
-  // Track touches specific to THIS canvas only
-  const canvasTouches = new Map(); // touchId -> { lastX, lastY }
-
+  function cancelPending() {
+    if (idleTimer !== null) clearTimeout(idleTimer);
+    idleTimer = null;
+    revision += 1;
+  }
   function resize() {
-    const scale = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-    const rect = canvas.getBoundingClientRect();
-    const cssW = Math.max(1, Math.round(rect.width));
-    const cssH = Math.max(1, Math.round(rect.height));
-    const newW = Math.max(1, Math.round(cssW * scale));
-    const newH = Math.max(1, Math.round(cssH * scale));
-    if (canvas.width !== newW || canvas.height !== newH) {
-      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale,0,0,scale,0,0);
-      ctx.lineCap='round'; ctx.lineJoin='round';
-    }
+    const scale = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
+    if (!canvas.clientWidth || !canvas.clientHeight) return;
+    if (canvas.width === Math.round(width * scale) && canvas.height === Math.round(height * scale)) return;
+    cancelPending();
+    input?.reset();
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.lineCap = ctx.lineJoin = 'round';
   }
-  resize();
-  window.addEventListener('resize', resize);
-
-  function getPos(touch){
-    const rect = canvas.getBoundingClientRect();
-    let x = touch.clientX - rect.left;
-    let y = touch.clientY - rect.top;
-    
-    // Check if this canvas is rotated 180 degrees (Player 2)
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
-      // Adjust coordinates for 180-degree rotation
-      x = rect.width - x;
-      y = rect.height - y;
-    }
-    
-    return { x, y };
+  function isBlank() {
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) return false;
+    return true;
   }
-
-  function isBlank(){
-    const blank = document.createElement('canvas');
-    blank.width = canvas.width; blank.height = canvas.height;
-    return ctx.getImageData(0,0,canvas.width,canvas.height).data.toString()===blank.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.toString();
-  }
-
-  function clear(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    canvas.classList.remove('drawing','processing');
-    if (player.status) player.status.textContent='Draw your answer';
+  function clear() {
+    cancelPending();
+    input?.reset();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.classList.remove('drawing', 'processing');
+    if (player.status) player.status.textContent = 'Draw your answer';
   }
   player.clear = clear;
   player.isBlank = isBlank;
-
-  // Mouse events (for desktop)
-  function startDraw(e){
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    lastX = e.clientX - rect.left;
-    lastY = e.clientY - rect.top;
-    
-    // Handle rotation for Player 2
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
-      lastX = rect.width - lastX;
-      lastY = rect.height - lastY;
-    }
-    
-    canvas.classList.add('drawing'); canvas.classList.remove('processing');
-    if (player.status) player.status.textContent='Drawing...';
-  }
-  
-  function draw(e){
-    if(!drawing) return; 
-    e.preventDefault();
-    
-    const rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-    
-    // Handle rotation for Player 2
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
-      x = rect.width - x;
-      y = rect.height - y;
-    }
-    
-    const base = 8;
-    const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke; ctx.strokeStyle='#000'; ctx.fillStyle='#000';
-    
-    const distance = Math.sqrt((x-lastX)**2+(y-lastY)**2);
-    if (distance>1.5){ 
-      const steps=Math.ceil(distance/1.5); 
-      for(let i=0;i<=steps;i++){ 
-        const t=i/steps; 
-        const ix=lastX+(x-lastX)*t; 
-        const iy=lastY+(y-lastY)*t; 
-        ctx.beginPath(); ctx.arc(ix,iy,scaleStroke/2,0,Math.PI*2); ctx.fill(); 
-      }
-    }
-    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); 
-    lastX=x; lastY=y;
-    
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer=null; }
-  }
-  
-  function endDraw(){
-    drawing=false; canvas.classList.remove('drawing');
-    if (player.status){ 
-      if (!isBlank()) player.status.textContent='Analyzing...'; 
-      else player.status.textContent='Draw your answer'; 
-    }
-    if (!isBlank()) { 
-      if (idleTimer) clearTimeout(idleTimer); 
-      idleTimer=setTimeout(()=>autoRecognize(), SUBMIT_DELAY_MS); 
-    }
-  }
-
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', endDraw);
-  canvas.addEventListener('mouseleave', endDraw);
-  
-  // ============================================================================
-  // MULTI-TOUCH HANDLING - Isolated per canvas for VS mode
-  // ============================================================================
-  
-  function touchStart(e){
-    // Prevent default to stop zoom/scroll
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const rect = canvas.getBoundingClientRect();
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-    
-    // Process each new touch
-    for (const touch of e.changedTouches) {
-      // Check if this touch started on THIS canvas
-      if (touch.target === canvas) {
-        let x = touch.clientX - rect.left;
-        let y = touch.clientY - rect.top;
-        
-        // Adjust for rotation (Player 2)
-        if (isRotated) {
-          x = rect.width - x;
-          y = rect.height - y;
-        }
-        
-        // Store this touch for this canvas
-        canvasTouches.set(touch.identifier, { lastX: x, lastY: y });
-        drawing = true;
-      }
-    }
-    
-    if (canvasTouches.size > 0) {
-      canvas.classList.add('drawing'); 
+  input = WriteMathCanvasInput.bind(canvas, {
+    enabled: () => vsState.running && !(vsState.isVsAi && player === p2),
+    start(point) {
+      cancelPending();
+      canvas.classList.add('drawing');
       canvas.classList.remove('processing');
-      if (player.status) player.status.textContent='Drawing...';
-      if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-    }
-  }
-  
-  function touchMove(e){
-    // Only process if we have touches on this canvas
-    if (canvasTouches.size === 0) return;
-    
-    // CRITICAL: Prevent default to stop ALL browser gestures
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const rect = canvas.getBoundingClientRect();
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-    
-    const base = 8;
-    const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.fillStyle = '#000';
-    
-    // Process each touch that belongs to this canvas
-    for (const touch of e.changedTouches) {
-      const state = canvasTouches.get(touch.identifier);
-      if (!state) continue; // This touch doesn't belong to this canvas
-      
-      let x = touch.clientX - rect.left;
-      let y = touch.clientY - rect.top;
-      
-      // Adjust for rotation (Player 2)
-      if (isRotated) {
-        x = rect.width - x;
-        y = rect.height - y;
+      if (player.status) player.status.textContent = 'Drawing...';
+      drawCanvasSegment(ctx, canvas, point, point);
+    },
+    move(from, to) { drawCanvasSegment(ctx, canvas, from, to); },
+    end({ cancelled }) {
+      canvas.classList.remove('drawing');
+      if (cancelled) {
+        cancelPending();
+        if (player.status) player.status.textContent = 'Draw your answer';
+        return;
       }
-      
-      // Draw smooth line
-      const dist = Math.sqrt((x - state.lastX) ** 2 + (y - state.lastY) ** 2);
-      if (dist > 1.5) {
-        const steps = Math.ceil(dist / 1.5);
-        for (let i = 0; i <= steps; i++) {
-          const f = i / steps;
-          const ix = state.lastX + (x - state.lastX) * f;
-          const iy = state.lastY + (y - state.lastY) * f;
-          ctx.beginPath();
-          ctx.arc(ix, iy, scaleStroke / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+      if (!isBlank() && vsState.running) {
+        if (player.status) player.status.textContent = 'Analyzing...';
+        idleTimer = setTimeout(() => { idleTimer = null; autoRecognize(); }, SUBMIT_DELAY_MS);
       }
-      
-      ctx.beginPath();
-      ctx.moveTo(state.lastX, state.lastY);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      
-      // Update last position for this touch
-      state.lastX = x;
-      state.lastY = y;
-    }
-    
-    // Reset idle timer while drawing
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-  }
-  
-  function touchEnd(e){
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Remove ended touches from our tracking
-    for (const touch of e.changedTouches) {
-      canvasTouches.delete(touch.identifier);
-    }
-    
-    // If all touches on this canvas are done, trigger end draw
-    if (canvasTouches.size === 0 && drawing) {
-      endDraw();
-    }
-  }
-  
-  // Use capture phase to ensure we get events before other handlers
-  canvas.addEventListener('touchstart', touchStart, { passive: false, capture: true });
-  canvas.addEventListener('touchmove', touchMove, { passive: false, capture: true });
-  canvas.addEventListener('touchend', touchEnd, { passive: false, capture: true });
-  canvas.addEventListener('touchcancel', touchEnd, { passive: false, capture: true });
+    },
+  });
+  resize();
+  window.addEventListener('resize', resize);
+  // Tab changes can reveal a canvas that was initially hidden.
+  window.canvasResizeFuncs = window.canvasResizeFuncs || {};
+  window.canvasResizeFuncs[canvas.id] = resize;
+  player.handwritingInput = { clear, resize };
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
 
   async function autoRecognize(){
-    if (!vsState.running || isBlank()) return;
+    if (!vsState.running || input.active || isBlank()) return;
+    if (recognizing) { idleTimer = setTimeout(autoRecognize, 150); return; }
+    recognizing = true;
+    const capturedRevision = revision;
     canvas.classList.add('processing'); canvas.classList.remove('drawing');
     if (player.status) player.status.textContent='🔬 Analyzing...';
 
     const expectedProblem = (player===p1? vsState.p1.problem: vsState.p2.problem);
     const expectedStr = String(expectedProblem.answer);
     const expectedLen = expectedStr.length;
+    let recognitionDeadline = null;
 
     try {
       // Build a cropped, tight canvas around drawing to improve accuracy
@@ -2685,10 +2515,20 @@ function setupPlayerCanvas(player, id) {
       }
 
       // Run multi recognizers
-      const [multi, mlSingle] = await Promise.all([
-        window.hm_recognizeMultiDigitFromCanvas ? window.hm_recognizeMultiDigitFromCanvas(src, expectedLen) : '',
-        window.hm_recognizeDigitMLFromCanvas ? window.hm_recognizeDigitMLFromCanvas(src) : null
+      const outcomes = await Promise.race([
+        Promise.allSettled([
+          window.hm_recognizeMultiDigitFromCanvas ? window.hm_recognizeMultiDigitFromCanvas(src, expectedLen) : '',
+          window.hm_recognizeDigitMLFromCanvas ? window.hm_recognizeDigitMLFromCanvas(src) : null,
+        ]),
+        new Promise((_, reject) => {
+          recognitionDeadline = setTimeout(() => reject(new Error('Handwriting recognition timed out')), 8_000);
+        }),
       ]);
+      const multi = outcomes[0].status === 'fulfilled' ? outcomes[0].value : '';
+      const mlSingle = outcomes[1].status === 'fulfilled' ? outcomes[1].value : null;
+      if (outcomes.every((result) => result.status === 'rejected')) throw new Error('Handwriting recognition is unavailable');
+      if (!vsState.running || revision !== capturedRevision || input.active
+        || expectedProblem !== (player === p1 ? vsState.p1.problem : vsState.p2.problem)) return;
       const mlDigit = mlSingle? mlSingle.digit : null;
 
       const raw = [];
@@ -2734,215 +2574,62 @@ function setupPlayerCanvas(player, id) {
       }
       clear();
     } catch(err){
+      if (revision !== capturedRevision || !vsState.running) return;
       console.error('VS recognize error', err);
-      if (player.status) player.status.textContent='⚠️ Recognition error';
+      if (player.status) player.status.textContent='Recognition unavailable. Draw again to retry.';
     } finally {
+      if (recognitionDeadline !== null) clearTimeout(recognitionDeadline);
+      recognizing = false;
       canvas.classList.remove('processing');
     }
   }
 }
 
+function drawCanvasSegment(ctx, canvas, from, to) {
+  const width = Math.max(4, 8 * canvas.clientWidth / 480);
+  ctx.lineWidth = width;
+  ctx.lineCap = ctx.lineJoin = 'round';
+  ctx.strokeStyle = ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
+  if (from.x === to.x && from.y === to.y) {
+    ctx.beginPath(); ctx.arc(to.x, to.y, width / 2, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+const workCanvasBindings = new WeakMap();
 function setupWorkCanvas(canvas, label) {
   if (!canvas) return null;
-  
+  if (workCanvasBindings.has(canvas)) { const binding = workCanvasBindings.get(canvas); binding.clear(); return binding; }
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  let drawing = false; 
-  let lastX = 0, lastY = 0;
-  
-  // Track touches specific to THIS canvas only
-  const canvasTouches = new Map();
-
+  const input = WriteMathCanvasInput.bind(canvas, {
+    start(point) { drawCanvasSegment(ctx, canvas, point, point); },
+    move(from, to) { drawCanvasSegment(ctx, canvas, from, to); },
+  });
   function resize() {
-    const scale = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-    const rect = canvas.getBoundingClientRect();
-    const cssW = Math.max(1, Math.round(rect.width));
-    const cssH = Math.max(1, Math.round(rect.height));
-    const newW = Math.max(1, Math.round(cssW * scale));
-    const newH = Math.max(1, Math.round(cssH * scale));
-    if (canvas.width !== newW || canvas.height !== newH) {
-      canvas.width = newW; canvas.height = newH; ctx.setTransform(scale,0,0,scale,0,0);
-      ctx.lineCap='round'; ctx.lineJoin='round';
-    }
+    if (!canvas.clientWidth || !canvas.clientHeight) return;
+    const scale = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const w = Math.max(1, Math.round(canvas.clientWidth * scale));
+    const h = Math.max(1, Math.round(canvas.clientHeight * scale));
+    if (canvas.width === w && canvas.height === h) return;
+    input.reset();
+    canvas.width = w; canvas.height = h;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  }
+  function clearWork() {
+    input.reset();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   resize();
   window.addEventListener('resize', resize);
-
-  function startDraw(e){
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    lastX = e.clientX - rect.left;
-    lastY = e.clientY - rect.top;
-    
-    // Handle rotation for Player 2
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
-      lastX = rect.width - lastX;
-      lastY = rect.height - lastY;
-    }
-  }
-  
-  function draw(e){
-    if(!drawing) return; 
-    e.preventDefault();
-    
-    const rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-    
-    // Handle rotation for Player 2
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    if (canvasContainer && canvasContainer.classList.contains('rotate180')) {
-      x = rect.width - x;
-      y = rect.height - y;
-    }
-    
-    const base = 8;
-    const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke; 
-    ctx.strokeStyle='#000'; 
-    ctx.fillStyle='#000';
-    
-    const distance = Math.sqrt((x-lastX)**2+(y-lastY)**2);
-    if (distance>1.5){ 
-      const steps=Math.ceil(distance/1.5); 
-      for(let i=0;i<=steps;i++){ 
-        const t=i/steps; 
-        const ix=lastX+(x-lastX)*t; 
-        const iy=lastY+(y-lastY)*t; 
-        ctx.beginPath(); 
-        ctx.arc(ix,iy,scaleStroke/2,0,Math.PI*2); 
-        ctx.fill(); 
-      }
-    }
-    ctx.beginPath(); 
-    ctx.moveTo(lastX,lastY); 
-    ctx.lineTo(x,y); 
-    ctx.stroke(); 
-    lastX=x; 
-    lastY=y;
-  }
-  
-  function endDraw(){
-    drawing=false;
-  }
-
-  function clearWork(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // Mouse events
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', endDraw);
-  canvas.addEventListener('mouseleave', endDraw);
-  
-  // ============================================================================
-  // MULTI-TOUCH HANDLING - Isolated per canvas
-  // ============================================================================
-  
-  function touchStart(e){
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const rect = canvas.getBoundingClientRect();
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-    
-    for (const touch of e.changedTouches) {
-      if (touch.target === canvas) {
-        let x = touch.clientX - rect.left;
-        let y = touch.clientY - rect.top;
-        
-        if (isRotated) {
-          x = rect.width - x;
-          y = rect.height - y;
-        }
-        
-        canvasTouches.set(touch.identifier, { lastX: x, lastY: y });
-        drawing = true;
-      }
-    }
-  }
-  
-  function touchMove(e){
-    if (canvasTouches.size === 0) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const rect = canvas.getBoundingClientRect();
-    const canvasContainer = canvas.closest('.player-canvas-container');
-    const isRotated = canvasContainer && canvasContainer.classList.contains('rotate180');
-    
-    const base = 8;
-    const scaleStroke = Math.max(4, Math.round(base * (rect.width / 480)));
-    ctx.lineWidth = scaleStroke;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.fillStyle = '#000';
-    
-    for (const touch of e.changedTouches) {
-      const state = canvasTouches.get(touch.identifier);
-      if (!state) continue;
-      
-      let x = touch.clientX - rect.left;
-      let y = touch.clientY - rect.top;
-      
-      if (isRotated) {
-        x = rect.width - x;
-        y = rect.height - y;
-      }
-      
-      const dist = Math.sqrt((x - state.lastX) ** 2 + (y - state.lastY) ** 2);
-      if (dist > 1.5) {
-        const steps = Math.ceil(dist / 1.5);
-        for (let i = 0; i <= steps; i++) {
-          const f = i / steps;
-          const ix = state.lastX + (x - state.lastX) * f;
-          const iy = state.lastY + (y - state.lastY) * f;
-          ctx.beginPath();
-          ctx.arc(ix, iy, scaleStroke / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      
-      ctx.beginPath();
-      ctx.moveTo(state.lastX, state.lastY);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      
-      state.lastX = x;
-      state.lastY = y;
-    }
-  }
-  
-  function touchEnd(e){
-    e.preventDefault();
-    e.stopPropagation();
-    
-    for (const touch of e.changedTouches) {
-      canvasTouches.delete(touch.identifier);
-    }
-    
-    if (canvasTouches.size === 0) {
-      endDraw();
-    }
-  }
-  
-  canvas.addEventListener('touchstart', touchStart, { passive: false, capture: true });
-  canvas.addEventListener('touchmove', touchMove, { passive: false, capture: true });
-  canvas.addEventListener('touchend', touchEnd, { passive: false, capture: true });
-  canvas.addEventListener('touchcancel', touchEnd, { passive: false, capture: true });
-  
-  // Store resize function globally for tab switching to call
-  if (canvas.id) {
-    window.canvasResizeFuncs = window.canvasResizeFuncs || {};
-    window.canvasResizeFuncs[canvas.id] = resize;
-    console.log(`[WorkCanvas] Stored resize function for ${canvas.id}`);
-  }
-  
-  return { clear: clearWork, resize: resize };
+  window.canvasResizeFuncs = window.canvasResizeFuncs || {};
+  window.canvasResizeFuncs[canvas.id] = resize;
+  const binding = { clear: clearWork, resize };
+  workCanvasBindings.set(canvas, binding);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
+  return binding;
 }
 
 function clearPlayerCanvas(player){ if (player && player.clear) player.clear(); }
@@ -3091,3 +2778,12 @@ window.testAutoClearDirect = function() {
 };
 
 document.addEventListener('DOMContentLoaded', init);
+// Safari gesture events supplement touch-action for shared-screen competition.
+for (const name of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick']) {
+  document.addEventListener(name, (event) => {
+    if (document.body.classList.contains('vs-mode-active') && event.cancelable) event.preventDefault();
+  }, { passive: false });
+}
+document.addEventListener('touchmove', (event) => {
+  if (document.body.classList.contains('vs-mode-active') && event.touches.length > 1 && event.cancelable) event.preventDefault();
+}, { passive: false });
