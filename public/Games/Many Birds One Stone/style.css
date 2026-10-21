@@ -29,6 +29,7 @@ button:not(:disabled):hover { filter: brightness(1.04); }
 svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 #app { height: calc(100vh - 32px); height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))); display: flex; justify-content: center; }
 #shell { width: min(100%, 1020px); min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr); grid-template-rows: auto 1fr auto; gap: 24px 64px; }
+#shell[hidden] { display: none; }
 .hud { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; align-items: stretch; gap: 22px; padding-top: 26px; }
 .game-brand { position: relative; }
 .brand-mark { width: 52px; height: 52px; color: var(--forest); margin-bottom: 10px; stroke-width: 1.5; }
@@ -42,7 +43,11 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .hud-card { min-width: 0; }
 .level-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; padding: 10px 0; border-top: 1px solid #cdd5c4; border-bottom: 1px solid #cdd5c4; }
 .mini-button { background: transparent; width: 44px; height: 44px; font-size: 1.7rem; }
-.level-main { min-width: 0; text-align: center; }
+.level-main { min-width: 0; min-height: 44px; text-align: center; background: transparent; border-radius: 10px; padding: 4px; }
+.level-main:hover { background: #e3e7d7; }
+.level-label, .level-value { display: block; }
+.level-map-label { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: .75rem; font-weight: 800; color: var(--forest); margin-top: 5px; }
+.level-map-label svg { width: 14px; height: 14px; }
 .level-label { color: var(--muted); font-size: .8rem; font-weight: 800; }
 .level-value { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.3; padding-top: 3px; }
 .meter-label-row { display: flex; justify-content: space-between; font-size: .9rem; font-weight: 800; margin-bottom: 8px; }
@@ -79,6 +84,44 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .overlay-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; flex-shrink: 0; background: var(--paper); padding: 10px 0 0; }
 .overlay-button { min-height: 48px; border-radius: 12px; font-weight: 800; background: #e4e8d8; padding: 9px; }
 .overlay-button--primary { color: #fff; background: var(--coral); }
+.overlay-map-button { grid-column: 1 / -1; min-height: 44px; background: transparent; border-radius: 10px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+.overlay-map-button[hidden] { display: none; }
+.level-map { position: fixed; inset: 0; width: min(660px, calc(100% - 32px)); height: min(850px, calc(100% - 32px)); max-height: calc(100dvh - 32px); max-width: none; margin: auto; padding: 0; border: 0; border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 0 20px 60px #102e2b55; overflow: hidden; }
+.level-map[open] { display: flex; flex-direction: column; }
+.level-map::backdrop { background: #102e2bb8; }
+.map-header { flex-shrink: 0; display: grid; grid-template-columns: 72px minmax(0, 1fr) 44px; align-items: center; gap: 6px 14px; padding: 24px 24px 16px; background: #e6eddf; }
+.map-bird { width: 72px; height: 54px; background: url('./assets/birds/EnemyBird16-strip.png') left center / auto 54px no-repeat; }
+.map-header h2 { font: 600 clamp(1.45rem, 4vw, 2rem)/1.12 var(--font-display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.map-header p { font-size: .875rem; line-height: 1.4; margin: 6px 0 0; color: var(--muted); }
+.map-close { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: #d2ddcc; }
+.map-header .map-progress { grid-column: 2 / -1; font-weight: 800; color: var(--forest); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.map-scroll { position: relative; min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #80977b #e6eddf; scrollbar-width: thin; scroll-padding-block: 16px; padding: 12px 24px 24px; background: linear-gradient(#f4f5e4d9, #f4f5e4d9), url('./assets/woodland-v2.webp') center / cover; }
+.map-chapter { position: relative; padding: 24px 0 18px; }
+.map-chapter + .map-chapter { border-top: 1px solid #8da58a; }
+.map-chapter h3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 18px; font: 600 1.25rem/1.2 var(--font-display); }
+.map-chapter-stars { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font: 800 .8rem var(--font-ui); color: #5f460b; font-variant-numeric: tabular-nums; }
+.map-chapter-stars svg { width: 16px; height: 16px; fill: #efbf50; stroke: #805609; stroke-width: 1.5; }
+.map-stops { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 4px; }
+.map-trail { position: absolute; inset: 0; width: 100%; height: 100px; pointer-events: none; }
+.map-trail path { fill: none; stroke: #688d65; stroke-width: 5px; stroke-dasharray: 4 9; vector-effect: non-scaling-stroke; }
+.map-stop { position: relative; min-width: 0; padding: 24px 4px 8px; display: flex; flex-direction: column; align-items: center; background: transparent; border-radius: 12px; }
+.map-stop:nth-of-type(2) { padding-top: 0; }
+.map-stop:not(:disabled):hover { background: #fffaf08c; }
+.map-stop:disabled { opacity: 1; color: #435e53; }
+.map-node { position: relative; display: grid; place-items: center; width: 64px; height: 64px; flex-shrink: 0; border-radius: 50%; background: #fff4d6; border: 3px solid #8d6b27; color: #4e3a13; font: 600 1.75rem var(--font-display); box-shadow: 0 4px 8px #32493426; }
+.is-cleared .map-node { background: #27674e; border-color: #d3e6b9; color: #fff; }
+.is-current .map-node { outline: 3px solid #b34029; outline-offset: 4px; }
+.map-stop:disabled .map-node { background: #d9e1d2; border: 2px dashed #71866c; color: #3c5748; box-shadow: none; }
+.map-node svg { position: absolute; right: -5px; bottom: -3px; width: 25px; height: 25px; padding: 3px; background: #d9e1d2; border-radius: 50%; stroke-width: 2; }
+.map-stars { display: flex; gap: 2px; margin: 8px 0 5px; }
+.map-stars svg { width: 18px; height: 18px; color: #6c7959; stroke-width: 1.5; fill: #fff9e7; }
+.map-stars .is-earned svg { color: #805609; fill: #efbf50; }
+.map-level-name { font: 600 1rem/1.2 var(--font-display); text-align: center; text-wrap: balance; }
+.map-stop-status { font-size: .75rem; font-weight: 800; margin-top: 3px; }
+.is-current .map-stop-status { color: #9b301c; }
+.map-footer { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; background: var(--paper); }
+.map-footer p { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.map-footer button { padding: 10px 18px; flex-shrink: 0; }
 .reward-stars { display: none; justify-content: center; gap: 10px; margin: 6px 0 14px; color: #c4911d; }
 .overlay[data-outcome="win"] .reward-stars { display: flex; }
 .reward-stars svg { width: min(32px, 22%); height: auto; aspect-ratio: 1; min-width: 0; flex-shrink: 1; }
@@ -101,13 +144,16 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   .hud-cluster { gap: 4px; }
   .hud-button { padding: 10px; }
   .hud-button .button-label { display: none; }
-  .level-card { padding: 0; border: 0; gap: 0; }
-  .level-label { font-size: .7rem; }
-  .level-value { font-size: .95rem; padding-top: 0; }
+  .level-card { grid-column: 1 / -1; padding: 0; border: 0; gap: 0; }
+  .level-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1px 6px; padding: 3px 4px; }
+  .level-label { font-size: .7rem; text-align: left; }
+  .level-value { grid-column: 1 / -1; grid-row: 2; font-size: .95rem; padding-top: 0; }
+  .level-map-label { grid-column: 2; grid-row: 1; font-size: .7rem; margin-top: 0; white-space: nowrap; }
+  .level-map-label svg { width: 12px; height: 12px; }
   .mini-button { font-size: 1.4rem; }
   .meter-card { min-width: 104px; }
   .meter-label-row { font-size: .8rem; margin-bottom: 5px; }
-  .flock-progress { grid-column: 1 / -1; gap: 5px; }
+  .flock-progress { grid-column: 2; gap: 5px; }
   .bird-token { width: 22px; height: 22px; }
   .bird-token svg { width: 14px; height: 14px; }
   #birdProgress { font-size: .75rem; }
@@ -132,7 +178,21 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   .overlay-actions { bottom: -18px; }
   .overlay-button { min-height: 44px; font-size: .85rem; }
 }
-@media (min-width: 761px) and (max-height: 740px) {
+@media (max-width: 480px) {
+  .level-map { width: calc(100% - 16px); height: calc(100% - 16px); max-height: calc(100dvh - 16px); border-radius: 18px; }
+  .map-header { grid-template-columns: 48px minmax(0, 1fr) 44px; gap: 6px 8px; padding: 18px 14px 14px; }
+  .map-bird { width: 48px; height: 38px; background-size: auto 36px; }
+  .map-header h2 { font-size: 1.4rem; }
+  .map-header p { font-size: .75rem; }
+  .map-header .map-progress { grid-column: 1 / -1; text-align: center; margin-top: 6px; }
+  .map-scroll { padding-inline: 12px; background-attachment: scroll; }
+  .map-chapter h3 { font-size: 1.1rem; }
+  .map-level-name { font-size: .875rem; }
+  .map-footer { padding: 12px 14px; flex-wrap: wrap; }
+  .map-footer p { width: 100%; font-size: .75rem; text-align: center; }
+  .map-footer button { width: 100%; }
+}
+@media (min-width: 761px) and (max-height: 850px) {
   #shell { gap: 16px 32px; grid-template-columns: 270px minmax(0, 1fr); }
   .hud { gap: 12px; padding-top: 0; }
   .brand-mark { width: 36px; height: 36px; margin-bottom: 4px; }
@@ -144,6 +204,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 @media (forced-colors: active) {
-  button, .stage-frame, .overlay-card, .meter-track, .bird-token { border: 1px solid ButtonText; }
+  button, .stage-frame, .overlay-card, .meter-track, .bird-token, .level-map, .map-node { border: 1px solid ButtonText; }
+  .map-scroll { background: Canvas; }
+  .map-stop.is-current { outline: 2px solid Highlight; }
+  .map-stars .is-earned svg { fill: Highlight; }
   .meter-fill, .bird-token.is-cleared { background: Highlight; }
 }

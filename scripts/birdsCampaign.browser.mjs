@@ -182,6 +182,8 @@ try {
       const campaign = await page.evaluate(() => window.WoodlandCampaign.levels);
       const session = touch ? await context.newCDPSession(page) : null;
       async function gesture(points) {
+        // A level transition can resize the canvas after its state changes.
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         const bounds = await page.locator('#gameCanvas').boundingBox();
         const toScreen = p => ({ x: bounds.x + p.x * bounds.width / 360, y: bounds.y + p.y * bounds.height / 640 });
         const expanded = [points[0]];
@@ -202,7 +204,9 @@ try {
         assert.equal(before.level, i + 1); assert.equal(before.elapsed, 0, 'every new stage has a repeatable start');
         assert.equal(before.chapter, level.chapter);
         await gesture([{ x: 180, y: 80 }, { x: level.hintAim, y: 80 }]);
-        assert.ok(Math.abs((await state(page)).clawX - level.hintAim) < 1);
+        // WebKit rounds synthetic pointer coordinates to CSS pixels; convert one pixel to world units.
+        const aimTolerance = 360 / (await page.locator('#gameCanvas').boundingBox()).width + .11;
+        assert.ok(Math.abs((await state(page)).clawX - level.hintAim) <= aimTolerance, JSON.stringify({ level: i + 1, expected: level.hintAim, actual: (await state(page)).clawX, aimTolerance }));
         for (const stroke of level.hint) await gesture(stroke);
         assert.equal((await state(page)).lines.length, level.hint.length);
         await page.evaluate(() => window.advanceTime(2000));

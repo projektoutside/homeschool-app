@@ -28,10 +28,11 @@
         </div>
         <div class="hud-card level-card">
           <button class="mini-button" id="prevLevelButton" type="button" aria-label="Previous level">‹</button>
-          <div class="level-main">
-            <div class="level-label" id="levelCount">Level 1</div>
-            <div class="level-value" id="levelValue">Breeze Bowl</div>
-          </div>
+          <button class="level-main" id="levelMapButton" type="button" aria-label="Open level map" aria-haspopup="dialog">
+            <span class="level-label" id="levelCount">Level 1</span>
+            <span class="level-value" id="levelValue">First Feather</span>
+            <span class="level-map-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16m6-14v16"/></svg>Level map</span>
+          </button>
           <button class="mini-button" id="nextLevelButton" type="button" aria-label="Next level">›</button>
         </div>
         <div class="hud-card meter-card">
@@ -62,6 +63,7 @@
               <div class="overlay-actions">
                 <button class="overlay-button" id="overlaySecondary" type="button">Games</button>
                 <button class="overlay-button overlay-button--primary" id="overlayPrimary" type="button">Begin</button>
+                <button class="overlay-map-button" id="resultMapButton" type="button" aria-haspopup="dialog" hidden>Choose a level</button>
               </div>
             </div>
           </div>
@@ -90,6 +92,16 @@
 
     <div class="sr-only" id="srStatus" aria-live="polite"></div>
   </div>
+  <dialog class="level-map" id="levelMap" aria-labelledby="levelMapTitle" aria-describedby="levelMapDescription">
+    <header class="map-header">
+      <div class="map-bird" aria-hidden="true"></div>
+      <div><h2 id="levelMapTitle">The woodland trail</h2><p id="levelMapDescription">Pick a path. Chase every star.</p></div>
+      <button class="map-close" id="closeLevelMap" type="button" aria-label="Close level map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      <p class="map-progress" id="mapProgress"></p>
+    </header>
+    <div class="map-scroll" id="mapScroll" tabindex="0" aria-label="All 18 levels, grouped into six chapters"></div>
+    <footer class="map-footer"><p>Clear a level to unlock the next.<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.</p><button class="overlay-button overlay-button--primary" id="resumeFromMap" type="button">Back to game</button></footer>
+  </dialog>
   <script src="../shared/lahsPointsBridge.js"></script>
   <script src="audio.js"></script>
   <script src="drop-mechanism.js"></script>
@@ -97,6 +109,7 @@
   <script src="birds.js"></script>
   <script src="physics.js"></script>
   <script src="campaign.js"></script>
+  <script src="level-map.js"></script>
   <script>
     (() => {
       'use strict';
@@ -155,6 +168,8 @@
         overlay: document.getElementById('overlay'),
         soundButton: document.getElementById('soundButton'),
         levelCount: document.getElementById('levelCount'),
+        levelMapButton: document.getElementById('levelMapButton'),
+        resultMapButton: document.getElementById('resultMapButton'),
         birdProgress: document.getElementById('birdProgress'),
         overlayTitle: document.getElementById('overlayTitle'),
         overlayBody: document.getElementById('overlayBody'),
@@ -271,6 +286,8 @@
         bestStats: storedProgress.bestStats || {},
         onboardingPending: !storedProgress.onboarded,
         overlayVisible: false,
+        mapVisible: false,
+        mapOpenedAt: null,
         overlayPrimaryAction: 'begin',
         overlaySecondaryAction: 'home',
         level: null,
@@ -321,6 +338,38 @@
         },
         pointsContext: null,
       };
+
+      const levelMap = new WoodlandLevelMap({
+        dialog: document.getElementById('levelMap'),
+        levels: LEVELS,
+        onSelect(index) {
+          levelMap.close();
+          goToLevel(index);
+        },
+        onClose() {
+          const now = performance.now();
+          const pausedFor = now - state.mapOpenedAt;
+          state.runStartAt += pausedFor;
+          if (state.runReleasedAt !== null) state.runReleasedAt += pausedFor;
+          state.mapOpenedAt = null;
+          state.mapVisible = false;
+          state.lastFrame = now;
+          state.accumulator = 0;
+          syncPauseState();
+          refreshButtons();
+        },
+      });
+
+      function openLevelMap(event) {
+        if (state.mapVisible) return;
+        resetClawControl();
+        finishStroke();
+        state.mapVisible = true;
+        state.mapOpenedAt = performance.now();
+        syncPauseState();
+        refreshButtons();
+        levelMap.open({ levelIndex: state.levelIndex, highestUnlocked: state.highestUnlocked, bestStats: state.bestStats, returnFocus: event.currentTarget });
+      }
 
       function saveProgress() {
         try {
@@ -388,7 +437,7 @@
       }
 
       function syncPauseState() {
-        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused;
+        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible;
         woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
           state.audio.context.resume().catch(() => {});
@@ -401,6 +450,7 @@
       function updateRotateNotice() {
         const shouldRotate = shouldForcePortrait();
         state.rotatePaused = shouldRotate;
+        document.getElementById('shell').hidden = shouldRotate;
         dom.rotateNotice.classList.toggle('is-visible', shouldRotate);
         dom.rotateNotice.setAttribute('aria-hidden', String(!shouldRotate));
         syncPauseState();
@@ -471,6 +521,7 @@
         dom.overlayTitle.textContent = config.title || '';
         dom.overlayBody.textContent = config.body || '';
         dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
+        dom.resultMapButton.hidden = state.onboardingPending;
         if (config.secondaryLabel) {
           dom.overlaySecondary.hidden = false;
           dom.overlaySecondary.textContent = config.secondaryLabel;
@@ -596,11 +647,12 @@
       function refreshButtons() {
         const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
-        dom.prevLevelButton.disabled = state.levelIndex <= 0 || state.overlayVisible;
-        dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || state.overlayVisible;
-        dom.hintButton.disabled = state.overlayVisible || state.rotatePaused || !attached;
-        dom.clearButton.disabled = state.overlayVisible || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
-        dom.dropButton.disabled = state.overlayVisible || state.rotatePaused || !attached;
+        const blocked = state.overlayVisible || state.mapVisible;
+        dom.prevLevelButton.disabled = state.levelIndex <= 0 || blocked;
+        dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
+        dom.hintButton.disabled = blocked || state.rotatePaused || !attached;
+        dom.clearButton.disabled = blocked || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
+        dom.dropButton.disabled = blocked || state.rotatePaused || !attached;
       }
 
       function resetStone() {
@@ -1395,8 +1447,9 @@
       }
 
       function handleKeyboard(event) {
+        if (state.mapVisible) return;
         if (state.overlayVisible && event.key === 'Tab') {
-          const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary].filter((button) => !button.hidden && !button.disabled);
+          const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary, dom.resultMapButton].filter((button) => !button.hidden && !button.disabled);
           const next = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
           if (document.activeElement === next) { event.preventDefault(); (event.shiftKey ? buttons[buttons.length - 1] : buttons[0]).focus(); }
           return;
@@ -1436,6 +1489,7 @@
 
       function update(dt) {
         if (!state.level) return;
+        if (state.mapVisible) return;
         if (!state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
           state.elapsed += dt;
         }
@@ -1477,6 +1531,8 @@
       }
 
       function bindEvents() {
+        dom.levelMapButton.addEventListener('click', openLevelMap);
+        dom.resultMapButton.addEventListener('click', openLevelMap);
         dom.soundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
         document.getElementById('rotateHomeButton').addEventListener('click', exitToGames);
         window.addEventListener('pagehide', (event) => { if (!event.persisted) woodlandAudio.dispose(); });
@@ -1573,6 +1629,7 @@
           elapsed: Number(state.elapsed.toFixed(4)),
           birdArt: woodlandBirds.describe(),
           overlayVisible: state.overlayVisible,
+          mapVisible: state.mapVisible,
           outcome: state.outcome,
           resultPending: Boolean(state.pendingResult),
           floorY: FLOOR_Y,
@@ -1597,7 +1654,7 @@
             : [],
           lines: state.drawnStrokes.map((stroke) => stroke.points.length),
           status: state.statusText,
-          paused: state.hostPaused || state.hiddenPause || state.rotatePaused,
+          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible,
           sound: { muted: state.audio.muted, volume: state.audio.sfxVolume, loaded: [...woodlandAudio.buffers.keys()], context: woodlandAudio.context?.state || 'locked' },
         });
         window.advanceTime = (ms) => {
