@@ -93,6 +93,7 @@
   <script src="audio.js"></script>
   <script src="drop-mechanism.js"></script>
   <script src="runways.js"></script>
+  <script src="birds.js"></script>
   <script>
     (() => {
       'use strict';
@@ -170,24 +171,7 @@
       const runways = new WoodlandRunways(WORLD_W, WORLD_H, FLOOR_Y);
       const scenery = new Image();
       scenery.src = './assets/woodland-v2.webp';
-      const assets = {
-        birdStrip: {
-          image: new Image(),
-          src: './assets/birds/EnemyBird16-strip.png',
-          loaded: false,
-          frameWidth: 198,
-          frameHeight: 148,
-          frameRate: 13,
-          cycle: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-        },
-      };
-      assets.birdStrip.image.decoding = 'async';
-      assets.birdStrip.image.addEventListener('load', () => {
-        assets.birdStrip.loaded = true;
-      });
-      assets.birdStrip.image.addEventListener('error', () => {
-        assets.birdStrip.loaded = false;
-      });
+      const woodlandBirds = new WoodlandBirds({ reducedMotion });
 
       function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
@@ -236,57 +220,57 @@
       const LEVELS = [
         {
           title: 'First Feather',
-          note: 'One bird, one easy drop. Aim down the center and let the stone fall.',
-          inkBudget: 320,
-          blockers: [],
-          hint: [[point(180, 118), point(180, 350)]],
-          birdLaneYs: [340], birdXs: [180],
-          birdRanges: [10], birdSpeeds: [.65], birdPhases: [.3],
+          note: 'The steel shelf blocks a straight drop. Aim left and draw a runway toward the bird.',
+          inkBudget: 200,
+          blockers: [seg(114, 210, 270, 210)],
+          hint: [[point(68, 254), point(154, 284)]],
+          birdLaneYs: [410], birdXs: [245],
+          birdRanges: [22], birdSpeeds: [.95], birdPhases: [.3],
         },
         {
           title: 'Little Drift',
-          note: 'Slide the claw right to line up with your bird. Draw a runway if you need one.',
-          inkBudget: 300,
-          blockers: [seg(64, 214, 133, 226)],
-          hint: [[point(180, 118), point(210, 220), point(224, 352)]],
-          birdLaneYs: [350], birdXs: [224],
-          birdRanges: [12], birdSpeeds: [.72], birdPhases: [1.1],
+          note: 'Approach from the right. Watch the patrol and slope a runway back toward the bird.',
+          inkBudget: 190,
+          blockers: [seg(60, 208, 246, 208)],
+          hint: [[point(292, 248), point(184, 298)]],
+          birdLaneYs: [405], birdXs: [110],
+          birdRanges: [26], birdSpeeds: [1.05], birdPhases: [1.1],
         },
         {
           title: 'Brass Bend',
-          note: 'Aim left of the steel platform, then curve a runway toward your bird.',
-          inkBudget: 290,
-          blockers: [seg(164, 206, 256, 224)],
-          hint: [[point(178, 130), point(126, 190), point(126, 360)]],
-          birdLaneYs: [390], birdXs: [126],
-          birdRanges: [14], birdSpeeds: [.8], birdPhases: [.5],
+          note: 'Thread the gap between the shelves. Keep your runway short and lead the moving bird.',
+          inkBudget: 175,
+          blockers: [seg(114, 180, 270, 180), seg(268, 358, 324, 346)],
+          hint: [[point(68, 254), point(142, 320)]],
+          birdLaneYs: [420], birdXs: [228],
+          birdRanges: [32], birdSpeeds: [1.2], birdPhases: [.5],
         },
         {
           title: 'Twin Feathers',
-          note: 'Two birds share the center lane. Keep one stone moving through both.',
-          inkBudget: 310,
-          blockers: [],
-          hint: [[point(180, 118), point(180, 432)]],
-          birdLaneYs: [310, 430], birdXs: [180, 180],
-          birdRanges: [12, 12], birdSpeeds: [.65, .8], birdPhases: [.2, 1.5],
+          note: 'Catch the left bird first, then turn the stone right with a runway below it.',
+          inkBudget: 210,
+          blockers: [seg(200, 190, 306, 204)],
+          hint: [[point(96, 290), point(188, 324)]],
+          birdLaneYs: [285, 450], birdXs: [132, 258],
+          birdRanges: [18, 24], birdSpeeds: [1, 1.12], birdPhases: [.2, 1.5],
         },
         {
           title: 'Paired Perches',
-          note: 'Aim right and guide the stone through both birds before it reaches the floor.',
-          inkBudget: 290,
-          blockers: [seg(70, 216, 144, 234)],
-          hint: [[point(180, 118), point(226, 204), point(238, 438)]],
-          birdLaneYs: [310, 444], birdXs: [238, 238],
-          birdRanges: [14, 12], birdSpeeds: [.75, .82], birdPhases: [.4, 1.7],
+          note: 'Start at the right bird, then bend left. The two patrols cross your route at different times.',
+          inkBudget: 200,
+          blockers: [seg(54, 196, 170, 210)],
+          hint: [[point(266, 304), point(174, 338)]],
+          birdLaneYs: [295, 466], birdXs: [234, 102],
+          birdRanges: [22, 26], birdSpeeds: [1.08, 1.18], birdPhases: [.4, 1.7],
         },
         {
           title: 'Split Flight',
-          note: 'Aim at the first bird on the left, then add a short runway toward the second.',
-          inkBudget: 280,
-          blockers: [seg(270, 214, 320, 228)],
-          hint: [[point(112, 294), point(200, 328)]],
-          birdLaneYs: [300, 440], birdXs: [148, 270],
-          birdRanges: [10, 10], birdSpeeds: [.74, .82], birdPhases: [.2, .8],
+          note: 'Plan two turns: left around the shelf, through the first bird, then right toward the second.',
+          inkBudget: 270,
+          blockers: [seg(66, 174, 202, 174)],
+          hint: [[point(266, 208), point(196, 244)], [point(40, 319), point(50, 364), point(140, 394)]],
+          birdLaneYs: [314, 488], birdXs: [118, 250],
+          birdRanges: [24, 30], birdSpeeds: [1.12, 1.24], birdPhases: [.2, .8],
         },
         {
           title: 'Breeze Bowl',
@@ -851,15 +835,8 @@
             bobAmp: 8 + index * 1.5,
             bodyRadius: 11,
             alive: true,
-            tint: index === 0 ? ['#c96f5e', '#7f3d35'] : index === 1 ? ['#8c6b86', '#56394e'] : ['#ad815e', '#6a4732'],
-            filter: index === 0
-              ? 'saturate(0.96) brightness(0.96) contrast(1.08)'
-              : index === 1
-                ? 'hue-rotate(-10deg) saturate(0.88) brightness(0.92) contrast(1.12)'
-                : 'hue-rotate(6deg) saturate(0.8) brightness(0.9) contrast(1.08)',
-            flapOffset: index * 2.75,
+            tint: index === 0 ? ['#c77b48', '#627f78'] : index === 1 ? ['#c7a55f', '#686c51'] : ['#ad8363', '#4f6877'],
             facing: Math.cos(base.birdPhases[index]) >= 0 ? 1 : -1,
-            renderHeight: 60,
           };
         });
 
@@ -883,12 +860,9 @@
             42,
             WORLD_W - 42
           );
-          const drift = nextX - bird.x;
           bird.prevX = bird.x;
           bird.x = nextX;
-          if (Math.abs(drift) > 0.08) {
-            bird.facing = drift >= 0 ? 1 : -1;
-          }
+          bird.facing = Math.cos(elapsed * bird.speed + bird.phase) >= 0 ? 1 : -1;
           bird.y = bird.laneY + Math.sin(elapsed * bird.speed * 1.42 + bird.phase * 1.8) * bird.bobAmp;
         });
       }
@@ -1639,114 +1613,8 @@
         ctx.restore();
       }
 
-      function drawBirdFallback(bird) {
-        if (!bird.alive) return;
-        ctx.save();
-        ctx.translate(bird.x, bird.y);
-        ctx.rotate(Math.sin(state.elapsed * bird.speed + bird.phase) * 0.06);
-        if (bird.facing < 0) {
-          ctx.scale(-1, 1);
-        }
-
-        ctx.fillStyle = 'rgba(43, 36, 29, 0.12)';
-        ctx.beginPath();
-        ctx.ellipse(0, 19, 16, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = bird.tint[1];
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 14, 11, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = bird.tint[0];
-        ctx.beginPath();
-        ctx.ellipse(-4, -4, 9, 8, -0.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = bird.tint[1];
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(-3, -2);
-        ctx.quadraticCurveTo(-16, -14, -22, -2);
-        ctx.moveTo(3, -2);
-        ctx.quadraticCurveTo(16, -14, 22, -2);
-        ctx.stroke();
-
-        ctx.fillStyle = '#f7e4a2';
-        ctx.beginPath();
-        ctx.moveTo(13, 1);
-        ctx.lineTo(22, 4);
-        ctx.lineTo(13, 8);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#2a241c';
-        ctx.beginPath();
-        ctx.arc(-5, -2, 1.8, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-6, -6);
-        ctx.quadraticCurveTo(-1, -10, 4, -7);
-        ctx.stroke();
-
-        ctx.restore();
-      }
-
       function drawBird(bird) {
-        if (!bird.alive) return;
-        if (!assets.birdStrip.loaded) {
-          drawBirdFallback(bird);
-          return;
-        }
-
-        const cycle = assets.birdStrip.cycle;
-        const frameIndex = cycle[Math.floor((state.elapsed * assets.birdStrip.frameRate + bird.flapOffset) % cycle.length)];
-        const drawHeight = bird.renderHeight;
-        const drawWidth = drawHeight * (assets.birdStrip.frameWidth / assets.birdStrip.frameHeight);
-        const top = -drawHeight * 0.76;
-        const left = -drawWidth * 0.52;
-
-        ctx.save();
-        ctx.translate(bird.x, bird.y);
-        ctx.rotate(Math.sin(state.elapsed * bird.speed + bird.phase) * 0.035);
-        if (bird.facing < 0) {
-          ctx.scale(-1, 1);
-        }
-
-        ctx.fillStyle = 'rgba(43, 36, 29, 0.11)';
-        ctx.beginPath();
-        ctx.ellipse(0, 22, 18, 5.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.filter = bird.filter;
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.16)';
-        ctx.shadowBlur = 10;
-        ctx.drawImage(
-          assets.birdStrip.image,
-          frameIndex * assets.birdStrip.frameWidth,
-          0,
-          assets.birdStrip.frameWidth,
-          assets.birdStrip.frameHeight,
-          left,
-          top,
-          drawWidth,
-          drawHeight
-        );
-        ctx.filter = 'none';
-
-        const accent = bird.tint[0];
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fillStyle = withAlpha(accent, 0.18);
-        ctx.beginPath();
-        ctx.ellipse(-8, -2, 12, 9, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalCompositeOperation = 'source-over';
-
-        ctx.restore();
+        woodlandBirds.draw(ctx, bird, state.elapsed);
       }
 
       function drawStone() {
@@ -2061,6 +1929,7 @@
           totalLevels: LEVELS.length,
           birdTarget: state.level ? state.level.birds.length : 0,
           title: state.level ? state.level.title : null,
+          elapsed: Number(state.elapsed.toFixed(4)),
           overlayVisible: state.overlayVisible,
           outcome: state.outcome,
           resultPending: Boolean(state.pendingResult),
@@ -2078,6 +1947,7 @@
               index: bird.index,
               alive: bird.alive,
               facing: bird.facing,
+              flight: woodlandBirds.pose(bird, state.elapsed),
               x: Number(bird.x.toFixed(1)),
               y: Number(bird.y.toFixed(1)),
             }))
@@ -2188,12 +2058,7 @@
         }
       }
 
-      function loadAssets() {
-        assets.birdStrip.image.src = assets.birdStrip.src;
-      }
-
       function init() {
-        loadAssets();
         exposeHooks();
         bindEvents();
         initBridge();

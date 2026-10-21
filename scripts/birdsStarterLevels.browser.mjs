@@ -14,17 +14,22 @@ const results = [];
 const snapshot = page => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const step = (page, ms) => page.evaluate(duration => window.advanceTime(duration), ms);
 async function freeze(page) {
-  await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  await page.evaluate(() => {
+    window.__birdsTestRequestAnimationFrame = window.requestAnimationFrame;
+    window.requestAnimationFrame = () => 0;
+  });
   await page.waitForTimeout(65);
 }
 async function record(name, run) {
   if (process.env.BIRDS_STARTER_FILTER && !new RegExp(process.env.BIRDS_STARTER_FILTER).test(name)) return;
   try { results.push({ name, pass: true, ...await run() }); console.log(`PASS ${name}`); }
   catch (error) { results.push({ name, pass: false, error: error.stack }); console.log(`FAIL ${name}: ${error.message}`); }
+  await writeFile(`${output}/${process.env.BIRDS_STARTER_REPORT || 'browser-report'}.json`, JSON.stringify(results, null, 2));
 }
 async function runCampaign(browser, name, viewport, mobile) {
   const context = await browser.newContext({ viewport, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: mobile ? 2 : 1 });
   const page = await context.newPage();
+  page.setDefaultTimeout(10000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const clears = [];
@@ -39,7 +44,14 @@ async function runCampaign(browser, name, viewport, mobile) {
     assert.equal(await page.locator('#nextLevelButton').isDisabled(), true);
     await page.evaluate(() => window.__manyBirdsDebug.setLevel(6));
     assert.equal((await snapshot(page)).level, 1, 'locked stages cannot be skipped');
-    const aims = [180, 224, 126, 180, 238, 148];
+    const routes = [
+      { aim: 90, strokes: [[[68, 290], [154, 320]]] },
+      { aim: 276, strokes: [[[292, 284], [184, 334]]] },
+      { aim: 90, strokes: [[[68, 290], [142, 356]]] },
+      { aim: 132, strokes: [[[96, 326], [188, 360]]] },
+      { aim: 234, strokes: [[[266, 340], [174, 374]]] },
+      { aim: 242, strokes: [[[266, 244], [196, 280]], [[40, 355], [50, 400], [140, 430]]] },
+    ];
     for (let level = 1; level <= 6; level++) {
       const before = await snapshot(page);
       const count = level <= 3 ? 1 : 2;
@@ -51,15 +63,20 @@ async function runCampaign(browser, name, viewport, mobile) {
         await step(page, 16);
         await page.screenshot({ path: `${output}/${name}-level-${level}.png`, animations: 'disabled' });
       }
-      await page.evaluate(x => window.__manyBirdsDebug.moveClaw(x), aims[level - 1]);
+      const route = routes[level - 1];
+      await page.evaluate(x => window.__manyBirdsDebug.moveClaw(x), route.aim);
       await step(page, 1600);
-      if (level === 6) {
-        const canvas = await page.locator('#gameCanvas').boundingBox();
+      const canvas = await page.locator('#gameCanvas').boundingBox();
+      for (const stroke of route.strokes) {
         const at = (x, y) => [canvas.x + x * canvas.width / 360, canvas.y + y * canvas.height / 640];
-        await page.mouse.move(...at(112, 330)); await page.mouse.down();
-        await page.mouse.move(...at(200, 364), { steps: 16 }); await page.mouse.up();
+        await page.mouse.move(...at(...stroke[0])); await page.mouse.down();
+        for (const next of stroke.slice(1)) await page.mouse.move(...at(...next), { steps: 16 });
+        await page.mouse.up();
         await step(page, 16);
       }
+      assert.equal((await snapshot(page)).lines.length, route.strokes.length);
+      if (level === 3) await step(page, 2400);
+      if (level === 4) await step(page, 1600);
       await page.locator('#dropButton').click();
       const after = await page.evaluate(() => {
         let snapshot;
@@ -72,7 +89,14 @@ async function runCampaign(browser, name, viewport, mobile) {
       assert.equal(await page.locator('#birdProgress').textContent(), `${count} / ${count} ${count === 1 ? 'bird' : 'birds'}`);
       assert.match(await page.locator('#overlayBody').textContent(), new RegExp(`${count} ${count === 1 ? 'bird' : 'birds'}`));
       clears.push({ level, count, title: before.title, outcome: after.outcome, onFloor: after.stone.onFloor });
-      await page.locator('#overlayPrimary').click();
+      await page.evaluate(() => { window.requestAnimationFrame = window.__birdsTestRequestAnimationFrame; });
+      assert.ok(await page.locator('#overlayPrimary').isVisible());
+      assert.ok(await page.locator('#overlayPrimary').isEnabled());
+      await page.locator('#overlayPrimary').press('Enter');
+      await page.reload();
+      await page.waitForFunction(() => typeof window.render_game_to_text === 'function');
+      await page.evaluate(() => document.fonts.ready);
+      await freeze(page);
     }
     const original = await snapshot(page);
     assert.equal(original.level, 7); assert.equal(original.title, 'Breeze Bowl'); assert.equal(original.birds.length, 3);
