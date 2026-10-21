@@ -58,6 +58,7 @@
               <div class="reward-stars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg></div>
               <h1 class="overlay-title" id="overlayTitle">Many Birds One Stone</h1>
               <p class="overlay-body" id="overlayBody"></p>
+              <div class="reward-celebration" id="resultReward" role="status" hidden></div>
               <div class="overlay-stats" id="overlayStats"></div>
               </div>
               <div class="overlay-actions">
@@ -98,6 +99,7 @@
       <div><h2 id="levelMapTitle">The woodland trail</h2><p id="levelMapDescription">Pick a path. Chase every star.</p></div>
       <button class="map-close" id="closeLevelMap" type="button" aria-label="Close level map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       <p class="map-progress" id="mapProgress"></p>
+      <div class="reward-celebration map-reward" id="mapReward" role="status" hidden></div>
     </header>
     <div class="map-scroll" id="mapScroll" tabindex="0" aria-label="All 18 levels, grouped into six chapters"></div>
     <footer class="map-footer"><p>Clear a level to unlock the next.<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.</p><button class="overlay-button overlay-button--primary" id="resumeFromMap" type="button">Back to game</button></footer>
@@ -174,6 +176,7 @@
         overlayTitle: document.getElementById('overlayTitle'),
         overlayBody: document.getElementById('overlayBody'),
         overlayStats: document.getElementById('overlayStats'),
+        resultReward: document.getElementById('resultReward'),
         overlayPrimary: document.getElementById('overlayPrimary'),
         overlaySecondary: document.getElementById('overlaySecondary'),
         rotateNotice: document.getElementById('rotateNotice'),
@@ -437,6 +440,7 @@
       }
 
       function syncPauseState() {
+        levelMap.setPaused(state.hostPaused || state.hiddenPause);
         const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible;
         woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
@@ -517,7 +521,13 @@
         state.overlaySecondaryAction = config.secondaryAction || 'home';
         dom.overlay.dataset.outcome = state.outcome;
         const stars = 1 + Number(!state.hintUsed) + Number(remainingInkRatio() >= 0.4);
-        dom.overlay.querySelectorAll('.reward-stars svg').forEach((star, index) => star.classList.toggle('is-earned', index < stars));
+        dom.overlay.querySelectorAll('.reward-stars svg').forEach((star, index) => {
+          star.classList.toggle('is-earned', index < stars);
+          star.classList.toggle('is-new-star', Boolean(config.reward) && index >= config.reward.previousStars && index < stars);
+          star.style.setProperty('--star-index', config.reward ? index - config.reward.previousStars : 0);
+          if (star.classList.contains('is-new-star')) star.replaceWith(star.cloneNode(true));
+        });
+        levelMap.renderReward(dom.resultReward, config.reward);
         dom.overlayTitle.textContent = config.title || '';
         dom.overlayBody.textContent = config.body || '';
         dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
@@ -1050,12 +1060,20 @@
           remainingInkRatio: Number(remainingInk.toFixed(3)),
         };
         summary.stars = 1 + Number(!state.hintUsed) + Number(remainingInk >= 0.4);
+        const previousStars = levelMap.earnedStars(state.bestStats[String(state.level.id)]);
+        const previousUnlocked = state.highestUnlocked;
         saveBestStats(summary);
         createParticles(WORLD_W / 2, WORLD_H / 3, reducedMotion ? 6 : 48, ['#ffd06b', '#f48a64', '#ffffff', '#72cda1']);
         awardPointsForClear(summary);
         if (state.levelIndex + 1 < LEVELS.length) {
           state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
         }
+        const reward = levelMap.recordClear({
+          levelIndex: state.levelIndex,
+          stars: summary.stars,
+          previousStars,
+          unlockedLevel: state.highestUnlocked > previousUnlocked ? state.highestUnlocked : null,
+        });
         saveProgress();
         setStatus(`${birdLabel(state.level.birds.length)} cleared! Watch the stone finish its descent.`);
         playTone('win');
@@ -1071,6 +1089,7 @@
 
         queueRoundResult({
           eyebrow: state.levelIndex === LEVELS.length - 1 ? 'Campaign Complete' : 'Level Cleared',
+          reward,
           title: !nextLevel ? 'The crown is yours!' : chapterComplete ? `${state.level.chapter} complete` : `Level ${state.level.id} complete`,
           body: state.levelIndex === LEVELS.length - 1
             ? 'You mastered all 18 woodland puzzles. Replay a favorite to refine your linework and earn three stars.'
@@ -1514,7 +1533,7 @@
           update(STEP);
           state.accumulator -= STEP;
         }
-        draw();
+        if (!state.mapVisible) draw();
         window.requestAnimationFrame(frame);
       }
 

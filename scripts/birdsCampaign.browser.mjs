@@ -70,6 +70,7 @@ try {
         }
         return rows;
       });
+      await writeFile(`${output}/${process.env.BIRDS_CAMPAIGN_REPORT || 'browser-report'}-balance-rows.json`, JSON.stringify(balance, null, 2));
       for (const row of balance) {
         assert.equal(row.reference.outcome, 'win', `reference route ${row.level}`);
         assert.equal(row.reference.onFloor, true, `complete descent ${row.level}`);

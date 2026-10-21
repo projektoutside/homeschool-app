@@ -35,6 +35,17 @@ test('every hint is drawable, reachable by the claw, and has enough ink for thre
   }
 });
 
+test('fixed starting platforms are sloped so a centered drop cannot rest on a flat shelf', () => {
+  for (const level of levels) {
+    for (const line of level.blockers) {
+      assert.notEqual(line.y1, line.y2, `${level.title}: no flat fixed shelves`);
+      if (Math.max(line.y1, line.y2) < 280 && line.x1 !== line.x2) {
+        assert.ok(Math.abs((line.y2 - line.y1) / (line.x2 - line.x1)) >= .18, `${level.title}: starting ramp has a useful incline`);
+      }
+    }
+  }
+});
+
 test('authored bird patrols stay inside the scene and clear of fixed platform bodies', () => {
   for (const level of levels) {
     for (const field of ['birdXs', 'birdRanges', 'birdSpeeds', 'birdPhases']) assert.equal(level[field].length, level.birdLaneYs.length);

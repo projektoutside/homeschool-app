@@ -19,6 +19,7 @@
       this.levels = levels;
       this.scroll = dialog.querySelector('#mapScroll');
       this.returnFocus = null;
+      this.pendingReward = null;
       this.onClose = onClose;
       dialog.querySelector('#closeLevelMap').addEventListener('click', () => this.close());
       dialog.querySelector('#resumeFromMap').addEventListener('click', () => this.close());
@@ -41,7 +42,34 @@
       });
     }
 
+    earnedStars(stats) { return earnedStars(stats); }
+
+    setPaused(paused) { this.dialog.classList.toggle('is-motion-paused', paused); }
+
+    recordClear({ levelIndex, stars, previousStars, unlockedLevel }) {
+      const newStars = Math.max(0, stars - previousStars);
+      if (!newStars && !unlockedLevel) return null;
+      const reward = { levelIndex, stars, previousStars, newStars, unlockedLevel };
+      this.pendingReward = reward;
+      return reward;
+    }
+
+    renderReward(container, reward) {
+      container.replaceChildren();
+      container.hidden = !reward;
+      if (!reward) return;
+      const title = reward.unlockedLevel ? `Level ${reward.unlockedLevel} unlocked!` : `${reward.newStars} more ${reward.newStars === 1 ? 'star' : 'stars'}!`;
+      const detail = reward.newStars
+        ? `+${reward.newStars} new ${reward.newStars === 1 ? 'star' : 'stars'} on Level ${reward.levelIndex + 1}`
+        : 'Your next woodland puzzle is ready.';
+      container.innerHTML = `<span class="celebration-medal" aria-hidden="true">${star}</span><span class="celebration-copy"><strong></strong><span></span></span><span class="celebration-burst" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<span style="--spark:${i}">${star}</span>`).join('')}</span>`;
+      container.querySelector('strong').textContent = title;
+      container.querySelector('.celebration-copy > span').textContent = detail;
+    }
+
     open({ levelIndex, highestUnlocked, bestStats, returnFocus }) {
+      const reward = this.pendingReward;
+      this.pendingReward = null;
       this.highestUnlocked = highestUnlocked;
       this.returnFocus = returnFocus;
       this.scroll.replaceChildren();
@@ -70,10 +98,18 @@
           button.dataset.level = String(index);
           button.disabled = locked;
           if (current) button.setAttribute('aria-current', 'step');
-          const status = locked ? 'Locked' : current ? 'Playing' : stars ? 'Replay' : 'Play';
+          const newlyUnlocked = reward && reward.unlockedLevel === index + 1;
+          const status = locked ? 'Locked' : newlyUnlocked ? 'New!' : current ? 'Playing' : stars ? 'Replay' : 'Play';
+          button.classList.toggle('is-newly-unlocked', Boolean(newlyUnlocked));
           button.setAttribute('aria-label', `Level ${index + 1}: ${level.title}. ${locked ? `Locked. Clear level ${index} to unlock.` : `${stars} of 3 stars. ${status}.`}`);
           button.innerHTML = `<span class="map-node"><span>${index + 1}</span>${locked ? lock : ''}</span><span class="map-stars" aria-hidden="true">${[0, 1, 2].map(i => `<span${i < stars ? ' class="is-earned"' : ''}>${star}</span>`).join('')}</span><span class="map-level-name"></span><span class="map-stop-status">${status}</span>`;
           button.querySelector('.map-level-name').textContent = level.title;
+          if (reward && index === reward.levelIndex) {
+            button.querySelectorAll('.map-stars > span').forEach((item, i) => {
+              if (i >= reward.previousStars && i < stars) item.classList.add('is-new-star');
+              item.style.setProperty('--star-index', i - reward.previousStars);
+            });
+          }
           stops.append(button);
         }
         const tally = document.createElement('span');
@@ -87,10 +123,11 @@
       }
       this.dialog.querySelector('#mapProgress').textContent = `${cleared} / ${this.levels.length} cleared · ${totalStars} / ${this.levels.length * 3} stars`;
       this.dialog.querySelector('#resumeFromMap').textContent = `Back to Level ${levelIndex + 1}`;
+      this.renderReward(this.dialog.querySelector('#mapReward'), reward);
       this.dialog.showModal();
-      const current = this.scroll.querySelector('[aria-current="step"]');
-      current.focus({ preventScroll: true });
-      this.scroll.scrollTop = Math.max(0, current.closest('section').offsetTop - 12);
+      const target = reward ? this.scroll.querySelector(`[data-level="${reward.unlockedLevel ? reward.unlockedLevel - 1 : reward.levelIndex}"]`) : this.scroll.querySelector('[aria-current="step"]');
+      target.focus({ preventScroll: true });
+      this.scroll.scrollTop = Math.max(0, target.closest('section').offsetTop - 12);
     }
 
     close() {
