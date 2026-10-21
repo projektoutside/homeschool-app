@@ -95,6 +95,7 @@
   <script src="drop-mechanism.js"></script>
   <script src="runways.js"></script>
   <script src="birds.js"></script>
+  <script src="physics.js"></script>
   <script>
     (() => {
       'use strict';
@@ -909,23 +910,8 @@
       }
 
       function rebuildDrawnColliders() {
-        const colliders = [];
-        state.drawnStrokes.forEach((stroke) => {
-          for (let i = 1; i < stroke.points.length; i += 1) {
-            const a = stroke.points[i - 1];
-            const b = stroke.points[i];
-            if (distance(a, b) < 1) continue;
-            colliders.push({
-              ax: a.x,
-              ay: a.y,
-              bx: b.x,
-              by: b.y,
-              radius: DRAWN_LINE_WIDTH / 2,
-              kind: 'drawn',
-            });
-          }
-        });
-        state.drawnColliders = colliders;
+        state.drawnColliders = state.drawnStrokes.map(stroke =>
+          window.WoodlandPhysics.createStroke(stroke.points, DRAWN_LINE_WIDTH / 2));
       }
 
       function beginAttempt(clearLines, preserveHintState) {
@@ -1189,86 +1175,19 @@
         announce('Stone released.');
       }
 
-      function nearestPointOnCollider(collider, x, y) {
-        const abx = collider.bx - collider.ax;
-        const aby = collider.by - collider.ay;
-        const abLenSq = abx * abx + aby * aby;
-        if (abLenSq <= 0.0001) {
-          return { x: collider.ax, y: collider.ay, tx: 1, ty: 0 };
-        }
-        const apx = x - collider.ax;
-        const apy = y - collider.ay;
-        const t = clamp((apx * abx + apy * aby) / abLenSq, 0, 1);
-        const px = collider.ax + abx * t;
-        const py = collider.ay + aby * t;
-        const len = Math.sqrt(abLenSq);
-        return { x: px, y: py, tx: abx / len, ty: aby / len };
-      }
-
-      function resolveStoneCollision(collider) {
-        const nearest = nearestPointOnCollider(collider, state.stone.x, state.stone.y);
-        let dx = state.stone.x - nearest.x;
-        let dy = state.stone.y - nearest.y;
-        let dist = Math.hypot(dx, dy);
-        const minDist = state.stone.radius + collider.radius;
-        if (dist <= minDist + .15 && dy < -dist * .35 && collider.kind !== 'wall') {
-          state.stone.supported = true;
-          if (collider.kind === 'floor') state.stone.onFloor = true;
-        }
-        if (dist >= minDist) {
-          return false;
-        }
-
-        if (dist < 0.0001) {
-          dx = -nearest.ty;
-          dy = nearest.tx;
-          dist = 1;
-        }
-
-        const nx = dx / dist;
-        const ny = dy / dist;
-        const push = minDist - dist + 0.01;
-        state.stone.x += nx * push;
-        state.stone.y += ny * push;
-
-        if (collider.kind === 'floor' && ny < -.5) {
-          state.stone.onFloor = true;
-          if (!state.stone.floorHit) {
+      function resolveStoneAgainstWorld(dt) {
+        const contacts = window.WoodlandPhysics.solve(state.stone,
+          [...WORLD_COLLIDERS, ...state.staticColliders, ...state.drawnColliders], dt);
+        let bounced = false;
+        for (const contact of contacts) {
+          if (contact.kind === 'floor' && contact.ny < -.5 && !state.stone.floorHit) {
             state.stone.floorHit = true;
             if (!reducedMotion) createParticles(state.stone.x, FLOOR_Y - 1, 7, ['#c8b985', '#a09e6e', '#e2d5a6']);
           }
+          if (contact.normalVelocity < -70 && contact.kind !== 'floor') state.stone.hitPulse = 1;
+          if (contact.normalVelocity < -100) bounced = true;
         }
-        if (ny < -.35 && collider.kind !== 'wall') state.stone.supported = true;
-        const tx = nearest.tx;
-        const ty = nearest.ty;
-        const normalVelocity = state.stone.vx * nx + state.stone.vy * ny;
-        const tangentVelocity = state.stone.vx * tx + state.stone.vy * ty;
-        if (normalVelocity < 0) {
-          const restitution = collider.kind === 'drawn' ? 0.32 : collider.kind === 'floor' ? 0.16 : 0.24;
-          const friction = collider.kind === 'drawn' ? 0.97 : collider.kind === 'floor' ? 0.78 : 0.94;
-          const nextNormalVelocity = -normalVelocity * restitution;
-          const nextTangentVelocity = tangentVelocity * friction;
-          state.stone.vx = tx * nextTangentVelocity + nx * nextNormalVelocity;
-          state.stone.vy = ty * nextTangentVelocity + ny * nextNormalVelocity;
-          if (normalVelocity < -70 && collider.kind !== 'floor') state.stone.hitPulse = 1;
-          if (normalVelocity < -100) playTone('bounce');
-        }
-
-        return true;
-      }
-
-      function resolveStoneAgainstWorld() {
-        let collided = false;
-        WORLD_COLLIDERS.forEach((collider) => {
-          collided = resolveStoneCollision(collider) || collided;
-        });
-        state.staticColliders.forEach((collider) => {
-          collided = resolveStoneCollision(collider) || collided;
-        });
-        state.drawnColliders.forEach((collider) => {
-          collided = resolveStoneCollision(collider) || collided;
-        });
-        return collided;
+        if (bounced) playTone('bounce');
       }
 
       function createParticles(x, y, count, colors) {
@@ -1457,6 +1376,8 @@
         if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
         state.stone.onFloor = false;
         state.stone.supported = false;
+        state.stone.supportMinX = Infinity;
+        state.stone.supportMaxX = -Infinity;
         const subDt = dt / COLLISION_SUBSTEPS;
         for (let i = 0; i < COLLISION_SUBSTEPS; i += 1) {
           state.stone.vy += GRAVITY * subDt;
@@ -1464,7 +1385,7 @@
           state.stone.vy = clamp(state.stone.vy, -200, 780);
           state.stone.x += state.stone.vx * subDt;
           state.stone.y += state.stone.vy * subDt;
-          resolveStoneAgainstWorld();
+          resolveStoneAgainstWorld(subDt);
 
           if (!state.runEnded) {
             state.level.birds.forEach((bird) => {
@@ -1481,7 +1402,7 @@
 
         if (!reducedMotion) state.stone.rotation += (state.stone.vx * .015 + state.stone.vy * .003) * dt;
         const speed = Math.hypot(state.stone.vx, state.stone.vy);
-        if (speed < FAIL_SLEEP_SPEED && state.stone.supported) state.stone.sleepMs += dt * 1000;
+        if (speed < FAIL_SLEEP_SPEED && window.WoodlandPhysics.stableSupport(state.stone)) state.stone.sleepMs += dt * 1000;
         else state.stone.sleepMs = 0;
         const settleTime = state.stone.onFloor ? 420 : FAIL_SLEEP_MS;
         if (state.stone.sleepMs >= settleTime) {

@@ -65,7 +65,8 @@ async function runCampaign(browser, name, viewport, mobile) {
       }
       const route = routes[level - 1];
       await page.evaluate(x => window.__manyBirdsDebug.moveClaw(x), route.aim);
-      await step(page, 1600);
+      // Align patrol phase across engines; initial font/load time varies.
+      await step(page, Math.max(0, 1600 - (await snapshot(page)).elapsed * 1000));
       const canvas = await page.locator('#gameCanvas').boundingBox();
       for (const stroke of route.strokes) {
         const at = (x, y) => [canvas.x + x * canvas.width / 360, canvas.y + y * canvas.height / 640];

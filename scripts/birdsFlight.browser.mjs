@@ -88,6 +88,8 @@ try {
       assert.equal(requests.some(request => request.includes('EnemyBird16-strip')), true, 'original bird artwork is loaded');
       const art = (await snapshot(page)).birdArt;
       assert.equal(art.source, 'EnemyBird16-strip.png'); assert.equal(art.loaded, true); assert.equal(art.interpolated, true);
+      assert.equal(art.decodedTextures, reduced ? 3 : 168, 'all finite phase textures are decoded before interactive use');
+      assert.ok(motion.p95Ms < 16.7, `local update/draw stays inside a 60 Hz frame budget: ${JSON.stringify(motion)}`);
       await page.evaluate(() => window.postMessage({ type: 'LAHS_HOST_LIFECYCLE', phase: 'pause' }, location.origin));
       await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).paused, undefined, { polling: 50 });
       const paused = await snapshot(page);
@@ -142,7 +144,13 @@ try {
         const bird = { index: 0, x: 80, y: 80, alive: true, range: 22, speed: 1, phase: .3, bobAmp: 8, tint: ['#c96f5e', '#7f3d35'] };
         let minAlpha = 255, opaqueSamples = 0;
         const originalPose = rig.pose.bind(rig);
-        const pixels = pose => { const texture = rig.frameTexture(0, pose); return texture.getContext('2d').getImageData(0, 0, texture.width, texture.height).data; };
+        const pixels = pose => {
+          const texture = rig.frameTexture(0, pose), sample = document.createElement('canvas');
+          sample.width = texture.width; sample.height = texture.height;
+          const paint = sample.getContext('2d');
+          paint.drawImage(texture, 0, 0);
+          return paint.getImageData(0, 0, sample.width, sample.height).data;
+        };
         for (let i = 0; i < 25; i++) {
           const pose = originalPose(bird, (i + .5) / 42);
           rig.pose = () => ({ ...pose, blend: 0 }); rig.draw(ctx, bird, 0); const first = pixels(rig.pose());
@@ -152,10 +160,33 @@ try {
             if (first[j] >= 252 && second[j] >= 252) { opaqueSamples++; minAlpha = Math.min(minAlpha, blended[j]); }
           }
         }
-        return { minAlpha, opaqueSamples, samples: 25, loaded: rig.loaded };
+        return { minAlpha, opaqueSamples, samples: 25, loaded: rig.loaded,
+          decodedImages: [...rig.frames.values()].every(texture => texture instanceof HTMLImageElement) };
       });
       assert.equal(result.loaded, true); assert.ok(result.opaqueSamples > 1000);
+      assert.equal(result.decodedImages, true, 'the render loop never replays Canvas-backed bird textures');
       assert.ok(result.minAlpha >= 250, `interpolation preserves opaque overlapping artwork: ${JSON.stringify(result)}`);
+      return result;
+    } finally { await context.close(); }
+  });
+
+  await record('texture-decode-failure', async () => {
+    const context = await safari.newContext(); const page = await context.newPage();
+    try {
+      await seed(page);
+      await page.addInitScript(() => { HTMLCanvasElement.prototype.toBlob = callback => callback(null); });
+      await page.goto(url);
+      await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).birdArt.failed, undefined, { polling: 50 });
+      const result = await page.evaluate(async () => {
+        const rig = new window.WoodlandBirds(); await rig.ready;
+        const canvas = document.createElement('canvas'); canvas.width = 180; canvas.height = 180;
+        const paint = canvas.getContext('2d');
+        rig.draw(paint, { index: 0, x: 80, y: 80, alive: true, range: 22, speed: 1, phase: .3, bobAmp: 8, tint: ['#c96f5e', '#7f3d35'] }, .1);
+        const pixels = paint.getImageData(0, 0, 180, 180).data;
+        return { visiblePixels: pixels.filter((value, index) => index % 4 === 3 && value > 0).length,
+          originalLoaded: rig.image.naturalWidth === 3168, failed: rig.failed };
+      });
+      assert.ok(result.visiblePixels > 300 && result.originalLoaded && result.failed, 'raw original art stays visible if decoding is unavailable');
       return result;
     } finally { await context.close(); }
   });
