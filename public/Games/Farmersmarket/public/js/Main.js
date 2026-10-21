@@ -10,15 +10,9 @@ class Main {
         this.orientationWarningElement = null;
         this.orientationIntroTimer = null;
         this.hasShownOrientationHint = false;
-        this.boundEnsureFullscreenOnInteraction = null;
         this.boundOnFullscreenChange = null;
         this.boundOnViewportChange = null;
         this.boundOnVisibilityRestore = null;
-        this.requiresFullscreenRestore = true;
-        this.lastFullscreenInteractionAt = 0;
-        this.fullscreenInteractionCooldownMs = 850;
-        this.boundEnsureFullscreenOnInteractionMouse = null;
-        this.boundEnsureFullscreenOnInteractionTouch = null;
         this.wasPausedByPortraitLock = false;
         this.hudSettingsElements = null;
         this.boundHandleHUDSettingsOutsideClick = null;
@@ -45,7 +39,7 @@ class Main {
             // Enforce strict landscape lock from startup
             this.initializeOrientationController();
 
-            // Enforce fullscreen whenever possible; restore it on user interaction if it drops
+            // Follow manually selected fullscreen changes for orientation support
             this.initializeFullscreenController();
             
             // Show loading screen
@@ -180,12 +174,8 @@ class Main {
 
     handleViewportChange() {
         this.enforceLandscapeLayoutLock();
-        const isPortrait = this.syncOrientationLockState();
+        this.syncOrientationLockState();
         this.requestLandscapeOrientationLock();
-
-        if (!isPortrait) {
-            this.attemptEnterFullscreen();
-        }
     }
 
     onVisibilityRestore() {
@@ -194,27 +184,13 @@ class Main {
     }
 
     initializeFullscreenController() {
-        if (this.boundEnsureFullscreenOnInteraction || !this.isFullscreenSupported()) return;
+        if (this.boundOnFullscreenChange || !this.isFullscreenSupported()) return;
 
-        this.boundEnsureFullscreenOnInteraction = this.ensureFullscreenOnInteraction.bind(this);
-        this.boundEnsureFullscreenOnInteractionMouse = this.ensureFullscreenOnInteraction.bind(this);
-        this.boundEnsureFullscreenOnInteractionTouch = this.ensureFullscreenOnInteraction.bind(this);
         this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
 
         document.addEventListener('fullscreenchange', this.boundOnFullscreenChange);
         document.addEventListener('webkitfullscreenchange', this.boundOnFullscreenChange);
         document.addEventListener('MSFullscreenChange', this.boundOnFullscreenChange);
-
-        const passiveOptions = { passive: true };
-        if (window.PointerEvent) {
-            window.addEventListener('pointerdown', this.boundEnsureFullscreenOnInteraction, passiveOptions);
-        } else {
-            window.addEventListener('mousedown', this.boundEnsureFullscreenOnInteractionMouse, passiveOptions);
-            window.addEventListener('touchstart', this.boundEnsureFullscreenOnInteractionTouch, passiveOptions);
-        }
-
-        this.requestLandscapeOrientationLock();
-        this.attemptEnterFullscreen();
     }
 
     isFullscreenSupported() {
@@ -251,7 +227,6 @@ class Main {
         if (!this.isFullscreenSupported()) return;
 
         if (this.getFullscreenElement()) {
-            this.requiresFullscreenRestore = false;
             return;
         }
 
@@ -279,23 +254,7 @@ class Main {
     }
 
     onFullscreenChange() {
-        this.requiresFullscreenRestore = !Boolean(this.getFullscreenElement());
-        if (!this.requiresFullscreenRestore) {
-            this.requestLandscapeOrientationLock();
-        }
-    }
-
-    ensureFullscreenOnInteraction(event) {
-        if (!this.isFullscreenSupported()) return;
-
-        const now = (window.performance?.now?.() ?? Date.now());
-        if ((now - this.lastFullscreenInteractionAt) < this.fullscreenInteractionCooldownMs) {
-            return;
-        }
-
-        if (this.requiresFullscreenRestore || !this.getFullscreenElement()) {
-            this.lastFullscreenInteractionAt = now;
-            this.attemptEnterFullscreen();
+        if (this.getFullscreenElement()) {
             this.requestLandscapeOrientationLock();
         }
     }
@@ -1869,30 +1828,13 @@ class Main {
     }
 
     cleanupFullscreenController() {
-        if (this.boundEnsureFullscreenOnInteraction) {
-            window.removeEventListener('pointerdown', this.boundEnsureFullscreenOnInteraction);
-        }
-
-        if (this.boundEnsureFullscreenOnInteractionMouse) {
-            window.removeEventListener('mousedown', this.boundEnsureFullscreenOnInteractionMouse);
-        }
-
-        if (this.boundEnsureFullscreenOnInteractionTouch) {
-            window.removeEventListener('touchstart', this.boundEnsureFullscreenOnInteractionTouch);
-        }
-
         if (this.boundOnFullscreenChange) {
             document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
             document.removeEventListener('webkitfullscreenchange', this.boundOnFullscreenChange);
             document.removeEventListener('MSFullscreenChange', this.boundOnFullscreenChange);
         }
 
-        this.boundEnsureFullscreenOnInteraction = null;
-        this.boundEnsureFullscreenOnInteractionMouse = null;
-        this.boundEnsureFullscreenOnInteractionTouch = null;
         this.boundOnFullscreenChange = null;
-        this.requiresFullscreenRestore = false;
-        this.lastFullscreenInteractionAt = 0;
     }
 
     removeEventListeners() {

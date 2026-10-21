@@ -531,11 +531,6 @@ let gameplayStartPending = false;
 let handwritingWarmupPromise = null;
 const HANDWRITING_WARMUP_TIMEOUT_MS = 3200;
 
-// Fullscreen startup/back-button handling
-const FULLSCREEN_HISTORY_TAG = '__writemath_fullscreen__';
-let fullscreenHistoryPushed = false;
-let fullscreenInteractionHandler = null;
-
 // VS state
 let vsState = {
   running: false,
@@ -831,101 +826,6 @@ function registerBackgroundLoop() {
   bgMusic.addEventListener('ended', () => {
     if (!gameSettings.music) return;
     playRandomBackgroundMusic();
-  });
-}
-
-function isFullscreenActive() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-}
-
-function hasFullscreenMarker(state) {
-  return !!(state && state[FULLSCREEN_HISTORY_TAG]);
-}
-
-function markFullscreenHistoryState() {
-  if (fullscreenHistoryPushed) return;
-  const nextState = {
-    ...(history.state || {}),
-    [FULLSCREEN_HISTORY_TAG]: true
-  };
-  history.pushState(nextState, '', window.location.href);
-  fullscreenHistoryPushed = true;
-}
-
-function clearFullscreenMarkerFromCurrentState() {
-  const currentState = history.state || {};
-  if (!hasFullscreenMarker(currentState)) return;
-  const nextState = { ...currentState };
-  delete nextState[FULLSCREEN_HISTORY_TAG];
-  history.replaceState(nextState, '', window.location.href);
-}
-
-async function requestAppFullscreen() {
-  try {
-    if (!document.documentElement || isFullscreenActive()) return;
-    const root = document.documentElement;
-    const requestFn = root.requestFullscreen
-      || root.webkitRequestFullscreen
-      || root.msRequestFullscreen;
-    if (typeof requestFn !== 'function') return;
-    await requestFn.call(root);
-  } catch (err) {
-    // Most browsers require user gesture; we'll retry on first interaction.
-    console.debug('[Fullscreen] requestFullscreen blocked/deferred:', err);
-  }
-}
-
-async function exitAppFullscreen() {
-  try {
-    if (!isFullscreenActive()) return;
-    const exitFn = document.exitFullscreen
-      || document.webkitExitFullscreen
-      || document.msExitFullscreen;
-    if (typeof exitFn !== 'function') return;
-    await exitFn.call(document);
-  } catch (err) {
-    console.warn('[Fullscreen] exitFullscreen failed:', err);
-  }
-}
-
-function addFullscreenInteractionListeners() {
-  if (fullscreenInteractionHandler) return;
-  fullscreenInteractionHandler = () => {
-    // User requested: whenever user interacts and app is not fullscreen, go fullscreen.
-    if (!isFullscreenActive()) {
-      requestAppFullscreen();
-    }
-  };
-  ['pointerdown', 'touchstart', 'keydown'].forEach((eventName) => {
-    document.addEventListener(eventName, fullscreenInteractionHandler, { capture: true, passive: false });
-  });
-}
-
-function setupFullscreenExperience() {
-  // Try immediately (works in some app contexts), then retry on first interaction.
-  requestAppFullscreen();
-
-  // Keep listening until fullscreen has successfully entered at least once.
-  addFullscreenInteractionListeners();
-
-  const onFullscreenChange = () => {
-    if (isFullscreenActive()) {
-      markFullscreenHistoryState();
-    } else {
-      clearFullscreenMarkerFromCurrentState();
-      fullscreenHistoryPushed = false;
-    }
-  };
-
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-  // Keep one history marker while fullscreen is active so device back exits fullscreen first.
-  window.addEventListener('popstate', () => {
-    // If user presses device back while fullscreen, use that action to leave fullscreen.
-    if (isFullscreenActive()) {
-      exitAppFullscreen();
-    }
   });
 }
 
@@ -2664,7 +2564,6 @@ window.onAutoCorrect = (function() {
 
 // --- Initialization ---
 function init() {
-  setupFullscreenExperience();
   setupVsExitIntentReveal();
   modeSelect.value = gameSettings.mode;
   difficultySelect.value = gameSettings.difficulty;

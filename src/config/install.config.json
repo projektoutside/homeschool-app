@@ -6,7 +6,7 @@
   "manifestId": "./",
   "startUrl": "./",
   "scope": "./",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "any",
   "themeColor": "#6366f1",
   "backgroundColor": "#6366f1",

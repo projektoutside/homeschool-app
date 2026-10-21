@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import MainLayout from './layouts/MainLayout';
@@ -16,7 +16,6 @@ import { CLASSROOM_RUNTIME_VERSION } from './constants/classroomRuntimeVersion';
 import { HOMEPAGE_APP_RUNTIME_VERSION } from './constants/homepageAppVersion';
 import { useCinematicInteractionFeedback } from './hooks/useCinematicInteractionFeedback';
 import { buildAssetPath } from './utils/pathUtils';
-import { getGameHostPolicyForRoute } from './utils/gameHostPolicy';
 import './App.css';
 import './components/ErrorBoundary.css';
 
@@ -140,128 +139,6 @@ const RequireInstalledShell: React.FC<{ pwa: PWAState; children: React.ReactNode
     return <>{children}</>;
 };
 
-const FULLSCREEN_EXEMPT_ROUTES = ['/install', '/auth'];
-
-const PWAWrapperWithState: React.FC<{ children: React.ReactNode; pwa: PWAState }> = ({ children, pwa }) => {
-    const {
-        enterFullscreen,
-        isFullscreen,
-        isStandaloneShell,
-        requiresInstalledShell,
-        shouldUseNativeFullscreenFallback,
-    } = pwa;
-    const location = useLocation();
-    const retryCount = useRef(0);
-    const maxRetries = 3;
-    const isFullscreenExemptRoute = FULLSCREEN_EXEMPT_ROUTES.some(route =>
-        location.pathname === route || location.pathname.startsWith(`${route}/`)
-    ) || !getGameHostPolicyForRoute(location.pathname).requiresNativeFullscreen;
-
-    useEffect(() => {
-        const attemptFullscreen = async () => {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const shellAlreadyImmersive = isFullscreen || isStandaloneShell;
-
-            if (
-                !shellAlreadyImmersive
-                && !isIOS
-                && !isFullscreenExemptRoute
-                && !requiresInstalledShell
-                && shouldUseNativeFullscreenFallback
-                && retryCount.current < maxRetries
-            ) {
-                retryCount.current += 1;
-
-                const delays = [100, 500, 1000];
-                const currentDelay = delays[retryCount.current - 1] || 1000;
-
-                window.setTimeout(() => {
-                    enterFullscreen().catch(() => {
-                        if (retryCount.current < maxRetries) {
-                            void attemptFullscreen();
-                        }
-                    });
-                }, currentDelay);
-            }
-        };
-
-        if (!isFullscreenExemptRoute) {
-            retryCount.current = 0;
-        }
-
-        void attemptFullscreen();
-    }, [
-        enterFullscreen,
-        isFullscreen,
-        isFullscreenExemptRoute,
-        isStandaloneShell,
-        requiresInstalledShell,
-        shouldUseNativeFullscreenFallback,
-    ]);
-
-    useEffect(() => {
-        if (isFullscreenExemptRoute || requiresInstalledShell || !shouldUseNativeFullscreenFallback) {
-            return;
-        }
-
-        let lastAttemptAt = 0;
-        const maybeEnterFullscreen = (event: Event) => {
-            if (isFullscreen || isStandaloneShell) {
-                return;
-            }
-
-            if (event.target instanceof Element && event.target.closest('[data-loader-interaction="true"]')) {
-                return;
-            }
-
-            if (event instanceof KeyboardEvent && event.key === 'Escape') {
-                return;
-            }
-
-            const now = Date.now();
-            if (now - lastAttemptAt < 250) {
-                return;
-            }
-
-            lastAttemptAt = now;
-            void enterFullscreen();
-        };
-
-        const pointerHandler = (event: Event) => {
-            maybeEnterFullscreen(event);
-        };
-
-        const keyHandler = (event: KeyboardEvent) => {
-            maybeEnterFullscreen(event);
-        };
-
-        document.addEventListener('pointerdown', pointerHandler, true);
-        document.addEventListener('touchstart', pointerHandler, true);
-        document.addEventListener('mousedown', pointerHandler, true);
-        document.addEventListener('keydown', keyHandler, true);
-
-        return () => {
-            document.removeEventListener('pointerdown', pointerHandler, true);
-            document.removeEventListener('touchstart', pointerHandler, true);
-            document.removeEventListener('mousedown', pointerHandler, true);
-            document.removeEventListener('keydown', keyHandler, true);
-        };
-    }, [
-        enterFullscreen,
-        isFullscreen,
-        isFullscreenExemptRoute,
-        isStandaloneShell,
-        requiresInstalledShell,
-        shouldUseNativeFullscreenFallback,
-    ]);
-
-    if (isFullscreenExemptRoute || pwa.requiresInstalledShell) {
-        return <>{children}</>;
-    }
-
-    return <>{children}</>;
-};
-
 const HOME_PAGE_APP_PATH = 'HomePageAPP/index.html';
 const CLASSROOM_APP_PATH = '3dClass/index.html';
 const CLASSROOM_DOOR_INTRO_PATH = '3dClass/door-intro.html';
@@ -291,102 +168,100 @@ const App: React.FC = () => {
     return (
         <ErrorBoundary>
             <BrowserRouter basename={basename}>
-                <PWAWrapperWithState pwa={pwa}>
-                    <RoutePrefetchCoordinator
-                        loading={loading}
-                        homePageAppUrl={homePageAppUrl}
-                        classroomAppUrl={classroomAppUrl}
-                        classroomDoorIntroUrl={classroomDoorIntroUrl}
-                        classroomDoorAudioUrl={classroomDoorAudioUrl}
+                <RoutePrefetchCoordinator
+                    loading={loading}
+                    homePageAppUrl={homePageAppUrl}
+                    classroomAppUrl={classroomAppUrl}
+                    classroomDoorIntroUrl={classroomDoorIntroUrl}
+                    classroomDoorAudioUrl={classroomDoorAudioUrl}
+                />
+                <Routes>
+                    {/* Install page - accessible without layout */}
+                    <Route path="/install" element={<RouteBoundary><InstallPage /></RouteBoundary>} />
+                    <Route
+                        path="/auth"
+                        element={
+                            loading
+                                ? <LoadingFallback />
+                                : user
+                                    ? <Navigate to="/" replace />
+                                    : <RouteBoundary><AuthPage /></RouteBoundary>
+                        }
                     />
-                    <Routes>
-                        {/* Install page - accessible without layout */}
-                        <Route path="/install" element={<RouteBoundary><InstallPage /></RouteBoundary>} />
+
+                    {/* Main app routes with layout */}
+                    <Route path="/" element={renderProtectedPage(<MainLayout />)}>
+                        <Route index element={<HomeRoutePlaceholder />} />
                         <Route
-                            path="/auth"
-                            element={
-                                loading
-                                    ? <LoadingFallback />
-                                    : user
-                                        ? <Navigate to="/" replace />
-                                        : <RouteBoundary><AuthPage /></RouteBoundary>
-                            }
+                            path="apps"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><Home /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
                         />
-                        
-                        {/* Main app routes with layout */}
-                        <Route path="/" element={renderProtectedPage(<MainLayout />)}>
-                            <Route index element={<HomeRoutePlaceholder />} />
-                            <Route
-                                path="apps"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><Home /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="play/:id"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><GamePlayer /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="open/:id"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><GamePlayer /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="manager"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><ManagerPage /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="character-creator"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><CharacterCreatorPage /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="resource/:id"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><Viewer /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route
-                                path="html-viewer"
-                                element={<RouteBoundary><HTMLViewer /></RouteBoundary>}
-                            />
-                            <Route path="home-profile" element={<Navigate to="/" replace />} />
-                            <Route
-                                path="classroom"
-                                element={(
-                                    <HomepageSessionGate>
-                                        <RouteBoundary><ClassroomPage /></RouteBoundary>
-                                    </HomepageSessionGate>
-                                )}
-                            />
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                        </Route>
-                    </Routes>
-                    <UpdateNotification
-                        updateInfo={pwa.updateInfo}
-                        isCheckingForUpdates={pwa.isCheckingForUpdates}
-                        checkForUpdates={pwa.checkForUpdates}
-                        applyUpdate={pwa.applyUpdate}
-                    />
-                </PWAWrapperWithState>
+                        <Route
+                            path="play/:id"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><GamePlayer /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route
+                            path="open/:id"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><GamePlayer /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route
+                            path="manager"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><ManagerPage /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route
+                            path="character-creator"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><CharacterCreatorPage /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route
+                            path="resource/:id"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><Viewer /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route
+                            path="html-viewer"
+                            element={<RouteBoundary><HTMLViewer /></RouteBoundary>}
+                        />
+                        <Route path="home-profile" element={<Navigate to="/" replace />} />
+                        <Route
+                            path="classroom"
+                            element={(
+                                <HomepageSessionGate>
+                                    <RouteBoundary><ClassroomPage /></RouteBoundary>
+                                </HomepageSessionGate>
+                            )}
+                        />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Route>
+                </Routes>
+                <UpdateNotification
+                    updateInfo={pwa.updateInfo}
+                    isCheckingForUpdates={pwa.isCheckingForUpdates}
+                    checkForUpdates={pwa.checkForUpdates}
+                    applyUpdate={pwa.applyUpdate}
+                />
             </BrowserRouter>
         </ErrorBoundary>
     );

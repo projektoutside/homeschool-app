@@ -10,7 +10,7 @@ export type GameHostPolicy = Readonly<{
 
 const DEFAULT_POLICY: GameHostPolicy = Object.freeze({
     lockZoom: true,
-    requiresNativeFullscreen: true,
+    requiresNativeFullscreen: false,
     iframeAllow: 'autoplay; fullscreen; camera; microphone; geolocation',
     allowFullScreen: true,
     iframeSandbox: 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation',

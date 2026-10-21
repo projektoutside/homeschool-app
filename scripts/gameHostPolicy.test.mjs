@@ -11,7 +11,6 @@ const LEGACY_IFRAME_ALLOW = 'autoplay; fullscreen; camera; microphone; geolocati
 const LEGACY_IFRAME_SANDBOX = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation';
 const ANIMAL_CHAMPION_IFRAME_ALLOW = 'microphone';
 const ANIMAL_CHAMPION_IFRAME_SANDBOX = 'allow-same-origin allow-scripts';
-const appSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const mainLayoutSource = readFileSync(new URL('../src/layouts/MainLayout.tsx', import.meta.url), 'utf8');
 const gamePlayerSource = readFileSync(new URL('../src/pages/GamePlayer.tsx', import.meta.url), 'utf8');
 const policySource = readFileSync(new URL('../src/utils/gameHostPolicy.ts', import.meta.url), 'utf8');
@@ -29,13 +28,13 @@ test('Animal Champion receives the frozen least-privilege host policy', () => {
   assert.equal(Object.isFrozen(policy), true);
 });
 
-test('other and near-match games retain frozen legacy host behavior', () => {
+test('other games keep their permissions without requiring fullscreen', () => {
   for (const id of ['math-car-king', 'animal-champion-2', null, undefined]) {
     const policy = getGameHostPolicy(id);
 
     assert.deepEqual(policy, {
       lockZoom: true,
-      requiresNativeFullscreen: true,
+      requiresNativeFullscreen: false,
       iframeAllow: LEGACY_IFRAME_ALLOW,
       allowFullScreen: true,
       iframeSandbox: LEGACY_IFRAME_SANDBOX,
@@ -68,7 +67,7 @@ test('malformed route encoding returns null instead of throwing', () => {
   assert.equal(getGameIdFromHostRoute('/open/%E0%A4%A'), null);
 });
 
-test('route policy exempts only exact Animal Champion play and open routes', () => {
+test('every route permits windowed play while preserving per-game permissions', () => {
   for (const pathname of [
     '/play/animal-champion',
     '/open/animal-champion/',
@@ -86,31 +85,11 @@ test('route policy exempts only exact Animal Champion play and open routes', () 
     '/apps',
   ]) {
     const policy = getGameHostPolicyForRoute(pathname);
-    assert.equal(policy.requiresNativeFullscreen, true, pathname);
+    assert.equal(policy.requiresNativeFullscreen, false, pathname);
     assert.equal(policy.lockZoom, true, pathname);
     assert.equal(policy.allowFullScreen, true, pathname);
     assert.equal(policy.iframeAllow, LEGACY_IFRAME_ALLOW, pathname);
   }
-});
-
-test('App global fullscreen fallback consults the route host policy', () => {
-  assert.match(
-    appSource,
-    /import\s+\{\s*getGameHostPolicyForRoute\s*\}\s+from '\.\/utils\/gameHostPolicy';/,
-  );
-  assert.match(
-    appSource,
-    /isFullscreenExemptRoute\s*=\s*[\s\S]*?!getGameHostPolicyForRoute\(location\.pathname\)\.requiresNativeFullscreen/,
-  );
-});
-
-test('App preserves install and auth static fullscreen exemptions before policy gating', () => {
-  const staticExemptions = "const FULLSCREEN_EXEMPT_ROUTES = ['/install', '/auth'];";
-  const staticExemptionsIndex = appSource.indexOf(staticExemptions);
-  const policyGateIndex = appSource.indexOf('!getGameHostPolicyForRoute(location.pathname).requiresNativeFullscreen');
-
-  assert.notEqual(staticExemptionsIndex, -1, 'both legacy static fullscreen exemptions must remain');
-  assert.ok(staticExemptionsIndex < policyGateIndex, 'static exemptions must be evaluated before policy gating');
 });
 
 test('MainLayout combines its current zoom decision with the route host policy', () => {
@@ -138,7 +117,6 @@ test('GamePlayer derives one policy before its unconditional zoom hook and enfor
   );
   assert.match(gamePlayerSource, /const gameHostPolicy = getGameHostPolicy\(currentGameId \?\? id\);/);
   assert.match(gamePlayerSource, /useZoomLock\(\{\s*enabled:\s*gameHostPolicy\.lockZoom,\s*iframeRefs:\s*zoomLockIframes\s*\}\);/);
-  assert.match(gamePlayerSource, /requiresRouteFullscreen\s*=\s*Boolean\([\s\S]*?gameHostPolicy\.requiresNativeFullscreen/);
   assert.match(gamePlayerSource, /allow=\{gameHostPolicy\.iframeAllow\}/);
   assert.match(gamePlayerSource, /allowFullScreen=\{gameHostPolicy\.allowFullScreen\}/);
   assert.match(gamePlayerSource, /sandbox=\{gameHostPolicy\.iframeSandbox\}/);
