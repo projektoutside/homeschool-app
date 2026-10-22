@@ -84,3 +84,19 @@ Verification fingerprint: `028f9c5fe06f0dd24fcedbcead7654103e880d5625cfca55c6009
 - Direct Vite production build, game audit (83 entries), JS/inline syntax and `git diff --check` passed. The existing chunk-size advisory remains. Desktop/phone/tablet reward captures and the high starting ramp were visually reviewed; the existing intentional vertical map scroll is the only added content region, with close/resume controls kept visible.
 
 This evidence uses local desktop browser engines and synthetic touch/input. No physical iPhone, iPad, Android hardware or Capacitor shell was tested; the previously recorded testing-service entitlement blocker remains unchanged. No remote push or deployment is included.
+
+## Progressive flight speed — 2026-10-21
+
+Tier 3: patrol motion changes bird/stone collision timing and puzzle difficulty. The plan was to increase speed on every level, preserve the original birds and renderer, retime only the starting patrol phases needed for fair routes, and verify normal/bigger-ball solutions and phone input.
+
+Campaign revision `crafted-18-v5-progressive-flight` derives the patrol rate from horizontal peak speed instead of sharing a rate across three levels. The first bird begins at 10.08 world pixels/second (the original first-level pace), gains 1.8 per level, and reaches 40.68 on level 18. Each additional bird is 2 pixels/second faster. Dividing by patrol distance keeps actual horizontal motion increasing even in narrow gate patrols. The existing sinusoidal easing, bob, wing textures and fixed-step renderer are preserved. Starting phases on levels 12, 13, 15, 17 and 18 were retimed; the middle birds on 12/15 and last bird on 18 also received margins for pointer-quantized phone drawings. Level IDs, paths, ink budgets, bird counts, saves, stars, shop and combo rules are unchanged.
+
+Verification:
+
+- `node --test scripts/birdsCampaign.test.mjs`: five passes, including strictly increasing actual horizontal speed, a gentle first level, bounded patrol frequency, drawable paths and bird/platform clearance.
+- `scripts/birdsCampaign.browser.mjs`: all 18 reference routes clear, 142/144 drawing/aim variations clear, later stages retain at least 11 sampled winning release times, and only 2/648 sampled no-line drops clear. All 18 hints retain the two-star hint penalty and pause/retry behavior. Report: `output/birds-campaign-design/progressive-speed-final.json` and its `-balance-rows.json` companion.
+- `scripts/birdsShop.browser.mjs` storage/bigger-ball scope passes all 18 Boulder ball routes, floor descents and save checks. `output/birds-shop/progressive-speed-final-boulder.json`.
+- Cross-browser combo/collision replay passes 90 route clears across desktop Chromium, Android touch emulation, iPhone/iPad WebKit and reduced-motion WebKit, plus the iframe award check. The full iPhone-sized pointer replay also clears all 18 stages with three stars, floor descent and persisted progression. Results: `output/birds-combos/progressive-speed-final.json` and `output/birds-campaign-design/progressive-speed-final.json`. These use isolated saves and browser engines, not physical devices.
+- The direct Vite build passes, all 11 built game files match source byte for byte, and the game audit passes 83 entries. Combined source/build fingerprint: `5f586ece4a2f4e212c26e93f041ace03198210039eeb27674e85611260a8482e`; individual hashes: `output/birds-progressive-speed/source-sha256.json`.
+
+No physical-device, native-shell, real-device frame-rate or authenticated server-persistence claim is made. The existing live preview and user progress remain in place; the task does not publish remotely.

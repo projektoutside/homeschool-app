@@ -15,7 +15,6 @@
       birdLaneYs: [410],
       birdXs: [240],
       birdRanges: [14],
-      birdSpeeds: [0.72],
       birdPhases: [0.3],
     },
     {
@@ -30,7 +29,6 @@
       birdLaneYs: [405],
       birdXs: [97],
       birdRanges: [14],
-      birdSpeeds: [0.72],
       birdPhases: [0.3],
     },
     {
@@ -45,7 +43,6 @@
       birdLaneYs: [420],
       birdXs: [237],
       birdRanges: [14],
-      birdSpeeds: [0.72],
       birdPhases: [0.3],
     },
     {
@@ -60,7 +57,6 @@
       birdLaneYs: [285,450],
       birdXs: [121,286],
       birdRanges: [16,18],
-      birdSpeeds: [0.79,0.85],
       birdPhases: [0.3,1.6],
     },
     {
@@ -75,7 +71,6 @@
       birdLaneYs: [295,466],
       birdXs: [223,98],
       birdRanges: [16,18],
-      birdSpeeds: [0.79,0.85],
       birdPhases: [0.3,1.6],
     },
     {
@@ -90,7 +85,6 @@
       birdLaneYs: [314,488],
       birdXs: [114,259],
       birdRanges: [16,18],
-      birdSpeeds: [0.79,0.85],
       birdPhases: [0.3,1.6],
     },
     {
@@ -105,7 +99,6 @@
       birdLaneYs: [320,400,488],
       birdXs: [195,237,236],
       birdRanges: [18,20,22],
-      birdSpeeds: [0.86,0.92,0.98],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -120,7 +113,6 @@
       birdLaneYs: [320,400,490],
       birdXs: [166,159,94],
       birdRanges: [18,20,22],
-      birdSpeeds: [0.86,0.92,0.98],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -135,7 +127,6 @@
       birdLaneYs: [245,390,450],
       birdXs: [84,274,282],
       birdRanges: [18,20,22],
-      birdSpeeds: [0.86,0.92,0.98],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -150,7 +141,6 @@
       birdLaneYs: [314,475,552],
       birdXs: [120,249,280],
       birdRanges: [20,22,24],
-      birdSpeeds: [0.93,0.99,1.05],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -165,7 +155,6 @@
       birdLaneYs: [300,460,540],
       birdXs: [105,216,266],
       birdRanges: [20,22,24],
-      birdSpeeds: [0.93,0.99,1.05],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -180,8 +169,7 @@
       birdLaneYs: [268,400,492],
       birdXs: [216,247,201],
       birdRanges: [14,18,20],
-      birdSpeeds: [0.93,0.99,1.05],
-      birdPhases: [0.3,1.6,3.1],
+      birdPhases: [-0.5,0.4,2.3],
     },
     {
       title: "Skybridge",
@@ -195,8 +183,7 @@
       birdLaneYs: [245,390,558],
       birdXs: [84,264,105],
       birdRanges: [22,24,26],
-      birdSpeeds: [1,1.06,1.12],
-      birdPhases: [0.3,1.6,3.1],
+      birdPhases: [-0.1,1.2,2.7],
     },
     {
       title: "Stone Stair",
@@ -210,7 +197,6 @@
       birdLaneYs: [300,455,535],
       birdXs: [176,146,109],
       birdRanges: [20,22,18],
-      birdSpeeds: [1,1.06,1.12],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -225,8 +211,7 @@
       birdLaneYs: [310,455,550],
       birdXs: [111,221,249],
       birdRanges: [22,24,26],
-      birdSpeeds: [1,1.06,1.12],
-      birdPhases: [0.3,1.6,3.1],
+      birdPhases: [-0.9,0,1.9],
     },
     {
       title: "Canopy Weave",
@@ -240,7 +225,6 @@
       birdLaneYs: [270,412,550],
       birdXs: [131,209,174],
       birdRanges: [24,26,28],
-      birdSpeeds: [1.07,1.13,1.19],
       birdPhases: [0.3,1.6,3.1],
     },
     {
@@ -255,8 +239,7 @@
       birdLaneYs: [280,430,560],
       birdXs: [280,118,256],
       birdRanges: [24,26,28],
-      birdSpeeds: [1.07,1.13,1.19],
-      birdPhases: [0.3,1.6,3.1],
+      birdPhases: [-0.5,0.8,2.3],
     },
     {
       title: "Crown Flight",
@@ -270,15 +253,16 @@
       birdLaneYs: [300,455,575],
       birdXs: [274,108,251],
       birdRanges: [24,26,28],
-      birdSpeeds: [1.07,1.13,1.19],
-      birdPhases: [0.3,1.6,3.1],
+      birdPhases: [-1.1,0.2,1.1],
     },
   ];
 
   window.WoodlandCampaign = Object.freeze({
-    revision: 'crafted-18-v4-boulder-exits',
-    levels: Object.freeze(levels.map(level => Object.freeze({
+    revision: 'crafted-18-v5-progressive-flight',
+    levels: Object.freeze(levels.map((level, levelIndex) => Object.freeze({
       ...level,
+      // Increase actual horizontal speed even when a gate needs a shorter patrol.
+      birdSpeeds: level.birdRanges.map((range, birdIndex) => Number(((10.08 + levelIndex * 1.8 + birdIndex * 2) / range).toFixed(4))),
       blockers: level.blockers.map(([x1, y1, x2, y2]) => ({ x1, y1, x2, y2, radius: 7, kind: 'blocker' })),
       hint: level.hint.map(stroke => stroke.map(([x, y]) => ({ x, y }))),
     }))),

@@ -20,6 +20,20 @@ test('the 18-stage campaign preserves the single, pair, then flock progression',
   assert.equal(levels.at(-1).hint.length, 3, 'the finale combines several learned turns');
 });
 
+test('every level increases actual bird flight speed, including shorter gate patrols', () => {
+  levels.forEach((level, index) => level.birdSpeeds.forEach((speed, bird) => {
+    assert.ok(Number.isFinite(speed) && speed > 0 && speed <= 2.5, `${level.title}: bounded smooth patrol rate`);
+    const previous = levels[index - 1];
+    if (previous?.birdRanges[bird]) {
+      assert.ok(level.birdRanges[bird] * speed > previous.birdRanges[bird] * previous.birdSpeeds[bird] + 1,
+        `${level.title}: actual horizontal speed rises even when the patrol narrows`);
+    }
+  }));
+  assert.equal(levels[0].birdSpeeds[0], .72, 'the first level keeps its welcoming pace');
+  assert.ok(levels.at(-1).birdRanges[0] * levels.at(-1).birdSpeeds[0] > levels[0].birdRanges[0] * levels[0].birdSpeeds[0] * 3.5,
+    'the final levels have a clearly faster pace');
+});
+
 test('every hint is drawable, reachable by the claw, and has enough ink for three stars', () => {
   for (const level of levels) {
     assert.ok(level.hintAim >= 54 && level.hintAim <= 306, level.title);
