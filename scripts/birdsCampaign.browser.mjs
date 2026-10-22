@@ -8,7 +8,7 @@ const output = 'output/birds-campaign-design';
 await mkdir(output, { recursive: true });
 const results = [];
 const sourceHash = createHash('sha256');
-for (const file of ['index.html', 'campaign.js', 'physics.js', 'birds.js', 'runways.js', 'drop-mechanism.js', 'style.css']) {
+for (const file of ['index.html', 'campaign.js', 'physics.js', 'birds.js', 'runways.js', 'drop-mechanism.js', 'style.css', 'shop.js', 'shop.css']) {
   sourceHash.update(file).update(await readFile(new URL(`../public/Games/Many Birds One Stone/${file}`, import.meta.url)));
 }
 const sourceFingerprint = sourceHash.digest('hex');

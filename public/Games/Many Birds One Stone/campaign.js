@@ -130,7 +130,7 @@
       skill: "Change direction after a hit",
       hintAim: 95,
       inkBudget: 210,
-      blockers: [[150,191,306,226]],
+      blockers: [[150,191,292,223]],
       hint: [[[72,300],[182,342]]],
       birdLaneYs: [245,390,450],
       birdXs: [84,274,282],
@@ -190,7 +190,7 @@
       skill: "Build a return bridge",
       hintAim: 90,
       inkBudget: 410,
-      blockers: [[145,169,308,205],[62,400,132,410]],
+      blockers: [[145,169,292,201],[62,400,132,410]],
       hint: [[[68,300],[180,330]],[[290,452],[180,490]]],
       birdLaneYs: [245,390,558],
       birdXs: [84,264,105],
@@ -276,7 +276,7 @@
   ];
 
   window.WoodlandCampaign = Object.freeze({
-    revision: 'crafted-18-v3-open-exits',
+    revision: 'crafted-18-v4-boulder-exits',
     levels: Object.freeze(levels.map(level => Object.freeze({
       ...level,
       blockers: level.blockers.map(([x1, y1, x2, y2]) => ({ x1, y1, x2, y2, radius: 7, kind: 'blocker' })),

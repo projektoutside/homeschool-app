@@ -4,9 +4,10 @@ import { createHash } from 'node:crypto';
 
 const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const output = 'output/birds-rolling';
+const ballRadius = Number(process.env.BIRDS_ROLLING_RADIUS) === 14 ? 14 : 12;
 await mkdir(output, { recursive: true });
 const hash = createHash('sha256');
-for (const file of ['index.html', 'physics.js', 'campaign.js', 'birds.js']) hash.update(file).update(await readFile(new URL(`../public/Games/Many Birds One Stone/${file}`, import.meta.url)));
+for (const file of ['index.html', 'physics.js', 'campaign.js', 'birds.js', 'shop.js', 'drop-mechanism.js']) hash.update(file).update(await readFile(new URL(`../public/Games/Many Birds One Stone/${file}`, import.meta.url)));
 const sourceFingerprint = hash.digest('hex'), report = [];
 for (const [name, engine, viewport, touch] of [
   ['desktop', chromium, { width: 1440, height: 1000 }, false],
@@ -15,7 +16,7 @@ for (const [name, engine, viewport, touch] of [
 ]) {
   if (process.env.BIRDS_ROLLING_FILTER && !new RegExp(process.env.BIRDS_ROLLING_FILTER).test(name)) continue;
   const browser = await engine.launch();
-  const row = { name, sourceFingerprint, physical: false };
+  const row = { name, sourceFingerprint, ballRadius, physical: false };
   try {
     const context = await browser.newContext({ viewport, hasTouch: touch, isMobile: touch }), page = await context.newPage();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -31,14 +32,14 @@ for (const [name, engine, viewport, touch] of [
             state.drawnStrokes = paths.map(points => ({points, width: DRAWN_LINE_WIDTH})); rebuildDrawnColliders();
             state.inkUsed = paths.reduce((sum, points) => sum + points.slice(1).reduce((length, p, i) => length + distance(p, points[i]), 0), 0);
             state.hintUsed = hintUsed; state.runReleasedAt = performance.now();
-            state.stone = {...createStone(), attached: false, active: true, ...body};
+            state.stone = {...createStone(state.loadout), attached: false, active: true, ...body};
           };
           window.readRollingBody = () => ({...state.stone});
           window.readRollingRoute = () => ({lines: state.drawnStrokes.map(stroke => stroke.points), ink: state.inkUsed, hintUsed: state.hintUsed, aim: state.clawBaseX});
         `);
       await route.fulfill({ response, body });
     });
-    await page.addInitScript(() => localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: 18, selectedLevel: 1, onboarded: true, bestStats: {} })));
+    await page.addInitScript(radius => localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: 18, selectedLevel: 1, onboarded: true, bestStats: {}, shop: { version: 1, coins: 60, owned: radius === 14 ? ['boulder'] : [], ball: radius === 14 ? 'boulder' : 'standard' } })), ballRadius);
     await page.goto(`${process.env.GAMES_TEST_URL || 'http://127.0.0.1:5186'}/Games/Many%20Birds%20One%20Stone/index.html`);
     await page.waitForFunction(() => window.setupRollingScenario, undefined, { polling: 50 });
     row.drops = await page.evaluate(() => {

@@ -12,6 +12,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23f0d8b6'/%3E%3Ccircle cx='24' cy='25' r='12' fill='%23c98a55'/%3E%3Ccircle cx='37' cy='35' r='15' fill='%23f6eddc'/%3E%3Ccircle cx='42' cy='25' r='4' fill='%232b241d'/%3E%3Cpath d='M46 26l10 3-10 4z' fill='%236e5a4a'/%3E%3C/svg%3E">
   <title>Many Birds One Stone</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="shop.css">
   <link rel="preload" href="assets/fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/woodland-v2.webp" as="image">
   <link rel="preload" href="assets/birds/EnemyBird16-strip.png" as="image">
@@ -19,12 +20,13 @@
 <body>
   <div id="app">
     <div id="shell">
-      <header class="hud">
+      <header class="hud" tabindex="0" aria-label="Game settings and progress">
         <div class="game-brand"><svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M11 36c-4-12 1-25 18-28 6-1 10 0 10 0s1 4 0 10C36 35 23 40 11 36Z"/><path d="m7 41 23-24M12 35l1-11m5 5 12-1m-6-5 1-9"/></svg><h1><span>Many Birds</span> <span>One Stone</span></h1><p>A little ink. A clever path.<br>One wonderfully satisfying drop.</p></div>
         <div class="hud-cluster">
           <button class="hud-button" id="homeButton" type="button" aria-label="Back to Games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span class="button-label">Games</span></button>
           <button class="hud-button" id="restartButton" type="button" aria-label="Restart level"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/></svg><span class="button-label">Retry</span></button>
           <button class="hud-button" id="soundButton" type="button" aria-label="Mute sound" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
+        <button class="shop-launch" id="shopButton" type="button" aria-haspopup="dialog"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 15 6-6m-6 0h.01m6 6h.01"/></svg><strong id="coinBalance">60</strong> <span>coins</span></span><span>Shop <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l2 13H3ZM8 8V6a4 4 0 0 1 8 0v2"/></svg></span></button>
         </div>
         <div class="hud-card level-card">
           <button class="mini-button" id="prevLevelButton" type="button" aria-label="Previous level">‹</button>
@@ -64,7 +66,7 @@
               <div class="overlay-actions">
                 <button class="overlay-button" id="overlaySecondary" type="button">Games</button>
                 <button class="overlay-button overlay-button--primary" id="overlayPrimary" type="button">Begin</button>
-                <button class="overlay-map-button" id="resultMapButton" type="button" aria-haspopup="dialog" hidden>Choose a level</button>
+                <div class="overlay-links"><button class="overlay-map-button" id="resultMapButton" type="button" aria-haspopup="dialog" hidden>Level map</button><button class="overlay-map-button" id="resultShopButton" type="button" aria-haspopup="dialog" hidden>Visit shop</button></div>
               </div>
             </div>
           </div>
@@ -104,6 +106,44 @@
     <div class="map-scroll" id="mapScroll" tabindex="0" aria-label="All 18 levels, grouped into six chapters"></div>
     <footer class="map-footer"><p>Clear a level to unlock the next.<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.</p><button class="overlay-button overlay-button--primary" id="resumeFromMap" type="button">Back to game</button></footer>
   </dialog>
+  <dialog class="woodland-shop" id="woodlandShop" aria-labelledby="shopTitle" aria-describedby="shopDescription">
+    <header class="shop-header">
+      <div><h2 id="shopTitle">Woodland workshop</h2><p id="shopDescription">A little help for your next clever drop.</p></div>
+      <button class="map-close" id="closeShop" type="button" aria-label="Close shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      <div class="shop-wallet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 15 6-6m-6 0h.01m6 6h.01"/></svg> <strong id="shopBalance">60</strong><span>Woodland coins</span></div>
+      <p id="shopMessage" class="shop-message" role="status"></p>
+    </header>
+    <div class="shop-scroll" id="shopScroll" tabindex="0" aria-label="Shop supplies and equipment">
+      <section class="shop-section" aria-labelledby="inkShopTitle">
+        <h3 id="inkShopTitle">Make room for a bigger idea.</h3><p>Extra ink, without losing a single line.</p>
+        <article class="shop-product shop-product--tank">
+          <div class="supply-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M16 6h16v8l6 6v20H10V20l6-6Z"/><path d="M16 11h16M11 26h26m-20 8h14"/></svg></div>
+          <div class="product-copy"><h4>Roomier ink tank</h4><p id="tankDescription"></p><meter id="tankSteps" min="0" max="3" value="0" aria-label="Ink tank upgrade tier"></meter></div>
+          <button class="shop-buy" data-shop-action="tank" aria-label="Upgrade ink tank">Upgrade · 120</button>
+        </article>
+        <article class="shop-product">
+          <div class="supply-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M18 5h12v7l5 5v24H13V17l5-5Zm0 5h12M14 24h20m-14 8h8"/></svg></div>
+          <div class="product-copy"><h4>Pocket ink bottle</h4><p>One full refill. Keep drawing your route.</p><span class="product-owned" id="bottleCount"></span></div>
+          <button class="shop-buy" data-shop-action="bottle" aria-label="Buy ink bottle">Buy bottle · 30</button>
+        </article>
+        <div class="refill-action"><p id="refillNote"></p><button class="overlay-button" data-shop-action="use-bottle">Use bottle (0)</button></div>
+      </section>
+      <section class="shop-section" aria-labelledby="ballsShopTitle">
+        <h3 id="ballsShopTitle">A little more impact.</h3><p>Change the size. Keep the satisfying roll.</p>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" aria-hidden="true"></canvas><div class="product-copy"><h4>Original ball</h4><p>The classic, carefully balanced size.</p></div><button class="shop-buy" data-shop-action="standard" aria-label="Select original ball">Selected</button></article>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" data-size="big" aria-hidden="true"></canvas><div class="product-copy"><h4>Boulder ball</h4><p>17% wider. More reach when a bird slips past.</p><span class="product-owned">Permanent size unlock</span></div><button class="shop-buy" data-shop-action="boulder" aria-label="Buy or select Boulder ball">Buy · 240</button></article>
+      </section>
+      <section class="shop-section" aria-labelledby="styleShopTitle">
+        <h3 id="styleShopTitle">Make the drop your own.</h3><p>Collect a finish. Leave a little woodland magic.</p>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" aria-hidden="true"></canvas><div class="product-copy"><h4>Warm brass</h4><p>The original sunlit finish. Always yours.</p></div><button class="shop-buy" data-shop-action="brass" aria-label="Select warm brass finish">Selected</button></article>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="steel" aria-hidden="true"></canvas><div class="product-copy"><h4>Moonlit steel</h4><p>Cool silver with a polished highlight.</p></div><button class="shop-buy" data-shop-action="steel" aria-label="Buy or select moonlit steel finish">Buy · 160</button></article>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="jade" aria-hidden="true"></canvas><div class="product-copy"><h4>Forest jade</h4><p>A deep green gem, caught in the light.</p></div><button class="shop-buy" data-shop-action="jade" aria-label="Buy or select forest jade finish">Buy · 220</button></article>
+        <article class="shop-product"><div class="supply-icon firefly-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M34 8v10m-5-5h10M13 25v10m-5-5h10M30 31v8m-4-4h8"/><circle cx="17" cy="12" r="2"/><circle cx="38" cy="25" r="2"/></svg></div><div class="product-copy"><h4>Firefly trail</h4><p>A stream of tiny lights behind your ball.</p><span class="product-owned">Cosmetic · no physics changes</span></div><button class="shop-buy" data-shop-action="firefly" aria-label="Buy or toggle firefly trail">Buy · 120</button></article>
+      </section>
+      <p class="shop-earning"><strong>Good drops pay off.</strong> Earn 15 coins each clear, plus 60 for a first clear and 15 for every new star. Your first 60 coins are a welcome gift; earlier clears and stars count too.</p>
+    </div>
+    <footer class="shop-footer"><p>Earned in this game.<br>Saved on this device.</p><button class="overlay-button overlay-button--primary" id="resumeFromShop" type="button">Back to game</button></footer>
+  </dialog>
   <script src="../shared/lahsPointsBridge.js"></script>
   <script src="audio.js"></script>
   <script src="drop-mechanism.js"></script>
@@ -112,6 +152,7 @@
   <script src="physics.js"></script>
   <script src="campaign.js"></script>
   <script src="level-map.js"></script>
+  <script src="shop.js"></script>
   <script>
     (() => {
       'use strict';
@@ -132,8 +173,6 @@
       const DRAW_LEFT = 22;
       const DRAW_RIGHT = WORLD_W - 22;
       const STONE_RADIUS = 12;
-      const STONE_DROP_TAP_RADIUS = STONE_RADIUS + 18;
-      const CLAW_CONTROL_RADIUS = STONE_DROP_TAP_RADIUS + 10;
       const CLAW_MIN_X = 54;
       const CLAW_MAX_X = WORLD_W - 54;
       const CLAW_DRAG_THRESHOLD = 8;
@@ -155,6 +194,9 @@
 
       const dom = {
         canvas: document.getElementById('gameCanvas'),
+        shopButton: document.getElementById('shopButton'),
+        resultShopButton: document.getElementById('resultShopButton'),
+        coinBalance: document.getElementById('coinBalance'),
         levelValue: document.getElementById('levelValue'),
         prevLevelButton: document.getElementById('prevLevelButton'),
         nextLevelButton: document.getElementById('nextLevelButton'),
@@ -224,13 +266,14 @@
         { ax: 10, ay: FLOOR_Y, bx: WORLD_W - 10, by: FLOOR_Y, radius: 0, kind: 'floor' },
       ];
 
-      function createStone() {
+      function createStone(loadout = { radius: STONE_RADIUS, finish: 'brass' }) {
         return {
           x: WORLD_W / 2,
           y: 92,
           vx: 0,
           vy: 0,
-          radius: STONE_RADIUS,
+          radius: loadout.radius,
+          finish: loadout.finish,
           rotation: 0,
           attached: true,
           active: false,
@@ -274,6 +317,7 @@
               /^([1-9]|1[0-2])$/.test(key) ? String(Number(key) + offset) : key, stats,
             ])) : bestStats,
             onboarded: Boolean(parsed.onboarded),
+            shop: parsed.shop,
             legacyBackup: legacy ? raw : null,
           };
         } catch (_error) {
@@ -289,6 +333,10 @@
         onboardingPending: !storedProgress.onboarded,
         overlayVisible: false,
         mapVisible: false,
+        shopVisible: false,
+        shopOpenedAt: null,
+        shop: WoodlandEconomy.normalize(storedProgress.shop, storedProgress.bestStats),
+        loadout: null,
         mapOpenedAt: null,
         overlayPrimaryAction: 'begin',
         overlaySecondaryAction: 'home',
@@ -364,7 +412,7 @@
       });
 
       function openLevelMap(event) {
-        if (state.mapVisible) return;
+        if (state.mapVisible || state.shopVisible) return;
         resetClawControl();
         finishStroke();
         state.mapVisible = true;
@@ -374,10 +422,58 @@
         levelMap.open({ levelIndex: state.levelIndex, highestUnlocked: state.highestUnlocked, bestStats: state.bestStats, returnFocus: event.currentTarget });
       }
 
-      function saveProgress() {
+      const shop = new WoodlandShop({
+        dialog: document.getElementById('woodlandShop'), getShop: () => state.shop,
+        canRefill: () => state.stone.attached && !state.runEnded && !state.onboardingPending && state.inkUsed > .01,
+        onAction(action) {
+          if (state.hostPaused || state.hiddenPause || state.rotatePaused) return { error: 'Return to the game in portrait before shopping.' };
+          if (action === 'use-bottle' && !(state.stone.attached && !state.runEnded && state.inkUsed > .01)) return { error: 'Use a bottle after drawing, before dropping.' };
+          try {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+            const latest = saved?.shop ? WoodlandEconomy.normalize(saved.shop, saved.bestStats) : state.shop;
+            const result = WoodlandEconomy.transact(latest, action);
+            if (result.error) { state.shop = latest; refreshHud(); return result; }
+            if (!saveProgress(result.next)) return { error: 'Your browser could not save this purchase. Nothing was spent. Enable storage and try again.' };
+            state.shop = result.next;
+            if (action === 'use-bottle') { state.inkUsed = 0; refreshButtons(); }
+            refreshHud(); announce(result.message);
+            return result;
+          } catch (_error) { return { error: 'Saving is unavailable. Nothing was spent. Enable storage and try again.' }; }
+        },
+        onClose() {
+          const now = performance.now(), pausedFor = now - state.shopOpenedAt;
+          state.runStartAt += pausedFor;
+          if (state.runReleasedAt !== null) state.runReleasedAt += pausedFor;
+          state.shopVisible = false; state.shopOpenedAt = null;
+          state.lastFrame = now; state.accumulator = 0;
+          syncPauseState(); refreshButtons();
+        },
+      });
+
+      function openShop(event) {
+        if (state.shopVisible || state.mapVisible || state.onboardingPending) return;
+        resetClawControl(); finishStroke();
+        state.shopVisible = true; state.shopOpenedAt = performance.now();
+        syncPauseState(); refreshButtons(); shop.open(event.currentTarget);
+      }
+
+      function saveProgress(nextShop = null) {
         try {
           if (storedProgress.legacyBackup && !window.localStorage.getItem(LEGACY_BACKUP_KEY)) {
             window.localStorage.setItem(LEGACY_BACKUP_KEY, storedProgress.legacyBackup);
+          }
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          let existing = null;
+          try { existing = JSON.parse(raw || 'null'); } catch (_error) { /* Replace a malformed save after keeping its backup. */ }
+          const latestShop = existing?.shop && WoodlandEconomy.normalize(existing.shop, existing.bestStats);
+          if (nextShop && latestShop && latestShop.revision >= nextShop.revision) return false;
+          if (!nextShop && latestShop && latestShop.revision > state.shop.revision) state.shop = latestShop;
+          if (existing?.campaignVersion === CAMPAIGN_VERSION) {
+            state.highestUnlocked = Math.max(state.highestUnlocked, clamp(Math.floor(Number(existing.highestUnlocked)) || 1, 1, LEVELS.length));
+            for (let level = 1; level <= LEVELS.length; level++) {
+              const previous = existing.bestStats?.[level], current = state.bestStats[level];
+              if (levelMap.earnedStars(previous) > levelMap.earnedStars(current) || (previous?.points === current?.points && previous?.clearTimeMs < current?.clearTimeMs)) state.bestStats[level] = previous;
+            }
           }
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
             campaignVersion: CAMPAIGN_VERSION,
@@ -385,9 +481,11 @@
             selectedLevel: state.levelIndex + 1,
             bestStats: state.bestStats,
             onboarded: !state.onboardingPending,
+            shop: nextShop || state.shop,
           }));
+          return true;
         } catch (_error) {
-          // Ignore storage failures in standalone/offline contexts.
+          return false;
         }
       }
 
@@ -444,7 +542,7 @@
         state.stone.previousY = state.stone.y;
         state.stone.previousRotation = state.stone.rotation;
         levelMap.setPaused(state.hostPaused || state.hiddenPause);
-        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible;
+        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible;
         woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
           state.audio.context.resume().catch(() => {});
@@ -535,6 +633,7 @@
         dom.overlayBody.textContent = config.body || '';
         dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
         dom.resultMapButton.hidden = state.onboardingPending;
+        dom.resultShopButton.hidden = state.onboardingPending;
         if (config.secondaryLabel) {
           dom.overlaySecondary.hidden = false;
           dom.overlaySecondary.textContent = config.secondaryLabel;
@@ -611,7 +710,7 @@
           id: levelIndex + 1,
           title: base.title,
           note: base.note,
-          inkBudget: base.inkBudget,
+          inkBudget: base.inkBudget * (state.loadout?.inkMultiplier || 1),
           chapter: base.chapter,
           skill: base.skill,
           hintAim: base.hintAim,
@@ -645,6 +744,9 @@
       }
 
       function refreshHud() {
+        dom.coinBalance.textContent = state.shop.coins.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 0 });
+        dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins`);
+        dom.shopButton.disabled = state.onboardingPending;
         dom.levelValue.textContent = state.level.title;
         dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
@@ -660,7 +762,7 @@
       function refreshButtons() {
         const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
-        const blocked = state.overlayVisible || state.mapVisible;
+        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible;
         dom.prevLevelButton.disabled = state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
         dom.hintButton.disabled = blocked || state.rotatePaused || !attached;
@@ -669,9 +771,10 @@
       }
 
       function resetStone() {
+        dropMechanism.radius = state.loadout.radius;
         dropMechanism.reset(state.clawBaseX);
         state.stoneTrail = [];
-        state.stone = createStone();
+        state.stone = createStone(state.loadout);
         const clawPose = getClawPose();
         state.stone.x = clawPose.x;
         state.stone.y = clawPose.stoneY;
@@ -688,6 +791,7 @@
       }
 
       function beginAttempt(clearLines, preserveHintState) {
+        if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
         if (clearLines) {
           state.drawnStrokes = [];
           state.drawnColliders = [];
@@ -761,13 +865,13 @@
 
       function pointHitsStoneDropTarget(point) {
         if (!state.stone.attached) return false;
-        return distance(point, state.stone) <= STONE_DROP_TAP_RADIUS;
+        return distance(point, state.stone) <= state.stone.radius + 18;
       }
 
       function pointHitsClawControl(point) {
         if (!state.stone.attached) return false;
         const clawPose = getClawPose();
-        const inStoneZone = distance(point, state.stone) <= CLAW_CONTROL_RADIUS;
+        const inStoneZone = distance(point, state.stone) <= state.stone.radius + 28;
         const inCarriageZone = Math.abs(point.x - clawPose.x) <= 40
           && point.y >= clawPose.y - 28
           && point.y <= clawPose.stoneY + 18;
@@ -1041,7 +1145,6 @@
         const previous = state.bestStats[key];
         if (!previous || summary.points > previous.points || (summary.points === previous.points && summary.clearTimeMs < previous.clearTimeMs)) {
           state.bestStats[key] = summary;
-          saveProgress();
         }
       }
 
@@ -1087,7 +1190,12 @@
           previousStars,
           unlockedLevel: state.highestUnlocked > previousUnlocked ? state.highestUnlocked : null,
         });
-        saveProgress();
+        let latestEconomy = state.shop;
+        try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved?.shop) latestEconomy = WoodlandEconomy.normalize(saved.shop); } catch (_error) {}
+        const coinReward = WoodlandEconomy.reward(latestEconomy, state.level.id, summary.stars);
+        const coinsSaved = saveProgress(coinReward.next);
+        state.shop = coinReward.next;
+        refreshHud();
         setStatus(`${birdLabel(state.level.birds.length)} cleared! Watch the stone finish its descent.`);
         playTone('win');
         announce(`Level ${state.level.id} cleared.`);
@@ -1096,6 +1204,7 @@
           { label: 'Level time', value: fmtSeconds(clearTimeMs) },
           { label: 'Ink left', value: fmtPercent(remainingInk) },
           { label: 'Points', value: String(points) },
+          { label: coinsSaved ? 'Woodland coins' : 'Coins (session only)', value: `+${coinReward.earned}` },
         ];
         const nextLevel = LEVELS[state.levelIndex + 1];
         const chapterComplete = nextLevel && nextLevel.chapter !== state.level.chapter;
@@ -1350,7 +1459,10 @@
 
       function drawStone(stone) {
         state.stoneTrail.forEach((point, index) => {
-          ctx.fillStyle = `rgba(255, 226, 153, ${index / state.stoneTrail.length * .42})`;
+          ctx.fillStyle = state.loadout.trail ? `rgba(232, 255, 164, ${index / state.stoneTrail.length * .7})` : `rgba(255, 226, 153, ${index / state.stoneTrail.length * .42})`;
+          if (state.loadout.trail && !reducedMotion && index % 3 === 0) {
+            ctx.fillRect(point.x + Math.sin(index * 2) * 5 - 1, point.y - 1, 2, 2);
+          }
           ctx.beginPath(); ctx.arc(point.x, point.y, state.stone.radius * index / state.stoneTrail.length * .7, 0, Math.PI * 2); ctx.fill();
         });
         dropMechanism.drawStone(ctx, stone);
@@ -1443,6 +1555,7 @@
           case 'begin':
             state.onboardingPending = false;
             saveProgress();
+            refreshHud();
             setStatus(state.level.note);
             return;
           case 'next-level':
@@ -1504,9 +1617,9 @@
       }
 
       function handleKeyboard(event) {
-        if (state.mapVisible) return;
+        if (state.mapVisible || state.shopVisible) return;
         if (state.overlayVisible && event.key === 'Tab') {
-          const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary, dom.resultMapButton].filter((button) => !button.hidden && !button.disabled);
+          const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary, dom.resultMapButton, dom.resultShopButton].filter((button) => !button.hidden && !button.disabled);
           const next = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
           if (document.activeElement === next) { event.preventDefault(); (event.shiftKey ? buttons[buttons.length - 1] : buttons[0]).focus(); }
           return;
@@ -1546,7 +1659,7 @@
 
       function update(dt) {
         if (!state.level) return;
-        if (state.mapVisible) return;
+        if (state.mapVisible || state.shopVisible) return;
         if (!state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
           state.elapsed += dt;
         }
@@ -1571,7 +1684,7 @@
           update(STEP);
           state.accumulator -= STEP;
         }
-        if (!state.mapVisible) draw(state.accumulator / STEP);
+        if (!state.mapVisible && !state.shopVisible) draw(state.accumulator / STEP);
         window.requestAnimationFrame(frame);
       }
 
@@ -1588,7 +1701,13 @@
       }
 
       function bindEvents() {
+        dom.shopButton.addEventListener('click', openShop);
+        dom.resultShopButton.addEventListener('click', openShop);
         dom.levelMapButton.addEventListener('click', openLevelMap);
+        window.addEventListener('storage', event => {
+          if (event.key !== STORAGE_KEY || !event.newValue) return;
+          try { const saved = JSON.parse(event.newValue); state.shop = WoodlandEconomy.normalize(saved.shop, saved.bestStats); refreshHud(); if (state.shopVisible) shop.update(); } catch (_error) {}
+        });
         dom.resultMapButton.addEventListener('click', openLevelMap);
         dom.soundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
         document.getElementById('rotateHomeButton').addEventListener('click', exitToGames);
@@ -1687,6 +1806,10 @@
           birdArt: woodlandBirds.describe(),
           overlayVisible: state.overlayVisible,
           mapVisible: state.mapVisible,
+          shopVisible: state.shopVisible,
+          shop: structuredClone(state.shop),
+          loadout: state.loadout,
+          inkBudget: state.level?.inkBudget,
           outcome: state.outcome,
           resultPending: Boolean(state.pendingResult),
           floorY: FLOOR_Y,
@@ -1711,7 +1834,7 @@
             : [],
           lines: state.drawnStrokes.map((stroke) => stroke.points.length),
           status: state.statusText,
-          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible,
+          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible,
           sound: { muted: state.audio.muted, volume: state.audio.sfxVolume, loaded: [...woodlandAudio.buffers.keys()], context: woodlandAudio.context?.state || 'locked' },
         });
         window.advanceTime = (ms) => {

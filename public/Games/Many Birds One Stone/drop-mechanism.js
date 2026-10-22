@@ -182,7 +182,7 @@
     }
 
     drawJaw(ctx, side, front) {
-      ctx.save(); ctx.translate(side * 11, 28); ctx.rotate(-side * this.open * .72); ctx.scale(side, 1);
+      ctx.save(); ctx.translate(side * (11 + (this.radius - 12) * .8), 28); ctx.rotate(-side * this.open * .72); ctx.scale(side, 1);
       // Forged finger with bevelled edges and a rubber contact pad below the stone's equator.
       ctx.beginPath();
       ctx.moveTo(-2, -1); ctx.bezierCurveTo(7, 0, 13, 10, 13, 17);
@@ -212,7 +212,10 @@
       const r = stone.radius;
       ctx.save(); ctx.translate(stone.x, stone.y);
       const shade = ctx.createRadialGradient(-r * .37, -r * .48, .3, r * .16, r * .19, r * 1.13);
-      [[0, '#ffedb4'], [.22, '#e7c77d'], [.52, '#bd9450'], [.78, '#806538'], [1, '#354a39']].forEach(([stop, color]) => shade.addColorStop(stop, color));
+      const colors = stone.finish === 'steel' ? ['#f0fbff', '#cbdfe7', '#7a9ba5', '#46616c', '#203b43']
+        : stone.finish === 'jade' ? ['#daffd1', '#9adba4', '#459a71', '#236147', '#153e35']
+        : ['#ffedb4', '#e7c77d', '#bd9450', '#806538', '#354a39'];
+      [0, .22, .52, .78, 1].forEach((stop, index) => shade.addColorStop(stop, colors[index]));
       circle(ctx, 0, 0, r, shade);
       ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r - .15, 0, TAU); ctx.clip();
       ctx.rotate(stone.rotation || 0);
