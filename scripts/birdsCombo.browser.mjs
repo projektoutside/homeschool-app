@@ -143,6 +143,13 @@ for (const [name, engine, options] of [
     await page.screenshot({path:`${output}/${name}-live-combo.png`});
     await page.evaluate(() => window.advanceTime(12000));
 
+    if(!options.hasTouch){
+      await page.setViewportSize({width:900,height:900});
+      const hud=await page.evaluate(()=>({header:document.querySelector('.hud').getBoundingClientRect().toJSON(),combo:document.querySelector('#comboReadout').getBoundingClientRect().toJSON()}));
+      assert.ok(hud.combo.top>=hud.header.top&&hud.combo.bottom<=hud.header.bottom,'combo tally stays visible in the live-panel desktop layout');
+      await overflow();
+    }
+
     await page.setViewportSize({width:320,height:568}); await page.evaluate(() => document.documentElement.style.fontSize='24px');
     await overflow();
     const meters = await page.evaluate(() => ({ink:document.querySelector('.meter-card').getBoundingClientRect().toJSON(),flock:document.querySelector('.flock-progress').getBoundingClientRect().toJSON()}));
