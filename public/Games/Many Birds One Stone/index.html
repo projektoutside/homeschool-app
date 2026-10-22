@@ -422,10 +422,11 @@
       });
 
       function finishVersusTurn(clear, reason, immediate = false) {
-        if (!versus.playing) return;
+        if (!versus.running) return;
         finishStroke(); resetClawControl();
         state.runEnded = true; state.outcome = clear ? 'win' : 'lose';
-        versus.capture({ hits: state.combo.hits, combo: state.combo.points, clear, inkLeft: remainingInkRatio(), reason });
+        versus.capture({ hits: state.level.birds.filter(bird => !bird.alive).length, combo: state.combo.points, clear, inkLeft: remainingInkRatio(), reason,
+          inkUsed: state.inkUsed, dropped: state.runReleasedAt !== null, ballRadius: state.stone.radius });
         playTone(clear ? 'win' : 'lose');
         if (clear) createParticles(180, 220, reducedMotion ? 6 : 36, ['#ffd06b', '#ffffff', '#72cda1']);
         if (immediate || !state.stone.active) {
@@ -814,7 +815,8 @@
         versus.dom.versusButton.disabled = state.onboardingPending || state.overlayVisible || state.mapVisible || state.shopVisible;
         const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
-        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.playing);
+        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.running);
+        versus.dom.vsEditTest.disabled = blocked || state.rotatePaused;
         dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
         dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
@@ -1058,7 +1060,7 @@
       function handleCanvasPointerDown(event) {
         if (versus.paused || state.hostPaused || state.hiddenPause || state.rotatePaused) return;
         if (versus.editing) { unlockAudio(); versus.pointerDown(event, pointerToWorld(event), dom.canvas); return; }
-        if (versus.active && !versus.playing) return;
+        if (versus.active && !versus.running) return;
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.pointer.active || state.clawControl.active) return;
         unlockAudio();
         const rawPoint = pointerToWorld(event);
@@ -1084,7 +1086,7 @@
       }
 
       function clearLines() {
-        if (versus.editing || versus.paused || (versus.active && !versus.playing)) return;
+        if (versus.editing || versus.paused || (versus.active && !versus.running)) return;
         if (!state.stone.attached || state.overlayVisible) return;
         state.drawnStrokes = [];
         state.drawnColliders = [];
@@ -1103,7 +1105,7 @@
       }
 
       function releaseStone() {
-        if (versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.playing)) return;
+        if (versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.running)) return;
         finishStroke();
         if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
         resetClawControl();
@@ -1238,7 +1240,7 @@
 
       function handleWin() {
         if (state.runEnded) return;
-        if (versus.active) { finishVersusTurn(true, 'Every bird cleared.'); return; }
+        if (versus.active) { finishVersusTurn(true, 'Every bird cleared.', versus.testing); return; }
         refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
@@ -1734,7 +1736,7 @@
       function handleKeyboard(event) {
         if (versus.paused) return;
         if (versus.active && event.key === 'Escape') { event.preventDefault(); versus.pause(); return; }
-        if (versus.editing || (versus.active && !versus.playing)) return;
+        if (versus.editing || (versus.active && !versus.running)) return;
         if (state.mapVisible || state.shopVisible) return;
         if (state.overlayVisible && event.key === 'Tab') {
           const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary, dom.resultMapButton, dom.resultShopButton].filter((button) => !button.hidden && !button.disabled);
@@ -2040,6 +2042,7 @@
             return JSON.parse(window.render_game_to_text());
           },
           forceWin() {
+            if (versus.active) return JSON.parse(window.render_game_to_text());
             state.level.birds.forEach(hitBird);
             handleWin();
             return JSON.parse(window.render_game_to_text());

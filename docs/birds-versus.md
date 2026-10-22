@@ -1,5 +1,18 @@
 # Many Birds One Stone: 2 Player VS Mode
 
+## Solvability safety follow-up
+
+Tier 3, base `2484de9`, same task checkout. Plan: require a creator clear under identical opponent rules; bind the proof to exact geometry and settings and invalidate it on editing; then exercise impossible/failed/expired proofs, successful handoffs, both player turns, lifecycle and campaign isolation in desktop/touch/WebKit contexts. Keep validation private and campaign rewards untouched. This is a completion gate rather than an automatic solver for arbitrary freehand shapes.
+
+Implemented and verified on 2026-10-21. `Test map` replaces the direct handoff. A creator must actually drop the original ball and hit every bird using the opponent's solving ink and timer. Test retries reset birds, clock and solving ink; returning to the editor preserves the gray platform design but removes approval. A successful test ends at the last bird, earns no rewards or match score, and exposes `Seal proven map`. Both maps are checked again before competitive turns. Proofs bind every bird/platform coordinate and all match settings; untested, partial, expired, oversized-ball and over-budget clears are rejected. The existing VS debug force-win shortcut cannot approve a map.
+
+Safety validation receipts (all local; no physical/native PASS):
+
+- `node --test scripts/birdsVersus.test.mjs`: six passed, covering stale geometry/settings, incomplete proof, equal equipment/budget/time, untimed proof and both-map gates.
+- `scripts/birdsVersus.browser.mjs`: desktop and iPhone WebKit (`safety-core.json`), final desktop including private-test pause/retry/edit controls (`safety-final-desktop.json`), short desktop/Android CDP touch/iPad WebKit/small reduced-motion phone/same-origin iframe (`safety-devices.json`) all passed. Actual collisions prove creator maps before competitive clears. A closed 88×88 gray box around a bird remains locked after a real failed drop; tests also reject a timeout and require another real clear after editing a proven map. Failed tests expose no seal action. Creator solution lines do not transfer to the opponent. Campaign saves, currency and global awards stay isolated.
+- All 18 authored campaign hint routes, retries and resume passed (`output/birds-campaign-design/versus-safety-regression.json`). `npm run audit:games` passed 83 entries; Vite build passed. The existing large-chunk warning remains. All 13 game code/style files match built output; inline/JS syntax and diff checks passed. Final game fingerprint: `b8939fa4cbb3702f5ea7bf1f3ea91d1871644dabe7dfbd21b09e7ee39a14f88a`, recorded in `output/birds-versus/source-sha256.json`. Original bird asset is unchanged.
+- One visual inspection pass of the inherited desktop/phone proof-required, passed and blocked dialogs: self-assessment 8/10 for fidelity, composition, finish, consistency and usability. Detector found no issues in the changed VS controller/styles. Existing contained dialog scrolling handles short screens and zoom. Physical iOS/Android, real keyboards and Capacitor remain untested because device-lab authorization is unavailable.
+
 Tier 3. Local pass-and-play extension of the established woodland game, using the original birds, claw, ball, sound and connected-stroke physics. Code-led, delegated design choices; Operate editor and protected handoffs. No new assets or providers.
 
 ## Implementation order
@@ -12,10 +25,10 @@ Tier 3. Local pass-and-play extension of the established woodland game, using th
 
 - Player 1 builds for Player 2; Player 2 builds for Player 1. Player 1 then solves Player 2's map, followed by Player 2.
 - User-confirmed defaults: three birds and 60 seconds per solving turn. Delegated supplies: 360 platform ink and 480 solving ink. Bird count (1–3), supplies and 30/60/90/120-second or untimed turns are configurable. Building is untimed.
-- Place or move birds inside the marked center area. Platforms stay below the claw and above the floor. Birds cannot overlap each other or platforms. Budget measures actual polyline length. Undo refunds it. Ready can be used early; spending all platform ink locks in the map after the stroke ends.
+- Place or move birds inside the marked center area. Platforms stay below the claw and above the floor. Birds cannot overlap each other or platforms. Budget measures actual polyline length. Undo refunds it. Test can be used early; spending all platform ink opens the required play-test after the stroke ends. Only a successful creator clear enables sealing and handoff.
 - One drop per turn. The clock includes drawing and aiming and starts only after the receiving player presses Begin. A trapped ball returns with lines kept and the clock continues. A miss or timeout ends the turn; a clear lets the ball finish its descent.
 - 100 match points per bird, existing x1/x2/x3 bird combo bonuses, and 100 for clearing the entire flock. Equal scores use faster elapsed time when a bird was hit; zero-hit rounds draw. Match points do not change campaign stars, global points, coins, bottles or gear.
-- Equal original balls and supplies; no shop upgrades during VS. Transient matches; leaving or reloading returns to the campaign. No claim that arbitrary user maps are guaranteed solvable; UI asks creators to leave a clear route.
+- Equal original balls and supplies; no shop upgrades during VS. Transient matches; leaving or reloading returns to the campaign. Both custom maps must have an actual successful creator clear under identical rules before the match can begin. Editing removes that proof.
 
 ## Layout exceptions
 
@@ -33,4 +46,4 @@ Verified locally on 2026-10-21 at `http://127.0.0.1:5186`. Task checkout `codex/
 
 DEGRADED: single-context (user requested direct execution without delegation). Visual self-assessment, two candidate passes: brief fidelity 8, composition 8, finish 8, style consistency 8, usability/motion 8. Reviewed desktop, phone, tablet, setup/editor/solve/results and reduced-motion/keyboard-height captures. Original birds and metal surfaces match the incumbent game. The detector's inherited cream-palette, old HUD/card and shadow suggestions were assessed against that deliberate woodland identity; no unrelated redesign or ignored-rule changes. VS combo text is 12px minimum at the default rem size.
 
-Physical devices, real mobile keyboards, iOS Safari hardware performance and Capacitor shells were not tested. The previously connected device lab requires authorization. No physical/native or authenticated cloud-points PASS is implied. Custom geometry can still be unsolvable; the editor enforces space and budgets and tells creators to leave a route, without claiming an automatic solvability proof.
+Physical devices, real mobile keyboards, iOS Safari hardware performance and Capacitor shells were not tested. The previously connected device lab requires authorization. No physical/native or authenticated cloud-points PASS is implied. The editor can represent an unsolvable layout, but the mandatory successful-clear gate prevents it from being handed to the opponent; see the safety follow-up above.

@@ -65,6 +65,47 @@ for (const [name,engine,options] of profiles) {
       assert.equal((await get(page)).versus.phase,'building');
     };
     const editorMaps=[];
+    let safetyExerciseDone=false;
+    const prove=async(player)=>{
+      assert.equal((await get(page)).versus.phase,'test-ready');
+      assert.equal(await page.getByRole('button',{name:'Seal proven map',exact:true}).count(),0);
+      await shot(`player${player}-test-required`);
+      await page.locator('#vsDialogActions button').last().click();
+      assert.equal((await get(page)).versus.phase,'testing');
+      assert.equal((await get(page)).inkBudget,(await get(page)).versus.config.solverInk);
+      assert.equal((await get(page)).loadout.radius,12);
+      await page.evaluate(()=>window.__manyBirdsDebug.forceWin());
+      assert.equal((await get(page)).versus.testPassed,false,'debug force-win cannot approve a map');
+      if(name==='desktop'&&!safetyExerciseDone){
+        await page.locator('#versusButton').click();const held=(await get(page)).versus.elapsedMs;
+        await page.evaluate(()=>window.advanceTime(5000));assert.equal((await get(page)).versus.elapsedMs,held,'private-test pause freezes its clock');await page.keyboard.press('Escape');
+        await page.evaluate(()=>window.vsTest.host('pause'));await page.evaluate(()=>window.advanceTime(2000));assert.equal((await get(page)).versus.elapsedMs,held);await page.evaluate(()=>window.vsTest.host('resume'));
+        await page.evaluate(()=>window.advanceTime(60100));
+        assert.equal((await get(page)).versus.testPassed,false);
+        assert.match(await page.locator('#vsDialogTitle').innerText(),/stays locked/);
+        assert.equal(await page.getByRole('button',{name:'Seal proven map',exact:true}).count(),0);
+        await shot('failed-test');
+        await page.locator('#vsDialogActions button').last().click();
+        await page.locator('#vsEditTest').click();assert.equal((await get(page)).versus.phase,'building');
+        await page.locator('#vsReady').click();await page.locator('#vsDialogActions button').last().click();
+      }
+      await draw([{x:300,y:510},{x:320,y:515}]);
+      await page.locator('#dropButton').click();await page.evaluate(()=>window.advanceTime(10000));
+      let s=await get(page);assert.equal(s.versus.phase,'test-result');assert.equal(s.versus.testPassed,true);assert.equal(s.versus.results.length,0,'creator tests do not become match scores');
+      if(name==='desktop'&&!safetyExerciseDone){
+        safetyExerciseDone=true;
+        await page.locator('#vsDialogActions button').first().click();
+        assert.equal((await get(page)).versus.phase,'building');assert.equal((await get(page)).versus.testPassed,false);
+        await page.locator('#vsBlockTool').click();await draw([{x:60,y:240},{x:75,y:245}]);
+        await page.locator('#vsReady').click();await page.locator('#vsDialogActions button').last().click();
+        await page.locator('#dropButton').click();await page.evaluate(()=>window.advanceTime(10000));
+        assert.equal((await get(page)).versus.testPassed,true,'edited map must earn a fresh real clear');
+      }
+      await shot(`player${player}-map-proven`);
+      assert.equal(await page.evaluate(()=>window.vsTest.awards.length),0);
+      await page.getByRole('button',{name:'Seal proven map',exact:true}).click();
+      assert.equal((await get(page)).versus.provenMaps[player-1],true);
+    };
     const build=async(player,auto=false)=>{
       assert.equal(await page.locator('#vsReady').isEnabled(),false);
       await tap({x:20,y:120});assert.equal((await get(page)).versus.draft.birds.length,0);
@@ -92,8 +133,9 @@ for (const [name,engine,options] of profiles) {
       }
       if(auto){
         await draw([{x:40,y:520},{x:320,y:520},{x:320,y:300}]);
-        s=await get(page);assert.ok(s.versus.platformUsed<=s.versus.config.platformInk+.01);assert.equal(s.versus.phase,'handoff');
+        s=await get(page);assert.ok(s.versus.platformUsed<=s.versus.config.platformInk+.01);assert.equal(s.versus.phase,'test-ready');
       }else await page.locator('#vsReady').click();
+      await prove(player);
       assert.equal(await page.locator('.stage-frame').isVisible(),false);
       await shot(`player${player}-handoff`);
     };
@@ -104,6 +146,7 @@ for (const [name,engine,options] of profiles) {
     await open();await build(1);await page.locator('#vsDialogActions button').last().click();await build(2);
     await page.locator('#vsDialogActions button').last().click();
     assert.equal((await get(page)).versus.player,1);assert.equal((await get(page)).loadout.radius,12);
+    assert.deepEqual((await get(page)).versus.provenMaps,[true,true]);assert.equal((await get(page)).lines.length,0,'creator solution is private');
     assert.ok(Math.abs((await get(page)).birds[0].x-editorMaps[1].birds[0].x)<.11,'Player 1 receives Player 2’s map');
     await page.evaluate(()=>window.advanceTime(2000));
     await page.locator('#versusButton').click();const paused=await get(page);
@@ -150,7 +193,7 @@ for (const [name,engine,options] of profiles) {
       // Real pointer drag canceled by a pause rolls back the pending edit.
       const p=await position({x:60,y:510});await page.mouse.move(p.x,p.y);await page.mouse.down();const q=await position({x:120,y:520});await page.mouse.move(q.x,q.y);
       await page.keyboard.press('Escape');await page.mouse.up();assert.equal((await get(page)).versus.platformUsed,saved);
-      await page.locator('#vsDialogActions button').last().click();await page.locator('#vsReady').click();await page.locator('#vsDialogActions button').last().click();await build(2);await page.locator('#vsDialogActions button').last().click();
+      await page.locator('#vsDialogActions button').last().click();await page.locator('#vsReady').click();await prove(1);await page.locator('#vsDialogActions button').last().click();await build(2);await page.locator('#vsDialogActions button').last().click();
       await page.evaluate(()=>window.advanceTime(180000));s=await get(page);assert.equal(s.versus.phase,'playing');assert.equal(s.versus.remainingMs,null);
       await page.locator('#versusButton').click();await page.locator('#vsDialogActions button').first().click();
       // Configurable single/pair maps: normal drops, a miss and a hit.
@@ -159,6 +202,7 @@ for (const [name,engine,options] of profiles) {
         for(let player=1;player<=2;player++){
           for(const y of count===1?[300]:[280,420])await tap({x:180,y});
           await draw([{x:60,y:200},{x:110,y:220}]);await page.locator('#vsReady').click();
+          await prove(player);
           await page.locator('#vsDialogActions button').last().click();
         }
         // The first player misses the whole flock; the second clears it.
@@ -169,6 +213,16 @@ for (const [name,engine,options] of profiles) {
         await page.locator('#vsDialogActions button').last().click();assert.match(await page.locator('#vsDialogTitle').innerText(),/Player 2 wins/);
         await page.locator('#vsDialogActions button').first().click();
       }
+      // A closed gray box is structurally valid, but cannot pass the completion gate.
+      await open('30','1');
+      // Use the default 360 ink to close an 88x88 box around the bird.
+      await tap({x:180,y:350});await draw([{x:136,y:306},{x:224,y:306},{x:224,y:394},{x:136,y:394},{x:136,y:306}]);
+      await page.locator('#vsReady').click();await page.locator('#vsDialogActions button').last().click();
+      await page.locator('#dropButton').click();await page.evaluate(()=>window.advanceTime(10000));
+      assert.equal((await get(page)).versus.phase,'test-result');assert.equal((await get(page)).versus.testPassed,false);assert.deepEqual((await get(page)).versus.provenMaps,[]);
+      assert.equal(await page.getByRole('button',{name:'Seal proven map',exact:true}).count(),0);await shot('impossible-map-blocked');
+      await page.locator('#vsDialogActions button').first().click();assert.equal((await get(page)).versus.draft.birds.length,1);
+      await page.locator('#versusButton').click();await page.locator('#vsDialogActions button').first().click();
       await page.evaluate(()=>window.__manyBirdsDebug.forceWin());assert.equal(await page.evaluate(()=>window.vsTest.awards.length),1,'campaign awards still work');
     }
     if(name==='small-phone'){
@@ -179,7 +233,7 @@ for (const [name,engine,options] of profiles) {
       await page.locator('#vsPlaceBird').click();assert.equal((await get(page)).versus.draft.birds.length,1);
       await page.setViewportSize({width:568,height:320});await page.evaluate(()=>window.dispatchEvent(new Event('resize')));assert.equal((await get(page)).paused,true);await page.screenshot({path:`${output}/${name}-landscape.png`});
     }
-    assert.deepEqual(errors,[]);Object.assign(row,{pass:true,checks:['two real collision clears','opponent maps','isolated currency and campaign','timeout','budget handoff','trap recovery','modal/host/hidden pause','layout'],input:cdp?'CDP touch':options.hasTouch?'touch taps and pointer drags':'mouse and keyboard'});
+    assert.deepEqual(errors,[]);Object.assign(row,{pass:true,checks:['mandatory real creator clears','proof invalidation and time limits','two real match clears','opponent maps','isolated currency and campaign','timeout','budget test gate','trap recovery','modal/host/hidden pause','layout'],input:cdp?'CDP touch':options.hasTouch?'touch taps and pointer drags':'mouse and keyboard'});
     await context.close();
   }catch(error){row.pass=false;row.error=error.stack;console.log(`FAIL ${name}: ${error.stack}`);}finally{await browser.close();}
   rows.push(row);await writeFile(`${output}/${process.env.BIRDS_VS_REPORT||'browser-report'}.json`,JSON.stringify(rows,null,2));if(row.pass)console.log(`PASS ${name}`);
@@ -201,6 +255,10 @@ if(!process.env.BIRDS_VS_FILTER || /iframe/.test(process.env.BIRDS_VS_FILTER)){
       const box=await frame.locator('#gameCanvas').boundingBox(),p={x:box.x+60/360*box.width,y:box.y+200/640*box.height},q={x:box.x+110/360*box.width,y:box.y+220/640*box.height};
       await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:12});await page.mouse.up();
       await frame.locator('#vsReady').click();await frame.locator('#vsDialogActions button').last().click();
+      assert.equal(JSON.parse(await frame.evaluate(()=>window.render_game_to_text())).versus.phase,'testing');
+      await frame.locator('#dropButton').click();await frame.evaluate(()=>window.advanceTime(8000));
+      assert.equal(JSON.parse(await frame.evaluate(()=>window.render_game_to_text())).versus.testPassed,true);
+      await frame.getByRole('button',{name:'Seal proven map',exact:true}).click();await frame.locator('#vsDialogActions button').last().click();
     }
     const start=JSON.parse(await frame.evaluate(()=>window.render_game_to_text())).versus.elapsedMs;
     await page.waitForTimeout(600);
