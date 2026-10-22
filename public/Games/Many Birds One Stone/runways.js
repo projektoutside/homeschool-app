@@ -72,6 +72,27 @@
       ctx.drawImage(this.platformLayer, 0, 0, this.width, this.height);
     }
 
+    drawBlocks(ctx, strokes, preview = null) {
+      if (this.blocks !== strokes) {
+        const layer = this.layer(this.blockLayer); this.blockLayer = layer.canvas;
+        strokes.forEach(points => this.drawBlockPath(layer.ctx, points));
+        this.blocks = strokes;
+      }
+      ctx.drawImage(this.blockLayer, 0, 0, this.width, this.height);
+      if (preview?.length > 1) this.drawBlockPath(ctx, preview);
+    }
+
+    drawBlockPath(ctx, points) {
+      ctx.save();
+      ctx.shadowColor = '#18362f60'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 2;
+      path(ctx, points, 14, '#213c37');
+      ctx.shadowColor = 'transparent';
+      path(ctx, points, 12.5, '#496c66'); path(ctx, points, 9, '#7b9690', -.3, -.8);
+      path(ctx, points, 1.1, '#d7e2cb', -.6, -3.4); path(ctx, points, 1, '#263f3a', .5, 4.7);
+      [points[0], points[points.length - 1]].forEach(p => { if (p) bolt(ctx, p.x, p.y, 1.8); });
+      ctx.restore();
+    }
+
     drawRunway(ctx, points, width, preview = false) {
       if (points.length < 2) return;
       ctx.save(); ctx.globalAlpha = preview ? .85 : 1;

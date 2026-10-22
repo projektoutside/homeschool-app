@@ -13,6 +13,7 @@
   <title>Many Birds One Stone</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="shop.css">
+  <link rel="stylesheet" href="versus.css">
   <link rel="preload" href="assets/fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/woodland-v2.webp" as="image">
   <link rel="preload" href="assets/birds/EnemyBird16-strip.png" as="image">
@@ -153,6 +154,7 @@
   <script src="campaign.js"></script>
   <script src="level-map.js"></script>
   <script src="shop.js"></script>
+  <script src="versus.js"></script>
   <script>
     (() => {
       'use strict';
@@ -394,6 +396,44 @@
         pointsContext: null,
       };
 
+      const versus = new WoodlandVersus({
+        canEnter: () => !state.onboardingPending && !state.mapVisible && !state.shopVisible && !state.overlayVisible,
+        status: text => { setStatus(text); announce(text); },
+        start() {
+          document.body.classList.remove('vs-concealed');
+          hideOverlay(); finishStroke(); resetClawControl(); beginAttempt(true, false);
+        },
+        editChanged() {
+          if (!versus.editing) return;
+          state.level = versus.level(); state.inkUsed = versus.platformUsed;
+          refreshHud(); refreshButtons();
+        },
+        conceal() { document.body.classList.add('vs-concealed'); },
+        pauseChanged() {
+          finishStroke(); resetClawControl();
+          state.lastFrame = performance.now(); state.accumulator = 0;
+          syncPauseState(); refreshButtons();
+        },
+        timeout() { finishVersusTurn(false, 'Time’s up! The turn is over.', true); },
+        exit() {
+          document.body.classList.remove('vs-concealed');
+          hideOverlay(); beginAttempt(true, false);
+        },
+      });
+
+      function finishVersusTurn(clear, reason, immediate = false) {
+        if (!versus.playing) return;
+        finishStroke(); resetClawControl();
+        state.runEnded = true; state.outcome = clear ? 'win' : 'lose';
+        versus.capture({ hits: state.combo.hits, combo: state.combo.points, clear, inkLeft: remainingInkRatio(), reason });
+        playTone(clear ? 'win' : 'lose');
+        if (clear) createParticles(180, 220, reducedMotion ? 6 : 36, ['#ffd06b', '#ffffff', '#72cda1']);
+        if (immediate || !state.stone.active) {
+          state.stone.active = false; versus.finishRound();
+        } else state.pendingResult = { versusResult: true };
+        refreshButtons();
+      }
+
       const levelMap = new WoodlandLevelMap({
         dialog: document.getElementById('levelMap'),
         levels: LEVELS,
@@ -416,7 +456,7 @@
       });
 
       function openLevelMap(event) {
-        if (state.mapVisible || state.shopVisible) return;
+        if (versus.active || versus.paused || state.mapVisible || state.shopVisible) return;
         resetClawControl();
         finishStroke();
         state.mapVisible = true;
@@ -455,7 +495,7 @@
       });
 
       function openShop(event) {
-        if (state.shopVisible || state.mapVisible || state.onboardingPending) return;
+        if (versus.active || versus.paused || state.shopVisible || state.mapVisible || state.onboardingPending) return;
         resetClawControl(); finishStroke();
         state.shopVisible = true; state.shopOpenedAt = performance.now();
         syncPauseState(); refreshButtons(); shop.open(event.currentTarget);
@@ -546,7 +586,8 @@
         state.stone.previousY = state.stone.y;
         state.stone.previousRotation = state.stone.rotation;
         levelMap.setPaused(state.hostPaused || state.hiddenPause);
-        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible;
+        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused;
+        if (paused) { versus.cancelPointer(); finishStroke(); resetClawControl(); }
         woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
           state.audio.context.resume().catch(() => {});
@@ -751,29 +792,33 @@
       function refreshHud() {
         dom.coinBalance.textContent = state.shop.coins.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 0 });
         dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins`);
-        dom.shopButton.disabled = state.onboardingPending;
+        dom.shopButton.disabled = state.onboardingPending || versus.active;
         dom.levelValue.textContent = state.level.title;
         dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
         dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
         dom.comboReadout.textContent = `x${state.combo.multiplier} · ${state.combo.points} pts`;
         dom.comboReadout.dataset.chain = state.combo.hits;
-        dom.comboReadout.setAttribute('aria-label', `Combo x${state.combo.multiplier}, ${state.combo.points} bonus points. Bank on level clear.`);
+        dom.comboReadout.setAttribute('aria-label', `Combo x${state.combo.multiplier}, ${state.combo.points} bonus points.${versus.active ? ' Match points.' : ' Bank on level clear.'}`);
         document.querySelectorAll('.bird-token').forEach((token, index) => {
           token.hidden = index >= state.level.birds.length;
           token.classList.toggle('is-cleared', index < cleared);
         });
-        dom.inkLabel.textContent = fmtPercent(remainingInkRatio());
+        dom.inkLabel.textContent = versus.editing ? `${Math.max(0, Math.round(state.level.inkBudget - state.inkUsed))} / ${state.level.inkBudget}` : fmtPercent(remainingInkRatio());
+        document.querySelector('.meter-label-row > span').textContent = versus.editing ? 'Platform ink' : 'Ink';
+        if (versus.editing) dom.birdProgress.textContent = `${state.level.birds.length} / ${versus.config.birds} placed`;
         dom.inkFill.style.transform = `scaleX(${remainingInkRatio().toFixed(3)})`;
       }
 
       function refreshButtons() {
+        versus.dom.versusButton.disabled = state.onboardingPending || state.overlayVisible || state.mapVisible || state.shopVisible;
         const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
-        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible;
-        dom.prevLevelButton.disabled = state.levelIndex <= 0 || blocked;
-        dom.nextLevelButton.disabled = state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
-        dom.hintButton.disabled = blocked || state.rotatePaused || !attached;
+        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.playing);
+        dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
+        dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
+        dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
+        dom.restartButton.disabled = versus.active;
         dom.clearButton.disabled = blocked || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
         dom.dropButton.disabled = blocked || state.rotatePaused || !attached;
       }
@@ -801,7 +846,8 @@
       function beginAttempt(clearLines, preserveHintState) {
         state.combo = { hits: 0, multiplier: 1, points: 0 };
         state.comboPopups = [];
-        if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
+        if (versus.active) state.loadout = { radius: STONE_RADIUS, finish: 'brass', inkMultiplier: 1, trail: false };
+        else if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
         if (clearLines) {
           state.drawnStrokes = [];
           state.drawnColliders = [];
@@ -814,8 +860,10 @@
           }
         }
         state.elapsed = 0;
-        state.level = hydrateLevel(state.levelIndex);
-        state.staticColliders = state.level.staticLines.map(createStaticCollider);
+        state.level = versus.active ? versus.level() : hydrateLevel(state.levelIndex);
+        state.staticColliders = versus.active
+          ? state.level.platformStrokes.map(points => WoodlandPhysics.createStroke(points, STATIC_LINE_WIDTH / 2))
+          : state.level.staticLines.map(createStaticCollider);
         refreshColliders();
         resetClawControl();
         setClawBaseX(WORLD_W / 2);
@@ -841,6 +889,7 @@
       }
 
       function goToLevel(levelIndex) {
+        if (versus.active || versus.paused) return;
         const target = clamp(levelIndex, 0, LEVELS.length - 1);
         if (target > state.highestUnlocked - 1) return;
         state.levelIndex = target;
@@ -1007,6 +1056,9 @@
       }
 
       function handleCanvasPointerDown(event) {
+        if (versus.paused || state.hostPaused || state.hiddenPause || state.rotatePaused) return;
+        if (versus.editing) { unlockAudio(); versus.pointerDown(event, pointerToWorld(event), dom.canvas); return; }
+        if (versus.active && !versus.playing) return;
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.pointer.active || state.clawControl.active) return;
         unlockAudio();
         const rawPoint = pointerToWorld(event);
@@ -1020,16 +1072,19 @@
       }
 
       function handleCanvasPointerMove(event) {
+        if (versus.editing) { versus.pointerMove(event, pointerToWorld(event)); return; }
         if (updateClawControl(event)) return;
         extendStroke(event);
       }
 
       function handleCanvasPointerFinish(event) {
+        if (versus.editing) { versus.pointerFinish(event, event.type !== 'pointerup'); return; }
         if (endClawControl(event)) return;
         finishStroke(event);
       }
 
       function clearLines() {
+        if (versus.editing || versus.paused || (versus.active && !versus.playing)) return;
         if (!state.stone.attached || state.overlayVisible) return;
         state.drawnStrokes = [];
         state.drawnColliders = [];
@@ -1048,6 +1103,8 @@
       }
 
       function releaseStone() {
+        if (versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.playing)) return;
+        finishStroke();
         if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
         resetClawControl();
         dropMechanism.release();
@@ -1126,6 +1183,7 @@
       }
 
       function awardPointsForClear(summary) {
+        if (versus.active) return;
         if (state.awardedForAttempt) return;
         const bridge = window.LAHSPointsBridge;
         if (!bridge || typeof bridge.awardPoints !== 'function') {
@@ -1169,6 +1227,7 @@
         if (!state.pendingResult) return;
         const result = state.pendingResult;
         state.pendingResult = null;
+        if (result.versusResult) { versus.finishRound(); return; }
         showOverlay(result);
       }
 
@@ -1179,6 +1238,7 @@
 
       function handleWin() {
         if (state.runEnded) return;
+        if (versus.active) { finishVersusTurn(true, 'Every bird cleared.'); return; }
         refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
@@ -1247,6 +1307,7 @@
 
       function handleLose(reason) {
         if (state.runEnded) return;
+        if (versus.active) { finishVersusTurn(false, reason); return; }
         state.runEnded = true;
         state.outcome = 'lose';
         setStatus(reason);
@@ -1285,7 +1346,9 @@
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
-          const message = `x${state.combo.multiplier} combo! +${hitPoints} points. Clear the flock to bank ${state.combo.points}.`;
+          const message = versus.active
+            ? `x${state.combo.multiplier} combo! +${hitPoints} bonus points. Keep going for a full clear!`
+            : `x${state.combo.multiplier} combo! +${hitPoints} points. Clear the flock to bank ${state.combo.points}.`;
           setStatus(message); announce(message);
         }
       }
@@ -1363,7 +1426,7 @@
             : 'The stone settled on a runway before the last birds crossed its path.');
           return;
         }
-        if (!state.runEnded && performance.now() - state.runReleasedAt >= FAIL_MAX_TIME_MS) {
+        if (!versus.active && !state.runEnded && performance.now() - state.runReleasedAt >= FAIL_MAX_TIME_MS) {
           handleLose('The run lasted too long. Try a shorter route.');
         }
       }
@@ -1418,6 +1481,7 @@
       }
 
       function drawPlayBandLabels() {
+        if (versus.editing) return;
         ctx.save();
         ctx.font = '800 10px Nunito, sans-serif';
         ctx.textAlign = 'center';
@@ -1434,6 +1498,7 @@
 
       function drawStaticLines() {
         runways.drawPlatforms(ctx, state.level.staticLines);
+        if (versus.active) runways.drawBlocks(ctx, state.level.platformStrokes, versus.editing ? versus.preview : null);
       }
 
       function drawHint() {
@@ -1572,9 +1637,11 @@
         dropMechanism.drawFront(ctx);
         drawParticles();
         drawComboPopups();
+        versus.drawEditor(ctx);
       }
 
       function useHint() {
+        if (versus.active || versus.paused) return;
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
         state.hintUsed = true;
         state.hintVisibleUntil = Infinity;
@@ -1665,6 +1732,9 @@
       }
 
       function handleKeyboard(event) {
+        if (versus.paused) return;
+        if (versus.active && event.key === 'Escape') { event.preventDefault(); versus.pause(); return; }
+        if (versus.editing || (versus.active && !versus.playing)) return;
         if (state.mapVisible || state.shopVisible) return;
         if (state.overlayVisible && event.key === 'Tab') {
           const buttons = [dom.overlay.querySelector('.overlay-content'), dom.overlaySecondary, dom.overlayPrimary, dom.resultMapButton, dom.resultShopButton].filter((button) => !button.hidden && !button.disabled);
@@ -1682,6 +1752,7 @@
           return;
         }
         if (event.key === 'r' || event.key === 'R') {
+          if (versus.active) return;
           beginAttempt(true, false);
           return;
         }
@@ -1707,7 +1778,7 @@
 
       function update(dt) {
         if (!state.level) return;
-        if (state.mapVisible || state.shopVisible) return;
+        if (state.mapVisible || state.shopVisible || versus.paused) return;
         if (!state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
           state.elapsed += dt;
         }
@@ -1716,7 +1787,7 @@
         updateBirdPositions(state.level, state.elapsed);
         updateParticles(dt);
 
-        if (state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused) {
+        if (state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused || versus.editing) {
           return;
         }
 
@@ -1727,6 +1798,7 @@
       }
 
       function frame(now) {
+        versus.tick(Math.max(0, now - state.lastFrame), state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused);
         const delta = Math.min(0.05, (now - state.lastFrame) / 1000 || 0);
         state.lastFrame = now;
         state.accumulator += delta;
@@ -1776,6 +1848,7 @@
           exitToGames();
         });
         dom.restartButton.addEventListener('click', () => {
+          if (versus.active || versus.paused) return;
           unlockAudio();
           playTone('tap');
           hideOverlay();
@@ -1845,6 +1918,7 @@
         window.setAudioMuted = setAudioMuted;
         window.setSfxVolume = setSfxVolume;
         window.render_game_to_text = () => JSON.stringify({
+          versus: versus.snapshot(),
           level: state.level ? state.level.id : null,
           totalLevels: LEVELS.length,
           campaignRevision: window.WoodlandCampaign.revision,
@@ -1886,7 +1960,7 @@
             : [],
           lines: state.drawnStrokes.map((stroke) => stroke.points.length),
           status: state.statusText,
-          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible,
+          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused,
           sound: { muted: state.audio.muted, volume: state.audio.sfxVolume, loaded: [...woodlandAudio.buffers.keys()], context: woodlandAudio.context?.state || 'locked' },
         });
         window.advanceTime = (ms) => {
@@ -1894,6 +1968,7 @@
           let remaining = total / 1000;
           while (remaining > 0) {
             const slice = Math.min(STEP, remaining);
+            versus.tick(slice * 1000, state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused);
             update(slice);
             remaining -= slice;
           }
