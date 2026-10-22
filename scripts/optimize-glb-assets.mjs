@@ -1,26 +1,15 @@
-import { spawn } from 'node:child_process';
 import { mkdtemp, readdir, rename, rm, stat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
+import { optimizeGlb } from './gltf-optimize.mjs';
 
 const ROOT_DIR = process.cwd();
 const PROPS_DIR = path.join(ROOT_DIR, 'public', 'HomePageAPP', 'Images', 'PROPS');
-const GLTF_TRANSFORM_CLI = path.join(ROOT_DIR, 'node_modules', '@gltf-transform', 'cli', 'bin', 'cli.js');
 const DRY_RUN = process.argv.includes('--check')
   || process.argv.includes('--dry-run')
   || process.env.npm_config_dry_run === 'true';
 const INCLUDE_WING_CRITICAL = process.argv.includes('--include-wing-critical');
-
-const STANDARD_OPTIMIZE_ARGS = [
-  'optimize',
-  '--compress', 'quantize',
-  '--simplify', 'false',
-  '--texture-compress', 'false',
-  '--palette', 'false',
-  '--instance', 'false',
-  '--join', 'false',
-  '--flatten', 'false',
-];
 
 async function collectGlbFiles(dirPath) {
   const entries = await readdir(dirPath, { withFileTypes: true });
@@ -40,44 +29,22 @@ function isWingCriticalAsset(filePath) {
     || relativePath === 'public/HomePageAPP/Images/PROPS/Eferno/ComfyUI_00007_.glb';
 }
 
-function getOptimizePlan(filePath) {
+export function getOptimizePlan(filePath, includeWingCritical = INCLUDE_WING_CRITICAL) {
   if (isWingCriticalAsset(filePath)) {
-    return INCLUDE_WING_CRITICAL
-      ? { profile: 'wing-manual', args: STANDARD_OPTIMIZE_ARGS }
-      : { profile: 'preserve-source', args: null };
+    return includeWingCritical
+      ? { profile: 'wing-manual', optimize: true }
+      : { profile: 'preserve-source', optimize: false };
   }
-  return { profile: 'standard', args: STANDARD_OPTIMIZE_ARGS };
+  return { profile: 'standard', optimize: true };
 }
 
-function runOptimize(inputPath, outputPath) {
+export async function runOptimize(inputPath, outputPath) {
   const optimizePlan = getOptimizePlan(inputPath);
-  if (!optimizePlan.args) {
-    return Promise.resolve({ skipped: true, profile: optimizePlan.profile });
+  if (!optimizePlan.optimize) {
+    return { skipped: true, profile: optimizePlan.profile };
   }
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [GLTF_TRANSFORM_CLI, ...optimizePlan.args, inputPath, outputPath],
-      {
-        cwd: ROOT_DIR,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
-
-    let stderr = '';
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve({ skipped: false, profile: optimizePlan.profile });
-        return;
-      }
-      reject(new Error(stderr.trim() || `gltf-transform optimize failed for ${inputPath}`));
-    });
-  });
+  await optimizeGlb(inputPath, outputPath);
+  return { skipped: false, profile: optimizePlan.profile };
 }
 
 function formatMb(bytes) {
@@ -102,7 +69,7 @@ async function main() {
       totalBefore += before.size;
       const optimizePlan = getOptimizePlan(filePath);
 
-      if (!optimizePlan.args) {
+      if (!optimizePlan.optimize) {
         totalAfter += before.size;
         console.log(`${path.relative(ROOT_DIR, filePath)} [${optimizePlan.profile}]: skipped to protect source visual fidelity`);
         continue;
@@ -139,4 +106,4 @@ async function main() {
   }
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
