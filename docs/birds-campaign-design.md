@@ -100,3 +100,11 @@ Verification:
 - The direct Vite build passes, all 11 built game files match source byte for byte, and the game audit passes 83 entries. Combined source/build fingerprint: `5f586ece4a2f4e212c26e93f041ace03198210039eeb27674e85611260a8482e`; individual hashes: `output/birds-progressive-speed/source-sha256.json`.
 
 No physical-device, native-shell, real-device frame-rate or authenticated server-persistence claim is made. The existing live preview and user progress remain in place; the task does not publish remotely.
+
+## Animated drawing prompt — 2026-10-22
+
+The larger brush uses a shaded wood handle, steel ferrule and brass trim to match the claw and platforms. Its cached high-resolution artwork follows a short curved brass stroke, pauses, lifts and returns. The existing game clock drives the loop without an additional animation scheduler. Reduced motion shows a stationary brush and path. The cue creates no collision geometry and spends no ink; a valid drawing pointer-down dismisses it immediately, including a gesture too short to leave a line. Clear lines or a fresh attempt restore the cue.
+
+Validation: Tier 3. `node output/verify-animated-paintbrush.mjs` passed seven isolated browser profiles: desktop Chromium, Android CDP touch emulation, iPhone/iPad WebKit emulation, tablet landscape pause and portrait resume, a 320px reduced-motion phone, and an iframe. Pixel checks verify motion/static fallback and dismissal; interaction checks cover drawing, clearing, dropping and restarting with no overflow or runtime errors. The diagnostic freezes only the game clock and suppresses the changing aiming guide to isolate prompt pixels. The unmodified live preview was also visually reviewed. Receipt: `output/paintbrush-animated/report.json`; index source SHA-256 `41967275e3949609e256949616f7551287b431d55f83292bae4da1063b15b280`.
+
+`npm run audit:games` passed 83 entries; inline scripts parse and `git diff --check` passed. Existing layout and scroll exceptions are unchanged. No physical devices or Capacitor shells were tested; iPhone/iPad hardware animation smoothness remains unverified. Changes are local and the live preview remains open.

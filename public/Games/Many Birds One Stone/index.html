@@ -351,6 +351,8 @@
         colliders: [],
         drawnStrokes: [],
         drawnColliders: [],
+        drawingPromptDismissed: false,
+        drawingPromptStartedAt: 0,
         particles: [],
         stoneTrail: [],
         combo: { hits: 0, multiplier: 1, points: 0 },
@@ -857,6 +859,8 @@
         if (clearLines) {
           state.drawnStrokes = [];
           state.drawnColliders = [];
+          state.drawingPromptDismissed = false;
+          state.drawingPromptStartedAt = 0;
           state.inkUsed = 0;
           state.pointer.points = [];
           state.pointer.inkUsedDuringStroke = 0;
@@ -994,6 +998,7 @@
       function startStroke(event, rawPoint = pointerToWorld(event)) {
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.clawControl.active) return;
         if (!pointAllowed(rawPoint)) return;
+        state.drawingPromptDismissed = true;
         state.pointer.active = true;
         state.pointer.pointerId = event.pointerId;
         state.pointer.points = [clampPointToDrawZone(rawPoint)];
@@ -1094,6 +1099,8 @@
         if (!state.stone.attached || state.overlayVisible) return;
         state.drawnStrokes = [];
         state.drawnColliders = [];
+        state.drawingPromptDismissed = false;
+        state.drawingPromptStartedAt = state.elapsed;
         refreshColliders();
         state.pointer.active = false;
         state.pointer.points = [];
@@ -1496,39 +1503,87 @@
         ctx.restore();
       }
 
+      let paintbrushSprite;
+
+      function createPaintbrushSprite() {
+        const sprite = document.createElement('canvas');
+        sprite.width = 38 * 3; sprite.height = 72 * 3;
+        const brush = sprite.getContext('2d');
+        brush.scale(3, 3); brush.translate(3, 3);
+        brush.lineJoin = 'round'; brush.lineCap = 'round';
+        const finish = (colors) => {
+          const gradient = brush.createLinearGradient(8, 0, 24, 0);
+          colors.forEach((color, i) => gradient.addColorStop(i / (colors.length - 1), color));
+          return gradient;
+        };
+
+        brush.beginPath();
+        brush.moveTo(12, 39);
+        brush.bezierCurveTo(11, 30, 11, 17, 13, 5);
+        brush.bezierCurveTo(13.8, .5, 19, .5, 19, 5);
+        brush.bezierCurveTo(21, 17, 21, 30, 20, 39);
+        brush.closePath();
+        brush.shadowColor = '#18362f65'; brush.shadowBlur = 2;
+        brush.shadowOffsetX = 1; brush.shadowOffsetY = 2;
+        brush.fillStyle = finish(['#67431f', '#bd8844', '#f1ce8d', '#a77332', '#67431f']); brush.fill();
+        brush.shadowColor = 'transparent';
+        brush.strokeStyle = '#5a462b'; brush.lineWidth = .8; brush.stroke();
+        brush.strokeStyle = '#fff0be90'; brush.lineWidth = .65;
+        brush.beginPath(); brush.moveTo(15, 6); brush.bezierCurveTo(13, 18, 14, 28, 14, 34); brush.stroke();
+        brush.strokeStyle = '#714c2c70';
+        brush.beginPath(); brush.moveTo(18, 10); brush.bezierCurveTo(19, 20, 17, 28, 18, 35); brush.stroke();
+
+        brush.beginPath(); brush.roundRect(9, 35, 14, 14, 2);
+        brush.fillStyle = finish(['#304b45', '#8da49a', '#edf0d7', '#6e8a80', '#304b45']); brush.fill();
+        brush.strokeStyle = '#314940'; brush.lineWidth = .8; brush.stroke();
+        [36.5, 46.5].forEach(y => {
+          brush.fillStyle = '#b79b5d'; brush.fillRect(9.5, y, 13, 1.5);
+          brush.fillStyle = '#f4df9b'; brush.fillRect(10, y, 12, .5);
+        });
+        brush.strokeStyle = '#ffffff85';
+        brush.beginPath(); brush.moveTo(12, 39); brush.lineTo(12, 44); brush.stroke();
+
+        brush.beginPath(); brush.moveTo(10, 49); brush.lineTo(22, 49);
+        brush.bezierCurveTo(24, 60, 17, 65, 7, 64);
+        brush.bezierCurveTo(13, 59, 7, 55, 10, 49); brush.closePath();
+        brush.fillStyle = finish(['#254238', '#557050', '#b6b185', '#48604a', '#254238']); brush.fill();
+        brush.strokeStyle = '#294738'; brush.lineWidth = .8; brush.stroke();
+        brush.strokeStyle = '#e3d8ad80'; brush.lineWidth = .55;
+        for (let x = 12; x <= 20; x += 2) {
+          brush.beginPath(); brush.moveTo(x, 50);
+          brush.quadraticCurveTo(x + 1, 57, 10 + (x - 12) * .7, 61); brush.stroke();
+        }
+        return sprite;
+      }
+
       function drawPaintbrushPrompt() {
-        if (versus.editing || !state.stone.attached || state.drawnStrokes.length || state.pointer.active) return;
-        ctx.save();
-        ctx.translate(WORLD_W / 2 + 12, DRAW_TOP + 20);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        if (versus.editing || state.drawingPromptDismissed || !state.stone.attached || state.drawnStrokes.length || state.pointer.active) return;
+        if (!paintbrushSprite) paintbrushSprite = createPaintbrushSprite();
+        const phase = (state.elapsed - state.drawingPromptStartedAt) % 3.8;
+        const returning = phase > 2.65;
+        const returnTime = returning ? (phase - 2.65) / 1.15 : 0;
+        const returnEase = returnTime * returnTime * (3 - 2 * returnTime);
+        const progress = reducedMotion ? .82 : returning ? 1 - returnEase : (1 - Math.cos(Math.PI * Math.min(1, phase / 2.1))) / 2;
+        const inkProgress = reducedMotion ? .82 : returning ? 1 : progress;
+        const pathY = (t) => DRAW_TOP + 44 + Math.sin(t * Math.PI * 2) * 6;
+        const left = WORLD_W / 2 - 36;
+        ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.globalAlpha = reducedMotion ? .9 : 1 - returnEase;
+        ctx.beginPath(); ctx.moveTo(left, pathY(0));
+        for (let i = 1; i <= Math.ceil(inkProgress * 32); i++) {
+          const t = Math.min(inkProgress, i / 32);
+          ctx.lineTo(left + t * 62, pathY(t));
+        }
+        ctx.shadowColor = '#234a3e50'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 2;
+        ctx.strokeStyle = '#625936'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = '#dec48b'; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.strokeStyle = '#fff0be'; ctx.lineWidth = .8; ctx.stroke();
 
-        ctx.beginPath();
-        ctx.moveTo(-25, 10);
-        ctx.bezierCurveTo(-24, 2, -17, 16, -10, 11);
-        ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 7; ctx.stroke();
-        ctx.strokeStyle = '#245446'; ctx.lineWidth = 3; ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(0, -1); ctx.lineTo(12, -13);
-        ctx.bezierCurveTo(16, -17, 20, -13, 16, -9);
-        ctx.lineTo(4, 3); ctx.closePath();
-        ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 5; ctx.stroke();
-        ctx.fillStyle = '#eaaa3c'; ctx.fill();
-        ctx.strokeStyle = '#173d36'; ctx.lineWidth = 1.8; ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(-3, 3); ctx.lineTo(0, -1); ctx.lineTo(4, 3); ctx.lineTo(1, 7); ctx.closePath();
-        ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(-3, 3);
-        ctx.bezierCurveTo(-10, 3, -5, 9, -11, 12);
-        ctx.bezierCurveTo(-4, 14, 1, 11, 1, 7);
-        ctx.closePath();
-        ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.fillStyle = '#245446'; ctx.fill();
-        ctx.strokeStyle = '#173d36'; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.translate(left + progress * 62, pathY(progress) - (reducedMotion ? 0 : Math.sin(returnTime * Math.PI) * 14));
+        ctx.rotate(.68 + (reducedMotion ? 0 : Math.sin(progress * Math.PI * 2) * .07));
+        ctx.drawImage(paintbrushSprite, -19, -67, 38, 72);
         ctx.restore();
       }
 
