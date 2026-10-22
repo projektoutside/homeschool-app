@@ -1,10 +1,11 @@
 # Games inventory
 
-Verified on 2026-10-21 from the repository's `CONTENT_ITEMS` catalog (`src/data/mockContent.ts`) and the Games section in the local guest preview. There are **15 games**. User-created or remotely configured content is outside this repository inventory.
+Verified on 2026-10-22 from the repository's `CONTENT_ITEMS` catalog (`src/data/mockContent.ts`) after integrating the runtime cleanup branch. There are **16 games**. User-created or remotely configured content is outside this repository inventory.
 
 | Game | Entry point |
 | --- | --- |
 | Math Puzzle | `/Games/MathPuzzle/index.html` |
+| Coin Champ | `/Games/Coin Champion/index.html` |
 | Preschool Fun! | `/Games/PreschoolFun/index.html` |
 | Many Birds One Stone | `/Games/Many Birds One Stone/index.html` |
 | Defender Champion | `/Games/DefenderChampion/index.html` |

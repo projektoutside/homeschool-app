@@ -10,7 +10,7 @@ import { readLegacyContentEntries } from './content/source-reader.mjs';
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
-test('generated catalog preserves all 83 legacy entries and route aliases deterministically', async (context) => {
+test('generated catalog preserves all 84 legacy entries and route aliases deterministically', async (context) => {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'homeschool-content-catalog-'));
   context.after(() => rm(tempDir, { recursive: true, force: true }));
   const firstOutput = path.join(tempDir, 'contentCatalog.ts');
@@ -43,7 +43,7 @@ test('generated catalog preserves all 83 legacy entries and route aliases determ
       .map(([legacyPath, ids]) => [legacyPath, ids.sort()[0]]),
   );
 
-  assert.equal(legacy.length, 83);
+  assert.equal(legacy.length, 84);
   assert.deepEqual(generated.GENERATED_EXPERIENCES, []);
   assert.equal(generated.GENERATED_CONTENT_ITEMS.length, legacy.length);
   assert.deepEqual(
@@ -60,6 +60,8 @@ test('generated catalog preserves all 83 legacy entries and route aliases determ
       title: 'Animal Champion',
       description: 'Identify 75 animals in fast visual challenge rounds.',
       type: 'game',
+      playerMode: 'single',
+      appPointsEnabled: true,
       category: 'science',
       subjects: ['Animals', 'Wildlife', 'Visual Recognition'],
       gradeLevels: ['All'],
@@ -79,6 +81,8 @@ test('generated catalog preserves all 83 legacy entries and route aliases determ
       title: 'Defender Champion',
       description: 'Command four defenders, hold the path, and survive a ten-level pure-strategy campaign.',
       type: 'game',
+      playerMode: 'single',
+      appPointsEnabled: true,
       category: 'strategy',
       subjects: ['Strategy', 'Resource Management', 'Problem Solving'],
       gradeLevels: ['All'],

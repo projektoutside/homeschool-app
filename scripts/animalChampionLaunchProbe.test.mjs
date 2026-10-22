@@ -85,7 +85,7 @@ test('generated catalog registers the exact Animal Champion record and legacy al
     '};',
   );
 
-  assert.equal(contentItems.length, 83);
+  assert.equal(contentItems.length, 84);
   const animalRecords = contentItems.filter(({ id }) => id === 'animal-champion');
   assert.equal(animalRecords.length, 1);
   assert.deepEqual(animalRecords[0], {
@@ -93,6 +93,8 @@ test('generated catalog registers the exact Animal Champion record and legacy al
     title: 'Animal Champion',
     description: 'Identify 75 animals in fast visual challenge rounds.',
     type: 'game',
+    playerMode: 'single',
+    appPointsEnabled: true,
     category: 'science',
     subjects: ['Animals', 'Wildlife', 'Visual Recognition'],
     gradeLevels: ['All'],
