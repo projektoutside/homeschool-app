@@ -151,6 +151,8 @@
   <script src="runways.js"></script>
   <script src="birds.js"></script>
   <script src="physics.js"></script>
+  <script src="versus-simulation.js"></script>
+  <script src="versus-solver.js"></script>
   <script src="campaign.js"></script>
   <script src="level-map.js"></script>
   <script src="shop.js"></script>
@@ -397,6 +399,7 @@
       };
 
       const versus = new WoodlandVersus({
+        suspended: () => state.hostPaused || state.hiddenPause || state.rotatePaused,
         canEnter: () => !state.onboardingPending && !state.mapVisible && !state.shopVisible && !state.overlayVisible,
         status: text => { setStatus(text); announce(text); },
         start() {
@@ -588,6 +591,7 @@
         state.stone.previousRotation = state.stone.rotation;
         levelMap.setPaused(state.hostPaused || state.hiddenPause);
         const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused;
+        versus.checker.setPaused(state.hostPaused || state.hiddenPause || state.rotatePaused);
         if (paused) { versus.cancelPointer(); finishStroke(); resetClawControl(); }
         woodlandAudio.setPaused(paused);
         if (!paused && state.audio.context && state.audio.context.state === 'suspended' && !state.audio.muted) {
@@ -768,6 +772,7 @@
       }
 
       function updateBirdPositions(level, elapsed) {
+        if (versus.active && !versus.editing) { WoodlandVersusSimulation.birdPositions(level.birds, elapsed); return; }
         level.birds.forEach((bird) => {
           if (!bird.alive) return;
           const nextX = clamp(
@@ -816,7 +821,6 @@
         const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
         const blocked = state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.running);
-        versus.dom.vsEditTest.disabled = blocked || state.rotatePaused;
         dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
         dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
@@ -1131,6 +1135,10 @@
       function resolveStoneAgainstWorld(dt) {
         const contacts = window.WoodlandPhysics.solve(state.stone,
           state.colliders, dt);
+        handleStoneContacts(contacts);
+      }
+
+      function handleStoneContacts(contacts) {
         let bounced = false;
         for (const contact of contacts) {
           if (contact.kind === 'floor' && contact.ny < -.5 && !state.stone.floorHit) {
@@ -1240,7 +1248,7 @@
 
       function handleWin() {
         if (state.runEnded) return;
-        if (versus.active) { finishVersusTurn(true, 'Every bird cleared.', versus.testing); return; }
+        if (versus.active) { finishVersusTurn(true, 'Every bird cleared.'); return; }
         refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
@@ -1377,7 +1385,13 @@
         state.stone.supportMinX = Infinity;
         state.stone.supportMaxX = -Infinity;
         const subDt = dt / COLLISION_SUBSTEPS;
-        for (let i = 0; i < COLLISION_SUBSTEPS; i += 1) {
+        const escaped = versus.active && WoodlandVersusSimulation.integrate(state.stone, state.colliders, state.level.birds, dt, hitBird, handleStoneContacts) === 'escaped';
+        if (escaped) {
+          state.stone.active = false;
+          if (state.runEnded) showPendingResult(); else handleLose('The stone drifted away before the flock was cleared.');
+          return;
+        }
+        for (let i = 0; !versus.active && i < COLLISION_SUBSTEPS; i += 1) {
           state.stone.vy += GRAVITY * subDt;
           state.stone.vx = clamp(state.stone.vx, -540, 540);
           state.stone.vy = clamp(state.stone.vy, -200, 780);

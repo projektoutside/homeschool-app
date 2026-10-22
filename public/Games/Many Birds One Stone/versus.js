@@ -29,8 +29,11 @@
   }
   function isProven(map, config, proof) {
     return Boolean(map && proof && validMap(map, config) && proof.key === mapKey(map, config)
+      && proof.automatic === true && proof.revision === WoodlandVersusSimulation.revision
+      && WoodlandVersusSimulation.validSolution(config, proof.solution) && proof.solutionKey === JSON.stringify(proof.solution)
       && proof.clear === true && proof.hits === config.birds && proof.dropped === true && proof.ballRadius === 12
       && Number.isFinite(proof.inkUsed) && proof.inkUsed >= 0 && proof.inkUsed <= config.solverInk + .01
+      && Math.abs(proof.inkUsed - WoodlandVersusSimulation.ink(proof.solution.strokes)) <= .01
       && Number.isFinite(proof.elapsedMs) && proof.elapsedMs >= 0
       && (!config.seconds || proof.elapsedMs <= config.seconds * 1000));
   }
@@ -47,6 +50,7 @@
   class WoodlandVersus {
     constructor(adapter) {
       this.adapter = adapter;
+      this.checker = new WoodlandMapChecker(); this.checkId = 0;
       this.active = false; this.phase = 'campaign'; this.dialogKind = '';
       this.config = { birds: 3, seconds: 60, platformInk: 360, solverInk: 480 };
       this.maps = []; this.proofs = []; this.proof = null; this.results = []; this.player = 0; this.elapsedMs = 0;
@@ -68,11 +72,11 @@
             </div></details>
           </div>
         </section>`);
-      document.querySelector('.controls').insertAdjacentHTML('beforeend', `<div class="vs-editor-actions" id="vsEditorActions" hidden><button class="control-button" id="vsUndo" type="button">Undo edit</button><button class="control-button control-button--primary" id="vsReady" type="button">Test map</button></div>`);
-      document.querySelector('.action-row').insertAdjacentHTML('afterbegin', '<button class="control-button" id="vsEditTest" type="button" hidden>Back to editor</button>');
+      document.querySelector('.controls').insertAdjacentHTML('beforeend', `<div class="vs-editor-actions" id="vsEditorActions" hidden><button class="control-button" id="vsUndo" type="button">Undo edit</button><button class="control-button control-button--primary" id="vsReady" type="button">Check map</button></div>`);
+
       document.body.insertAdjacentHTML('beforeend', `<dialog id="versusDialog" class="vs-dialog" aria-labelledby="vsDialogTitle"><header><div class="vs-duel-art" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="m4 3 16 18M20 3 4 21M3 7l4-4m10 0 4 4"/></svg><span></span></div><h2 id="vsDialogTitle"></h2></header><div class="vs-dialog-body" id="vsDialogBody" tabindex="0"></div><footer id="vsDialogActions"></footer></dialog>`);
       const byId = id => document.getElementById(id);
-      this.dom = Object.fromEntries(['versusButton','versusPanel','vsTurnTitle','vsClock','vsEditorTools','vsBirdTool','vsBlockTool','vsSelectedBird','vsBirdX','vsBirdY','vsPlaceBird','vsRemoveBird','vsEditorActions','vsUndo','vsReady','vsEditTest','versusDialog','vsDialogTitle','vsDialogBody','vsDialogActions'].map(id => [id, byId(id)]));
+      this.dom = Object.fromEntries(['versusButton','versusPanel','vsTurnTitle','vsClock','vsEditorTools','vsBirdTool','vsBlockTool','vsSelectedBird','vsBirdX','vsBirdY','vsPlaceBird','vsRemoveBird','vsEditorActions','vsUndo','vsReady','versusDialog','vsDialogTitle','vsDialogBody','vsDialogActions'].map(id => [id, byId(id)]));
     }
 
     bind() {
@@ -85,7 +89,6 @@
         this.draft = this.history.pop(); this.changed();
       });
       d.vsReady.addEventListener('click', () => this.ready());
-      d.vsEditTest.addEventListener('click', () => { if (this.testing) this.editDraft(); });
       d.vsSelectedBird.addEventListener('change', () => this.selectBird());
       d.vsPlaceBird.addEventListener('click', () => {
         if (!this.editing || this.pointer) return;
@@ -101,7 +104,7 @@
       d.versusDialog.addEventListener('cancel', event => {
         event.preventDefault();
         if (this.dialogKind === 'setup' || this.dialogKind === 'pause') this.closeDialog();
-        else if (this.dialogKind === 'test-ready') this.editDraft();
+        else if (['checking', 'unverified'].includes(this.dialogKind)) this.editDraft();
       });
       const keepFieldVisible = () => window.requestAnimationFrame(() => {
         const field = document.activeElement;
@@ -112,12 +115,12 @@
       });
       window.addEventListener('resize', keepFieldVisible, { passive: true });
       window.visualViewport?.addEventListener('resize', keepFieldVisible, { passive: true });
+      window.addEventListener('pagehide', () => { if (this.phase === 'checking') this.editDraft(); else this.checker.cancel(); });
     }
 
     get editing() { return this.active && this.phase === 'building'; }
     get playing() { return this.active && this.phase === 'playing'; }
-    get testing() { return this.active && this.phase === 'testing'; }
-    get running() { return this.playing || this.testing; }
+    get running() { return this.playing; }
     get paused() { return this.dom.versusDialog.open; }
     get platformUsed() { return this.draft ? usedInk(this.draft) + length(this.preview) : 0; }
     message(text) { this.adapter.status(text); }
@@ -159,7 +162,7 @@
         ${select('vsTimeLimit','Time per turn',[[30,'30 seconds'],[60,'60 seconds'],[90,'90 seconds'],[120,'2 minutes'],[0,'No time limit']],c.seconds)}
         ${select('vsPlatformInk','Platform ink',[[240,'240 · compact'],[360,'360 · standard'],[480,'480 · generous']],c.platformInk)}
         ${select('vsSolverInk','Solving ink',[[360,'360 · tricky'],[480,'480 · standard'],[600,'600 · generous']],c.solverInk)}
-        </div><p class="vs-rules"><strong>Build → prove → swap.</strong> Place birds and draw gray platforms, then clear your own map before sending it. Both players get equal supplies and one drop. Tests use the same ink and turn timer; building is untimed.</p><p class="vs-rules">Score 100 per bird, combo bonuses and 100 for a full clear. Equal scores use the faster turn. Match points stay in this match.</p>`, [
+        </div><p class="vs-rules"><strong>Build → check → swap.</strong> Place birds and draw gray platforms. We automatically find and verify a winning route before handoff. Both players get equal supplies and one drop; building is untimed.</p><p class="vs-rules">Score 100 per bird, combo bonuses and 100 for a full clear. Equal scores use the faster turn. Match points stay in this match.</p>`, [
         { label: 'Back to campaign', run: () => this.closeDialog() },
         { label: 'Player 1: build', primary: true, run: () => {
           const number = id => Number(document.getElementById(id).value);
@@ -172,8 +175,7 @@
 
     startBuild() {
       this.phase = 'building'; this.tool = 'birds'; this.draft = { birds: [], strokes: [] }; this.history = []; this.preview = [];
-      this.proof = null; this.dom.vsEditTest.hidden = true;
-      document.body.classList.remove('vs-testing');
+      this.proof = null;
       document.body.classList.add('vs-active'); document.body.classList.add('vs-building');
       this.dom.versusPanel.hidden = false; this.dom.vsEditorTools.hidden = false; this.dom.vsEditorActions.hidden = false;
       this.dom.versusButton.querySelector('span').textContent = 'Pause / leave VS';
@@ -194,7 +196,7 @@
 
     renderControls() {
       const d = this.dom;
-      d.vsTurnTitle.textContent = this.editing ? `Player ${this.player + 1} builds for Player ${2 - this.player}` : this.testing ? `Player ${this.player + 1}: prove your map` : `Player ${this.player + 1}'s turn`;
+      d.vsTurnTitle.textContent = this.editing ? `Player ${this.player + 1} builds for Player ${2 - this.player}` : `Player ${this.player + 1}'s turn`;
       d.vsClock.textContent = this.editing ? `${this.draft.birds.length}/${this.config.birds} placed` : this.clockText();
       d.vsClock.classList.toggle('is-urgent', this.running && this.config.seconds > 0 && this.remainingMs <= 10000);
       if (!this.editing) return;
@@ -275,52 +277,47 @@
 
     cancelPointer() { if (this.pointer) this.pointerFinish(null, true); }
 
-    ready() {
+    async ready() {
       if (!this.editing || this.pointer || !validMap(this.draft, this.config)) return;
-      this.proof = null; this.phase = 'test-ready';
-      const time = this.config.seconds ? `within ${this.config.seconds} seconds` : 'with no time limit';
-      this.dialog('test-ready', 'Prove your map is possible.', `<p>Player ${this.player + 1}, clear <strong>every bird with one stone</strong>, using ${this.config.solverInk} solving ink ${time}.</p><p>You get the same ball, bird movement, ink and timer as your opponent. A miss or timeout keeps the map locked. You can edit and retry as often as you like.</p><p>This private test earns no match points. Only a successful clear unlocks the handoff.</p>`, [
-        { label: 'Back to editor', run: () => this.editDraft() },
-        { label: 'Start test', primary: true, run: () => this.startTest() },
+      this.proof = null; this.phase = 'checking';
+      const id = ++this.checkId, key = mapKey(this.draft, this.config);
+      this.dialog('checking', 'Finding a winning route…', '<p>Checking bird positions, gray platforms, solving ink and the turn timer.</p><p id="vsCheckStatus" role="status">Trying routes with the same ball and physics you will play.</p><p>You can return to the editor at any time.</p>', [
+        { label: 'Back to editor', primary: true, run: () => this.editDraft() },
       ]);
-    }
-
-    startTest() {
-      if (!this.active || !['test-ready', 'test-result'].includes(this.phase) || !validMap(this.draft, this.config)) return;
-      this.phase = 'testing'; this.elapsedMs = 0; this.captured = null; this.proof = null;
-      this.testingKey = mapKey(this.draft, this.config);
-      document.body.classList.remove('vs-building'); document.body.classList.add('vs-testing');
-      this.dom.vsEditorTools.hidden = true; this.dom.vsEditorActions.hidden = true; this.dom.vsEditTest.hidden = false;
-      this.adapter.start(); this.closeDialog(); this.renderControls();
-      this.message(`Private test: clear all ${this.config.birds} birds with one stone. ${this.config.solverInk} ink; ${this.config.seconds ? `${this.config.seconds} seconds including drawing.` : 'no time limit.'}`);
+      let lastUpdate = 0;
+      const promise = this.checker.check(copy(this.draft), { ...this.config }, attempts => {
+        if (id !== this.checkId || this.phase !== 'checking' || performance.now() - lastUpdate < 300) return;
+        lastUpdate = performance.now();
+        document.getElementById('vsCheckStatus').textContent = `Trying routes… ${attempts} checked.`;
+      });
+      this.checker.setPaused(this.adapter.suspended());
+      const found = await promise;
+      if (id !== this.checkId || this.phase !== 'checking' || !this.active || key !== mapKey(this.draft, this.config)) return;
+      const verified = found.solution && WoodlandVersusSimulation.replay(this.draft, this.config, found.solution);
+      if (verified?.clear && WoodlandVersusSimulation.replay(this.draft, { ...this.config, reducedMotion: true }, found.solution).clear) {
+        this.proof = { key, ...verified, automatic: true, revision: WoodlandVersusSimulation.revision, solution: copy(found.solution), solutionKey: JSON.stringify(found.solution), dropped: true, ballRadius: 12 };
+        this.phase = 'verified'; this.seal();
+        return;
+      }
+      this.phase = 'unverified';
+      this.dialog('unverified', 'This map needs a little adjustment.', '<p>We could not verify a winning route within the current ink and time limits. The map stays locked.</p><p>Move the birds closer together, open a route around the gray platforms, or simplify the layout, then check again.</p><p>A complex map may be solvable even when this search cannot find its route.</p>', [
+        { label: 'Edit map', primary: true, run: () => this.editDraft() },
+      ]);
     }
 
     editDraft() {
       if (!this.active) return;
-      this.cancelPointer(); this.proof = null; this.phase = 'building'; this.captured = null;
-      document.body.classList.remove('vs-testing'); document.body.classList.add('vs-building');
-      this.dom.vsEditorTools.hidden = false; this.dom.vsEditorActions.hidden = false; this.dom.vsEditTest.hidden = true;
+      ++this.checkId; this.checker.cancel(); this.cancelPointer(); this.proof = null; this.phase = 'building'; this.captured = null;
+      this.dom.vsEditorTools.hidden = false; this.dom.vsEditorActions.hidden = false;
+      document.body.classList.add('vs-building');
       this.adapter.start(); this.closeDialog(); this.changed();
-      this.message('Edit your map, then test it again. A fresh clear is required before handoff.');
-    }
-
-    finishTest() {
-      const r = this.captured;
-      this.phase = 'test-result'; this.adapter.conceal(); this.dom.vsEditTest.hidden = true;
-      const passed = isProven(this.draft, this.config, this.proof);
-      this.dialog('test-result', passed ? 'Map proven. Challenge ready!' : 'Map stays locked.', passed
-        ? `<p>You cleared all ${this.config.birds} birds under the same rules your opponent will use.</p><dl class="vs-score"><div><dt>Test time</dt><dd>${(r.elapsedMs / 1000).toFixed(1)}s</dd></div><div><dt>Solving ink left</dt><dd>${Math.round(r.inkLeft * 100)}%</dd></div></dl><p>Your solution stays private. Editing this map requires another successful test.</p>`
-        : `<p>${r.reason || 'Every bird must be cleared within the ink and time limits.'}</p><p>Clear every bird in one drop to unlock this map. Adjust the platforms or bird positions if it cannot be completed.</p>`, [
-        { label: 'Edit map', run: () => this.editDraft() },
-        { label: passed ? 'Seal proven map' : 'Retry test', primary: true, run: () => passed ? this.seal() : this.startTest() },
-      ]);
+      this.message('Edit your map, then check it again. Changes need a fresh automatic check.');
     }
 
     seal() {
-      if (!this.active || this.phase !== 'test-result') return;
+      if (!this.active || this.phase !== 'verified') return;
       if (!isProven(this.draft, this.config, this.proof)) { this.editDraft(); return; }
       this.maps[this.player] = copy(this.draft); this.proofs[this.player] = copy(this.proof); this.phase = 'handoff';
-      document.body.classList.remove('vs-testing');
       this.adapter.conceal();
       if (this.player === 0) {
         this.dialog('handoff', 'Pass to Player 2', '<p>Player 1’s challenge is sealed. Player 2, build your own map for Player 1. No peeking!</p>', [{ label: 'Player 2: build', primary: true, run: () => { this.player = 1; this.startBuild(); } }]);
@@ -331,7 +328,7 @@
       if (!this.mapsProven()) return;
       this.player = player; this.phase = 'handoff'; this.adapter.conceal();
       const time = this.config.seconds ? `${this.config.seconds} seconds` : 'as much time as you like';
-      this.dialog('handoff', `Pass to Player ${player + 1}`, `<p>Player ${player + 1}, solve the map Player ${2 - player} made and successfully play-tested for you.</p><p>You have <strong>${time}</strong>, ${this.config.solverInk} ink and <strong>one drop</strong>. Draw a path, slide the claw and clear the birds.</p><p>The clock starts when you press Begin.</p>`, [{ label: `Begin Player ${player + 1}'s turn`, primary: true, run: () => this.startTurn() }]);
+      this.dialog('handoff', `Pass to Player ${player + 1}`, `<p>Player ${player + 1}, solve the map Player ${2 - player} made for you. Its winning route has been verified automatically.</p><p>You have <strong>${time}</strong>, ${this.config.solverInk} ink and <strong>one drop</strong>. Draw a path, slide the claw and clear the birds.</p><p>The clock starts when you press Begin.</p>`, [{ label: `Begin Player ${player + 1}'s turn`, primary: true, run: () => this.startTurn() }]);
     }
 
     mapsProven() { return [0, 1].every(index => isProven(this.maps[index], this.config, this.proofs[index])); }
@@ -358,14 +355,11 @@
 
     capture(data) {
       if (!this.running) return false;
-      const testing = this.testing;
       this.captured = resultFor({ ...data, elapsedMs: this.elapsedMs });
-      if (testing) this.proof = { key: this.testingKey, clear: data.clear, hits: data.hits, dropped: data.dropped, ballRadius: data.ballRadius, inkUsed: data.inkUsed, elapsedMs: this.elapsedMs };
-      this.phase = testing ? 'test-landing' : 'landing'; this.renderControls(); return true;
+      this.phase = 'landing'; this.renderControls(); return true;
     }
 
     finishRound() {
-      if (this.phase === 'test-landing' && this.captured) { this.finishTest(); return; }
       if (this.phase !== 'landing' || !this.captured) return;
       this.results[this.player] = this.captured; this.phase = 'round-result'; this.adapter.conceal();
       const r = this.captured;
@@ -390,15 +384,15 @@
     }
 
     exit() {
-      this.cancelPointer(); this.active = false; this.phase = 'campaign'; this.maps = []; this.proofs = []; this.proof = null; this.results = [];
-      document.body.classList.remove('vs-active', 'vs-building', 'vs-testing');
-      this.dom.versusPanel.hidden = true; this.dom.vsEditorActions.hidden = true; this.dom.vsEditTest.hidden = true;
+      ++this.checkId; this.checker.cancel(); this.cancelPointer(); this.active = false; this.phase = 'campaign'; this.maps = []; this.proofs = []; this.proof = null; this.results = [];
+      document.body.classList.remove('vs-active', 'vs-building');
+      this.dom.versusPanel.hidden = true; this.dom.vsEditorActions.hidden = true;
       this.dom.versusButton.querySelector('span').textContent = '2 Player VS Mode';
       this.closeDialog(); this.adapter.exit();
     }
 
     level() {
-      const map = this.editing || this.testing ? this.draft : this.maps[1 - this.player];
+      const map = this.editing ? this.draft : this.maps[1 - this.player];
       return { id: 'vs', title: `Player ${this.player + 1}'s ${this.editing ? 'workshop' : 'challenge'}`, chapter: '2 Player VS Mode', skill: 'Build and swap', note: '', inkBudget: this.editing ? this.config.platformInk : this.config.solverInk,
         hintAim: 180, hintSegments: [], staticLines: [], platformStrokes: map.strokes,
         birds: map.birds.map((p, index) => ({ index, baseX: p.x, x: p.x, prevX: p.x, y: p.y, laneY: p.y, range: this.editing ? 0 : 6, speed: 1.25 + index * .1, phase: 0, bobAmp: this.editing ? 0 : 2, bodyRadius: 11, alive: true, facing: 1,

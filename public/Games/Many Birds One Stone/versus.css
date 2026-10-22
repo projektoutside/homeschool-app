@@ -2,7 +2,6 @@
 .vs-launch svg { width: 22px; height: 22px; }
 .vs-launch:hover { background: #184c3d; }
 .vs-panel[hidden], .vs-editor-actions[hidden], #vsEditorTools[hidden] { display: none; }
-#vsEditTest[hidden] { display: none; }
 .vs-panel { min-width: 0; }
 .vs-turn { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .vs-turn h2 { margin: 0; font: 600 1.35rem/1.15 var(--font-display); text-wrap: balance; }

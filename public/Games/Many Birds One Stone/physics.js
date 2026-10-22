@@ -37,7 +37,11 @@
       if (Math.hypot(a.x - b.x, a.y - b.y) < .001) continue;
       segments.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y });
     }
-    return { segments, radius, kind: 'drawn' };
+    const bounds = path.length ? {
+      left: Math.min(...path.map(p => p.x)), right: Math.max(...path.map(p => p.x)),
+      top: Math.min(...path.map(p => p.y)), bottom: Math.max(...path.map(p => p.y)),
+    } : null;
+    return { segments, radius, kind: 'drawn', bounds };
   }
 
   function nearest(collider, x, y) {
@@ -51,6 +55,8 @@
   }
 
   function resolve(stone, collider) {
+    const bounds = collider.bounds, reach = stone.radius + collider.radius + .15;
+    if (bounds && (stone.x < bounds.left - reach || stone.x > bounds.right + reach || stone.y < bounds.top - reach || stone.y > bounds.bottom + reach)) return null;
     const point = nearest(collider, stone.x, stone.y);
     if (!point) return null;
     let dx = stone.x - point.x, dy = stone.y - point.y, distance = Math.hypot(dx, dy);

@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-const context = vm.createContext({ window: {} });
-vm.runInContext(await readFile('public/Games/Many Birds One Stone/versus.js', 'utf8'), context);
+const context = vm.createContext({performance,setTimeout,clearTimeout});
+vm.runInContext('window=globalThis',context);
+for(const file of ['drop-mechanism.js','physics.js','versus-simulation.js','versus-solver.js','versus.js'])vm.runInContext(await readFile(`public/Games/Many Birds One Stone/${file}`,'utf8'),context);
 const rules = context.window.WoodlandVersusRules;
 const config = { birds: 3, platformInk: 360, solverInk: 480, seconds: 60 };
+const proofFor = (m,c) => { const search=context.WoodlandVersusSolver.createSearch(m,c);let found;do {found=search.next(100);}while(!found.done);return {...found.result,key:rules.mapKey(m,c),automatic:true,revision:context.WoodlandVersusSimulation.revision,solution:found.solution,solutionKey:JSON.stringify(found.solution),dropped:true,ballRadius:12}; };
 const map = () => ({ birds: [{x:180,y:250},{x:180,y:350},{x:180,y:450}], strokes: [[{x:60,y:200},{x:110,y:220}]] });
 test('custom maps require the entire flock, a platform and a bounded ink budget', () => {
   assert.equal(rules.validMap(map(), config), true);
@@ -31,16 +33,16 @@ test('match points and tiebreaks reward hits, combos, full clears and time witho
   assert.equal(rules.winner([result(0,false,500),result(0,false,3000)]),null);
   assert.equal('coins' in clear,false);
 });
-test('only a full creator clear with the opponent supplies and time unlocks a map', () => {
-  const m=map(), proof={key:rules.mapKey(m,config),clear:true,hits:3,dropped:true,ballRadius:12,inkUsed:120,elapsedMs:5000};
+test('only a verified automatic route with the opponent supplies and time unlocks a map', () => {
+  const m=map(), proof=proofFor(m,config);
   assert.equal(rules.isProven(m,config,proof),true);
   assert.equal(rules.isProven(m,config,null),false);
-  for(const invalid of [{clear:false},{hits:2},{dropped:false},{ballRadius:14},{inkUsed:481},{inkUsed:-1},{inkUsed:NaN},{elapsedMs:60001},{elapsedMs:-1},{elapsedMs:Infinity}]){
+  for(const invalid of [{automatic:false},{revision:'old'},{solutionKey:'changed'},{clear:false},{hits:2},{dropped:false},{ballRadius:14},{inkUsed:481},{inkUsed:-1},{inkUsed:NaN},{elapsedMs:60001},{elapsedMs:-1},{elapsedMs:Infinity}]){
     assert.equal(rules.isProven(m,config,{...proof,...invalid}),false,JSON.stringify(invalid));
   }
 });
 test('proofs are bound to every bird, platform and match setting', () => {
-  const m=map(), proof={key:rules.mapKey(m,config),clear:true,hits:3,dropped:true,ballRadius:12,inkUsed:120,elapsedMs:5000};
+  const m=map(), proof=proofFor(m,config);
   const birdEdit=map();birdEdit.birds[0].x+=1;assert.equal(rules.isProven(birdEdit,config,proof),false);
   const railEdit=map();railEdit.strokes[0][1].y+=1;assert.equal(rules.isProven(railEdit,config,proof),false);
   for(const edit of [{birds:2},{seconds:30},{seconds:0},{platformInk:480},{solverInk:600}]) assert.equal(rules.isProven(m,{...config,...edit},proof),false);
@@ -50,7 +52,7 @@ test('both challenges must be proven before any competitive turn can start', () 
   const versus=Object.create(context.window.WoodlandVersus.prototype);
   Object.assign(versus,{active:true,phase:'handoff',config,maps:[map(),map()],proofs:[]});
   versus.startTurn();assert.equal(versus.phase,'handoff');
-  const proof={key:rules.mapKey(map(),config),clear:true,hits:3,dropped:true,ballRadius:12,inkUsed:120,elapsedMs:5000};
+  const proof=proofFor(map(),config);
   versus.proofs=[proof];assert.equal(versus.mapsProven(),false);
   versus.startTurn();assert.equal(versus.phase,'handoff');
   versus.proofs=[proof,proof];assert.equal(versus.mapsProven(),true);
