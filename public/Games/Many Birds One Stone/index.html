@@ -46,7 +46,7 @@
             <div class="meter-fill" id="inkFill"></div>
           </div>
         </div>
-        <div class="flock-progress" aria-live="polite"><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span id="birdProgress">0 / 1 bird</span></div>
+        <div class="flock-progress" aria-live="polite"><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="bird-token"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c0 5 4 8 9 6l6-4 3-4-5 1c0-6-6-7-8-3L2 5l2 7Z"/><path d="m8 12 5 2m3-5h.01"/></svg></span><span class="flock-tally"><span id="birdProgress">0 / 1 bird</span><span class="combo-readout" id="comboReadout" aria-label="Combo points bank on level clear">x1 · 0 pts</span></span></div>
       </header>
 
       <main class="stage-panel">
@@ -182,6 +182,7 @@
       const STEP = 1 / 60;
       const FAIL_SLEEP_SPEED = 22;
       const FAIL_MAX_TIME_MS = 16500;
+      const BIRD_HIT_POINTS = 10;
       const CLEAR_BASE_POINTS = 100;
       const CLEAR_NO_HINT_BONUS = 25;
       const CLEAR_INK_BONUS = 25;
@@ -214,6 +215,7 @@
         levelMapButton: document.getElementById('levelMapButton'),
         resultMapButton: document.getElementById('resultMapButton'),
         birdProgress: document.getElementById('birdProgress'),
+        comboReadout: document.getElementById('comboReadout'),
         overlayTitle: document.getElementById('overlayTitle'),
         overlayBody: document.getElementById('overlayBody'),
         overlayStats: document.getElementById('overlayStats'),
@@ -347,6 +349,8 @@
         drawnColliders: [],
         particles: [],
         stoneTrail: [],
+        combo: { hits: 0, multiplier: 1, points: 0 },
+        comboPopups: [],
         pointer: {
           active: false,
           pointerId: null,
@@ -472,7 +476,7 @@
             state.highestUnlocked = Math.max(state.highestUnlocked, clamp(Math.floor(Number(existing.highestUnlocked)) || 1, 1, LEVELS.length));
             for (let level = 1; level <= LEVELS.length; level++) {
               const previous = existing.bestStats?.[level], current = state.bestStats[level];
-              if (levelMap.earnedStars(previous) > levelMap.earnedStars(current) || (previous?.points === current?.points && previous?.clearTimeMs < current?.clearTimeMs)) state.bestStats[level] = previous;
+              if (isBetterStats(previous, current)) state.bestStats[level] = previous;
             }
           }
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -582,8 +586,8 @@
         return state.audio.muted ? null : state.audio.context;
       }
 
-      function playTone(kind) {
-        if (woodlandAudio.play(kind)) return;
+      function playTone(kind, pitch = 1) {
+        if (woodlandAudio.play(kind, pitch)) return;
         const audioContext = ensureAudioContext();
         if (!audioContext) return;
 
@@ -594,7 +598,8 @@
           win: [840, 0.24, 'sine', 0.12],
           lose: [180, 0.22, 'sawtooth', 0.07],
         };
-        const [frequency, duration, wave, gainValue] = presets[kind] || presets.tap;
+        const [baseFrequency, duration, wave, gainValue] = presets[kind] || presets.tap;
+        const frequency = baseFrequency * pitch;
         const now = audioContext.currentTime;
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
@@ -751,6 +756,9 @@
         dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
         dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
+        dom.comboReadout.textContent = `x${state.combo.multiplier} · ${state.combo.points} pts`;
+        dom.comboReadout.dataset.chain = state.combo.hits;
+        dom.comboReadout.setAttribute('aria-label', `Combo x${state.combo.multiplier}, ${state.combo.points} bonus points. Bank on level clear.`);
         document.querySelectorAll('.bird-token').forEach((token, index) => {
           token.hidden = index >= state.level.birds.length;
           token.classList.toggle('is-cleared', index < cleared);
@@ -791,6 +799,8 @@
       }
 
       function beginAttempt(clearLines, preserveHintState) {
+        state.combo = { hits: 0, multiplier: 1, points: 0 };
+        state.comboPopups = [];
         if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
         if (clearLines) {
           state.drawnStrokes = [];
@@ -1123,10 +1133,7 @@
           return;
         }
         const remainingInk = remainingInkRatio();
-        const points = CLEAR_BASE_POINTS
-          + (state.hintUsed ? 0 : CLEAR_NO_HINT_BONUS)
-          + (remainingInk >= 0.4 ? CLEAR_INK_BONUS : 0);
-        bridge.awardPoints(points, {
+        bridge.awardPoints(summary.points, {
           eventId: `clear:l${state.level.id}:${state.currentAttemptId}`,
           label: 'Level Clear',
           meta: {
@@ -1135,15 +1142,25 @@
             hintUsed: state.hintUsed,
             remainingInkRatio: Number(remainingInk.toFixed(3)),
             clearTimeMs: Math.round(summary.clearTimeMs),
+            comboPoints: summary.comboPoints,
+            maxCombo: summary.maxCombo,
           },
         });
         state.awardedForAttempt = true;
       }
 
+      function isBetterStats(candidate, previous) {
+        const stars = levelMap.earnedStars(candidate), previousStars = levelMap.earnedStars(previous);
+        if (!stars) return false;
+        if (stars !== previousStars) return stars > previousStars;
+        const points = Number(candidate.points) || 0, previousPoints = Number(previous.points) || 0;
+        return points > previousPoints || (points === previousPoints && candidate.clearTimeMs < previous.clearTimeMs);
+      }
+
       function saveBestStats(summary) {
         const key = String(state.level.id);
         const previous = state.bestStats[key];
-        if (!previous || summary.points > previous.points || (summary.points === previous.points && summary.clearTimeMs < previous.clearTimeMs)) {
+        if (isBetterStats(summary, previous)) {
           state.bestStats[key] = summary;
         }
       }
@@ -1169,9 +1186,12 @@
         const remainingInk = remainingInkRatio();
         const points = CLEAR_BASE_POINTS
           + (state.hintUsed ? 0 : CLEAR_NO_HINT_BONUS)
-          + (remainingInk >= 0.4 ? CLEAR_INK_BONUS : 0);
+          + (remainingInk >= 0.4 ? CLEAR_INK_BONUS : 0)
+          + state.combo.points;
         const summary = {
           points,
+          comboPoints: state.combo.points,
+          maxCombo: state.combo.hits,
           clearTimeMs,
           remainingInkRatio: Number(remainingInk.toFixed(3)),
         };
@@ -1198,12 +1218,13 @@
         refreshHud();
         setStatus(`${birdLabel(state.level.birds.length)} cleared! Watch the stone finish its descent.`);
         playTone('win');
-        announce(`Level ${state.level.id} cleared.`);
+        announce(`Level ${state.level.id} cleared. ${state.combo.points} combo bonus points banked. ${points} total points.`);
 
         const stats = [
           { label: 'Level time', value: fmtSeconds(clearTimeMs) },
           { label: 'Ink left', value: fmtPercent(remainingInk) },
-          { label: 'Points', value: String(points) },
+          { label: `Bird combo (x${state.combo.multiplier})`, value: `+${state.combo.points}` },
+          { label: 'Total points', value: String(points) },
           { label: coinsSaved ? 'Woodland coins' : 'Coins (session only)', value: `+${coinReward.earned}` },
         ];
         const nextLevel = LEVELS[state.levelIndex + 1];
@@ -1242,22 +1263,30 @@
           stats: [
             { label: 'Birds cleared', value: `${state.level.birds.filter((bird) => !bird.alive).length}/${state.level.birds.length}` },
             { label: 'Ink used', value: fmtPercent(1 - remainingInkRatio()) },
+            { label: 'Combo (not banked)', value: String(state.combo.points) },
           ],
         });
       }
 
       function hitBird(bird) {
-        if (!bird.alive) return;
+        if (!bird.alive || state.runEnded) return;
         bird.alive = false;
+        state.combo.hits++;
+        state.combo.multiplier = Math.min(3, state.combo.hits);
+        const hitPoints = BIRD_HIT_POINTS * state.combo.multiplier;
+        state.combo.points += hitPoints;
+        state.comboPopups.push({ x: clamp(bird.x, 82, WORLD_W - 82), y: bird.y - 22, age: 0, multiplier: state.combo.multiplier, points: hitPoints });
+        state.comboPopups = state.comboPopups.slice(-3);
         createParticles(bird.x, bird.y, 16, [bird.tint[0], bird.tint[1], '#ffffff']);
         state.stone.vx *= 0.95;
         state.stone.vy = Math.min(state.stone.vy, 180);
-        playTone('bird');
+        playTone('bird', 1 + (state.combo.multiplier - 1) * .16);
         refreshHud();
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
-          setStatus(`${state.level.birds.filter((candidate) => !candidate.alive).length} of ${birdLabel(state.level.birds.length)} cleared. Keep the stone moving.`);
+          const message = `x${state.combo.multiplier} combo! +${hitPoints} points. Clear the flock to bank ${state.combo.points}.`;
+          setStatus(message); announce(message);
         }
       }
 
@@ -1488,6 +1517,24 @@
         });
       }
 
+      function drawComboPopups() {
+        ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+        state.comboPopups.forEach(popup => {
+          const progress = clamp(popup.age / 1.6, 0, 1);
+          ctx.globalAlpha = reducedMotion ? 1 : Math.min(1, (1 - progress) * 4);
+          const y = popup.y - (reducedMotion ? 0 : 32 * (1 - Math.pow(1 - progress, 3)));
+          const color = popup.multiplier === 3 ? '#a73320' : popup.multiplier === 2 ? '#775014' : '#174e3c';
+          ctx.strokeStyle = '#fffaf0'; ctx.fillStyle = color; ctx.lineWidth = 4;
+          ctx.font = '800 11px Nunito';
+          const title = popup.multiplier === 3 ? 'FLOCK COMBO!' : popup.multiplier === 2 ? 'DOUBLE!' : 'NICE HIT!';
+          ctx.strokeText(title, popup.x, y - 18); ctx.fillText(title, popup.x, y - 18);
+          ctx.font = '600 22px Fredoka';
+          const score = `x${popup.multiplier}  +${popup.points}`;
+          ctx.strokeText(score, popup.x, y); ctx.fillText(score, popup.x, y);
+        });
+        ctx.restore();
+      }
+
       function drawBirdLanes() {
         ctx.save();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
@@ -1524,6 +1571,7 @@
         drawStone(stone);
         dropMechanism.drawFront(ctx);
         drawParticles();
+        drawComboPopups();
       }
 
       function useHint() {
@@ -1672,6 +1720,8 @@
           return;
         }
 
+        state.comboPopups.forEach(popup => { popup.age += dt; });
+        state.comboPopups = state.comboPopups.filter(popup => popup.age < 1.6);
         dropMechanism.update(dt, state.clawBaseX);
         updateStone(dt);
       }
@@ -1810,6 +1860,8 @@
           shop: structuredClone(state.shop),
           loadout: state.loadout,
           inkBudget: state.level?.inkBudget,
+          combo: { ...state.combo },
+          comboPopups: state.comboPopups.map(popup => ({ ...popup })),
           outcome: state.outcome,
           resultPending: Boolean(state.pendingResult),
           floorY: FLOOR_Y,
@@ -1913,11 +1965,7 @@
             return JSON.parse(window.render_game_to_text());
           },
           forceWin() {
-            state.level.birds.forEach((bird) => {
-              if (bird.alive) {
-                bird.alive = false;
-              }
-            });
+            state.level.birds.forEach(hitBird);
             handleWin();
             return JSON.parse(window.render_game_to_text());
           },
@@ -1950,7 +1998,7 @@
           showOverlay({
             eyebrow: 'Draw. Drop. Clear.',
             title: 'A little ink. One clever drop.',
-            body: 'Start with one bird, then two, before taking on a flock of three. Draw paths, slide the claw to aim, and tap the stone or Drop.',
+            body: 'Start with one bird, then two, before taking on a flock of three. Draw paths, slide the claw to aim, and tap the stone or Drop. Chain birds for x1, x2 and x3 bonus points; clear the flock to bank them.',
             primaryLabel: 'Let’s play',
             primaryAction: 'begin',
             secondaryLabel: 'Games',

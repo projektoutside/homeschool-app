@@ -59,7 +59,7 @@
       this.ambience = source;
     }
 
-    play(kind) {
+    play(kind, pitch = 1) {
       if (this.muted || this.paused) return true;
       const buffer = this.buffers.get(kind);
       if (!buffer || this.context?.state !== 'running') return false;
@@ -71,7 +71,7 @@
       const gain = this.context.createGain();
       source.buffer = buffer;
       gain.gain.value = kind === 'win' ? 0.65 : kind === 'draw' ? 0.24 : 0.48;
-      if (kind === 'bird' || kind === 'bounce') source.playbackRate.value = 0.96 + Math.random() * 0.08;
+      if (kind === 'bird' || kind === 'bounce') source.playbackRate.value = (0.96 + Math.random() * 0.08) * Math.max(.8, Math.min(1.5, Number(pitch) || 1));
       source.connect(gain).connect(this.master);
       this.sources.add(source);
       source.onended = () => { this.sources.delete(source); source.disconnect(); gain.disconnect(); };

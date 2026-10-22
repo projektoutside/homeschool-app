@@ -1,6 +1,12 @@
 .shop-launch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 10px 14px; border-radius: 12px; color: #593c13; background: #f1dfb3; font-weight: 800; }
 .shop-launch > span { display: inline-flex; align-items: center; gap: 6px; }
 .shop-launch strong, .shop-wallet strong { font-variant-numeric: tabular-nums; }
+.flock-tally { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.flock-tally #birdProgress { margin-left: 0; line-height: 1.1; }
+.combo-readout { font-size: .75rem; font-weight: 800; line-height: 1.1; color: #48665c; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.combo-readout[data-chain="1"] { color: #174e3c; }
+.combo-readout[data-chain="2"] { color: #775014; }
+.combo-readout[data-chain="3"] { color: #a73320; }
 .shop-launch > span:first-child > span { font-size: .8rem; }
 .overlay-links { grid-column: 1 / -1; display: flex; gap: 8px; min-width: 0; }
 .overlay-links button { flex: 1; min-width: 0; padding: 6px; }
@@ -50,6 +56,8 @@
   .shop-launch { flex-basis: 100%; }
 }
 @media (max-width: 760px) {
+  .combo-readout { font-size: .65rem; }
+  .hud .meter-card { min-width: 0; }
   .hud-cluster { display: grid; grid-template-columns: repeat(3, 44px) 56px; }
   .shop-launch { flex: 0 0 56px; min-height: 44px; height: 44px; padding: 4px; flex-direction: column; justify-content: center; gap: 1px; font-size: .7rem; }
   .shop-launch > span { gap: 3px; }
