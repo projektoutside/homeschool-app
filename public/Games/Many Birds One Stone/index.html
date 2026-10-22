@@ -142,7 +142,6 @@
       const GRAVITY = 980;
       const STEP = 1 / 60;
       const FAIL_SLEEP_SPEED = 22;
-      const FAIL_SLEEP_MS = 1050;
       const FAIL_MAX_TIME_MS = 16500;
       const CLEAR_BASE_POINTS = 100;
       const CLEAR_NO_HINT_BONUS = 25;
@@ -295,6 +294,7 @@
         overlaySecondaryAction: 'home',
         level: null,
         staticColliders: [],
+        colliders: [],
         drawnStrokes: [],
         drawnColliders: [],
         particles: [],
@@ -440,6 +440,9 @@
       }
 
       function syncPauseState() {
+        state.stone.previousX = state.stone.x;
+        state.stone.previousY = state.stone.y;
+        state.stone.previousRotation = state.stone.rotation;
         levelMap.setPaused(state.hostPaused || state.hiddenPause);
         const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible;
         woodlandAudio.setPaused(paused);
@@ -677,6 +680,11 @@
       function rebuildDrawnColliders() {
         state.drawnColliders = state.drawnStrokes.map(stroke =>
           window.WoodlandPhysics.createStroke(stroke.points, DRAWN_LINE_WIDTH / 2));
+        refreshColliders();
+      }
+
+      function refreshColliders() {
+        state.colliders = [...WORLD_COLLIDERS, ...state.staticColliders, ...state.drawnColliders];
       }
 
       function beginAttempt(clearLines, preserveHintState) {
@@ -694,6 +702,7 @@
         state.elapsed = 0;
         state.level = hydrateLevel(state.levelIndex);
         state.staticColliders = state.level.staticLines.map(createStaticCollider);
+        refreshColliders();
         resetClawControl();
         setClawBaseX(WORLD_W / 2);
         resetStone();
@@ -910,6 +919,7 @@
         if (!state.stone.attached || state.overlayVisible) return;
         state.drawnStrokes = [];
         state.drawnColliders = [];
+        refreshColliders();
         state.pointer.active = false;
         state.pointer.points = [];
         state.pointer.pointerId = null;
@@ -929,6 +939,9 @@
         dropMechanism.release();
         state.hintVisibleUntil = 0;
         state.stone.attached = false;
+        state.stone.previousX = state.stone.x;
+        state.stone.previousY = state.stone.y;
+        state.stone.previousRotation = state.stone.rotation;
         state.stone.active = true;
         state.stone.vx = 0;
         state.stone.vy = 14;
@@ -944,7 +957,7 @@
 
       function resolveStoneAgainstWorld(dt) {
         const contacts = window.WoodlandPhysics.solve(state.stone,
-          [...WORLD_COLLIDERS, ...state.staticColliders, ...state.drawnColliders], dt);
+          state.colliders, dt);
         let bounced = false;
         for (const contact of contacts) {
           if (contact.kind === 'floor' && contact.ny < -.5 && !state.stone.floorHit) {
@@ -1150,6 +1163,10 @@
         }
         if (!state.stone.active) return;
 
+        state.stone.previousX = state.stone.x;
+        state.stone.previousY = state.stone.y;
+        state.stone.previousRotation = state.stone.rotation;
+
         state.stoneTrail.push({ x: state.stone.x, y: state.stone.y });
         if (state.stoneTrail.length > (reducedMotion ? 3 : 18)) state.stoneTrail.shift();
         state.stone.onFloor = false;
@@ -1179,11 +1196,25 @@
         }
 
         if (!reducedMotion) state.stone.rotation += (state.stone.vx * .015 + state.stone.vy * .003) * dt;
+        const rolling = window.WoodlandPhysics.keepRolling(state.stone, state.colliders, dt);
+        if (rolling === 'trapped') {
+          if (state.runEnded) {
+            state.stone.active = false;
+            showPendingResult();
+          } else {
+            const aim = state.clawBaseX;
+            beginAttempt(false, true);
+            setClawBaseX(aim);
+            resetStone();
+            setStatus('Stone returned. Move the claw or clear the trapped path.');
+            announce('The stone returned to the claw. Your lines are kept.');
+          }
+          return;
+        }
         const speed = Math.hypot(state.stone.vx, state.stone.vy);
-        if (speed < FAIL_SLEEP_SPEED && window.WoodlandPhysics.stableSupport(state.stone)) state.stone.sleepMs += dt * 1000;
+        if (state.stone.onFloor && speed < FAIL_SLEEP_SPEED && window.WoodlandPhysics.stableSupport(state.stone)) state.stone.sleepMs += dt * 1000;
         else state.stone.sleepMs = 0;
-        const settleTime = state.stone.onFloor ? 420 : FAIL_SLEEP_MS;
-        if (state.stone.sleepMs >= settleTime) {
+        if (state.stone.sleepMs >= 420) {
           state.stone.active = false;
           state.stone.vx = 0;
           state.stone.vy = 0;
@@ -1317,14 +1348,14 @@
         woodlandBirds.draw(ctx, bird, state.elapsed);
       }
 
-      function drawStone() {
+      function drawStone(stone) {
         state.stoneTrail.forEach((point, index) => {
           ctx.fillStyle = `rgba(255, 226, 153, ${index / state.stoneTrail.length * .42})`;
           ctx.beginPath(); ctx.arc(point.x, point.y, state.stone.radius * index / state.stoneTrail.length * .7, 0, Math.PI * 2); ctx.fill();
         });
-        dropMechanism.drawStone(ctx, state.stone);
+        dropMechanism.drawStone(ctx, stone);
         ctx.save();
-        ctx.translate(state.stone.x, state.stone.y);
+        ctx.translate(stone.x, stone.y);
         if (state.stone.hitPulse > 0.01) {
           ctx.strokeStyle = `rgba(255, 255, 255, ${state.stone.hitPulse * 0.42})`;
           ctx.lineWidth = 3;
@@ -1359,10 +1390,17 @@
         ctx.restore();
       }
 
-      function draw() {
+      function stoneRenderPose(alpha = 1) {
+        const stone = state.stone;
+        if (stone.attached || !stone.active || stone.previousX === undefined || alpha >= 1) return stone;
+        return { ...stone, x: lerp(stone.previousX, stone.x, alpha), y: lerp(stone.previousY, stone.y, alpha), rotation: lerp(stone.previousRotation, stone.rotation, alpha) };
+      }
+
+      function draw(alpha = 1) {
+        const stone = stoneRenderPose(alpha);
         ctx.clearRect(0, 0, WORLD_W, WORLD_H);
         drawBackground();
-        runways.drawGroundContact(ctx, state.stone);
+        runways.drawGroundContact(ctx, stone);
         drawPlayBandLabels();
         drawBirdLanes();
         drawClaw();
@@ -1371,7 +1409,7 @@
         drawDrawnStrokes();
         drawGuides();
         state.level.birds.forEach(drawBird);
-        drawStone();
+        drawStone(stone);
         dropMechanism.drawFront(ctx);
         drawParticles();
       }
@@ -1533,7 +1571,7 @@
           update(STEP);
           state.accumulator -= STEP;
         }
-        if (!state.mapVisible) draw();
+        if (!state.mapVisible) draw(state.accumulator / STEP);
         window.requestAnimationFrame(frame);
       }
 

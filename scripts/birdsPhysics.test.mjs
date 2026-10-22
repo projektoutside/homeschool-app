@@ -7,9 +7,10 @@ const context = { window: {} };
 runInNewContext(readFileSync(new URL('../public/Games/Many Birds One Stone/physics.js', import.meta.url), 'utf8'), context);
 const physics = context.window.WoodlandPhysics;
 const floor = { ax: 10, ay: 626, bx: 350, by: 626, radius: 0, kind: 'floor' };
+const walls = [{ ax: 10, ay: 96, bx: 10, by: 664, radius: 10, kind: 'wall' }, { ax: 350, ay: 96, bx: 350, by: 664, radius: 10, kind: 'wall' }];
 const body = (overrides = {}) => ({ x: 95, y: 260, vx: 0, vy: 0, radius: 12, ...overrides });
 
-function simulate(stone, colliders, seconds = 6, hz = 60) {
+function simulate(stone, colliders, seconds = 6, hz = 60, assist = false) {
   let stableFrames = 0;
   for (let i = 0; i < seconds * hz; i += 1) {
     stone.supported = false; stone.onFloor = false;
@@ -21,6 +22,7 @@ function simulate(stone, colliders, seconds = 6, hz = 60) {
       physics.solve(stone, colliders, dt);
     }
     assert.ok([stone.x, stone.y, stone.vx, stone.vy].every(Number.isFinite));
+    if (assist && physics.keepRolling(stone, colliders, 1 / hz) === 'trapped') return { ...stone, recovered: true };
     stableFrames = physics.stableSupport(stone) && Math.hypot(stone.vx, stone.vy) < 22 ? stableFrames + 1 : 0;
   }
   return { ...stone, stableFrames };
@@ -93,4 +95,32 @@ test('rolling drag follows elapsed time rather than sample or frame count', () =
   const fast = simulate(body({ x: 100, y: 282.49, vx: 80 }), [flat], .5, 120);
   assert.ok(Math.abs(slow.vx - fast.vx) < .01);
   assert.ok(Math.abs(slow.x - fast.x) < .2);
+});
+
+test('gameplay assistance rolls flat and nearly flat paths off their ends in either drawing direction', () => {
+  for (const slope of [0, .002, -.002]) {
+    const path = [{ x: 60, y: 300 }, { x: 300, y: 300 + slope * 240 }];
+    for (const points of [path, path.slice().reverse()]) {
+      const result = simulate(body(), [physics.createStroke(points, 5.5), floor, ...walls], 12, 60, true);
+      assert.ok(result.onFloor && !result.recovered, JSON.stringify(result));
+    }
+  }
+});
+
+test('a fully enclosed route recovers in bounded time and the floor never gets a rolling impulse', () => {
+  const valley = physics.createStroke([{ x: 60, y: 260 }, { x: 180, y: 350 }, { x: 300, y: 260 }], 5.5);
+  const result = simulate(body({ x: 175, y: 270 }), [valley, floor], 8, 60, true);
+  assert.ok(result.recovered);
+  const resting = body({ x: 180, y: 613.99, vx: 0, vy: 0, onFloor: true });
+  const before = { ...resting };
+  assert.equal(physics.keepRolling(resting, [floor], 1 / 60), null);
+  assert.deepEqual(resting, before);
+});
+
+test('rolling assistance remains finite and reaches the floor at different simulation rates', () => {
+  const flat = physics.createStroke([{ x: 60, y: 300 }, { x: 300, y: 300 }], 5.5);
+  for (const hz of [30, 60, 120]) {
+    const result = simulate(body(), [flat, floor, ...walls], 12, hz, true);
+    assert.ok(result.onFloor && !result.recovered);
+  }
 });

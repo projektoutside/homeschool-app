@@ -110,5 +110,47 @@
     return stone.supported && stone.supportMinX <= .01 && stone.supportMaxX >= -.01;
   }
 
-  window.WoodlandPhysics = { createStroke, nearest, resolve, solve, stableSupport };
+  function keepRolling(stone, colliders, dt) {
+    if (stone.onFloor) return null;
+    if (stone.rollAnchorX === undefined) {
+      stone.rollAnchorX = stone.trapAnchorX = stone.x;
+      stone.rollAnchorY = stone.trapAnchorY = stone.y;
+      stone.rollIdleTime = stone.trapTime = 0;
+    }
+    if (Math.abs(stone.vx) > 12) stone.rollDirection = Math.sign(stone.vx);
+    stone.trapTime += dt;
+    if (stone.trapTime >= 2.6) {
+      const trapped = Math.hypot(stone.x - stone.trapAnchorX, stone.y - stone.trapAnchorY) < 12;
+      stone.trapAnchorX = stone.x; stone.trapAnchorY = stone.y; stone.trapTime = 0;
+      if (trapped) return 'trapped';
+    }
+    if (Math.hypot(stone.x - stone.rollAnchorX, stone.y - stone.rollAnchorY) >= 2) {
+      stone.rollAnchorX = stone.x; stone.rollAnchorY = stone.y; stone.rollIdleTime = 0;
+    } else stone.rollIdleTime += dt;
+    if (stone.rollIdleTime < .65) return null;
+    for (const collider of colliders) {
+      if (collider.kind === 'floor' || collider.kind === 'wall') continue;
+      const point = nearest(collider, stone.x, stone.y);
+      if (!point) continue;
+      const dx = stone.x - point.x, dy = stone.y - point.y, distance = Math.hypot(dx, dy);
+      if (dy >= 0 || distance > stone.radius + collider.radius + .3 || -dy / distance < .35) continue;
+      let direction = Math.abs(point.ty) > .005 ? Math.sign(point.tx * point.ty) : stone.rollDirection;
+      if (!direction) {
+        const segments = collider.segments || [collider];
+        const left = Math.min(...segments.map(segment => Math.min(segment.ax, segment.bx)));
+        const right = Math.max(...segments.map(segment => Math.max(segment.ax, segment.bx)));
+        direction = stone.x - left < right - stone.x ? -1 : 1;
+      }
+      const nx = dx / distance, ny = dy / distance;
+      stone.vx = direction * 48 * -ny;
+      stone.vy = direction * 48 * nx;
+      stone.rollDirection = direction;
+      stone.rollAnchorX = stone.x; stone.rollAnchorY = stone.y; stone.rollIdleTime = 0;
+      stone.rollAssistCount = (stone.rollAssistCount || 0) + 1;
+      return 'nudged';
+    }
+    return null;
+  }
+
+  window.WoodlandPhysics = { createStroke, nearest, resolve, solve, stableSupport, keepRolling };
 })();

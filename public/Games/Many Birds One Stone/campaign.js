@@ -115,7 +115,7 @@
       skill: "Control a long sweep",
       hintAim: 270,
       inkBudget: 160,
-      blockers: [[60,152,218,188],[232,438,310,452]],
+      blockers: [[60,152,218,188],[232,438,292,449]],
       hint: [[[292,270],[206,282]]],
       birdLaneYs: [320,400,490],
       birdXs: [166,159,94],
@@ -220,7 +220,7 @@
       skill: "Lead a moving relay",
       hintAim: 270,
       inkBudget: 460,
-      blockers: [[110,159,224,185],[214,340,310,354]],
+      blockers: [[110,159,224,185],[214,340,292,351]],
       hint: [[[292,215],[190,252]],[[28,338],[160,406]]],
       birdLaneYs: [310,455,550],
       birdXs: [111,221,249],
@@ -235,7 +235,7 @@
       skill: "Combine three turns",
       hintAim: 270,
       inkBudget: 570,
-      blockers: [[105,120,218,146],[210,295,310,310]],
+      blockers: [[105,120,218,146],[210,295,292,307]],
       hint: [[[292,170],[190,205]],[[60,320],[170,356]],[[300,462],[205,492]]],
       birdLaneYs: [270,412,550],
       birdXs: [131,209,174],
@@ -276,7 +276,7 @@
   ];
 
   window.WoodlandCampaign = Object.freeze({
-    revision: 'crafted-18-v2-sloped-starts',
+    revision: 'crafted-18-v3-open-exits',
     levels: Object.freeze(levels.map(level => Object.freeze({
       ...level,
       blockers: level.blockers.map(([x1, y1, x2, y2]) => ({ x1, y1, x2, y2, radius: 7, kind: 'blocker' })),

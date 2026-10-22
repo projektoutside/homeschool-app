@@ -22,7 +22,7 @@ async function createPage(browser, options = {}, { unlocked = false, diagnostic 
   await page.route('**/Many%20Birds%20One%20Stone/index.html', async route => {
     const response = await route.fetch();
     let body = (await response.text()).replace('function frame(now) {', 'function frame(now) { if (window.__campaignClockPaused) return;');
-    if (diagnostic) body = body.replace('function draw() {', 'function draw() { return;');
+    if (diagnostic) body = body.replace(/function draw\([^)]*\) \{/, 'function draw(alpha = 1) { return;');
     await route.fulfill({ response, body });
   });
   await page.addInitScript(unlocked => {
