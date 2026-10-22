@@ -8,8 +8,10 @@ import test from 'node:test';
 const pipelineUrl = new URL('./optimize-animal-champion-images.py', import.meta.url);
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const pipelinePath = fileURLToPath(pipelineUrl);
+const bundledPythonPath = 'C:\\Users\\Xator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
+const systemPythonPath = process.platform === 'win32' ? 'python' : 'python3';
 const pythonPath = process.env.ANIMAL_ASSET_PYTHON
-  ?? 'C:\\Users\\Xator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
+  ?? (existsSync(bundledPythonPath) ? bundledPythonPath : systemPythonPath);
 
 test('Animal Champion imports are explicit, atomic, and source preserving', async () => {
   const source = await readFile(pipelineUrl, 'utf8');
