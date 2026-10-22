@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { findBaseModuleById, resolveAreaFromRequest, resolveAreaRoute } from '../data/moduleRegistry';
-import { buildAssetPath } from '../utils/pathUtils';
+import { findBaseModuleById, isAppPointsEnabledModule, resolveAreaFromRequest, resolveAreaRoute } from '../data/moduleRegistry';
 import type { ContentItem } from '../types/content';
 import { useAuth } from '../context/AuthContext';
 import { usePoints } from '../context/PointsContext';
@@ -11,7 +9,6 @@ import { useSoundSettings } from '../context/SoundSettingsContext';
 import { useZoomLock } from '../hooks/useZoomLock';
 import { useManagerConfig } from '../hooks/useManagerConfig';
 import { supabase } from '../lib/supabase';
-import { isGuestUser } from '../utils/guestSession';
 import { getGameHostPolicy } from '../utils/gameHostPolicy';
 import { teardownIframeElement, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { GAME_STAMINA_COST, getSecondsUntilNextRecharge } from '../utils/stamina';
@@ -28,7 +25,6 @@ import {
     GAME_POINTS_EARNED_MESSAGE,
     createGamePointsSessionId,
     getPointEventKey,
-    isSinglePlayerPointsGameId,
     sanitizePointValue,
 } from '../utils/gamePoints';
 import {
@@ -40,105 +36,40 @@ import {
     isCarKingSpeechControlMessage,
 } from '../features/speech/speechBridge';
 import { CarKingNativeFirstSpeechController } from '../features/speech/nativeSpeechController';
+import {
+    type CarKingMicPreference,
+    CAR_KING_GAME_ID,
+    CAR_KING_MIC_PREF_REQUEST,
+    CAR_KING_MIC_PREF_SAVE,
+    CAR_KING_MIC_PREF_SAVE_RESULT,
+    CAR_KING_MIC_PREF_SYNC,
+    WORD_PUZZLE_GAME_ID,
+    WORD_PUZZLE_USER_CONTEXT_REQUEST,
+    WORD_PUZZLE_USER_CONTEXT_SYNC,
+    buildWordPuzzleBootstrapKey,
+    buildWordPuzzleUserContext,
+    getUserCarKingMicPreference,
+    isCarKingMicPreference,
+    persistWordPuzzleBootstrapContext,
+    writeLocalCarKingMicPreference,
+} from './gamePlayer/gamePlayerSpecialCases';
+import {
+    buildGameLaunchPath,
+    buildStaminaLaunchEventId,
+    formatRechargeCountdown,
+} from './gamePlayer/gamePlayerRuntime';
 import './GamePlayer.css';
 
 const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
 const GAME_ORIENTATION_REQUEST_MESSAGE = 'LAHS_GAME_ORIENTATION_REQUEST';
 const GAME_ORIENTATION_RESULT_MESSAGE = 'LAHS_GAME_ORIENTATION_RESULT';
 const DEFENDER_CHAMPION_GAME_ID = 'defender-champion';
-const CAR_KING_GAME_ID = 'math-car-king';
 const ANIMAL_CHAMPION_GAME_ID = 'animal-champion';
-const WORD_PUZZLE_GAME_ID = 'word-puzzle-game';
-const CAR_KING_MIC_PREF_SYNC = 'LAHS_CAR_KING_MIC_PREF_SYNC';
-const CAR_KING_MIC_PREF_REQUEST = 'LAHS_CAR_KING_MIC_PREF_REQUEST';
-const CAR_KING_MIC_PREF_SAVE = 'LAHS_CAR_KING_MIC_PREF_SAVE';
-const CAR_KING_MIC_PREF_SAVE_RESULT = 'LAHS_CAR_KING_MIC_PREF_SAVE_RESULT';
-const CAR_KING_MIC_PREF_STORAGE_PREFIX = 'carKingMicPreference';
-const WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY = 'LAHS_WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP';
-const WORD_PUZZLE_USER_CONTEXT_SYNC = 'LAHS_WORD_PUZZLE_USER_CONTEXT_SYNC';
-const WORD_PUZZLE_USER_CONTEXT_REQUEST = 'LAHS_WORD_PUZZLE_USER_CONTEXT_REQUEST';
 const DEV_CACHE_BUST = import.meta.env.DEV ? Date.now().toString() : '';
-
-type CarKingMicPreference = 'ask' | 'session' | 'always';
-type WordPuzzleUserContext = {
-    userId: string | null;
-    username: string | null;
-    isAuthenticated: boolean;
-    storageScope: string;
-};
 
 type StaminaGateStatus = {
     requestKey: string | null;
     status: 'checking' | 'allowed' | 'blocked';
-};
-
-const isCarKingMicPreference = (value: unknown): value is CarKingMicPreference => {
-    return value === 'ask' || value === 'session' || value === 'always';
-};
-
-const getCarKingMicPreferenceStorageKey = (userId: string) => {
-    return `${CAR_KING_MIC_PREF_STORAGE_PREFIX}:${userId}`;
-};
-
-const readLocalCarKingMicPreference = (userId?: string | null): CarKingMicPreference => {
-    if (!userId) return 'ask';
-
-    try {
-        const stored = window.localStorage.getItem(getCarKingMicPreferenceStorageKey(userId));
-        return isCarKingMicPreference(stored) ? stored : 'ask';
-    } catch {
-        return 'ask';
-    }
-};
-
-const writeLocalCarKingMicPreference = (
-    userId: string | null | undefined,
-    preference: CarKingMicPreference,
-) => {
-    if (!userId) return;
-
-    try {
-        const key = getCarKingMicPreferenceStorageKey(userId);
-        if (preference === 'always') {
-            window.localStorage.setItem(key, preference);
-        } else {
-            window.localStorage.removeItem(key);
-        }
-    } catch {
-        // Ignore local fallback storage failures.
-    }
-};
-
-const getUserCarKingMicPreference = (user: User | null): CarKingMicPreference => {
-    const storedInMetadata = user?.user_metadata?.car_king_mic_preference;
-    if (isCarKingMicPreference(storedInMetadata)) {
-        return storedInMetadata;
-    }
-
-    return readLocalCarKingMicPreference(user?.id);
-};
-
-const buildWordPuzzleUserContext = (user: User | null): WordPuzzleUserContext => {
-    const userId = user?.id ?? null;
-    const usernameFromMetadata = user?.user_metadata?.username;
-    const username = typeof usernameFromMetadata === 'string' && usernameFromMetadata.trim()
-        ? usernameFromMetadata.trim()
-        : null;
-
-    return {
-        userId,
-        username,
-        isAuthenticated: Boolean(userId),
-        storageScope: userId ? `${isGuestUser(user) ? 'local-guest' : 'supabase-user'}:${userId}` : 'anonymous-test',
-    };
-};
-
-const persistWordPuzzleBootstrapContext = (context: WordPuzzleUserContext) => {
-    try {
-        window.sessionStorage.setItem(WORD_PUZZLE_USER_CONTEXT_BOOTSTRAP_KEY, JSON.stringify(context));
-    } catch {
-        // Ignore bootstrap storage failures and allow anonymous fallback inside the iframe.
-    }
 };
 
 const GamePlayer: React.FC = () => {
@@ -181,19 +112,10 @@ const GamePlayer: React.FC = () => {
         }
         return resolvedItems.get(id ?? '') ?? findBaseModuleById(id);
     }, [id, launchStateItem, resolvedItems]);
-    const launchPath = useMemo(() => {
-        if (!item) return '';
-        if (item.customHtmlPath) {
-            const basePath = buildAssetPath(item.customHtmlPath);
-            if (!import.meta.env.DEV) {
-                return basePath;
-            }
-            const separator = basePath.includes('?') ? '&' : '?';
-            return `${basePath}${separator}dev=${DEV_CACHE_BUST}`;
-        }
-        if (item.externalUrl) return item.externalUrl;
-        return '';
-    }, [item]);
+    const launchPath = useMemo(
+        () => buildGameLaunchPath(item, DEV_CACHE_BUST, import.meta.env.DEV),
+        [item],
+    );
     const currentGameId = item?.id ?? null;
     const gameHostPolicy = getGameHostPolicy(currentGameId ?? id);
     useZoomLock({ enabled: gameHostPolicy.lockZoom, iframeRefs: zoomLockIframes });
@@ -202,24 +124,22 @@ const GamePlayer: React.FC = () => {
     const isAnimalChampionGame = currentGameId === ANIMAL_CHAMPION_GAME_ID;
     const isSpeechRecognitionGame = isCarKingGame || isAnimalChampionGame;
     const isWordPuzzleGame = currentGameId === WORD_PUZZLE_GAME_ID;
-    const isSinglePlayerPointsGame = item?.type === 'game' && isSinglePlayerPointsGameId(currentGameId);
+    const isSinglePlayerPointsGame = isAppPointsEnabledModule(item);
     const carKingMicPreference = useMemo(() => getUserCarKingMicPreference(user), [user]);
     const wordPuzzleUserContext = useMemo(() => buildWordPuzzleUserContext(user), [user]);
     const pointsSessionId = useMemo(() => {
         return createGamePointsSessionId(currentGameId ?? id ?? 'game');
     }, [currentGameId, id]);
     const wordPuzzleBootstrapKey = useMemo(() => {
-        return `${WORD_PUZZLE_GAME_ID}:${wordPuzzleUserContext.userId ?? 'anonymous'}`;
+        return buildWordPuzzleBootstrapKey(wordPuzzleUserContext.userId);
     }, [wordPuzzleUserContext.userId]);
     const staminaLaunchEventId = useMemo(() => {
-        if (!isGameItem || !currentGameId) {
-            return null;
-        }
-
-        const safeLocationKey = location.key && location.key !== 'default'
-            ? location.key
-            : `${location.pathname}:${currentGameId}`;
-        return `launch:${currentGameId}:${safeLocationKey}`;
+        return buildStaminaLaunchEventId({
+            currentGameId,
+            isGameItem,
+            locationKey: location.key,
+            pathname: location.pathname,
+        });
     }, [currentGameId, isGameItem, location.key, location.pathname]);
     const staminaLaunchRequestKey = useMemo(() => {
         if (!staminaLaunchEventId) {
@@ -232,9 +152,7 @@ const GamePlayer: React.FC = () => {
         return getSecondsUntilNextRecharge(nextRechargeAtMs, staminaCountdownNowMs);
     }, [nextRechargeAtMs, staminaCountdownNowMs]);
     const nextStaminaCountdownLabel = useMemo(() => {
-        const minutes = Math.floor(secondsUntilNextStamina / 60);
-        const seconds = secondsUntilNextStamina % 60;
-        return `${minutes}:${String(seconds).padStart(2, '0')}`;
+        return formatRechargeCountdown(secondsUntilNextStamina);
     }, [secondsUntilNextStamina]);
 
     // Games and tools share the embedded player

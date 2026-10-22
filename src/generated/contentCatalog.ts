@@ -9,6 +9,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Math Puzzle",
     "description": "A fun and challenging math puzzle game for all ages.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "Addition",
@@ -47,6 +49,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Animal Champion",
     "description": "Identify 75 animals in fast visual challenge rounds.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "science",
     "subjects": [
       "Animals",
@@ -65,6 +69,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Cage Pet Rescue",
     "description": "Rescue trapped pets by solving math problems and managing your energy carefully.",
     "type": "game",
+    "playerMode": "single",
     "category": "math",
     "subjects": [
       "Addition",
@@ -80,10 +85,34 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "dateAdded": "2026-03-18"
   },
   {
+    "id": "coin-champ",
+    "title": "Coin Champ",
+    "description": "Practice pennies, nickels, dimes, and quarters through polished make-the-amount and count-the-coins rounds.",
+    "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
+    "category": "math",
+    "subjects": [
+      "Money",
+      "Counting",
+      "Addition"
+    ],
+    "gradeLevels": [
+      "Kindergarten",
+      "1st",
+      "2nd"
+    ],
+    "thumbnail": "/Games/Coin Champion/thumb.svg",
+    "customHtmlPath": "/Games/Coin Champion/index.html",
+    "dateAdded": "2026-03-28"
+  },
+  {
     "id": "defender-champion",
     "title": "Defender Champion",
     "description": "Command four defenders, hold the path, and survive a ten-level pure-strategy campaign.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "strategy",
     "subjects": [
       "Strategy",
@@ -118,6 +147,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Many Birds One Stone",
     "description": "Draw elegant runway lines, release one stone, and clear every moving bird in a single physics puzzle drop.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "puzzles",
     "subjects": [
       "Physics",
@@ -151,6 +182,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Polygon Fun Challenge",
     "description": "Explore polygons in the shared Polygon Fun workspace.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "Geometry"
@@ -227,6 +260,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "2 Players Math Write",
     "description": "Take turns practicing handwriting and math skills with a friend.",
     "type": "game",
+    "playerMode": "multi",
     "category": "math",
     "subjects": [
       "Addition",
@@ -546,6 +580,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Analog Clock Game",
     "description": "Practice reading analog clocks with interactive time challenges.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "Time",
@@ -563,6 +599,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Car King",
     "description": "A car-themed math game where you identify and learn about cars.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "General"
@@ -714,6 +752,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Farmers Market Frenzy 3D",
     "description": "Run a farmers market stand, calculate totals, and return correct change.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "Addition",
@@ -942,6 +982,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Quiz it Polygon!",
     "description": "Build, classify, and measure polygons in a polished 10-question geometry challenge.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "math",
     "subjects": [
       "Geometry"
@@ -1078,6 +1120,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "The Spy Academy",
     "description": "An immersive escape room experience with team-based puzzles, color code mysteries, and timed challenges. Work together to solve the mystery!",
     "type": "game",
+    "playerMode": "multi",
     "category": "puzzles",
     "subjects": [
       "Logic",
@@ -1220,6 +1263,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Preschool Fun!",
     "description": "A bright preschool puzzle game with ABCs, 123 counting, silly pattern play, animations, and funny sounds.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "puzzles",
     "subjects": [
       "Alphabet",
@@ -1277,6 +1322,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "States Champion",
     "description": "Study U.S. state shapes and build map recognition through quick challenge rounds.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "geography",
     "subjects": [
       "Geography",
@@ -1294,6 +1341,8 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "title": "Word Puzzle",
     "description": "Unscramble themed words using clues and category hints.",
     "type": "game",
+    "playerMode": "single",
+    "appPointsEnabled": true,
     "category": "language",
     "subjects": [
       "Vocabulary",
@@ -1316,6 +1365,7 @@ export const GENERATED_LEGACY_PATHS: Readonly<Record<string, string>> = {
   "/Games/2PlayersMathWrite/index.html": "math-2-players-math-write",
   "/Games/Animal Champion/index.html": "animal-champion",
   "/Games/CarKingFinal/index.html": "math-car-king",
+  "/Games/Coin Champion/index.html": "coin-champ",
   "/Games/DefenderChampion/index.html": "defender-champion",
   "/Games/Farmersmarket/index.html": "math-farmers-market-frenzy",
   "/Games/Many Birds One Stone/index.html": "many-birds-one-stone",

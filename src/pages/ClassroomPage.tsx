@@ -8,6 +8,11 @@ import { buildAssetPath } from '../utils/pathUtils';
 import { getUsername, isManagerUser } from '../utils/managerAccess';
 import { postIframeLifecyclePhase, teardownIframeElementWhenDisconnected } from '../utils/iframeLifecycle';
 import { resumeIframeRuntime } from '../utils/iframeRuntime';
+import {
+    appendWorksheetDebugQuery as appendWorksheetDebugQueryToPath,
+    DEBUG_WORKSHEETS_QUERY_KEY,
+    parseBooleanQueryFlag,
+} from '../utils/worksheetDebug';
 import './Home.css';
 import './ClassroomPage.css';
 
@@ -26,8 +31,6 @@ const CLASSROOM_SAVE_DEBOUNCE_MS = 420;
 const CLASSROOM_DOOR_INTRO_SCOPE = 'classroom-main';
 const CLASSROOM_DOOR_INTRO_DONE = 'LAHS_CLASSROOM_DOOR_INTRO_DONE';
 const CLASSROOM_DOOR_INTRO_FALLBACK_MS = 2200;
-const DEBUG_WORKSHEETS_QUERY_KEY = 'debugWorksheets';
-
 type ClassroomLayoutEntry = {
     left: number;
     top: number;
@@ -55,12 +58,6 @@ interface ClassroomPageProps {
 }
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
-
-const parseBooleanQuery = (value: string | null): boolean => {
-    if (!value) return false;
-    const normalized = value.trim().toLowerCase();
-    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
-};
 
 const sanitizeClassroomState = (rawState: unknown): ClassroomPersistedState | null => {
     if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
@@ -131,14 +128,14 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
             return false;
         }
         const params = new URLSearchParams(location.search);
-        return parseBooleanQuery(params.get('manager')) || parseBooleanQuery(params.get('manager_ui'));
+        return parseBooleanQueryFlag(params.get('manager')) || parseBooleanQueryFlag(params.get('manager_ui'));
     }, [isActive, location.search]);
     const worksheetDebugEnabled = useMemo(() => {
         if (!isActive) {
             return false;
         }
         const params = new URLSearchParams(location.search);
-        return parseBooleanQuery(params.get(DEBUG_WORKSHEETS_QUERY_KEY));
+        return parseBooleanQueryFlag(params.get(DEBUG_WORKSHEETS_QUERY_KEY));
     }, [isActive, location.search]);
     const logWorksheetDebug = useCallback((event: string, details: Record<string, unknown> = {}) => {
         if (!worksheetDebugEnabled) {
@@ -147,19 +144,7 @@ const ClassroomPage: React.FC<ClassroomPageProps> = ({ isActive = true }) => {
         console.info('[WorksheetsDebug]', event, details);
     }, [worksheetDebugEnabled]);
     const appendWorksheetDebugQuery = useCallback((path: string) => {
-        if (!worksheetDebugEnabled || !path) {
-            return path;
-        }
-
-        try {
-            const nextUrl = new URL(path, window.location.origin);
-            nextUrl.searchParams.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
-            return `${nextUrl.pathname}${nextUrl.search}`;
-        } catch {
-            return path.includes('?')
-                ? `${path}&${DEBUG_WORKSHEETS_QUERY_KEY}=1`
-                : `${path}?${DEBUG_WORKSHEETS_QUERY_KEY}=1`;
-        }
+        return appendWorksheetDebugQueryToPath(path, worksheetDebugEnabled);
     }, [worksheetDebugEnabled]);
     const launchPath = useMemo(
         () => {

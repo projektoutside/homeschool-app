@@ -31,6 +31,8 @@ export const scienceContent: ContentItem[] = [
     title: 'Animal Champion',
     description: 'Identify 75 animals in fast visual challenge rounds.',
     type: 'game',
+    playerMode: 'single',
+    appPointsEnabled: true,
     category: 'science',
     subjects: ['Animals', 'Wildlife', 'Visual Recognition'],
     gradeLevels: ['All'],

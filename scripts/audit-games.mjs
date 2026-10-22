@@ -285,6 +285,13 @@ function auditGameFolders(entries) {
     '.vite-temp',
     'shared',
   ]);
+  const warnableRuntimeNoiseDirs = new Set([
+    '_workspace',
+    'output',
+    '.git_disabled',
+    '.vite-temp',
+    'shared',
+  ]);
 
   const folders = fs.readdirSync(gamesDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -305,7 +312,7 @@ function auditGameFolders(entries) {
     const childDirs = fs.readdirSync(folderPath, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
-      .filter((name) => runtimeNoiseDirs.has(name));
+      .filter((name) => warnableRuntimeNoiseDirs.has(name));
 
     for (const child of childDirs) {
       warnings.push(`Legacy/runtime-noise directory in game folder: public/Games/${folderName}/${child}`);

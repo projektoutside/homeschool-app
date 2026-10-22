@@ -83,7 +83,8 @@ const GAME_CONFIG = {
         }
     ],
     MAX_STARS: 3,
-    DEBUG: true // Enable debug mode to track issues
+    DEBUG: new URLSearchParams(window.location.search).get('debugClock') === '1'
+        || window.localStorage.getItem('ANALOG_CLOCK_DEBUG') === 'true'
 };
 
 const VISUAL_CONFIG = {

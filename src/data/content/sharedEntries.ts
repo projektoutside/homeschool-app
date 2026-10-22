@@ -63,5 +63,7 @@ export const polygonGameEntry = createSharedEntry({
   id: 'math-1768955732393-game',
   title: 'Polygon Fun Challenge',
   type: 'game',
+  playerMode: 'single',
+  appPointsEnabled: true,
   ...polygonSharedBase,
 });

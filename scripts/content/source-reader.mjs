@@ -10,6 +10,8 @@ const CONTENT_FIELDS = [
   'title',
   'description',
   'type',
+  'playerMode',
+  'appPointsEnabled',
   'category',
   'subjects',
   'gradeLevels',
@@ -210,6 +212,12 @@ const toContentItem = ({ candidate, node, initializers, filePath }) => {
   }
   if (value.isFeatured !== undefined && typeof value.isFeatured !== 'boolean') {
     throw new Error(`${source}: invalid legacy content isFeatured`);
+  }
+  if (value.playerMode !== undefined && value.playerMode !== 'single' && value.playerMode !== 'multi') {
+    throw new Error(`${source}: invalid legacy content playerMode`);
+  }
+  if (value.appPointsEnabled !== undefined && typeof value.appPointsEnabled !== 'boolean') {
+    throw new Error(`${source}: invalid legacy content appPointsEnabled`);
   }
   if (value.type === 'worksheet' && value.customHtmlPath) {
     value.customHtmlPath = normalizeWorksheetContentPath(value.customHtmlPath);

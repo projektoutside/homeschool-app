@@ -1,5 +1,5 @@
 import { CONTENT_ITEMS } from './mockContent';
-import type { ContentItem, ContentType } from '../types/content';
+import type { ContentItem, ContentType, GamePlayerMode } from '../types/content';
 import type { AppAreaId, AreaDefinition, ModuleDefinition, ModuleLaunchTarget } from '../types/appAreas';
 import { buildWorksheetViewerRoute, migrateLegacyWorksheetPath } from '../utils/worksheetRoutes';
 
@@ -40,6 +40,21 @@ const normalizeContentType = (value: unknown): ContentType => {
   return 'tool';
 };
 
+const normalizeGamePlayerMode = (
+  type: ContentType,
+  value: unknown,
+): GamePlayerMode | undefined => {
+  if (type !== 'game') {
+    return undefined;
+  }
+
+  if (value === 'single' || value === 'multi') {
+    return value;
+  }
+
+  return undefined;
+};
+
 export const normalizeAreaId = (value: unknown): AppAreaId | null => {
   if (value !== 'home' && value !== 'games' && value !== 'classroom') {
     return null;
@@ -68,10 +83,13 @@ const sanitizeBaseModule = (item: ContentItem): ModuleDefinition | null => {
   }
 
   const type = normalizeContentType(item.type);
+  const playerMode = normalizeGamePlayerMode(type, item.playerMode);
 
   return {
     ...item,
     type,
+    playerMode,
+    appPointsEnabled: type === 'game' ? item.appPointsEnabled === true : false,
     areaId: getDefaultAreaIdForType(type),
     visibility: 'visible',
   };
@@ -107,6 +125,24 @@ export const resolveAreaFromRequest = (value: unknown): AppAreaId | null => {
   if (normalized === 'game' || normalized === 'games') return 'games';
   if (isLegacyClassroomTabRequest(normalized)) return 'classroom';
   return null;
+};
+
+export const isSinglePlayerGameModule = (
+  item: Pick<ContentItem, 'type' | 'playerMode'> | null | undefined,
+): boolean => {
+  return item?.type === 'game' && item.playerMode === 'single';
+};
+
+export const isMultiplayerGameModule = (
+  item: Pick<ContentItem, 'type' | 'playerMode'> | null | undefined,
+): boolean => {
+  return item?.type === 'game' && item.playerMode === 'multi';
+};
+
+export const isAppPointsEnabledModule = (
+  item: Pick<ContentItem, 'type' | 'appPointsEnabled'> | null | undefined,
+): boolean => {
+  return item?.type === 'game' && item.appPointsEnabled === true;
 };
 
 export const resolveModuleLaunchTarget = (

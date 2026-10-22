@@ -14,6 +14,7 @@ import {
     getWorksheetLookupAliases,
     migrateLegacyWorksheetPath,
 } from '../utils/worksheetRoutes';
+import { appendWorksheetDebugQuery, DEBUG_WORKSHEETS_QUERY_KEY, parseBooleanQueryFlag } from '../utils/worksheetDebug';
 import './HTMLViewer.css';
 
 type WorksheetScreen = 'home' | 'open' | 'create' | 'settings' | 'viewer';
@@ -40,7 +41,6 @@ interface WorksheetSubjectGroup {
 const WORKSHEET_MANIFEST_PATH = '/Worksheets/manifest.json';
 const WORKSHEET_APP_PREFERENCES_KEY = 'lhs.worksheet-app.preferences.v1';
 const WORKSHEET_LAST_SELECTED_STORAGE_KEY = 'lhs.worksheet-app.last-selected.v1';
-const DEBUG_WORKSHEETS_QUERY_KEY = 'debugWorksheets';
 const FALLBACK_WORKSHEET_SIZE: WorksheetSize = { width: 816, height: 1056 };
 const FALLBACK_VIEWPORT_SIZE: WorksheetSize = { width: 816, height: 600 };
 const MIN_VIEWPORT_FIT_MARGIN = 10;
@@ -194,15 +194,6 @@ const isWorksheetScreen = (value: string | null): value is WorksheetScreen => (
     || value === 'viewer'
 );
 
-const isEnabledQueryFlag = (value: string | null): boolean => {
-    if (!value) {
-        return false;
-    }
-
-    const normalized = value.trim().toLowerCase();
-    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
-};
-
 const readStoredPreferences = (): WorksheetAppPreferences => {
     if (typeof window === 'undefined') {
         return DEFAULT_PREFERENCES;
@@ -299,7 +290,7 @@ const HTMLViewer: React.FC = () => {
         ? 'classroom'
         : null;
     const debugWorksheets = useMemo(
-        () => isEnabledQueryFlag(queryParams.get(DEBUG_WORKSHEETS_QUERY_KEY)),
+        () => parseBooleanQueryFlag(queryParams.get(DEBUG_WORKSHEETS_QUERY_KEY)),
         [queryParams],
     );
     const openMode = (queryParams.get('open') ?? '').trim().toLowerCase();
@@ -346,13 +337,7 @@ const HTMLViewer: React.FC = () => {
         console.info('[WorksheetsDebug]', event, details);
     }, [debugWorksheets]);
     const withWorksheetDebugQuery = useCallback((route: string) => {
-        if (!debugWorksheets) {
-            return route;
-        }
-
-        const nextUrl = new URL(route, window.location.origin);
-        nextUrl.searchParams.set(DEBUG_WORKSHEETS_QUERY_KEY, '1');
-        return `${nextUrl.pathname}${nextUrl.search}`;
+        return appendWorksheetDebugQuery(route, debugWorksheets);
     }, [debugWorksheets]);
     const currentScreen: WorksheetScreen = useMemo(() => {
         if (activeEntry) {
