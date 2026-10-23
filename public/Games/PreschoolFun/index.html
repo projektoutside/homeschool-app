@@ -14,7 +14,7 @@
         content="Preschool Fun! is a bright learning game with ABCs, 123 counting, pattern puzzles, animations, and silly sounds."
     >
     <title>Preschool Fun!</title>
-    <link rel="icon" href="thumb.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/icon-64.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -23,9 +23,13 @@
     >
     <link rel="stylesheet" href="../shared/birdEscape/birdEscape.css">
     <link rel="stylesheet" href="game.css">
+    <link rel="stylesheet" href="premium.css">
     <script src="../../3dClass/scripts/three.min.js" defer></script>
     <script src="../shared/birdEscape/birdEscape.js" defer></script>
     <script src="../shared/lahsPointsBridge.js" defer></script>
+    <script src="audio.js" defer></script>
+    <script src="activities.js" defer></script>
+    <script src="challenge.js" defer></script>
     <script src="game.js" defer></script>
 </head>
 <body>
@@ -34,16 +38,26 @@
     <div class="scene-glow scene-glow--left" aria-hidden="true"></div>
     <div class="scene-glow scene-glow--right" aria-hidden="true"></div>
 
-    <div id="start-overlay" class="start-overlay" aria-hidden="false">
-        <div class="start-card">
-            <div class="start-badge">Preschool Fun!</div>
-            <h1 class="start-title">Fill the missing spot.</h1>
-            <p class="start-copy">Tap start. Then tap or drag the right answer.</p>
-            <button id="start-button" class="start-button" type="button">Start Playing</button>
+    <div id="start-overlay" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorial-title" aria-hidden="false">
+        <div class="start-card tutorial-card">
+            <div class="tutorial-scroll" tabindex="0" aria-label="How to help the little bird">
+                <header class="tutorial-heading"><img src="assets/icon-256.webp" width="80" height="80" alt=""><h1 id="tutorial-title">Help the little bird escape!</h1></header>
+                <p class="tutorial-intro">The big blue bird is chasing our little purple friend.</p>
+                <button id="tutorial-listen" class="voice-button tutorial-listen" type="button" aria-label="Read the tutorial aloud" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg><span>Listen to the story</span></button>
+                <section id="mode-picker" class="mode-picker" aria-label="Choose how to play">
+                    <div class="mode-tabs" role="group" aria-label="Game mode"><button type="button" data-play-mode="free" aria-pressed="true">Free Play<span>Learn at your pace</span></button><button type="button" data-play-mode="challenge" aria-pressed="false">Challenge Mode<span>Race to Ultimate Master</span></button></div>
+                    <div id="challenge-panel" class="challenge-panel" hidden><div class="challenge-heading"><h2>Your flight adventure</h2><span id="master-badge" class="master-badge" hidden></span></div><div id="challenge-stages" class="challenge-stages" aria-label="Challenge stages"></div><p id="challenge-details"></p><p id="challenge-save" class="challenge-save">Progress saved on this device.</p></div>
+                </section>
+                <div class="tutorial-flight" id="tutorial-flight" aria-hidden="true"><span class="tutorial-bird tutorial-bird--large"></span><span class="tutorial-bird tutorial-bird--small"></span><span class="tutorial-safety">To safety <svg viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></span></div>
+                <ol class="tutorial-steps"><li>Try letters, numbers, patterns, counting pictures, matching pairs and finding a different picture.</li><li>Tap or drag your answer into the empty spot. Tap <strong>Check answer</strong>. Explore all six skills to collect six feathers!</li></ol>
+                <p class="tutorial-rule"><strong>Correct?</strong> More room to fly!<br><strong>Not quite?</strong> The blue bird moves closer. Try again.</p>
+                <section class="tutorial-practice" aria-labelledby="practice-title"><h2 id="practice-title">Try a little practice</h2><div class="practice-row"><span>A</span><span id="practice-gap" class="practice-gap">?</span><span>C</span><button data-practice-choice="B" type="button" aria-label="Practice: choose B">B</button><button data-practice-choice="D" type="button" aria-label="Practice: choose D">D</button></div><button id="practice-check" class="practice-check" type="button" disabled>Check answer</button><p id="practice-feedback" role="status">Which letter fits between A and C?</p></section>
+            </div>
+            <footer class="tutorial-footer"><button id="start-button" class="start-button" type="button">Start Playing</button><button id="choose-mode-button" class="choose-mode-button" type="button" hidden>Choose game mode</button><p id="mode-note">Take your time. There’s no countdown.</p></footer>
         </div>
     </div>
 
-    <main class="game-shell">
+    <main class="game-shell" inert>
         <header class="top-bar">
             <div class="brand-lockup">
                 <div class="brand-badge">ABC • 123 • Patterns</div>
@@ -52,11 +66,12 @@
             </div>
 
             <div class="top-actions">
-                <button id="sound-toggle" class="icon-pill" type="button" aria-pressed="true">
+                <button id="help-button" class="icon-pill" type="button" aria-label="How to play"><span class="help-mark" aria-hidden="true">?</span><span class="icon-pill__label">Help</span></button>
+                <button id="sound-toggle" class="icon-pill" type="button" aria-label="Turn sound off" aria-pressed="true">
                     <span class="icon-pill__emoji" aria-hidden="true">🔊</span>
                     <span class="icon-pill__label">Sound On</span>
                 </button>
-                <button id="home-button" class="icon-pill icon-pill--home" type="button">
+                <button id="home-button" class="icon-pill icon-pill--home" type="button" aria-label="Back to Games">
                     <span class="icon-pill__emoji" aria-hidden="true">🏡</span>
                     <span class="icon-pill__label">Back to Games</span>
                 </button>
@@ -106,6 +121,7 @@
                 <div class="prompt-card__meta">
                     <span id="activity-pill" class="activity-pill">Alphabet Parade</span>
                     <span id="prompt-hint" class="prompt-hint">Find what is missing.</span>
+                    <button id="question-listen" class="voice-button question-listen" type="button" aria-label="Read the question aloud" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg><span>Listen</span></button>
                 </div>
                 <h2 id="prompt-title" class="prompt-title">Find what is missing.</h2>
                 <p id="prompt-description" class="prompt-description">
@@ -113,12 +129,14 @@
                 </p>
 
                 <div class="sequence-wrap">
+                    <div id="activity-display" class="activity-display" hidden></div>
                     <div id="sequence-track" class="sequence-track" aria-live="polite"></div>
                 </div>
 
                 <div id="story-visual" class="story-visual" aria-hidden="true"></div>
                 <div class="prompt-actions">
-                    <button id="submit-button" class="submit-button" type="button" disabled>Submit</button>
+                    <p id="answer-feedback" class="answer-feedback">Pick an answer, then check it.</p>
+                    <button id="submit-button" class="submit-button" type="button" disabled>Check answer</button>
                 </div>
             </div>
 
@@ -136,16 +154,21 @@
             </aside>
         </section>
 
+        <div class="answer-column">
         <section class="choices-panel">
             <div class="choices-panel__header">
-                <h3>Pick One</h3>
+                <h3>Pick One <span id="skill-collection" class="skill-collection" role="img" aria-label="0 of 6 skill feathers collected"></span></h3>
+                <button id="auto-voice" class="voice-button auto-voice" type="button" aria-pressed="true" aria-label="Automatic reading on. Turn automatic reading off.">Auto voice: On</button>
             </div>
             <div id="choices-grid" class="choices-grid"></div>
         </section>
 
-        <section class="bird-flight-strip" aria-hidden="true">
-            <div id="bird-escape-lane" class="bird-escape-lane"></div>
+        <section class="bird-flight-strip" aria-labelledby="flight-title">
+            <div class="flight-heading"><h2 id="flight-title">Fly to safety!</h2><span id="flight-stats">0 solved · 0 in a row</span></div>
+            <p id="flight-message">Each correct answer gives our bird more room.</p>
+            <div id="bird-escape-lane" class="bird-escape-lane" aria-hidden="true"></div>
         </section>
+        </div>
 
         <section class="footer-bar">
             <div class="footer-pill">
@@ -178,6 +201,7 @@
                 <button id="session-play-again-button" class="session-win-button session-win-button--primary" type="button">
                     Play Again
                 </button>
+                <button type="button" class="session-win-button session-win-button--secondary" data-choose-mode>Choose game mode</button>
                 <button id="session-main-menu-button" class="session-win-button session-win-button--secondary" type="button">
                     Main Menu
                 </button>
@@ -197,6 +221,7 @@
                 <button id="session-try-again-button" class="session-lose-button session-lose-button--primary" type="button">
                     Try Again
                 </button>
+                <button type="button" class="session-lose-button session-lose-button--secondary" data-choose-mode>Choose game mode</button>
                 <button id="session-lose-main-menu-button" class="session-lose-button session-lose-button--secondary" type="button">
                     Main Menu
                 </button>

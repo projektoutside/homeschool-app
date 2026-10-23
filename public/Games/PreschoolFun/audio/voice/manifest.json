@@ -1,0 +1,638 @@
+{
+  "provider": "ElevenLabs",
+  "voiceId": "EXAVITQu4vr4xnSDxMaL",
+  "voice": "Sarah - Mature, Reassuring, Confident (premade)",
+  "model": "eleven_v4",
+  "language": "en",
+  "settings": {
+    "stability": 0.65,
+    "similarity_boost": 0.75
+  },
+  "method": "OAuth CLI convert_with_timestamps; split at supplied character timings; FFmpeg mono 44.1 kHz MP3 96 kbps, -18 LUFS, -2 dBTP, 0.94x tempo.",
+  "clips": {
+    "tutorial": {
+      "file": "tutorial.mp3",
+      "text": "Hello, little helper! Help our purple bird fly away from the blue bird. Try six little games: letters, numbers, patterns, counting pictures, matching pairs, and finding a different picture. Every new puzzle starts with an empty spot. Tap an answer to hear its name, or drag it into the empty spot. Then tap Check answer. Each correct answer gives our bird more room to fly! If it is not quite right, you can try again. Explore all six skills to collect six feathers! There is no countdown. Let us practice! A, blank, C. Which letter is missing? Tap B or D, then tap Check answer. When you are ready, tap Start Playing!",
+      "bank": "variety-tutorial",
+      "startSeconds": 0,
+      "endSeconds": 47.12,
+      "durationSeconds": 47.099,
+      "bytes": 565542,
+      "sha256": "d63b041c9bf9367acffbc9951fca5b342ce1936da1f362b0b37689b49a998e90"
+    },
+    "alphabet": {
+      "file": "alphabet.mp3",
+      "text": "Find the missing letter. Listen to the row.",
+      "bank": "directions",
+      "startSeconds": 0,
+      "endSeconds": 2.96,
+      "durationSeconds": 3.004,
+      "bytes": 36406,
+      "sha256": "a3b87cba0466366865ffdb4368d2bfe26fde419ea556ea456d3511e1d285674b"
+    },
+    "counting": {
+      "file": "counting.mp3",
+      "text": "Find the missing number. Listen to the row.",
+      "bank": "directions",
+      "startSeconds": 2.9,
+      "endSeconds": 6.56,
+      "durationSeconds": 3.709,
+      "bytes": 44870,
+      "sha256": "fb59e49bb2bc1c24fc4f235ae735a6fd89a776c515c2d21216d55c57dfd4d1e8"
+    },
+    "pattern": {
+      "file": "pattern.mp3",
+      "text": "Find the missing picture. Listen for the pattern.",
+      "bank": "directions",
+      "startSeconds": 6.66,
+      "endSeconds": 9.76,
+      "durationSeconds": 3.135,
+      "bytes": 37973,
+      "sha256": "66beda3909d4de0131d423c3fefccdc4b1738d0678b4d6fa2313d2aa2cc4d136"
+    },
+    "blank": {
+      "file": "blank.mp3",
+      "text": "Blank.",
+      "bank": "directions",
+      "startSeconds": 10.1,
+      "endSeconds": 10.8,
+      "durationSeconds": 0.731,
+      "bytes": 9134,
+      "sha256": "a3fde1fcfbf1366ee0b08755fc048015066e626c5f5302ed239a66989eca2a67"
+    },
+    "choose": {
+      "file": "choose.mp3",
+      "text": "Tap an answer to hear its name. Then tap Check answer.",
+      "bank": "directions",
+      "startSeconds": 11.06,
+      "endSeconds": 15.04,
+      "durationSeconds": 4.023,
+      "bytes": 48631,
+      "sha256": "a6a2624b159bfdbcc00687d017c07687b27ade3ec41642bcd8252b931342b148"
+    },
+    "check": {
+      "file": "check.mp3",
+      "text": "Tap Check answer when you are ready.",
+      "bank": "directions",
+      "startSeconds": 15.22,
+      "endSeconds": 17.36,
+      "durationSeconds": 2.168,
+      "bytes": 26375,
+      "sha256": "053209d1058e104b01484ff7716b8da2a360dbde45a4aed4c7ee9d7457dd3975"
+    },
+    "practice-yes": {
+      "file": "practice-yes.mp3",
+      "text": "Yes! B fits between A and C. Our little bird has more room to fly!",
+      "bank": "directions",
+      "startSeconds": 17.7,
+      "endSeconds": 23.52,
+      "durationSeconds": 5.851,
+      "bytes": 70574,
+      "sha256": "e8247b5c1ddbd4512c3dda99ae14c85b27337f6756265259e9d99b7917fd0d12"
+    },
+    "practice-retry": {
+      "file": "practice-retry.mp3",
+      "text": "Let us try B. It fits between A and C.",
+      "bank": "directions",
+      "startSeconds": 23.46,
+      "endSeconds": 27.2,
+      "durationSeconds": 3.788,
+      "bytes": 45810,
+      "sha256": "9701936438f845b69e4b77cf6f4e9c6c1f0942fbe79c5e83a5b98c2b3524414c"
+    },
+    "correct": {
+      "file": "correct.mp3",
+      "text": "Great job! You helped our little bird!",
+      "bank": "directions",
+      "startSeconds": 27.22,
+      "endSeconds": 30.32,
+      "durationSeconds": 3.135,
+      "bytes": 37973,
+      "sha256": "7aa6dee50d7ed196ec9815a6fc2bf650a21ebf5d584a0776cb168cd74091c204"
+    },
+    "retry": {
+      "file": "retry.mp3",
+      "text": "Not quite. Listen to the row again, and try another answer.",
+      "bank": "directions",
+      "startSeconds": 30.34,
+      "endSeconds": 34.56,
+      "durationSeconds": 4.18,
+      "bytes": 50512,
+      "sha256": "0e375416632189a370fed3f2291aa1ee7645d5ee50dddda63dacf2ece791a144"
+    },
+    "letter-A": {
+      "file": "letter-A.mp3",
+      "text": "Letter A.",
+      "bank": "letters",
+      "startSeconds": 0,
+      "endSeconds": 0.88,
+      "durationSeconds": 0.914,
+      "bytes": 11328,
+      "sha256": "9b1e8effc025ecf6246a38dc4d4f8fbddeb99258f562c9172b11a0c9c257b083"
+    },
+    "letter-B": {
+      "file": "letter-B.mp3",
+      "text": "Letter B.",
+      "bank": "letters",
+      "startSeconds": 0.82,
+      "endSeconds": 2.24,
+      "durationSeconds": 1.463,
+      "bytes": 17911,
+      "sha256": "e18759cac3bc1b4dfdc4cf409afce309bd9ab5428901d54c1b371c50eb763b67"
+    },
+    "letter-C": {
+      "file": "letter-C.mp3",
+      "text": "Letter C.",
+      "bank": "letters",
+      "startSeconds": 2.18,
+      "endSeconds": 3.96,
+      "durationSeconds": 1.829,
+      "bytes": 22300,
+      "sha256": "fc0e8a68c50f05f603954c02ab5a05b59b0103c14a42f848e3fd4cbf991aabfc"
+    },
+    "letter-D": {
+      "file": "letter-D.mp3",
+      "text": "Letter D.",
+      "bank": "letters",
+      "startSeconds": 4.1,
+      "endSeconds": 5.04,
+      "durationSeconds": 0.967,
+      "bytes": 11955,
+      "sha256": "2faed8f081f76b91f8dd83f4cd1259841982adf9343e757ed5e83fc0c9609605"
+    },
+    "letter-E": {
+      "file": "letter-E.mp3",
+      "text": "Letter E.",
+      "bank": "letters",
+      "startSeconds": 5.46,
+      "endSeconds": 6.4,
+      "durationSeconds": 0.967,
+      "bytes": 11955,
+      "sha256": "227fecc2681b3c06f06e744d9480b643d9ff8cb663257329407adb40f4143590"
+    },
+    "letter-F": {
+      "file": "letter-F.mp3",
+      "text": "Letter F.",
+      "bank": "letters",
+      "startSeconds": 6.74,
+      "endSeconds": 7.76,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "e2fe53d6617eb4fb8a9cdc5be8ed6b868b49c27e83c449bc1db13e7be82c98dc"
+    },
+    "letter-G": {
+      "file": "letter-G.mp3",
+      "text": "Letter G.",
+      "bank": "letters",
+      "startSeconds": 8.1,
+      "endSeconds": 9.12,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "507034fff4953dac8f8c5b3fb8f82cc5c3fec92be03cdc2ec0682817832233dc"
+    },
+    "letter-H": {
+      "file": "letter-H.mp3",
+      "text": "Letter H.",
+      "bank": "letters",
+      "startSeconds": 9.46,
+      "endSeconds": 10.48,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "508d8473cef0a983ba55d5ad4ee5aa30cc23a2f5bc50ed0d03d325fb0b4a1db2"
+    },
+    "letter-I": {
+      "file": "letter-I.mp3",
+      "text": "Letter I.",
+      "bank": "letters",
+      "startSeconds": 10.82,
+      "endSeconds": 11.84,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "165e59b1f0d136d9d153ab9426b05ff2c0177e7650cb317a02ae634296528a14"
+    },
+    "letter-J": {
+      "file": "letter-J.mp3",
+      "text": "Letter J.",
+      "bank": "letters",
+      "startSeconds": 12.18,
+      "endSeconds": 13.2,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "2e87a504a31ddb687077392e1c39a758fd0208499aee842f836b01abe8c4112d"
+    },
+    "letter-K": {
+      "file": "letter-K.mp3",
+      "text": "Letter K.",
+      "bank": "letters",
+      "startSeconds": 13.54,
+      "endSeconds": 14.56,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "50a4597bb2c3b4640b767dc3c1e13d5e412dc85aae6f04ba83bcdbfa33bbee44"
+    },
+    "letter-L": {
+      "file": "letter-L.mp3",
+      "text": "Letter L.",
+      "bank": "letters",
+      "startSeconds": 14.9,
+      "endSeconds": 16.12,
+      "durationSeconds": 1.254,
+      "bytes": 15404,
+      "sha256": "f39269ea76f0bc5d101834ed1ba45b4289d8d9485bbf5dc96ad3db4551e40d88"
+    },
+    "letter-M": {
+      "file": "letter-M.mp3",
+      "text": "Letter M.",
+      "bank": "letters",
+      "startSeconds": 16.26,
+      "endSeconds": 17.2,
+      "durationSeconds": 0.967,
+      "bytes": 11955,
+      "sha256": "0db06a07d798776dd86a0180477052733b5ee1be2f87db5457b1bee06947e514"
+    },
+    "letter-N": {
+      "file": "letter-N.mp3",
+      "text": "Letter N.",
+      "bank": "letters",
+      "startSeconds": 17.54,
+      "endSeconds": 18.56,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "ba7ff9f8f1ef019a4fc4c2811c3ca5a147d27ecac56ecaa404ccdb550e8744d5"
+    },
+    "letter-O": {
+      "file": "letter-O.mp3",
+      "text": "Letter O.",
+      "bank": "letters",
+      "startSeconds": 18.9,
+      "endSeconds": 19.84,
+      "durationSeconds": 0.967,
+      "bytes": 11955,
+      "sha256": "25d35800c1ef2ea661e02e29c1542159de7b041d2c9ffbda8f093ef439166846"
+    },
+    "letter-P": {
+      "file": "letter-P.mp3",
+      "text": "Letter P.",
+      "bank": "letters",
+      "startSeconds": 20.18,
+      "endSeconds": 21.2,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "6aa216cd880ab3c6d4f798a75a8627ef2289f9c3378d61a7f39aa6896b6bfb66"
+    },
+    "letter-Q": {
+      "file": "letter-Q.mp3",
+      "text": "Letter Q.",
+      "bank": "letters",
+      "startSeconds": 21.54,
+      "endSeconds": 22.56,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "5bb81dbaaf85297d1be1a2f87ed6c6b64b55503199e1188f905e6d0e52e166c4"
+    },
+    "letter-R": {
+      "file": "letter-R.mp3",
+      "text": "Letter R.",
+      "bank": "letters",
+      "startSeconds": 22.9,
+      "endSeconds": 23.92,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "f9f884963e4329dea2fe146fae7cc5e49bd354e38a8ff40ea28998226526d3d0"
+    },
+    "letter-S": {
+      "file": "letter-S.mp3",
+      "text": "Letter S.",
+      "bank": "letters",
+      "startSeconds": 24.18,
+      "endSeconds": 25.2,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "8085bc0a8b5540c854722346479fb7f82d73a8f159cced15ce648f42de1ca180"
+    },
+    "letter-T": {
+      "file": "letter-T.mp3",
+      "text": "Letter T.",
+      "bank": "letters",
+      "startSeconds": 25.54,
+      "endSeconds": 26.56,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "62b7580b5e8ee51ebb452f810ac4e547c38df9509f14bda58a763d34839efb33"
+    },
+    "letter-U": {
+      "file": "letter-U.mp3",
+      "text": "Letter U.",
+      "bank": "letters",
+      "startSeconds": 26.9,
+      "endSeconds": 27.92,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "4f13ff41155f5bbc2a46214236d2d40e700e045a5bb1797e177602fb332dec85"
+    },
+    "letter-V": {
+      "file": "letter-V.mp3",
+      "text": "Letter V.",
+      "bank": "letters",
+      "startSeconds": 28.26,
+      "endSeconds": 29.28,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "d309962768b839f8f2bdcb710e54febb781826e2ed6a14b6929ea07f846cefe7"
+    },
+    "letter-W": {
+      "file": "letter-W.mp3",
+      "text": "Letter W.",
+      "bank": "letters",
+      "startSeconds": 29.54,
+      "endSeconds": 30.64,
+      "durationSeconds": 1.149,
+      "bytes": 14150,
+      "sha256": "1340d961641edc2ccacc5c53aa6fbc146fade14c4dce36d40b1360ea59b7d972"
+    },
+    "letter-X": {
+      "file": "letter-X.mp3",
+      "text": "Letter X.",
+      "bank": "letters",
+      "startSeconds": 30.98,
+      "endSeconds": 32.2,
+      "durationSeconds": 1.254,
+      "bytes": 15404,
+      "sha256": "2f0491c3948346f417fdef903ce1e1247854a950f6e5015c5def3d74d0bb1218"
+    },
+    "letter-Y": {
+      "file": "letter-Y.mp3",
+      "text": "Letter Y.",
+      "bank": "letters",
+      "startSeconds": 32.26,
+      "endSeconds": 33.28,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "12e1d5484d513cd399cde4f482b3cfbd820b5b1839512fb880b7935975ebc998"
+    },
+    "letter-Z": {
+      "file": "letter-Z.mp3",
+      "text": "Letter Z.",
+      "bank": "letters",
+      "startSeconds": 33.54,
+      "endSeconds": 34.8,
+      "durationSeconds": 1.202,
+      "bytes": 14777,
+      "sha256": "8cca4cae136aa54aeb610744920c82ee3799a621915c4466701d3de79042123f"
+    },
+    "number-1": {
+      "file": "number-1.mp3",
+      "text": "one.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 0,
+      "endSeconds": 0.88,
+      "durationSeconds": 0.914,
+      "bytes": 11328,
+      "sha256": "c6f83413025b2dbcc7ebe680e2ec6d7fc267fe49b07b07fd193f171728ff93f5"
+    },
+    "number-2": {
+      "file": "number-2.mp3",
+      "text": "two.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 0.88,
+      "endSeconds": 1.12,
+      "durationSeconds": 0.287,
+      "bytes": 3805,
+      "sha256": "727d87d2def28044f5a220baf3e1a361c3e6906671c818ae73c88a0f701e9b15"
+    },
+    "number-3": {
+      "file": "number-3.mp3",
+      "text": "three.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 1.14,
+      "endSeconds": 2.12,
+      "durationSeconds": 1.019,
+      "bytes": 12582,
+      "sha256": "deb797d162c4ee856aefe86635ab8d378aa9ee74618415ba6661768706e076c6"
+    },
+    "number-4": {
+      "file": "number-4.mp3",
+      "text": "four.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 2.08,
+      "endSeconds": 3.0,
+      "durationSeconds": 0.967,
+      "bytes": 11955,
+      "sha256": "fc12b9a8f39dafa68bb291f69912c340975c56cd021679e20357e1f8686d086c"
+    },
+    "number-5": {
+      "file": "number-5.mp3",
+      "text": "five.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 2.96,
+      "endSeconds": 3.76,
+      "durationSeconds": 0.836,
+      "bytes": 10388,
+      "sha256": "67610305d82ae4d6e9d49ffa247bacf2a94363000bb3324bae22dd7ee94f3feb"
+    },
+    "number-6": {
+      "file": "number-6.mp3",
+      "text": "six.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 3.86,
+      "endSeconds": 4.72,
+      "durationSeconds": 0.888,
+      "bytes": 11015,
+      "sha256": "0d873a1850811acd7f6edefba22d0f95bb706366d1e4898dab27b74c21eb93ae"
+    },
+    "number-7": {
+      "file": "number-7.mp3",
+      "text": "seven.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 4.74,
+      "endSeconds": 5.76,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "50cacb7c718e06ac911721942b365fecacf7906bcf52ba0ef35739ed5bb38f6b"
+    },
+    "number-8": {
+      "file": "number-8.mp3",
+      "text": "eight.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 5.78,
+      "endSeconds": 6.693,
+      "durationSeconds": 0.94,
+      "bytes": 11642,
+      "sha256": "083378268b6ba8a3ec0e9780fab8c7680bbdcb58cec98516f2db215cb46f0a5d"
+    },
+    "number-9": {
+      "file": "number-9.mp3",
+      "text": "nine.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 6.687,
+      "endSeconds": 7.44,
+      "durationSeconds": 0.784,
+      "bytes": 9761,
+      "sha256": "a47cc23a7aa7392b3db2300b05dcd080c6226bc1b51c2f78f81c2509a647d315"
+    },
+    "number-10": {
+      "file": "number-10.mp3",
+      "text": "ten.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 7.38,
+      "endSeconds": 8.4,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "6f3ad14a060cc345c0ef8bac59a2eaab21c6ebfb95e10bea7d4b0c610cdb4d1f"
+    },
+    "number-11": {
+      "file": "number-11.mp3",
+      "text": "eleven.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 8.393,
+      "endSeconds": 9.44,
+      "durationSeconds": 1.097,
+      "bytes": 13523,
+      "sha256": "691918500f33f781f3bb04f37723bab6d525706ff437afade62d3be2d130a46a"
+    },
+    "number-12": {
+      "file": "number-12.mp3",
+      "text": "twelve.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 9.38,
+      "endSeconds": 10.4,
+      "durationSeconds": 1.071,
+      "bytes": 13209,
+      "sha256": "a15551dbaaab4e2abcdb16d76b744a0128c723ba70e1a93abb403ed4a35ddb18"
+    },
+    "gold-star": {
+      "file": "gold-star.mp3",
+      "text": "gold star.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 10.373,
+      "endSeconds": 11.36,
+      "durationSeconds": 1.019,
+      "bytes": 12582,
+      "sha256": "7635566b3b097eef97a6e2332f5d7bf1a5af050b0c1215029f7fec5dfc32dc31"
+    },
+    "purple-dot": {
+      "file": "purple-dot.mp3",
+      "text": "purple dot.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 11.32,
+      "endSeconds": 12.791,
+      "durationSeconds": 1.515,
+      "bytes": 18538,
+      "sha256": "1d8eba37d71642cf68d00f59cd2c996944e5313d865dcc3d74c792bee1db606a"
+    },
+    "green-square": {
+      "file": "green-square.mp3",
+      "text": "green square.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 12.773,
+      "endSeconds": 14.08,
+      "durationSeconds": 1.358,
+      "bytes": 16657,
+      "sha256": "10c268e2433e162db2fd59f4ec78ebda8d81533c70f4e27c6806bada2a779539"
+    },
+    "red-heart": {
+      "file": "red-heart.mp3",
+      "text": "red heart.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 14.032,
+      "endSeconds": 15.44,
+      "durationSeconds": 1.437,
+      "bytes": 17598,
+      "sha256": "d83fc5f8062a5a8431327651eac8785b4876a67d946315af10c9ea411c810866"
+    },
+    "blue-square": {
+      "file": "blue-square.mp3",
+      "text": "blue square.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 16.633,
+      "endSeconds": 18.3,
+      "durationSeconds": 1.698,
+      "bytes": 20733,
+      "sha256": "bb31a30540dcb5acb6352fd801d6a45accb14acb8fa00b0bfa3e9348bbf34e82"
+    },
+    "sun": {
+      "file": "sun.mp3",
+      "text": "sun.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 18.34,
+      "endSeconds": 19.6,
+      "durationSeconds": 1.306,
+      "bytes": 16030,
+      "sha256": "27f589a702d32cca5e79d988111e4237f116c27c0b5e350e00afe03d0c37a23a"
+    },
+    "moon": {
+      "file": "moon.mp3",
+      "text": "moon.",
+      "bank": "picturesAndNumbers",
+      "startSeconds": 19.62,
+      "endSeconds": 20.48,
+      "durationSeconds": 0.888,
+      "bytes": 11015,
+      "sha256": "8f790a332ec5cb01b05136b91ccbc1188468acd04d8692fd0e9fca56965a53ad"
+    },
+    "red-triangle": {
+      "file": "red-triangle.mp3",
+      "text": "Red triangle.",
+      "bank": "single corrected color label",
+      "durationSeconds": 1.463,
+      "bytes": 17911,
+      "sha256": "b76a8a50447cdaa421e06086e09a7325c754ec255979ef194584e8d09ff733b9"
+    },
+    "quantity": {
+      "file": "quantity.mp3",
+      "text": "Count the pictures. How many can you see? Put your number in the empty spot.",
+      "bank": "variety-activities",
+      "startSeconds": 0,
+      "endSeconds": 5.2,
+      "durationSeconds": 5.251,
+      "bytes": 63364,
+      "sha256": "ca5b971fd76fa65cfab024a67c3e346226554aa265112dfd6feaaec8be2dfbc6"
+    },
+    "matching": {
+      "file": "matching.mp3",
+      "text": "Find the matching picture. Look for the same shape and color.",
+      "bank": "variety-activities",
+      "startSeconds": 5.54,
+      "endSeconds": 9.76,
+      "durationSeconds": 4.258,
+      "bytes": 51453,
+      "sha256": "f51067442187b45fefaabbcbbf5ea069d42baf9fd875f03f7620e5d8d1141621"
+    },
+    "odd": {
+      "file": "odd.mp3",
+      "text": "One of these pictures is different. Which one does not match the others?",
+      "bank": "variety-activities",
+      "startSeconds": 10.18,
+      "endSeconds": 14.48,
+      "durationSeconds": 4.336,
+      "bytes": 52393,
+      "sha256": "72edf8e3f49521ef5c1155e295839c12a6367b396800cd5fc256f9db235ebeb9"
+    },
+    "counting-twos": {
+      "file": "counting-twos.mp3",
+      "text": "Count by twos. What number is missing? Listen to the row.",
+      "bank": "variety-activities",
+      "startSeconds": 14.82,
+      "endSeconds": 19.68,
+      "durationSeconds": 4.885,
+      "bytes": 58976,
+      "sha256": "dc82870cd5684af954358e833a3300ecc2c0e916cb5552d1a0ac772ac3293d89"
+    },
+    "challenge-tutorial": {
+      "file": "challenge-tutorial.mp3",
+      "text": "Welcome to the flight challenge! Help our little purple bird escape through eight exciting stages. Choose an open stage, then tap Start. The blue bird keeps flying closer while you think. Pick an answer and tap Check answer. Correct answers push the blue bird back! Solve enough questions to finish each stage and unlock the next one. Each new stage brings a faster blue bird! The chase pauses while I read a question, or when you open Help. You can always try again. Beat the fastest final challenge to earn your Ultimate Master crown!",
+      "bank": "challenge",
+      "durationSeconds": 37.042,
+      "bytes": 444857,
+      "sha256": "96b8ec6d8f604bd7153297c6ff99d41b77323c9ae1daaeffe1b05ac5d76a3f1f"
+    },
+    "challenge-master": {
+      "file": "challenge-master.mp3",
+      "text": "You did it! You beat the fastest blue bird and finished all eight challenges. You are an Ultimate Master! What a wonderful learning adventure!",
+      "bank": "challenge",
+      "durationSeconds": 10.841,
+      "bytes": 130447,
+      "sha256": "cdaa92d04b8414fef56e6881a89f7acbee692254c14ff6a04573b96bfb409a9e"
+    }
+  }
+}

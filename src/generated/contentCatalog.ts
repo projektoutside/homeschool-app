@@ -158,6 +158,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "gradeLevels": [
       "All"
     ],
+    "thumbnail": "/assets/thumbnails/optimized/many-birds-one-stone-256.webp",
     "customHtmlPath": "/Games/Many Birds One Stone/index.html",
     "dateAdded": "2026-03-28"
   },
@@ -1276,7 +1277,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
       "Pre-K",
       "Kindergarten"
     ],
-    "thumbnail": "/Games/PreschoolFun/thumb.svg",
+    "thumbnail": "/assets/thumbnails/optimized/preschool-fun-256.webp",
     "customHtmlPath": "/Games/PreschoolFun/index.html",
     "isFeatured": true,
     "dateAdded": "2026-03-10"

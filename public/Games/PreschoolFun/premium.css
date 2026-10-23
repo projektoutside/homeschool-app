@@ -1,0 +1,176 @@
+.tutorial-card { width: min(600px, 100%); max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)); padding: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; border: 0; border-radius: 24px; background: #fffdf5; text-align: left; }
+.tutorial-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 22px 26px 8px; }
+.tutorial-heading { display: flex; gap: 14px; align-items: center; }
+.tutorial-heading img { width: 76px; height: 76px; border-radius: 16px; }
+.tutorial-heading h1 { margin: 0; color: #244467; font: 800 clamp(1.65rem, 5vw, 2.15rem)/1.08 "Baloo 2", sans-serif; }
+.tutorial-intro, .tutorial-rule { font-size: .95rem; line-height: 1.45; margin: 12px 0; }
+.tutorial-flight { position: relative; height: 100px; border-radius: 16px; background: #d6f4ff; overflow: hidden; }
+.tutorial-bird { position: absolute; background-repeat: no-repeat; background-size: 1200% 1600%; background-position: 0 0; transition: transform 650ms cubic-bezier(.16, 1, .3, 1); }
+.tutorial-bird--large { width: 138px; aspect-ratio: 232 / 196; left: 3%; bottom: -15px; background-image: url('generated/bigbird-flight-atlas.webp'); }
+.tutorial-bird--small { width: 108px; aspect-ratio: 179 / 148; right: 7%; bottom: 0; background-image: url('generated/smallbird-flight-atlas.webp'); }
+.is-boosted .tutorial-bird--large { transform: translateX(-42px); }
+.is-boosted .tutorial-bird--small { transform: translateX(14px) translateY(-10px); }
+.tutorial-safety { position: absolute; right: 10px; top: 6px; display: flex; gap: 4px; align-items: center; font-size: .75rem; font-weight: 800; color: #285f53; }
+.tutorial-safety svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.tutorial-steps { padding-left: 24px; margin: 12px 0; font-size: .95rem; line-height: 1.4; }
+.tutorial-steps li + li { margin-top: 6px; }
+.tutorial-steps li::marker { color: #6942b5; font-weight: 800; }
+.tutorial-rule { color: #285f53; }
+.tutorial-practice { padding-top: 12px; border-top: 1px solid #cbdce2; }
+.tutorial-practice h2 { font: 800 1.2rem/1.2 "Baloo 2", sans-serif; margin: 0 0 10px; }
+.practice-row { display: flex; align-items: center; gap: 8px; }
+.practice-row > span, .practice-row button { width: 44px; min-height: 44px; display: grid; place-items: center; font-size: 1.5rem; font-weight: 800; border-radius: 10px; }
+.practice-row > span { color: #244467; background: #eaf5fc; }
+.practice-row .practice-gap { outline: 2px dashed #a36718; outline-offset: -2px; }
+.practice-row button { background: #fdd164; color: #493319; border: 0; cursor: pointer; }
+.practice-row button:first-of-type { margin-left: auto; }
+.practice-row button[aria-pressed="true"] { outline: 3px solid #7342bd; outline-offset: 2px; }
+.practice-check { min-height: 44px; margin-top: 10px; padding: 8px 18px; background: #315f9a; color: white; border: 0; border-radius: 12px; font-weight: 800; cursor: pointer; }
+.practice-check:disabled { background: #dbe6ec; color: #4f6276; cursor: default; }
+#practice-feedback { min-height: 2.6em; font-size: .9rem; line-height: 1.3; margin: 8px 0 0; }
+.tutorial-footer { flex: none; padding: 12px 26px 16px; background: #fffdf5; box-shadow: 0 -5px 16px #2444670c; }
+.tutorial-footer .start-button { width: 100%; min-height: 52px; font-size: 1.35rem; }
+.tutorial-footer .start-button, .session-win-button--primary, .session-lose-button--primary { color: #493319; }
+.submit-button:not(:disabled) { background: #9be3b0; color: #164b32; }
+.tutorial-footer p { text-align: center; margin: 8px 0 0; font-size: .8rem; color: #405b73; }
+.tutorial-scroll:focus-visible, button:focus-visible { outline: 3px solid #315f9a; outline-offset: 3px; }
+.help-mark { font: 800 1.5rem/1 "Baloo 2", sans-serif; }
+.prompt-actions { align-items: center; gap: 12px; }
+.answer-feedback { margin: 0 auto 0 0; font-size: .9rem; line-height: 1.35; color: #244467; font-weight: 800; }
+.submit-button { min-height: 44px; flex-shrink: 0; }
+.choice-card.is-eliminated { opacity: .4; filter: grayscale(.75); cursor: default; }
+.flight-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 3px 8px; }
+.flight-heading h2 { margin: 0; font: 800 1rem/1.1 "Baloo 2", sans-serif; color: #285f53; }
+#flight-stats { font-size: .75rem; font-weight: 800; color: #244467; }
+#flight-message { font-size: .8rem; line-height: 1.25; margin: 4px 0 0; color: #244467; }
+.bird-flight-strip { padding: 10px 12px 0; }
+.answer-column { display: contents; }
+@media (max-width: 760px) {
+    .top-actions { gap: 6px; }
+    body.is-started .brand-lockup h1 { font-size: clamp(1rem, 4.6vw, 1.4rem); }
+    .top-bar { align-items: center; gap: 8px; }
+    .top-actions .icon-pill { width: 44px; height: 44px; min-height: 44px; padding: 4px; }
+    .top-actions .icon-pill__label { display: none; }
+    .answer-feedback { font-size: .8rem; }
+    .submit-button { padding: 10px 12px; font-size: .95rem; }
+    .prompt-actions { gap: 8px; }
+    body.is-started .bird-escape-lane { min-height: 66px; }
+    .tutorial-scroll { padding: 16px 18px 8px; }
+    .tutorial-heading { gap: 10px; }
+    .tutorial-heading img { width: 60px; height: 60px; }
+    .tutorial-footer { padding: 10px 18px 12px; }
+}
+@media (max-width: 600px) and (max-height: 740px) {
+    body.is-started .game-shell { grid-template-rows: repeat(4, auto); }
+    body.is-started .hero-panel { display: none; }
+    body.is-started .choices-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 64px; align-items: center; gap: 6px; }
+    body.is-started .choices-grid .choice-card.is-symbol-only:nth-child(n),
+    body.is-started .choices-grid .choice-card.is-pattern-token:nth-child(n) { margin: 0; transform: none; align-self: center; }
+    body.is-started .choice-card.is-symbol-only, body.is-started .choice-card.is-pattern-token { min-height: 64px; padding: 2px; }
+    body.is-started .choice-card.is-symbol-only .choice-stage, body.is-started .choice-card.is-pattern-token .choice-stage { width: 100%; min-height: 58px; }
+    body.is-started .choice-card.is-symbol-only .choice-three-shell { width: 100%; }
+    body.is-started .choice-card.is-pattern-token .choice-value--pattern { font-size: 2rem; }
+    body.is-started .bird-escape-lane { min-height: 58px; }
+    body.is-started .prompt-card { padding: 12px; }
+    body.is-started .slot-card.is-symbol-only, body.is-started .slot-card.is-pattern-token { min-height: 76px; padding: 8px 6px; }
+    body.is-started .choices-grid .choice-card.is-symbol-only .choice-stage,
+    body.is-started .choices-grid .choice-card.is-pattern-token .choice-stage { height: 60px; min-height: 60px; transform: none; }
+    body.is-started .choices-grid .choice-card.is-symbol-only .choice-three-shell { width: 100%; height: 60px; transform: none; }
+    .tutorial-flight { height: 84px; }
+}
+@media (max-height: 520px) and (min-width: 700px) {
+    body.is-started .game-shell { grid-template-areas: "top top" "play choices"; grid-template-rows: auto minmax(0, 1fr); }
+    .answer-column { grid-area: choices; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    body.is-started .answer-column .choices-panel { height: auto; width: 100%; }
+    body.is-started .answer-column .bird-flight-strip { width: 100%; }
+    body.is-started .choices-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 64px; }
+    body.is-started .choices-grid .choice-card.is-symbol-only:nth-child(n),
+    body.is-started .choices-grid .choice-card.is-pattern-token:nth-child(n) { margin: 0; min-height: 64px; padding: 2px; transform: none; }
+    body.is-started .choices-grid .choice-card.is-symbol-only .choice-stage,
+    body.is-started .choices-grid .choice-card.is-pattern-token .choice-stage { width: 100%; height: 60px; min-height: 60px; transform: none; }
+    body.is-started .choices-grid .choice-card.is-symbol-only .choice-three-shell { width: 100%; height: 60px; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tutorial-bird { transition: none; }
+    body.is-loss-shaking .game-shell { animation: none; }
+}
+@media (forced-colors: active) {
+    .tutorial-card, .tutorial-footer { background: Canvas; color: CanvasText; }
+    .practice-row button, .practice-check { background: ButtonFace; color: ButtonText; border: 2px solid ButtonText; }
+}
+body:not(.is-started) .game-shell { display: none; }
+body.is-started .game-shell { min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 34px); padding-bottom: 0; }
+.voice-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 7px 13px; border: 2px solid #80bdaf; border-radius: 14px; background: #e7f8ee; color: #20584d; font: 800 .9rem/1.15 'Nunito', sans-serif; cursor: pointer; }
+.voice-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.voice-button[aria-pressed="true"] { background: #c9edda; border-color: #347c64; }
+.voice-button:disabled { opacity: .65; cursor: default; }
+.tutorial-listen { margin-bottom: 10px; }
+.prompt-card__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.question-listen { flex: none; margin-left: auto; }
+body.is-started .choices-panel__header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.auto-voice { font-size: .78rem; min-height: 44px; padding: 6px 10px; }
+@media (max-width: 600px) { .question-listen { padding: 6px 9px; font-size: .8rem; } .auto-voice { padding: 6px 8px; } }
+@media (max-width: 360px) and (max-height: 740px) {
+    .question-listen { width: 44px; padding: 8px; }
+    .question-listen span { display: none; }
+    body.is-started .game-shell { gap: 6px; }
+    body.is-started .sequence-wrap { margin-top: 8px; }
+}
+@media (forced-colors: active) { .voice-button, .voice-button[aria-pressed="true"] { background: ButtonFace; color: ButtonText; border-color: ButtonText; } }
+.bird-flight-strip .bird-escape-lane { border: 4px solid #315f52; border-radius: 20px; box-shadow: 0 4px 8px #2444671c; background: #c8e8cd; }
+body.is-started .sequence-track { grid-template-columns: repeat(var(--sequence-count, 4), minmax(0, 1fr)); }
+.learning-symbol { display: block; width: 100%; max-width: 84px; height: 78px; margin: auto; overflow: visible; }
+.slot-value--pattern { width: 100%; display: flex; align-items: center; justify-content: center; }
+body.is-started .slot-card.is-pattern-token { padding-inline: 2px; }
+.choice-value--pattern { display: flex; width: 100%; justify-content: center; }
+.activity-display:not([hidden]) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-content: center; gap: 4px; padding: 6px; background: #edf7e9; border: 2px dashed #9cbd90; border-radius: 16px; min-width: 0; }
+.display-symbol { display: flex; align-items: center; justify-content: center; min-width: 0; }
+.display-symbol .learning-symbol { height: 44px; max-width: 48px; }
+.sequence-wrap.has-activity-display { grid-template-columns: minmax(0, 1fr) minmax(64px, 100px); align-items: stretch; }
+.sequence-wrap.has-activity-display .sequence-track { min-width: 0; }
+.skill-collection { display: inline-flex; align-items: center; vertical-align: middle; gap: 2px; margin-left: 4px; font: 800 .75rem/1 'Nunito', sans-serif; color: #76501f; }
+.skill-collection svg { width: 20px; height: 22px; }
+.choices-panel__header h3 { white-space: nowrap; }
+.choice-card.is-selected.is-pattern-token .learning-symbol { transform: translateY(-2px); }
+@media (max-width: 600px) {
+    .learning-symbol { max-width: 66px; height: 64px; }
+    .slot-card .learning-symbol { height: 54px; }
+    .display-symbol .learning-symbol { height: 34px; }
+    .skill-collection { font-size: .7rem; margin-left: 2px; }
+    .skill-collection svg { width: 17px; }
+}
+@media (max-width: 600px) and (max-height: 740px), (max-height: 520px) and (min-width: 700px) {
+    .choice-card .learning-symbol, .slot-card .learning-symbol { height: 50px; }
+    .display-symbol .learning-symbol { height: 34px; }
+    .activity-display:not([hidden]) { padding: 2px; }
+    .sequence-wrap.has-activity-display { grid-template-columns: minmax(0, 1fr) 64px; }
+    body.is-started .sequence-track { gap: 4px; }
+}
+@media (forced-colors: active) { .bird-flight-strip .bird-escape-lane { border-color: CanvasText; } .activity-display:not([hidden]) { background: Canvas; border-color: CanvasText; } }
+
+/* The mode picker scrolls inside the tutorial; the primary action stays reachable. */
+.mode-picker { margin: 4px 0 16px; }
+.mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode-tabs button, .challenge-stages button { font: 800 1rem/1.2 'Nunito', sans-serif; color: #315d53; background: #f3f7ec; border: 2px solid #b3c9a7; border-radius: 16px; min-height: 64px; padding: 10px; cursor: pointer; }
+.mode-tabs button span { display: block; font-size: .78rem; font-weight: 700; margin-top: 5px; }
+.mode-tabs button[aria-pressed="true"] { background: #d6efe0; border-color: #357d68; box-shadow: inset 0 -4px #9fd0b2; }
+.challenge-panel { margin-top: 14px; background: #fff6df; border: 2px solid #e8c68b; border-radius: 20px; padding: 14px; }
+.challenge-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.challenge-heading h2 { margin: 0 0 10px; font-size: 1.2rem; color: #76501f; }
+.challenge-stages { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.challenge-stages button { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; font-size: .78rem; border-radius: 14px; background: #fffdf6; }
+.challenge-stages button strong { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #e4efd9; color: #315f52; font-size: 1.2rem; }
+.challenge-stages button small { font-size: .7rem; font-weight: 700; }
+.challenge-stages button[aria-pressed="true"] { border-color: #c47828; background: #ffe5a0; box-shadow: 0 3px #d6ae70; }
+.challenge-stages button:disabled { color: #687069; background: #eeeee7; cursor: default; border-color: #d4d7ce; }
+.challenge-stages button:disabled strong { background: #d9ddd2; color: #687069; }
+#challenge-details { font-weight: 800; color: #76501f; margin: 14px 0 4px; }
+.challenge-save { font-size: .8rem; margin: 0; color: #596d5c; }
+.master-badge { display: inline-flex; align-items: center; gap: 4px; font: 800 .8rem 'Nunito', sans-serif; color: #76501f; }
+.master-badge svg { width: 32px; height: 28px; }
+.session-win-emoji svg { width: 100px; height: 85px; }
+.choose-mode-button { min-height: 44px; padding: 8px 16px; border: 2px solid #9bbfaa; border-radius: 12px; background: #eef6e9; color: #315f52; font: 800 .9rem 'Nunito', sans-serif; cursor: pointer; }
+[hidden] { display: none !important; }
+@media (max-width: 400px) { .challenge-stages { grid-template-columns: repeat(2, minmax(0,1fr)); } .mode-tabs { gap: 6px; } .mode-tabs button { padding: 8px 5px; font-size: .9rem; } }
+@media (prefers-reduced-motion: no-preference) { .master-badge svg { animation: master-float 2.5s ease-in-out infinite; } @keyframes master-float { 50% { transform: translateY(-3px) rotate(4deg); } } }
+@media (forced-colors: active) { .mode-tabs button, .challenge-stages button { background: ButtonFace; color: ButtonText; border-color: ButtonText; } .mode-tabs button[aria-pressed="true"], .challenge-stages button[aria-pressed="true"] { outline: 3px solid Highlight; } }

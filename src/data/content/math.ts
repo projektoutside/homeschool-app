@@ -57,7 +57,7 @@ const mathEntries: ContentItem[] = [
         subjects: ['Alphabet', 'Counting', 'Patterns'],
         gradeLevels: ['Preschool', 'Pre-K', 'Kindergarten'],
         customHtmlPath: '/Games/PreschoolFun/index.html',
-        thumbnail: '/Games/PreschoolFun/thumb.svg',
+        thumbnail: '/assets/thumbnails/optimized/preschool-fun-256.webp',
         isFeatured: true,
         dateAdded: '2026-03-10'
     },
@@ -72,6 +72,7 @@ const mathEntries: ContentItem[] = [
         subjects: ['Physics', 'Problem Solving', 'Trajectory Planning'],
         gradeLevels: ['All'],
         customHtmlPath: '/Games/Many Birds One Stone/index.html',
+        thumbnail: '/assets/thumbnails/optimized/many-birds-one-stone-256.webp',
         dateAdded: '2026-03-28'
     },
     {

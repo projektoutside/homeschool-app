@@ -1,0 +1,104 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "format": "mp3_44100_128",
+  "promptInfluence": 0.65,
+  "normalization": {
+    "effectsLUFS": -19,
+    "ambienceLUFS": -28,
+    "truePeakDB": -2
+  },
+  "effects": [
+    {
+      "id": "ui-tap",
+      "duration": 0.5,
+      "text": "A single premium playful educational game UI tap: one soft wooden bubble pop with a tiny warm marimba sparkle. Crisp immediate attack, round gentle low mid body, short clean tail, friendly and tactile, no voice, no music bed, no background hiss, comfortable for preschool children.",
+      "file": "ui-tap.mp3",
+      "bytes": 8820,
+      "actualDuration": 0.522449,
+      "sha256": "eabf5b4a1f1863bf47ec8a7289ba9a4880dce03cf720d46c8566a52afae0c76b",
+      "peakDB": -5.9
+    },
+    {
+      "id": "answer-place",
+      "duration": 0.6,
+      "text": "One satisfying magnetic toy letter block snapping into a puzzle slot, soft rounded wooden click and delicate sparkling bell tail. Premium tactile preschool app sound, clear immediate attack, warm and friendly, no speech, no harsh highs, no background music.",
+      "file": "answer-place.mp3",
+      "bytes": 10492,
+      "actualDuration": 0.626939,
+      "sha256": "d43c010a13e9dd01750c324911472a674f40aab7c71906c752c8392a55b8f4c4",
+      "peakDB": -3.6
+    },
+    {
+      "id": "answer-correct",
+      "duration": 1.1,
+      "text": "A joyful premium preschool puzzle correct answer reward. Warm three-note ascending marimba and celesta sparkle followed by one happy tiny bird chirp. Bright confident rewarding sound with a round gentle attack and polished clean short tail. No speech, no applause, no music bed, no harsh frequencies.",
+      "file": "answer-correct.mp3",
+      "bytes": 18433,
+      "actualDuration": 1.123265,
+      "sha256": "66eabc091dcbb4b7a8a5c996f1cdcad036171c3871c2c073a8efd6c1fba82271",
+      "peakDB": -3.5
+    },
+    {
+      "id": "try-again",
+      "duration": 0.8,
+      "text": "A gentle supportive try again cue for a preschool learning game, two soft warm woodwind plops with a curious upward tail, friendly and encouraging rather than failure or alarm. Premium clean toy-like acoustic sound, quiet rounded transients, no harsh buzzer, no sad voice, no speech or background music.",
+      "file": "try-again.mp3",
+      "bytes": 13835,
+      "actualDuration": 0.835918,
+      "sha256": "11763072d812506f883e427a5c7dd5f4dfde0a549bc4f80ce9a165940ec2a34f",
+      "peakDB": -8.8
+    },
+    {
+      "id": "wing-boost",
+      "duration": 0.75,
+      "text": "One quick graceful little bird wing-flap boost, silky feather swish and airy upward swoosh ending with a tiny cheerful chirp. Premium animated family game effect, soft rounded energy, no crash, no voice, no music or noisy background.",
+      "file": "wing-boost.mp3",
+      "bytes": 12581,
+      "actualDuration": 0.757551,
+      "sha256": "37d09956102da7580efb13caa672693619d391d8deb87f11b63084313ee82829",
+      "peakDB": -2.4
+    },
+    {
+      "id": "streak-reward",
+      "duration": 1.4,
+      "text": "A delightful three answers in a row bonus reward for a premium preschool bird adventure. Playful ascending wooden xylophone flourish with tiny golden bell sparkles and a cheerful soft wing swish. Celebratory, clear, polished, warm, no voices, no applause, no loud impact or music bed.",
+      "file": "streak-reward.mp3",
+      "bytes": 23030,
+      "actualDuration": 1.410612,
+      "sha256": "a09b2e35543f5a1d2cc113be1a6c9d3915370a2fdaf153987961701f848fc687",
+      "peakDB": -3
+    },
+    {
+      "id": "escape-win",
+      "duration": 2.4,
+      "text": "A short triumphant little bird escape victory flourish for a premium family educational game. Warm marimba and pizzicato strings ascending into a radiant soft celesta chord, two joyful bird chirps and a gentle wing release. Rich joyful orchestral game reward with a polished natural tail, child friendly, no speech, no applause, no loud impacts.",
+      "file": "escape-win.mp3",
+      "bytes": 39331,
+      "actualDuration": 2.429388,
+      "sha256": "bd0d8773f37fb38b24f785b75e7c225a48ac1f563c2f640eb6179dc0b1c4d29a",
+      "peakDB": -10
+    },
+    {
+      "id": "bird-bump",
+      "duration": 1.1,
+      "text": "A friendly cartoon bird bump and recovery cue for a preschool game: one very soft rounded feather poof, playful wooden boing, and an optimistic tiny upward chirp. Gentle amusing and reassuring, no injury sounds, no scream, no harsh crash, no scary bass or speech.",
+      "file": "bird-bump.mp3",
+      "bytes": 18433,
+      "actualDuration": 1.123265,
+      "sha256": "8c1b1d0445523c463e06234eba3298a55a815bfb08e8a34ea9499f870cb85317",
+      "peakDB": -7.3
+    },
+    {
+      "id": "garden-ambience",
+      "duration": 8,
+      "loop": true,
+      "text": "Seamlessly looping very quiet sunny garden air for a premium preschool bird puzzle game. Delicate soft leaves in a warm breeze with just a few gentle distant bird chirps, spacious clean natural atmosphere, no busy birdsong, no wind rumble, no people, no voices, no music. Consistent volume, soft edges that loop smoothly.",
+      "file": "garden-ambience.mp3",
+      "bytes": 129192,
+      "actualDuration": 8.045714,
+      "sha256": "895cef4eb0435b20a8ea1f47c78e438f68ae33998b2542ff28adcde21221b220",
+      "peakDB": -8
+    }
+  ]
+}

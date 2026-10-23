@@ -1,18 +1,9 @@
 (function () {
     const GAME_EXIT_TO_HOME_MESSAGE = 'LAHS_GAME_EXIT_TO_HOME';
     const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const ACTIVITY_TYPES = ['alphabet', 'counting', 'pattern'];
+    const activities = window.PreschoolActivities;
+    const ACTIVITY_TYPES = activities.types;
     const TOKEN_POOL = ['🚂', '🦆', '🦋', '🍓', '🌼', '🎵', '⭐', '🌈', '🫧', '🧸'];
-    const PATTERN_TOKENS = [
-        { value: '⭐', label: 'gold star' },
-        { value: '🟣', label: 'purple dot' },
-        { value: '🟩', label: 'green square' },
-        { value: '❤️', label: 'red heart' },
-        { value: '🔺', label: 'orange triangle' },
-        { value: '🟦', label: 'blue square' },
-        { value: '☀️', label: 'sun' },
-        { value: '🌙', label: 'moon' }
-    ];
     const ACTIVITY_META = {
         alphabet: {
             pill: 'Alphabet Parade',
@@ -34,7 +25,7 @@
         },
         pattern: {
             pill: 'Pattern Party',
-            prompt: 'Find the next piece.',
+            prompt: 'Find the missing picture.',
             description: 'Tap or drag the right one.',
             hint: 'Tap or drag.',
             coachTip: 'Look for the part that repeats.',
@@ -48,6 +39,11 @@
         'Tap or drag one.',
         'You can do it.'
     ];
+    Object.assign(ACTIVITY_META, {
+        quantity: { pill: 'Garden Counter', prompt: 'How many pictures?', description: 'Count each picture once.', hint: 'Count, then choose.', coachTip: 'Touch each picture with your finger as you count.', successEmoji: '🌻', successTitle: 'Counting Explorer!' },
+        matching: { pill: 'Picture Pairs', prompt: 'Find the matching picture.', description: 'Look for its exact twin.', hint: 'Find its twin.', coachTip: 'Look for the same shape and color.', successEmoji: '🦋', successTitle: 'Perfect Pair!' },
+        odd: { pill: 'Picture Detective', prompt: 'Which picture is different?', description: 'One picture does not match the others.', hint: 'Spot the different one.', coachTip: 'Three pictures match. Find the other one.', successEmoji: '🔎', successTitle: 'Super Detective!' }
+    });
     const CORRECT_LINES = [
         'You got it!',
         'That fits just right.',
@@ -83,6 +79,26 @@
         canvas: document.getElementById('sky-canvas'),
         startOverlay: document.getElementById('start-overlay'),
         startButton: document.getElementById('start-button'),
+        modePicker: document.getElementById('mode-picker'),
+        modeNote: document.getElementById('mode-note'),
+        chooseMode: document.getElementById('choose-mode-button'),
+        challengePanel: document.getElementById('challenge-panel'),
+        challengeStages: document.getElementById('challenge-stages'),
+        challengeDetails: document.getElementById('challenge-details'),
+        challengeSave: document.getElementById('challenge-save'),
+        masterBadge: document.getElementById('master-badge'),
+        flightTitle: document.getElementById('flight-title'),
+        tutorialListen: document.getElementById('tutorial-listen'),
+        questionListen: document.getElementById('question-listen'),
+        autoVoice: document.getElementById('auto-voice'),
+        gameShell: document.querySelector('.game-shell'),
+        helpButton: document.getElementById('help-button'),
+        feedback: document.getElementById('answer-feedback'),
+        flightMessage: document.getElementById('flight-message'),
+        flightStats: document.getElementById('flight-stats'),
+        practiceCheck: document.getElementById('practice-check'),
+        practiceGap: document.getElementById('practice-gap'),
+        practiceFeedback: document.getElementById('practice-feedback'),
         soundToggle: document.getElementById('sound-toggle'),
         homeButton: document.getElementById('home-button'),
         roundValue: document.getElementById('round-value'),
@@ -96,6 +112,8 @@
         promptTitle: document.getElementById('prompt-title'),
         promptDescription: document.getElementById('prompt-description'),
         sequenceTrack: document.getElementById('sequence-track'),
+        activityDisplay: document.getElementById('activity-display'),
+        skillCollection: document.getElementById('skill-collection'),
         storyVisual: document.getElementById('story-visual'),
         coachTip: document.getElementById('coach-tip'),
         choicesGrid: document.getElementById('choices-grid'),
@@ -122,8 +140,22 @@
         srStatus: document.getElementById('sr-status')
     };
 
+    const challenge = window.PreschoolChallenge;
+    let progressStorage;
+    try { progressStorage = window.localStorage; } catch (_) { /* Session-only progress. */ }
     const state = {
+        playMode: 'free',
+        challengeLevel: 0,
+        challengeCompleted: challenge.readProgress(progressStorage),
+        challengeRun: null,
+        challengeCatching: false,
         started: false,
+        tutorialVisible: true,
+        voiceEnabled: true,
+        hostPaused: false,
+        pendingAdvance: false,
+        practiceChoice: null,
+        wrongChoices: [],
         round: 1,
         stars: 0,
         streak: 0,
@@ -135,6 +167,12 @@
         ambientTimer: randomRange(IDLE_AMBIENT_MIN_MS, IDLE_AMBIENT_MAX_MS),
         confetti: [],
         activityCursor: 0,
+        activityDeck: [],
+        lastActivity: null,
+        missionNumber: 0,
+        patternCursor: 0,
+        recentPuzzles: [],
+        skillFeathers: new Set(),
         cheerCursor: 0,
         autoAdvanceTimer: null,
         birdEscape: null,
@@ -172,108 +210,12 @@
     const choicePieceRenderer = createChoicePieceRenderer();
 
     function createSoundEngine() {
-        return {
-            ctx: null,
-            ensure() {
-                if (!this.ctx) {
-                    const Ctor = window.AudioContext || window.webkitAudioContext;
-                    if (!Ctor) return null;
-                    this.ctx = new Ctor();
-                }
-                if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
-                return this.ctx;
-            },
-            play(type, steps) {
-                const ctx = this.ensure();
-                if (!ctx || state.sound.muted) return;
-                const master = ctx.createGain();
-                master.gain.value = clamp(type === 'music' ? state.sound.musicVolume : state.sound.sfxVolume, 0, 1);
-                master.connect(ctx.destination);
-                steps.forEach((step) => {
-                    if (step.kind === 'noise') {
-                        const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * step.duration), ctx.sampleRate);
-                        const data = buffer.getChannelData(0);
-                        for (let i = 0; i < data.length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-                        const source = ctx.createBufferSource();
-                        const filter = ctx.createBiquadFilter();
-                        const gain = ctx.createGain();
-                        source.buffer = buffer;
-                        filter.type = 'bandpass';
-                        filter.frequency.value = step.filterFreq;
-                        gain.gain.setValueAtTime(0.0001, ctx.currentTime + step.when);
-                        gain.gain.exponentialRampToValueAtTime(step.volume, ctx.currentTime + step.when + 0.02);
-                        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + step.when + step.duration);
-                        source.connect(filter);
-                        filter.connect(gain);
-                        gain.connect(master);
-                        source.start(ctx.currentTime + step.when);
-                        source.stop(ctx.currentTime + step.when + step.duration + 0.02);
-                        return;
-                    }
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = step.wave;
-                    osc.frequency.setValueAtTime(step.freq, ctx.currentTime + step.when);
-                    if (step.slideTo) osc.frequency.exponentialRampToValueAtTime(step.slideTo, ctx.currentTime + step.when + step.duration);
-                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + step.when);
-                    gain.gain.exponentialRampToValueAtTime(step.volume, ctx.currentTime + step.when + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + step.when + step.duration);
-                    osc.connect(gain);
-                    gain.connect(master);
-                    osc.start(ctx.currentTime + step.when);
-                    osc.stop(ctx.currentTime + step.when + step.duration + 0.03);
-                });
-            },
-            boop() {
-                this.play('sfx', [
-                    { freq: 460, slideTo: 620, wave: 'triangle', duration: 0.16, when: 0, volume: 0.12 },
-                    { freq: 620, slideTo: 760, wave: 'triangle', duration: 0.18, when: 0.07, volume: 0.11 }
-                ]);
-            },
-            drop() {
-                this.play('sfx', [{ freq: 330, slideTo: 510, wave: 'triangle', duration: 0.18, when: 0, volume: 0.08 }]);
-            },
-            success() {
-                this.play('sfx', [
-                    { freq: 523.25, wave: 'triangle', duration: 0.24, when: 0, volume: 0.11 },
-                    { freq: 659.25, wave: 'triangle', duration: 0.24, when: 0.06, volume: 0.11 },
-                    { freq: 783.99, wave: 'triangle', duration: 0.24, when: 0.12, volume: 0.1 },
-                    { freq: 1046.5, wave: 'triangle', duration: 0.24, when: 0.18, volume: 0.1 },
-                    { kind: 'noise', duration: 0.14, when: 0.03, volume: 0.05, filterFreq: 2200 }
-                ]);
-            },
-            wrong() {
-                this.play('sfx', [
-                    { freq: 280, slideTo: 180, wave: 'sawtooth', duration: 0.26, when: 0, volume: 0.06 },
-                    { freq: 240, slideTo: 140, wave: 'square', duration: 0.22, when: 0.06, volume: 0.05 }
-                ]);
-            },
-            loss() {
-                this.play('sfx', [
-                    { freq: 210, slideTo: 128, wave: 'sawtooth', duration: 0.28, when: 0, volume: 0.07 },
-                    { freq: 188, slideTo: 122, wave: 'triangle', duration: 0.24, when: 0.08, volume: 0.06 },
-                    { freq: 540, slideTo: 780, wave: 'triangle', duration: 0.14, when: 0.11, volume: 0.05 },
-                    { kind: 'noise', duration: 0.18, when: 0.04, volume: 0.045, filterFreq: 1450 }
-                ]);
-            },
-            ambient() {
-                const set = [
-                    [
-                        { freq: 760, slideTo: 920, wave: 'sine', duration: 0.22, when: 0, volume: 0.04 },
-                        { freq: 990, slideTo: 820, wave: 'sine', duration: 0.18, when: 0.08, volume: 0.04 }
-                    ],
-                    [
-                        { freq: 410, slideTo: 520, wave: 'triangle', duration: 0.18, when: 0, volume: 0.04 },
-                        { kind: 'noise', duration: 0.07, when: 0.08, volume: 0.03, filterFreq: 1800 }
-                    ],
-                    [
-                        { freq: 520, slideTo: 640, wave: 'square', duration: 0.13, when: 0, volume: 0.03 },
-                        { freq: 640, slideTo: 510, wave: 'square', duration: 0.14, when: 0.09, volume: 0.03 }
-                    ]
-                ];
-                this.play('sfx', set[randomInt(set.length)]);
-            }
-        };
+        return window.createPreschoolAudio({
+            getSettings: () => state.sound,
+            canPlay: () => !state.hostPaused && !document.hidden,
+            isPlaying: () => state.started && state.sessionActive && !state.tutorialVisible,
+            onVoiceChange: refreshVoiceControls
+        });
     }
 
     function createChoicePieceRenderer() {
@@ -694,10 +636,56 @@
     }
 
     function registerUi() {
+        renderModePicker();
+        document.querySelectorAll('[data-play-mode]').forEach(button => button.addEventListener('click', () => {
+            if (state.started) return;
+            sound.stopVoice(); state.playMode = button.dataset.playMode; renderModePicker();
+        }));
+        dom.challengeStages.addEventListener('click', event => {
+            const button = event.target.closest('[data-stage]');
+            if (!button || state.started || button.disabled) return;
+            const level = Number(button.dataset.stage);
+            if (level < 0 || level > Math.min(state.challengeCompleted, challenge.levels.length - 1)) return;
+            state.challengeLevel = level; sound.stopVoice(); renderModePicker();
+        });
+        dom.chooseMode.addEventListener('click', showStartScreen);
+        document.querySelectorAll('[data-choose-mode]').forEach(button => button.addEventListener('click', showStartScreen));
+        dom.tutorialListen.addEventListener('click', () => {
+            unlockAudio();
+            if (sound.describe().voice.kind === 'tutorial') sound.stopVoice();
+            else sound.speak([state.playMode === 'challenge' ? 'challenge-tutorial' : 'tutorial'], 'tutorial', () => state.tutorialVisible);
+        });
+        dom.questionListen.addEventListener('click', () => {
+            unlockAudio();
+            if (sound.describe().voice.kind === 'question') sound.stopVoice();
+            else readQuestion(true);
+        });
+        dom.autoVoice.addEventListener('click', () => {
+            unlockAudio(); state.voiceEnabled = !state.voiceEnabled;
+            sound.stopVoice(); refreshVoiceControls();
+            if (state.voiceEnabled) readQuestion();
+        });
         dom.startButton.addEventListener('click', () => {
             unlockAudio();
             sound.boop();
-            startGame();
+            if (state.started) closeTutorial();
+            else startGame();
+        });
+        dom.helpButton.addEventListener('click', openTutorial);
+        document.querySelectorAll('[data-practice-choice]').forEach(button => button.addEventListener('click', () => {
+            unlockAudio(); sound.drop();
+            state.practiceChoice = button.dataset.practiceChoice;
+            dom.practiceGap.textContent = state.practiceChoice;
+            document.querySelectorAll('[data-practice-choice]').forEach(choice => choice.setAttribute('aria-pressed', String(choice === button)));
+            dom.practiceCheck.disabled = false;
+            if (state.voiceEnabled) sound.speak([`letter-${state.practiceChoice}`, 'check'], 'practice', () => state.tutorialVisible);
+        }));
+        dom.practiceCheck.addEventListener('click', () => {
+            const correct = state.practiceChoice === 'B';
+            document.getElementById('tutorial-flight').classList.toggle('is-boosted', correct);
+            dom.practiceFeedback.textContent = correct ? 'Yes! B fits. Our little bird has more room to fly!' : 'Try B. It fits between A and C.';
+            if (correct) sound.success(); else sound.wrong();
+            if (state.voiceEnabled) sound.speak([correct ? 'practice-yes' : 'practice-retry'], 'practice', () => state.tutorialVisible);
         });
         dom.soundToggle.addEventListener('click', () => {
             unlockAudio();
@@ -717,6 +705,9 @@
             createPuzzle(true);
         });
         dom.sessionPlayAgainButton.addEventListener('click', () => {
+            if (state.playMode === 'challenge' && state.sessionWon && state.challengeLevel < challenge.levels.length - 1) {
+                state.challengeLevel++; state.birdEscape?.destroy(); state.birdEscape = null;
+            }
             unlockAudio();
             sound.boop();
             restartSession();
@@ -741,6 +732,18 @@
         });
         window.addEventListener('resize', resizeCanvas, { passive: true });
         window.addEventListener('message', handleHostSoundMessage);
+        document.addEventListener('visibilitychange', syncPauseState);
+        window.addEventListener('pagehide', event => { if (!event.persisted) sound.dispose(); });
+        document.addEventListener('keydown', event => {
+            if (!state.tutorialVisible) return;
+            if (event.key === 'Escape' && state.started) { event.preventDefault(); closeTutorial(); return; }
+            if (event.key !== 'Tab') return;
+            const targets = [...dom.startOverlay.querySelectorAll('button:not(:disabled), [tabindex="0"]')];
+            const first = targets[0], last = targets[targets.length - 1];
+            if ((event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
+                event.preventDefault(); (event.shiftKey ? last : first).focus();
+            }
+        });
     }
 
     function exposeHooks() {
@@ -748,15 +751,11 @@
             state.sound.muted = Boolean(muted);
             updateSoundToggle();
         };
-        window.setMusicVolume = (volume) => { state.sound.musicVolume = clamp(Number(volume) || 0, 0, 1); };
-        window.setSfxVolume = (volume) => { state.sound.sfxVolume = clamp(Number(volume) || 0, 0, 1); };
+        window.setMusicVolume = (volume) => { state.sound.musicVolume = clamp(Number(volume) || 0, 0, 1); sound.sync(); };
+        window.setSfxVolume = (volume) => { state.sound.sfxVolume = clamp(Number(volume) || 0, 0, 1); sound.sync(); refreshVoiceControls(); };
         window.setBirdEscapeDebug = (enabled) => { state.birdEscape?.setDebug?.(Boolean(enabled)); };
         window.setBirdEscapePaused = (paused) => {
-            if (paused) {
-                state.birdEscape?.pause?.();
-                return;
-            }
-            state.birdEscape?.resume?.();
+            state.hostPaused = Boolean(paused); syncPauseState();
         };
         window.render_game_to_text = () => {
             const birdState = state.birdEscape?.getState?.() ?? null;
@@ -764,9 +763,25 @@
                 state.started
                     ? {
                         mode: state.currentPuzzle?.type ?? 'idle',
+                        playMode: state.playMode,
+                        challenge: state.challengeRun?.describe() ?? null,
+                        challengeCompleted: state.challengeCompleted,
+                        variant: state.currentPuzzle?.variant ?? null,
+                        answerKind: state.currentPuzzle?.answerKind ?? null,
+                        display: (state.currentPuzzle?.display ?? []).map(item => ({ value: item.value, label: item.label })),
+                        feathers: [...state.skillFeathers],
+                        voiceInstruction: state.currentPuzzle?.voiceInstruction ?? state.currentPuzzle?.type,
+                        voiceSequence: state.currentPuzzle?.voiceSequence !== false,
                         round: state.round,
                         stars: state.stars,
                         streak: state.streak,
+                        locked: state.locked,
+                        puzzleId: state.puzzleToken,
+                        eliminated: [...state.wrongChoices],
+                        tutorialVisible: state.tutorialVisible,
+                        voiceEnabled: state.voiceEnabled,
+                        paused: isPaused(),
+                        sound: sound.describe(),
                         prompt: state.currentPuzzle?.prompt ?? '',
                         sequence: (state.currentPuzzle?.sequence ?? []).map((item) => ({
                             value: item.missing
@@ -816,7 +831,10 @@
                         coordinateSystem: 'DOM left-to-right sequence with the Bird Escape flight lane below the Pick One panel.'
                     }
                     : {
-                        mode: 'start',
+                        mode: 'start', playMode: state.playMode, challengeLevel: state.challengeLevel, challengeCompleted: state.challengeCompleted,
+                        tutorialVisible: true,
+                        voiceEnabled: state.voiceEnabled,
+                        sound: sound.describe(),
                         prompt: 'Tap start to play.',
                         status: 'Start screen visible.',
                         options: [{ id: 'start-button', value: 'Start Playing', label: 'Start Playing' }],
@@ -829,12 +847,23 @@
             updateAmbient(deltaMs);
             updateConfetti(deltaMs / 1000);
             drawBackground(deltaMs / 1000);
-            state.birdEscape?.advanceTime?.(deltaMs);
+            for (let elapsed = 0; elapsed < deltaMs; elapsed += 32) {
+                const step = Math.min(32, deltaMs - elapsed);
+                updateChallenge(step); state.birdEscape?.advanceTime?.(step);
+            }
         };
     }
 
     function handleHostSoundMessage(event) {
-        if (!event?.data || typeof event.data !== 'object' || event.data.type !== 'APP_SOUND_SETTINGS_UPDATE') return;
+        if (!event?.data || typeof event.data !== 'object' || event.source !== window.parent || window.parent === window) return;
+        let parentOrigin = window.location.origin;
+        try { if (document.referrer) parentOrigin = new URL(document.referrer).origin; } catch (_) { /* Use local origin. */ }
+        if (event.origin !== parentOrigin) return;
+        if (event.data.type === 'LAHS_HOST_LIFECYCLE') {
+            if (!['pause', 'resume'].includes(event.data.phase)) return;
+            state.hostPaused = event.data.phase === 'pause'; syncPauseState(); return;
+        }
+        if (event.data.type !== 'APP_SOUND_SETTINGS_UPDATE') return;
         const payload = event.data.payload ?? {};
         if (typeof payload.muted === 'boolean') state.sound.muted = payload.muted;
         if (typeof payload.musicVolume === 'number') state.sound.musicVolume = clamp(payload.musicVolume, 0, 1);
@@ -843,20 +872,133 @@
     }
 
     function unlockAudio() {
-        if (state.audioUnlocked) return;
         if (!sound.ensure()) return;
         state.audioUnlocked = true;
-        if (!state.sound.muted) sound.boop();
     }
 
     function updateSoundToggle() {
         const on = !state.sound.muted;
         dom.soundToggle.setAttribute('aria-pressed', String(on));
+        dom.soundToggle.setAttribute('aria-label', on ? 'Turn sound off' : 'Turn sound on');
         dom.soundToggle.querySelector('.icon-pill__emoji').textContent = on ? '🔊' : '🔇';
         dom.soundToggle.querySelector('.icon-pill__label').textContent = on ? 'Sound On' : 'Sound Off';
+        sound.sync();
+        refreshVoiceControls();
+    }
+
+    function refreshVoiceControls() {
+        const audio = sound.describe(), voice = audio.voice;
+        const available = audio.supported && !state.sound.muted && state.sound.sfxVolume > 0;
+        for (const [button, kind, label] of [[dom.tutorialListen, 'tutorial', 'Listen to the story'], [dom.questionListen, 'question', 'Listen']]) {
+            const busy = voice.kind === kind && voice.state !== 'idle';
+            button.disabled = !available || (kind === 'question' && (!state.sessionActive || state.locked));
+            button.setAttribute('aria-pressed', String(busy));
+            button.querySelector('span').textContent = !audio.supported ? 'Voice unavailable' : !available ? 'Sound off' : busy ? 'Stop voice' : label;
+            button.setAttribute('aria-label', busy ? 'Stop reading aloud' : kind === 'tutorial' ? 'Read the tutorial aloud' : 'Read the question aloud');
+            button.title = voice.error || '';
+        }
+        dom.autoVoice.textContent = `Auto voice: ${state.voiceEnabled ? 'On' : 'Off'}`;
+        dom.autoVoice.setAttribute('aria-pressed', String(state.voiceEnabled));
+        dom.autoVoice.setAttribute('aria-label', `Automatic reading ${state.voiceEnabled ? 'on. Turn automatic reading off.' : 'off. Turn automatic reading on.'}`);
+    }
+
+    function voiceKey(item, type) {
+        if (type === 'alphabet') return `letter-${item.value}`;
+        if (type === 'counting' || type === 'quantity') return `number-${item.value}`;
+        return item.label.replaceAll(' ', '-');
+    }
+
+    function readQuestion(manual = false) {
+        if ((!manual && !state.voiceEnabled) || isPaused() || !state.sessionActive || state.locked || !state.currentPuzzle) return;
+        const puzzle = state.currentPuzzle, token = state.puzzleToken;
+        const row = puzzle.voiceSequence === false ? [] : puzzle.sequence.map(item => item.missing ? 'blank' : voiceKey(item, puzzle.answerKind));
+        const ids = [puzzle.voiceInstruction || puzzle.type, ...row, 'choose'];
+        sound.speak(ids, 'question', () => token === state.puzzleToken && state.sessionActive && !state.locked && !isPaused());
+    }
+
+    function isPaused() { return state.hostPaused || document.hidden || state.tutorialVisible; }
+
+    function syncPauseState() {
+        background.lastFrame = 0;
+        if (state.hostPaused || document.hidden || (!state.sessionActive && !state.tutorialVisible)) sound.stopVoice();
+        if (isPaused() || !state.sessionActive) state.birdEscape?.pause?.();
+        else state.birdEscape?.resume?.();
+        sound.sync();
+        if (!isPaused() && state.pendingAdvance && state.sessionActive) {
+            state.pendingAdvance = false; createPuzzle(false);
+        }
+    }
+
+    function renderModePicker() {
+        dom.modePicker.hidden = state.started; dom.chooseMode.hidden = !state.started;
+        document.querySelectorAll('[data-play-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.playMode === state.playMode)));
+        dom.challengePanel.hidden = state.playMode !== 'challenge';
+        dom.challengeStages.replaceChildren(...challenge.levels.map((level, index) => {
+            const button = document.createElement('button');
+            const complete = index < state.challengeCompleted;
+            button.type = 'button'; button.dataset.stage = String(index);
+            button.disabled = index > state.challengeCompleted;
+            button.setAttribute('aria-pressed', String(index === state.challengeLevel));
+            button.setAttribute('aria-label', `Stage ${index + 1}: ${level.name}. ${complete ? 'Completed' : button.disabled ? 'Locked' : 'Available'}`);
+            button.innerHTML = `<strong>${complete ? '✓' : index + 1}</strong><span>${level.name}</span><small>${button.disabled ? 'Locked' : level.speed + '× chase'}</small>`;
+            return button;
+        }));
+        const level = challenge.levels[state.challengeLevel];
+        dom.challengeDetails.textContent = `Stage ${state.challengeLevel + 1}: ${level.name} · ${level.goal} correct answers · ${level.speed}× chase speed`;
+        dom.masterBadge.hidden = state.challengeCompleted < challenge.levels.length;
+        dom.masterBadge.innerHTML = challenge.crown + '<span>Ultimate Master</span>';
+        dom.modeNote.textContent = state.playMode === 'challenge' ? 'The blue bird keeps coming! Correct answers push it back. Listening and Help pause the chase.' : 'Take your time. There’s no countdown.';
+        if (!state.started) dom.startButton.textContent = state.playMode === 'challenge' ? `Start stage ${state.challengeLevel + 1}` : 'Start Playing';
+    }
+
+    function updateChallengeHud() {
+        dom.flightTitle.textContent = state.challengeRun ? `Challenge ${state.challengeLevel + 1}/8` : 'Fly to safety!';
+        if (state.challengeRun) {
+            const run = state.challengeRun.describe(), level = challenge.levels[state.challengeLevel];
+            dom.flightStats.textContent = `${run.correct}/${level.goal} solved · ${level.speed}× chase`;
+        }
+    }
+
+    function updateChallenge(deltaMs) {
+        if (!state.challengeRun || !state.sessionActive || isPaused() || state.challengeCatching) return;
+        const bird = state.birdEscape?.getState();
+        if (!bird?.assetsReady || !bird.laneWidth) return;
+        const voice = sound.describe().voice;
+        const racing = !state.locked && !(voice.kind === 'question' && voice.state !== 'idle');
+        const run = state.challengeRun.advance(deltaMs, racing);
+        const safeX = bird.laneWidth * .03;
+        state.birdEscape.setLargeBirdX(safeX + (bird.catchX - safeX) * run.visualDanger);
+        updateChallengeHud();
+        if (run.caught) {
+            state.challengeCatching = true; state.locked = true;
+            cleanupPointerDrag(); sound.stopVoice(); updateActionButtons();
+            const token = state.puzzleToken;
+            Promise.resolve(state.birdEscape.onWrong()).then(() => {
+                if (state.sessionActive && state.puzzleToken === token && state.challengeCatching) handleSessionLose();
+            });
+        }
+    }
+
+    function openTutorial() {
+        if (!state.started || !state.sessionActive || state.locked) return;
+        unlockAudio(); sound.boop(); sound.stopVoice();
+        cleanupPointerDrag(); state.tutorialVisible = true;
+        dom.gameShell.inert = true; dom.startOverlay.inert = false;
+        dom.startOverlay.classList.remove('is-hidden'); dom.startOverlay.setAttribute('aria-hidden', 'false');
+        dom.startButton.textContent = 'Back to game';
+        dom.modePicker.hidden = true; dom.chooseMode.hidden = false;
+        syncPauseState(); dom.startButton.focus({ preventScroll: true });
+    }
+
+    function closeTutorial() {
+        sound.stopVoice();
+        state.tutorialVisible = false; dom.gameShell.inert = false;
+        dom.startOverlay.inert = true; dom.startOverlay.classList.add('is-hidden'); dom.startOverlay.setAttribute('aria-hidden', 'true');
+        syncPauseState(); readQuestion(); dom.helpButton.focus({ preventScroll: true });
     }
 
     function showStartScreen() {
+        sound.stopVoice();
         state.sessionActive = false;
         state.sessionWon = false;
         state.sessionLost = false;
@@ -869,19 +1011,29 @@
         hideCelebration();
         hideSessionWinOverlay();
         clearLoseEffects();
-        state.birdEscape?.destroy();
+        state.birdEscape?.destroy(); state.birdEscape = null;
+        state.challengeRun = null; state.challengeCatching = false;
         state.started = false;
+        state.tutorialVisible = true;
+        dom.gameShell.inert = true;
+        dom.startOverlay.inert = false;
+        renderModePicker();
         document.body.classList.remove('is-started');
         dom.startOverlay.classList.remove('is-hidden');
         dom.startOverlay.setAttribute('aria-hidden', 'false');
         setStatus('Tap start to play.');
         updateActionButtons();
         announce('Tap start to play Preschool Fun.');
+        syncPauseState(); dom.startButton.focus({ preventScroll: true });
     }
 
     function startGame() {
         if (state.started) return;
+        sound.stopVoice();
         state.started = true;
+        state.tutorialVisible = false;
+        dom.gameShell.inert = false;
+        dom.startOverlay.inert = true;
         state.sessionActive = true;
         if (document.activeElement instanceof HTMLElement && dom.startOverlay.contains(document.activeElement)) {
             document.activeElement.blur();
@@ -892,6 +1044,7 @@
         mountBirdEscape();
         resetSessionProgress();
         createPuzzle(false);
+        syncPauseState();
     }
 
     function mountBirdEscape() {
@@ -933,7 +1086,7 @@
                     driftSpeed: 0.42,
                     scaleBreath: 0.0035,
                     scaleSpeed: 0.5,
-                    playbackRate: 1,
+                    playbackRate: state.playMode === 'challenge' ? challenge.levels[state.challengeLevel].flapRate : 1,
                     phaseOffset: 0.34,
                     phaseOffsetFrames: 0
                 },
@@ -949,7 +1102,7 @@
                 atmosphere: {
                     windLines: 5,
                     windOpacity: 0.12,
-                    windSpeed: 88,
+                    windSpeed: state.playMode === 'challenge' ? 88 * challenge.levels[state.challengeLevel].flapRate : 88,
                     windLength: 104,
                     cloudPuffs: 3,
                     cloudOpacity: 0.085,
@@ -962,6 +1115,7 @@
     }
 
     function resetSessionProgress() {
+        sound.stopVoice();
         state.puzzleToken += 1;
         window.clearTimeout(state.autoAdvanceTimer);
         state.autoAdvanceTimer = null;
@@ -969,6 +1123,8 @@
         hideCelebration();
         hideSessionWinOverlay();
         clearLoseEffects();
+        state.challengeRun = state.playMode === 'challenge' ? challenge.createRun(state.challengeLevel) : null;
+        state.challengeCatching = false;
         state.round = 1;
         state.stars = 0;
         state.streak = 0;
@@ -976,8 +1132,11 @@
         state.draggedChoiceId = null;
         state.chosenChoiceId = null;
         state.locked = false;
+        state.wrongChoices = [];
+        state.pendingAdvance = false;
         state.confetti = [];
         state.activityCursor = 0;
+        state.missionNumber += 1;
         state.cheerCursor = 0;
         state.sessionWon = false;
         state.sessionLost = false;
@@ -987,8 +1146,11 @@
         suppressedClick = { choiceId: null, until: 0 };
         state.birdEscape?.resume?.();
         state.birdEscape?.reset();
+        updateChallenge(0);
         updateHud();
         updateActionButtons();
+        dom.flightMessage.textContent = 'Each correct answer gives our bird more room.';
+        syncPauseState();
     }
 
     function restartSession() {
@@ -1049,6 +1211,7 @@
     }
 
     function handleSessionWin() {
+        sound.stopVoice();
         if (state.sessionWon || state.sessionLost) return;
         state.sessionWon = true;
         state.sessionActive = false;
@@ -1061,12 +1224,27 @@
         hideCelebration();
         hideSessionLoseOverlay();
         dom.sessionWinEmoji.textContent = '🐦';
+        dom.sessionPlayAgainButton.textContent = 'Play Again';
         dom.sessionWinTitle.textContent = 'You helped the little bird escape!';
         dom.sessionWinCopy.textContent = `The big bird flew off screen after ${state.stars} great answers.`;
+        if (state.playMode === 'challenge') {
+            state.challengeCompleted = Math.max(state.challengeCompleted, state.challengeLevel + 1);
+            const saved = challenge.writeProgress(progressStorage, state.challengeCompleted);
+            dom.challengeSave.textContent = saved ? 'Progress saved on this device.' : 'Progress is available for this visit. Device storage is unavailable.';
+            const final = state.challengeLevel === challenge.levels.length - 1;
+            dom.sessionWinTitle.textContent = final ? 'You are an Ultimate Master!' : `Stage ${state.challengeLevel + 1} complete!`;
+            dom.sessionWinCopy.textContent = final ? 'Eight flight challenges conquered! You earned the Ultimate Master crown.' : `${challenge.levels[state.challengeLevel].name} conquered! The next blue bird flies faster. Ready for your next adventure?`;
+            if (final) dom.sessionWinEmoji.innerHTML = challenge.crown;
+            dom.sessionPlayAgainButton.textContent = final ? 'Replay final challenge' : 'Next stage';
+        }
         setMascot('The little bird is safe now. Great thinking!', 'cheer', 'Sunny Buddy');
         setStatus('Bird Escape complete!');
         updateActionButtons();
         showSessionWinOverlay();
+        sound.win(); sound.sync();
+        if (state.playMode === 'challenge' && state.challengeLevel === challenge.levels.length - 1 && state.voiceEnabled) {
+            sound.speak(['challenge-master'], 'result', () => state.sessionWon && !state.tutorialVisible);
+        }
         announce('Bird Escape complete! You helped the little bird get away.');
     }
 
@@ -1091,6 +1269,7 @@
     }
 
     function handleSessionLose() {
+        sound.stopVoice();
         if (state.sessionLost || state.sessionWon) return;
         state.sessionLost = true;
         state.sessionActive = false;
@@ -1104,6 +1283,7 @@
         triggerLossScreenShake();
         birdImpactBurst();
         sound.loss();
+        sound.sync();
         dom.sessionLoseEmoji.textContent = '💥';
         dom.sessionLoseTitle.textContent = 'The big bird caught up!';
         dom.sessionLoseCopy.textContent = 'Tap Try Again and help the little bird escape on the next round.';
@@ -1157,17 +1337,20 @@
 
     function tick(now) {
         if (!background.lastFrame) background.lastFrame = now;
-        const dt = Math.min(0.032, (now - background.lastFrame) / 1000);
+        const elapsedMs = Math.max(0, Math.min(100, now - background.lastFrame));
+        const dt = Math.min(0.032, elapsedMs / 1000);
         background.lastFrame = now;
-        updateAmbient(dt * 1000);
-        updateConfetti(dt);
-        drawBackground(dt);
+        if (!state.hostPaused && !document.hidden) {
+            if (!state.tutorialVisible) updateAmbient(dt * 1000);
+            updateChallenge(elapsedMs);
+            updateConfetti(dt); drawBackground(dt);
+        }
         requestAnimationFrame(tick);
     }
 
     function updateAmbient(deltaMs) {
         state.ambientTimer -= deltaMs;
-        if (state.ambientTimer > 0 || !state.audioUnlocked || state.sound.muted || state.locked) return;
+        if (state.ambientTimer > 0 || !state.started || !state.sessionActive || isPaused() || !state.audioUnlocked || state.sound.muted || state.locked) return;
         sound.ambient();
         state.ambientTimer = randomRange(IDLE_AMBIENT_MIN_MS, IDLE_AMBIENT_MAX_MS);
     }
@@ -1267,6 +1450,7 @@
 
     function createPuzzle(withSound) {
         if (!state.started || !state.sessionActive || state.sessionWon || state.sessionLost) return;
+        sound.stopVoice();
         state.puzzleToken += 1;
         window.clearTimeout(state.autoAdvanceTimer);
         state.autoAdvanceTimer = null;
@@ -1274,30 +1458,49 @@
         const shouldSmoothScroll = state.round > 1 || withSound;
         state.locked = false;
         state.chosenChoiceId = null;
+        state.wrongChoices = [];
         state.draggedChoiceId = null;
         suppressedClick = { choiceId: null, until: 0 };
         hideCelebration();
 
-        const type = ACTIVITY_TYPES[state.activityCursor % ACTIVITY_TYPES.length];
+        if (state.activityCursor >= 3 || state.missionNumber > 1) {
+            if (!state.activityDeck.length) state.activityDeck = activities.deck(randomInt, state.lastActivity, state.activityCursor === 3 && state.missionNumber === 1);
+        }
+        const type = state.missionNumber === 1 && state.activityCursor < 3 ? ACTIVITY_TYPES[state.activityCursor] : state.activityDeck.shift();
         state.activityCursor += 1;
-        state.currentPuzzle = buildPuzzle(type);
+        state.lastActivity = type;
+        let puzzle, signature;
+        for (let attempt = 0; attempt < 8; attempt++) {
+            puzzle = buildPuzzle(type);
+            signature = JSON.stringify([type, puzzle.variant, puzzle.sequence.map(item => [item.value, item.missing]), puzzle.display?.map(item => item.value)]);
+            if (!state.recentPuzzles.includes(signature)) break;
+        }
+        state.recentPuzzles.push(signature); if (state.recentPuzzles.length > 12) state.recentPuzzles.shift();
+        state.currentPuzzle = puzzle;
         renderPuzzle();
+        readQuestion();
         updateHud();
         setMascot(CHEERS[state.cheerCursor % CHEERS.length], 'happy', 'Sunny Buddy');
         state.cheerCursor += 1;
-        setStatus('Find what is missing.');
+        setStatus(['quantity', 'matching', 'odd'].includes(type) ? 'Pick your answer, then check it.' : 'Find what is missing.');
         announce(`${state.currentPuzzle.prompt} ${sequenceForAnnouncement()}`);
         focusPuzzleArea(shouldSmoothScroll);
         if (withSound) sound.boop();
     }
 
     function buildPuzzle(type) {
-        return type === 'alphabet' ? buildAlphabetPuzzle() : type === 'counting' ? buildCountingPuzzle() : buildPatternPuzzle();
+        if (type === 'alphabet') return buildAlphabetPuzzle();
+        if (type === 'counting') return buildCountingPuzzle();
+        if (type === 'pattern') return buildPatternPuzzle();
+        const data = activities.visual(type, randomInt, puzzleDifficulty());
+        return { ...finalizePuzzle(type, data.sequence, data.answer, data.distractors, []), answerKind: data.answerKind, display: data.display || [], voiceSequence: type === 'matching' };
     }
 
+    function puzzleDifficulty() { return state.stars + (state.playMode === 'challenge' ? Math.floor(state.challengeLevel * 1.3) : Math.max(0, state.missionNumber - 1) * 2); }
+
     function buildAlphabetPuzzle() {
-        const start = randomInt(18);
-        const length = 4 + randomInt(2);
+        const start = state.missionNumber === 1 && state.activityCursor === 1 ? 0 : randomInt(Math.min(18, 4 + puzzleDifficulty() * 2));
+        const length = state.stars < 6 ? 4 : 4 + randomInt(2);
         const sequence = Array.from({ length }, (_, index) => {
             const value = ALPHABET[start + index];
             return { value, label: `Letter ${value}`, icon: null, missing: false };
@@ -1322,14 +1525,15 @@
     }
 
     function buildCountingPuzzle() {
-        const start = 1 + randomInt(3);
-        const length = 4 + randomInt(2);
+        const start = state.missionNumber === 1 && state.activityCursor === 2 ? 1 : 1 + randomInt(3);
+        const step = puzzleDifficulty() >= 6 && randomInt(3) === 0 ? 2 : 1;
+        const length = state.stars < 6 ? 4 : 4 + randomInt(2);
         const sequence = Array.from({ length }, (_, index) => {
-            const value = String(start + index);
+            const value = String(start + index * step);
             return { value, label: value, icon: null, missing: false };
         });
         const missingIndex = 1 + randomInt(length - 2);
-        const answerNumber = start + missingIndex;
+        const answerNumber = start + missingIndex * step;
         const answer = option(String(answerNumber), `${answerNumber}`, null);
         sequence[missingIndex].missing = true;
         const visibleValues = new Set(sequence.filter((item) => !item.missing).map((item) => item.value));
@@ -1345,48 +1549,32 @@
         const distractors = distractorValues
             .slice(0, 3)
             .map((value) => option(value, `${value}`, null));
-        return finalizePuzzle('counting', sequence, answer, distractors, []);
+        const puzzle = finalizePuzzle('counting', sequence, answer, distractors, []);
+        if (step === 2) { puzzle.prompt = 'Count by twos. What is missing?'; puzzle.coachTip = 'Say two more each time.'; puzzle.voiceInstruction = 'counting-twos'; puzzle.variant = 'twos'; }
+        return puzzle;
     }
 
     function buildPatternPuzzle() {
-        const tokenA = PATTERN_TOKENS[randomInt(PATTERN_TOKENS.length)];
-        let tokenB = PATTERN_TOKENS[randomInt(PATTERN_TOKENS.length)];
-        while (tokenB.value === tokenA.value) tokenB = PATTERN_TOKENS[randomInt(PATTERN_TOKENS.length)];
-        const basePattern = randomInt(2) === 0
-            ? [tokenA, tokenB, tokenA, tokenB, tokenA]
-            : [tokenA, tokenA, tokenB, tokenB, tokenA];
-        const missingIndex = 2 + randomInt(2);
-        const answerToken = basePattern[missingIndex];
-        const sequence = basePattern.map((item, index) => ({
-            value: item.value,
-            label: item.label,
-            icon: null,
-            missing: index === missingIndex
-        }));
-        const answer = option(answerToken.value, answerToken.label, null);
-        const distractors = shuffle(PATTERN_TOKENS.filter((item) => item.value !== answer.value))
-            .slice(0, 3)
-            .map((item) => option(item.value, item.label, null));
-        return finalizePuzzle('pattern', sequence, answer, distractors, basePattern.map((item, index) => ({
-            id: `pattern-${index}`,
-            value: item.value,
-            label: item.label
-        })));
+        const data = activities.pattern(randomInt, puzzleDifficulty(), state.patternCursor++);
+        return { ...finalizePuzzle('pattern', data.sequence, data.answer, data.distractors, []), variant: data.rule };
     }
 
     function finalizePuzzle(type, sequence, answer, distractors, storyVisual) {
         const meta = ACTIVITY_META[type];
+        const choicePrefix = `puzzle-${state.puzzleToken}-choice`;
         return {
+            id: state.puzzleToken,
             type,
+            answerKind: type === 'alphabet' || type === 'counting' ? type : 'picture',
             prompt: meta.prompt,
             description: meta.description,
             hint: meta.hint,
             coachTip: meta.coachTip,
             sequence,
-            answer: { ...answer, id: `choice-${answer.value}-0` },
+            answer: { ...answer, id: `${choicePrefix}-0` },
             options: shuffle([
-                { ...answer, id: `choice-${answer.value}-0` },
-                ...distractors.map((item, index) => ({ ...item, id: `choice-${item.value}-${index + 1}` }))
+                { ...answer, id: `${choicePrefix}-0` },
+                ...distractors.map((item, index) => ({ ...item, id: `${choicePrefix}-${index + 1}` }))
             ]),
             storyVisual
         };
@@ -1413,7 +1601,7 @@
     }
 
     function renderChoiceMarkup(item, puzzle, symbolOnlyMode, index) {
-        if (puzzle.type === 'pattern') {
+        if (puzzle.answerKind === 'picture') {
             const floatDuration = 3400 + (index * 140);
             const floatDelay = index * -180;
             const floatLift = 4 + ((index + 2) % 3);
@@ -1423,7 +1611,7 @@
                     style="--float-duration:${floatDuration}ms; --float-delay:${floatDelay}ms; --float-lift:${floatLift}px; --float-sway:0deg;"
                     aria-hidden="true"
                 >
-                    <span class="choice-value choice-value--pattern">${item.value}</span>
+                    <span class="choice-value choice-value--pattern">${activities.symbol(item.value)}</span>
                 </span>
             `;
         }
@@ -1453,8 +1641,8 @@
     function renderPuzzle() {
         const puzzle = state.currentPuzzle;
         const meta = ACTIVITY_META[puzzle.type];
-        const symbolOnlyMode = puzzle.type !== 'pattern';
-        const patternMode = puzzle.type === 'pattern';
+        const symbolOnlyMode = puzzle.answerKind !== 'picture';
+        const patternMode = puzzle.answerKind === 'picture';
         const selectedChoice = getSelectedChoice();
         dom.activityPill.textContent = meta.pill;
         dom.promptHint.textContent = puzzle.hint;
@@ -1462,18 +1650,26 @@
         dom.promptDescription.textContent = puzzle.description;
         dom.coachTip.textContent = puzzle.coachTip;
 
+        dom.activityDisplay.hidden = !puzzle.display?.length;
+        dom.activityDisplay.parentElement.classList.toggle('has-activity-display', !dom.activityDisplay.hidden);
+        dom.activityDisplay.setAttribute('aria-label', puzzle.type === 'quantity' ? 'Pictures to count' : 'Find the different picture');
+        dom.activityDisplay.innerHTML = (puzzle.display || []).map(item => `<span class="display-symbol" role="img" aria-label="${item.label}">${activities.symbol(item.value)}</span>`).join('');
+
         dom.sequenceTrack.innerHTML = '';
+        dom.sequenceTrack.style.setProperty('--sequence-count', puzzle.sequence.length);
         puzzle.sequence.forEach((item) => {
             const slot = document.createElement('div');
             slot.className = 'slot-card';
             if (symbolOnlyMode) slot.classList.add('is-symbol-only');
+            if (patternMode) slot.classList.add('is-pattern-token');
             if (item.missing) slot.classList.add('is-missing');
             if (item.missing && selectedChoice && !state.locked) slot.classList.add('is-preview-filled');
             if (item.missing && state.locked && state.chosenChoiceId === puzzle.answer.id) slot.classList.add('is-filled-correct');
             const showBlankMarker = item.missing && !selectedChoice;
             const slotValueMarkup = showBlankMarker
                 ? '<span class="slot-blank" aria-hidden="true"></span><span class="sr-only">blank</span>'
-                : (item.missing && selectedChoice ? selectedChoice.value : item.value);
+                : (patternMode ? activities.symbol(item.missing && selectedChoice ? selectedChoice.value : item.value) : item.missing && selectedChoice ? selectedChoice.value : item.value);
+            if (!showBlankMarker && patternMode) slot.setAttribute('aria-label', item.missing && selectedChoice ? selectedChoice.label : item.label);
             slot.innerHTML = `
                 <div class="slot-value${patternMode ? ' slot-value--pattern' : ''}">${slotValueMarkup}</div>
             `;
@@ -1493,6 +1689,7 @@
         dom.choicesGrid.innerHTML = '';
         const symbolChoices = [];
         puzzle.options.forEach((item, index) => {
+            const puzzleToken = puzzle.id;
             const choice = document.createElement('button');
             choice.type = 'button';
             choice.className = 'choice-card';
@@ -1500,16 +1697,19 @@
             if (patternMode) choice.classList.add('is-pattern-token');
             if (item.id === state.chosenChoiceId) choice.classList.add('is-selected');
             if (state.locked) choice.classList.add('is-disabled');
+            choice.disabled = state.locked || state.wrongChoices.includes(item.id);
+            if (state.wrongChoices.includes(item.id)) choice.classList.add('is-eliminated');
             choice.dataset.choiceId = item.id;
+            choice.dataset.puzzleId = String(puzzleToken);
             choice.setAttribute('draggable', 'false');
             choice.setAttribute('aria-label', item.label);
             choice.innerHTML = renderChoiceMarkup(item, puzzle, symbolOnlyMode, index);
-            choice.addEventListener('click', () => choose(item.id));
+            choice.addEventListener('click', event => { if (event.detail === 0 && choice.isConnected) choose(item.id, { puzzleToken }); });
             choice.addEventListener('pointerdown', onChoicePointerDown);
             choice.addEventListener('keydown', (event) => {
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();
-                choose(item.id);
+                if (!event.repeat && choice.isConnected) choose(item.id, { puzzleToken });
             });
             dom.choicesGrid.appendChild(choice);
             if (symbolOnlyMode) {
@@ -1525,12 +1725,17 @@
     }
 
     function updateHud() {
+        updateChallengeHud();
         dom.roundValue.textContent = String(state.round);
         dom.starsValue.textContent = String(state.stars);
         dom.streakValue.textContent = String(state.streak);
+        if (!state.challengeRun) dom.flightStats.textContent = `Puzzle ${state.round} · ${state.stars} stars · ${state.streak} in a row`;
+        dom.skillCollection.innerHTML = `${activities.feather}<span>${state.skillFeathers.size}/6</span>`;
+        dom.skillCollection.setAttribute('aria-label', `${state.skillFeathers.size} of 6 skill feathers collected`);
     }
 
     function onChoicePointerDown(event) {
+        if (isPaused() || pointerDrag || Number(event.currentTarget.dataset.puzzleId) !== state.puzzleToken) return;
         if (state.locked) return;
         if (!state.started) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -1538,6 +1743,7 @@
         const source = event.currentTarget;
         const pointerId = event.pointerId;
         pointerDrag = {
+            puzzleToken: state.puzzleToken,
             choiceId: source.dataset.choiceId,
             pointerId,
             source,
@@ -1557,6 +1763,7 @@
 
     function onChoicePointerMove(event) {
         if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
+        if (pointerDrag.puzzleToken !== state.puzzleToken) { cleanupPointerDrag(); return; }
         const movedDistance = Math.hypot(event.clientX - pointerDrag.startX, event.clientY - pointerDrag.startY);
         const movedEnough = movedDistance > POINTER_DRAG_DISTANCE_PX;
         if (!movedEnough && !pointerDrag.moved) return;
@@ -1573,15 +1780,16 @@
         if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
         const moved = pointerDrag.moved;
         const choiceId = pointerDrag.choiceId;
+        const puzzleToken = pointerDrag.puzzleToken;
         const shouldDrop = moved && isPointInsideDropSlot(event.clientX, event.clientY);
         cleanupPointerDrag();
         suppressedClick = { choiceId, until: Date.now() + SUPPRESSED_CLICK_MS };
         if (!moved) {
-            choose(choiceId, { fromPointer: true });
+            choose(choiceId, { fromPointer: true, puzzleToken });
             return;
         }
         if (shouldDrop) {
-            choose(choiceId, { fromDrag: true });
+            choose(choiceId, { fromDrag: true, puzzleToken });
         }
     }
 
@@ -1641,23 +1849,32 @@
     }
 
     function choose(choiceId, options = {}) {
+        if (options.puzzleToken !== state.puzzleToken || !state.currentPuzzle?.options.some(item => item.id === choiceId)) return;
+        if (isPaused() || state.wrongChoices.includes(choiceId)) return;
         if (!state.started) return;
         if (!state.sessionActive || state.sessionWon || state.sessionLost || state.sessionWinOverlayVisible || state.sessionLoseOverlayVisible) return;
         if (state.locked) return;
         if (!options.fromDrag && !options.fromPointer && suppressedClick.choiceId === choiceId && Date.now() < suppressedClick.until) return;
         unlockAudio();
         sound.drop();
+        sound.stopVoice();
         state.chosenChoiceId = choiceId;
         renderPuzzle();
-        setStatus('Look at your answer. Tap Submit.');
-        announce(`${getSelectedChoice()?.label ?? 'Answer placed'}. Tap Submit.`);
+        setStatus('Ready? Tap Check answer.');
+        announce(`${getSelectedChoice()?.label ?? 'Answer placed'}. Tap Check answer.`);
+        if (state.voiceEnabled) {
+            const token = state.puzzleToken;
+            sound.speak([voiceKey(getSelectedChoice(), state.currentPuzzle.answerKind), 'check'], 'answer', () => token === state.puzzleToken && state.chosenChoiceId === choiceId && !state.locked && !isPaused());
+        }
     }
 
     function submitChoice() {
+        if (isPaused()) return;
         if (!state.started || !state.sessionActive || state.sessionWon || state.sessionLost || state.sessionWinOverlayVisible || state.sessionLoseOverlayVisible) return;
         if (state.locked) return;
-        if (!state.chosenChoiceId) return;
+        if (!getSelectedChoice()) return;
         unlockAudio();
+        sound.stopVoice();
         const choiceId = state.chosenChoiceId;
         const correct = choiceId === state.currentPuzzle.answer.id;
         if (correct) {
@@ -1666,6 +1883,8 @@
             state.stars += 1;
             state.streak += 1;
             state.round += 1;
+            const newFeather = !state.skillFeathers.has(state.currentPuzzle.type);
+            state.skillFeathers.add(state.currentPuzzle.type);
             window.LAHSPointsBridge?.awardPoints(PRESCHOOL_CORRECT_POINTS, {
                 label: 'Correct Answer',
                 meta: {
@@ -1677,6 +1896,10 @@
             renderPuzzle();
             flashChoice(choiceId, true);
             sound.success();
+            sound.boost();
+            if (newFeather || state.streak % 3 === 0) sound.streak();
+            dom.flightMessage.textContent = state.streak % 3 === 0 ? `${state.streak} in a row! Keep those wings flying!` : 'Great thinking! Our little bird has more room to fly.';
+            if (newFeather) dom.flightMessage.textContent = `${state.skillFeathers.size}/6 feathers! ${ACTIVITY_META[state.currentPuzzle.type].successTitle}`;
             confettiBurst();
             setMascot('We did it! That answer fits perfectly!', 'cheer', 'Sunny Buddy is cheering!');
             showCelebration(
@@ -1684,16 +1907,19 @@
                 ACTIVITY_META[state.currentPuzzle.type].successTitle,
                 CORRECT_LINES[randomInt(CORRECT_LINES.length)]
             );
-            setStatus(`Correct! The row is complete. +${PRESCHOOL_CORRECT_POINTS} points!`);
+            setStatus(state.streak % 3 === 0 ? `${state.streak} in a row! +${PRESCHOOL_CORRECT_POINTS} points!` : `Correct! +${PRESCHOOL_CORRECT_POINTS} points!`);
             announce(`Correct! Great job. +${PRESCHOOL_CORRECT_POINTS} points.`);
-            Promise.resolve(state.birdEscape?.onCorrect?.() ?? null).then(() => {
+            const movement = state.challengeRun ? state.challengeRun.answer(true) : state.birdEscape?.onCorrect?.();
+            updateChallengeHud();
+            Promise.resolve(movement).then(() => {
                 if (!state.started || state.puzzleToken !== puzzleToken) return;
-                if (state.birdEscape?.checkWin?.()) {
+                if (state.challengeRun ? state.challengeRun.describe().won : state.birdEscape?.checkWin?.()) {
                     handleSessionWin();
                     return;
                 }
                 state.autoAdvanceTimer = window.setTimeout(() => {
                     if (!state.started || !state.sessionActive || state.sessionWon || state.puzzleToken !== puzzleToken) return;
+                    if (isPaused()) { state.pendingAdvance = true; return; }
                     createPuzzle(false);
                 }, 1500);
             });
@@ -1703,15 +1929,17 @@
         const puzzleToken = state.puzzleToken;
         state.locked = true;
         state.chosenChoiceId = null;
+        state.wrongChoices.push(choiceId);
         state.streak = 0;
         updateHud();
         renderPuzzle();
         flashChoice(choiceId, false);
         sound.wrong();
         setMascot(WRONG_LINES[randomInt(WRONG_LINES.length)], 'thinking', 'Sunny Buddy');
-        setStatus('Try again.');
+        setStatus(`${state.currentPuzzle.coachTip} Try another answer.`);
+        dom.flightMessage.textContent = 'The blue bird moved closer. You can still do it!';
         announce('That one does not fit. Try again.');
-        Promise.resolve(state.birdEscape?.onWrong?.() ?? { caught: false }).then((result) => {
+        Promise.resolve(state.challengeRun ? state.challengeRun.answer(false) : (state.birdEscape?.onWrong?.() ?? { caught: false })).then((result) => {
             if (!state.started || state.puzzleToken !== puzzleToken) return;
             if (result?.caught) {
                 handleSessionLose();
@@ -1740,6 +1968,7 @@
 
     function setStatus(text) {
         dom.statusText.textContent = text;
+        dom.feedback.textContent = text;
     }
 
     function updateActionButtons() {
@@ -1750,9 +1979,10 @@
             && !state.sessionWinOverlayVisible
             && !state.sessionLoseOverlayVisible
             && !state.locked
-            && Boolean(state.chosenChoiceId);
+            && Boolean(getSelectedChoice());
         dom.submitButton.disabled = !canSubmit;
         dom.submitButton.setAttribute('aria-disabled', String(!canSubmit));
+        refreshVoiceControls();
     }
 
     function showCelebration(emoji, title, copy) {
@@ -1800,6 +2030,7 @@
     }
 
     function focusPuzzleArea(smooth) {
+        if (document.documentElement.scrollHeight <= innerHeight + 1) return;
         const top = dom.promptTitle.getBoundingClientRect().top + window.scrollY - 12;
         window.scrollTo({
             top: Math.max(0, top),
@@ -1808,6 +2039,7 @@
     }
 
     function exitToGames() {
+        sound.stopVoice();
         try {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({ type: GAME_EXIT_TO_HOME_MESSAGE, tab: 'games' }, '*');
