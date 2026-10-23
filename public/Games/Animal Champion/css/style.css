@@ -1634,8 +1634,9 @@ button:disabled {
   }
 }
 
-/* Correct answer remains visible over the picture without blocking controls. */
-.feedback[data-result="correct"] {
+/* Answer popups remain visible over the picture without blocking controls. */
+.feedback[data-result="correct"],
+.feedback[data-result="wrong"] {
   position: fixed;
   z-index: 100;
   left: 50%;
@@ -1651,15 +1652,26 @@ button:disabled {
   color: #fff;
   font-size: clamp(1.25rem, 3vw, 2rem);
   font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
   text-align: center;
   box-shadow: 0 12px 36px #022c2266;
   pointer-events: none;
   animation: answer-celebrate 240ms ease-out;
+}
+.feedback[data-result="wrong"] {
+  background: #fff1f2;
+  color: #b91c1c;
+  border: 2px solid #fda4af;
+  box-shadow: 0 12px 36px #450a0a33;
 }
 @keyframes answer-celebrate {
   from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(.96); }
   to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .feedback[data-result="correct"] { animation: none; }
+  .feedback[data-result="correct"], .feedback[data-result="wrong"] { animation: none; }
+}
+@media (forced-colors: active) {
+  .feedback[data-result="wrong"] { color: CanvasText; background: Canvas; border-color: CanvasText; box-shadow: none; }
 }

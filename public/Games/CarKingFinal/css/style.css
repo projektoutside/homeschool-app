@@ -1902,8 +1902,9 @@ body.size-xl .car-image-container {
     }
 }
 
-/* Correct answer remains visible over the picture without blocking controls. */
-.feedback.correct {
+/* Answer popups remain visible over the picture without blocking controls. */
+.feedback.correct,
+.feedback.incorrect {
   position: fixed;
   z-index: 100;
   left: 50%;
@@ -1919,15 +1920,26 @@ body.size-xl .car-image-container {
   color: #fff;
   font-size: clamp(1.25rem, 3vw, 2rem);
   font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
   text-align: center;
   box-shadow: 0 12px 36px #022c2266;
   pointer-events: none;
   animation: answer-celebrate 240ms ease-out;
+}
+.feedback.incorrect {
+  background: #fff1f2;
+  color: #b91c1c;
+  border: 2px solid #fda4af;
+  box-shadow: 0 12px 36px #450a0a33;
 }
 @keyframes answer-celebrate {
   from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(.96); }
   to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .feedback.correct { animation: none; }
+  .feedback.correct, .feedback.incorrect { animation: none; }
+}
+@media (forced-colors: active) {
+  .feedback.incorrect { color: CanvasText; background: Canvas; border-color: CanvasText; box-shadow: none; }
 }

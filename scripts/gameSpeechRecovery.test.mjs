@@ -31,6 +31,58 @@ test('speech alternatives keep their prefix when a recognizer splits an animal n
   assert.ok(buildSpeechCandidatesFromEvent(event).candidates.includes('polar bear'));
 });
 
+function createCarFeedbackHarness() {
+  const timers = [], feedback = [], transitions = [];
+  let now = 0;
+  const context = {
+    window: { addEventListener() {} }, console,
+    performance: { now: () => now },
+    setTimeout(callback, ms) { timers.push({ callback, ms }); return timers.length; },
+  };
+  vm.runInNewContext(`${carSource}\nglobalThis.Controller = CarGuessingGame;`, context);
+  const game = Object.create(context.Controller.prototype);
+  Object.assign(game, {
+    currentCar: { name: 'Mercedes-Benz G Class', voice: 'car.mp3' },
+    currentQuestionToken: 1, isGameRunning: true,
+    stopListening() { this.currentQuestionToken += 1; },
+    showFeedback(...args) { feedback.push(args); },
+    loadNextCar() { transitions.push('next-car'); },
+    gameOver() { transitions.push('game-over'); },
+  });
+  return { game, timers, feedback, transitions, setNow: (value) => { now = value; } };
+}
+
+test('Car King reveals mistakes for a readable interval with muted or failed narration', async () => {
+  for (const mode of ['continuous', 'challenger']) {
+    const harness = createCarFeedbackHarness();
+    harness.game.gameMode = mode;
+    harness.game.voiceSystem = mode === 'continuous'
+      ? { playWrongSequence: () => Promise.resolve() }
+      : { playWrongSequence: () => Promise.reject(new Error('audio unavailable')) };
+    harness.game.handleIncorrectGuess('wrong car');
+    assert.deepEqual(harness.feedback[0], ['Not quite. The correct answer is Mercedes-Benz G Class.', 'incorrect']);
+    assert.equal(harness.transitions.length, 0);
+    await new Promise(setImmediate);
+    assert.equal(harness.timers.length, 1);
+    assert.equal(harness.timers[0].ms, 3000);
+    harness.setNow(3000);
+    harness.timers[0].callback();
+    assert.deepEqual(harness.transitions, [mode === 'continuous' ? 'next-car' : 'game-over']);
+  }
+});
+
+test('Car King ignores stale wrong-answer narration after a round is replaced', async () => {
+  const harness = createCarFeedbackHarness();
+  let resolveNarration;
+  harness.game.voiceSystem = { playWrongSequence: () => new Promise((resolve) => { resolveNarration = resolve; }) };
+  harness.game.handleIncorrectGuess('wrong car');
+  harness.game.currentQuestionToken += 1;
+  resolveNarration();
+  await new Promise(setImmediate);
+  assert.equal(harness.timers.length, 0);
+  assert.equal(harness.transitions.length, 0);
+});
+
 function createWebEngine({ ios = false } = {}) {
   const instances = [];
   class Recognition {

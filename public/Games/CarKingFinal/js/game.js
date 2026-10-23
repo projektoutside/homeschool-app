@@ -1133,7 +1133,9 @@ class CarGuessingGame {
             return;
         }
 
-        if (!formatted) {
+        if (formatted && snapshot.isFinal) {
+            this.showAnswerReveal();
+        } else if (!formatted) {
             this.updateListeningTranscript('Listening... say the car name when you are ready.');
         }
     }
@@ -1762,6 +1764,7 @@ class CarGuessingGame {
 
             if (formatted) {
                 this.updateListeningTranscript(`I heard "${formatted}". Keep going!`);
+                if (speechSnapshot.isFinal) this.showAnswerReveal();
             } else {
                 this.updateListeningTranscript('Listening... say the car name when you are ready.');
             }
@@ -2611,6 +2614,9 @@ class CarGuessingGame {
             btn.className = 'choice-btn';
             btn.textContent = car.name;
             btn.addEventListener('click', () => {
+                if (this.isProcessingGuess) return;
+                this.isProcessingGuess = true;
+                choicesSection.querySelectorAll('button').forEach((button) => { button.disabled = true; });
                 if (car.name === this.currentCar.name) {
                     this.handleCorrectGuess();
                 } else {
@@ -3013,10 +3019,12 @@ class CarGuessingGame {
     buildSpeechCandidatesFromEvent(event) {
         const candidates = new Set();
         const displayParts = [];
+        let isFinal = false;
 
         for (let i = event.resultIndex ?? 0; i < event.results.length; ++i) {
             const result = event.results[i];
             if (!result || result.length === 0) continue;
+            isFinal ||= Boolean(result.isFinal);
 
             const prefix = Array.from(event.results).slice(Math.max(0, i - 2), i)
                 .map(part => (part?.[0]?.transcript || '').trim()).filter(Boolean).join(' ');
@@ -3043,7 +3051,8 @@ class CarGuessingGame {
 
         return {
             displayText,
-            candidates: [...candidates]
+            candidates: [...candidates],
+            isFinal
         };
     }
 
@@ -3364,34 +3373,33 @@ class CarGuessingGame {
 
     }
 
-    handleIncorrectGuess(guess) {
+    handleIncorrectGuess(guess, timedOut = false) {
         // Mute mic during feedback
         this.stopListening();
 
         // Ensure input is locked (if entered via submitGuess, it's already locked, but good for safety)
         this.isProcessingGuess = true;
+        this.showAnswerReveal(timedOut ? "Time's up." : 'Not quite.');
+        const questionToken = this.currentQuestionToken;
+        const feedbackStartedAt = performance.now();
 
         const onComplete = () => {
-            if (this.gameMode === 'continuous') {
-                // Continuous Mode: Move to next car
-                this.loadNextCar();
-            } else {
-                // Challenger Mode: Game Over
-                this.gameOver();
-            }
+            if (!this.isGameRunning || questionToken !== this.currentQuestionToken) return;
+            // Keep the answer readable even when narration is muted or unavailable.
+            this.nextCarTimer = setTimeout(() => {
+                if (!this.isGameRunning || questionToken !== this.currentQuestionToken) return;
+                if (this.gameMode === 'continuous') this.loadNextCar();
+                else this.gameOver();
+            }, Math.max(0, 3000 - (performance.now() - feedbackStartedAt)));
         };
 
-        // Use new sequence: Random Wrong -> Car Voice
-        if (this.voiceSystem) {
-            console.log("🔊 Playing Wrong Sequence...");
-            this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
-                console.log("🔊 Sequence finished. Proceeding...");
-                onComplete();
-            });
-        } else {
-            // Fallback if no voice system
-            setTimeout(() => onComplete(), 1000);
-        }
+        Promise.resolve(this.voiceSystem?.playWrongSequence(this.currentCar.voice))
+            .catch(() => false)
+            .then(onComplete);
+    }
+
+    showAnswerReveal(prefix = 'Not quite.') {
+        this.showFeedback(`${prefix} The correct answer is ${this.currentCar.name}.`, 'incorrect');
     }
 
     showFeedback(message, type) {
@@ -3412,44 +3420,13 @@ class CarGuessingGame {
         // PREVENT RACE CONDITIONS: Lock immediately
         if (this.isProcessingGuess) return;
         this.isProcessingGuess = true;
-        this.stopListening();
-
-        // Time ran out or empty guess -> Game Over
-        console.log("⏰ Time ran out! Mode:", this.gameMode);
-
         if (this.gameMode === 'continuous') {
-            // Continuous Mode: Reveal -> Wrong Voice -> Next Car
             this.streak = 0; // Reset streak on timeout
             this.updateScore();
-
-            const message = `Time's up! It was a ${this.currentCar.name}`;
-            this.showFeedback(message, 'incorrect');
-
-            // Force reveal of the car text immediately so they see it
             const input = document.getElementById('guessInput');
             if (input) input.value = this.currentCar.name;
-
-            if (this.voiceSystem) {
-                this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
-                    setTimeout(() => this.loadNextCar(), 1500);
-                });
-            } else {
-                setTimeout(() => this.loadNextCar(), 2000);
-            }
-
-        } else {
-            // Challenger Mode: Game Over
-            if (this.voiceSystem) {
-                console.log("🔊 Playing Wrong Sequence (Timeout) before Game Over...");
-                // Treat timeout as a wrong answer
-                this.voiceSystem.playWrongSequence(this.currentCar.voice).then(() => {
-                    console.log("🔊 Sequence finished. Now triggering Game Over.");
-                    this.gameOver();
-                });
-            } else {
-                setTimeout(() => this.gameOver(), 1000);
-            }
         }
+        this.handleIncorrectGuess('', true);
     }
 
     updateScore() {

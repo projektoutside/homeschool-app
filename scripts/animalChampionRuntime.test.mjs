@@ -815,13 +815,22 @@ test('wrong animal speech stays retryable and a later matching alternative submi
     },
   };
 
+  assert.equal(harness.controller.acceptSpeechCandidates(['cat'], 'cat', false), false);
+  assert.equal(harness.document.getElementById('feedback').textContent, '', 'partial speech does not reveal the answer');
+  assert.equal(harness.controller.acceptSpeechCandidates([]), false);
+  assert.equal(harness.document.getElementById('feedback').textContent, '', 'silence does not count as a wrong answer');
   assert.equal(harness.controller.acceptSpeechCandidates(['cat']), false);
   assert.equal(submissions, 0);
+  assert.equal(harness.controller.phase, 'answering', 'a correction still allows another spoken attempt');
+  assert.match(harness.document.getElementById('feedback').textContent, /correct answer is Bat/);
+  assert.equal(harness.document.getElementById('feedback').dataset.result, 'wrong');
   assert.match(harness.document.getElementById('voiceTranscript').textContent, /cat/i);
   assert.match(harness.document.getElementById('micStatusText').textContent, /keep trying/i);
 
   assert.equal(harness.controller.acceptSpeechCandidates(['unrelated', 'bat']), true);
   assert.equal(submissions, 1);
+  harness.controller.resetRoundView();
+  assert.equal(harness.document.getElementById('feedback').textContent, '', 'correction cannot leak into the next round');
 });
 
 test('host speech uses Animal Champion messages and accepts a matching final transcript', async () => {

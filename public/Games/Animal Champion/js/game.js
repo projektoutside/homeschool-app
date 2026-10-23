@@ -349,7 +349,7 @@ export class AnimalChampionController {
       if (this.recognition !== recognition) return;
       if (this.phase !== 'answering' || this.selectedInputMode !== INPUT_MODES.VOICE) return;
       const snapshot = buildSpeechCandidatesFromEvent(event);
-      this.acceptSpeechCandidates(snapshot.candidates, snapshot.displayText);
+      this.acceptSpeechCandidates(snapshot.candidates, snapshot.displayText, snapshot.isFinal);
     };
     recognition.onerror = (event) => {
       if (this.recognition !== recognition) return;
@@ -543,7 +543,7 @@ export class AnimalChampionController {
       return;
     }
     if (message.event === 'partial' || message.event === 'final') {
-      this.acceptSpeechCandidates(message.matches ?? [message.text].filter(Boolean), message.text);
+      this.acceptSpeechCandidates(message.matches ?? [message.text].filter(Boolean), message.text, message.event === 'final');
       return;
     }
     if (message.event === 'error') {
@@ -553,7 +553,7 @@ export class AnimalChampionController {
     }
   }
 
-  acceptSpeechCandidates(candidates, displayText = '') {
+  acceptSpeechCandidates(candidates, displayText = '', isFinal = true) {
     if (this.phase !== 'answering' || this.selectedInputMode !== INPUT_MODES.VOICE || !this.currentRound) {
       return false;
     }
@@ -563,6 +563,10 @@ export class AnimalChampionController {
     const match = matchAnimalSpeech(candidates, animal);
     if (!match.matched) {
       this.updateMicStatus('Not that animal yet — keep trying.');
+      if (heard && isFinal) {
+        this.elements.feedback.dataset.result = 'wrong';
+        this.elements.feedback.textContent = `✕ Not quite. The correct answer is ${animal.name}.`;
+      }
       return false;
     }
     this.elements.voiceTranscript.textContent = `I heard “${animal.name}”.`;
