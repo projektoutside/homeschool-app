@@ -189,8 +189,8 @@ test('Android relative base path does not become a React Router basename', async
 test('Android release version advances beyond the published internal test', async () => {
   const appBuild = await readSource('android/app/build.gradle');
 
-  assert.ok(Number(appBuild.match(/versionCode\s+(\d+)/)?.[1]) > 8);
-  assert.match(appBuild, /versionName\s+"1\.0\.8"/);
+  assert.ok(Number(appBuild.match(/versionCode\s+(\d+)/)?.[1]) > 9);
+  assert.match(appBuild, /versionName\s+"1\.0\.9"/);
 });
 
 test('Android release disables the unavailable paid cloud backend', async () => {

@@ -22,10 +22,21 @@ if (-not $resolvedBaseAssetsRoot.StartsWith($resolvedRepoRoot, [StringComparison
     throw "Refusing to stage assets from outside the repository: $resolvedBaseAssetsRoot"
 }
 
+$expectedPackRoot = [IO.Path]::GetFullPath((Join-Path $resolvedRepoRoot 'android\game_assets\src\main\assets'))
+if ([IO.Path]::GetFullPath($packAssetsRoot) -ne $expectedPackRoot) {
+    throw 'Refusing to stage outside the game asset pack.'
+}
 New-Item -ItemType Directory -Path $packAssetsRoot -Force | Out-Null
+$resolvedPackRoot = (Resolve-Path -LiteralPath $packAssetsRoot).Path
+if ($resolvedPackRoot -ne $expectedPackRoot) { throw 'Unexpected asset-pack destination.' }
 Get-ChildItem -LiteralPath $packAssetsRoot -Force |
     Where-Object { $_.Name -ne '.gitkeep' } |
-    ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
+    ForEach-Object {
+        if ($_.LinkType -or -not $_.FullName.StartsWith($resolvedPackRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Refusing to delete an asset-pack path outside its verified destination.'
+        }
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force
+    }
 
 $sizes = [ordered]@{}
 foreach ($directory in $assetDirectories) {
@@ -34,6 +45,13 @@ foreach ($directory in $assetDirectories) {
         throw "Required Android asset directory is missing: $sourcePath"
     }
 
+    $resolvedSource = (Resolve-Path -LiteralPath $sourcePath).Path
+    $resolvedDestination = [IO.Path]::GetFullPath((Join-Path $resolvedPackRoot $directory))
+    if ((Get-Item -LiteralPath $sourcePath).LinkType -or
+        -not $resolvedSource.StartsWith($resolvedBaseAssetsRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+        -not $resolvedDestination.StartsWith($resolvedPackRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Refusing to move assets outside verified staging roots.'
+    }
     $sizeBytes = (Get-ChildItem -LiteralPath $sourcePath -Recurse -File | Measure-Object Length -Sum).Sum
     $sizes[$directory] = [long]$sizeBytes
     Move-Item -LiteralPath $sourcePath -Destination $packAssetsRoot
