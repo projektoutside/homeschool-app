@@ -38,7 +38,7 @@
         const button = event.target.closest('button[data-level]');
         if (!button || button.disabled || !dialog.open) return;
         const index = Number(button.dataset.level);
-        if (index >= 0 && index < this.highestUnlocked) onSelect(index);
+        if (index >= 0 && index < (this.customPlay ? this.levels.length : this.highestUnlocked)) onSelect(index);
       });
     }
 
@@ -67,10 +67,11 @@
       container.querySelector('.celebration-copy > span').textContent = detail;
     }
 
-    open({ levelIndex, highestUnlocked, bestStats, returnFocus }) {
+    open({ levelIndex, highestUnlocked, bestStats, returnFocus, fromMenu = false, customPlay = false }) {
       const reward = this.pendingReward;
       this.pendingReward = null;
       this.highestUnlocked = highestUnlocked;
+      this.customPlay = customPlay;
       this.returnFocus = returnFocus;
       this.scroll.replaceChildren();
       let totalStars = 0, cleared = 0;
@@ -86,7 +87,7 @@
         stops.innerHTML = '<svg class="map-trail" viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true"><path d="M100 56 Q200 4 300 32 Q400 4 500 56"/></svg>';
         let chapterStars = 0;
         for (let index = start; index < Math.min(start + 3, this.levels.length); index++) {
-          const level = this.levels[index], locked = index >= highestUnlocked;
+          const level = this.levels[index], locked = !customPlay && index >= highestUnlocked;
           const stars = locked ? 0 : earnedStars(bestStats[String(index + 1)]);
           totalStars += stars;
           chapterStars += stars;
@@ -122,7 +123,10 @@
         this.scroll.append(chapter);
       }
       this.dialog.querySelector('#mapProgress').textContent = `${cleared} / ${this.levels.length} cleared · ${totalStars} / ${this.levels.length * 3} stars`;
-      this.dialog.querySelector('#resumeFromMap').textContent = `Back to Level ${levelIndex + 1}`;
+      this.dialog.querySelector('#levelMapTitle').textContent = fromMenu ? 'Choose a level' : customPlay ? 'Custom Play' : 'The woodland trail';
+      this.dialog.querySelector('#levelMapDescription').textContent = customPlay ? 'All 18 levels are open. Pick any puzzle.' : 'Pick a path. Chase every star.';
+      this.dialog.querySelector('#mapInstructions').innerHTML = `${customPlay ? 'All 18 levels are open. Progressive unlocks stay separate.' : 'Clear a level to unlock the next.'}<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.`;
+      this.dialog.querySelector('#resumeFromMap').textContent = fromMenu ? 'Back to Single Player' : `Back to Level ${levelIndex + 1}`;
       this.renderReward(this.dialog.querySelector('#mapReward'), reward);
       this.dialog.showModal();
       const target = reward ? this.scroll.querySelector(`[data-level="${reward.unlockedLevel ? reward.unlockedLevel - 1 : reward.levelIndex}"]`) : this.scroll.querySelector('[aria-current="step"]');

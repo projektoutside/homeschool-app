@@ -1,0 +1,71 @@
+.main-menu {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: #278d85 url('./assets/main-menu-woodland.webp') center 42% / cover no-repeat;
+}
+.main-menu[hidden] { display: none; }
+.main-menu-tools { display: flex; justify-content: space-between; width: 100%; gap: 16px; }
+.main-menu-tools .hud-button { background: #fff7df; color: #214a3a; box-shadow: 0 4px 14px #153c3b2b; }
+#menuSoundButton[aria-pressed="true"] .sound-waves { display: none; }
+.main-menu-content { width: min(100%, 650px); display: grid; justify-items: center; gap: clamp(18px, 3vh, 32px); margin-top: auto; }
+#mainMenuTitle { margin: 0; font: 600 clamp(2.6rem, 7vw, 5.5rem)/.97 var(--font-display); letter-spacing: -.025em; text-align: center; color: #ffdc66; text-shadow: 0 3px 0 #8b3c25, 0 6px 18px #153b3b66; -webkit-text-stroke: 1.5px #5a3424; paint-order: stroke fill; }
+#mainMenuTitle span { display: block; }
+#mainMenuTitle span:last-child { color: #e8ffff; }
+.main-menu-actions { width: min(100%, 360px); display: grid; gap: 12px; }
+.main-menu-actions[hidden], .single-player-actions[hidden], .continue-play[hidden] { display: none; }
+.single-player-actions { width: min(100%, 360px); display: grid; gap: 12px; justify-items: stretch; }
+.is-single-player #mainMenuTitle { display: none; }
+.single-player-actions h2 { margin: 0 0 6px; text-align: center; color: #fff7df; font: 600 2.5rem/1.1 var(--font-display); text-shadow: 0 3px 8px #153b3b; -webkit-text-stroke: 1.5px #214a3a; paint-order: stroke fill; }
+.single-player-actions small { display: block; margin-top: 5px; font: 500 .9rem/1.3 var(--font-display); }
+.continue-play { justify-self: center; background: #fff7df; color: #214a3a; padding: 10px 18px; }
+.mode-button { min-height: 62px; padding: 16px 22px; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 16px; font: 600 clamp(1.1rem, 2vw, 1.35rem)/1.2 var(--font-display); box-shadow: 0 5px 0 #8b5a1c, 0 10px 20px #173d3640; }
+.mode-button svg { width: 26px; height: 26px; }
+.mode-button--single { background: #ffe096; color: #4d3215; }
+.mode-button--single svg { fill: currentColor; stroke-width: 1; }
+.mode-button--versus { background: #175e4e; color: #fff9e9; box-shadow: 0 5px 0 #123d34, 0 10px 20px #173d3640; }
+.mode-button:focus-visible { outline: 3px solid #fff; outline-offset: 6px; }
+.main-menu-content { animation: menu-arrive 500ms cubic-bezier(.16, 1, .3, 1); }
+@keyframes menu-arrive { from { transform: translateY(14px); } to { transform: translateY(0); } }
+
+/* Keep quiet campaign guidance accessible without spending playfield height. */
+body:not(.vs-active) .status-card { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+.vs-launch[hidden] { display: none; }
+.game-brand h1 { font-size: 2rem; }
+.controls { gap: 12px; }
+.combo-readout { font-size: max(11px, .75rem); }
+@media (max-aspect-ratio: 1/1) {
+  .main-menu { background-image: url('./assets/main-menu-woodland-portrait.webp'); background-position: center 35%; }
+}
+@media (max-width: 760px) {
+  .game-brand { display: none; }
+  #shell { gap: 6px; }
+  .hud { gap: 5px 8px; }
+  .hud-cluster { grid-column: 1 / -1; gap: 6px; }
+  #soundButton { margin-left: 0; }
+  .hud-cluster .shop-launch { margin-left: auto; }
+  .controls { gap: 0; }
+  .vs-active .controls { gap: 6px; }
+  .main-menu { background-position: 50% 40%; }
+}
+@media (max-height: 650px) and (min-aspect-ratio: 6/5) {
+  .main-menu { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .main-menu-content { width: min(100%, 980px); grid-template-columns: 1fr 1fr; align-items: end; gap: 28px; }
+  #mainMenuTitle { font-size: clamp(2.2rem, 6vw, 4rem); }
+  .mode-button { min-height: 50px; padding: 12px 14px; font-size: 1.05rem; }
+  .is-single-player .main-menu-content { grid-template-columns: 1fr; }
+  .single-player-actions { width: min(100%, 680px); grid-template-columns: 1fr 1fr; }
+  .single-player-actions h2, .continue-play { grid-column: 1 / -1; }
+}
+@media (max-height: 560px) and (max-aspect-ratio: 6/5) {
+  .main-menu { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  .main-menu-content { gap: 14px; }
+  #mainMenuTitle { font-size: 2.5rem; }
+  .mode-button { min-height: 52px; padding: 12px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .main-menu-content { animation: none; } }
+@media (forced-colors: active) {
+  .main-menu { background: Canvas; }
+  #mainMenuTitle, #mainMenuTitle span:last-child, .single-player-actions h2 { color: CanvasText; -webkit-text-stroke: 0; text-shadow: none; }
+  .mode-button, .main-menu-tools .hud-button { color: ButtonText; background: ButtonFace; border: 2px solid ButtonText; box-shadow: none; }
+}

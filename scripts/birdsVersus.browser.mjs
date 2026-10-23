@@ -63,7 +63,8 @@ for (const [name,engine,options] of profiles) {
       else{await page.mouse.move(path[0].x,path[0].y);await page.mouse.down();for(const p of path.slice(1))await page.mouse.move(p.x,p.y);await page.mouse.up();}
     };
     const open=async(seconds='60',birds='3')=>{
-      await page.locator('#versusButton').click();
+      if (!(await get(page)).menuVisible) await page.locator('#homeButton').click();
+      await page.locator('#menuVersusButton').click();
       await page.locator('#vsTimeLimit').selectOption(seconds);
       await page.locator('#vsBirdCount').selectOption(birds);
       await page.locator('#vsDialogActions button').last().click();
@@ -112,7 +113,7 @@ for (const [name,engine,options] of profiles) {
       assert.equal(await page.locator('.stage-frame').isVisible(),false);
       await shot(`player${player}-handoff`);
     };
-    await page.locator('#versusButton').click();await shot('setup');
+    await page.locator('#menuVersusButton').click();await shot('setup');
     assert.equal(await page.locator('#vsBirdCount').inputValue(),'3');
     assert.equal(await page.locator('#vsTimeLimit').inputValue(),'60');
     await page.keyboard.press('Escape');assert.equal((await get(page)).versus.active,false);
@@ -137,8 +138,9 @@ for (const [name,engine,options] of profiles) {
     await shot('results');assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),before);assert.equal(await page.evaluate(()=>window.vsTest.awards.length),0);
     await page.locator('#vsDialogActions button').first().click();
     s=await get(page);assert.equal(s.level,7);assert.equal(s.loadout.radius,14);assert.equal(s.versus.active,false);
-    await page.locator('#shopButton').click();await page.locator('#closeShop').click();assert.equal(await page.locator('#versusButton').isEnabled(),true);
-    await page.locator('#levelMapButton').click();await page.locator('#closeLevelMap').click();assert.equal(await page.locator('#versusButton').isEnabled(),true);
+    assert.equal(s.menuVisible,true); await page.locator('#singlePlayerButton').click(); await page.locator('#continuePlayButton').click();
+    await page.locator('#shopButton').click();await page.locator('#closeShop').click();assert.equal(await page.locator('#versusButton').isVisible(),false);
+    await page.locator('#levelMapButton').click();await page.locator('#closeLevelMap').click();assert.equal(await page.locator('#versusButton').isVisible(),false);
     await shot('campaign-restored');
 
     // A second match exercises automatic budget handoff, timeout and trapped-ball recovery.
@@ -261,7 +263,7 @@ if(!process.env.BIRDS_VS_FILTER || /iframe/.test(process.env.BIRDS_VS_FILTER)){
     await context.addInitScript(key=>localStorage.setItem(key,JSON.stringify({campaignVersion:2,highestUnlocked:1,selectedLevel:1,onboarded:true,bestStats:{}})),key);
     await page.goto(`${origin}/birds-versus-host`);const frame=page.frames().find(frame=>frame.url().includes('/Games/'));
     await frame.waitForFunction(()=>window.render_game_to_text&&JSON.parse(window.render_game_to_text()).birdArt.loaded&&document.fonts.status==='loaded');
-    await frame.locator('#versusButton').click();await frame.locator('#vsBirdCount').selectOption('1');await frame.locator('#vsDialogActions button').last().click();
+    await frame.locator('#menuVersusButton').click();await frame.locator('#vsBirdCount').selectOption('1');await frame.locator('#vsDialogActions button').last().click();
     for(let player=1;player<=2;player++){
       await frame.locator('.vs-precision summary').click();await frame.locator('#vsBirdY').fill('300');await frame.locator('#vsPlaceBird').click();await frame.locator('.vs-precision summary').click();
       await frame.locator('#vsBlockTool').click();await frame.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));

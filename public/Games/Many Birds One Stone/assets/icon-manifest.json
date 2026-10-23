@@ -1,0 +1,14 @@
+{
+  "asset": "Many Birds One Stone game catalog icon",
+  "generator": "Built-in image_gen tool",
+  "mode": "Style adaptation using two existing game icons as references",
+  "referenceImages": [
+    "public/Games/analogclockgame/thumb.png",
+    "public/Games/2PlayersMathWrite/thumb.png"
+  ],
+  "outputs": {
+    "master": "public/Games/Many Birds One Stone/thumb.png",
+    "catalog": "public/assets/thumbnails/optimized/many-birds-one-stone-256.webp"
+  },
+  "prompt": "Create one finished square 1024x1024 game catalog icon for the existing children's physics puzzle game MANY BIRDS ONE STONE. This is an image-to-image style adaptation: image 1 (Clock Game) and image 2 (two-player math) are STYLE REFERENCES ONLY. Make a new subject-specific companion asset, preserving the references' visual family, not their characters or clock. Match their exceptionally polished glossy cartoon game art, rich violet/indigo background with pink radiance, bright cyan, sunshine gold and orange highlights, dimensional outlined forms, soft specular highlights, crisp edges, playful confident expressions and tiny restrained sparkle accents. The art must look like it belongs beside those two existing icons. Use a strong compact composition readable at 128px: three distinct friendly plump blue/turquoise birds with orange beaks and warm orange breast accents, expressive eyes and smoothly posed open wings, flying together across the upper half; exactly one substantial gleaming bronze-gold stone ball being released from a small wood-and-bronze claw above, with a single elegant pale cyan/white hand-drawn curved runway line suggesting its trajectory. A small golden pencil drawing the path can reinforce the puzzle mechanic. Keep the birds large and visually distinct and the ball clearly spherical, with a little cheerful motion sparkle, no injury or aggression. A softly suggested woodland silhouette may blend into the purple background, never compete with the subjects. The lower 40 percent is a beautiful big title lockup in the same rounded chunky beveled cartoon display lettering and layered dark outline as the Clock Game reference. Exact text, two lines only: 'MANY BIRDS' / 'ONE STONE'. First line warm glossy golden yellow; second line bright ice-cyan with white highlights. Exact spelling, legible and centered, no extra words, no numbers, no UI or score counters. Full-bleed square artwork, no external white margin or device mockup, no premade app mask; preserve breathing room at the edges so birds and title remain unclipped. Balanced polished composition, coherent upper-left lighting, strong readable silhouettes, professional final production asset, not a screenshot or concept board."
+}

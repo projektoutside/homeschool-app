@@ -42,7 +42,8 @@ try {
         await page.waitForFunction(() => typeof window.render_game_to_text === 'function');
         await page.evaluate(() => document.fonts.ready);
         await page.screenshot({ path: `${output}/birds-${name}-intro.png` });
-        await page.locator('#overlayPrimary').click();
+        await page.locator('#singlePlayerButton').click();
+        await page.locator('#progressivePlayButton').click();
         await page.waitForFunction(() => !JSON.parse(window.render_game_to_text()).overlayVisible);
         const layout = await geometry(page);
         assert.ok(layout.document[0] <= viewport.width + 1, 'no horizontal page overflow');
@@ -112,7 +113,8 @@ try {
       await page.goto(`${base}/games-v2-host`);
       const frame = page.frames().find((frame) => frame.url().includes('Many%20Birds'));
       await frame.waitForFunction(() => typeof window.render_game_to_text === 'function');
-      await frame.locator('#overlayPrimary').click();
+      await frame.locator('#singlePlayerButton').click();
+      await frame.locator('#progressivePlayButton').click();
       const send = (data) => page.evaluate((message) => frames[0].postMessage(message, location.origin), data);
       await send({ type: 'LAHS_HOST_LIFECYCLE', phase: 'pause' });
       await frame.waitForFunction(() => JSON.parse(window.render_game_to_text()).paused);

@@ -77,6 +77,7 @@
       document.body.insertAdjacentHTML('beforeend', `<dialog id="versusDialog" class="vs-dialog" aria-labelledby="vsDialogTitle"><header><div class="vs-duel-art" aria-hidden="true"><span></span><svg viewBox="0 0 24 24"><path d="m4 3 16 18M20 3 4 21M3 7l4-4m10 0 4 4"/></svg><span></span></div><h2 id="vsDialogTitle"></h2></header><div class="vs-dialog-body" id="vsDialogBody" tabindex="0"></div><footer id="vsDialogActions"></footer></dialog>`);
       const byId = id => document.getElementById(id);
       this.dom = Object.fromEntries(['versusButton','versusPanel','vsTurnTitle','vsClock','vsEditorTools','vsBirdTool','vsBlockTool','vsSelectedBird','vsBirdX','vsBirdY','vsPlaceBird','vsRemoveBird','vsEditorActions','vsUndo','vsReady','versusDialog','vsDialogTitle','vsDialogBody','vsDialogActions'].map(id => [id, byId(id)]));
+      this.dom.versusButton.hidden = true;
     }
 
     bind() {
@@ -150,7 +151,7 @@
 
     closeDialog() {
       this.dom.versusDialog.close(); this.dialogKind = ''; this.adapter.pauseChanged();
-      (this.editing ? this.dom.vsBirdTool : this.dom.versusButton).focus({ preventScroll: true });
+      (this.editing ? this.dom.vsBirdTool : this.active ? this.dom.versusButton : this.adapter.entryButton?.() || this.dom.versusButton).focus({ preventScroll: true });
     }
 
     setup() {
@@ -163,7 +164,7 @@
         ${select('vsPlatformInk','Platform ink',[[240,'240 · compact'],[360,'360 · standard'],[480,'480 · generous']],c.platformInk)}
         ${select('vsSolverInk','Solving ink',[[360,'360 · tricky'],[480,'480 · standard'],[600,'600 · generous']],c.solverInk)}
         </div><p class="vs-rules"><strong>Build → check → swap.</strong> Place birds and draw gray platforms. We automatically find and verify a winning route before handoff. Both players get equal supplies and one drop; building is untimed.</p><p class="vs-rules">Score 100 per bird, combo bonuses and 100 for a full clear. Equal scores use the faster turn. Match points stay in this match.</p>`, [
-        { label: 'Back to campaign', run: () => this.closeDialog() },
+        { label: 'Main menu', run: () => this.closeDialog() },
         { label: 'Player 1: build', primary: true, run: () => {
           const number = id => Number(document.getElementById(id).value);
           this.config = { birds: number('vsBirdCount'), seconds: number('vsTimeLimit'), platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk') };
@@ -371,14 +372,14 @@
       const title = won === null ? 'An even match!' : `Player ${won + 1} wins!`;
       const rows = this.results.map((r, i) => `<tr${i === won ? ' class="is-winner"' : ''}><th scope="row">Player ${i + 1}</th><td>${r.hits}/${this.config.birds}</td><td>${r.points}</td><td>${(r.elapsedMs / 1000).toFixed(1)}s</td></tr>`).join('');
       this.dialog('results', title, `<p>Two hand-built challenges. One woodland showdown.</p><table class="vs-results"><caption>Match scoreboard</caption><thead><tr><th>Player</th><th>Birds</th><th>Points</th><th>Time</th></tr></thead><tbody>${rows}</tbody></table><p class="vs-rules">Higher points win. Equal scores use the faster turn; turns within 0.1 seconds tie. Zero-bird turns tie. Your campaign is ready where you left it.</p>`, [
-        { label: 'Campaign', run: () => this.exit() },
+        { label: 'Main menu', run: () => this.exit() },
         { label: 'Build new maps', primary: true, run: () => { this.maps = []; this.proofs = []; this.results = []; this.player = 0; this.startBuild(); } },
       ]);
     }
 
     pause() {
       if (this.paused) return;
-      this.dialog('pause', 'Take a breather.', '<p>The match is paused. Continue when you’re both ready, or return to your campaign.</p>', [
+      this.dialog('pause', 'Take a breather.', '<p>The match is paused. Continue when you’re both ready, or return to the main menu.</p>', [
         { label: 'Leave match', run: () => this.exit() }, { label: 'Continue match', primary: true, run: () => this.closeDialog() },
       ]);
     }

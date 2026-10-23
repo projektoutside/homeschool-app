@@ -14,17 +14,39 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="shop.css">
   <link rel="stylesheet" href="versus.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="preload" href="assets/main-menu-woodland.webp" as="image" media="(min-aspect-ratio: 1/1)">
+  <link rel="preload" href="assets/main-menu-woodland-portrait.webp" as="image" media="(max-aspect-ratio: 1/1)">
   <link rel="preload" href="assets/fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="assets/woodland-v2.webp" as="image">
   <link rel="preload" href="assets/birds/EnemyBird16-strip.png" as="image">
 </head>
-<body>
+<body class="menu-open">
+  <section class="main-menu" id="mainMenu" aria-labelledby="mainMenuTitle">
+    <nav class="main-menu-tools" aria-label="Menu controls">
+      <button class="hud-button" id="menuGamesButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"/></svg><span id="menuBackLabel">Games</span></button>
+      <button class="hud-button" id="menuSoundButton" type="button" aria-label="Mute sound" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
+    </nav>
+    <div class="main-menu-content">
+      <h1 id="mainMenuTitle"><span>Many Birds</span><span>One Stone</span></h1>
+      <div class="main-menu-actions" id="mainMenuActions" aria-label="Choose a game mode">
+        <button class="mode-button mode-button--single" id="singlePlayerButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7Z"/></svg><span>Single Player</span></button>
+        <button class="mode-button mode-button--versus" id="menuVersusButton" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 21v-4a5 5 0 0 1 10 0v4m0-4a5 5 0 0 1 10 0v4"/></svg><span>2 Player VS Mode</span></button>
+      </div>
+      <div class="single-player-actions" id="singlePlayerActions" aria-labelledby="singlePlayerTitle" hidden>
+        <h2 id="singlePlayerTitle">Single Player</h2>
+        <button class="mode-button mode-button--single" id="progressivePlayButton" type="button"><span>Progressive Play<small>Start from Level 1</small></span></button>
+        <button class="mode-button mode-button--versus" id="customPlayButton" type="button" aria-haspopup="dialog"><span>Custom Play<small>Choose any of the 18 levels</small></span></button>
+        <button class="hud-button continue-play" id="continuePlayButton" type="button" hidden>Continue</button>
+      </div>
+    </div>
+  </section>
   <div id="app">
-    <div id="shell">
+    <div id="shell" hidden inert>
       <header class="hud" tabindex="0" aria-label="Game settings and progress">
-        <div class="game-brand"><svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M11 36c-4-12 1-25 18-28 6-1 10 0 10 0s1 4 0 10C36 35 23 40 11 36Z"/><path d="m7 41 23-24M12 35l1-11m5 5 12-1m-6-5 1-9"/></svg><h1><span>Many Birds</span> <span>One Stone</span></h1><p>A little ink. A clever path.<br>One wonderfully satisfying drop.</p></div>
+        <div class="game-brand"><h1><span>Many Birds</span> <span>One Stone</span></h1></div>
         <div class="hud-cluster">
-          <button class="hud-button" id="homeButton" type="button" aria-label="Back to Games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span class="button-label">Games</span></button>
+          <button class="hud-button" id="homeButton" type="button" aria-label="Main menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span class="button-label">Menu</span></button>
           <button class="hud-button" id="restartButton" type="button" aria-label="Restart level"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/></svg><span class="button-label">Retry</span></button>
           <button class="hud-button" id="soundButton" type="button" aria-label="Mute sound" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
         <button class="shop-launch" id="shopButton" type="button" aria-haspopup="dialog"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 15 6-6m-6 0h.01m6 6h.01"/></svg><strong id="coinBalance">60</strong> <span>coins</span></span><span>Shop <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l2 13H3ZM8 8V6a4 4 0 0 1 8 0v2"/></svg></span></button>
@@ -76,8 +98,7 @@
 
       <footer class="controls">
         <div class="status-card">
-          <div class="status-title">Your flight plan</div>
-          <div class="status-copy" id="statusCopy"></div>
+          <div class="status-copy" id="statusCopy" role="status" aria-live="polite"></div>
         </div>
         <div class="action-row">
           <button class="control-button" id="hintButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-6 3h6M8 14a6 6 0 1 1 8 0l-1 3H9Z"/></svg>Hint</button>
@@ -90,7 +111,7 @@
     <div class="rotate-notice" id="rotateNotice" aria-hidden="true">
       <div class="rotate-card">
         <h2>Rotate back to portrait</h2>
-        <p>Turn your device upright for the full woodland playfield. Your game is paused and your lines are safe.</p><button id="rotateHomeButton" class="hud-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg>Back to Games</button>
+        <p>Turn your device upright for the full woodland playfield. Your game is paused and your lines are safe.</p><button id="rotateHomeButton" class="hud-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg>Main menu</button>
       </div>
     </div>
 
@@ -105,7 +126,7 @@
       <div class="reward-celebration map-reward" id="mapReward" role="status" hidden></div>
     </header>
     <div class="map-scroll" id="mapScroll" tabindex="0" aria-label="All 18 levels, grouped into six chapters"></div>
-    <footer class="map-footer"><p>Clear a level to unlock the next.<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.</p><button class="overlay-button overlay-button--primary" id="resumeFromMap" type="button">Back to game</button></footer>
+    <footer class="map-footer"><p id="mapInstructions">Clear a level to unlock the next.<br><strong>3 stars:</strong> clear it, skip hints, keep 40% ink.</p><button class="overlay-button overlay-button--primary" id="resumeFromMap" type="button">Back to game</button></footer>
   </dialog>
   <dialog class="woodland-shop" id="woodlandShop" aria-labelledby="shopTitle" aria-describedby="shopDescription">
     <header class="shop-header">
@@ -198,6 +219,14 @@
         : '*';
 
       const dom = {
+        mainMenu: document.getElementById('mainMenu'),
+        shell: document.getElementById('shell'),
+        singlePlayerButton: document.getElementById('singlePlayerButton'),
+        mainMenuActions: document.getElementById('mainMenuActions'),
+        singlePlayerActions: document.getElementById('singlePlayerActions'),
+        continuePlayButton: document.getElementById('continuePlayButton'),
+        menuVersusButton: document.getElementById('menuVersusButton'),
+        menuSoundButton: document.getElementById('menuSoundButton'),
         canvas: document.getElementById('gameCanvas'),
         shopButton: document.getElementById('shopButton'),
         resultShopButton: document.getElementById('resultShopButton'),
@@ -333,7 +362,12 @@
 
       const storedProgress = loadProgress();
       const state = {
+        menuVisible: true,
+        singlePlayerMenu: false,
+        menuOpenedAt: null,
         levelIndex: clamp(storedProgress.selectedLevel - 1, 0, LEVELS.length - 1),
+        playMode: 'progressive',
+        progressiveLevelIndex: 0,
         highestUnlocked: clamp(storedProgress.highestUnlocked || 1, 1, LEVELS.length),
         bestStats: storedProgress.bestStats || {},
         onboardingPending: !storedProgress.onboarded,
@@ -402,10 +436,13 @@
 
       const versus = new WoodlandVersus({
         suspended: () => state.hostPaused || state.hiddenPause || state.rotatePaused,
-        canEnter: () => !state.onboardingPending && !state.mapVisible && !state.shopVisible && !state.overlayVisible,
+        canEnter: () => state.menuVisible && !state.mapVisible && !state.shopVisible,
+        entryButton: () => dom.menuVersusButton,
         status: text => { setStatus(text); announce(text); },
         start() {
           document.body.classList.remove('vs-concealed');
+          state.onboardingPending = false;
+          setMenuVisible(false);
           hideOverlay(); finishStroke(); resetClawControl(); beginAttempt(true, false);
         },
         editChanged() {
@@ -423,6 +460,7 @@
         exit() {
           document.body.classList.remove('vs-concealed');
           hideOverlay(); beginAttempt(true, false);
+          showMainMenu();
         },
       });
 
@@ -444,14 +482,19 @@
         dialog: document.getElementById('levelMap'),
         levels: LEVELS,
         onSelect(index) {
+          const fromMenu = state.menuVisible;
           levelMap.close();
+          if (fromMenu) state.playMode = 'custom';
           goToLevel(index);
+          if (fromMenu) startSinglePlayer();
         },
         onClose() {
           const now = performance.now();
           const pausedFor = now - state.mapOpenedAt;
-          state.runStartAt += pausedFor;
-          if (state.runReleasedAt !== null) state.runReleasedAt += pausedFor;
+          if (!state.menuVisible) {
+            state.runStartAt += pausedFor;
+            if (state.runReleasedAt !== null) state.runReleasedAt += pausedFor;
+          }
           state.mapOpenedAt = null;
           state.mapVisible = false;
           state.lastFrame = now;
@@ -469,7 +512,7 @@
         state.mapOpenedAt = performance.now();
         syncPauseState();
         refreshButtons();
-        levelMap.open({ levelIndex: state.levelIndex, highestUnlocked: state.highestUnlocked, bestStats: state.bestStats, returnFocus: event.currentTarget });
+        levelMap.open({ levelIndex: state.levelIndex, highestUnlocked: state.highestUnlocked, bestStats: state.bestStats, returnFocus: event.currentTarget, fromMenu: state.menuVisible, customPlay: state.menuVisible || state.playMode === 'custom' });
       }
 
       const shop = new WoodlandShop({
@@ -528,7 +571,7 @@
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
             campaignVersion: CAMPAIGN_VERSION,
             highestUnlocked: state.highestUnlocked,
-            selectedLevel: state.levelIndex + 1,
+            selectedLevel: state.progressiveLevelIndex + 1,
             bestStats: state.bestStats,
             onboarded: !state.onboardingPending,
             shop: nextShop || state.shop,
@@ -565,8 +608,9 @@
       }
 
       function setStatus(text) {
-        state.statusText = text;
-        dom.statusCopy.textContent = text;
+        const message = !versus.active && text === state.level?.note ? '' : text;
+        state.statusText = message;
+        dom.statusCopy.textContent = message;
       }
 
       function fmtPercent(value) {
@@ -592,7 +636,7 @@
         state.stone.previousY = state.stone.y;
         state.stone.previousRotation = state.stone.rotation;
         levelMap.setPaused(state.hostPaused || state.hiddenPause);
-        const paused = state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused;
+        const paused = state.menuVisible || state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused;
         versus.checker.setPaused(state.hostPaused || state.hiddenPause || state.rotatePaused);
         if (paused) { versus.cancelPointer(); finishStroke(); resetClawControl(); }
         woodlandAudio.setPaused(paused);
@@ -604,10 +648,63 @@
         }
       }
 
+      function setMenuVisible(visible) {
+        const now = performance.now();
+        if (visible && (!state.menuVisible || state.menuOpenedAt === null)) state.menuOpenedAt = now;
+        if (!visible && state.menuVisible) {
+          const pausedFor = now - (state.menuOpenedAt ?? now);
+          for (const key of ['runStartAt', 'runReleasedAt', 'autoDropAt', 'hintVisibleUntil', 'drawingPromptStartedAt']) {
+            if (state[key] > 0) state[key] += pausedFor;
+          }
+          state.menuOpenedAt = null;
+        }
+        state.menuVisible = visible;
+        dom.mainMenu.hidden = !visible;
+        dom.mainMenu.inert = !visible;
+        dom.shell.inert = visible;
+        document.body.classList.toggle('menu-open', visible);
+        state.lastFrame = now;
+        state.accumulator = 0;
+        updateRotateNotice();
+        if (!visible) requestAnimationFrame(fitCanvas);
+      }
+
+      function showMainMenu() {
+        finishStroke(); resetClawControl();
+        setMenuVisible(true);
+        setSinglePlayerMenu(false);
+        dom.singlePlayerButton.focus({ preventScroll: true });
+      }
+
+      function setSinglePlayerMenu(visible) {
+        state.singlePlayerMenu = visible;
+        dom.mainMenu.classList.toggle('is-single-player', visible);
+        dom.mainMenuActions.hidden = visible;
+        dom.singlePlayerActions.hidden = !visible;
+        document.getElementById('menuBackLabel').textContent = visible ? 'Back' : 'Games';
+        dom.continuePlayButton.hidden = state.onboardingPending;
+        dom.continuePlayButton.textContent = `Continue · ${state.playMode === 'custom' ? 'Custom ' : ''}Level ${state.levelIndex + 1}`;
+      }
+
+      function showSinglePlayerMenu() {
+        unlockAudio();
+        setSinglePlayerMenu(true);
+        document.getElementById('progressivePlayButton').focus({ preventScroll: true });
+      }
+
+      function startSinglePlayer() {
+        unlockAudio();
+        state.onboardingPending = false;
+        saveProgress();
+        setMenuVisible(false);
+        refreshHud(); refreshButtons();
+        (state.overlayVisible ? dom.overlayPrimary : dom.canvas).focus({ preventScroll: true });
+      }
+
       function updateRotateNotice() {
-        const shouldRotate = shouldForcePortrait();
+        const shouldRotate = !state.menuVisible && shouldForcePortrait();
         state.rotatePaused = shouldRotate;
-        document.getElementById('shell').hidden = shouldRotate;
+        dom.shell.hidden = state.menuVisible || shouldRotate;
         dom.rotateNotice.classList.toggle('is-visible', shouldRotate);
         dom.rotateNotice.setAttribute('aria-hidden', String(!shouldRotate));
         syncPauseState();
@@ -618,6 +715,8 @@
         state.audio.muted = Boolean(muted);
         woodlandAudio.setMuted(state.audio.muted);
         dom.soundButton.setAttribute('aria-pressed', String(state.audio.muted));
+        dom.menuSoundButton.setAttribute('aria-pressed', String(state.audio.muted));
+        dom.menuSoundButton.setAttribute('aria-label', state.audio.muted ? 'Unmute sound' : 'Mute sound');
         dom.soundButton.setAttribute('aria-label', state.audio.muted ? 'Unmute sound' : 'Mute sound');
         syncPauseState();
       }
@@ -802,7 +901,7 @@
         dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins`);
         dom.shopButton.disabled = state.onboardingPending || versus.active;
         dom.levelValue.textContent = state.level.title;
-        dom.levelCount.textContent = `Level ${state.level.id} of ${LEVELS.length}`;
+        dom.levelCount.textContent = `${state.playMode === 'custom' && !versus.active ? 'Custom · ' : ''}Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
         dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
         dom.comboReadout.textContent = `x${state.combo.multiplier} · ${state.combo.points} pts`;
@@ -819,10 +918,11 @@
       }
 
       function refreshButtons() {
+        versus.dom.versusButton.hidden = !versus.active;
         versus.dom.versusButton.disabled = state.onboardingPending || state.overlayVisible || state.mapVisible || state.shopVisible;
-        const levelLockedNext = state.levelIndex + 1 >= state.highestUnlocked;
+        const levelLockedNext = state.playMode !== 'custom' && state.levelIndex + 1 >= state.highestUnlocked;
         const attached = state.stone.attached;
-        const blocked = state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.running);
+        const blocked = state.menuVisible || state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.running);
         dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
         dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
@@ -884,6 +984,7 @@
         state.pointer.inkUsedDuringStroke = 0;
         state.autoDropAt = null;
         state.runStartAt = performance.now();
+        if (state.menuVisible) state.menuOpenedAt = state.runStartAt;
         state.runReleasedAt = null;
         state.runEnded = false;
         state.outcome = 'ready';
@@ -901,8 +1002,9 @@
       function goToLevel(levelIndex) {
         if (versus.active || versus.paused) return;
         const target = clamp(levelIndex, 0, LEVELS.length - 1);
-        if (target > state.highestUnlocked - 1) return;
+        if (state.playMode !== 'custom' && target > state.highestUnlocked - 1) return;
         state.levelIndex = target;
+        if (state.playMode === 'progressive') state.progressiveLevelIndex = target;
         saveProgress();
         hideOverlay();
         beginAttempt(true, false);
@@ -1067,7 +1169,7 @@
       }
 
       function handleCanvasPointerDown(event) {
-        if (versus.paused || state.hostPaused || state.hiddenPause || state.rotatePaused) return;
+        if (state.menuVisible || versus.paused || state.hostPaused || state.hiddenPause || state.rotatePaused) return;
         if (versus.editing) { unlockAudio(); versus.pointerDown(event, pointerToWorld(event), dom.canvas); return; }
         if (versus.active && !versus.running) return;
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached || state.runEnded || state.pointer.active || state.clawControl.active) return;
@@ -1116,7 +1218,7 @@
       }
 
       function releaseStone() {
-        if (versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.running)) return;
+        if (state.menuVisible || versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.running)) return;
         finishStroke();
         if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
         resetClawControl();
@@ -1278,7 +1380,7 @@
         saveBestStats(summary);
         createParticles(WORLD_W / 2, WORLD_H / 3, reducedMotion ? 6 : 48, ['#ffd06b', '#f48a64', '#ffffff', '#72cda1']);
         awardPointsForClear(summary);
-        if (state.levelIndex + 1 < LEVELS.length) {
+        if (state.playMode === 'progressive' && state.levelIndex + 1 < LEVELS.length) {
           state.highestUnlocked = Math.max(state.highestUnlocked, state.levelIndex + 2);
         }
         const reward = levelMap.recordClear({
@@ -1307,6 +1409,16 @@
         const nextLevel = LEVELS[state.levelIndex + 1];
         const chapterComplete = nextLevel && nextLevel.chapter !== state.level.chapter;
 
+        if (state.playMode === 'custom') {
+          queueRoundResult({
+            eyebrow: 'Custom Play', title: `Level ${state.level.id} complete`,
+            body: 'Choose another puzzle, or replay to improve your stars.', reward, stats,
+            primaryLabel: 'Choose a level', primaryAction: 'choose-level',
+            secondaryLabel: 'Retry', secondaryAction: 'retry-level',
+          });
+          return;
+        }
+
         queueRoundResult({
           eyebrow: state.levelIndex === LEVELS.length - 1 ? 'Campaign Complete' : 'Level Cleared',
           reward,
@@ -1316,7 +1428,7 @@
             : `You cleared ${birdLabel(state.level.birds.length)} with one stone! ${chapterComplete ? `Next chapter: ${nextLevel.chapter}.` : `Up next: ${nextLevel.title}.`} Replay any stage to save ink and earn three stars.`,
           primaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Play Again' : 'Next Level',
           primaryAction: state.levelIndex === LEVELS.length - 1 ? 'restart-campaign' : 'next-level',
-          secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Games' : 'Retry',
+          secondaryLabel: state.levelIndex === LEVELS.length - 1 ? 'Main menu' : 'Retry',
           secondaryAction: state.levelIndex === LEVELS.length - 1 ? 'home' : 'retry-level',
           stats,
         });
@@ -1771,6 +1883,9 @@
           case 'next-level':
             goToLevel(Math.min(state.levelIndex + 1, state.highestUnlocked - 1));
             return;
+          case 'choose-level':
+            openLevelMap({ currentTarget: dom.levelMapButton });
+            return;
           case 'retry-level':
             beginAttempt(true, false);
             return;
@@ -1787,7 +1902,7 @@
         hideOverlay();
         switch (state.overlaySecondaryAction) {
           case 'home':
-            exitToGames();
+            showMainMenu();
             return;
           case 'retry-level':
             beginAttempt(true, false);
@@ -1827,8 +1942,15 @@
       }
 
       function handleKeyboard(event) {
+        if (state.menuVisible) {
+          if (event.key === 'Escape' && state.singlePlayerMenu && !state.mapVisible && !versus.paused) {
+            event.preventDefault(); setSinglePlayerMenu(false); dom.singlePlayerButton.focus({ preventScroll: true });
+          }
+          return;
+        }
         if (versus.paused) return;
         if (versus.active && event.key === 'Escape') { event.preventDefault(); versus.pause(); return; }
+        if (event.key === 'Escape' && !state.overlayVisible && !state.mapVisible && !state.shopVisible) { event.preventDefault(); showMainMenu(); return; }
         if (versus.editing || (versus.active && !versus.running)) return;
         if (state.mapVisible || state.shopVisible) return;
         if (state.overlayVisible && event.key === 'Tab') {
@@ -1873,7 +1995,7 @@
 
       function update(dt) {
         if (!state.level) return;
-        if (state.mapVisible || state.shopVisible || versus.paused) return;
+        if (state.menuVisible || state.mapVisible || state.shopVisible || versus.paused) return;
         if (!state.hostPaused && !state.hiddenPause && !state.rotatePaused) {
           state.elapsed += dt;
         }
@@ -1893,6 +2015,7 @@
       }
 
       function frame(now) {
+        if (state.menuVisible) { state.lastFrame = now; state.accumulator = 0; window.requestAnimationFrame(frame); return; }
         versus.tick(Math.max(0, now - state.lastFrame), state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused);
         const delta = Math.min(0.05, (now - state.lastFrame) / 1000 || 0);
         state.lastFrame = now;
@@ -1918,6 +2041,16 @@
       }
 
       function bindEvents() {
+        dom.singlePlayerButton.addEventListener('click', showSinglePlayerMenu);
+        document.getElementById('progressivePlayButton').addEventListener('click', () => { state.playMode = 'progressive'; goToLevel(0); startSinglePlayer(); });
+        document.getElementById('customPlayButton').addEventListener('click', openLevelMap);
+        dom.continuePlayButton.addEventListener('click', startSinglePlayer);
+        dom.menuVersusButton.addEventListener('click', () => { unlockAudio(); versus.setup(); });
+        dom.menuSoundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
+        document.getElementById('menuGamesButton').addEventListener('click', () => {
+          if (state.singlePlayerMenu) { setSinglePlayerMenu(false); dom.singlePlayerButton.focus({ preventScroll: true }); }
+          else exitToGames();
+        });
         dom.shopButton.addEventListener('click', openShop);
         dom.resultShopButton.addEventListener('click', openShop);
         dom.levelMapButton.addEventListener('click', openLevelMap);
@@ -1927,7 +2060,7 @@
         });
         dom.resultMapButton.addEventListener('click', openLevelMap);
         dom.soundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
-        document.getElementById('rotateHomeButton').addEventListener('click', exitToGames);
+        document.getElementById('rotateHomeButton').addEventListener('click', () => versus.active ? versus.pause() : showMainMenu());
         window.addEventListener('pagehide', (event) => { if (!event.persisted) woodlandAudio.dispose(); });
         if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(dom.canvas.parentElement.parentElement);
         fitCanvas();
@@ -1940,7 +2073,8 @@
         dom.homeButton.addEventListener('click', () => {
           unlockAudio();
           playTone('tap');
-          exitToGames();
+          if (versus.active) versus.pause();
+          else showMainMenu();
         });
         dom.restartButton.addEventListener('click', () => {
           if (versus.active || versus.paused) return;
@@ -2013,6 +2147,10 @@
         window.setAudioMuted = setAudioMuted;
         window.setSfxVolume = setSfxVolume;
         window.render_game_to_text = () => JSON.stringify({
+          screen: state.menuVisible ? 'menu' : versus.active ? 'versus' : 'single-player',
+          menuVisible: state.menuVisible,
+          singlePlayerMenu: state.menuVisible && state.singlePlayerMenu,
+          playMode: versus.active ? 'versus' : state.playMode,
           versus: versus.snapshot(),
           level: state.level ? state.level.id : null,
           totalLevels: LEVELS.length,
@@ -2055,7 +2193,7 @@
             : [],
           lines: state.drawnStrokes.map((stroke) => stroke.points.length),
           status: state.statusText,
-          paused: state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused,
+          paused: state.menuVisible || state.hostPaused || state.hiddenPause || state.rotatePaused || state.mapVisible || state.shopVisible || versus.paused,
           sound: { muted: state.audio.muted, volume: state.audio.sfxVolume, loaded: [...woodlandAudio.buffers.keys()], context: woodlandAudio.context?.state || 'locked' },
         });
         window.advanceTime = (ms) => {
@@ -2162,26 +2300,11 @@
         bindEvents();
         initBridge();
         state.levelIndex = clamp(state.levelIndex, 0, Math.min(state.highestUnlocked - 1, LEVELS.length - 1));
+        state.progressiveLevelIndex = state.levelIndex;
         beginAttempt(true, false);
         updateRotateNotice();
         saveProgress();
-        if (state.onboardingPending) {
-          showOverlay({
-            eyebrow: 'Draw. Drop. Clear.',
-            title: 'A little ink. One clever drop.',
-            body: 'Start with one bird, then two, before taking on a flock of three. Draw paths, slide the claw to aim, and tap the stone or Drop. Chain birds for x1, x2 and x3 bonus points; clear the flock to bank them.',
-            primaryLabel: 'Let’s play',
-            primaryAction: 'begin',
-            secondaryLabel: 'Games',
-            secondaryAction: 'home',
-            stats: [
-              { label: 'Goal', value: `${birdLabel(state.level.birds.length)}, 1 stone` },
-              { label: 'Controls', value: 'Draw • Slide Claw • Drop' },
-            ],
-          });
-        } else {
-          setStatus(state.level.note);
-        }
+        showMainMenu();
         state.lastFrame = performance.now();
         window.requestAnimationFrame(frame);
       }
