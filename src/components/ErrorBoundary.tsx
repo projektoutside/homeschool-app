@@ -36,10 +36,8 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     handleReset = (): void => {
-        this.setState({
-            hasError: false,
-            error: null
-        });
+        // React.lazy caches rejected imports until the document reloads.
+        window.location.reload();
     };
 
     render(): ReactNode {
@@ -60,7 +58,10 @@ export class ErrorBoundary extends Component<Props, State> {
                                 Try again
                             </button>
                             <button
-                                onClick={() => window.location.href = '/'}
+                                onClick={() => {
+                                    const baseUrl = import.meta.env.BASE_URL || '/';
+                                    window.location.assign(baseUrl === './' ? '/' : baseUrl);
+                                }}
                                 className="error-btn error-btn-secondary"
                             >
                                 Go to home
