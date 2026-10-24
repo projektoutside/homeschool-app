@@ -113,6 +113,10 @@ const createPublicPreviewReloadPlugin = (): Plugin => ({
 // https://vite.dev/config/
 export default defineConfig({
   base,
+  optimizeDeps: {
+    // Embedded games own their imports; only scan the React app entry.
+    entries: ['index.html'],
+  },
   server: {
     allowedHosts: devAllowedHosts,
   },
