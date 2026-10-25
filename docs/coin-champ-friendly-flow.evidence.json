@@ -1,0 +1,551 @@
+{
+  "identity": "2fa94f8+coin-kids:928f96d026d61fad",
+  "hashes": {
+    "index.html": {
+      "local": "0cefd086fe740d4c5de5a1c2d32a53d7b0c30969005c08e44887eb5d2b8d9476",
+      "served": "0cefd086fe740d4c5de5a1c2d32a53d7b0c30969005c08e44887eb5d2b8d9476"
+    },
+    "game.js": {
+      "local": "7c0897698cbcc84b79b77b2a052f7cfd9841e3752f99e057581bc6b93e6f8792",
+      "served": "7c0897698cbcc84b79b77b2a052f7cfd9841e3752f99e057581bc6b93e6f8792"
+    },
+    "kid-friendly.css": {
+      "local": "f498420377b6d411f31c98fd202e097265d6e0ef81f0502b1d0cb61c924fa46f",
+      "served": "f498420377b6d411f31c98fd202e097265d6e0ef81f0502b1d0cb61c924fa46f"
+    },
+    "start-countdown.mjs": {
+      "local": "c1279a12362dad13b654dd9a6d7d9ed4aed4fbc0d4d57cf6a6566a805260989f",
+      "served": "c1279a12362dad13b654dd9a6d7d9ed4aed4fbc0d4d57cf6a6566a805260989f"
+    }
+  },
+  "runs": {
+    "layout-chromium": {
+      "nativeCountdownWorks": true,
+      "sequence": [
+        "3",
+        "2",
+        "1",
+        "START!"
+      ],
+      "results": [
+        {
+          "size": "desktop",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "desktop",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "desktop",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "desktop",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "desktop",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "desktop",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "phone",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "small",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "short",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "landscape",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "menu",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "countdown",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "identify",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "count",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "make",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "size": "tablet-wide",
+          "state": "change",
+          "docX": 0,
+          "docY": 0,
+          "outside": [],
+          "blocked": []
+        }
+      ],
+      "errors": []
+    },
+    "flow-chromium": {
+      "checks": [
+        "opens on main menu",
+        "native browser timers start play without a clock mock",
+        "reload with an active save still opens main menu",
+        "help pauses the visible countdown step",
+        "closing help resumes the remaining part of the step",
+        "synthetic background pauses countdown",
+        "foreground resumes countdown",
+        "START appears before gameplay",
+        "round time is untouched by intro and paused help",
+        "tap adds one coin",
+        "wrong amount permits a retry",
+        "coin-box tap removes only one denomination",
+        "undo removes last coin",
+        "keyboard adds a quarter",
+        "pointer drag adds exactly one coin",
+        "reopening preserves the menu-first flow",
+        "continue also shows the start countdown",
+        "continue preserves the saved round and coins",
+        "correct amount shows a clear Next action",
+        "saved success opens on menu",
+        "resuming success does not duplicate rewards",
+        "optional round timer still enters review",
+        "Escape cancels delayed entry into play"
+      ],
+      "layout": [
+        {
+          "name": "phone-make",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "phone-wrong-answer",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "phone-feedback",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "phone-timeout",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "modes-320",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "selected-320",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "wrong-320",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "success-320",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "modes-568",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "selected-568",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "wrong-568",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "success-568",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        }
+      ],
+      "errors": []
+    },
+    "webkit-webkit": {
+      "checks": [
+        "WebKit opens on menu",
+        "WebKit native countdown enters play",
+        "round 1 shows every counting coin",
+        "a first hint keeps the instruction instead of implying a wrong answer",
+        "wrong tap keeps the round open",
+        "round 2 shows every counting coin",
+        "round 3 shows every counting coin",
+        "round 4 shows every counting coin",
+        "round 5 shows every counting coin",
+        "round 6 shows every counting coin",
+        "round 7 shows every counting coin",
+        "round 8 shows every counting coin",
+        "all eight counting rounds reach results",
+        "WebKit reopening keeps progress and shows menu",
+        "WebKit touch adds all denominations",
+        "WebKit touch removes a selected coin",
+        "WebKit Help holds the countdown",
+        "WebKit Continue restores coin selection",
+        "WebKit menu cancels pending countdown"
+      ],
+      "layout": [
+        {
+          "name": "phone-menu",
+          "x": 0,
+          "y": 0,
+          "blocked": []
+        },
+        {
+          "name": "phone-count",
+          "x": 0,
+          "y": 0,
+          "blocked": []
+        },
+        {
+          "name": "phone-results",
+          "x": 0,
+          "y": 0,
+          "blocked": []
+        },
+        {
+          "name": "landscape-selected",
+          "x": 0,
+          "y": 0,
+          "blocked": []
+        },
+        {
+          "name": "small-selected",
+          "x": 0,
+          "y": 0,
+          "blocked": []
+        }
+      ],
+      "errors": []
+    },
+    "host-chromium": {
+      "checks": [
+        "embedded main menu labels exit Games",
+        "one solved coin emits one existing five-point event",
+        "Menu first returns to the game main menu",
+        "Continue does not emit a duplicate host reward",
+        "Games preserves the existing host exit message"
+      ],
+      "errors": []
+    }
+  }
+}

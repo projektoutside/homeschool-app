@@ -84,6 +84,12 @@ Notes:
 - Local development is intended to stay production-parity for auth. There is no dev-only auth bypass in the root app.
 - If Supabase env vars are missing, the app can still boot, but authenticated flows will not work correctly for normal testing.
 
+### Guest mode
+
+Guest mode saves the guest profile, points, and stamina in local storage on the current device and browser origin. Closing and reopening the app restores the guest session. Signing out ends access without deleting that progress; choosing **Play as Guest** again resumes the saved profile. Existing temporary guest saves migrate automatically. Clearing site/app data removes local saves, and guest progress does not sync to a Supabase account or another device.
+
+The `.auth-page` sign-in form allows contained vertical scrolling when short screens, zoom, keyboards, or expanded Quick Unlock fields exceed the viewport. All fields and actions stay in that scroll region; the document does not scroll horizontally. Guest login and form reachability are checked at phone, tablet, and desktop sizes; physical keyboards and native app restarts require device verification.
+
 ## Supabase Setup
 
 Run [`supabase/schema.sql`](/C:/Users/xator/Desktop/LatestLa'sHomeschool/homeschool-app/supabase/schema.sql) in the Supabase SQL editor.

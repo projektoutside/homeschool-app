@@ -10,7 +10,7 @@ import {
   sanitizePointDeltaValue,
   sanitizePointValue,
 } from '../utils/gamePoints';
-import { GUEST_USER_ID } from '../utils/guestSession';
+import { GUEST_USER_ID, readGuestStorageItem } from '../utils/guestSession';
 
 const USER_POINTS_TOTALS_TABLE = 'user_points_totals';
 const APPLY_GAME_POINTS_RPC = 'apply_game_points_event';
@@ -111,8 +111,10 @@ const readCachedPointsState = (userId: string): CachedPointsState => {
   }
 
   try {
-    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
-    const raw = storage.getItem(buildPointsCacheKey(userId));
+    const storageKey = buildPointsCacheKey(userId);
+    const raw = isGuestUserId(userId)
+      ? readGuestStorageItem(storageKey)
+      : window.localStorage.getItem(storageKey);
     if (!raw) {
       return { version: POINTS_CACHE_VERSION, serverTotalPoints: 0, pendingEvents: [] };
     }
@@ -136,8 +138,7 @@ const writeCachedPointsState = (userId: string, state: CachedPointsState): void 
   if (typeof window === 'undefined') return;
 
   try {
-    const storage = isGuestUserId(userId) ? window.sessionStorage : window.localStorage;
-    storage.setItem(buildPointsCacheKey(userId), JSON.stringify(state));
+    window.localStorage.setItem(buildPointsCacheKey(userId), JSON.stringify(state));
   } catch {
     // Ignore local cache failures and continue with in-memory state.
   }

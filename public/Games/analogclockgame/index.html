@@ -105,7 +105,8 @@
                 <p>1. Look at the analog clock and read the time.</p>
                 <p>2. Choose the correct time from the options.</p>
                 <p>3. Progress through 7 difficulty levels.</p>
-                <p>4. Earn stars and beat the timer!</p>
+                <p>4. Correct answers earn points and ClockCoins. Wrong answers cost a life.</p>
+                <p>5. Shops and settings pause the timer. Spend coins on points, extra time, or lives.</p>
             </div>
             <div class="modal-footer">
                 <button id="start-from-instructions" class="start-button">Start Playing!</button>
@@ -198,7 +199,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="modal-play-again" class="primary-button pulse-animation">Play Again 🔄</button>
+                <button id="modal-play-again" class="primary-button">Play Again 🔄</button>
                 <button id="modal-menu" class="secondary-button">Main Menu 🏠</button>
             </div>
         </div>
@@ -211,7 +212,7 @@
             <h3 id="next-level-name">Level 2</h3>
             <div class="level-details">
                 <p>New: <span id="level-challenge-text">Challenge</span></p>
-                <p>Time: <span id="level-time-limit">4:30</span></p>
+                <p>Time left: <span id="level-time-limit">4:30</span></p>
                 <p>Tip: <span id="level-tip">Keep going!</span></p>
             </div>
             <div id="scoring-breakdown"></div>
@@ -238,7 +239,7 @@
                 </div>
                 <div class="stat-item">
                     <div class="stat-label">Time</div>
-                    <div id="timer">05:00</div>
+                    <div id="timer" role="timer" aria-live="off">05:00</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-label">Score</div>

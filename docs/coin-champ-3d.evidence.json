@@ -1,0 +1,271 @@
+{
+  "identity": "1724497+coin-3d:e8cb6d7616992455",
+  "hashes": {
+    "index.html": "00bfaa851b24ee2d9c7487bb7d5dc1c8c0a7be7f8bbe062b2527902b6dc9b697",
+    "game.js": "bfeedaff5dadbe26bae34d4ca38abb3b79ec959df89419ad85760e1df44ad40b",
+    "coin-art.js": "5f8fd557c885560d521fd5f0a42f9fb053d1dbac6bf1dbb47d742b08448cdbc9",
+    "coin-scene.js": "75bed0aec344dd2cf2a1389e1579c1e64f2938769a15a2833095b8bbbd9691fc",
+    "coin-motion.mjs": "ba2c840ba4bbb81fe11039b00c263b28c0fa83e2dac8227e7a283d928cd8243b",
+    "coin-visuals.css": "b57218ea9303c50e97a38bd8610e665ad13a56190c269aabf8d6fe5c8b837519",
+    "assets/coins/penny-obverse.png": "1b73652a4e4601905858917f9c5e6329190a136e9491eebe3e758b5b446aefb0",
+    "assets/coins/penny-reverse.jpg": "59a3c20582e754e241f2a01c223e296c9fd8f0f44811e65cbf1df8ebe8c38663",
+    "assets/coins/nickel-obverse.png": "ff4cd5dc4fe307966223cb30030a563849747696e36bea67d37761b0ff270154",
+    "assets/coins/nickel-reverse.jpg": "005b7b92b7088be7c5e6e8108dcbdf70eb4c49fde936e5094f6ec5a1bba70ae8",
+    "assets/coins/dime-obverse.png": "5e5e3c564be27d0203f79ce527a5a1a8a8642ffeebd0e5eaaa096043340cf152",
+    "assets/coins/dime-reverse.png": "f896281d918652beda678e52e109c7509f200c7f3e4b012bd45719390fec12ab",
+    "assets/coins/quarter-obverse.jpg": "f6b45623bde8be79e389c5e8909a1289247a7fa78512cf5d4aa2b0323e5d4c2e",
+    "assets/coins/quarter-reverse.jpg": "1bb4ab917929702deab92688daa97a66e0de96d35b16e06196394c63cb55162a"
+  },
+  "chromium": {
+    "engine": "chromium",
+    "checks": [
+      "menu remains first",
+      "one shared renderer is created",
+      "drop updates selection immediately",
+      "renderer stops drawing when coins settle",
+      "rapid drops respect the 32-coin capacity",
+      "all 32 visual coin identities remain synchronized",
+      "remove and undo work during the 3D game",
+      "Start over clears the rendered coins",
+      "keyboard adds exactly one coin per key",
+      "dragging drops exactly one coin through the transparent renderer",
+      "Help settles and stops the animation",
+      "synthetic backgrounding stops GPU draw calls",
+      "foreground recovery restores all selected coins",
+      "Menu hides the 3D layer",
+      "reopening still starts at the menu",
+      "saved game restores the exact round and coin selection",
+      "saved coins restore without replaying old drops",
+      "context loss leaves native coin controls working",
+      "context restoration reconciles coins added during fallback",
+      "desktop fits with reachable controls",
+      "phone fits with reachable controls",
+      "small fits with reachable controls",
+      "short fits with reachable controls",
+      "landscape fits with reachable controls",
+      "tablet fits with reachable controls",
+      "correct payment still awards success",
+      "success fits with reachable controls",
+      "count fits with reachable controls",
+      "identify fits with reachable controls",
+      "reduced motion confirms the coin without spatial movement",
+      "disabled WebGL retains photographic coins and working gameplay",
+      "no uncaught page errors"
+    ],
+    "layouts": [
+      {
+        "name": "desktop",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "phone",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "small",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "short",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "landscape",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "tablet",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "success",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "count",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "identify",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      }
+    ],
+    "errors": [],
+    "contextLoss": true
+  },
+  "webkit": {
+    "engine": "webkit",
+    "checks": [
+      "menu remains first",
+      "one shared renderer is created",
+      "drop updates selection immediately",
+      "renderer stops drawing when coins settle",
+      "rapid drops respect the 32-coin capacity",
+      "all 32 visual coin identities remain synchronized",
+      "remove and undo work during the 3D game",
+      "Start over clears the rendered coins",
+      "keyboard adds exactly one coin per key",
+      "dragging drops exactly one coin through the transparent renderer",
+      "Help settles and stops the animation",
+      "synthetic backgrounding stops GPU draw calls",
+      "foreground recovery restores all selected coins",
+      "Menu hides the 3D layer",
+      "reopening still starts at the menu",
+      "saved game restores the exact round and coin selection",
+      "saved coins restore without replaying old drops",
+      "context loss leaves native coin controls working",
+      "context restoration reconciles coins added during fallback",
+      "desktop fits with reachable controls",
+      "phone fits with reachable controls",
+      "small fits with reachable controls",
+      "short fits with reachable controls",
+      "landscape fits with reachable controls",
+      "tablet fits with reachable controls",
+      "correct payment still awards success",
+      "success fits with reachable controls",
+      "count fits with reachable controls",
+      "identify fits with reachable controls",
+      "reduced motion confirms the coin without spatial movement",
+      "disabled WebGL retains photographic coins and working gameplay",
+      "no uncaught page errors"
+    ],
+    "layouts": [
+      {
+        "name": "desktop",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "phone",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "small",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "short",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "landscape",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "tablet",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "success",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "count",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      },
+      {
+        "name": "identify",
+        "x": 0,
+        "y": 0,
+        "outside": [],
+        "blocked": []
+      }
+    ],
+    "errors": [],
+    "contextLoss": true
+  },
+  "extra": {
+    "checks": [
+      "muting during a drop prevents the later landing sound",
+      "small-screen Help keeps Close and Done visible",
+      "coin source credits remain accessible in Help"
+    ],
+    "dialog": {
+      "scrolls": true,
+      "bodyHeight": 375,
+      "buttons": [
+        {
+          "x": 241,
+          "y": 32,
+          "width": 44,
+          "height": 44,
+          "top": 32,
+          "right": 285,
+          "bottom": 76,
+          "left": 241
+        },
+        {
+          "x": 35,
+          "y": 495.90625,
+          "width": 235.390625,
+          "height": 50,
+          "top": 495.90625,
+          "right": 270.390625,
+          "bottom": 545.90625,
+          "left": 35
+        },
+        {
+          "x": 66.359375,
+          "y": 488,
+          "width": 218.640625,
+          "height": 48,
+          "top": 488,
+          "right": 285,
+          "bottom": 536,
+          "left": 66.359375
+        }
+      ],
+      "viewport": 568
+    }
+  }
+}

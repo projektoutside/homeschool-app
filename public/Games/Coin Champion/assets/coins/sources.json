@@ -1,0 +1,74 @@
+[
+  {
+    "id": "penny",
+    "side": "obverse",
+    "file": "penny-obverse.png",
+    "url": "https://commons.wikimedia.org/wiki/File:US_One_Cent_Obv.png",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/2/2e/US_One_Cent_Obv.png",
+    "license": "Public domain",
+    "artist": "United States Mint"
+  },
+  {
+    "id": "penny",
+    "side": "reverse",
+    "file": "penny-reverse.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:20050228_200242_1_revers_lincoln.999x989.jpg",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/e/e1/20050228_200242_1_revers_lincoln.999x989.jpg",
+    "license": "Public domain",
+    "artist": "G. Edward Johnson user:Lorax~commonswiki"
+  },
+  {
+    "id": "nickel",
+    "side": "obverse",
+    "file": "nickel-obverse.png",
+    "url": "https://commons.wikimedia.org/wiki/File:Nickel_obverse.png",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/3/35/Nickel_obverse.png",
+    "license": "Public domain",
+    "artist": "United States Mint"
+  },
+  {
+    "id": "nickel",
+    "side": "reverse",
+    "file": "nickel-reverse.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:US_Nickel_Reverse.jpg",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/2/23/US_Nickel_Reverse.jpg",
+    "license": "Public domain",
+    "artist": "The original uploader was Hephaestos at English Wikipedia."
+  },
+  {
+    "id": "dime",
+    "side": "obverse",
+    "file": "dime-obverse.png",
+    "url": "https://commons.wikimedia.org/wiki/File:2005_Dime_Obv_Unc_P.png",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/1/17/2005_Dime_Obv_Unc_P.png",
+    "license": "Public domain",
+    "artist": "United States Mint"
+  },
+  {
+    "id": "dime",
+    "side": "reverse",
+    "file": "dime-reverse.png",
+    "url": "https://commons.wikimedia.org/wiki/File:2005_Dime_Rev_Unc_P.png",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/5/5c/2005_Dime_Rev_Unc_P.png",
+    "license": "Public domain",
+    "artist": "United States Mint"
+  },
+  {
+    "id": "quarter",
+    "side": "obverse",
+    "file": "quarter-obverse.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:America_the_Beautiful_quarter_obverse_(Philadeplhia).jpg",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/f/f3/America_the_Beautiful_quarter_obverse_%28Philadeplhia%29.jpg",
+    "license": "Public domain",
+    "artist": "John Flanagan"
+  },
+  {
+    "id": "quarter",
+    "side": "reverse",
+    "file": "quarter-reverse.jpg",
+    "url": "https://commons.wikimedia.org/wiki/File:1932_Washington_quarter_reverse.jpg",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/7/77/1932_Washington_quarter_reverse.jpg",
+    "license": "Public domain",
+    "artist": "Numismatic Guaranty Corporation"
+  }
+]

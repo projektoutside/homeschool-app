@@ -106,13 +106,13 @@ const mathEntries: ContentItem[] = [
     {
         id: 'coin-champ',
         title: 'Coin Champ',
-        description: 'Practice pennies, nickels, dimes, and quarters through polished make-the-amount and count-the-coins rounds.',
+        description: 'Explore a coin carnival with counting, exact-payment, change-making, and fewest-coin challenges. Collect stars and earned prizes at three skill levels.',
         type: 'game',
         playerMode: 'single',
         appPointsEnabled: true,
         category: 'math',
-        subjects: ['Money', 'Counting', 'Addition'],
-        gradeLevels: ['Kindergarten', '1st', '2nd'],
+        subjects: ['Money', 'Counting', 'Addition', 'Subtraction', 'Problem Solving'],
+        gradeLevels: ['All'],
         customHtmlPath: '/Games/Coin Champion/index.html',
         thumbnail: '/Games/Coin Champion/thumb.svg',
         dateAdded: '2026-03-28'

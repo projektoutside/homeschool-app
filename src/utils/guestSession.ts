@@ -32,18 +32,44 @@ const assertBrowserStorageAvailable = (): void => {
   }
 
   try {
-    window.sessionStorage.setItem(STORAGE_TEST_KEY, '1');
-    window.sessionStorage.removeItem(STORAGE_TEST_KEY);
+    window.localStorage.setItem(STORAGE_TEST_KEY, '1');
+    window.localStorage.removeItem(STORAGE_TEST_KEY);
   } catch {
-    throw new Error('This browser is blocking temporary storage, so guest play cannot start.');
+    throw new Error('This browser is blocking local storage, so guest progress cannot be saved on this device.');
   }
+};
+
+export const readGuestStorageItem = (key: string): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const saved = window.localStorage.getItem(key);
+  if (saved !== null) return saved;
+
+  let temporary: string | null;
+  try {
+    temporary = window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+
+  if (temporary !== null) {
+    // Preserve guests who already have an active session when this update loads.
+    window.localStorage.setItem(key, temporary);
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // The persistent copy is already saved.
+    }
+  }
+
+  return temporary;
 };
 
 const readJson = <T,>(key: string): T | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const raw = window.sessionStorage.getItem(key);
+    const raw = readGuestStorageItem(key);
     return raw ? JSON.parse(raw) as T : null;
   } catch {
     return null;
@@ -51,7 +77,7 @@ const readJson = <T,>(key: string): T | null => {
 };
 
 const writeJson = (key: string, value: unknown): void => {
-  window.sessionStorage.setItem(key, JSON.stringify(value));
+  window.localStorage.setItem(key, JSON.stringify(value));
 };
 
 const sanitizeProfile = (value: unknown): GuestProfile | null => {
@@ -148,8 +174,6 @@ export const readActiveGuestUser = (): User | null => {
 
 export const startGuestSession = (): User => {
   assertBrowserStorageAvailable();
-  window.localStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
-  window.localStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
   const profile = getOrCreateGuestProfile();
   writeJson(GUEST_SESSION_STORAGE_KEY, {
     active: true,
@@ -163,12 +187,17 @@ export const clearGuestSession = (): void => {
   if (typeof window === 'undefined') return;
 
   try {
-    window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
-    window.sessionStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
-    window.localStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
-    window.localStorage.removeItem(GUEST_PROFILE_STORAGE_KEY);
+    readGuestStorageItem(GUEST_PROFILE_STORAGE_KEY);
   } catch {
-    // Ignore sign-out storage failures; route guards will fall back to no guest session.
+    // Keep the temporary profile if it cannot be migrated yet.
+  }
+
+  for (const storageName of ['sessionStorage', 'localStorage'] as const) {
+    try {
+      window[storageName].removeItem(GUEST_SESSION_STORAGE_KEY);
+    } catch {
+      // Continue clearing the other storage when one is unavailable.
+    }
   }
 };
 

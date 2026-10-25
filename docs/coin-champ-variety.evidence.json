@@ -1,0 +1,431 @@
+{
+  "identity": "1796b7b+coin-variety:8428ef2e698da4be",
+  "hashes": {
+    "index.html": "4f8fcfc6dac2a4eb2b4d84dae3aa9df30fd7ab8e6790fb5161969230c3dde708",
+    "game.js": "04ecd26de444be4919016ace3388b8d76427d3d2c2fd75ce9c9f27eaff3b413e",
+    "game-core.mjs": "082167bb59517d7402ca710c9b7fbf79904d654feef9f346d157e2c90400eb03",
+    "mini-games.mjs": "d4895db866b321383081291752c2b55427bb469864881def22e3fe05a5aa0ccb",
+    "mini-ui.js": "f1bbc81e3a20199cd7974c47ed6920731ec4b85f9ef717a526b146e7285953d0",
+    "mini-games.css": "dabd268060b6b106fa943202c111df799fd48ef1975df411efc2d4a76d7413c1",
+    "coin-scene.js": "d6984f5491aba57ca10aac6ec45896233a0fdd8bedd8d43efe611353302fd6cc"
+  },
+  "runs": {
+    "final-layout": {
+      "results": [
+        {
+          "name": "room",
+          "size": "desktop",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "phone",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "small",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "short",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "landscape",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "tablet",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "room",
+          "size": "tablet-wide",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "desktop",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "phone",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "small",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "short",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "landscape",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "tablet",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "sort",
+          "size": "tablet-wide",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "desktop",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "phone",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "small",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "short",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "landscape",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "tablet",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "memory",
+          "size": "tablet-wide",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "desktop",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "phone",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "small",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "short",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "landscape",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "tablet",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "treasure",
+          "size": "tablet-wide",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        }
+      ],
+      "errors": []
+    },
+    "verified-chromium": {
+      "engine": "chromium",
+      "checks": [
+        "main menu remains first",
+        "existing Count practice launches through Coin practice with native countdown",
+        "Fun games shows all three new choices",
+        "keyboard switches to existing practice choices",
+        "existing 3D coin-bank input still works",
+        "wrong sort jar keeps the coin available",
+        "sort drag advances once without a synthesized extra answer",
+        "a fresh tap immediately after dragging is accepted",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "partial mini progress does not award a completed round",
+        "sort round reaches success",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "reopening settled success does not duplicate rewards",
+        "sort round reaches success",
+        "sort round reaches success",
+        "sort round reaches success",
+        "Coin Sort completes all four rounds",
+        "first memory flip preserves keyboard focus",
+        "mismatch holds both cards until the player chooses Flip back",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "memory mismatch survives app reopening",
+        "memory hint identifies a matching pair",
+        "Flip back is keyboard operable",
+        "memory round reaches success",
+        "memory round reaches success",
+        "memory round reaches success",
+        "memory round reaches success",
+        "Memory Match completes all four rounds",
+        "treasure map collects a chosen coin",
+        "tapping a chosen map coin returns it",
+        "treasure Undo returns the last coin",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "Treasure Hunt completes all four rounds",
+        "Help pauses the optional timer and keeps the open card",
+        "mini-game timeout offers review without awarding a round",
+        "phone-review fits with reachable actions",
+        "small-review fits with reachable actions",
+        "short-review fits with reachable actions",
+        "Next starts a fresh mini round after timeout",
+        "layout tracking does not create an idle GPU render loop",
+        "no uncaught page errors"
+      ],
+      "errors": [],
+      "layouts": [
+        {
+          "name": "phone-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "small-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "short-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        }
+      ]
+    },
+    "verified-webkit": {
+      "engine": "webkit",
+      "checks": [
+        "main menu remains first",
+        "existing Count practice launches through Coin practice with native countdown",
+        "Fun games shows all three new choices",
+        "keyboard switches to existing practice choices",
+        "existing 3D coin-bank input still works",
+        "wrong sort jar keeps the coin available",
+        "sort drag advances once without a synthesized extra answer",
+        "a fresh tap immediately after dragging is accepted",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "partial mini progress does not award a completed round",
+        "sort round reaches success",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "reopening settled success does not duplicate rewards",
+        "sort round reaches success",
+        "sort round reaches success",
+        "sort round reaches success",
+        "Coin Sort completes all four rounds",
+        "first memory flip preserves keyboard focus",
+        "mismatch holds both cards until the player chooses Flip back",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "memory mismatch survives app reopening",
+        "memory hint identifies a matching pair",
+        "Flip back is keyboard operable",
+        "memory round reaches success",
+        "memory round reaches success",
+        "memory round reaches success",
+        "memory round reaches success",
+        "Memory Match completes all four rounds",
+        "treasure map collects a chosen coin",
+        "tapping a chosen map coin returns it",
+        "treasure Undo returns the last coin",
+        "reopen starts on main menu",
+        "reopen preserves mini-game state and round identity",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "treasure round reaches success",
+        "Treasure Hunt completes all four rounds",
+        "Help pauses the optional timer and keeps the open card",
+        "mini-game timeout offers review without awarding a round",
+        "phone-review fits with reachable actions",
+        "small-review fits with reachable actions",
+        "short-review fits with reachable actions",
+        "Next starts a fresh mini round after timeout",
+        "layout tracking does not create an idle GPU render loop",
+        "no uncaught page errors"
+      ],
+      "errors": [],
+      "layouts": [
+        {
+          "name": "phone-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "small-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        },
+        {
+          "name": "short-review",
+          "x": 0,
+          "y": 0,
+          "outside": [],
+          "blocked": []
+        }
+      ]
+    },
+    "final-states-chromium": {
+      "checks": [
+        "review keeps pair progress visible in the heading",
+        "review removes the inactive footer instead of overlapping cards",
+        "short landscape review retains every card and Next in the viewport",
+        "Continue names the saved mini game",
+        "touch sorting remains playable without WebGL",
+        "final state checks have no uncaught page errors"
+      ],
+      "errors": []
+    },
+    "final-states-webkit": {
+      "checks": [
+        "review keeps pair progress visible in the heading",
+        "review removes the inactive footer instead of overlapping cards",
+        "short landscape review retains every card and Next in the viewport",
+        "Continue names the saved mini game",
+        "touch sorting remains playable without WebGL",
+        "final state checks have no uncaught page errors"
+      ],
+      "errors": []
+    },
+    "host": {
+      "checks": [
+        "game room has a local Menu action",
+        "partial sorting does not emit host points",
+        "completed mini round uses the existing five-point host contract",
+        "Menu returns locally without leaving the host",
+        "reloaded completed mini round does not duplicate host points",
+        "Games retains the existing outer-app exit contract"
+      ]
+    }
+  }
+}

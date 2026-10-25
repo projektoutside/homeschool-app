@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "run_id": "coin-champ-variety-20261024",
+  "started_at": "2026-10-25T02:48:53.420Z",
+  "finished_at": "2026-10-25T03:05:22.001Z",
+  "target": {
+    "kind": "web",
+    "environment": "local",
+    "url_or_artifact": "http://127.0.0.1:5173/play/coin-champ",
+    "expected_release": "1796b7b+coin-variety:8428ef2e698da4be",
+    "observed_release": "1796b7b+coin-variety:8428ef2e698da4be",
+    "release_verified": true
+  },
+  "scope": {
+    "name": "Three additional Coin Champ mini games and shared recovery/input paths",
+    "features": [
+      {
+        "id": "games",
+        "name": "New game room and complete mini games",
+        "critical": true
+      },
+      {
+        "id": "recovery",
+        "name": "Local recovery and reward identity",
+        "critical": true
+      },
+      {
+        "id": "input",
+        "name": "Pointer, touch, keyboard and fallback",
+        "critical": true
+      },
+      {
+        "id": "layout",
+        "name": "Responsive layout and 3D alignment",
+        "critical": true
+      },
+      {
+        "id": "host",
+        "name": "Embedded host points and exit",
+        "critical": true
+      },
+      {
+        "id": "physical",
+        "name": "Real-device and installed-shell acceptance",
+        "critical": true
+      }
+    ],
+    "required_check_ids": [
+      "games",
+      "recovery",
+      "input",
+      "layout",
+      "host",
+      "physical"
+    ],
+    "limitations": [
+      "No publication, provider changes or Supabase/RLS verification.",
+      "Local engine and viewport/touch emulation are not physical Android/iPhone/iPad acceptance.",
+      "Real audio, safe areas, zoom, installed Capacitor and hardware performance remain unverified.",
+      "One active session per browser profile; no cloud or independent per-mode saves.",
+      "Renderer target introspection was an isolated diagnostic, separate from the normal customer journey tests."
+    ],
+    "authorization": {
+      "test_identity_refs": [
+        "Disposable local browser guest contexts and same-origin iframe fixture"
+      ],
+      "production_write_refs": [],
+      "high_impact_refs": []
+    }
+  },
+  "checks": [
+    {
+      "id": "games",
+      "feature_id": "games",
+      "journey": "New game room and complete mini games",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Complete sessions remain playable at all difficulty levels.",
+      "observed": "Both engines completed four rounds of Sort, Memory, and Treasure; original Count/Make remained usable.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-variety.evidence.json",
+          "release": "1796b7b+coin-variety:8428ef2e698da4be",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "complete"
+    },
+    {
+      "id": "recovery",
+      "feature_id": "recovery",
+      "journey": "Local recovery and reward identity",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Every partial move and settled outcome recover without duplicate rewards.",
+      "observed": "Sort cursor, memory mismatches, treasure picks, round IDs and settled rewards survived reopening. Invalid saved metadata is rejected by the final unit tests.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-variety.evidence.json",
+          "release": "1796b7b+coin-variety:8428ef2e698da4be",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "complete"
+    },
+    {
+      "id": "input",
+      "feature_id": "input",
+      "journey": "Pointer, touch, keyboard and fallback",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Jar tap/drag, memory keyboard, treasure return/Undo and fallback remain usable.",
+      "observed": "Native drag advances once; an immediate fresh tap works; first-flip focus survives; touch sorting works with WebGL disabled.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-variety.evidence.json",
+          "release": "1796b7b+coin-variety:8428ef2e698da4be",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "complete"
+    },
+    {
+      "id": "layout",
+      "feature_id": "layout",
+      "journey": "Responsive layout and 3D alignment",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Normal screens fit and 3D coins stay aligned after layout settles.",
+      "observed": "28 game-room/play states plus six engine review states fit; diagnostics confirmed target centers match DOM anchors after resize. Pair progress remains visible on compact review.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-variety.evidence.json",
+          "release": "1796b7b+coin-variety:8428ef2e698da4be",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "complete"
+    },
+    {
+      "id": "host",
+      "feature_id": "host",
+      "journey": "Embedded host points and exit",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Only a completed round emits one existing game point event; exits retain their contract.",
+      "observed": "Six same-origin iframe checks passed, including partial-no-points, one five-point award, reload deduplication, local Menu and outer Games exit.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-variety.evidence.json",
+          "release": "1796b7b+coin-variety:8428ef2e698da4be",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "complete"
+    },
+    {
+      "id": "physical",
+      "feature_id": "physical",
+      "journey": "Real-device and installed-shell acceptance",
+      "status": "blocked",
+      "platform": {
+        "kind": "physical_device",
+        "name": "Android / iPhone / iPad",
+        "os": "Android / iOS / iPadOS",
+        "browser_or_app": "Physical browsers / Capacitor"
+      },
+      "environment": "local",
+      "release": "1796b7b+coin-variety:8428ef2e698da4be",
+      "expected": "Real phones/tablets verify touch, frame pacing, safe areas and native lifecycle.",
+      "reason": "No physical device or installed APK/IPA session was run.",
+      "evidence": [],
+      "side_effect": "read_only",
+      "authorization_ref": "User requested new interactive games inside Coin Champ while preserving the preview",
+      "cleanup": "not_needed"
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "status": "incomplete",
+    "next_action": "Local requested behavior is verified; complete representative physical phone/tablet and installed-shell checks before claiming all-device acceptance."
+  }
+}

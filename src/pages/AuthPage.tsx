@@ -10,10 +10,13 @@ import {
 } from '../utils/quickUnlock';
 
 const formWrapStyle: React.CSSProperties = {
-  minHeight: '100vh',
+  boxSizing: 'border-box',
+  height: '100dvh',
+  minHeight: 0,
+  overflowY: 'auto',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
   padding: '1rem',
   background: 'var(--color-background)',
 };
@@ -22,6 +25,8 @@ const cardStyle: React.CSSProperties = {
   boxSizing: 'border-box',
   width: '100%',
   maxWidth: 420,
+  flexShrink: 0,
+  margin: 'auto',
   borderRadius: 20,
   padding: '1.25rem 1.25rem 1.1rem',
   background: 'linear-gradient(180deg, #17233e 0%, #12203a 100%)',
@@ -211,7 +216,7 @@ const AuthPage: React.FC = () => {
   const quickUnlockUser = readQuickUnlockUsername();
 
   return (
-    <div style={formWrapStyle}>
+    <div className="auth-page" style={formWrapStyle}>
       <form style={cardStyle} onSubmit={handleSubmit}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
           <span style={{ fontSize: '1.5rem' }}>🌟</span>
@@ -225,7 +230,7 @@ const AuthPage: React.FC = () => {
 
         {!isConfigured && (
           <p style={{ color: '#fecaca', marginBottom: 12 }}>
-            Supabase is not configured. Account login is unavailable, but temporary guest play is still available.
+            Account login is unavailable. You can still play as a guest and save progress on this device.
           </p>
         )}
 
@@ -310,7 +315,7 @@ const AuthPage: React.FC = () => {
         </button>
 
         <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.88rem', color: 'rgba(248,250,252,0.82)' }}>
-          Guest progress resets when you sign out or close the browser or app.
+          Guest progress is saved on this device, even after you close the app. Clearing browser or app data removes it.
         </p>
 
         <button

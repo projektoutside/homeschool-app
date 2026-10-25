@@ -1,46 +1,104 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import test from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
+import * as guest from '../src/utils/guestSession.ts';
 
-const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const SESSION_KEY = 'lahs.guest-session.v1';
+const PROFILE_KEY = 'lahs.guest-profile.v1';
+const POINTS_KEY = 'lahs.user-points.v1:local-guest-device';
+const STAMINA_KEY = 'lahs.user-stamina.v1:local-guest-device';
 
-test('guest identity and profile use session storage', async () => {
-  const source = await readSource('src/utils/guestSession.ts');
+const createStorage = () => {
+  const values = new Map();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+    clear: () => values.clear(),
+  };
+};
 
-  assert.match(source, /window\.sessionStorage\.setItem\(STORAGE_TEST_KEY/);
-  assert.match(source, /window\.sessionStorage\.getItem\(key\)/);
-  assert.match(source, /window\.sessionStorage\.setItem\(key, JSON\.stringify\(value\)\)/);
-  assert.doesNotMatch(source, /window\.localStorage\.setItem\(STORAGE_TEST_KEY/);
+beforeEach(() => {
+  globalThis.window = { localStorage: createStorage(), sessionStorage: createStorage() };
 });
 
-test('guest cleanup removes current session data and legacy persistent data', async () => {
-  const source = await readSource('src/utils/guestSession.ts');
-
-  assert.match(source, /window\.sessionStorage\.removeItem\(GUEST_SESSION_STORAGE_KEY\)/);
-  assert.match(source, /window\.sessionStorage\.removeItem\(GUEST_PROFILE_STORAGE_KEY\)/);
-  assert.match(source, /window\.localStorage\.removeItem\(GUEST_SESSION_STORAGE_KEY\)/);
-  assert.match(source, /window\.localStorage\.removeItem\(GUEST_PROFILE_STORAGE_KEY\)/);
+afterEach(() => {
+  delete globalThis.window;
 });
 
-test('guest points and stamina use session storage while accounts retain local storage', async () => {
-  const points = await readSource('src/context/PointsContext.tsx');
-  const stamina = await readSource('src/context/StaminaContext.tsx');
+test('guest identity and edited profile survive a new browser session', () => {
+  guest.startGuestSession();
+  guest.updateGuestProfile({ username: 'Local Learner', homeLabel: 'Our Classroom' });
+  window.sessionStorage = createStorage();
 
-  assert.match(points, /const storage = isGuestUserId\(userId\) \? window\.sessionStorage : window\.localStorage/);
-  assert.match(stamina, /const storage = isGuestUserId\(userId\) \? window\.sessionStorage : window\.localStorage/);
+  const restored = guest.readActiveGuestUser();
+  assert.equal(restored?.id, guest.GUEST_USER_ID);
+  assert.equal(restored?.user_metadata.username, 'Local Learner');
+  assert.equal(restored?.user_metadata.home_label, 'Our Classroom');
 });
 
-test('authentication screen offers Play as Guest with reset wording', async () => {
-  const source = await readSource('src/pages/AuthPage.tsx');
+test('sign-out ends guest access without deleting saved progress or profile', () => {
+  guest.startGuestSession();
+  guest.updateGuestProfile({ username: 'Returning Learner' });
+  window.localStorage.setItem(POINTS_KEY, JSON.stringify({ version: 1, serverTotalPoints: 50, pendingEvents: [] }));
+  window.localStorage.setItem(STAMINA_KEY, JSON.stringify({ version: 1, available: 16, updatedAtMs: Date.now() }));
 
-  assert.match(source, /Play as Guest/);
-  assert.match(source, /resets when you sign out or close the browser or app/i);
-  assert.doesNotMatch(source, /Log in as Guest/);
+  guest.clearGuestSession();
+  assert.equal(guest.readActiveGuestUser(), null);
+  window.sessionStorage = createStorage();
+
+  const returning = guest.startGuestSession();
+  assert.equal(returning.user_metadata.username, 'Returning Learner');
+  assert.equal(JSON.parse(window.localStorage.getItem(POINTS_KEY)).serverTotalPoints, 50);
+  assert.equal(JSON.parse(window.localStorage.getItem(STAMINA_KEY)).available, 16);
 });
 
-test('guest account settings describe temporary progress accurately', async () => {
-  const source = await readSource('src/components/GlobalSettings.tsx');
+test('existing temporary guest identity and profile migrate without losing edits', () => {
+  window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ active: true, userId: guest.GUEST_USER_ID }));
+  window.sessionStorage.setItem(PROFILE_KEY, JSON.stringify({ id: guest.GUEST_USER_ID, username: 'Existing Guest', homeLabel: 'Saved Home' }));
 
-  assert.match(source, /Guest profile changes last only for this play session\./);
-  assert.doesNotMatch(source, /Guest profile changes are saved locally on this device\./);
+  assert.equal(guest.readActiveGuestUser()?.user_metadata.username, 'Existing Guest');
+  assert.equal(window.sessionStorage.getItem(SESSION_KEY), null);
+  assert.equal(window.sessionStorage.getItem(PROFILE_KEY), null);
+  window.sessionStorage = createStorage();
+  assert.equal(guest.readActiveGuestUser()?.user_metadata.home_label, 'Saved Home');
+});
+
+test('existing temporary points and stamina migrate with their original storage format', () => {
+  const points = JSON.stringify({ version: 1, serverTotalPoints: 50, pendingEvents: [] });
+  const stamina = JSON.stringify({ version: 1, available: 16, updatedAtMs: Date.now() });
+  for (const [key, value] of [[POINTS_KEY, points], [STAMINA_KEY, stamina]]) {
+    window.sessionStorage.setItem(key, value);
+    assert.equal(guest.readGuestStorageItem(key), value);
+    assert.equal(window.localStorage.getItem(key), value);
+    assert.equal(window.sessionStorage.getItem(key), null);
+  }
+});
+
+test('newer persistent progress takes precedence over a stale temporary copy', () => {
+  window.localStorage.setItem(POINTS_KEY, 'newer-save');
+  window.sessionStorage.setItem(POINTS_KEY, 'older-save');
+  assert.equal(guest.readGuestStorageItem(POINTS_KEY), 'newer-save');
+});
+
+test('guest sign-out leaves account caches and saved guest data untouched', () => {
+  const accountKey = 'lahs.user-points.v1:account-user';
+  window.localStorage.setItem(accountKey, 'account-data');
+  guest.startGuestSession();
+  const profile = window.localStorage.getItem(PROFILE_KEY);
+  assert.ok(profile);
+  guest.clearGuestSession();
+  assert.equal(window.localStorage.getItem(accountKey), 'account-data');
+  assert.equal(window.localStorage.getItem(PROFILE_KEY), profile);
+  assert.equal(window.localStorage.getItem(SESSION_KEY), null);
+});
+
+test('blocked persistent storage reports that guest progress cannot be saved', () => {
+  window.localStorage.setItem = () => { throw new Error('Storage blocked'); };
+  assert.throws(() => guest.startGuestSession(), /local storage|save.*progress/i);
+  assert.equal(guest.readActiveGuestUser(), null);
+});
+
+test('malformed stored guest session does not grant guest access', () => {
+  window.localStorage.setItem(SESSION_KEY, '{invalid');
+  assert.equal(guest.readActiveGuestUser(), null);
 });

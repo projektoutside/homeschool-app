@@ -1,0 +1,270 @@
+.games-view { display: grid; height: 100%; max-width: 1080px; margin: auto; grid-template-rows: auto 48px minmax(0, 1fr); gap: 20px; padding: 18px 12px 24px; }
+.games-heading h1 { font-size: 40px; color: #285a44; }
+.games-heading p { font-size: 18px; color: #4f705e; margin-top: 6px; }
+.game-tabs { display: flex; gap: 10px; }
+.game-tabs button { min-height: 44px; padding: 8px 22px; border-radius: 12px; color: #315b43; background: #dfecdf; font-size: 18px; }
+.game-tabs button[aria-pressed="true"] { background: #315b43; color: #fffdf7; }
+.game-shelves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; min-height: 0; }
+.game-door { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; min-height: 44px; gap: 16px; padding: 26px; border-radius: 18px; background: #ffedba; color: #654820; text-align: left; }
+.game-door-memory, .game-door-make { background: #eadff7; color: #5d3c77; }
+.game-door-treasure, .game-door-change { background: #d9eee5; color: #2b6253; }
+.game-door-art { width: 100%; display: flex; justify-content: center; padding-bottom: 20px; }
+.game-door-art svg { width: 110px; height: 110px; stroke-width: 1.25; }
+.game-door > strong { font: 700 30px Fredoka, sans-serif; }
+.game-door > span:not(.game-door-art):not(.game-door-play) { font-size: 17px; line-height: 1.4; }
+.game-door-play { display: inline-flex; gap: 10px; align-items: center; font-size: 20px; font-weight: 800; margin-top: 12px; }
+.mini-play { grid-template-rows: 30px auto minmax(0, 1fr) !important; gap: 12px; }
+.mini-play.show-feedback { grid-template-rows: 30px auto minmax(0, 1fr) minmax(48px, auto) !important; }
+.mini-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 3px 8px; }
+.mini-heading h1 { font-size: 32px; color: #285a44; }
+.mini-heading p { font-size: 17px; line-height: 1.35; color: #4f705e; margin-top: 5px; }
+.mini-play .clock-label.urgent { color: #993c2e; }
+.mini-board { min-height: 0; min-width: 0; border-radius: 18px; padding: 20px; }
+.sort-board { background: #f3fbf5; display: grid; grid-template-rows: minmax(0, 1fr) minmax(120px, .65fr); gap: 12px; }
+.sort-pedestal { display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 0; gap: 8px; color: #4f705e; }
+.mini-status { font-size: 16px; font-weight: 800; }
+.sort-current { display: grid; place-items: center; width: 140px; height: 140px; border-radius: 50%; background: #fff0cc; touch-action: none; }
+.sort-current .coin-face { --coin-size: 120px; }
+.sort-coin-name { color: #315b43; font-size: 18px; }
+.sort-finished { display: grid; place-items: center; width: 90px; height: 90px; border-radius: 50%; color: #fffdf7; background: #24795b; }
+.sort-finished svg { width: 54px; height: 54px; }
+.sorting-jars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; min-height: 0; }
+.sort-bin.tray-slot { position: relative; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 5px; border-radius: 14px; background: #e2eee1; color: #315b43; padding: 6px; }
+.sort-bin > strong { font-size: 20px; }
+.sort-bin > span:last-child { font-size: 18px; }
+.jar-count { position: absolute; top: 8px; right: 10px; min-width: 24px; padding: 2px 6px; background: #fffdf7; border-radius: 8px; font-weight: 800; }
+.jar-glass { display: grid; place-items: center; position: relative; width: 82px; height: 86px; }
+.jar-glass > svg { position: absolute; width: 100%; height: 100%; color: #7fa68c; stroke-width: .8; }
+.jar-glass .coin-face { --coin-size: 54px; margin-top: 16px; }
+.sort-bin[data-count="0"] .coin-face { visibility: hidden; }
+.memory-board { display: grid; grid-template-rows: minmax(0, 1fr) 48px; gap: 14px; background: #f6f0fc; }
+.memory-board.settled-memory { grid-template-rows: minmax(0, 1fr); }
+.mini-pair-summary { display: block; margin-top: 5px; font-size: 13px; color: #60406f; font-weight: 800; }
+.mini-treasure-summary { display: none; }
+.memory-grid { display: grid; grid-template-columns: repeat(var(--memory-columns), minmax(0, 1fr)); grid-auto-rows: minmax(44px, 1fr); gap: 12px; min-height: 0; }
+.memory-card { position: relative; display: grid; place-items: center; min-width: 0; min-height: 44px; border-radius: 14px; background: #74538d; color: #fff9ed; padding: 14px 8px; border: 2px solid #68467f; }
+.memory-card.face-up { background: #fffdf7; border-color: #d8c7e6; color: #60406f; }
+.memory-card.matched { background: #e4f2df; border-color: #9cbe93; }
+.memory-card:disabled { opacity: 1; cursor: default; }
+.card-number { position: absolute; top: 6px; left: 9px; font-size: 13px; font-weight: 800; opacity: .85; }
+.memory-card > strong { font: 700 32px Fredoka, sans-serif; }
+.memory-back { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.memory-back svg { width: 40px; height: 40px; }
+.memory-back > span { font-size: 16px; font-weight: 800; }
+.memory-coin-bundle { display: flex; align-items: center; justify-content: center; gap: 2px; max-width: 100%; }
+.memory-coin { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.memory-coin small { font-size: 14px; line-height: 1.15; font-weight: 800; }
+.memory-coin-bundle .coin-face { --coin-size: 52px; }
+.memory-coin-bundle:has(> :nth-child(3)) .coin-face { --coin-size: 40px; }
+.matched-mark { position: absolute; bottom: 5px; right: 7px; color: #24795b; }
+.matched-mark svg { width: 20px; height: 20px; }
+.memory-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #60406f; font-size: 15px; }
+.memory-footer button { min-height: 44px; padding: 7px 14px; }
+.treasure-board { display: grid; grid-template-rows: minmax(0, 1fr) 108px; gap: 14px; background: #dcf0e9; }
+.treasure-map { display: grid; grid-template-columns: repeat(var(--map-columns), minmax(0, 1fr)); grid-auto-rows: minmax(44px, 1fr); gap: 12px; min-height: 0; padding: 2px 10px; }
+.treasure-spot { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0; min-height: 44px; width: min(100%, 120px); aspect-ratio: 1; align-self: center; justify-self: center; border-radius: 50% 50% 42% 42%; background: #fff1c9; color: #6b552d; padding: 6px; }
+.treasure-spot.chosen { background: #c6dfd2; }
+.treasure-spot .coin-face { --coin-size: 58px; }
+.treasure-spot > strong { font-size: 18px; }
+.map-number { position: absolute; top: 6px; left: 12px; font-size: 12px; font-weight: 800; }
+.treasure-taken { display: grid; place-items: center; min-height: 40px; }
+.treasure-taken svg { width: 28px; height: 28px; color: #24795b; }
+.treasure-dock { display: flex; align-items: center; justify-content: center; gap: 24px; min-width: 0; background: #fff9e9; border-radius: 14px; padding: 8px 16px; }
+.treasure-vault { display: grid; place-items: center; position: relative; width: 144px; height: 90px; flex-shrink: 0; }
+.treasure-vault > svg { width: 84px; height: 84px; color: #a67728; stroke-width: 1.2; }
+.treasure-stacks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; position: absolute; inset: 22px 0 auto; }
+.treasure-stacks .tray-slot { min-height: 0; padding: 0; background: transparent; gap: 0; }
+.treasure-stacks .coin-face { --coin-size: 32px; }
+.treasure-stacks small { font-size: 11px; font-weight: 800; }
+.treasure-total { display: flex; flex-direction: column; gap: 2px; color: #5c6347; }
+.treasure-total > output { font: 700 32px Fredoka, sans-serif; color: #24795b; }
+.treasure-total > small { font-size: 14px; }
+.treasure-total.over-goal > output, .treasure-total.over-goal > small { color: #993c2e; }
+.treasure-tools { display: flex; gap: 8px; margin-left: auto; }
+.treasure-tools button { display: flex; align-items: center; gap: 5px; min-height: 44px; padding: 7px 12px; }
+.chest-open > svg { animation: chest-prize 280ms ease-out; }
+@keyframes chest-prize { from { opacity: .5; } to { opacity: 1; } }
+@media (max-width: 680px) and (min-height: 400px) {
+  .games-view { gap: 12px; padding: 10px 4px; grid-template-rows: auto 44px minmax(0, 1fr); }
+  .games-heading h1 { font-size: 29px; }
+  .games-heading p { font-size: 15px; }
+  .game-tabs button { flex: 1; padding: 8px; font-size: 16px; }
+  .game-shelves { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .game-door { display: grid; grid-template-columns: 72px minmax(0, 1fr) 26px; grid-template-rows: auto auto; gap: 5px 12px; padding: 12px; align-content: center; }
+  .game-door-art { grid-row: 1 / 3; padding: 0; align-self: center; }
+  .game-door-art svg { width: 64px; height: 64px; }
+  .game-door > strong { font-size: 23px; }
+  .game-door > span:not(.game-door-art):not(.game-door-play) { grid-column: 2; font-size: 14px; }
+  .game-door-play { grid-column: 3; grid-row: 1 / 3; font-size: 0; margin: 0; }
+  .mini-play { gap: 8px; grid-template-rows: 28px auto minmax(0, 1fr) !important; }
+  .mini-play.show-feedback { grid-template-rows: 28px auto minmax(0, 1fr) minmax(48px, auto) !important; }
+  .mini-heading { padding: 0; gap: 8px; }
+  .mini-heading h1 { font-size: 25px; }
+  .mini-heading p { font-size: 14px; }
+  .mini-heading .read-button { display: none; }
+  .mini-board { padding: 12px; }
+  .sort-board { grid-template-rows: minmax(0, 1fr) 112px; gap: 8px; }
+  .sort-current { width: 108px; height: 108px; }
+  .sort-current .coin-face { --coin-size: 96px; }
+  .sort-pedestal { gap: 6px; font-size: 13px; }
+  .sort-coin-name { font-size: 16px; }
+  .sorting-jars { gap: 6px; }
+  .sort-bin.tray-slot { padding: 4px 2px; gap: 1px; }
+  .sort-bin > strong { font-size: 15px; }
+  .sort-bin > span:last-child { font-size: 16px; }
+  .jar-count { top: 4px; right: 4px; min-width: 18px; padding: 0 3px; font-size: 12px; }
+  .jar-glass { width: 56px; height: 64px; }
+  .jar-glass .coin-face { --coin-size: 38px; margin-top: 12px; }
+  .memory-board { gap: 8px; grid-template-rows: minmax(0, 1fr) 44px; }
+  .memory-board.settled-memory { grid-template-rows: minmax(0, 1fr); }
+  .memory-grid { gap: 7px; }
+  .memory-card { padding: 12px 3px; border-radius: 12px; }
+  .memory-card > strong { font-size: 26px; }
+  .memory-back svg { width: 31px; height: 31px; }
+  .memory-back > span { font-size: 13px; }
+  .memory-coin-bundle .coin-face { --coin-size: 32px; }
+  .memory-coin-bundle:has(> :nth-child(3)) .coin-face { --coin-size: 22px; }
+  .memory-coin small { font-size: 12px; }
+  .memory-footer { font-size: 12px; }
+  .memory-footer > span:last-child { max-width: 150px; text-align: right; }
+  .treasure-board { grid-template-rows: minmax(0, 1fr) 100px; gap: 8px; }
+  .treasure-map { padding: 0; gap: 7px; }
+  .treasure-spot .coin-face { --coin-size: 43px; }
+  .treasure-spot > strong { font-size: 15px; }
+  .map-number { top: 4px; left: 7px; font-size: 10px; }
+  .treasure-dock { padding: 5px 8px; gap: 8px; }
+  .treasure-vault { width: 90px; height: 76px; }
+  .treasure-vault > svg { width: 66px; height: 66px; }
+  .treasure-stacks { inset: 18px 0 auto; }
+  .treasure-stacks .coin-face { --coin-size: 23px; }
+  .treasure-total { font-size: 12px; }
+  .treasure-total > output { font-size: 27px; }
+  .treasure-total > small { font-size: 11px; }
+  .treasure-tools { flex-direction: column; gap: 4px; }
+  .treasure-tools button { font-size: 11px; padding: 4px 7px; min-height: 44px; }
+}
+@media (max-width: 370px) and (min-height: 400px) {
+  .mini-heading h1 { font-size: 23px; }
+  .mini-board { padding: 8px; }
+  .sort-board { grid-template-rows: minmax(0, 1fr) 102px; }
+  .sort-current { width: 82px; height: 82px; }
+  .sort-current .coin-face { --coin-size: 76px; }
+  .sort-pedestal { gap: 4px; }
+  .jar-glass { width: 48px; height: 58px; }
+  .jar-glass .coin-face { --coin-size: 32px; }
+  .sort-bin > strong { font-size: 13px; }
+  .memory-card > strong { font-size: 23px; }
+  .memory-coin-bundle:has(> :nth-child(3)) .coin-face { --coin-size: 18px; }
+  .treasure-board { grid-template-rows: minmax(0, 1fr) 98px; }
+  .treasure-spot .coin-face { --coin-size: 35px; }
+}
+@media (max-height: 500px) and (min-width: 450px) {
+  .games-view { grid-template-rows: 30px 44px minmax(0, 1fr); gap: 7px; padding: 3px 4px; }
+  .games-heading h1 { font-size: 25px; }
+  .games-heading p { display: none; }
+  .game-door { padding: 9px 12px; gap: 5px; }
+  .game-door-art { padding: 0; }
+  .game-door-art svg { width: 42px; height: 42px; }
+  .game-door > strong { font-size: 19px; }
+  .game-door > span:not(.game-door-art):not(.game-door-play) { font-size: 12px; }
+  .game-door-play { font-size: 14px; margin-top: 3px; }
+  .mini-play { grid-template-columns: minmax(150px, .65fr) minmax(0, 1.5fr); grid-template-rows: 26px minmax(0, 1fr) !important; gap: 5px 10px; }
+  .mini-play.show-feedback { grid-template-rows: 26px minmax(0, 1fr) minmax(44px, auto) !important; }
+  .mini-play .journey-bar { grid-column: 1 / -1; }
+  .mini-play:has(.memory-board) { grid-template-columns: minmax(112px, .5fr) minmax(0, 1.8fr); }
+  .mini-heading { flex-direction: column; align-items: flex-start; align-self: center; padding: 5px; gap: 8px; }
+  .mini-heading h1 { font-size: 23px; }
+  .mini-heading p { font-size: 13px; }
+  .mini-heading .read-button { display: none; }
+  .mini-board { grid-column: 2; grid-row: 2; padding: 8px; }
+  .mini-play .feedback-bar { grid-column: 1 / -1; }
+  .mini-play.show-feedback .mini-heading { display: contents; }
+  .mini-play.show-feedback .mini-heading > div:first-child { grid-column: 1; grid-row: 2; align-self: center; }
+  .mini-play.show-feedback .question-actions { grid-column: 1; grid-row: 3; align-self: center; }
+  .mini-play.show-feedback .feedback-bar { grid-column: 2; }
+  .sort-board { grid-template-columns: 80px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; }
+  .sort-current { width: 68px; height: 68px; }
+  .sort-current .coin-face { --coin-size: 62px; }
+  .sort-pedestal { font-size: 11px; gap: 6px; text-align: center; }
+  .sort-coin-name { font-size: 12px; }
+  .mini-status { font-size: 11px; }
+  .sorting-jars { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .sort-bin.tray-slot { padding: 2px; gap: 0; }
+  .jar-glass { width: 44px; height: 36px; }
+  .jar-glass .coin-face { display: inline-grid; --coin-size: 24px; margin-top: 5px; }
+  .sort-bin > strong { font-size: 12px; }
+  .sort-bin > span:last-child { font-size: 13px; }
+  .jar-count { top: 3px; right: 3px; min-width: 14px; font-size: 10px; padding: 0 2px; }
+  .memory-board { grid-template-rows: minmax(0, 1fr) 44px; gap: 5px; }
+  .memory-board.settled-memory { grid-template-rows: minmax(0, 1fr); }
+  .memory-grid { gap: 5px; }
+  .memory-card { padding: 0 2px; border-radius: 9px; }
+  .memory-card > strong { font-size: 22px; }
+  .memory-back { flex-direction: row; gap: 3px; }
+  .memory-back svg { width: 22px; height: 22px; }
+  .memory-back > span { font-size: 11px; }
+  .card-number { top: 3px; left: 5px; font-size: 10px; }
+  .memory-coin-bundle .coin-face, .memory-coin-bundle:has(> :nth-child(3)) .coin-face { --coin-size: 20px; }
+  .memory-coin small { font-size: 12px; }
+  .memory-footer { font-size: 11px; }
+  .memory-footer > span:last-child { display: none; }
+  .memory-footer button { min-height: 44px; padding: 5px 8px; font-size: 12px; }
+  .treasure-board { grid-template-rows: minmax(0, 1fr) 50px; gap: 5px; }
+  .treasure-board.settled-treasure { grid-template-rows: minmax(0, 1fr); }
+  .settled-treasure .treasure-dock { display: none; }
+  .mini-treasure-summary { display: block; margin-top: 5px; font-size: 13px; font-weight: 800; }
+  .treasure-map { gap: 4px; padding: 0; }
+  .treasure-spot { border-radius: 14px; padding: 2px; flex-direction: row; gap: 3px; aspect-ratio: auto; height: 100%; }
+  .treasure-spot .coin-face { --coin-size: 26px; }
+  .treasure-spot > strong { font-size: 13px; }
+  .map-number { top: 2px; left: 4px; font-size: 9px; }
+  .treasure-taken { min-height: 26px; }
+  .treasure-taken svg { width: 22px; height: 22px; }
+  .treasure-dock { padding: 3px 6px; gap: 6px; }
+  .treasure-vault { width: 62px; height: 44px; }
+  .treasure-vault > svg { width: 42px; height: 42px; }
+  .treasure-stacks { inset: 8px 0 auto; }
+  .treasure-stacks .coin-face { --coin-size: 17px; }
+  .treasure-stacks small { font-size: 9px; }
+  .treasure-total { font-size: 10px; gap: 0; }
+  .treasure-total > output { font-size: 20px; }
+  .treasure-total > small { font-size: 10px; }
+  .treasure-tools { flex-direction: row; gap: 4px; }
+  .treasure-tools button { padding: 3px 5px; font-size: 10px; min-height: 44px; }
+}
+@media (max-width: 370px) and (min-height: 500px) {
+  .memory-grid:has(> :nth-child(9)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 449px) and (max-height: 520px) and (min-height: 400px) {
+  .mini-play { gap: 4px; }
+  .mini-heading h1 { font-size: 23px; }
+  .mini-heading p { font-size: 13px; }
+  .mini-board { padding: 6px; }
+  .memory-card { padding: 2px 0; }
+  .memory-back { flex-direction: row; gap: 3px; }
+  .memory-back svg { width: 20px; height: 20px; }
+  .memory-back > span { font-size: 12px; }
+  .memory-coin-bundle { gap: 0; }
+  .memory-coin-bundle .coin-face, .memory-coin-bundle:has(> :nth-child(3)) .coin-face { --coin-size: 20px; }
+  .card-number { top: 2px; left: 3px; font-size: 10px; }
+  .treasure-board { grid-template-rows: minmax(0, 1fr) 50px; gap: 5px; }
+  .treasure-map { gap: 4px; }
+  .treasure-spot { flex-direction: row; gap: 3px; height: 100%; aspect-ratio: auto; border-radius: 14px; padding: 2px; }
+  .treasure-spot .coin-face { --coin-size: 24px; }
+  .treasure-spot > strong { font-size: 14px; }
+  .map-number { top: 2px; left: 3px; }
+  .treasure-dock { gap: 6px; padding: 3px 6px; }
+  .treasure-vault { width: 54px; height: 44px; }
+  .treasure-vault > svg { width: 40px; height: 40px; }
+  .treasure-stacks { inset: 8px 0 auto; }
+  .treasure-stacks .coin-face { --coin-size: 16px; }
+  .treasure-total { font-size: 10px; gap: 0; }
+  .treasure-total > output { font-size: 20px; }
+  .treasure-total > small { font-size: 11px; white-space: nowrap; }
+  .treasure-tools { flex-direction: row; gap: 4px; }
+  .treasure-tools button { padding: 3px 6px; font-size: 12px; }
+  .treasure-tools svg { width: 16px; height: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chest-open > svg { animation: none; }
+}

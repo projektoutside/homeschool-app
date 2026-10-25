@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "run_id": "coin-champ-3d-20261024",
+  "started_at": "2026-10-24T22:56:46.542Z",
+  "finished_at": "2026-10-24T23:05:58.936Z",
+  "target": {
+    "kind": "web",
+    "environment": "local",
+    "url_or_artifact": "http://127.0.0.1:5173/play/coin-champ",
+    "expected_release": "1724497+coin-3d:e8cb6d7616992455",
+    "observed_release": "1724497+coin-3d:e8cb6d7616992455",
+    "release_verified": true
+  },
+  "scope": {
+    "name": "Local 3D coin visual and motion upgrade",
+    "features": [
+      {
+        "id": "renderer",
+        "name": "3D coin rendering",
+        "critical": true
+      },
+      {
+        "id": "interaction",
+        "name": "Coin input and progress",
+        "critical": true
+      },
+      {
+        "id": "motion",
+        "name": "Motion and lifecycle",
+        "critical": true
+      },
+      {
+        "id": "layout",
+        "name": "Responsive controls",
+        "critical": true
+      },
+      {
+        "id": "audio",
+        "name": "Landing sound preferences",
+        "critical": true
+      },
+      {
+        "id": "physical",
+        "name": "Physical and native acceptance",
+        "critical": true
+      }
+    ],
+    "required_check_ids": [
+      "renderer",
+      "interaction",
+      "motion",
+      "layout",
+      "audio",
+      "physical"
+    ],
+    "limitations": [
+      "No production deployment, provider configuration or Supabase writes.",
+      "Local Chrome/WebKit and synthetic visibility/context-loss tests do not prove physical Safari, Android, safe areas, real zoom, battery cost or native shell behavior.",
+      "Audio checks observe sound creation and mute routing, not physical audible quality.",
+      "Photo texture/bump detail is not a sculpted portrait scan."
+    ],
+    "authorization": {
+      "test_identity_refs": [
+        "Disposable local browser guest contexts"
+      ],
+      "production_write_refs": [],
+      "high_impact_refs": []
+    }
+  },
+  "checks": [
+    {
+      "id": "renderer",
+      "feature_id": "renderer",
+      "journey": "3D coin rendering",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport/touch emulation"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Real 3D models and one shared renderer remain usable.",
+      "observed": "Both engines created one renderer, rendered all 32 selected identities, and stopped GPU draw calls while idle.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-3d.evidence.json",
+          "release": "1724497+coin-3d:e8cb6d7616992455",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "complete"
+    },
+    {
+      "id": "interaction",
+      "feature_id": "interaction",
+      "journey": "Coin input and progress",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport/touch emulation"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Tap, keyboard, drag, undo and reload preserve exact selections.",
+      "observed": "Both engines passed immediate saves, capacity, single-drop drag, removal, undo, clearing and round/selection restoration.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-3d.evidence.json",
+          "release": "1724497+coin-3d:e8cb6d7616992455",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "complete"
+    },
+    {
+      "id": "motion",
+      "feature_id": "motion",
+      "journey": "Motion and lifecycle",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport/touch emulation"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Finite drops settle safely during interruptions.",
+      "observed": "Both engines passed Help/background pauses, reduced motion, no old-drop replay, WebGL context loss/restoration and no-WebGL fallback.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-3d.evidence.json",
+          "release": "1724497+coin-3d:e8cb6d7616992455",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "complete"
+    },
+    {
+      "id": "layout",
+      "feature_id": "layout",
+      "journey": "Responsive controls",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport/touch emulation"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Normal primary play has no overflow or blocked actions.",
+      "observed": "18 engine/layout states passed, including six sizes plus success, count and identify; 320x568 Help retains visible Close and Done.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-3d.evidence.json",
+          "release": "1724497+coin-3d:e8cb6d7616992455",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "complete"
+    },
+    {
+      "id": "audio",
+      "feature_id": "audio",
+      "journey": "Landing sound preferences",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Headless Chrome and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Chrome / WebKit desktop engines with viewport/touch emulation"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Muting during flight prevents later sound creation.",
+      "observed": "A browser oscillator counter did not increase after muting during a live drop.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-3d.evidence.json",
+          "release": "1724497+coin-3d:e8cb6d7616992455",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "complete"
+    },
+    {
+      "id": "physical",
+      "feature_id": "physical",
+      "journey": "Physical and native acceptance",
+      "status": "blocked",
+      "platform": {
+        "kind": "physical_device",
+        "name": "Android / iPhone / iPad",
+        "os": "Android / iOS / iPadOS",
+        "browser_or_app": "Physical browsers and Capacitor"
+      },
+      "environment": "local",
+      "release": "1724497+coin-3d:e8cb6d7616992455",
+      "expected": "Real phones/tablets verify frame pacing, touch, audible playback and shell lifecycle.",
+      "reason": "No physical device or installed APK/IPA session was run.",
+      "evidence": [],
+      "side_effect": "read_only",
+      "authorization_ref": "User requested richer coin visuals and animations with the live preview preserved",
+      "cleanup": "not_needed"
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "status": "incomplete",
+    "next_action": "The local implementation is verified for the tested scope; complete physical phone/tablet and installed-shell checks before claiming all-device performance."
+  }
+}

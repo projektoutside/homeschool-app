@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T03:03:20.232Z",
+  "title": "Design System: Coin Champ",
+  "extensions": {
+    "playPalette": [
+      "#fff9ed",
+      "#e7f5ed",
+      "#294e43",
+      "#285a44",
+      "#f3fbf5",
+      "#fffdf7",
+      "#fff0cc",
+      "#e6f4e9",
+      "#24795b",
+      "#ffe29a"
+    ],
+    "startFlow": "Main menu, then 3, 2, 1, START!, then the saved or new round",
+    "shadows": [
+      {
+        "name": "workbench",
+        "value": "0 10px 30px #160d383b",
+        "purpose": "Ground the cream coin workbench"
+      }
+    ],
+    "motion": [
+      {
+        "name": "coin-arrival",
+        "value": "180ms ease-out",
+        "purpose": "One brief response when a coin is added"
+      },
+      {
+        "name": "celebration",
+        "value": "800ms ease-out",
+        "purpose": "A correct-answer reward; skipped for reduced motion"
+      },
+      {
+        "name": "coin-drop",
+        "value": "860ms tumble with a small landing rebound",
+        "purpose": "Connect each add action to its selected denomination stack"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "portrait",
+        "value": "680px"
+      },
+      {
+        "name": "short",
+        "value": "500px height"
+      },
+      {
+        "name": "small",
+        "value": "370px"
+      }
+    ],
+    "coinRendering": {
+      "geometry": "Beveled 3D bodies, photographic front/back faces, denomination-specific metal edges",
+      "duration": "860ms finite drop",
+      "idle": "No continuous render loop",
+      "fallback": "Photographic DOM controls on WebGL failure",
+      "reducedMotion": "Immediate settled pose"
+    },
+    "miniGames": {
+      "modes": [
+        "Coin Sort",
+        "Memory Match",
+        "Treasure Hunt"
+      ],
+      "rounds": 4,
+      "collections": [
+        "Fun games",
+        "Coin practice"
+      ],
+      "layout": "Single play board; prompt beside board on short landscape",
+      "persistence": "One active session, saved after every move"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Start or advance a challenge",
+      "html": "<button class=\"ds-primary\">Play!</button>",
+      "css": ".ds-primary{background:var(--gold,#ffce69);color:#543510;border:0;border-radius:14px;min-height:48px;padding:12px 20px;font:700 19px sans-serif;cursor:pointer}.ds-primary:hover{filter:brightness(1.06)}.ds-primary:focus-visible{outline:3px solid #4cf4cb;outline-offset:4px}.ds-primary:active{transform:translateY(2px)}"
+    },
+    {
+      "name": "Check action",
+      "kind": "button",
+      "description": "Submit the student's coin tray",
+      "html": "<button class=\"ds-check\">Check</button>",
+      "css": ".ds-check{background:#186b58;color:#fff9ed;border:0;border-radius:14px;min-height:44px;padding:12px 20px;font:700 17px sans-serif;cursor:pointer}.ds-check:focus-visible{outline:3px solid #4cf4cb;outline-offset:4px}.ds-check:hover{filter:brightness(1.06)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Small coins. Big adventures.",
+    "overview": "An illustrated carnival menu leading into a calm cream and mint coin table with one simple prompt.",
+    "keyCharacteristics": [
+      "Sculpted gold and plum",
+      "Menu-first entry and a paused-safe 3, 2, 1, START! screen",
+      "Individual counting coins and a clearly labeled coin box",
+      "Forgiving retries",
+      "Persistent earned rewards"
+    ],
+    "rules": [
+      {
+        "name": "Play before chrome",
+        "body": "Adapt panels and secondary details to preserve the playable coin area.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Use dynamic viewport dimensions and safe areas",
+      "Keep visible money values exact"
+    ],
+    "donts": [
+      "Do not hide overflow to mask inaccessible controls",
+      "Do not claim physical-device acceptance from emulation"
+    ]
+  }
+}

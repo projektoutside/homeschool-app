@@ -1,0 +1,618 @@
+{
+  "identity": "d1f0aa4+playtest:000b1e1918243da2",
+  "environment": "local",
+  "url": "http://127.0.0.1:5173/play/coin-champ",
+  "hashes": {
+    "game.css": "eec07ba600c425763b83d3f2df450d1c846081cd1af500ac600dd0971efc06b9",
+    "kid-friendly.css": "16997f7fa11303060a6d2f99e3d5af756965a230d4b2306c3fbe7c71f7223829",
+    "coin-visuals.css": "58769f496b94ddc6bd9e37f081975628508938ac5c579f5332ab18a8c5684f2e",
+    "mini-games.css": "cbb79bcfc6db0fc08af2732ed6f90458132e4ef74843cd5f15b1f70263a1d7d3",
+    "mini-ui.js": "dcf32f0827fb3cec199f0c93d56cbdeebb801b8d6b3e667e042a3cf78947bde5",
+    "game.js": "d61f066a825781070e7c9d453ccd35ed3dc83f402585bd3cca4c2c272457243c"
+  },
+  "runs": {
+    "chromium": {
+      "rounds": [
+        "starter sort round 1 completes once",
+        "starter sort round 2 completes once",
+        "starter sort round 3 completes once",
+        "starter sort round 4 completes once",
+        "starter memory round 1 completes once",
+        "starter memory round 2 completes once",
+        "starter memory round 3 completes once",
+        "starter memory round 4 completes once",
+        "starter treasure round 1 completes once",
+        "starter treasure round 2 completes once",
+        "starter treasure round 3 completes once",
+        "starter treasure round 4 completes once",
+        "explorer sort round 1 completes once",
+        "explorer sort round 2 completes once",
+        "explorer sort round 3 completes once",
+        "explorer sort round 4 completes once",
+        "explorer memory round 1 completes once",
+        "explorer memory round 2 completes once",
+        "explorer memory round 3 completes once",
+        "explorer memory round 4 completes once",
+        "explorer treasure round 1 completes once",
+        "explorer treasure round 2 completes once",
+        "explorer treasure round 3 completes once",
+        "explorer treasure round 4 completes once",
+        "master sort round 1 completes once",
+        "master sort round 2 completes once",
+        "master sort round 3 completes once",
+        "master sort round 4 completes once",
+        "master memory round 1 completes once",
+        "master memory round 2 completes once",
+        "master memory round 3 completes once",
+        "master memory round 4 completes once",
+        "master treasure round 1 completes once",
+        "master treasure round 2 completes once",
+        "master treasure round 3 completes once",
+        "master treasure round 4 completes once"
+      ],
+      "assertions": 351,
+      "layoutStates": 132,
+      "viewports": [
+        "1440x900",
+        "393x852",
+        "390x844",
+        "320x568",
+        "390x500",
+        "390x400",
+        "480x320",
+        "568x320",
+        "844x390",
+        "768x1024",
+        "1024x768"
+      ],
+      "finalCompactStates": 36,
+      "finalCompactFixtures": [
+        [
+          "sort",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "sort",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "sort",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "sort",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "sort",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "sort",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "sort",
+          "review",
+          480,
+          320
+        ],
+        [
+          "sort",
+          "review",
+          568,
+          320
+        ],
+        [
+          "sort",
+          "review",
+          844,
+          390
+        ],
+        [
+          "sort",
+          "review",
+          390,
+          400
+        ],
+        [
+          "sort",
+          "review",
+          320,
+          568
+        ],
+        [
+          "sort",
+          "review",
+          1440,
+          900
+        ],
+        [
+          "memory",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "memory",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "memory",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "memory",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "memory",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "memory",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "memory",
+          "review",
+          480,
+          320
+        ],
+        [
+          "memory",
+          "review",
+          568,
+          320
+        ],
+        [
+          "memory",
+          "review",
+          844,
+          390
+        ],
+        [
+          "memory",
+          "review",
+          390,
+          400
+        ],
+        [
+          "memory",
+          "review",
+          320,
+          568
+        ],
+        [
+          "memory",
+          "review",
+          1440,
+          900
+        ],
+        [
+          "treasure",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "treasure",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "treasure",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "treasure",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "treasure",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "treasure",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "treasure",
+          "review",
+          480,
+          320
+        ],
+        [
+          "treasure",
+          "review",
+          568,
+          320
+        ],
+        [
+          "treasure",
+          "review",
+          844,
+          390
+        ],
+        [
+          "treasure",
+          "review",
+          390,
+          400
+        ],
+        [
+          "treasure",
+          "review",
+          320,
+          568
+        ],
+        [
+          "treasure",
+          "review",
+          1440,
+          900
+        ]
+      ],
+      "guards": [
+        "touch sorting works without WebGL and with reduced motion",
+        "double tapping one memory card does not reveal another card",
+        "memory hint returns focus to Hint",
+        "touch treasure collection can be returned immediately without WebGL",
+        "Hint pauses the optional timer",
+        "timer expiration gives a review and Next rather than blocking play",
+        "Next after timeout starts a clean round",
+        "fallback and timer checks have no uncaught page errors"
+      ],
+      "uncaughtErrors": [],
+      "failures": []
+    },
+    "webkit": {
+      "rounds": [
+        "starter sort round 1 completes once",
+        "starter sort round 2 completes once",
+        "starter sort round 3 completes once",
+        "starter sort round 4 completes once",
+        "starter memory round 1 completes once",
+        "starter memory round 2 completes once",
+        "starter memory round 3 completes once",
+        "starter memory round 4 completes once",
+        "starter treasure round 1 completes once",
+        "starter treasure round 2 completes once",
+        "starter treasure round 3 completes once",
+        "starter treasure round 4 completes once",
+        "explorer sort round 1 completes once",
+        "explorer sort round 2 completes once",
+        "explorer sort round 3 completes once",
+        "explorer sort round 4 completes once",
+        "explorer memory round 1 completes once",
+        "explorer memory round 2 completes once",
+        "explorer memory round 3 completes once",
+        "explorer memory round 4 completes once",
+        "explorer treasure round 1 completes once",
+        "explorer treasure round 2 completes once",
+        "explorer treasure round 3 completes once",
+        "explorer treasure round 4 completes once",
+        "master sort round 1 completes once",
+        "master sort round 2 completes once",
+        "master sort round 3 completes once",
+        "master sort round 4 completes once",
+        "master memory round 1 completes once",
+        "master memory round 2 completes once",
+        "master memory round 3 completes once",
+        "master memory round 4 completes once",
+        "master treasure round 1 completes once",
+        "master treasure round 2 completes once",
+        "master treasure round 3 completes once",
+        "master treasure round 4 completes once"
+      ],
+      "assertions": 353,
+      "layoutStates": 132,
+      "viewports": [
+        "1440x900",
+        "393x852",
+        "390x844",
+        "320x568",
+        "390x500",
+        "390x400",
+        "480x320",
+        "568x320",
+        "844x390",
+        "768x1024",
+        "1024x768"
+      ],
+      "finalCompactStates": 36,
+      "finalCompactFixtures": [
+        [
+          "sort",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "sort",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "sort",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "sort",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "sort",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "sort",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "sort",
+          "review",
+          480,
+          320
+        ],
+        [
+          "sort",
+          "review",
+          568,
+          320
+        ],
+        [
+          "sort",
+          "review",
+          844,
+          390
+        ],
+        [
+          "sort",
+          "review",
+          390,
+          400
+        ],
+        [
+          "sort",
+          "review",
+          320,
+          568
+        ],
+        [
+          "sort",
+          "review",
+          1440,
+          900
+        ],
+        [
+          "memory",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "memory",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "memory",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "memory",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "memory",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "memory",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "memory",
+          "review",
+          480,
+          320
+        ],
+        [
+          "memory",
+          "review",
+          568,
+          320
+        ],
+        [
+          "memory",
+          "review",
+          844,
+          390
+        ],
+        [
+          "memory",
+          "review",
+          390,
+          400
+        ],
+        [
+          "memory",
+          "review",
+          320,
+          568
+        ],
+        [
+          "memory",
+          "review",
+          1440,
+          900
+        ],
+        [
+          "treasure",
+          "feedback",
+          480,
+          320
+        ],
+        [
+          "treasure",
+          "feedback",
+          568,
+          320
+        ],
+        [
+          "treasure",
+          "feedback",
+          844,
+          390
+        ],
+        [
+          "treasure",
+          "feedback",
+          390,
+          400
+        ],
+        [
+          "treasure",
+          "feedback",
+          320,
+          568
+        ],
+        [
+          "treasure",
+          "feedback",
+          1440,
+          900
+        ],
+        [
+          "treasure",
+          "review",
+          480,
+          320
+        ],
+        [
+          "treasure",
+          "review",
+          568,
+          320
+        ],
+        [
+          "treasure",
+          "review",
+          844,
+          390
+        ],
+        [
+          "treasure",
+          "review",
+          390,
+          400
+        ],
+        [
+          "treasure",
+          "review",
+          320,
+          568
+        ],
+        [
+          "treasure",
+          "review",
+          1440,
+          900
+        ]
+      ],
+      "guards": [
+        "touch sorting works without WebGL and with reduced motion",
+        "double tapping one memory card does not reveal another card",
+        "memory hint returns focus to Hint",
+        "touch treasure collection can be returned immediately without WebGL",
+        "Hint pauses the optional timer",
+        "timer expiration gives a review and Next rather than blocking play",
+        "Next after timeout starts a clean round",
+        "fallback and timer checks have no uncaught page errors"
+      ],
+      "uncaughtErrors": [],
+      "failures": []
+    }
+  },
+  "static": {
+    "unitTests": 39,
+    "catalogEntries": 84,
+    "syntax": "passed",
+    "diffWhitespace": "passed"
+  },
+  "baseline": {
+    "horizontalOverflow390x500": 82,
+    "offscreenActions480x320": [
+      "sort",
+      "memory",
+      "treasure"
+    ],
+    "hintFocus": "lost after rerender",
+    "findingsResolved": [
+      "readable coin identity/values",
+      "remaining/overshoot guidance",
+      "compact results",
+      "compact feedback heading and map/dock overlap"
+    ]
+  },
+  "provenance": [
+    "Full journeys used only revealed card content and visible values.",
+    "The final read-only compact feedback reflow was validated in 72 generated-save fixture states after the full journeys.",
+    "The source hash above identifies the final served files; full journey evidence is reused across that scoped layout correction."
+  ],
+  "limits": [
+    "Device Lab devices_list and workspace_get returned fetch failed.",
+    "No physical device, true zoom, audible sound, hardware performance, native shell or student testing."
+  ],
+  "cleanup": "Isolated browser contexts closed; existing preview/server preserved."
+}

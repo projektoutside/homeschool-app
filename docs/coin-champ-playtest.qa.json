@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "run_id": "coin-champ-playtest-20261024",
+  "started_at": "2026-10-25T03:18:50.453Z",
+  "finished_at": "2026-10-25T03:33:31.809Z",
+  "target": {
+    "kind": "web",
+    "environment": "local",
+    "url_or_artifact": "http://127.0.0.1:5173/play/coin-champ",
+    "expected_release": "d1f0aa4+playtest:000b1e1918243da2",
+    "observed_release": "d1f0aa4+playtest:000b1e1918243da2",
+    "release_verified": true
+  },
+  "scope": {
+    "name": "Coin Sort, Memory Match and Treasure Hunt playtest/fixes",
+    "features": [
+      {
+        "id": "play",
+        "name": "play",
+        "critical": true
+      },
+      {
+        "id": "layout",
+        "name": "layout",
+        "critical": true
+      },
+      {
+        "id": "recovery",
+        "name": "recovery",
+        "critical": true
+      },
+      {
+        "id": "fallback",
+        "name": "fallback",
+        "critical": true
+      },
+      {
+        "id": "physical",
+        "name": "physical",
+        "critical": true
+      }
+    ],
+    "required_check_ids": [
+      "play",
+      "layout",
+      "recovery",
+      "fallback",
+      "physical"
+    ],
+    "limitations": [
+      "Device Lab devices_list and workspace_get returned fetch failed.",
+      "No physical device, true zoom, audible sound, hardware performance, native shell or student testing."
+    ],
+    "authorization": {
+      "test_identity_refs": [
+        "Isolated disposable local saves; generated-save layout fixtures"
+      ],
+      "production_write_refs": [],
+      "high_impact_refs": []
+    }
+  },
+  "checks": [
+    {
+      "id": "play",
+      "feature_id": "play",
+      "journey": "play",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chromium and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "d1f0aa4+playtest:000b1e1918243da2",
+      "expected": "Complete four rounds of all three games at each level.",
+      "observed": "72 rounds completed through normal visible controls in Chromium/WebKit.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-playtest.evidence.json",
+          "release": "d1f0aa4+playtest:000b1e1918243da2",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested playing all three mini games, fixing bugs/confusion and ensuring screen fit.",
+      "cleanup": "complete"
+    },
+    {
+      "id": "layout",
+      "feature_id": "layout",
+      "journey": "layout",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chromium and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "d1f0aa4+playtest:000b1e1918243da2",
+      "expected": "Primary controls, card content and map remain visible without page overflow.",
+      "observed": "264 full-journey states plus 72 final compact-feedback states passed; representative screenshots were inspected.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-playtest.evidence.json",
+          "release": "d1f0aa4+playtest:000b1e1918243da2",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested playing all three mini games, fixing bugs/confusion and ensuring screen fit.",
+      "cleanup": "complete"
+    },
+    {
+      "id": "recovery",
+      "feature_id": "recovery",
+      "journey": "recovery",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chromium and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "d1f0aa4+playtest:000b1e1918243da2",
+      "expected": "Partial progress, settled rewards and keyboard recovery remain stable.",
+      "observed": "Save/reopen, single reward per completed round, Flip back focus and Hint trigger focus passed.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-playtest.evidence.json",
+          "release": "d1f0aa4+playtest:000b1e1918243da2",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested playing all three mini games, fixing bugs/confusion and ensuring screen fit.",
+      "cleanup": "complete"
+    },
+    {
+      "id": "fallback",
+      "feature_id": "fallback",
+      "journey": "fallback",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chromium and Playwright WebKit",
+        "os": "Windows host",
+        "browser_or_app": "Desktop engines with viewport and touch emulation"
+      },
+      "environment": "local",
+      "release": "d1f0aa4+playtest:000b1e1918243da2",
+      "expected": "Touch fallback and paused/expired timers remain playable.",
+      "observed": "Both engines passed 8 reduced-motion, WebGL-unavailable, touch, repeated-tap, timer and recovery checks.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-playtest.evidence.json",
+          "release": "d1f0aa4+playtest:000b1e1918243da2",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested playing all three mini games, fixing bugs/confusion and ensuring screen fit.",
+      "cleanup": "complete"
+    },
+    {
+      "id": "physical",
+      "feature_id": "physical",
+      "journey": "physical",
+      "status": "blocked",
+      "platform": {
+        "kind": "physical_device",
+        "name": "Android / iPhone / iPad",
+        "os": "Android / iOS / iPadOS",
+        "browser_or_app": "Physical browser / Capacitor"
+      },
+      "environment": "local",
+      "release": "d1f0aa4+playtest:000b1e1918243da2",
+      "expected": "Validate touch, safe areas, native lifecycle and frame pacing on physical devices.",
+      "reason": "Device Lab inventory/workspace calls returned fetch failed; no physical sessions executed.",
+      "evidence": [],
+      "side_effect": "read_only",
+      "authorization_ref": "User requested playing all three mini games, fixing bugs/confusion and ensuring screen fit.",
+      "cleanup": "not_needed"
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "status": "incomplete",
+    "next_action": "Local scope passes; physical phone/tablet and student observation remain unverified."
+  }
+}

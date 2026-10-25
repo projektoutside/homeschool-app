@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "run_id": "coin-champ-friendly-flow-20261024",
+  "started_at": "2026-10-24T22:09:44Z",
+  "finished_at": "2026-10-24T22:22:32.668Z",
+  "target": {
+    "kind": "web",
+    "environment": "local",
+    "url_or_artifact": "http://127.0.0.1:5173/play/coin-champ",
+    "expected_release": "2fa94f8+coin-kids:928f96d026d61fad",
+    "observed_release": "2fa94f8+coin-kids:928f96d026d61fad",
+    "release_verified": true
+  },
+  "scope": {
+    "name": "Menu-first Coin Champ refinement and local customer journeys",
+    "features": [
+      {
+        "id": "entry",
+        "name": "Main menu and start countdown",
+        "critical": true
+      },
+      {
+        "id": "play",
+        "name": "Simple coin gameplay and feedback",
+        "critical": true
+      },
+      {
+        "id": "save",
+        "name": "Guest save and reward recovery",
+        "critical": true
+      },
+      {
+        "id": "layout",
+        "name": "Responsive layout and accessible actions",
+        "critical": true
+      },
+      {
+        "id": "host",
+        "name": "Embedded host exit and points",
+        "critical": true
+      },
+      {
+        "id": "devices",
+        "name": "Physical and native lifecycle acceptance",
+        "critical": true
+      }
+    ],
+    "required_check_ids": [
+      "entry-chrome",
+      "play-engines",
+      "saved-round",
+      "layout-matrix",
+      "host-contract",
+      "hardware"
+    ],
+    "limitations": [
+      "No production deployment or Supabase changes.",
+      "Chrome and WebKit are local desktop engines with viewport/touch emulation.",
+      "Visibility events were synthetic; actual browser bfcache, physical audio/safe areas/zoom and installed Capacitor remain unverified.",
+      "No student usability study was performed."
+    ],
+    "authorization": {
+      "test_identity_refs": [
+        "Disposable isolated local browser guest contexts"
+      ],
+      "production_write_refs": [],
+      "high_impact_refs": []
+    }
+  },
+  "checks": [
+    {
+      "id": "entry-chrome",
+      "feature_id": "entry",
+      "journey": "Play, Help, background, Continue, Escape",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chrome desktop/touch emulation",
+        "os": "Windows host",
+        "browser_or_app": "Headless Chrome / Playwright WebKit"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "The start gate holds, resumes, and cancels safely.",
+      "observed": "Native timer startup and 3, 2, 1, START sequence passed; Help/visibility hold; Escape cancels.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-friendly-flow.evidence.json",
+          "release": "2fa94f8+coin-kids:928f96d026d61fad",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "complete"
+    },
+    {
+      "id": "play-engines",
+      "feature_id": "play",
+      "journey": "Count, make, change, retry, success and timeout",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chrome and WebKit touch emulation",
+        "os": "Windows host",
+        "browser_or_app": "Headless Chrome / Playwright WebKit"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "Coins, answers, retry guidance and Next remain usable.",
+      "observed": "23 Chrome flow assertions and 19 WebKit assertions passed, including all eight counting rounds and first-hint guidance.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-friendly-flow.evidence.json",
+          "release": "2fa94f8+coin-kids:928f96d026d61fad",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "complete"
+    },
+    {
+      "id": "saved-round",
+      "feature_id": "save",
+      "journey": "Close/reload, Continue, and settled reward",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chrome and WebKit touch emulation",
+        "os": "Windows host",
+        "browser_or_app": "Headless Chrome / Playwright WebKit"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "Opening shows menu and preserves the saved round without duplicate awards.",
+      "observed": "Selections and round identity recovered; tickets/correct totals stayed settled after reopening.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-friendly-flow.evidence.json",
+          "release": "2fa94f8+coin-kids:928f96d026d61fad",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "complete"
+    },
+    {
+      "id": "layout-matrix",
+      "feature_id": "layout",
+      "journey": "Menu, countdown and four play types at seven sizes",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chrome desktop and viewport emulation",
+        "os": "Windows host",
+        "browser_or_app": "Headless Chrome / Playwright WebKit"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "Zero document overflow, offscreen actions or occluded action centers at normal tested sizes.",
+      "observed": "42 primary states plus 17 interaction/result states passed geometry checks from 320x568 through 1440x900.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-friendly-flow.evidence.json",
+          "release": "2fa94f8+coin-kids:928f96d026d61fad",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "complete"
+    },
+    {
+      "id": "host-contract",
+      "feature_id": "host",
+      "journey": "Embedded menu, solved answer, Continue, Games",
+      "status": "pass",
+      "platform": {
+        "kind": "browser_emulation",
+        "name": "Chrome same-origin iframe fixture",
+        "os": "Windows host",
+        "browser_or_app": "Headless Chrome / Playwright WebKit"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "Menu stays in game; Games emits existing exit; solved answer emits one point event.",
+      "observed": "All five checks passed; one five-point event and unchanged coin-champ exit contract.",
+      "evidence": [
+        {
+          "kind": "log",
+          "path_or_url": "coin-champ-friendly-flow.evidence.json",
+          "release": "2fa94f8+coin-kids:928f96d026d61fad",
+          "environment": "local",
+          "platform_kind": "browser_emulation"
+        }
+      ],
+      "side_effect": "test_write",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "complete"
+    },
+    {
+      "id": "hardware",
+      "feature_id": "devices",
+      "journey": "Physical phones/tablet, zoom, audible playback and native resume",
+      "status": "blocked",
+      "platform": {
+        "kind": "physical_device",
+        "name": "Android/iPhone/iPad/Capacitor",
+        "os": "Android/iOS/iPadOS",
+        "browser_or_app": "Real browsers and Capacitor"
+      },
+      "environment": "local",
+      "release": "2fa94f8+coin-kids:928f96d026d61fad",
+      "expected": "Responsive controls, safe areas, audio and lifecycle work on physical hardware.",
+      "reason": "No physical session or installed APK/IPA was run.",
+      "evidence": [],
+      "side_effect": "read_only",
+      "authorization_ref": "User requested Coin Champ refinement and local testing",
+      "cleanup": "not_needed"
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "status": "incomplete",
+    "next_action": "Local requested behavior is verified; complete physical Android/iPhone/iPad and installed-shell checks before claiming all-device acceptance."
+  }
+}

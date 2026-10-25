@@ -87,7 +87,7 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
   {
     "id": "coin-champ",
     "title": "Coin Champ",
-    "description": "Practice pennies, nickels, dimes, and quarters through polished make-the-amount and count-the-coins rounds.",
+    "description": "Explore a coin carnival with counting, exact-payment, change-making, and fewest-coin challenges. Collect stars and earned prizes at three skill levels.",
     "type": "game",
     "playerMode": "single",
     "appPointsEnabled": true,
@@ -95,12 +95,12 @@ export const GENERATED_CONTENT_ITEMS: ContentItem[] = [
     "subjects": [
       "Money",
       "Counting",
-      "Addition"
+      "Addition",
+      "Subtraction",
+      "Problem Solving"
     ],
     "gradeLevels": [
-      "Kindergarten",
-      "1st",
-      "2nd"
+      "All"
     ],
     "thumbnail": "/Games/Coin Champion/thumb.svg",
     "customHtmlPath": "/Games/Coin Champion/index.html",
