@@ -62,3 +62,9 @@ Tier 3 validation extends the existing seven-profile menu runner to cover all 18
 The map retains the existing accessible contained vertical scroll for all 18 nodes; this is the same documented long-content/expanded-content exception. Inspected the updated footer and mode copy at small-phone and short-landscape sizes plus the actual app. No new styling or illustration candidates. Existing visual rubric and layout remain applicable. The detector ran once; its eight existing HUD/dialog warnings/advisories were unchanged, and no clean-detector claim is made. Physical phones/tablets, OS gestures and native shells remain untested. Work remains local/uncommitted with the visible preview retained.
 
 Final result: 7/7 browser profiles passed with no page errors. Dirty-source identity: `output/birds-menu/custom-all-levels-source-receipt.json`. Actual embedded app picker, with all 18 enabled buttons confirmed through normal UI state: `output/birds-menu/side-panel-custom-all-levels.png`. Primary checkout remains clean; unrelated task-worktree edits are preserved. No commit, push, merge or deployment performed.
+
+## Unreal Mode
+
+The third mode starts a fresh ten-stage run at Level 1 with one stone. The reserve carries across stages. Reloads within a stage keep cleared birds and drawn lines. Hints, shop upgrades, and level selection are unavailable during the run. Leaving for the main menu ends the run. Completion awards 100 points per stone left through the existing game points bridge.
+
+On extremely short or zoomed viewports, `#mainMenu` can scroll vertically so all three full-size buttons and the top navigation remain reachable. The menu fits at 320 × 568. The 320 × 220 WebKit check confirms contained vertical scrolling and no horizontal overflow. The rules and results use the existing `.overlay-content` scrolling region when needed, with actions outside that region.

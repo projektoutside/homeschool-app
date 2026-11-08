@@ -32,6 +32,7 @@
       <div class="main-menu-actions" id="mainMenuActions" aria-label="Choose a game mode">
         <button class="mode-button mode-button--single" id="singlePlayerButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7Z"/></svg><span>Single Player</span></button>
         <button class="mode-button mode-button--versus" id="menuVersusButton" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 21v-4a5 5 0 0 1 10 0v4m0-4a5 5 0 0 1 10 0v4"/></svg><span>2 Player VS Mode</span></button>
+        <button class="mode-button mode-button--unreal" id="unrealButton" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/></svg><span>Unreal Mode</span></button>
       </div>
       <div class="single-player-actions" id="singlePlayerActions" aria-labelledby="singlePlayerTitle" hidden>
         <h2 id="singlePlayerTitle">Single Player</h2>
@@ -59,6 +60,12 @@
             <span class="level-map-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16m6-14v16"/></svg>Level map</span>
           </button>
           <button class="mini-button" id="nextLevelButton" type="button" aria-label="Next level">›</button>
+        </div>
+        <div class="hud-card level-card unreal-level">
+          <div class="level-main">
+            <span class="level-label" id="unrealLevelCount"></span>
+            <span class="level-value" id="unrealLevelValue"></span>
+          </div>
         </div>
         <div class="hud-card meter-card">
           <div class="meter-label-row">
@@ -175,6 +182,7 @@
   <script src="versus-simulation.js"></script>
   <script src="versus-solver.js"></script>
   <script src="campaign.js"></script>
+  <script src="unreal-levels.js"></script>
   <script src="level-map.js"></script>
   <script src="shop.js"></script>
   <script src="versus.js"></script>
@@ -245,6 +253,8 @@
         overlay: document.getElementById('overlay'),
         soundButton: document.getElementById('soundButton'),
         levelCount: document.getElementById('levelCount'),
+        unrealLevelCount: document.getElementById('unrealLevelCount'),
+        unrealLevelValue: document.getElementById('unrealLevelValue'),
         levelMapButton: document.getElementById('levelMapButton'),
         resultMapButton: document.getElementById('resultMapButton'),
         birdProgress: document.getElementById('birdProgress'),
@@ -294,6 +304,8 @@
       }
 
       const LEVELS = window.WoodlandCampaign.levels;
+      const UNREAL_LEVELS = window.WoodlandUnrealLevels;
+      const UNREAL_POINTS_PER_STONE = 100;
 
       const WORLD_COLLIDERS = [
         createStaticCollider(seg(10, 96, 10, WORLD_H + 24, 'wall', 10)),
@@ -367,6 +379,7 @@
         menuOpenedAt: null,
         levelIndex: clamp(storedProgress.selectedLevel - 1, 0, LEVELS.length - 1),
         playMode: 'progressive',
+        unreal: null,
         progressiveLevelIndex: 0,
         highestUnlocked: clamp(storedProgress.highestUnlocked || 1, 1, LEVELS.length),
         bestStats: storedProgress.bestStats || {},
@@ -505,7 +518,7 @@
       });
 
       function openLevelMap(event) {
-        if (versus.active || versus.paused || state.mapVisible || state.shopVisible) return;
+        if (state.unreal || versus.active || versus.paused || state.mapVisible || state.shopVisible) return;
         resetClawControl();
         finishStroke();
         state.mapVisible = true;
@@ -544,7 +557,7 @@
       });
 
       function openShop(event) {
-        if (versus.active || versus.paused || state.shopVisible || state.mapVisible || state.onboardingPending) return;
+        if (state.unreal || versus.active || versus.paused || state.shopVisible || state.mapVisible || state.onboardingPending) return;
         resetClawControl(); finishStroke();
         state.shopVisible = true; state.shopOpenedAt = performance.now();
         syncPauseState(); refreshButtons(); shop.open(event.currentTarget);
@@ -670,10 +683,17 @@
       }
 
       function showMainMenu() {
+        const leavingUnreal = Boolean(state.unreal);
         finishStroke(); resetClawControl();
         setMenuVisible(true);
+        if (leavingUnreal) {
+          state.unreal = null;
+          document.body.classList.remove('unreal-active');
+          hideOverlay();
+          beginAttempt(true, false);
+        }
         setSinglePlayerMenu(false);
-        dom.singlePlayerButton.focus({ preventScroll: true });
+        (leavingUnreal ? document.getElementById('unrealButton') : dom.singlePlayerButton).focus({ preventScroll: true });
       }
 
       function setSinglePlayerMenu(visible) {
@@ -699,6 +719,23 @@
         setMenuVisible(false);
         refreshHud(); refreshButtons();
         (state.overlayVisible ? dom.overlayPrimary : dom.canvas).focus({ preventScroll: true });
+      }
+
+      function startUnreal(showRules) {
+        unlockAudio();
+        state.unreal = { levelIndex: 0, stones: 1, shotStartedAt: null };
+        document.body.classList.add('unreal-active');
+        setMenuVisible(false);
+        beginAttempt(true, false);
+        if (!showRules) {
+          dom.canvas.focus({ preventScroll: true });
+          return;
+        }
+        showOverlay({
+          title: 'Unreal Mode',
+          body: 'Start with one stone. Each drop spends one, and each bird hit gives one back. Run out and the game ends after your shot. Clear all 10 levels for 100 points per stone left. Try a straight drop down the center first.',
+          primaryLabel: 'Begin Level 1', primaryAction: 'begin-unreal', secondaryLabel: 'Main menu',
+        });
       }
 
       function updateRotateNotice() {
@@ -784,8 +821,8 @@
         dom.overlayTitle.textContent = config.title || '';
         dom.overlayBody.textContent = config.body || '';
         dom.overlayPrimary.textContent = config.primaryLabel || 'Continue';
-        dom.resultMapButton.hidden = state.onboardingPending;
-        dom.resultShopButton.hidden = state.onboardingPending;
+        dom.resultMapButton.hidden = Boolean(state.unreal) || state.onboardingPending;
+        dom.resultShopButton.hidden = Boolean(state.unreal) || state.onboardingPending;
         if (config.secondaryLabel) {
           dom.overlaySecondary.hidden = false;
           dom.overlaySecondary.textContent = config.secondaryLabel;
@@ -830,8 +867,8 @@
         };
       }
 
-      function hydrateLevel(levelIndex) {
-        const base = LEVELS[levelIndex];
+      function hydrateLevel(levelIndex, levels) {
+        const base = levels[levelIndex];
         const hintSegments = base.hint.map(stroke => stroke.map(p => ({ ...p })));
         const staticLines = base.blockers.map(line => ({ ...line }));
         const laneYs = base.birdLaneYs;
@@ -896,17 +933,31 @@
         return `${count} ${count === 1 ? 'bird' : 'birds'}`;
       }
 
+      function unrealStoneLabel() {
+        const count = state.unreal.stones;
+        return `${count} ${count === 1 ? 'stone' : 'stones'}`;
+      }
+
       function refreshHud() {
         dom.coinBalance.textContent = state.shop.coins.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 0 });
         dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins`);
-        dom.shopButton.disabled = state.onboardingPending || versus.active;
+        dom.shopButton.disabled = Boolean(state.unreal) || state.onboardingPending || versus.active;
         dom.levelValue.textContent = state.level.title;
         dom.levelCount.textContent = `${state.playMode === 'custom' && !versus.active ? 'Custom · ' : ''}Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
         dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
-        dom.comboReadout.textContent = `x${state.combo.multiplier} · ${state.combo.points} pts`;
-        dom.comboReadout.dataset.chain = state.combo.hits;
-        dom.comboReadout.setAttribute('aria-label', `Combo x${state.combo.multiplier}, ${state.combo.points} bonus points.${versus.active ? ' Match points.' : ' Bank on level clear.'}`);
+        if (state.unreal) {
+          dom.unrealLevelCount.textContent = `Unreal · Level ${state.level.id} of ${UNREAL_LEVELS.length}`;
+          dom.unrealLevelValue.textContent = state.level.title;
+          const reserve = `${unrealStoneLabel()} left`;
+          dom.comboReadout.textContent = reserve;
+          dom.comboReadout.dataset.chain = '0';
+          dom.comboReadout.setAttribute('aria-label', reserve);
+        } else {
+          dom.comboReadout.textContent = `x${state.combo.multiplier} · ${state.combo.points} pts`;
+          dom.comboReadout.dataset.chain = state.combo.hits;
+          dom.comboReadout.setAttribute('aria-label', `Combo x${state.combo.multiplier}, ${state.combo.points} bonus points.${versus.active ? ' Match points.' : ' Bank on level clear.'}`);
+        }
         document.querySelectorAll('.bird-token').forEach((token, index) => {
           token.hidden = index >= state.level.birds.length;
           token.classList.toggle('is-cleared', index < cleared);
@@ -926,7 +977,7 @@
         dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
         dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
-        dom.restartButton.disabled = versus.active;
+        dom.restartButton.disabled = versus.active || Boolean(state.unreal);
         dom.clearButton.disabled = blocked || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
         dom.dropButton.disabled = blocked || state.rotatePaused || !attached;
       }
@@ -954,7 +1005,7 @@
       function beginAttempt(clearLines, preserveHintState) {
         state.combo = { hits: 0, multiplier: 1, points: 0 };
         state.comboPopups = [];
-        if (versus.active) state.loadout = { radius: STONE_RADIUS, finish: 'brass', inkMultiplier: 1, trail: false };
+        if (versus.active || state.unreal) state.loadout = { radius: STONE_RADIUS, finish: 'brass', inkMultiplier: 1, trail: false };
         else if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
         if (clearLines) {
           state.drawnStrokes = [];
@@ -970,7 +1021,8 @@
           }
         }
         state.elapsed = 0;
-        state.level = versus.active ? versus.level() : hydrateLevel(state.levelIndex);
+        state.level = versus.active ? versus.level()
+          : hydrateLevel(state.unreal?.levelIndex ?? state.levelIndex, state.unreal ? UNREAL_LEVELS : LEVELS);
         state.staticColliders = versus.active
           ? state.level.platformStrokes.map(points => WoodlandPhysics.createStroke(points, STATIC_LINE_WIDTH / 2))
           : state.level.staticLines.map(createStaticCollider);
@@ -1000,7 +1052,7 @@
       }
 
       function goToLevel(levelIndex) {
-        if (versus.active || versus.paused) return;
+        if (state.unreal || versus.active || versus.paused) return;
         const target = clamp(levelIndex, 0, LEVELS.length - 1);
         if (state.playMode !== 'custom' && target > state.highestUnlocked - 1) return;
         state.levelIndex = target;
@@ -1220,7 +1272,12 @@
       function releaseStone() {
         if (state.menuVisible || versus.editing || versus.paused || state.hostPaused || state.hiddenPause || (versus.active && !versus.running)) return;
         finishStroke();
-        if (!state.stone.attached || state.overlayVisible || state.rotatePaused) return;
+        if (!state.stone.attached || state.overlayVisible || state.rotatePaused || state.unreal?.stones === 0) return;
+        if (state.unreal) {
+          state.unreal.stones--;
+          state.unreal.shotStartedAt = state.elapsed;
+          refreshHud();
+        }
         resetClawControl();
         dropMechanism.release();
         state.hintVisibleUntil = 0;
@@ -1236,7 +1293,7 @@
         state.outcome = 'running';
         state.autoDropAt = null;
         refreshButtons();
-        setStatus('One stone only. Let the runway do the work.');
+        setStatus(state.unreal ? 'Stone in play. Each bird hit returns one stone.' : 'One stone only. Let the runway do the work.');
         playTone('drop');
         announce('Stone released.');
       }
@@ -1309,15 +1366,18 @@
           state.awardedForAttempt = true;
           return;
         }
-        const remainingInk = remainingInkRatio();
-        bridge.awardPoints(summary.points, {
+        bridge.awardPoints(summary.points, state.unreal ? {
+          eventId: `unreal:complete:${state.currentAttemptId}`,
+          label: 'Unreal Mode Complete',
+          meta: { mode: 'unreal', levelsCleared: UNREAL_LEVELS.length, stonesRemaining: state.unreal.stones },
+        } : {
           eventId: `clear:l${state.level.id}:${state.currentAttemptId}`,
           label: 'Level Clear',
           meta: {
             level: state.level.id,
             birdsHit: state.level.birds.length,
             hintUsed: state.hintUsed,
-            remainingInkRatio: Number(remainingInk.toFixed(3)),
+            remainingInkRatio: Number(remainingInkRatio().toFixed(3)),
             clearTimeMs: Math.round(summary.clearTimeMs),
             comboPoints: summary.comboPoints,
             maxCombo: summary.maxCombo,
@@ -1355,12 +1415,35 @@
         if (!state.stone.active) showPendingResult();
       }
 
+      function finishUnrealLevel() {
+        const nextLevel = UNREAL_LEVELS[state.unreal.levelIndex + 1];
+        const stats = [{ label: 'Stones left', value: state.unreal.stones }];
+        if (!nextLevel) {
+          const points = state.unreal.stones * UNREAL_POINTS_PER_STONE;
+          stats.push({ label: 'Points earned', value: points });
+          awardPointsForClear({ points });
+        }
+        const title = nextLevel ? `Level ${state.level.id} cleared` : 'Unreal Mode complete!';
+        setStatus(`${title} ${unrealStoneLabel()} left.`);
+        playTone('win');
+        createParticles(WORLD_W / 2, WORLD_H / 3, reducedMotion ? 6 : 48, ['#ffd06b', '#f48a64', '#ffffff', '#72cda1']);
+        queueRoundResult({
+          title,
+          body: nextLevel ? `Up next: ${nextLevel.title}. ${nextLevel.note}` : 'You cleared all 10 levels and earned 100 points for each stone you saved.',
+          stats,
+          primaryLabel: nextLevel ? 'Next level' : 'Play again',
+          primaryAction: nextLevel ? 'next-unreal' : 'restart-unreal',
+          secondaryLabel: 'Main menu',
+        });
+      }
+
       function handleWin() {
         if (state.runEnded) return;
         if (versus.active) { finishVersusTurn(true, 'Every bird cleared.'); return; }
         refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
+        if (state.unreal) { finishUnrealLevel(); return; }
         const clearTimeMs = Math.round(performance.now() - state.runStartAt);
         const remainingInk = remainingInkRatio();
         const points = CLEAR_BASE_POINTS
@@ -1437,6 +1520,29 @@
       function handleLose(reason) {
         if (state.runEnded) return;
         if (versus.active) { finishVersusTurn(false, reason); return; }
+        if (state.unreal) {
+          if (state.unreal.stones > 0) {
+            resetStone();
+            state.unreal.shotStartedAt = null;
+            state.runReleasedAt = null;
+            state.outcome = 'ready';
+            refreshButtons();
+            setStatus(`${reason} ${unrealStoneLabel()} left. Adjust your route and drop again.`);
+            return;
+          }
+          state.runEnded = true;
+          state.outcome = 'lose';
+          setStatus('Out of stones. Your Unreal run is over.');
+          playTone('lose');
+          queueRoundResult({
+            title: 'Out of stones',
+            body: `${reason} Your Unreal run ends here. A new run starts at Level 1 with one stone.`,
+            stats: [{ label: 'Levels cleared', value: `${state.unreal.levelIndex} / ${UNREAL_LEVELS.length}` }],
+            primaryLabel: 'Start new run', primaryAction: 'restart-unreal',
+            secondaryLabel: 'Main menu',
+          });
+          return;
+        }
         state.runEnded = true;
         state.outcome = 'lose';
         setStatus(reason);
@@ -1461,10 +1567,13 @@
       function hitBird(bird) {
         if (!bird.alive || state.runEnded) return;
         bird.alive = false;
-        state.combo.hits++;
-        state.combo.multiplier = Math.min(3, state.combo.hits);
-        const hitPoints = BIRD_HIT_POINTS * state.combo.multiplier;
-        state.combo.points += hitPoints;
+        if (state.unreal) state.unreal.stones++;
+        else {
+          state.combo.hits++;
+          state.combo.multiplier = Math.min(3, state.combo.hits);
+          state.combo.points += BIRD_HIT_POINTS * state.combo.multiplier;
+        }
+        const hitPoints = state.unreal ? 1 : BIRD_HIT_POINTS * state.combo.multiplier;
         state.comboPopups.push({ x: clamp(bird.x, 82, WORLD_W - 82), y: bird.y - 22, age: 0, multiplier: state.combo.multiplier, points: hitPoints });
         state.comboPopups = state.comboPopups.slice(-3);
         createParticles(bird.x, bird.y, 16, [bird.tint[0], bird.tint[1], '#ffffff']);
@@ -1475,7 +1584,8 @@
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
-          const message = versus.active
+          const message = state.unreal ? `Bird cleared! +1 stone. ${unrealStoneLabel()} left.`
+            : versus.active
             ? `x${state.combo.multiplier} combo! +${hitPoints} bonus points. Keep going for a full clear!`
             : `x${state.combo.multiplier} combo! +${hitPoints} points. Clear the flock to bank ${state.combo.points}.`;
           setStatus(message); announce(message);
@@ -1537,6 +1647,9 @@
           if (state.runEnded) {
             state.stone.active = false;
             showPendingResult();
+          } else if (state.unreal) {
+            state.stone.active = false;
+            handleLose('The stone got stuck before every bird was cleared.');
           } else {
             const aim = state.clawBaseX;
             beginAttempt(false, true);
@@ -1561,7 +1674,11 @@
             : 'The stone settled on a runway before the last birds crossed its path.');
           return;
         }
-        if (!versus.active && !state.runEnded && performance.now() - state.runReleasedAt >= FAIL_MAX_TIME_MS) {
+        if (state.unreal && (state.elapsed - state.unreal.shotStartedAt) * 1000 >= FAIL_MAX_TIME_MS) {
+          state.stone.active = false;
+          if (state.runEnded) showPendingResult();
+          else handleLose('The stone ran out of time before clearing the flock.');
+        } else if (!state.unreal && !versus.active && !state.runEnded && performance.now() - state.runReleasedAt >= FAIL_MAX_TIME_MS) {
           handleLose('The run lasted too long. Try a shorter route.');
         }
       }
@@ -1801,7 +1918,7 @@
           const title = popup.multiplier === 3 ? 'FLOCK COMBO!' : popup.multiplier === 2 ? 'DOUBLE!' : 'NICE HIT!';
           ctx.strokeText(title, popup.x, y - 18); ctx.fillText(title, popup.x, y - 18);
           ctx.font = '600 22px Fredoka';
-          const score = `x${popup.multiplier}  +${popup.points}`;
+          const score = state.unreal ? '+1 stone' : `x${popup.multiplier}  +${popup.points}`;
           ctx.strokeText(score, popup.x, y); ctx.fillText(score, popup.x, y);
         });
         ctx.restore();
@@ -1848,7 +1965,7 @@
       }
 
       function useHint() {
-        if (versus.active || versus.paused) return;
+        if (state.unreal || versus.active || versus.paused) return;
         if (state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
         state.hintUsed = true;
         state.hintVisibleUntil = Infinity;
@@ -1874,6 +1991,18 @@
       function handleOverlayPrimary() {
         hideOverlay();
         switch (state.overlayPrimaryAction) {
+          case 'begin-unreal':
+            setStatus(state.level.note);
+            dom.canvas.focus({ preventScroll: true });
+            return;
+          case 'next-unreal':
+            state.unreal.levelIndex++;
+            beginAttempt(true, false);
+            dom.canvas.focus({ preventScroll: true });
+            return;
+          case 'restart-unreal':
+            startUnreal();
+            return;
           case 'begin':
             state.onboardingPending = false;
             saveProgress();
@@ -1969,7 +2098,7 @@
           return;
         }
         if (event.key === 'r' || event.key === 'R') {
-          if (versus.active) return;
+          if (state.unreal || versus.active) return;
           beginAttempt(true, false);
           return;
         }
@@ -2046,6 +2175,7 @@
         document.getElementById('customPlayButton').addEventListener('click', openLevelMap);
         dom.continuePlayButton.addEventListener('click', startSinglePlayer);
         dom.menuVersusButton.addEventListener('click', () => { unlockAudio(); versus.setup(); });
+        document.getElementById('unrealButton').addEventListener('click', () => startUnreal(true));
         dom.menuSoundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
         document.getElementById('menuGamesButton').addEventListener('click', () => {
           if (state.singlePlayerMenu) { setSinglePlayerMenu(false); dom.singlePlayerButton.focus({ preventScroll: true }); }
@@ -2077,7 +2207,7 @@
           else showMainMenu();
         });
         dom.restartButton.addEventListener('click', () => {
-          if (versus.active || versus.paused) return;
+          if (state.unreal || versus.active || versus.paused) return;
           unlockAudio();
           playTone('tap');
           hideOverlay();
@@ -2150,10 +2280,11 @@
           screen: state.menuVisible ? 'menu' : versus.active ? 'versus' : 'single-player',
           menuVisible: state.menuVisible,
           singlePlayerMenu: state.menuVisible && state.singlePlayerMenu,
-          playMode: versus.active ? 'versus' : state.playMode,
+          playMode: versus.active ? 'versus' : state.unreal ? 'unreal' : state.playMode,
+          ...(state.unreal && { stonesRemaining: state.unreal.stones }),
           versus: versus.snapshot(),
           level: state.level ? state.level.id : null,
-          totalLevels: LEVELS.length,
+          totalLevels: state.unreal ? UNREAL_LEVELS.length : LEVELS.length,
           campaignRevision: window.WoodlandCampaign.revision,
           chapter: state.level ? state.level.chapter : null,
           skill: state.level ? state.level.skill : null,
@@ -2209,7 +2340,7 @@
         };
         window.__manyBirdsDebug = {
           reset(clearLines = true) {
-            beginAttempt(Boolean(clearLines), false);
+            if (!state.unreal) beginAttempt(Boolean(clearLines), false);
             return JSON.parse(window.render_game_to_text());
           },
           setLevel(index) {
@@ -2273,7 +2404,7 @@
             return JSON.parse(window.render_game_to_text());
           },
           forceWin() {
-            if (versus.active) return JSON.parse(window.render_game_to_text());
+            if (state.unreal || versus.active) return JSON.parse(window.render_game_to_text());
             state.level.birds.forEach(hitBird);
             handleWin();
             return JSON.parse(window.render_game_to_text());
