@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
+import { androidPrivacyPolicyUrl } from '../config/installConfig';
 import { useAuth } from '../context/AuthContext';
 import {
   clearQuickUnlock,
@@ -316,6 +318,9 @@ const AuthPage: React.FC = () => {
 
         <p style={{ marginTop: 8, marginBottom: 0, fontSize: '0.88rem', color: 'rgba(248,250,252,0.82)' }}>
           Guest progress is saved on this device, even after you close the app. Clearing browser or app data removes it.
+          {Capacitor.getPlatform() === 'android' && (
+            <> <a href={androidPrivacyPolicyUrl} style={{ color: '#7dd3fc' }}>Privacy policy</a></>
+          )}
         </p>
 
         <button

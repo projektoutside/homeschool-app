@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
+import { androidPrivacyPolicyUrl } from '../config/installConfig';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_SOUND_SETTINGS, useSoundSettings, type SoundSettings } from '../context/SoundSettingsContext';
 import { HOME_PAGE_MUSIC_OPTIONS } from '../utils/homePageMusic';
@@ -450,6 +452,9 @@ export const GlobalSettings: React.FC<GlobalSettingsProps> = ({ isOpen, onClose,
                     >
                         Sound Settings
                     </button>
+                    {Capacitor.getPlatform() === 'android' && (
+                        <a className="settings-menu-btn" href={androidPrivacyPolicyUrl}>Privacy policy</a>
+                    )}
                 </div>
             </section>
 

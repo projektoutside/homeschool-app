@@ -43,3 +43,5 @@ export const installConfig = {
 } as const;
 
 export type InstallConfig = typeof installConfig;
+
+export const androidPrivacyPolicyUrl = 'https://projektoutside.github.io/homeschool-app/privacy.html';
