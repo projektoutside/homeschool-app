@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  const maxShotFrames = 1200;
   const STEP = 1 / 60;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dropCache = new Map();
@@ -60,7 +61,7 @@
     const pose = dropPose(solution, Boolean(config.reducedMotion));
     const stone = { x: pose.x, y: pose.stoneY, vx: 0, vy: 14, radius: 12, sleepMs: 0, supported: false, onFloor: false };
     const path = [];
-    const maxFrames = Math.min(1200, config.seconds ? config.seconds * 60 - solution.dropFrame : 1200);
+    const maxFrames = Math.min(maxShotFrames, config.seconds ? config.seconds * 60 - solution.dropFrame : maxShotFrames);
     for (let frame = 1; frame <= maxFrames; frame++) {
       birdPositions(birds, (solution.dropFrame + frame) * STEP);
       if (integrate(stone, colliders, birds, STEP) === 'escaped') break;
@@ -73,5 +74,5 @@
     }
     return { clear: false, hits: birds.filter(b => !b.alive).length, ...(trace ? { path, remaining: birds.filter(b => b.alive).map(b => ({ x: b.baseX, y: b.laneY })) } : {}) };
   }
-  window.WoodlandVersusSimulation = { revision: 'vs-simulation-v1', STEP, birdPositions, birdsFor, integrate, ink, validSolution, collidersFor, replay };
+  window.WoodlandVersusSimulation = { revision: 'vs-simulation-v1', STEP, maxShotMs: maxShotFrames * STEP * 1000, birdPositions, birdsFor, integrate, ink, validSolution, collidersFor, replay };
 })();

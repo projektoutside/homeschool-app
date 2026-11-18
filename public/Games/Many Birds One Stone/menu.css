@@ -26,6 +26,7 @@
 .mode-button--single svg { fill: currentColor; stroke-width: 1; }
 .mode-button--versus { background: #175e4e; color: #fff9e9; box-shadow: 0 5px 0 #123d34, 0 10px 20px #173d3640; }
 .mode-button--unreal { background: #733e35; color: #fff6df; box-shadow: 0 5px 0 #492b23, 0 10px 20px #173d3640; }
+.mode-button--impossible { background: #4c345c; color: #fff6df; box-shadow: 0 5px 0 #342340, 0 10px 20px #173d3640; }
 .mode-button:focus-visible { outline: 3px solid #fff; outline-offset: 6px; }
 .main-menu-content { animation: menu-arrive 500ms cubic-bezier(.16, 1, .3, 1); }
 @keyframes menu-arrive { from { transform: translateY(14px); } to { transform: translateY(0); } }

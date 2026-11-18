@@ -40,10 +40,14 @@
   function resultFor({ hits, combo, clear, elapsedMs, inkLeft, reason }) {
     return { hits, combo, clear, elapsedMs: Math.round(elapsedMs), inkLeft, reason, points: hits * 100 + combo + (clear ? 100 : 0) };
   }
-  function winner(results) {
+  function formatTime(ms, tenths = false) {
+    const seconds = Math.floor(ms / 1000);
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}${tenths ? '.' + Math.floor(ms / 100) % 10 : ''}`;
+  }
+  function winner(results, unlimited = false) {
     const [a, b] = results;
-    if (a.points !== b.points) return a.points > b.points ? 0 : 1;
-    if (!a.hits || Math.abs(a.elapsedMs - b.elapsedMs) < 100) return null;
+    if (!unlimited && a.points !== b.points) return a.points > b.points ? 0 : 1;
+    if ((!unlimited && !a.hits) || Math.abs(a.elapsedMs - b.elapsedMs) < 100) return null;
     return a.elapsedMs < b.elapsedMs ? 0 : 1;
   }
 
@@ -52,7 +56,7 @@
       this.adapter = adapter;
       this.checker = new WoodlandMapChecker(); this.checkId = 0;
       this.active = false; this.phase = 'campaign'; this.dialogKind = '';
-      this.config = { birds: 3, seconds: 60, platformInk: 360, solverInk: 480 };
+      this.config = { birds: 3, seconds: 60, attempts: 1, platformInk: 360, solverInk: 480 };
       this.maps = []; this.proofs = []; this.proof = null; this.results = []; this.player = 0; this.elapsedMs = 0;
       this.history = []; this.tool = 'birds'; this.pointer = null; this.preview = [];
       this.mount(); this.bind();
@@ -61,7 +65,7 @@
     mount() {
       document.querySelector('.hud-cluster').insertAdjacentHTML('afterend', `<button id="versusButton" class="vs-launch" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 3 16 18M20 3 4 21M3 7l4-4m10 0 4 4M2 19l3 3m14 0 3-3"/></svg><span>2 Player VS Mode</span></button>
         <section class="vs-panel" id="versusPanel" hidden aria-label="VS match">
-          <div class="vs-turn"><h2 id="vsTurnTitle"></h2><output id="vsClock" aria-label="Turn time remaining"></output></div>
+          <div class="vs-turn"><h2 id="vsTurnTitle"></h2><output id="vsClock" aria-label="Turn status" aria-live="off"></output></div>
           <div id="vsEditorTools">
             <div class="vs-tools" role="group" aria-label="Map tools"><button id="vsBirdTool" type="button" aria-pressed="true">Place birds</button><button id="vsBlockTool" type="button" aria-pressed="false">Draw platforms</button></div>
             <details class="vs-precision"><summary>Place birds precisely</summary><div class="vs-coordinates">
@@ -161,17 +165,24 @@
       this.dialog('setup', 'Build a challenge. Trade maps.', `<p>Two players. One device. Each of you builds a woodland puzzle for the other to solve.</p><div class="vs-settings">
         ${select('vsBirdCount','Birds per map',[[1,'1 bird'],[2,'2 birds'],[3,'3 birds']],c.birds)}
         ${select('vsTimeLimit','Time per turn',[[30,'30 seconds'],[60,'60 seconds'],[90,'90 seconds'],[120,'2 minutes'],[0,'No time limit']],c.seconds)}
+        ${select('vsAttempts','Attempts per player',[[1,'1 attempt'],[2,'2 attempts'],[3,'3 attempts'],[4,'4 attempts'],[5,'5 attempts'],[6,'6 attempts'],[7,'7 attempts'],[8,'8 attempts'],[9,'9 attempts'],[10,'10 attempts'],[0,'Unlimited']],c.attempts)}
         ${select('vsPlatformInk','Platform ink',[[240,'240 · compact'],[360,'360 · standard'],[480,'480 · generous']],c.platformInk)}
         ${select('vsSolverInk','Solving ink',[[360,'360 · tricky'],[480,'480 · standard'],[600,'600 · generous']],c.solverInk)}
-        </div><p class="vs-rules"><strong>Build → check → swap.</strong> Place birds and draw gray platforms. We automatically find and verify a winning route before handoff. Both players get equal supplies and one drop; building is untimed.</p><p class="vs-rules">Score 100 per bird, combo bonuses and 100 for a full clear. Equal scores use the faster turn. Match points stay in this match.</p>`, [
+        </div><p class="vs-rules"><strong>Build → check → swap.</strong> Place birds and draw gray platforms. We automatically find and verify a winning route before handoff. Every retry resets the map and ink. Unlimited attempts count up until the map is cleared.</p><p class="vs-rules">Limited attempts use the best shot’s score, with total turn time breaking ties. Unlimited attempts use the fastest clear.</p>`, [
         { label: 'Main menu', run: () => this.closeDialog() },
         { label: 'Player 1: build', primary: true, run: () => {
           const number = id => Number(document.getElementById(id).value);
-          this.config = { birds: number('vsBirdCount'), seconds: number('vsTimeLimit'), platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk') };
+          const attempts = number('vsAttempts');
+          this.config = { birds: number('vsBirdCount'), seconds: attempts === 0 ? 0 : number('vsTimeLimit'), attempts, platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk') };
           this.active = true; this.maps = []; this.proofs = []; this.results = []; this.player = 0;
           this.startBuild();
         } },
       ]);
+      const attempts = document.getElementById('vsAttempts');
+      const timeLimit = document.getElementById('vsTimeLimit');
+      const syncLimit = () => { timeLimit.disabled = attempts.value === '0'; };
+      attempts.addEventListener('change', syncLimit);
+      syncLimit();
     }
 
     startBuild() {
@@ -198,7 +209,10 @@
     renderControls() {
       const d = this.dom;
       d.vsTurnTitle.textContent = this.editing ? `Player ${this.player + 1} builds for Player ${2 - this.player}` : `Player ${this.player + 1}'s turn`;
-      d.vsClock.textContent = this.editing ? `${this.draft.birds.length}/${this.config.birds} placed` : this.clockText();
+      const turnStatus = this.editing
+        ? `${this.draft.birds.length}/${this.config.birds} placed`
+        : `${this.clockText()} · ${this.attemptLabel()}`;
+      if (d.vsClock.textContent !== turnStatus) d.vsClock.textContent = turnStatus;
       d.vsClock.classList.toggle('is-urgent', this.running && this.config.seconds > 0 && this.remainingMs <= 10000);
       if (!this.editing) return;
       d.vsBirdTool.setAttribute('aria-pressed', String(this.tool === 'birds'));
@@ -329,7 +343,7 @@
       if (!this.mapsProven()) return;
       this.player = player; this.phase = 'handoff'; this.adapter.conceal();
       const time = this.config.seconds ? `${this.config.seconds} seconds` : 'as much time as you like';
-      this.dialog('handoff', `Pass to Player ${player + 1}`, `<p>Player ${player + 1}, solve the map Player ${2 - player} made for you. Its winning route has been verified automatically.</p><p>You have <strong>${time}</strong>, ${this.config.solverInk} ink and <strong>one drop</strong>. Draw a path, slide the claw and clear the birds.</p><p>The clock starts when you press Begin.</p>`, [{ label: `Begin Player ${player + 1}'s turn`, primary: true, run: () => this.startTurn() }]);
+      this.dialog('handoff', `Pass to Player ${player + 1}`, `<p>Player ${player + 1}, solve the map Player ${2 - player} made for you. Its winning route has been verified automatically.</p><p>You have <strong>${time}</strong>, ${this.config.solverInk} ink and <strong>${this.config.attempts || 'unlimited'} ${this.config.attempts === 1 ? 'attempt' : 'attempts'}</strong>. Draw a path, slide the claw and clear the birds.</p><p>The clock starts when you press Begin.</p>`, [{ label: `Begin Player ${player + 1}'s turn`, primary: true, run: () => this.startTurn() }]);
     }
 
     mapsProven() { return [0, 1].every(index => isProven(this.maps[index], this.config, this.proofs[index])); }
@@ -337,26 +351,48 @@
     startTurn() {
       if (!this.active || this.phase !== 'handoff' || !this.mapsProven()) return;
       this.phase = 'playing'; this.elapsedMs = 0; this.captured = null;
+      this.attemptsUsed = 0; this.bestAttempt = null; this.preparingShot = true;
       document.body.classList.remove('vs-building');
       this.dom.vsEditorTools.hidden = true; this.dom.vsEditorActions.hidden = true;
       this.adapter.start(); this.closeDialog(); this.renderControls();
-      this.message(`Player ${this.player + 1}: draw your route and aim. One drop; ${this.config.seconds ? `${this.config.seconds} seconds including drawing.` : 'take your time.'}`);
+      this.message(`Player ${this.player + 1}: draw your route and aim. ${this.attemptLabel()}. ${this.config.seconds ? `${this.config.seconds} seconds including drawing.` : 'The clock counts up.'}`);
     }
 
     get remainingMs() { return Math.max(0, this.config.seconds * 1000 - this.elapsedMs); }
     clockText() {
-      const seconds = Math.ceil((this.config.seconds ? this.remainingMs : this.elapsedMs) / 1000);
-      return `${this.config.seconds ? '' : '+'}${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+      return this.config.seconds ? formatTime(Math.ceil(this.remainingMs / 1000) * 1000) : `+${formatTime(this.elapsedMs)}`;
+    }
+
+    attemptLabel() {
+      const attempt = Math.max(1, this.attemptsUsed + (this.preparingShot ? 1 : 0) || 1);
+      return this.config.attempts ? `Try ${attempt}/${this.config.attempts}` : `Try ${attempt}`;
+    }
+
+    drop() {
+      this.preparingShot = false;
+      this.attemptsUsed++;
+      this.renderControls();
     }
     tick(ms, paused) {
       if (!this.running || paused || this.paused) return;
-      this.elapsedMs += Math.max(0, ms); this.renderControls();
+      this.elapsedMs += Math.max(0, ms);
+      if (this.config.seconds) this.elapsedMs = Math.min(this.elapsedMs, this.config.seconds * 1000);
+      this.renderControls();
       if (this.config.seconds && this.remainingMs <= 0) this.adapter.timeout();
     }
 
-    capture(data) {
+    capture(data, timedOut) {
       if (!this.running) return false;
-      this.captured = resultFor({ ...data, elapsedMs: this.elapsedMs });
+      const attempt = resultFor({ ...data, elapsedMs: this.elapsedMs });
+      if (!this.bestAttempt || attempt.points > this.bestAttempt.points || data.clear) this.bestAttempt = attempt;
+      if (!data.clear && !timedOut && (!this.config.attempts || this.attemptsUsed < this.config.attempts)) {
+        this.preparingShot = true;
+        this.adapter.retry();
+        this.renderControls();
+        this.message(`${this.attemptLabel()}. The map and ink are reset. The turn clock is still running.`);
+        return false;
+      }
+      this.captured = { ...this.bestAttempt, reason: data.reason, attempts: this.attemptsUsed, elapsedMs: Math.round(this.elapsedMs) };
       this.phase = 'landing'; this.renderControls(); return true;
     }
 
@@ -364,14 +400,26 @@
       if (this.phase !== 'landing' || !this.captured) return;
       this.results[this.player] = this.captured; this.phase = 'round-result'; this.adapter.conceal();
       const r = this.captured;
-      this.dialog('round-result', `Player ${this.player + 1}: ${r.points} points`, `<p>${r.clear ? 'A clean sweep. Every bird, one stone!' : r.reason}</p><dl class="vs-score"><div><dt>Birds cleared</dt><dd>${r.hits} / ${this.config.birds}</dd></div><div><dt>Bird combo</dt><dd>+${r.combo}</dd></div><div><dt>Full clear bonus</dt><dd>+${r.clear ? 100 : 0}</dd></div><div><dt>Turn time</dt><dd>${(r.elapsedMs / 1000).toFixed(1)}s</dd></div></dl>`, [{ label: this.player === 0 ? 'Pass to Player 2' : 'See match results', primary: true, run: () => this.player === 0 ? this.offerTurn(1) : this.showResults() }]);
+      if (this.player === 1) { this.showResults(); return; }
+      this.dialog('round-result', `Player ${this.player + 1}: ${r.points} points`, `<p>${r.clear ? 'A clean sweep. Every bird, one stone!' : r.reason}</p><dl class="vs-score"><div><dt>Birds cleared</dt><dd>${r.hits} / ${this.config.birds}</dd></div><div><dt>Bird combo</dt><dd>+${r.combo}</dd></div><div><dt>Full clear bonus</dt><dd>+${r.clear ? 100 : 0}</dd></div><div><dt>Turn time</dt><dd>${formatTime(r.elapsedMs, true)}</dd></div><div><dt>Attempts</dt><dd>${r.attempts}</dd></div></dl>`, [{ label: 'Pass to Player 2', primary: true, run: () => this.offerTurn(1) }]);
     }
 
     showResults() {
-      this.phase = 'results'; const won = winner(this.results);
+      this.phase = 'results'; const won = winner(this.results, this.config.attempts === 0);
       const title = won === null ? 'An even match!' : `Player ${won + 1} wins!`;
-      const rows = this.results.map((r, i) => `<tr${i === won ? ' class="is-winner"' : ''}><th scope="row">Player ${i + 1}</th><td>${r.hits}/${this.config.birds}</td><td>${r.points}</td><td>${(r.elapsedMs / 1000).toFixed(1)}s</td></tr>`).join('');
-      this.dialog('results', title, `<p>Two hand-built challenges. One woodland showdown.</p><table class="vs-results"><caption>Match scoreboard</caption><thead><tr><th>Player</th><th>Birds</th><th>Points</th><th>Time</th></tr></thead><tbody>${rows}</tbody></table><p class="vs-rules">Higher points win. Equal scores use the faster turn; turns within 0.1 seconds tie. Zero-bird turns tie. Your campaign is ready where you left it.</p>`, [
+      const [first, second] = this.results;
+      const row = (label, show) => `<tr><th scope="row">${label}</th>${this.results.map((result, i) => `<td${i === won ? ' class="is-winner"' : ''}>${show(result)}</td>`).join('')}</tr>`;
+      const rows = [
+        row('Result', r => r.clear ? 'Cleared' : 'Incomplete'),
+        row('Best flock', r => `${r.hits}/${this.config.birds}`),
+        row('Attempts', r => r.attempts),
+        row('Points', r => r.points),
+        row('Total time', r => formatTime(r.elapsedMs, true)),
+      ].join('');
+      const gap = Math.abs(first.elapsedMs - second.elapsedMs);
+      const speed = gap < 100 ? 'Their times were within 0.1 seconds.'
+        : `Player ${first.elapsedMs < second.elapsedMs ? 1 : 2} was ${(gap / 1000).toFixed(1)}s faster.`;
+      this.dialog('results', title, `<table class="vs-results"><caption>Match scoreboard</caption><thead><tr><th scope="col">Stat</th><th scope="col">Player 1</th><th scope="col">Player 2</th></tr></thead><tbody>${rows}</tbody></table><p class="vs-rules">${speed} ${this.config.attempts ? 'Points decide the match. Time breaks equal scores.' : 'Fastest clear wins.'}</p>`, [
         { label: 'Main menu', run: () => this.exit() },
         { label: 'Build new maps', primary: true, run: () => { this.maps = []; this.proofs = []; this.results = []; this.player = 0; this.startBuild(); } },
       ]);
@@ -419,10 +467,10 @@
     }
 
     snapshot() {
-      return { active: this.active, phase: this.phase, player: this.player + 1, config: { ...this.config }, elapsedMs: Math.round(this.elapsedMs), remainingMs: this.config.seconds ? Math.round(this.remainingMs) : null,
+      return { active: this.active, phase: this.phase, player: this.player + 1, config: { ...this.config }, elapsedMs: Math.round(this.elapsedMs), remainingMs: this.config.seconds ? Math.round(this.remainingMs) : null, attemptsUsed: this.attemptsUsed || 0,
         dialog: this.dom.versusDialog.open ? this.dialogKind : null, tool: this.tool, platformUsed: this.platformUsed, draft: this.editing ? copy(this.draft) : null, results: copy(this.results), provenMaps: this.maps.map((map, index) => isProven(map, this.config, this.proofs[index])), testPassed: Boolean(this.proof && isProven(this.draft, this.config, this.proof)) };
     }
   }
   window.WoodlandVersus = WoodlandVersus;
-  window.WoodlandVersusRules = Object.freeze({ CENTER, BUILD, length, usedInk, birdAllowed, validMap, mapKey, isProven, resultFor, winner });
+  window.WoodlandVersusRules = Object.freeze({ CENTER, BUILD, length, usedInk, birdAllowed, validMap, mapKey, isProven, resultFor, winner, formatTime });
 })();

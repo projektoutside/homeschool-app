@@ -244,6 +244,60 @@ for (const { name, engine, viewport, mobile, embedded, touchDrawing, layoutOnly 
       assert.equal((await snapshot(game)).level, 8);
       assert.equal(await game.locator('#levelMapButton').isVisible(), true);
     }
+    if (!layoutOnly) {
+      await click('#homeButton');
+      await click('#singlePlayerButton');
+    } else {
+      await click('#overlaySecondary');
+      await click('#singlePlayerButton');
+    }
+    await assertFit('#impossibleButton');
+    await click('#impossibleButton');
+    await assertFit('#overlayPrimary');
+    await advance(game, 1500);
+    assert.equal((await snapshot(game)).runTimeMs, 0, 'rules do not run the clock');
+    await click('#overlayPrimary');
+    await gesture([[180, 80], [54, 80]]);
+    await advance(game, 750);
+    await click('#dropButton');
+    await advance(game, 17000);
+    const lost = await snapshot(game);
+    assert.equal(lost.playMode, 'impossible');
+    assert.equal(lost.outcome, 'lose');
+    assert.equal(lost.level, 1);
+    assert.equal(lost.runPoints, 0);
+    assert.ok(lost.runTimeMs > 750);
+    assert.match(await game.locator('#overlayTitle').textContent(), /Impossible run over/);
+    assert.match(await game.locator('#overlayStats').textContent(), /Levels cleared0 \/ 10.*Score0 pts.*Time/);
+    await assertFit('#overlayPrimary');
+    await page.screenshot({ path: output + '/' + name + '-impossible-loss.png' });
+
+    if (embedded) {
+      await click('#overlayPrimary');
+      assert.equal((await snapshot(game)).runTimeMs, 0);
+      let lastScore = 0;
+      let lastTime = 0;
+      for (const [index, [aim, delay, , ...strokes]] of routes.entries()) {
+        if (aim !== 180) await gesture([[180, 80], [aim, 80]]);
+        for (const stroke of strokes) await gesture(stroke);
+        await advance(game, delay * 1000);
+        await click('#dropButton');
+        await advance(game, 17000);
+        const round = await snapshot(game);
+        assert.equal(round.level, index + 1);
+        assert.equal(round.outcome, 'win', 'Impossible stage ' + (index + 1));
+        assert.equal(round.stonesRemaining, 0);
+        assert.ok(round.runPoints > lastScore && round.runTimeMs > lastTime);
+        lastScore = round.runPoints;
+        lastTime = round.runTimeMs;
+        if (index < routes.length - 1) await click('#overlayPrimary');
+      }
+      assert.match(await game.locator('#overlayTitle').textContent(), /Impossible Mode complete/);
+      assert.match(await game.locator('#overlayStats').textContent(), /10 \/ 10/);
+      await assertFit('#overlayPrimary');
+      await page.screenshot({ path: output + '/desktop-impossible-complete.png' });
+      assert.equal(await save(), previousSave);
+    }
     assert.deepEqual(errors, []);
     console.log('PASS ' + name + (layoutOnly ? ' menu and first clear' : ' all 10 stages, ' + reserve * 100 + ' points'));
   } finally {

@@ -38,6 +38,7 @@
         <h2 id="singlePlayerTitle">Single Player</h2>
         <button class="mode-button mode-button--single" id="progressivePlayButton" type="button"><span>Progressive Play<small>Start from Level 1</small></span></button>
         <button class="mode-button mode-button--versus" id="customPlayButton" type="button" aria-haspopup="dialog"><span>Custom Play<small>Choose any of the 18 levels</small></span></button>
+        <button class="mode-button mode-button--impossible" id="impossibleButton" type="button" aria-haspopup="dialog"><span>Impossible Mode<small>One drop per level</small></span></button>
         <button class="hud-button continue-play" id="continuePlayButton" type="button" hidden>Continue</button>
       </div>
     </div>
@@ -469,6 +470,7 @@
           state.lastFrame = performance.now(); state.accumulator = 0;
           syncPauseState(); refreshButtons();
         },
+        retry() { beginAttempt(true, false); dom.canvas.focus({ preventScroll: true }); },
         timeout() { finishVersusTurn(false, 'Time’s up! The turn is over.', true); },
         exit() {
           document.body.classList.remove('vs-concealed');
@@ -480,10 +482,9 @@
       function finishVersusTurn(clear, reason, immediate = false) {
         if (!versus.running) return;
         finishStroke(); resetClawControl();
-        state.runEnded = true; state.outcome = clear ? 'win' : 'lose';
-        versus.capture({ hits: state.level.birds.filter(bird => !bird.alive).length, combo: state.combo.points, clear, inkLeft: remainingInkRatio(), reason,
-          inkUsed: state.inkUsed, dropped: state.runReleasedAt !== null, ballRadius: state.stone.radius });
         playTone(clear ? 'win' : 'lose');
+        if (!versus.capture({ hits: state.combo.hits, combo: state.combo.points, clear, inkLeft: remainingInkRatio(), reason }, immediate)) return;
+        state.runEnded = true; state.outcome = clear ? 'win' : 'lose';
         if (clear) createParticles(180, 220, reducedMotion ? 6 : 36, ['#ffd06b', '#ffffff', '#72cda1']);
         if (immediate || !state.stone.active) {
           state.stone.active = false; versus.finishRound();
@@ -684,6 +685,7 @@
 
       function showMainMenu() {
         const leavingUnreal = Boolean(state.unreal);
+        const leavingImpossible = state.unreal?.impossible;
         finishStroke(); resetClawControl();
         setMenuVisible(true);
         if (leavingUnreal) {
@@ -692,8 +694,9 @@
           hideOverlay();
           beginAttempt(true, false);
         }
-        setSinglePlayerMenu(false);
-        (leavingUnreal ? document.getElementById('unrealButton') : dom.singlePlayerButton).focus({ preventScroll: true });
+        setSinglePlayerMenu(Boolean(leavingImpossible));
+        const entry = leavingImpossible ? 'impossibleButton' : leavingUnreal ? 'unrealButton' : 'singlePlayerButton';
+        document.getElementById(entry).focus({ preventScroll: true });
       }
 
       function setSinglePlayerMenu(visible) {
@@ -721,9 +724,9 @@
         (state.overlayVisible ? dom.overlayPrimary : dom.canvas).focus({ preventScroll: true });
       }
 
-      function startUnreal(showRules) {
+      function startUnreal(showRules, impossible = false) {
         unlockAudio();
-        state.unreal = { levelIndex: 0, stones: 1, shotStartedAt: null };
+        state.unreal = { levelIndex: 0, stones: 1, shotStartedAt: null, impossible, elapsedMs: 0, points: 0, birdsHit: 0 };
         document.body.classList.add('unreal-active');
         setMenuVisible(false);
         beginAttempt(true, false);
@@ -732,8 +735,8 @@
           return;
         }
         showOverlay({
-          title: 'Unreal Mode',
-          body: 'Start with one stone. Each drop spends one, and each bird hit gives one back. Run out and the game ends after your shot. Clear all 10 levels for 100 points per stone left. Try a straight drop down the center first.',
+          title: impossible ? 'Impossible Mode' : 'Unreal Mode',
+          body: impossible ? 'Clear all ten levels with one drop per level. Leave any bird standing and your run ends. Your score counts each bird, combo points and a bonus for each level cleared.' : 'Start with one stone. Each drop spends one, and each bird hit gives one back. Run out and the game ends after your shot. Clear all 10 levels for 100 points per stone left. Try a straight drop down the center first.',
           primaryLabel: 'Begin Level 1', primaryAction: 'begin-unreal', secondaryLabel: 'Main menu',
         });
       }
@@ -947,9 +950,9 @@
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
         dom.birdProgress.textContent = `${cleared} / ${birdLabel(state.level.birds.length)}`;
         if (state.unreal) {
-          dom.unrealLevelCount.textContent = `Unreal · Level ${state.level.id} of ${UNREAL_LEVELS.length}`;
+          dom.unrealLevelCount.textContent = `${state.unreal.impossible ? 'Impossible' : 'Unreal'} · Level ${state.level.id} of ${UNREAL_LEVELS.length}`;
           dom.unrealLevelValue.textContent = state.level.title;
-          const reserve = `${unrealStoneLabel()} left`;
+          const reserve = state.unreal.impossible ? `${state.unreal.points} pts · ${WoodlandVersusRules.formatTime(state.unreal.elapsedMs)}` : `${unrealStoneLabel()} left`;
           dom.comboReadout.textContent = reserve;
           dom.comboReadout.dataset.chain = '0';
           dom.comboReadout.setAttribute('aria-label', reserve);
@@ -1278,6 +1281,10 @@
           state.unreal.shotStartedAt = state.elapsed;
           refreshHud();
         }
+        if (versus.active) {
+          versus.drop();
+          state.versusShotStartedAt = state.elapsed;
+        }
         resetClawControl();
         dropMechanism.release();
         state.hintVisibleUntil = 0;
@@ -1293,7 +1300,7 @@
         state.outcome = 'running';
         state.autoDropAt = null;
         refreshButtons();
-        setStatus(state.unreal ? 'Stone in play. Each bird hit returns one stone.' : 'One stone only. Let the runway do the work.');
+        setStatus(state.unreal && !state.unreal.impossible ? 'Stone in play. Each bird hit returns one stone.' : 'One stone only. Let the runway do the work.');
         playTone('drop');
         announce('Stone released.');
       }
@@ -1415,6 +1422,31 @@
         if (!state.stone.active) showPendingResult();
       }
 
+      function finishImpossibleLevel(clear, reason) {
+        const run = state.unreal;
+        run.points += WoodlandVersusRules.resultFor({
+          hits: state.combo.hits, combo: state.combo.points, clear, elapsedMs: run.elapsedMs,
+        }).points;
+        run.birdsHit += state.combo.hits;
+        const next = clear && UNREAL_LEVELS[run.levelIndex + 1];
+        const levelsCleared = run.levelIndex + Number(clear);
+        playTone(clear ? 'win' : 'lose');
+        refreshHud();
+        queueRoundResult({
+          title: next ? `Level ${state.level.id} cleared` : clear ? 'Impossible Mode complete!' : 'Impossible run over',
+          body: next ? `Up next · ${next.title}` : reason,
+          stats: [
+            { label: 'Levels cleared', value: `${levelsCleared} / ${UNREAL_LEVELS.length}` },
+            { label: 'Birds hit', value: run.birdsHit },
+            { label: 'Score', value: `${run.points} pts` },
+            { label: 'Time', value: WoodlandVersusRules.formatTime(run.elapsedMs, true) },
+          ],
+          primaryLabel: next ? 'Next level' : 'Start new run',
+          primaryAction: next ? 'next-impossible' : 'restart-impossible',
+          secondaryLabel: 'Main menu',
+        });
+      }
+
       function finishUnrealLevel() {
         const nextLevel = UNREAL_LEVELS[state.unreal.levelIndex + 1];
         const stats = [{ label: 'Stones left', value: state.unreal.stones }];
@@ -1443,7 +1475,11 @@
         refreshHud();
         state.runEnded = true;
         state.outcome = 'win';
-        if (state.unreal) { finishUnrealLevel(); return; }
+        if (state.unreal) {
+          if (state.unreal.impossible) finishImpossibleLevel(true, 'You cleared all ten levels with one drop each.');
+          else finishUnrealLevel();
+          return;
+        }
         const clearTimeMs = Math.round(performance.now() - state.runStartAt);
         const remainingInk = remainingInkRatio();
         const points = CLEAR_BASE_POINTS
@@ -1521,6 +1557,12 @@
         if (state.runEnded) return;
         if (versus.active) { finishVersusTurn(false, reason); return; }
         if (state.unreal) {
+          if (state.unreal.impossible) {
+            state.runEnded = true;
+            state.outcome = 'lose';
+            finishImpossibleLevel(false, reason);
+            return;
+          }
           if (state.unreal.stones > 0) {
             resetStone();
             state.unreal.shotStartedAt = null;
@@ -1567,13 +1609,13 @@
       function hitBird(bird) {
         if (!bird.alive || state.runEnded) return;
         bird.alive = false;
-        if (state.unreal) state.unreal.stones++;
+        if (state.unreal && !state.unreal.impossible) state.unreal.stones++;
         else {
           state.combo.hits++;
           state.combo.multiplier = Math.min(3, state.combo.hits);
           state.combo.points += BIRD_HIT_POINTS * state.combo.multiplier;
         }
-        const hitPoints = state.unreal ? 1 : BIRD_HIT_POINTS * state.combo.multiplier;
+        const hitPoints = state.unreal && !state.unreal.impossible ? 1 : BIRD_HIT_POINTS * state.combo.multiplier;
         state.comboPopups.push({ x: clamp(bird.x, 82, WORLD_W - 82), y: bird.y - 22, age: 0, multiplier: state.combo.multiplier, points: hitPoints });
         state.comboPopups = state.comboPopups.slice(-3);
         createParticles(bird.x, bird.y, 16, [bird.tint[0], bird.tint[1], '#ffffff']);
@@ -1584,7 +1626,7 @@
         if (state.level.birds.every((candidate) => !candidate.alive)) {
           handleWin();
         } else {
-          const message = state.unreal ? `Bird cleared! +1 stone. ${unrealStoneLabel()} left.`
+          const message = state.unreal && !state.unreal.impossible ? `Bird cleared! +1 stone. ${unrealStoneLabel()} left.`
             : versus.active
             ? `x${state.combo.multiplier} combo! +${hitPoints} bonus points. Keep going for a full clear!`
             : `x${state.combo.multiplier} combo! +${hitPoints} points. Clear the flock to bank ${state.combo.points}.`;
@@ -1647,7 +1689,7 @@
           if (state.runEnded) {
             state.stone.active = false;
             showPendingResult();
-          } else if (state.unreal) {
+          } else if (state.unreal || versus.active) {
             state.stone.active = false;
             handleLose('The stone got stuck before every bird was cleared.');
           } else {
@@ -1674,7 +1716,8 @@
             : 'The stone settled on a runway before the last birds crossed its path.');
           return;
         }
-        if (state.unreal && (state.elapsed - state.unreal.shotStartedAt) * 1000 >= FAIL_MAX_TIME_MS) {
+        const shotAgeMs = (state.elapsed - (versus.active ? state.versusShotStartedAt : state.unreal?.shotStartedAt)) * 1000;
+        if ((state.unreal && shotAgeMs >= FAIL_MAX_TIME_MS) || (versus.active && shotAgeMs >= WoodlandVersusSimulation.maxShotMs)) {
           state.stone.active = false;
           if (state.runEnded) showPendingResult();
           else handleLose('The stone ran out of time before clearing the flock.');
@@ -1918,7 +1961,7 @@
           const title = popup.multiplier === 3 ? 'FLOCK COMBO!' : popup.multiplier === 2 ? 'DOUBLE!' : 'NICE HIT!';
           ctx.strokeText(title, popup.x, y - 18); ctx.fillText(title, popup.x, y - 18);
           ctx.font = '600 22px Fredoka';
-          const score = state.unreal ? '+1 stone' : `x${popup.multiplier}  +${popup.points}`;
+          const score = state.unreal && !state.unreal.impossible ? '+1 stone' : `x${popup.multiplier}  +${popup.points}`;
           ctx.strokeText(score, popup.x, y); ctx.fillText(score, popup.x, y);
         });
         ctx.restore();
@@ -1995,10 +2038,16 @@
             setStatus(state.level.note);
             dom.canvas.focus({ preventScroll: true });
             return;
+          case 'next-impossible':
           case 'next-unreal':
+            if (state.unreal.impossible) state.unreal.stones = 1;
             state.unreal.levelIndex++;
+            state.unreal.shotStartedAt = null;
             beginAttempt(true, false);
             dom.canvas.focus({ preventScroll: true });
+            return;
+          case 'restart-impossible':
+            startUnreal(false, true);
             return;
           case 'restart-unreal':
             startUnreal();
@@ -2143,9 +2192,18 @@
         updateStone(dt);
       }
 
+      function tickRunClocks(ms) {
+        const paused = state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused;
+        versus.tick(ms, paused);
+        if (!state.unreal?.impossible || state.runEnded || paused || state.menuVisible) return;
+        const previousSecond = Math.floor(state.unreal.elapsedMs / 1000);
+        state.unreal.elapsedMs += ms;
+        if (Math.floor(state.unreal.elapsedMs / 1000) !== previousSecond) refreshHud();
+      }
+
       function frame(now) {
         if (state.menuVisible) { state.lastFrame = now; state.accumulator = 0; window.requestAnimationFrame(frame); return; }
-        versus.tick(Math.max(0, now - state.lastFrame), state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused);
+        tickRunClocks(Math.max(0, now - state.lastFrame));
         const delta = Math.min(0.05, (now - state.lastFrame) / 1000 || 0);
         state.lastFrame = now;
         state.accumulator += delta;
@@ -2176,6 +2234,7 @@
         dom.continuePlayButton.addEventListener('click', startSinglePlayer);
         dom.menuVersusButton.addEventListener('click', () => { unlockAudio(); versus.setup(); });
         document.getElementById('unrealButton').addEventListener('click', () => startUnreal(true));
+        document.getElementById('impossibleButton').addEventListener('click', () => startUnreal(true, true));
         dom.menuSoundButton.addEventListener('click', () => { unlockAudio(); setAudioMuted(!state.audio.muted); });
         document.getElementById('menuGamesButton').addEventListener('click', () => {
           if (state.singlePlayerMenu) { setSinglePlayerMenu(false); dom.singlePlayerButton.focus({ preventScroll: true }); }
@@ -2280,8 +2339,9 @@
           screen: state.menuVisible ? 'menu' : versus.active ? 'versus' : 'single-player',
           menuVisible: state.menuVisible,
           singlePlayerMenu: state.menuVisible && state.singlePlayerMenu,
-          playMode: versus.active ? 'versus' : state.unreal ? 'unreal' : state.playMode,
+          playMode: versus.active ? 'versus' : state.unreal?.impossible ? 'impossible' : state.unreal ? 'unreal' : state.playMode,
           ...(state.unreal && { stonesRemaining: state.unreal.stones }),
+          ...(state.unreal?.impossible && { runTimeMs: Math.round(state.unreal.elapsedMs), runPoints: state.unreal.points }),
           versus: versus.snapshot(),
           level: state.level ? state.level.id : null,
           totalLevels: state.unreal ? UNREAL_LEVELS.length : LEVELS.length,
@@ -2332,7 +2392,7 @@
           let remaining = total / 1000;
           while (remaining > 0) {
             const slice = Math.min(STEP, remaining);
-            versus.tick(slice * 1000, state.overlayVisible || state.hostPaused || state.hiddenPause || state.rotatePaused);
+            tickRunClocks(slice * 1000);
             update(slice);
             remaining -= slice;
           }

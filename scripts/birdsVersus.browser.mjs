@@ -62,10 +62,12 @@ for (const [name,engine,options] of profiles) {
       if(cdp){await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...path[0],id:1}]});for(const p of path.slice(1))await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...p,id:1}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
       else{await page.mouse.move(path[0].x,path[0].y);await page.mouse.down();for(const p of path.slice(1))await page.mouse.move(p.x,p.y);await page.mouse.up();}
     };
-    const open=async(seconds='60',birds='3')=>{
+    const open=async(seconds='60',birds='3',attempts='1')=>{
       if (!(await get(page)).menuVisible) await page.locator('#homeButton').click();
       await page.locator('#menuVersusButton').click();
-      await page.locator('#vsTimeLimit').selectOption(seconds);
+      await page.locator('#vsAttempts').selectOption(attempts);
+      if (attempts === '0') assert.equal(await page.locator('#vsTimeLimit').isDisabled(), true);
+      else await page.locator('#vsTimeLimit').selectOption(seconds);
       await page.locator('#vsBirdCount').selectOption(birds);
       await page.locator('#vsDialogActions button').last().click();
       assert.equal((await get(page)).versus.phase,'building');
@@ -134,7 +136,7 @@ for (const [name,engine,options] of profiles) {
     assert.ok(Math.abs((await get(page)).birds[0].x-editorMaps[0].birds[0].x)<.11,'Player 2 receives Player 1’s map');
     await page.evaluate(()=>window.advanceTime(4000));await page.locator('#dropButton').click();await page.evaluate(()=>window.advanceTime(8000));
     s=await get(page);assert.equal(s.versus.results[1].points,460);
-    await page.locator('#vsDialogActions button').last().click();assert.match(await page.locator('#vsDialogTitle').innerText(),/Player 1 wins/);
+    assert.match(await page.locator('#vsDialogTitle').innerText(),/Player 1 wins/);
     await shot('results');assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),before);assert.equal(await page.evaluate(()=>window.vsTest.awards.length),0);
     await page.locator('#vsDialogActions button').first().click();
     s=await get(page);assert.equal(s.level,7);assert.equal(s.loadout.radius,14);assert.equal(s.versus.active,false);
@@ -144,14 +146,26 @@ for (const [name,engine,options] of profiles) {
     await shot('campaign-restored');
 
     // A second match exercises automatic budget handoff, timeout and trapped-ball recovery.
-    await open('30');await build(1,true);await page.locator('#vsDialogActions button').last().click();await build(2);
+    await open('30','3','2');await build(1,true);await page.locator('#vsDialogActions button').last().click();await build(2);
     await page.locator('#vsDialogActions button').last().click();
     await page.evaluate(()=>{window.vsTest.hidden(true);window.advanceTime(3000);window.vsTest.hidden(false);});assert.equal((await get(page)).versus.elapsedMs,0);
     if(name==='desktop')await page.evaluate(()=>{window.vsTest.hit(0);window.vsTest.hit(0);window.vsTest.hit(1);});
     await page.evaluate(()=>window.advanceTime(30100));s=await get(page);assert.equal(s.versus.results[0].hits,name==='desktop'?2:0);assert.equal(s.versus.results[0].points,name==='desktop'?230:0);assert.match(s.versus.results[0].reason,/Time/);
     await page.locator('#vsDialogActions button').last().click();await page.locator('#vsDialogActions button').last().click();
-    await page.evaluate(()=>{window.vsTest.trap();window.advanceTime(12000);});s=await get(page);assert.equal(s.attached,true);assert.equal(s.versus.phase,'playing');assert.ok(s.versus.elapsedMs>=11999);assert.ok(s.lines.length);
-    await page.evaluate(()=>window.advanceTime(19000));await page.locator('#vsDialogActions button').last().click();assert.match(await page.locator('#vsDialogTitle').innerText(),name==='desktop'?/Player 1 wins/:/even match/);
+    await page.locator('#dropButton').click();
+    await page.evaluate(()=>{window.vsTest.trap();window.advanceTime(12000);});
+    s=await get(page);
+    assert.equal(s.attached,true);
+    assert.equal(s.versus.phase,'playing');
+    assert.equal(s.versus.attemptsUsed,1);
+    assert.ok(s.versus.elapsedMs>=11999);
+    assert.equal(s.lines.length,0);
+    await page.evaluate(()=>window.advanceTime(19000));
+    s=await get(page);
+    assert.equal(s.versus.phase,'results');
+    assert.equal(s.versus.results[1].attempts,1);
+    assert.equal(s.versus.results[1].elapsedMs,30000);
+    assert.match(s.versus.results[1].reason,/Time/);
     await page.locator('#vsDialogActions button').first().click();assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),before);
 
     if(name==='desktop'){
@@ -185,9 +199,33 @@ for (const [name,engine,options] of profiles) {
         assert.equal((await get(page)).versus.results[0].hits,0);
         await page.locator('#vsDialogActions button').last().click();await page.locator('#vsDialogActions button').last().click();
         await page.locator('#dropButton').click();await page.evaluate(()=>window.advanceTime(8000));assert.equal((await get(page)).versus.results[1].hits,count);
-        await page.locator('#vsDialogActions button').last().click();assert.match(await page.locator('#vsDialogTitle').innerText(),/Player 2 wins/);
+        assert.match(await page.locator('#vsDialogTitle').innerText(),/Player 2 wins/);
         await page.locator('#vsDialogActions button').first().click();
       }
+      await open('60','3','0');
+      await build(1);
+      await page.locator('#vsDialogActions button').last().click();
+      await build(2);
+      await page.locator('#vsDialogActions button').last().click();
+      assert.equal((await get(page)).versus.remainingMs, null);
+      await page.evaluate(()=>{window.__manyBirdsDebug.moveClaw(306);window.advanceTime(800);});
+      await page.locator('#dropButton').click();
+      await page.evaluate(()=>window.advanceTime(8000));
+      assert.equal((await get(page)).versus.attemptsUsed, 1);
+      assert.match(await page.locator('#vsClock').innerText(), /^\+0:08.*Try 2/);
+      await page.locator('#dropButton').click();
+      await page.evaluate(()=>window.advanceTime(8000));
+      assert.equal((await get(page)).versus.results[0].attempts, 2);
+      await page.locator('#vsDialogActions button').last().click();
+      await page.locator('#vsDialogActions button').last().click();
+      assert.equal((await get(page)).versus.elapsedMs, 0);
+      await page.locator('#dropButton').click();
+      await page.evaluate(()=>window.advanceTime(8000));
+      assert.match(await page.locator('#vsDialogTitle').innerText(), /Player 2 wins/);
+      assert.match(await page.locator('.vs-results').innerText(), /Total time/);
+      await shot('unlimited-results');
+      await page.locator('#vsDialogActions button').first().click();
+
       // A closed gray box is structurally valid, but cannot pass the completion gate.
       await open('30','1');
       // Use the default 360 ink to close an 88x88 box around the bird.

@@ -44,9 +44,11 @@
 .vs-score { margin: 20px 0 4px; }
 .vs-score > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #d5decf; }
 .vs-score dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.vs-settings select:disabled { opacity: .65; }
 .vs-results { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; margin: 20px 0; }
 .vs-results caption { text-align: left; font-weight: 800; margin-bottom: 10px; }
 .vs-results th, .vs-results td { text-align: left; padding: 10px 5px; border-bottom: 1px solid #d5decf; }
+.vs-results :is(th, td):not(:first-child) { text-align: center; }
 .vs-results .is-winner { color: #174e3c; background: #e0ebd8; }
 .vs-active.vs-concealed .stage-frame { visibility: hidden; }
 @media (min-width: 761px) and (max-height: 950px) {
