@@ -205,17 +205,21 @@
         </div>
     </div>
 
-    <div id="level-transition-modal" class="level-transition-modal hidden">
+    <div id="level-transition-modal" class="level-transition-modal hidden" role="dialog"
+        aria-modal="true" aria-labelledby="level-transition-title" aria-hidden="true">
         <div class="modal-content">
-            <h2 id="level-transition-title">Level Up!</h2>
-            <p id="level-celebration-text">Congratulations!</p>
-            <h3 id="next-level-name">Level 2</h3>
-            <div class="level-details">
-                <p>New: <span id="level-challenge-text">Challenge</span></p>
-                <p>Time left: <span id="level-time-limit">4:30</span></p>
-                <p>Tip: <span id="level-tip">Keep going!</span></p>
+            <div class="modal-header">
+                <h2 id="level-transition-title">Level Up!</h2>
             </div>
-            <div id="scoring-breakdown"></div>
+            <div class="modal-body" tabindex="0" role="region" aria-label="Level details and scoring">
+                <h3 id="next-level-name">Level 2</h3>
+                <div class="level-details">
+                    <p>New: <span id="level-challenge-text">Challenge</span></p>
+                    <p>Time left: <span id="level-time-limit">4:30</span></p>
+                    <p>Tip: <span id="level-tip">Keep going!</span></p>
+                </div>
+                <div id="scoring-breakdown"></div>
+            </div>
             <div class="modal-footer">
                 <button id="reward-shop-btn" class="secondary-button">
                     <span class="button-text">Reward Shop 🏪</span>
@@ -267,14 +271,13 @@
                         <span class="icon">🏪</span>
                         <span class="btn-text">Shop</span>
                     </button>
+                    <div id="ampm-panel" class="hidden">
+                        <span id="ampm-indicator">AM · Morning</span>
+                    </div>
                     <div class="clock-corner-coin" aria-label="Clock Coins">
                         <span class="coin-icon">🪙</span>
                         <span id="clockcoin-amount">0</span>
                     </div>
-                </div>
-
-                <div id="ampm-panel" class="hidden">
-                    Time of Day: <span id="ampm-indicator">Morning</span>
                 </div>
 
                 <div class="clock-container">
@@ -312,7 +315,7 @@
                                 stroke-linecap="round" />
                             <line id="minute-hand" x1="250" y1="250" x2="250" y2="110" stroke="#D32F2F"
                                 stroke-width="10" stroke-linecap="round" />
-                            <line id="seconds-hand" x1="250" y1="250" x2="250" y2="100" stroke="#FF9800"
+                            <line id="seconds-hand" x1="250" y1="250" x2="250" y2="45" stroke="#b45309"
                                 stroke-width="3" stroke-linecap="round" style="opacity: 0;" />
                         </g>
 

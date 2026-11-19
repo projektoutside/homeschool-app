@@ -93,7 +93,7 @@ const VISUAL_CONFIG = {
     CLOCK_RADIUS: 230,     // Increased from 180
     HOUR_HAND_LENGTH: 90,  // Increased from 70
     MINUTE_HAND_LENGTH: 140, // Increased from 110
-    SECONDS_HAND_LENGTH: 150, // Longest hand for precision
+    SECONDS_HAND_LENGTH: 205, // Reach the inner edge of the second marks
     COLORS: {
         HOUR_MARKS: '#FF9800',
         MINUTE_MARKS: '#B0B0B0',
@@ -737,46 +737,14 @@ class GameState {
     }
 
     shouldLevelUp() {
-        if (this.currentLevel >= GAME_CONFIG.LEVELS.length) {
-            return false;
-        }
-
-        // Find the next level that should be unlocked based on current score
-        for (let i = this.currentLevel; i < GAME_CONFIG.LEVELS.length; i++) {
-            const nextLevel = GAME_CONFIG.LEVELS[i];
-            if (this.points >= nextLevel.unlockScore) {
-                return true;
-            } else {
-                break;
-            }
-        }
-        return false;
+        const nextLevel = GAME_CONFIG.LEVELS[this.currentLevel];
+        return !!nextLevel && this.points >= nextLevel.unlockScore;
     }
 
     levelUp() {
-        // Find the highest level that should be unlocked based on current score
-        let newLevel = this.currentLevel;
-        for (let i = 0; i < GAME_CONFIG.LEVELS.length; i++) {
-            const level = GAME_CONFIG.LEVELS[i];
-            if (this.points >= level.unlockScore) {
-                newLevel = level.id;
-            } else {
-                break;
-            }
-        }
-
-        if (newLevel > this.currentLevel) {
-            this.currentLevel = newLevel;
-
-            // Clear legacy level tracking
-            this.currentLevelUsedTimes.clear();
-
-            // Clear randomness manager level tracking
-            this.randomnessManager.clearLevelProgress(newLevel);
-
-            return true;
-        }
-        return false;
+        this.currentLevel++;
+        this.currentLevelUsedTimes.clear();
+        this.randomnessManager.clearLevelProgress(this.currentLevel);
     }
 
     incrementScore(timeFormat) {
@@ -888,7 +856,6 @@ class DOMManager {
             // Level transition elements
             levelTransitionModal: document.getElementById('level-transition-modal'),
             levelTransitionTitle: document.getElementById('level-transition-title'),
-            levelCelebrationText: document.getElementById('level-celebration-text'),
             nextLevelName: document.getElementById('next-level-name'),
             levelChallengeText: document.getElementById('level-challenge-text'),
             levelTimeLimit: document.getElementById('level-time-limit'),
@@ -1055,25 +1022,25 @@ class DOMManager {
             el.classList.add('visible');
             el.setAttribute('aria-hidden', 'false');
         });
+        this.safeUpdate('gameContainer', el => { el.inert = true; });
+        this.get('startNextLevelBtn')?.focus({ preventScroll: true });
     }
 
     hideLevelTransitionModal() {
         this.safeUpdate('levelTransitionModal', el => {
             el.classList.add('hidden');
             el.classList.remove('visible');
+            el.setAttribute('aria-hidden', 'true');
+            el.inert = false;
         });
+        this.safeUpdate('gameContainer', el => { el.inert = false; });
     }
 
-    updateLevelTransitionContent(currentLevel, nextLevel, gameState) {
+    updateLevelTransitionContent(nextLevel, gameState) {
         // Update title
         this.safeUpdate('levelTransitionTitle', el => el.textContent = `Level ${nextLevel.id} Unlocked!`);
 
-        // Update celebration text
-        this.safeUpdate('levelCelebrationText', el =>
-            el.textContent = `Amazing! You've mastered Level ${currentLevel.id} and unlocked the next challenge!`);
-
-        // Update next level name
-        this.safeUpdate('nextLevelName', el => el.textContent = `Level ${nextLevel.id}: ${nextLevel.name}`);
+        this.safeUpdate('nextLevelName', el => el.textContent = nextLevel.name);
 
         // Update challenge text
         const challengeTexts = {
@@ -1087,11 +1054,7 @@ class DOMManager {
         this.safeUpdate('levelChallengeText', el =>
             el.textContent = challengeTexts[nextLevel.id] || "New time formats to master");
 
-        // Update time limit
-        const minutes = Math.floor(gameState.timeRemaining / 60);
-        const seconds = gameState.timeRemaining % 60;
-        this.safeUpdate('levelTimeLimit', el =>
-            el.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`);
+        this.updateLevelTransitionTime(gameState.timeRemaining);
 
         // Update tip
         const tips = {
@@ -1107,6 +1070,13 @@ class DOMManager {
 
         // Update scoring breakdown
         this.updateScoringBreakdown(nextLevel);
+    }
+
+    updateLevelTransitionTime(timeRemaining) {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        this.safeUpdate('levelTimeLimit', el =>
+            el.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`);
     }
 
     updateScoringBreakdown(level) {
@@ -1169,7 +1139,7 @@ class DOMManager {
     }
 
     updatePoints(points) {
-        this.safeUpdate('points', el => el.textContent = `${points} points`);
+        this.safeUpdate('points', el => el.textContent = String(points));
     }
 
     updateTotalScoreDisplay(points) {
@@ -1360,7 +1330,7 @@ class DOMManager {
             return;
         }
 
-        this.updateAMPMIndicator(sceneData.label);
+        this.updateAMPMIndicator(`${timeData.isAM ? 'AM' : 'PM'} · ${sceneData.label}`);
         this.safeUpdate('clockScene', el => {
             el.dataset.scene = sceneData.scene;
             el.classList.add('is-visible');
@@ -2298,7 +2268,8 @@ class PerfectGameLogic {
             overlay.remove();
         });
         document.body.classList.remove('shop-open');
-        ['game-over-modal', 'level-transition-modal', 'shop-items-container', 'quick-settings-panel'].forEach(id => {
+        this.domManager.hideLevelTransitionModal();
+        ['game-over-modal', 'shop-items-container', 'quick-settings-panel'].forEach(id => {
             const element = document.getElementById(id);
             if (!element) return;
             if (id !== 'shop-items-container') element.classList.add('hidden');
@@ -3528,6 +3499,8 @@ class PerfectGameLogic {
             return;
         }
 
+        if (this.finishIfTimeExpired()) return;
+
         // Play click sound
         if (this.soundManager) {
             this.soundManager.playClick();
@@ -3560,12 +3533,9 @@ class PerfectGameLogic {
         } else {
             GameUtils.log('❌ Answer is INCORRECT!');
             this.handleIncorrectAnswer();
-            // Generate next question after a delay for incorrect answers (which will unlock options)
-            this.queueAdvance(() => {
-                if (this.gameState.isGameActive) {
-                    this.generateQuestion();
-                }
-            }, 1500);
+            if (this.gameState.isGameActive) {
+                this.queueAdvance(() => this.advanceQuestion(), 1500);
+            }
         }
     }
 
@@ -3596,37 +3566,36 @@ class PerfectGameLogic {
         // Show points popup with the points earned and 1 coin
         this.domManager.showPointsPopup(pointsEarned, 1);
 
-        let feedbackDuration = 700;
-        let showLevelTransition = false;
-        let previousLevel = null;
+        this.updateAllDisplays();
+        const feedbackDuration = this.gameState.shouldLevelUp() ? 1000 : 700;
+        this.queueAdvance(() => this.advanceQuestion(), feedbackDuration);
+    }
 
+    advanceQuestion() {
+        if (this.finishIfTimeExpired()) return;
         if (this.gameState.shouldLevelUp()) {
-            previousLevel = this.gameState.getCurrentLevel();
-            const leveledUp = this.gameState.levelUp();
-            if (leveledUp) {
-                GameUtils.log(`Level up detected! Moving to level ${this.gameState.currentLevel}`);
-                this.domManager.updateClockStatus(`Level ${this.gameState.currentLevel} Unlocked! 🎉`);
-                feedbackDuration = 1000;
-                showLevelTransition = true;
+            const previousLevel = this.gameState.getCurrentLevel();
+            this.gameState.levelUp();
+            this.updateProgressDisplay();
+            if (this.levelTransitionManager) {
+                const nextLevel = this.gameState.getCurrentLevel();
+                this.domManager.updateClockStatus(`Level ${nextLevel.id} Unlocked! 🎉`);
+                this.levelTransitionManager.showLevelTransition(previousLevel, nextLevel, this.gameState);
+                return;
             }
         }
+        this.generateQuestion();
+    }
 
-        this.updateAllDisplays();
+    advanceAfterPurchase() {
+        // Existing answer feedback will check the new score. The transition shop
+        // belongs to the level already unlocked and must finish before advancing.
+        if (!this.gameState.isGameActive || this.isProcessingAnswer ||
+            this.pauseReasons.has('level-transition') || !this.gameState.shouldLevelUp()) return;
 
-        // Show level transition or continue game
-        this.queueAdvance(() => {
-            if (this.gameState.isGameActive) {
-                if (showLevelTransition && this.levelTransitionManager) {
-                    // Show level transition modal (options remain disabled until next question)
-                    const currentLevel = this.gameState.getCurrentLevel();
-                    this.levelTransitionManager.showLevelTransition(previousLevel, currentLevel, this.gameState);
-                } else {
-                    // Continue with next question (this will unlock options)
-                    this.domManager.updateClockStatusWithLevel(this.gameState);
-                    this.generateQuestion();
-                }
-            }
-        }, feedbackDuration);
+        this.isProcessingAnswer = true;
+        this.domManager.disableAllOptions();
+        this.queueAdvance(() => this.advanceQuestion(), 300);
     }
 
     handleIncorrectAnswer() {
@@ -3707,7 +3676,7 @@ class PerfectGameLogic {
 
     updateProgressDisplay() {
         const level = this.gameState.getCurrentLevel();
-        this.domManager.updateBadge(`Level ${level.id}: ${level.name}`);
+        this.domManager.updateBadge(`Level ${level.id}`);
 
         // Get the correct max stars from settings
         const maxStars = this.gameState.settingsManager ?
@@ -3785,12 +3754,16 @@ class PerfectGameLogic {
         }
         this.remainingMilliseconds ??= this.gameState.timeRemaining * 1000;
         this.updateTimerDisplay();
-        if (!this.gameState.isGameActive || this.pauseReasons.size) return;
+        if (!this.gameState.isGameActive || this.pauseReasons.size || this.finishIfTimeExpired()) return;
         this.timerDeadline = performance.now() + this.remainingMilliseconds;
-        this.gameState.timer = setInterval(() => {
-            this.syncRemainingTime();
-            if (this.remainingMilliseconds <= 0) this.handleGameOver();
-        }, 100);
+        this.gameState.timer = setInterval(() => this.finishIfTimeExpired(), 100);
+    }
+
+    finishIfTimeExpired() {
+        this.syncRemainingTime();
+        if (this.remainingMilliseconds !== 0) return false;
+        this.handleGameOver();
+        return true;
     }
 
     syncRemainingTime() {
@@ -4452,7 +4425,7 @@ class LevelTransitionManager {
 
     showLevelTransition(currentLevel, nextLevel, gameState) {
         // Update modal content
-        this.domManager.updateLevelTransitionContent(currentLevel, nextLevel, gameState);
+        this.domManager.updateLevelTransitionContent(nextLevel, gameState);
 
         // Update reward shop button with current ClockCoin count
         this.updateRewardShopButton();
@@ -4473,16 +4446,9 @@ class LevelTransitionManager {
         if (!this.gameState?.isGameActive || !modal || modal.classList.contains('hidden')) return;
         // Hide the modal
         this.domManager.hideLevelTransitionModal();
-
-        // Continue the game
-        if (this.gameLogic) {
-            // ✨ UNLOCK: Reset processing state before generating new question
-            this.gameLogic.isProcessingAnswer = false;
-            this.gameLogic.answerProcessingStartTime = null;
-
-            this.gameLogic.generateQuestion();
-            this.gameLogic.resumeTimer('level-transition');
-        }
+        this.domManager.focusNextQuestion = true;
+        this.gameLogic.generateQuestion();
+        this.gameLogic.resumeTimer('level-transition');
 
         GameUtils.log('Starting next level from transition screen');
     }
@@ -4508,6 +4474,8 @@ class LevelTransitionManager {
         // Create overlay for the reward shop
         const overlay = this.createRewardShopOverlay();
         document.body.appendChild(overlay);
+
+        this.domManager.safeUpdate('levelTransitionModal', el => { el.inert = true; });
 
         // Show with animation
         overlay.classList.remove('hidden');
@@ -4653,6 +4621,7 @@ class LevelTransitionManager {
         // Process the purchase
         this.rewardShop.clockCoins -= cost;
         this.rewardShop.applyPurchaseEffect(effect, value);
+        if (effect === 'time') this.domManager.updateLevelTransitionTime(this.gameState.timeRemaining);
 
         // CRITICAL: Update both overlay AND main shop displays to ensure synchronization
         this.updateOverlayClockCoinDisplay(overlay);
@@ -4771,6 +4740,7 @@ class LevelTransitionManager {
         overlay.classList.remove('visible');
         overlay.classList.add('hidden');
         overlay.remove();
+        this.domManager.safeUpdate('levelTransitionModal', el => { el.inert = false; });
         this.domManager.get('rewardShopBtn')?.focus({ preventScroll: true });
 
         GameUtils.log('Closed reward shop overlay');
@@ -5171,34 +5141,7 @@ class RewardShop {
         });
         GameUtils.log(`⭐ Added ${points} points to score. New total: ${this.gameState.points}`);
 
-        // Check for level up after purchasing points
-        this.checkForLevelUp();
-    }
-
-    checkForLevelUp() {
-        if (!this.gameState.isGameActive) return;
-        if (this.gameState.shouldLevelUp()) {
-            const previousLevel = this.gameState.getCurrentLevel();
-            const leveledUp = this.gameState.levelUp();
-            if (leveledUp) {
-                const newLevel = this.gameState.getCurrentLevel();
-                GameUtils.log(`🎉 Level up triggered by ClockCoin purchase! Moving to level ${this.gameState.currentLevel}`);
-
-                // Update displays to reflect the new level
-                this.gameLogic.updateAllDisplays();
-                this.domManager.updateClockStatus(`Level ${this.gameState.currentLevel} Unlocked! 🎉`);
-
-                // Show level transition modal if level transition manager is available
-                if (this.gameLogic.levelTransitionManager) {
-                    // Delay to allow purchase feedback to show first
-                    this.gameLogic.cancelPendingActions();
-                    this.gameLogic.pauseTimer('level-transition');
-                    this.gameLogic.scheduleAction(() => {
-                        this.gameLogic.levelTransitionManager.showLevelTransition(previousLevel, newLevel, this.gameState);
-                    }, 300);
-                }
-            }
-        }
+        this.gameLogic.advanceAfterPurchase();
     }
 
     addExtraLife() {

@@ -75,7 +75,7 @@ function runtime({ storageBlocked = false } = {}) {
     clearInterval: id => clock.tasks.delete(id),
   });
   vm.runInContext(source, context);
-  const classes = vm.runInContext('({ SettingsManager, SettingsModalManager, InGameQuickSettingsManager, SoundManager, GameState, PerfectGameLogic, PerfectClockBuilder, LevelTransitionManager, HighScoreManager, GAME_CONFIG })', context);
+  const classes = vm.runInContext('({ SettingsManager, SettingsModalManager, InGameQuickSettingsManager, SoundManager, GameState, PerfectGameLogic, PerfectClockBuilder, LevelTransitionManager, RewardShop, HighScoreManager, GAME_CONFIG })', context);
   const settings = new classes.SettingsManager();
   const state = new classes.GameState(settings);
   let generated = 0;
@@ -335,7 +335,7 @@ test('clock hand geometry includes fractional minutes and seconds at hour bounda
     const cases = [
       ['hour-hand', 90, (hours % 12) * 30 + minutes / 2 + seconds / 120],
       ['minute-hand', 140, minutes * 6 + seconds / 10],
-      ['seconds-hand', 150, seconds * 6],
+      ['seconds-hand', 205, seconds * 6],
     ];
     for (const [id, length, degrees] of cases) {
       const hand = document.getElementById(id);
@@ -373,4 +373,72 @@ test('unsupported Web Audio is detected once and does not warn on every answer',
   sound.initAudio();
   assert.equal(sound.audioContextUnavailable, true);
   assert.equal(warnings.length, 1);
+});
+
+
+test('a large reward purchase unlocks levels in order and preserves an open transition', () => {
+  const { logic, state, dom, classes, clock, generated } = runtime();
+  const transitions = [];
+  logic.levelTransitionManager = {
+    showLevelTransition(previous, next) {
+      transitions.push([previous.id, next.id]);
+      logic.pauseTimer('level-transition');
+    },
+  };
+  const shop = Object.create(classes.RewardShop.prototype);
+  Object.assign(shop, { gameState: state, gameLogic: logic, domManager: dom });
+
+  logic.startGame(5);
+  state.points = 740;
+  logic.pauseTimer('shop');
+  shop.addPoints(500);
+  clock.tick(1000);
+  assert.equal(state.currentLevel, 5);
+  assert.equal(generated(), 1);
+  logic.resumeTimer('shop');
+  assert.deepEqual(transitions, [[5, 6]]);
+
+  shop.addPoints(10);
+  clock.tick(1000);
+  assert.equal(state.currentLevel, 6);
+  assert.deepEqual(transitions, [[5, 6]]);
+  logic.resumeTimer('level-transition');
+  logic.generateQuestion();
+  logic.currentCorrectAnswer = '12:00 AM';
+  logic.checkAnswer('12:00 AM');
+  clock.tick(1000);
+  assert.deepEqual(transitions, [[5, 6], [6, 7]]);
+});
+
+test('a shop purchase during answer feedback cannot replace the pending level transition', () => {
+  const { logic, state, dom, classes, clock } = runtime();
+  const transitions = [];
+  logic.levelTransitionManager = {
+    showLevelTransition(previous, next) { transitions.push([previous.id, next.id]); },
+  };
+  const shop = Object.create(classes.RewardShop.prototype);
+  Object.assign(shop, { gameState: state, gameLogic: logic, domManager: dom });
+
+  logic.startGame(6);
+  state.points = 1190;
+  logic.currentCorrectAnswer = '11:59 PM';
+  logic.checkAnswer('11:59 PM');
+  logic.pauseTimer('shop');
+  shop.addPoints(10);
+  clock.tick(1500);
+  assert.equal(state.currentLevel, 6);
+  assert.deepEqual(transitions, []);
+  logic.resumeTimer('shop');
+  assert.deepEqual(transitions, [[6, 7]]);
+});
+
+test('an answer after the deadline is rejected even if the timer callback has not fired', () => {
+  const { logic, state, clock } = runtime();
+  logic.startGame(7);
+  logic.currentCorrectAnswer = '11:59:59 PM';
+  clock.now += 300001;
+  logic.checkAnswer('11:59:59 PM');
+  assert.equal(state.questionsAnswered, 0);
+  assert.equal(state.points, 0);
+  assert.equal(state.isGameActive, false);
 });

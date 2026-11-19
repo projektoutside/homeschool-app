@@ -134,6 +134,7 @@ for (const { name, engine, viewport, mobile, embedded, touchDrawing, layoutOnly 
     }
     await click('#unrealButton');
     assert.equal((await snapshot(game)).stonesRemaining, 1);
+    assert.equal((await snapshot(game)).runPoints, 0);
     assert.equal((await snapshot(game)).totalLevels, 10);
     assert.match(await game.locator('#overlayTitle').textContent(), /Unreal Mode/);
     await assertFit('#overlayPrimary');
@@ -253,6 +254,7 @@ for (const { name, engine, viewport, mobile, embedded, touchDrawing, layoutOnly 
     }
     await assertFit('#impossibleButton');
     await click('#impossibleButton');
+    assert.equal((await snapshot(game)).runPoints, 0);
     await assertFit('#overlayPrimary');
     await advance(game, 1500);
     assert.equal((await snapshot(game)).runTimeMs, 0, 'rules do not run the clock');
@@ -297,6 +299,8 @@ for (const { name, engine, viewport, mobile, embedded, touchDrawing, layoutOnly 
       await assertFit('#overlayPrimary');
       await page.screenshot({ path: output + '/desktop-impossible-complete.png' });
       assert.equal(await save(), previousSave);
+      await click('#overlayPrimary');
+      assert.equal((await snapshot(game)).runPoints, 0, 'new runs discard the previous run score');
     }
     assert.deepEqual(errors, []);
     console.log('PASS ' + name + (layoutOnly ? ' menu and first clear' : ' all 10 stages, ' + reserve * 100 + ' points'));

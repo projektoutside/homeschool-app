@@ -60,3 +60,31 @@ test('hints debit exactly 100 earned Birds points and leave the coin wallet inta
   assert.ok(e.transact(purchase.next, 'hint').error);
   assert.equal(e.reward(purchase.next, 2, 2, 125).next.hintPoints, 205);
 });
+
+test('purchase indicator tracks eligible offers, including hints and full inventories', () => {
+  const shop = e.normalize({
+    version: 1, coins: 29, hintPoints: 100, tank: 3, bottles: 9,
+    owned: ['acorn', 'boulder', 'wind', 'steel', 'jade', 'firefly'],
+  });
+  assert.ok(!e.hasPurchase(shop, false));
+  assert.ok(e.hasPurchase(shop, true));
+  assert.ok(!e.hasPurchase({ ...shop, hintPoints: 99 }, true));
+  assert.ok(!e.hasPurchase({ ...shop, coins: 900 }, false), 'free actions and full stock do not glow');
+  assert.ok(e.hasPurchase({ ...shop, coins: 30, bottles: 8 }, false));
+  assert.ok(e.hasPurchase({ ...shop, coins: 180, owned: shop.owned.filter(id => id !== 'wind') }, false));
+});
+
+test('Acorn ball and Wind charm persist and re-equip without charging twice', () => {
+  const shop = e.normalize({ version: 1, coins: 330, wind: true, ball: 'acorn' });
+  assert.equal(e.loadout(shop).radius, 12);
+  assert.equal(e.loadout(shop).wind, false);
+  const acorn = e.transact(shop, 'acorn').next;
+  const equipped = e.normalize(e.transact(acorn, 'wind').next);
+  assert.equal(equipped.coins, 0);
+  assert.equal(e.loadout(equipped).radius, 10);
+  assert.equal(e.loadout(equipped).wind, true);
+  const off = e.transact(equipped, 'wind').next;
+  assert.equal(e.loadout(off).wind, false);
+  assert.equal(e.transact(off, 'wind').next.coins, 0);
+  assert.equal(e.transact(e.transact(equipped, 'standard').next, 'acorn').next.coins, 0);
+});

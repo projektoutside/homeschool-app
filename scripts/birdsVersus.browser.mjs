@@ -70,7 +70,12 @@ for (const [name,engine,options] of profiles) {
       else await page.locator('#vsTimeLimit').selectOption(seconds);
       await page.locator('#vsBirdCount').selectOption(birds);
       await page.locator('#vsDialogActions button').last().click();
-      assert.equal((await get(page)).versus.phase,'building');
+      const fresh = await get(page);
+      assert.equal(fresh.versus.phase,'building');
+      assert.equal(fresh.combo.points, 0);
+      assert.deepEqual(fresh.versus.results, []);
+      assert.equal(fresh.versus.attemptsUsed, 0);
+      assert.equal(fresh.versus.elapsedMs, 0);
     };
     const editorMaps=[];
     const autoCheck=async(player)=>{

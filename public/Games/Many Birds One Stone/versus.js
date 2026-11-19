@@ -174,8 +174,7 @@
           const number = id => Number(document.getElementById(id).value);
           const attempts = number('vsAttempts');
           this.config = { birds: number('vsBirdCount'), seconds: attempts === 0 ? 0 : number('vsTimeLimit'), attempts, platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk'), reducedMotion: Boolean(this.adapter.reducedMotion) };
-          this.active = true; this.maps = []; this.proofs = []; this.results = []; this.player = 0;
-          this.startBuild();
+          this.startMatch();
         } },
       ]);
       const attempts = document.getElementById('vsAttempts');
@@ -183,6 +182,13 @@
       const syncLimit = () => { timeLimit.disabled = attempts.value === '0'; };
       attempts.addEventListener('change', syncLimit);
       syncLimit();
+    }
+
+    startMatch() {
+      this.active = true;
+      this.maps = []; this.proofs = []; this.results = [];
+      this.player = 0; this.elapsedMs = 0; this.attemptsUsed = 0;
+      this.startBuild();
     }
 
     startBuild() {
@@ -421,7 +427,7 @@
         : `Player ${first.elapsedMs < second.elapsedMs ? 1 : 2} was ${(gap / 1000).toFixed(1)}s faster.`;
       this.dialog('results', title, `<table class="vs-results"><caption>Match scoreboard</caption><thead><tr><th scope="col">Stat</th><th scope="col">Player 1</th><th scope="col">Player 2</th></tr></thead><tbody>${rows}</tbody></table><p class="vs-rules">${speed} ${this.config.attempts ? 'Points decide the match. Time breaks equal scores.' : 'Fastest clear wins.'}</p>`, [
         { label: 'Main menu', run: () => this.exit() },
-        { label: 'Build new maps', primary: true, run: () => { this.maps = []; this.proofs = []; this.results = []; this.player = 0; this.startBuild(); } },
+        { label: 'Build new maps', primary: true, run: () => this.startMatch() },
       ]);
     }
 

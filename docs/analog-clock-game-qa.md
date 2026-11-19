@@ -112,3 +112,52 @@ Remaining checks, in priority order:
 
 Guest lifetime progress continues to use the existing local-persistence feature.
 This change does not add restoration of an unfinished clock round after closing.
+
+
+## Late-level regression pass (2026-11-19)
+
+Base: `2c7d3fbee35cd4854929b00e4f1d50a294b6c396` on
+`codex/analog-clock-late-levels`. Validation was Tier 3. The pass covered the
+analog clock game locally, including a standalone page and a same-origin test iframe.
+
+- Score rewards unlock the next level in order. Gameplay shop purchases wait
+  for the shop and any answer feedback to finish. Purchases in the transition
+  shop preserve the open transition, and time purchases update its countdown.
+- The deadline is checked when an answer is submitted, even if the timer tick is
+  late. Both paid recovery paths were exercised at Level 7.
+- The Level 6 and 7 cue shows AM or PM alongside the scene label. The Level 7
+  seconds hand reaches the tick marks and uses a darker orange for legibility.
+- The full dial fits in the clock panel. A compact level badge and numeric score
+  keep the stats readable. The answers and quick settings have separate rows
+  on short portrait screens.
+
+`node --test scripts/analogClockGame.test.mjs` passed 25 tests.
+`node --check public/Games/analogclockgame/game.js`, `npm run audit:games`
+(84 entries), and `git diff --check` passed.
+
+Headless Chromium at 1440×900 (test iframe) and touch-emulated WebKit at
+390×844 played all seven levels from Easy, selected answers from the rendered
+hand endpoints and AM/PM cue, answered ten Level 7 questions each, and resumed
+after both life loss and time expiry. Focused Hard runs exercised real browser
+taps, sequential purchases, and a controlled 12:59:59 PM question in Chromium
+at 393×852, 320×568, and 568×320, and in WebKit at 390×844, 1024×1366, and
+1366×1024. The dial and all four answer hit targets fit with zero document
+overflow in these runs.
+
+- The Level 6/7 dialog's details and scoring region scrolls vertically
+  when needed on short screens. Its footer stays within the viewport.
+  End and Home scrolled the details region at 568×320.
+- The game shell can scroll internally on very short portrait screens
+  if the dial, answers, and controls exceed the available height. At
+  320×568 the gameplay controls fit and were exercised directly.
+- Physical Android, iPhone, iPad, and installed Capacitor flows remain
+  unverified. ADB listed no connected device. The browser runs used local
+  content and a test iframe, so they do not verify the live app or native shell.
+
+Tested SHA-256 fingerprints:
+
+| File | SHA-256 |
+| --- | --- |
+| `game.js` | `39DC84F30194D78E9502868DE4C4B0E5B4C36C2A31AC1147BF4AD257C0186904` |
+| `index.html` | `CDFEDE75FCFFECB4D23ABB48AC084EDC473E5F9E3020F96BF3A2B46068DAE608` |
+| `style.css` | `CA81292FACC802913C3DBB45989187B2AE2797E8460609E557C75B5A4F6ADFF0` |

@@ -13,9 +13,10 @@ const saved = { campaignVersion: 2, highestUnlocked: 9, selectedLevel: 8, onboar
 let baselineHeight;
 {
   const browser = await chromium.launch(), page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  const head = file => execFileSync('git', ['show', `HEAD:public/Games/Many Birds One Stone/${file}`], { encoding: 'utf8' });
-  await page.route('**/Many%20Birds%20One%20Stone/index.html', route => route.fulfill({ contentType: 'text/html', body: head('index.html') }));
-  await page.route('**/Many%20Birds%20One%20Stone/versus.js', route => route.fulfill({ contentType: 'text/javascript', body: head('versus.js') }));
+  // Keep the comparison against the version before the illustrated menu.
+  const baseline = file => execFileSync('git', ['show', `09986b9:public/Games/Many Birds One Stone/${file}`], { encoding: 'utf8' });
+  await page.route('**/Many%20Birds%20One%20Stone/index.html', route => route.fulfill({ contentType: 'text/html', body: baseline('index.html') }));
+  await page.route('**/Many%20Birds%20One%20Stone/versus.js', route => route.fulfill({ contentType: 'text/javascript', body: baseline('versus.js') }));
   await page.goto(url);
   await page.waitForFunction(() => typeof window.render_game_to_text === 'function');
   await page.locator('#overlayPrimary').click();
@@ -68,8 +69,9 @@ for (const [name, engine, width, height] of profiles) {
     assert.equal(await frame.locator('#vsBirdCount').inputValue(), '3');
     assert.equal(await frame.locator('#vsTimeLimit').inputValue(), '60');
     await page.keyboard.press('Escape');
+    await frame.waitForFunction(() => !document.getElementById('versusDialog').open
+      && document.activeElement.id === 'menuVersusButton');
     assert.equal((await snapshot(frame)).screen, 'menu');
-    assert.equal(await frame.evaluate(() => document.activeElement.id), 'menuVersusButton');
     await frame.locator('#singlePlayerButton').click();
     assert.equal((await snapshot(frame)).singlePlayerMenu, true);
     assert.equal(await frame.locator('#gameCanvas').isVisible(), false);
@@ -97,6 +99,7 @@ for (const [name, engine, width, height] of profiles) {
     await frame.locator('#progressivePlayButton').click();
     assert.equal((await snapshot(frame)).level, 1, 'progressive play starts from level one');
     assert.equal((await snapshot(frame)).playMode, 'progressive');
+    assert.equal((await snapshot(frame)).combo.points, 0);
     const progressAfter = await frame.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
     assert.equal(progressAfter.highestUnlocked, progressBefore.highestUnlocked, 'starting from one keeps unlocked levels');
     assert.deepEqual(progressAfter.bestStats, progressBefore.bestStats, 'starting from one keeps earned stars');
@@ -208,6 +211,8 @@ for (const [name, engine, width, height] of profiles) {
     await frame.locator('#singlePlayerButton').click();
     await frame.locator('#customPlayButton').click();
     await frame.locator('#mapScroll button[data-level="17"]').click();
+    assert.equal((await snapshot(frame)).playMode, 'custom');
+    assert.equal((await snapshot(frame)).combo.points, 0);
     await page.reload();
     if (name === 'embedded-desktop') frame = await (await page.locator('iframe').elementHandle()).contentFrame();
     await frame.waitForFunction(() => typeof window.render_game_to_text === 'function');

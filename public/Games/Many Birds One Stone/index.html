@@ -111,6 +111,8 @@
         <div class="action-row">
           <button class="control-button" id="clearButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 9-11 7 6-9 11H8Zm7 6h10M8 10l7 6"/></svg>Clear lines</button>
           <button class="control-button control-button--primary" id="dropButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14m-6-6 6 6 6-6M4 21h16"/></svg>Drop stone <small>Space</small></button>
+          <button class="control-button wind-button" id="windLeft" type="button" hidden><span aria-hidden="true">←</span> Wind left</button>
+          <button class="control-button wind-button" id="windRight" type="button" hidden>Wind right <span aria-hidden="true">→</span></button>
         </div>
       </footer>
     </div>
@@ -169,7 +171,12 @@
       <section class="shop-section" aria-labelledby="ballsShopTitle">
         <h3 id="ballsShopTitle">A little more impact.</h3><p>Change the size. Keep the satisfying roll.</p>
         <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" aria-hidden="true"></canvas><div class="product-copy"><h4>Original ball</h4><p>The classic, carefully balanced size.</p></div><button class="shop-buy" data-shop-action="standard" aria-label="Select original ball">Selected</button></article>
-        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" data-size="big" aria-hidden="true"></canvas><div class="product-copy"><h4>Boulder ball</h4><p>17% wider. More reach when a bird slips past.</p><span class="product-owned">Permanent size unlock</span></div><button class="shop-buy" data-shop-action="boulder" aria-label="Buy or select Boulder ball">Buy · 240</button></article>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" data-ball="acorn" aria-hidden="true"></canvas><div class="product-copy"><h4>Acorn ball</h4><p>17% smaller. Squeeze through tighter gaps, with less reach when aiming for birds.</p><span class="product-owned">Permanent size unlock</span></div><button class="shop-buy" data-shop-action="acorn" type="button">Buy · 150</button></article>
+        <article class="shop-product"><canvas class="product-ball" width="128" height="128" data-finish="brass" data-ball="boulder" aria-hidden="true"></canvas><div class="product-copy"><h4>Boulder ball</h4><p>17% wider. More reach when a bird slips past.</p><span class="product-owned">Permanent size unlock</span></div><button class="shop-buy" data-shop-action="boulder" aria-label="Buy or select Boulder ball">Buy · 240</button></article>
+      </section>
+      <section class="shop-section" aria-labelledby="windShopTitle">
+        <h3 id="windShopTitle">Trick shots</h3>
+        <article class="shop-product"><div class="supply-icon wind-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 18h23a5 5 0 1 0-5-5M7 25h32M13 32h15a5 5 0 1 1-5 5"/></svg></div><div class="product-copy"><h4>Wind charm</h4><p>Send your falling ball left or right with one gust per shot. Try it on a bank shot or a near miss.</p><span class="product-owned">Reusable · choose a direction after dropping</span></div><button class="shop-buy" data-shop-action="wind" type="button">Buy · 180</button></article>
       </section>
       <section class="shop-section" aria-labelledby="styleShopTitle">
         <h3 id="styleShopTitle">Make the drop your own.</h3><p>Collect a finish. Leave a little woodland magic.</p>
@@ -255,6 +262,7 @@
         homeButton: document.getElementById('homeButton'),
         clearButton: document.getElementById('clearButton'),
         dropButton: document.getElementById('dropButton'),
+        windButtons: [document.getElementById('windLeft'), document.getElementById('windRight')],
         inkLabel: document.getElementById('inkLabel'),
         inkFill: document.getElementById('inkFill'),
         statusCopy: document.getElementById('statusCopy'),
@@ -956,8 +964,7 @@
 
       function refreshHud() {
         dom.coinBalance.textContent = state.shop.coins.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 0 });
-        dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins`);
-        dom.shopButton.disabled = Boolean(state.unreal) || state.onboardingPending || versus.active;
+        refreshShopButtons();
         dom.levelValue.textContent = state.level.title;
         dom.levelCount.textContent = `${state.playMode === 'custom' && !versus.active ? 'Custom · ' : ''}Level ${state.level.id} of ${LEVELS.length}`;
         const cleared = state.level.birds.filter((bird) => !bird.alive).length;
@@ -965,7 +972,8 @@
         if (state.unreal) {
           dom.unrealLevelCount.textContent = `${state.unreal.impossible ? 'Impossible' : 'Unreal'} · Level ${state.level.id} of ${UNREAL_LEVELS.length}`;
           dom.unrealLevelValue.textContent = state.level.title;
-          const reserve = state.unreal.impossible ? `${state.unreal.points} pts · ${WoodlandVersusRules.formatTime(state.unreal.elapsedMs)}` : `${unrealStoneLabel()} left`;
+          const detail = state.unreal.impossible ? WoodlandVersusRules.formatTime(state.unreal.elapsedMs) : `${unrealStoneLabel()} left`;
+          const reserve = `${state.unreal.points} pts · ${detail}`;
           dom.comboReadout.textContent = reserve;
           dom.comboReadout.dataset.chain = '0';
           dom.comboReadout.setAttribute('aria-label', reserve);
@@ -984,7 +992,19 @@
         dom.inkFill.style.transform = `scaleX(${remainingInkRatio().toFixed(3)})`;
       }
 
+      function refreshShopButtons() {
+        dom.shopButton.disabled = Boolean(state.unreal) || state.onboardingPending || versus.active;
+        const shoppingAllowed = !dom.shopButton.disabled && !state.hostPaused && !state.hiddenPause && !state.rotatePaused;
+        const available = shoppingAllowed && WoodlandEconomy.hasPurchase(state.shop, canBuyHint());
+        const resultAvailable = shoppingAllowed && WoodlandEconomy.hasPurchase(state.shop, false);
+        dom.shopButton.classList.toggle('has-purchase', available);
+        dom.resultShopButton.classList.toggle('has-purchase', resultAvailable);
+        dom.shopButton.setAttribute('aria-label', `Open shop. ${state.shop.coins} Woodland coins.${available ? ' Items available to buy.' : ''}`);
+        dom.resultShopButton.setAttribute('aria-label', resultAvailable ? 'Visit shop. Items available to buy.' : 'Visit shop');
+      }
+
       function refreshButtons() {
+        refreshShopButtons();
         versus.dom.versusButton.hidden = !versus.active;
         versus.dom.versusButton.disabled = state.onboardingPending || state.overlayVisible || state.mapVisible || state.shopVisible;
         const levelLockedNext = state.playMode !== 'custom' && state.levelIndex + 1 >= state.highestUnlocked;
@@ -995,6 +1015,13 @@
         dom.restartButton.disabled = versus.active || Boolean(state.unreal);
         dom.clearButton.disabled = blocked || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
         dom.dropButton.disabled = blocked || state.rotatePaused || !attached;
+        const showWind = Boolean(state.loadout?.wind) && state.stone.active && !state.overlayVisible;
+        dom.clearButton.hidden = dom.dropButton.hidden = showWind;
+        for (const button of dom.windButtons) {
+          button.hidden = !showWind;
+          button.disabled = blocked || state.rotatePaused;
+          button.setAttribute('aria-disabled', String(state.windUsed || state.runEnded));
+        }
       }
 
       function resetStone() {
@@ -1020,6 +1047,8 @@
       function beginAttempt(clearLines, preserveHintState) {
         state.combo = { hits: 0, multiplier: 1, points: 0 };
         state.comboPopups = [];
+        state.windUsed = false;
+        state.windPressed = null;
         if (versus.active || state.unreal) state.loadout = { radius: STONE_RADIUS, finish: 'brass', inkMultiplier: 1, trail: false };
         else if (clearLines || !state.loadout) state.loadout = WoodlandEconomy.loadout(state.shop);
         if (clearLines) {
@@ -1313,10 +1342,27 @@
         state.runReleasedAt = performance.now();
         state.outcome = 'running';
         state.autoDropAt = null;
+        const dropFocused = document.activeElement === dom.dropButton;
         refreshButtons();
-        setStatus(state.unreal && !state.unreal.impossible ? 'Stone in play. Each bird hit returns one stone.' : 'One stone only. Let the runway do the work.');
+        if (dropFocused && state.loadout.wind) dom.windButtons[0].focus({ preventScroll: true });
+        const dropStatus = state.unreal && !state.unreal.impossible
+          ? 'Stone in play. Each bird hit returns one stone.'
+          : state.loadout.wind ? 'Wind ready. Steer the stone once with a gust.' : 'One stone only. Let the runway do the work.';
+        setStatus(dropStatus);
         playTone('drop');
         announce('Stone released.');
+      }
+
+      function steerStone(direction) {
+        if (dom.windButtons[0].disabled || dom.windButtons[0].hidden || state.windUsed || state.runEnded) return;
+        state.windUsed = true;
+        const stone = state.stone;
+        stone.vx = clamp(stone.vx + direction * 150, -540, 540);
+        stone.sleepMs = 0;
+        if (!reducedMotion) createParticles(stone.x, stone.y, 12, ['#78cfbe', '#efffdb', '#b4ebaa']);
+        playTone('tap');
+        setStatus(direction < 0 ? 'Gust used. Stone nudged left.' : 'Gust used. Stone nudged right.');
+        refreshButtons();
       }
 
       function resolveStoneAgainstWorld(dt) {
@@ -1466,6 +1512,8 @@
         const stats = [{ label: 'Stones left', value: state.unreal.stones }];
         if (!nextLevel) {
           const points = state.unreal.stones * UNREAL_POINTS_PER_STONE;
+          state.unreal.points = points;
+          refreshHud();
           stats.push({ label: 'Points earned', value: points });
           awardPointsForClear({ points });
         }
@@ -1529,6 +1577,7 @@
         state.shop = coinReward.next;
         refreshHud();
         setStatus(`${birdLabel(state.level.birds.length)} cleared! Watch the stone finish its descent.`);
+        refreshButtons();
         playTone('win');
         announce(`Level ${state.level.id} cleared. ${state.combo.points} combo bonus points banked. ${points} total points.`);
 
@@ -2299,6 +2348,16 @@
           unlockAudio();
           releaseStone();
         });
+        dom.windButtons.forEach((button, index) => {
+          button.addEventListener('pointerdown', () => { state.windPressed = button; });
+          button.addEventListener('pointercancel', () => { state.windPressed = null; });
+          button.addEventListener('click', (event) => {
+            // Swapping controls on touch release can retarget the Drop button's compatibility click.
+            const intentional = event.detail === 0 || state.windPressed === button;
+            state.windPressed = null;
+            if (intentional) steerStone(index === 0 ? -1 : 1);
+          });
+        });
         dom.dropButton.addEventListener('pointerup', (event) => {
           if (event.pointerType !== 'touch' || !event.isPrimary || dom.dropButton.disabled) return;
           const bounds = dom.dropButton.getBoundingClientRect();
@@ -2344,8 +2403,8 @@
           menuVisible: state.menuVisible,
           singlePlayerMenu: state.menuVisible && state.singlePlayerMenu,
           playMode: versus.active ? 'versus' : state.unreal?.impossible ? 'impossible' : state.unreal ? 'unreal' : state.playMode,
-          ...(state.unreal && { stonesRemaining: state.unreal.stones }),
-          ...(state.unreal?.impossible && { runTimeMs: Math.round(state.unreal.elapsedMs), runPoints: state.unreal.points }),
+          ...(state.unreal && { stonesRemaining: state.unreal.stones, runPoints: state.unreal.points }),
+          ...(state.unreal?.impossible && { runTimeMs: Math.round(state.unreal.elapsedMs) }),
           versus: versus.snapshot(),
           level: state.level ? state.level.id : null,
           totalLevels: state.unreal ? UNREAL_LEVELS.length : LEVELS.length,
@@ -2361,6 +2420,7 @@
           shopVisible: state.shopVisible,
           shop: structuredClone(state.shop),
           loadout: state.loadout,
+          windUsed: state.windUsed,
           inkBudget: state.level?.inkBudget,
           combo: { ...state.combo },
           comboPopups: state.comboPopups.map(popup => ({ ...popup })),

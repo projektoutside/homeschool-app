@@ -128,6 +128,46 @@ for (const [name, engine, options] of [
     await p.locator('#closeLevelMap').click(); await noOverflow(p);
     assert.deepEqual(rich.errors, []); assert.deepEqual(errors, []);
     row.purchasesPersistenceAndModal = true; await rich.context.close();
+
+    const gear = await setup(browser, options, { ...seed({}), shop: { version: 1, coins: 330, hintPoints: 0 } });
+    const g = gear.page;
+    const tapGear = id => options.hasTouch ? g.locator(id).tap() : g.locator(id).click();
+    const glowing = () => g.locator('#shopButton').evaluate(button => button.classList.contains('has-purchase'));
+    assert.equal(await glowing(), true);
+    await tapGear('#shopButton');
+    await act(g, 'acorn'); await act(g, 'wind');
+    await g.locator('#windShopTitle').scrollIntoViewIfNeeded();
+    await g.screenshot({ path: `${output}/${name}-trick-shots.png` });
+    assert.equal((await snapshot(g)).stone.radius, 12, 'gear leaves the current setup intact');
+    await tapGear('#closeShop');
+    assert.equal(await glowing(), false);
+    await tapGear('#restartButton');
+    assert.equal((await snapshot(g)).stone.radius, 10);
+    assert.equal(await g.locator('#windLeft').isVisible(), false);
+    const fire = async (button, direction) => {
+      await tapGear('#dropButton');
+      await noOverflow(g);
+      assert.equal(await g.locator('#windLeft').getAttribute('aria-disabled'), 'false');
+      assert.equal(await g.locator('#dropButton').isVisible(), false);
+      const initialX = (await snapshot(g)).stone.x;
+      if (options.hasTouch) await tapGear(button);
+      else { await g.locator(button).focus(); await g.keyboard.press('Enter'); }
+      assert.equal((await snapshot(g)).windUsed, true);
+      assert.equal(await g.locator('#windRight').getAttribute('aria-disabled'), 'true');
+      await g.locator(direction < 0 ? '#windRight' : '#windLeft').dispatchEvent('click');
+      await g.evaluate(() => window.advanceTime(180));
+      assert.ok(((await snapshot(g)).stone.x - initialX) * direction > 20, 'one gust steers in the selected direction');
+    };
+    await fire('#windLeft', -1);
+    await g.screenshot({ path: `${output}/${name}-gust.png` });
+    await g.reload();
+    await enterBirdsCampaign(g);
+    assert.equal((await snapshot(g)).shop.coins, 0);
+    assert.equal((await snapshot(g)).stone.radius, 10);
+    await fire('#windRight', 1);
+    assert.deepEqual(gear.errors, []);
+    await gear.context.close();
+    row.acornWindAndAffordability = true;
     row.pass = true; console.log(`PASS ${name}`);
   } catch (e) { row.pass = false; row.error = e.stack; console.log(`FAIL ${name}: ${e.message}`); }
   finally { await browser.close(); }
