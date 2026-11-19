@@ -1,3 +1,4 @@
+import { buyRouteHint, enterBirdsCampaign } from './birdsShop.fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -27,10 +28,11 @@ async function createPage(browser, options = {}, { unlocked = false, diagnostic 
   });
   await page.addInitScript(unlocked => {
     window.__campaignClockPaused = true;
-    if (unlocked) localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: 18, selectedLevel: 1, onboarded: true, bestStats: {} }));
+    if (unlocked) localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: 18, selectedLevel: 1, onboarded: true, bestStats: {}, shop: { version: 1, coins: 60, hintPoints: 5000 } }));
   }, unlocked);
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.render_game_to_text && JSON.parse(window.render_game_to_text()).birdArt.loaded && document.fonts.status === 'loaded', undefined, { polling: 50 });
+  await enterBirdsCampaign(page);
   await page.evaluate(() => window.advanceTime(0));
   return { context, page, errors };
 }
@@ -95,7 +97,7 @@ try {
       for (let index = 0; index < campaign.length; index++) {
         await page.evaluate(index => window.__manyBirdsDebug.setLevel(index), index);
         const before = await state(page);
-        await page.locator('#hintButton').click();
+        await buyRouteHint(page);
         await page.evaluate(() => window.advanceTime(12000));
         const held = await state(page);
         assert.equal(held.hintVisible, true, 'guides stay available while planning');
@@ -105,7 +107,7 @@ try {
         const retry = await state(page);
         assert.equal(retry.elapsed, 0); assert.equal(retry.hintUsed, false); assert.equal(retry.hintVisible, false);
         assert.deepEqual(retry.birds, before.birds, 'retry begins at the same patrol phase');
-        await page.locator('#hintButton').click();
+        await buyRouteHint(page);
         await page.evaluate(index => window.WoodlandCampaign.levels[index].hint.forEach(stroke => window.__manyBirdsDebug.applyStroke(stroke)), index);
         if (index === 17) {
           await page.evaluate(() => window.postMessage({ type: 'LAHS_HOST_LIFECYCLE', phase: 'pause' }, location.origin));
@@ -127,13 +129,12 @@ try {
         hints.push({ level: index + 1, aligned: held.clawX, guideClear: true, stars: stats.stars });
       }
       await page.evaluate(() => window.__manyBirdsDebug.setLevel(5));
-      await page.locator('#hintButton').click(); await page.locator('#dropButton').click();
+      await buyRouteHint(page); await page.locator('#dropButton').click();
       await page.evaluate(() => window.advanceTime(12000));
       assert.equal((await state(page)).outcome, 'lose');
       await page.locator('#overlaySecondary').click();
       assert.equal((await state(page)).hintUsed, true);
-      await page.locator('#hintButton').click();
-      assert.equal((await state(page)).hintVisible, true, 'editing a failed route can reopen its guide');
+      assert.equal((await state(page)).hintVisible, true, 'editing restores the purchased guide');
       assert.deepEqual(errors, []);
       return { hints, deterministicRetry: true, resumePreservesGuide: true, physical: false };
     } finally { await context.close(); }

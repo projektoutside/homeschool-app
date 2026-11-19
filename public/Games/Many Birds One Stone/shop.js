@@ -3,6 +3,7 @@
 
   const integer = (value, max) => (typeof value === 'number' || typeof value === 'string') && Number.isFinite(Number(value)) ? Math.max(0, Math.min(max, Math.floor(Number(value)))) : 0;
   const tankBonuses = [0, .15, .3, .5], tankPrices = [120, 240, 420];
+  const HINT_COST = 100;
   const items = Object.freeze({
     bottle: { name: 'Ink bottle', price: 30 },
     boulder: { name: 'Boulder ball', price: 240 },
@@ -21,7 +22,9 @@
     const ledger = Array.from({ length: 18 }, (_, i) => Math.max(stars(bestStats[i + 1]), valid ? integer(raw.ledger?.[i], 3) : 0));
     const owned = valid && Array.isArray(raw.owned) ? [...new Set(raw.owned.filter(id => typeof id === 'string' && Object.hasOwn(items, id) && id !== 'bottle'))] : [];
     const welcome = 60 + ledger.reduce((sum, count) => sum + (count ? 60 + count * 15 : 0), 0);
+    const priorPoints = Array.from({ length: 18 }, (_, i) => integer(bestStats[i + 1]?.points, 999999)).reduce((sum, points) => sum + points, 0);
     return {
+      hintPoints: integer(valid && raw.hintPoints != null ? raw.hintPoints : priorPoints, 999999),
       version: 1, revision: valid ? integer(raw.revision, Number.MAX_SAFE_INTEGER) : 0,
       coins: valid ? integer(raw.coins, 999999) : welcome,
       tank: valid ? integer(raw.tank, 3) : 0,
@@ -34,18 +37,25 @@
   function loadout(shop) {
     return { radius: shop.ball === 'boulder' ? 14 : 12, inkMultiplier: 1 + tankBonuses[shop.tank], finish: shop.finish, trail: shop.trail };
   }
-  function reward(shop, level, count) {
+  function reward(shop, level, count, points = 0) {
     const next = structuredClone(shop), previous = next.ledger[level - 1] || 0;
     const newStars = Math.max(0, integer(count, 3) - previous);
     const earned = 15 + (previous === 0 ? 60 : 0) + newStars * 15;
     next.ledger[level - 1] = Math.max(previous, integer(count, 3));
     next.coins = Math.min(999999, next.coins + earned);
+    next.hintPoints = Math.min(999999, next.hintPoints + integer(points, 999999));
     next.revision++;
     return { next, earned };
   }
   function transact(shop, action) {
     const next = structuredClone(shop);
     let price = 0, message = '';
+    if (action === 'hint') {
+      if (next.hintPoints < HINT_COST) return { error: `You need ${HINT_COST} Birds points to buy a hint.` };
+      next.hintPoints -= HINT_COST;
+      next.revision++;
+      return { next, message: 'Hint purchased. Return to the game to see the guide.' };
+    }
     if (action === 'tank') {
       if (next.tank >= 3) return { error: 'Your ink tank is already at maximum capacity.' };
       price = tankPrices[next.tank]; next.tank++;
@@ -73,8 +83,8 @@
   }
 
   class WoodlandShop {
-    constructor({ dialog, getShop, canRefill, onAction, onClose }) {
-      Object.assign(this, { dialog, getShop, canRefill, onAction, onClose });
+    constructor({ dialog, getShop, canRefill, canBuyHint, onAction, onClose }) {
+      Object.assign(this, { dialog, getShop, canRefill, canBuyHint, onAction, onClose });
       this.returnFocus = null;
       dialog.querySelector('#closeShop').addEventListener('click', () => this.close());
       dialog.querySelector('#resumeFromShop').addEventListener('click', () => this.close());
@@ -95,7 +105,7 @@
         const result = onAction(button.dataset.shopAction);
         this.update();
         this.message(result.error || result.message, Boolean(result.error));
-        window.setTimeout(() => { this.busy = false; }, 350);
+        this.purchaseTimer = window.setTimeout(() => { this.busy = false; }, 350);
       });
       // Use the same cached material renderer as the playfield, once per preview.
       const renderer = new WoodlandDropMechanism();
@@ -111,6 +121,8 @@
     update() {
       const shop = this.getShop();
       this.dialog.querySelector('#shopBalance').textContent = shop.coins.toLocaleString();
+      this.dialog.querySelector('#hintPoints').textContent = shop.hintPoints.toLocaleString();
+      this.dialog.querySelector('#hintPrice').textContent = HINT_COST;
       this.dialog.querySelector('#bottleCount').textContent = `${shop.bottles} / 9 bottles in your bag`;
       this.dialog.querySelector('#tankDescription').textContent = shop.tank === 3
         ? 'Maximum capacity: 50% more ink on every fresh attempt.'
@@ -118,6 +130,11 @@
       this.dialog.querySelector('#tankSteps').value = shop.tank;
       this.dialog.querySelectorAll('[data-shop-action]').forEach(button => {
         const id = button.dataset.shopAction;
+        if (id === 'hint') {
+          button.textContent = `Buy hint · ${HINT_COST} pts`;
+          button.disabled = !this.canBuyHint() || shop.hintPoints < HINT_COST;
+          return;
+        }
         let label, price = 0, selected = false, unavailable = false;
         if (id === 'tank') { price = tankPrices[shop.tank] || 0; label = price ? `Upgrade · ${price}` : 'Fully upgraded'; unavailable = !price; }
         else if (id === 'bottle') { price = 30; label = `Buy bottle · ${price}`; unavailable = shop.bottles >= 9; }
@@ -151,6 +168,8 @@
     finishClose() {
       if (this.dialog.open || !this.returnFocus) return;
       const focus = this.returnFocus; this.returnFocus = null;
+      window.clearTimeout(this.purchaseTimer);
+      this.busy = false;
       this.onClose(); if (focus.isConnected && !focus.disabled) focus.focus();
     }
   }

@@ -1,3 +1,4 @@
+import { buyRouteHint, enterBirdsCampaign } from './birdsShop.fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -23,6 +24,7 @@ async function setup(browser, options, data = seed({}), extra) {
   if (extra) await page.addInitScript(extra);
   await page.goto(url);
   await page.waitForFunction(() => window.render_game_to_text && document.fonts.status === 'loaded', undefined, { polling: 50 });
+  await enterBirdsCampaign(page);
   await page.evaluate(() => window.advanceTime(0));
   return { context, page, errors };
 }
@@ -46,7 +48,7 @@ for (const [name, engine, options] of [
   if (process.env.BIRDS_SHOP_FILTER && !new RegExp(process.env.BIRDS_SHOP_FILTER).test(name)) continue;
   const browser = await engine.launch(), row = { name, fingerprint, physical: false };
   try {
-    const { context, page, errors } = await setup(browser, options);
+    const { context, page, errors } = await setup(browser, options, { ...seed({}), shop: { version: 1, coins: 60, hintPoints: 200 } });
     let s = await snapshot(page); assert.equal(s.shop.coins, 60);
     await page.locator('#shopButton').click(); await noOverflow(page);
     assert.equal(await page.locator('[data-shop-action="tank"]').isDisabled(), true);
@@ -63,10 +65,10 @@ for (const [name, engine, options] of [
     s = await snapshot(page); assert.equal(s.shop.bottles, 0); assert.equal(s.shop.coins, 30); assert.equal(s.inkLeftRatio, 1);
     assert.deepEqual(s.lines, beforeRefill.lines);
     await page.locator('#resumeFromShop').click();
-    await page.locator('#hintButton').click();
+    await buyRouteHint(page);
     await page.evaluate(() => { window.__manyBirdsDebug.forceWin(); window.__manyBirdsDebug.forceWin(); });
     s = await snapshot(page); assert.equal(s.shop.coins, 135, 'first two-star clear earns 105 once');
-    await page.locator('#overlaySecondary').click(); await page.locator('#hintButton').click();
+    await page.locator('#overlaySecondary').click(); await buyRouteHint(page);
     await page.evaluate(() => window.__manyBirdsDebug.forceWin());
     assert.equal((await snapshot(page)).shop.coins, 150, 'replay earns 15');
     await page.locator('#overlaySecondary').click(); await page.evaluate(() => window.__manyBirdsDebug.forceWin());
@@ -92,7 +94,7 @@ for (const [name, engine, options] of [
     await p.locator('#closeShop').click(); await p.locator('#restartButton').click();
     s = await snapshot(p); assert.equal(s.stone.radius, 14); assert.equal(s.loadout.inkMultiplier, 1.5); assert.equal(s.loadout.finish, 'jade'); assert.equal(s.loadout.trail, true);
     const budget = s.inkBudget;
-    await p.reload(); s = await snapshot(p); assert.equal(s.shop.coins, 400); assert.equal(s.stone.radius, 14); assert.equal(s.inkBudget, budget);
+    await p.reload(); await enterBirdsCampaign(p); s = await snapshot(p); assert.equal(s.shop.coins, 400); assert.equal(s.stone.radius, 14); assert.equal(s.inkBudget, budget);
     await p.locator('#dropButton').click(); await p.evaluate(() => window.advanceTime(100));
     const inFlight = await snapshot(p);
     await p.locator('#shopButton').click(); await act(p, 'standard'); await act(p, 'brass'); await act(p, 'firefly');

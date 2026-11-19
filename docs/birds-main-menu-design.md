@@ -68,3 +68,23 @@ Final result: 7/7 browser profiles passed with no page errors. Dirty-source iden
 The third mode starts a fresh ten-stage run at Level 1 with one stone. The reserve carries across stages. Reloads within a stage keep cleared birds and drawn lines. Hints, shop upgrades, and level selection are unavailable during the run. Leaving for the main menu ends the run. Completion awards 100 points per stone left through the existing game points bridge.
 
 On extremely short or zoomed viewports, `#mainMenu` can scroll vertically so all three full-size buttons and the top navigation remain reachable. The menu fits at 320 × 568. The 320 × 220 WebKit check confirms contained vertical scrolling and no horizontal overflow. The rules and results use the existing `.overlay-content` scrolling region when needed, with actions outside that region.
+
+## Expanded playfield, shop hints and Versus scan
+
+The layout uses a compact toolbar on phones and a slim sidebar at 700 CSS pixels and above. The canvas fits the remaining width and height at its original 9:16 ratio. Landscape touch layouts at 480 CSS pixels tall or above can play in the available space. Shorter touch landscape retains the rotate-to-portrait pause so the whole board and touch controls remain usable.
+
+| Viewport | Previous canvas height | Current canvas height |
+| --- | ---: | ---: |
+| Desktop, 1440 × 900 | 868 px | 884 px |
+| Android-emulated phone, 393 × 852 | 645 px | 677 px |
+| Small phone, 320 × 568 | 351 px | 396 px |
+| Portrait tablet, 768 × 1024 | 661 px | 1,003 px |
+| Landscape tablet, 1366 × 1024 | Rotation required | 1,008 px |
+
+The main screen fits the viewport in the checked profiles. The side rail can scroll vertically when short displays or expanded Versus precision inputs need room. On narrow screens, scrolling is contained in the Versus panel. The game canvas and primary actions remain outside that region. Existing scrollable rules, shop, and level-map content keep their own controls and focus behavior. Physical devices and actual soft keyboards were not used.
+
+Hints are sold through the in-game shop for 100 Birds points from level clears. Older saves initialize the available Birds points from recorded best scores. A purchase applies one guide for the current attempt after the debit is saved. Editing a failed route restores its purchased guide. Starting a fresh attempt clears the guide. Woodland coins are independent. Unreal, Impossible, and Versus retain their hint-free rules.
+
+The Versus scan now verifies routes with the current match motion setting, tries finer aims and timing, and has a slightly larger time budget. The former coarse reachability gate rejected a 40-pixel opening between two platforms without simulating a shot. The new scan replayed a full clear for that map under both motion settings. A missed search still leaves the draft editable. Time limits, ink budgets, and full-flock clears remain part of proof validation.
+
+Visual self-assessment (DEGRADED: single-context, direct execution). Fidelity 9, composition 9, finish 8, style consistency 9, usability 8. Two code-led inspection passes, no illustration variants. The arena and its existing art remain the focal point. The Impeccable detector reported existing palette and shadow advisories. Browser screenshots and measurements are in [the layout evidence](../output/birds-playfield/).

@@ -19,6 +19,19 @@ for(const[name,targets,platforms]of cases)test(`automatic search verifies ${name
   assert.equal(ctx.WoodlandVersusSimulation.replay(map,{...config,reducedMotion:true},found.solution).clear,true);
   if(['diagonal','horizontal','zigzag','blocked-entry'].includes(name))assert.ok(found.solution.strokes.length,'a drawing solution is required');
 });
+test('a legal drop through a gap between coarse scan columns is replayed', () => {
+  const map = {
+    birds: [{ x: 183, y: 350 }],
+    strokes: [[{ x: 22, y: 180 }, { x: 163, y: 180 }], [{ x: 203, y: 180 }, { x: 338, y: 180 }]],
+  };
+  for (const reducedMotion of [false, true]) {
+    const config = { birds: 1, seconds: 30, solverInk: 480, platformInk: 480, reducedMotion };
+    const result = ctx.WoodlandVersusSolver.createSearch(map, config).next(100);
+    assert.ok(result.solution, 'the draft can be cleared without drawing a runway');
+    assert.ok(ctx.WoodlandVersusSimulation.replay(map, config, result.solution).clear);
+  }
+});
+
 test('an enclosed bird cannot be approved and malformed/over-budget/deadline witnesses fail',()=>{
   const map={birds:[{x:180,y:350}],strokes:[[{x:136,y:306},{x:224,y:306},{x:224,y:394},{x:136,y:394},{x:136,y:306}]]},config={birds:1,solverInk:480,seconds:30};
   assert.equal(ctx.WoodlandVersusSolver.createSearch(map,config).next(100).solution,undefined);

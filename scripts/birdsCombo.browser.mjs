@@ -1,3 +1,4 @@
+import { buyRouteHint, enterBirdsCampaign } from './birdsShop.fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -45,6 +46,7 @@ for (const [name, engine, options] of [
     await context.addInitScript(key => { if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ campaignVersion: 2, highestUnlocked: 18, selectedLevel: 7, onboarded: true, bestStats: {}, shop: {version:1,coins:60,owned:[],ledger:[]} })); }, key);
     const url = `${process.env.GAMES_TEST_URL || 'http://127.0.0.1:5186'}/Games/Many%20Birds%20One%20Stone/index.html`;
     await page.goto(url);
+    await enterBirdsCampaign(page);
     await page.waitForFunction(() => window.comboTest && window.__manyBirdsDebug.snapshot().birdArt.loaded && document.fonts.status === 'loaded', undefined, { polling: 50 });
     await page.evaluate(() => {
       window.LAHSPointsBridge.awardPoints = (points, options) => window.comboTest.awards.push({points,...options});
@@ -95,8 +97,8 @@ for (const [name, engine, options] of [
     assert.equal(saved.bestStats[7].points,210); assert.equal(saved.bestStats[7].stars,3);
 
     // An old perfect result must survive a newly introduced, higher-point two-star clear.
-    await page.evaluate(key => { const saved=JSON.parse(localStorage.getItem(key)); saved.bestStats[7]={points:150,stars:3,clearTimeMs:500}; localStorage.setItem(key,JSON.stringify(saved)); },key);
-    await page.reload(); await page.locator('#hintButton').click();
+    await page.evaluate(key => { const saved=JSON.parse(localStorage.getItem(key)); saved.bestStats[7]={points:150,stars:3,clearTimeMs:500}; saved.shop.hintPoints=100; localStorage.setItem(key,JSON.stringify(saved)); },key);
+    await page.reload(); await enterBirdsCampaign(page); await buyRouteHint(page);
     await page.evaluate(() => window.__manyBirdsDebug.forceWin());
     saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)),key);
     assert.deepEqual(saved.bestStats[7],{points:150,stars:3,clearTimeMs:500});
@@ -153,7 +155,8 @@ for (const [name, engine, options] of [
     await page.setViewportSize({width:320,height:568}); await page.evaluate(() => document.documentElement.style.fontSize='24px');
     await overflow();
     const meters = await page.evaluate(() => ({ink:document.querySelector('.meter-card').getBoundingClientRect().toJSON(),flock:document.querySelector('.flock-progress').getBoundingClientRect().toJSON()}));
-    assert.ok(meters.ink.right<=meters.flock.left+1,'ink and combo tally do not overlap at 150% text');
+    const separated = meters.ink.right <= meters.flock.left + 1 || meters.ink.bottom <= meters.flock.top + 1;
+    assert.ok(separated, 'ink and combo tally do not overlap at 150% text');
     await page.locator('#resultShopButton').click(); await overflow();
     await page.locator('#closeShop').click(); await page.locator('#resultMapButton').click();
     await page.locator('#closeLevelMap').click(); await overflow();

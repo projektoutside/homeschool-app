@@ -48,3 +48,15 @@ test('malformed saves cannot equip unowned items or produce negative wallets', (
   const corrupt = e.normalize({ version: 1, coins: { toString: {} }, owned: [{ toString: {} }] }, null);
   assert.equal(corrupt.coins, 0); assert.equal(corrupt.owned.length, 0);
 });
+
+test('hints debit exactly 100 earned Birds points and leave the coin wallet intact', () => {
+  const legacy = e.normalize({ version: 1, coins: 60 }, { 2: { points: 180 } });
+  assert.equal(legacy.hintPoints, 180);
+  const purchase = e.transact(legacy, 'hint');
+  assert.equal(purchase.next.hintPoints, 80);
+  assert.equal(purchase.next.coins, 60);
+  assert.equal(purchase.next.revision, legacy.revision + 1);
+  assert.equal(e.normalize(purchase.next, { 2: { points: 180 } }).hintPoints, 80);
+  assert.ok(e.transact(purchase.next, 'hint').error);
+  assert.equal(e.reward(purchase.next, 2, 2, 125).next.hintPoints, 205);
+});

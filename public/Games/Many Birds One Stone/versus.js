@@ -24,7 +24,7 @@
       && map.strokes.every(stroke => stroke.length >= 2 && stroke.every(p => inside(p, BUILD)));
   }
   function mapKey(map, config) {
-    return JSON.stringify({ birds: config.birds, seconds: config.seconds, platformInk: config.platformInk, solverInk: config.solverInk,
+    return JSON.stringify({ birds: config.birds, seconds: config.seconds, platformInk: config.platformInk, solverInk: config.solverInk, reducedMotion: Boolean(config.reducedMotion),
       targets: map.birds.map(({ x, y }) => [x, y]), platforms: map.strokes.map(stroke => stroke.map(({ x, y }) => [x, y])) });
   }
   function isProven(map, config, proof) {
@@ -68,7 +68,7 @@
           <div class="vs-turn"><h2 id="vsTurnTitle"></h2><output id="vsClock" aria-label="Turn status" aria-live="off"></output></div>
           <div id="vsEditorTools">
             <div class="vs-tools" role="group" aria-label="Map tools"><button id="vsBirdTool" type="button" aria-pressed="true">Place birds</button><button id="vsBlockTool" type="button" aria-pressed="false">Draw platforms</button></div>
-            <details class="vs-precision"><summary>Place birds precisely</summary><div class="vs-coordinates">
+            <details class="vs-precision"><summary aria-label="Place birds precisely">Precision</summary><div class="vs-coordinates">
               <label>Bird<select id="vsSelectedBird" aria-label="Bird to place or move"></select></label>
               <label>X<input id="vsBirdX" type="number" min="56" max="304" value="180" inputmode="numeric"></label>
               <label>Y<input id="vsBirdY" type="number" min="190" max="490" value="250" inputmode="numeric"></label>
@@ -173,7 +173,7 @@
         { label: 'Player 1: build', primary: true, run: () => {
           const number = id => Number(document.getElementById(id).value);
           const attempts = number('vsAttempts');
-          this.config = { birds: number('vsBirdCount'), seconds: attempts === 0 ? 0 : number('vsTimeLimit'), attempts, platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk') };
+          this.config = { birds: number('vsBirdCount'), seconds: attempts === 0 ? 0 : number('vsTimeLimit'), attempts, platformInk: number('vsPlatformInk'), solverInk: number('vsSolverInk'), reducedMotion: Boolean(this.adapter.reducedMotion) };
           this.active = true; this.maps = []; this.proofs = []; this.results = []; this.player = 0;
           this.startBuild();
         } },
@@ -309,13 +309,13 @@
       const found = await promise;
       if (id !== this.checkId || this.phase !== 'checking' || !this.active || key !== mapKey(this.draft, this.config)) return;
       const verified = found.solution && WoodlandVersusSimulation.replay(this.draft, this.config, found.solution);
-      if (verified?.clear && WoodlandVersusSimulation.replay(this.draft, { ...this.config, reducedMotion: true }, found.solution).clear) {
+      if (verified?.clear) {
         this.proof = { key, ...verified, automatic: true, revision: WoodlandVersusSimulation.revision, solution: copy(found.solution), solutionKey: JSON.stringify(found.solution), dropped: true, ballRadius: 12 };
         this.phase = 'verified'; this.seal();
         return;
       }
       this.phase = 'unverified';
-      this.dialog('unverified', 'This map needs a little adjustment.', '<p>We could not verify a winning route within the current ink and time limits. The map stays locked.</p><p>Move the birds closer together, open a route around the gray platforms, or simplify the layout, then check again.</p><p>A complex map may be solvable even when this search cannot find its route.</p>', [
+      this.dialog('unverified', 'No winning route found yet', '<p>We could not verify a winning route within the current ink and time limits. The map stays locked.</p><p>Move the birds closer together, open a route around the gray platforms, or simplify the layout, then check again.</p><p>A complex map may be solvable even when this search cannot find its route.</p>', [
         { label: 'Edit map', primary: true, run: () => this.editDraft() },
       ]);
     }

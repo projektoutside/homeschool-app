@@ -49,21 +49,14 @@
 .shop-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; padding: 16px 28px; background: #eceddd; }
 .shop-footer p { margin: 0; font-size: .75rem; line-height: 1.4; color: var(--muted); }
 .shop-footer button { min-width: 160px; }
-@media (min-width: 761px) {
-  #shell { grid-template-rows: minmax(0, 1fr) 0 auto; }
-  .hud { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #8da18d #eeeddd; scrollbar-width: thin; padding-right: 5px; }
-  .hud-cluster { flex-wrap: wrap; }
+@media (min-width: 700px) {
   .shop-launch { flex-basis: 100%; }
 }
-@media (max-width: 760px) {
-  .combo-readout { font-size: .65rem; }
-  .hud .meter-card { min-width: 0; }
-  .hud-cluster { display: grid; grid-template-columns: repeat(3, 44px) 56px; }
-  .shop-launch { flex: 0 0 56px; min-height: 44px; height: 44px; padding: 4px; flex-direction: column; justify-content: center; gap: 1px; font-size: .7rem; }
+@media (max-width: 699px) {
+  .shop-launch { min-width: 50px; min-height: 44px; padding: 3px 5px; flex-direction: column; justify-content: center; gap: 1px; font-size: .75rem; }
   .shop-launch > span { gap: 3px; }
   .shop-launch > span:first-child > span, .shop-launch > span:last-child svg { display: none; }
   .shop-launch svg { width: 15px; height: 15px; }
-  .shop-launch strong { font-size: .75rem; }
 }
 @media (max-width: 480px) {
   .woodland-shop { width: calc(100% - 16px); max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 18px; }

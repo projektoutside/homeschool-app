@@ -10,7 +10,7 @@ self.onmessage = event => {
     if (paused) { setTimeout(chunk, 100); return; }
     try {
       const start = performance.now(), result = search.next(15); used += performance.now() - start;
-      if (result.done || used >= 7000) self.postMessage({ type: 'result', ...result });
+      if (result.done || used >= WoodlandVersusSolver.searchBudgetMs) self.postMessage({ type: 'result', ...result });
       else { self.postMessage({ type: 'progress', attempts: result.attempts }); setTimeout(chunk, 0); }
     } catch (_error) { self.postMessage({ type: 'result', error: true }); }
   };

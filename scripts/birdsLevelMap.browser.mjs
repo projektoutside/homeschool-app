@@ -1,3 +1,4 @@
+import { buyRouteHint, enterBirdsCampaign } from './birdsShop.fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -34,6 +35,7 @@ async function setup(browser, options = {}, saved = progress(), embedded = false
     surface = page.frames().find(frame => frame.url().includes('Many%20Birds'));
   } else await page.goto(gameUrl);
   await surface.waitForFunction(() => window.render_game_to_text && document.fonts.status === 'loaded', undefined, { polling: 50 });
+  await enterBirdsCampaign(surface);
   await surface.evaluate(() => window.advanceTime(0));
   return { context, page, surface, errors };
 }
@@ -163,7 +165,7 @@ try {
       await surface.locator('#resultMapButton').click();
       await surface.locator('.map-stop[data-level="0"]').press('Enter');
       assert.equal((await snapshot(surface)).overlayVisible, false);
-      await surface.locator('#hintButton').click();
+      await buyRouteHint(surface);
       await surface.evaluate(() => {
         const level = window.WoodlandCampaign.levels[0]; level.hint.forEach(stroke => window.__manyBirdsDebug.applyStroke(stroke));
         window.advanceTime(2000); window.__manyBirdsDebug.drop(); window.advanceTime(12000);

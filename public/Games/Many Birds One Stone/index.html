@@ -109,7 +109,6 @@
           <div class="status-copy" id="statusCopy" role="status" aria-live="polite"></div>
         </div>
         <div class="action-row">
-          <button class="control-button" id="hintButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-6 3h6M8 14a6 6 0 1 1 8 0l-1 3H9Z"/></svg>Hint</button>
           <button class="control-button" id="clearButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 9-11 7 6-9 11H8Zm7 6h10M8 10l7 6"/></svg>Clear lines</button>
           <button class="control-button control-button--primary" id="dropButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14m-6-6 6 6 6-6M4 21h16"/></svg>Drop stone <small>Space</small></button>
         </div>
@@ -144,6 +143,15 @@
       <p id="shopMessage" class="shop-message" role="status"></p>
     </header>
     <div class="shop-scroll" id="shopScroll" tabindex="0" aria-label="Shop supplies and equipment">
+      <section class="shop-section" aria-labelledby="hintsShopTitle">
+        <h3 id="hintsShopTitle">Hints</h3>
+        <p><strong id="hintPoints">0</strong> Birds points available</p>
+        <article class="shop-product">
+          <div class="supply-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18h6m-6 3h6M8 14a6 6 0 1 1 8 0l-1 3H9Z"/></svg></div>
+          <div class="product-copy"><h4>Route hint</h4><p>Spend <span id="hintPrice">100</span> Birds points earned from clears to see the guide for this attempt. Available once before dropping.</p></div>
+          <button class="shop-buy" type="button" data-shop-action="hint">Buy hint · 100 pts</button>
+        </article>
+      </section>
       <section class="shop-section" aria-labelledby="inkShopTitle">
         <h3 id="inkShopTitle">Make room for a bigger idea.</h3><p>Extra ink, without losing a single line.</p>
         <article class="shop-product shop-product--tank">
@@ -221,7 +229,7 @@
       const CLEAR_NO_HINT_BONUS = 25;
       const CLEAR_INK_BONUS = 25;
       const COLLISION_SUBSTEPS = 3;
-      const TOUCH_ROTATE_BREAKPOINT = 1024;
+      const MIN_LANDSCAPE_HEIGHT = 480;
       const DEFAULT_SOUND = { muted: false, sfxVolume: 0.75 };
       const TARGET_ORIGIN = window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')
         ? window.location.origin
@@ -245,7 +253,6 @@
         nextLevelButton: document.getElementById('nextLevelButton'),
         restartButton: document.getElementById('restartButton'),
         homeButton: document.getElementById('homeButton'),
-        hintButton: document.getElementById('hintButton'),
         clearButton: document.getElementById('clearButton'),
         dropButton: document.getElementById('dropButton'),
         inkLabel: document.getElementById('inkLabel'),
@@ -449,6 +456,7 @@
       };
 
       const versus = new WoodlandVersus({
+        reducedMotion,
         suspended: () => state.hostPaused || state.hiddenPause || state.rotatePaused,
         canEnter: () => state.menuVisible && !state.mapVisible && !state.shopVisible,
         entryButton: () => dom.menuVersusButton,
@@ -529,11 +537,15 @@
         levelMap.open({ levelIndex: state.levelIndex, highestUnlocked: state.highestUnlocked, bestStats: state.bestStats, returnFocus: event.currentTarget, fromMenu: state.menuVisible, customPlay: state.menuVisible || state.playMode === 'custom' });
       }
 
+      const canBuyHint = () => !state.unreal && !versus.active && !state.overlayVisible && !state.runEnded
+        && state.stone.attached && !state.hintUsed;
       const shop = new WoodlandShop({
         dialog: document.getElementById('woodlandShop'), getShop: () => state.shop,
         canRefill: () => state.stone.attached && !state.runEnded && !state.onboardingPending && state.inkUsed > .01,
+        canBuyHint,
         onAction(action) {
           if (state.hostPaused || state.hiddenPause || state.rotatePaused) return { error: 'Return to the game in portrait before shopping.' };
+          if (action === 'hint' && !canBuyHint()) return { error: 'Hints are available once per attempt before dropping.' };
           if (action === 'use-bottle' && !(state.stone.attached && !state.runEnded && state.inkUsed > .01)) return { error: 'Use a bottle after drawing, before dropping.' };
           try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -542,6 +554,7 @@
             if (result.error) { state.shop = latest; refreshHud(); return result; }
             if (!saveProgress(result.next)) return { error: 'Your browser could not save this purchase. Nothing was spent. Enable storage and try again.' };
             state.shop = result.next;
+            if (action === 'hint') showPurchasedHint();
             if (action === 'use-bottle') { state.inkUsed = 0; refreshButtons(); }
             refreshHud(); announce(result.message);
             return result;
@@ -642,7 +655,7 @@
       }
 
       function shouldForcePortrait() {
-        return isTouchLandscape() && Math.max(window.innerWidth, window.innerHeight) <= TOUCH_ROTATE_BREAKPOINT * 1.5;
+        return isTouchLandscape() && window.innerHeight < MIN_LANDSCAPE_HEIGHT;
       }
 
       function syncPauseState() {
@@ -979,7 +992,6 @@
         const blocked = state.menuVisible || state.overlayVisible || state.mapVisible || state.shopVisible || versus.paused || versus.editing || state.hostPaused || state.hiddenPause || (versus.active && !versus.running);
         dom.prevLevelButton.disabled = versus.active || state.levelIndex <= 0 || blocked;
         dom.nextLevelButton.disabled = versus.active || state.levelIndex >= LEVELS.length - 1 || levelLockedNext || blocked;
-        dom.hintButton.disabled = versus.active || blocked || state.rotatePaused || !attached;
         dom.restartButton.disabled = versus.active || Boolean(state.unreal);
         dom.clearButton.disabled = blocked || state.rotatePaused || !attached || (state.drawnStrokes.length === 0 && !state.pointer.active);
         dom.dropButton.disabled = blocked || state.rotatePaused || !attached;
@@ -1031,7 +1043,9 @@
           : state.level.staticLines.map(createStaticCollider);
         refreshColliders();
         resetClawControl();
-        setClawBaseX(WORLD_W / 2);
+        const restoreGuide = preserveHintState && state.hintUsed;
+        if (restoreGuide) state.hintVisibleUntil = Infinity;
+        setClawBaseX(restoreGuide ? state.level.hintAim : WORLD_W / 2);
         resetStone();
         state.pointer.active = false;
         state.pointer.pointerId = null;
@@ -1509,8 +1523,8 @@
           unlockedLevel: state.highestUnlocked > previousUnlocked ? state.highestUnlocked : null,
         });
         let latestEconomy = state.shop;
-        try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved?.shop) latestEconomy = WoodlandEconomy.normalize(saved.shop); } catch (_error) {}
-        const coinReward = WoodlandEconomy.reward(latestEconomy, state.level.id, summary.stars);
+        try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved?.shop) latestEconomy = WoodlandEconomy.normalize(saved.shop, saved.bestStats); } catch (_error) {}
+        const coinReward = WoodlandEconomy.reward(latestEconomy, state.level.id, summary.stars, summary.points);
         const coinsSaved = saveProgress(coinReward.next);
         state.shop = coinReward.next;
         refreshHud();
@@ -2007,9 +2021,7 @@
         versus.drawEditor(ctx);
       }
 
-      function useHint() {
-        if (state.unreal || versus.active || versus.paused) return;
-        if (state.overlayVisible || state.rotatePaused || !state.stone.attached) return;
+      function showPurchasedHint() {
         state.hintUsed = true;
         state.hintVisibleUntil = Infinity;
         setClawBaseX(state.level.hintAim);
@@ -2151,10 +2163,6 @@
           beginAttempt(true, false);
           return;
         }
-        if (event.key === 'h' || event.key === 'H') {
-          useHint();
-          return;
-        }
         if ((event.key === 'a' || event.key === 'A' || event.key === 'd' || event.key === 'D') && state.stone.attached && !state.overlayVisible) {
           event.preventDefault();
           setClawBaseX(state.clawBaseX + ((event.key === 'a' || event.key === 'A') ? -18 : 18));
@@ -2281,10 +2289,6 @@
           unlockAudio();
           playTone('tap');
           goToLevel(state.levelIndex + 1);
-        });
-        dom.hintButton.addEventListener('click', () => {
-          unlockAudio();
-          useHint();
         });
         dom.clearButton.addEventListener('click', () => {
           unlockAudio();

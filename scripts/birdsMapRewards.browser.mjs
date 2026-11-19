@@ -1,3 +1,4 @@
+import { buyRouteHint, enterBirdsCampaign } from './birdsShop.fixture.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -23,14 +24,15 @@ async function setup(browser, options = {}, unlocked = 1) {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace('function frame(now) {', 'function frame(now) { return;') });
   });
-  await page.addInitScript(unlocked => localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: unlocked, selectedLevel: 1, onboarded: true, bestStats: {} })), unlocked);
+  await page.addInitScript(unlocked => localStorage.setItem('lahs-many-birds-one-stone-v1', JSON.stringify({ campaignVersion: 2, highestUnlocked: unlocked, selectedLevel: 1, onboarded: true, bestStats: {}, shop: { version: 1, coins: 60, hintPoints: 200 } })), unlocked);
   await page.goto(url);
   await page.waitForFunction(() => window.render_game_to_text && document.fonts.status === 'loaded', undefined, { polling: 50 });
+  await enterBirdsCampaign(page);
   await page.evaluate(() => window.advanceTime(0));
   return { context, page, errors };
 }
 async function clear(page, withHint = false) {
-  if (withHint) await page.locator('#hintButton').click();
+  if (withHint) await buyRouteHint(page);
   const after = await page.evaluate(() => {
     const d = window.__manyBirdsDebug, level = window.WoodlandCampaign.levels[d.snapshot().level - 1];
     d.moveClaw(level.hintAim); level.hint.forEach(stroke => d.applyStroke(stroke));

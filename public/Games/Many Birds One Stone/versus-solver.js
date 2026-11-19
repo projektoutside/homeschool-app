@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const S = window.WoodlandVersusSimulation;
+  const searchBudgetMs = 9000;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const point = (x, y) => ({ x: clamp(x, 22, 338), y: clamp(y, 110, 522) });
   function* permutations(values) {
@@ -43,9 +44,13 @@
       if (S.ink(strokes) > config.solverInk) continue;
       for (const aim of aims) yield { aim, dropFrame: 300, strokes };
     }
+    const fineAims = [...new Set([...aims, ...Array.from({ length: 43 }, (_, i) => 54 + i * 6)])];
+    for (const delay of [48, 72, 114, 132, 174, 198, 234, 282, 330]) {
+      for (const aim of fineAims) yield { aim, dropFrame: delay, strokes: [] };
+    }
   }
   function createSearch(map, config) {
-    const iterator = candidates(map, config), pending = [], seeds = new Set(), tried = new Set(); let attempts = 0, done = !reachable(map);
+    const iterator = candidates(map, config), pending = [], seeds = new Set(), tried = new Set(); let attempts = 0, done = false;
     return { next(budgetMs = 8) {
       const start = performance.now();
       while (!done && performance.now() - start < budgetMs) {
@@ -56,7 +61,7 @@
         tried.add(key);
         attempts++;
         const result = S.replay(map, config, candidate.value);
-        if (result.clear && S.replay(map, { ...config, reducedMotion: true }, candidate.value).clear) { done = true; return { done, attempts, solution: candidate.value, result }; }
+        if (result.clear) { done = true; return { done, attempts, solution: candidate.value, result }; }
         const seedKey = `${result.hits}:${candidate.value.strokes.length}:${Math.round(candidate.value.aim / 40)}`;
         if (result.hits && candidate.value.strokes.length < 4 && !seeds.has(seedKey) && seeds.size < 24) {
           seeds.add(seedKey);
@@ -75,26 +80,6 @@
       }
       return { done, attempts };
     } };
-  }
-  function reachable(map) {
-    const rails = map.strokes.map(points => WoodlandPhysics.createStroke(points, 7)), width = 49, height = 83;
-    const seen = new Uint8Array(width * height), queue = [];
-    const free = (x, y) => rails.every(rail => {
-      const b = rail.bounds;
-      if (b && (x < b.left - 18.7 || x > b.right + 18.7 || y < b.top - 18.7 || y > b.bottom + 18.7)) return true;
-      const p = WoodlandPhysics.nearest(rail, x, y);
-      return !p || Math.hypot(x - p.x, y - p.y) > 18.7;
-    });
-    for (let x = 3; x <= 45; x++) if (free(36 + x * 6, 114)) { queue.push(x); seen[x] = 1; }
-    for (let head = 0; head < queue.length; head++) {
-      const index = queue[head], x = index % width, y = Math.floor(index / width);
-      for (const [nx, ny] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]) {
-        const next = ny * width + nx;
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height || seen[next] || !free(36 + nx * 6, 114 + ny * 6)) continue;
-        seen[next] = 1; queue.push(next);
-      }
-    }
-    return map.birds.every(bird => queue.some(index => Math.hypot(36 + index % width * 6 - bird.x, 114 + Math.floor(index / width) * 6 - bird.y) <= 34));
   }
   class WoodlandMapChecker {
     constructor() { this.job = null; }
@@ -115,7 +100,7 @@
             try {
               const start = performance.now(), result = search.next(7); used += performance.now() - start;
               onProgress(result.attempts);
-              if (result.done || used >= 7000) finish(result);
+              if (result.done || used >= searchBudgetMs) finish(result);
               else setTimeout(chunk, 0);
             } catch (_error) { finish({ error: true }); }
           };
@@ -133,5 +118,5 @@
     }
   }
   window.WoodlandMapChecker = WoodlandMapChecker;
-  window.WoodlandVersusSolver = { candidates, createSearch, reachable };
+  window.WoodlandVersusSolver = { candidates, createSearch, searchBudgetMs };
 })();

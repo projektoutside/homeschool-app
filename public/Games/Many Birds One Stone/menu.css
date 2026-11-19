@@ -34,11 +34,9 @@
 /* Keep quiet campaign guidance accessible without spending playfield height. */
 body:not(.vs-active) .status-card { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
 .vs-launch[hidden] { display: none; }
-.game-brand h1 { font-size: 2rem; }
-.controls { gap: 12px; }
 .combo-readout { font-size: max(11px, .75rem); }
 .unreal-level,
-.unreal-active :is(.level-card:not(.unreal-level), #shopButton, #restartButton, #hintButton, .bird-token, .overlay-links, .reward-stars) { display: none; }
+.unreal-active :is(.level-card:not(.unreal-level), #shopButton, #restartButton, .bird-token, .overlay-links, .reward-stars) { display: none; }
 .unreal-active .unreal-level { display: grid; grid-template-columns: minmax(0, 1fr); }
 .unreal-active .unreal-level .level-main { background: transparent; }
 .unreal-active .combo-readout { font-size: .875rem; }
@@ -47,15 +45,7 @@ body:not(.vs-active) .status-card { position: absolute; width: 1px; height: 1px;
 @media (max-aspect-ratio: 1/1) {
   .main-menu { background-image: url('./assets/main-menu-woodland-portrait.webp'); background-position: center 35%; }
 }
-@media (max-width: 760px) {
-  .game-brand { display: none; }
-  #shell { gap: 6px; }
-  .hud { gap: 5px 8px; }
-  .hud-cluster { grid-column: 1 / -1; gap: 6px; }
-  #soundButton { margin-left: 0; }
-  .hud-cluster .shop-launch { margin-left: auto; }
-  .controls { gap: 0; }
-  .vs-active .controls { gap: 6px; }
+@media (max-width: 699px) {
   .main-menu { background-position: 50% 40%; }
   .unreal-active .unreal-level .level-main { text-align: left; }
 }
