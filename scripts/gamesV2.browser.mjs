@@ -203,13 +203,13 @@ try {
       await page.evaluate(() => window.hm_warmupRecognition());
       assert.equal(await page.locator('#dev-panel').count(), 0);
       const readings = await page.evaluate(async () => {
-        function pad(digits) {
+        function pad(digits, width = 7) {
           const surface = document.createElement('canvas');
           surface.width = 420;
           surface.height = 140;
           const ink = surface.getContext('2d');
           ink.lineCap = ink.lineJoin = 'round';
-          ink.lineWidth = 7;
+          ink.lineWidth = width;
           for (const [index, digit] of [...digits].entries()) {
             const x = 35 + index * 58;
             ink.beginPath();
@@ -233,9 +233,10 @@ try {
           WriteMathRecognition.recognize(pad('7'), 2),
           WriteMathRecognition.recognize(pad('101010'), 6),
           WriteMathRecognition.recognize(pad(''), 2),
+          WriteMathRecognition.recognize(pad('0', 0.9), 1),
         ]);
       });
-      assert.deepEqual(readings, ['11', '7', '101010', '']);
+      assert.deepEqual(readings, ['11', '7', '101010', '', '0']);
       return { readings, realModel: true };
     } finally { await page.close(); }
   });
@@ -272,14 +273,31 @@ try {
       const b = await page.locator('#p2-canvas').boundingBox();
       const session = await context.newCDPSession(page);
       const finger = (id, rect, dx = 0) => ({ id, x: rect.x + rect.width * .4 + dx, y: rect.y + rect.height * .5, radiusX: 2, radiusY: 2, force: 1 });
-      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [finger(1, a), finger(2, b)] });
-      for (let dx = 4; dx <= 32; dx += 4) await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [finger(1, a, dx), finger(2, b, -dx)] });
+      const workTab = page.locator('#player1 .canvas-tab[data-tab="work"]');
+      const tabRect = await workTab.boundingBox();
+      const controlTouch = finger(3, tabRect);
+      const spareTouch = { ...finger(4, a), x: a.x + a.width * .8 };
+      const contacts = (dx = 0) => [finger(1, a, dx), finger(2, b, -dx), controlTouch, spareTouch];
+      const seconds = await page.locator('#p1-time-left').textContent();
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [controlTouch] });
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: contacts() });
+      for (let dx = 4; dx <= 32; dx += 4) {
+        await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: contacts(dx) });
+      }
+      await page.waitForFunction((seconds) => document.querySelector('#p1-time-left').textContent !== seconds, seconds);
       await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      assert.equal(await workTab.evaluate((tab) => tab.classList.contains('active')), false, 'overlapping contact cannot switch panels');
+      assert.equal(await page.evaluate(() => vsState.running), true, 'match remains active');
       const ink = () => page.evaluate(() => ['p1-canvas', 'p2-canvas'].map((id) => {
         const canvas = document.getElementById(id), pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
         let n = 0; for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) n++; return n;
       }));
       assert.ok((await ink()).every((n) => n > 10), 'both players draw at once');
+      assert.equal(await page.locator('#p1-canvas').evaluate((canvas) => {
+        const ctx = canvas.getContext('2d');
+        const x = Math.floor(canvas.width * .8);
+        return ctx.getImageData(x - 3, 0, 7, canvas.height).data.some((value, i) => i % 4 === 3 && value > 0);
+      }), false, 'extra contact on an occupied pad creates no ink');
       assert.equal(await page.evaluate(() => visualViewport.scale), 1, 'simultaneous touches did not zoom');
       await page.waitForFunction(() => window.__pendingRecognition.length === 2);
       await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [finger(3, a, 60)] });

@@ -128,80 +128,35 @@
   console.log('[TabSystem] Canvas tab system loaded');
 })();
 
-// ============================================================================
-// MULTI-TOUCH & GESTURE PREVENTION SYSTEM
-// Prevents pinch-zoom and other gestures while allowing two-player drawing
-// ============================================================================
-(function setupMultiTouchPrevention() {
-  'use strict';
-  
-  // Prevent all zoom gestures on the document
-  document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  
-  document.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  
-  document.addEventListener('gestureend', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  
-  // Prevent pinch zoom on touchmove when multiple touches detected
-  document.addEventListener('touchmove', function(e) {
-    // If there are 2+ touches and they're NOT both on canvases, prevent zoom
-    if (e.touches.length >= 2) {
-      // Check if touches are on different game canvases (VS mode)
-      const touch1Target = e.touches[0].target;
-      const touch2Target = e.touches[1].target;
-      
-      const isCanvas1 = touch1Target.tagName === 'CANVAS';
-      const isCanvas2 = touch2Target.tagName === 'CANVAS';
-      
-      // If both touches are on canvases (could be same or different), allow it
-      // But prevent default zoom behavior
-      if (isCanvas1 || isCanvas2) {
-        // Don't prevent default here - let the canvas handlers manage it
-        // But mark the event as handled
-        e.stopPropagation();
-      } else {
-        // Neither touch is on a canvas - prevent zoom
-        e.preventDefault();
-      }
+// Cancel browser gestures and overlapping touch clicks while keeping pointer
+// events available to the canvas that owns each stroke.
+const overlappingTouches = new Set();
+for (const type of ['touchstart', 'touchmove']) {
+  document.addEventListener(type, event => {
+    if (event.touches.length < 2) return;
+    for (const touch of event.touches) overlappingTouches.add(touch.identifier);
+    if (event.cancelable) event.preventDefault();
+  }, { capture: true, passive: false });
+}
+for (const type of ['touchend', 'touchcancel']) {
+  document.addEventListener(type, event => {
+    let overlapped = false;
+    for (const touch of event.changedTouches) {
+      if (overlappingTouches.delete(touch.identifier)) overlapped = true;
     }
+    if (overlapped && event.cancelable) event.preventDefault();
+  }, { capture: true, passive: false });
+}
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, event => {
+    if (event.cancelable) event.preventDefault();
   }, { passive: false });
-  
-  // Prevent double-tap zoom
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function(e) {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false });
-  
-  // Prevent context menu on long press
-  document.addEventListener('contextmenu', function(e) {
-    if (e.target.tagName === 'CANVAS') {
-      e.preventDefault();
-    }
-  });
-  
-  // Fix for iOS Safari - prevent bouncing/overscroll
-  document.body.addEventListener('touchmove', function(e) {
-    if (e.target.tagName !== 'CANVAS' && !e.target.closest('.modal-content')) {
-      // Allow scrolling in modals but prevent elsewhere
-      const isScrollable = e.target.closest('.screen');
-      if (!isScrollable || isScrollable.scrollHeight <= isScrollable.clientHeight) {
-        // Not scrollable or doesn't need scroll - prevent overscroll
-      }
-    }
-  }, { passive: true });
-  
-  console.log('[MultiTouch] Gesture prevention system initialized');
-})();
+}
+document.addEventListener('contextmenu', event => {
+  if (event.target instanceof Element && (event.target.closest('canvas') || event.target.closest('#vs-screen'))) {
+    event.preventDefault();
+  }
+});
 
 // --- DOM Elements ---
 const screens = {
@@ -1295,14 +1250,14 @@ function isNearBottom(clientY) {
 
 function setupVsExitIntentReveal() {
   window.addEventListener('pointermove', (event) => {
-    if (!isVsScreenActive()) return;
+    if (!isVsScreenActive() || event.pointerType === 'touch' || event.buttons) return;
     if (isNearBottom(event.clientY)) {
       showVsExitFooter();
     }
   }, { passive: true });
 
   window.addEventListener('pointerdown', (event) => {
-    if (!isVsScreenActive()) return;
+    if (!isVsScreenActive() || event.pointerType === 'touch') return;
     const target = event.target;
     if (!isVsCanvasInteractionTarget(target) && !target.closest('.vs-footer')) {
       armVsExitSafety();
@@ -1315,8 +1270,9 @@ function setupVsExitIntentReveal() {
   window.addEventListener('touchstart', (event) => {
     if (!isVsScreenActive()) return;
     const touch = event.touches && event.touches[0];
-    if (!touch) return;
+    if (!touch || event.touches.length !== 1) { lastVsTouchY = null; return; }
     const target = event.target;
+    if (isVsCanvasInteractionTarget(target)) return;
     if (!isVsCanvasInteractionTarget(target) && !target.closest('.vs-footer')) {
       armVsExitSafety();
     }
@@ -1329,7 +1285,7 @@ function setupVsExitIntentReveal() {
   window.addEventListener('touchmove', (event) => {
     if (!isVsScreenActive()) return;
     const touch = event.touches && event.touches[0];
-    if (!touch) return;
+    if (!touch || event.touches.length !== 1 || overlappingTouches.has(touch.identifier) || lastVsTouchY == null) return;
     const dy = lastVsTouchY == null ? 0 : touch.clientY - lastVsTouchY;
     lastVsTouchY = touch.clientY;
 
@@ -2649,12 +2605,3 @@ window.testAutoClearDirect = function() {
 };
 
 document.addEventListener('DOMContentLoaded', init);
-// Safari gesture events supplement touch-action for shared-screen competition.
-for (const name of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick']) {
-  document.addEventListener(name, (event) => {
-    if (document.body.classList.contains('vs-mode-active') && event.cancelable) event.preventDefault();
-  }, { passive: false });
-}
-document.addEventListener('touchmove', (event) => {
-  if (document.body.classList.contains('vs-mode-active') && event.touches.length > 1 && event.cancelable) event.preventDefault();
-}, { passive: false });

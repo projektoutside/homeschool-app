@@ -47,7 +47,6 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('DOMContentLoaded', resizeCanvasForDPI);
 let drawing = false;
-let lastX = 0, lastY = 0;
 let lastTime = 0;
 let currentWidth = 8;
 
@@ -141,40 +140,9 @@ function showPopup(message, isCorrect = true) {
   }, isCorrect ? 800 : 1000); // Much faster display times
 }
 
-// Precise pointer positioning handling borders and padding
-function getPointerPos(e) {
-  // If it's a mouse event, offsetX/Y is the most accurate (relative to padding-box)
-  if (!e.touches) {
-    return { x: e.offsetX, y: e.offsetY };
-  }
-
-  // For touch events, we must manually calculate relative to the element
-  const rect = canvas.getBoundingClientRect();
-
-  // Important: getBoundingClientRect includes the border.
-  // The canvas internal coordinates start inside the border.
-  const style = window.getComputedStyle(canvas);
-  const borderLeft = parseFloat(style.borderLeftWidth) || 0;
-  const borderTop = parseFloat(style.borderTopWidth) || 0;
-
-  const touch = e.touches[0];
-  const clientX = touch.clientX;
-  const clientY = touch.clientY;
-
-  // Subtract rect position AND border width to match internal coordinate system
-  return {
-    x: clientX - rect.left - borderLeft,
-    y: clientY - rect.top - borderTop
-  };
-}
-
-function startDraw(e) {
-  if (!gameState.running) return;
+function startDraw() {
   cancelRecognition();
   drawing = true;
-  const pos = getPointerPos(e);
-  lastX = pos.x;
-  lastY = pos.y;
   lastTime = Date.now();
   currentWidth = 8; // Reset width
 
@@ -190,81 +158,28 @@ function startDraw(e) {
   }
 }
 
-function draw(e) {
-  if (!drawing) return;
-  e.preventDefault();
-  const pos = getPointerPos(e);
-
-  // === Advanced Variable-Width Inking (Simulated Pressure) ===
-
-  // Calculate speed
-  const currentTime = Date.now();
-  const timeDelta = currentTime - (lastTime || currentTime);
-  const dist = Math.sqrt((pos.x - lastX) ** 2 + (pos.y - lastY) ** 2);
-  const speed = timeDelta > 0 ? dist / timeDelta : 0; // px/ms
-
-  // Map speed to width: faster = thinner, slower = thicker
-  // Base width scales with canvas size
-  const rect = canvas.getBoundingClientRect();
-  const baseSize = Math.max(4, Math.round(8 * (rect.width / 480)));
-
-  // Dynamic width calculation
-  // Speed typically ranges 0.1 to 5.0+
-  // We want width to range from baseSize * 0.5 to baseSize * 1.2
-  const minWidth = baseSize * 0.4;
-  const maxWidth = baseSize * 1.4;
-
-  // Smooth the speed factor
-  const targetWidth = Math.max(minWidth, Math.min(maxWidth, baseSize - (speed * 1.5)));
-
-  // Smooth transition from previous width
-  currentWidth = currentWidth * 0.6 + targetWidth * 0.4; // simple low-pass filter
-
-  // Draw using quadratic curves for smoothness
+function draw(from, to) {
+  const now = Date.now();
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  const speed = distance / Math.max(1, now - lastTime);
+  const baseSize = Math.max(4, Math.round(8 * canvas.clientWidth / 480));
+  const targetWidth = Math.max(baseSize * 0.4, baseSize - speed * 1.5);
+  currentWidth = currentWidth * 0.6 + targetWidth * 0.4;
   ctx.lineWidth = currentWidth;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#000000';
-
-  // To make it look like a continuous stroke with variable width, 
-  // we actually need to draw many small segments or use a specialized brush.
-  // Standard canvas stroke() has constant width per path.
-  // Workaround: Draw individual segments with varying width.
-
+  ctx.lineCap = ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#000';
   ctx.beginPath();
-  ctx.moveTo(lastX, lastY);
-
-  // Quadratic Bezier for smoother curves than lines
-  // Use midpoint as control point? No, standard trick is:
-  // mid = (p1 + p2) / 2
-  // draw quad from last_mid to new_mid using p1 as control
-
-  // For now, linear segments with variable width is a massive upgrade over loops of circles.
-  ctx.lineTo(pos.x, pos.y);
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
   ctx.stroke();
-
-  // Circle cap at the end to smooth joints
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, currentWidth / 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#000000';
-  ctx.fill();
-
-  // Fill the start gap too
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, currentWidth / 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  lastX = pos.x;
-  lastY = pos.y;
-  lastTime = currentTime;
-
+  lastTime = now;
 }
 
-function endDraw(event) {
+function endDraw({ cancelled }) {
   if (!drawing) return;
   drawing = false;
   canvas.classList.remove('drawing');
-  if (event.type === 'touchcancel') return;
+  if (cancelled) return;
   const status = document.getElementById('canvas-status');
   if (status) status.textContent = 'Waiting for ink...';
   idleTimer = setTimeout(tryAutoSubmit, SUBMIT_DELAY_MS);
@@ -272,7 +187,7 @@ function endDraw(event) {
 
 function clearCanvas() {
   cancelRecognition();
-  drawing = false;
+  answerInput.reset();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Remove all visual feedback states when clearing
@@ -323,14 +238,12 @@ async function tryAutoSubmit() {
   }
 }
 
-canvas.addEventListener('mousedown', startDraw);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', endDraw);
-canvas.addEventListener('mouseleave', endDraw);
-canvas.addEventListener('touchstart', startDraw);
-canvas.addEventListener('touchmove', draw, { passive: false });
-canvas.addEventListener('touchend', endDraw);
-canvas.addEventListener('touchcancel', endDraw);
+const answerInput = WriteMathCanvasInput.bind(canvas, {
+  enabled: () => gameState.running,
+  start: startDraw,
+  move: draw,
+  end: endDraw,
+});
 
 window.clearCanvas = clearCanvas;
 window.getHandwritingInput = () => WriteMathRecognition.recognize(canvas);

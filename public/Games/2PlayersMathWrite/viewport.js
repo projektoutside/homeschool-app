@@ -236,25 +236,6 @@
   }
 
   // ========================================================================
-  // PREVENT ZOOM ON DOUBLE TAP (for game canvases)
-  // ========================================================================
-  function preventDoubleTapZoom() {
-    let lastTouchEnd = 0;
-    
-    document.addEventListener('touchend', (event) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        // Check if the target is a canvas or button
-        const target = event.target;
-        if (target.tagName === 'CANVAS' || target.tagName === 'BUTTON') {
-          event.preventDefault();
-        }
-      }
-      lastTouchEnd = now;
-    }, { passive: false });
-  }
-
-  // ========================================================================
   // SCROLL LOCK FOR MODALS
   // ========================================================================
   let scrollPosition = 0;
@@ -290,9 +271,6 @@
       window.visualViewport.addEventListener('resize', handleResize);
       window.visualViewport.addEventListener('scroll', updateViewportHeight);
     }
-
-    // Prevent double-tap zoom on interactive elements
-    preventDoubleTapZoom();
 
     // Initial canvas resize after DOM is ready
     if (document.readyState === 'loading') {

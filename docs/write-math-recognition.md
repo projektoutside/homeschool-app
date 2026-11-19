@@ -36,3 +36,16 @@ Model weights SHA-256: `6923e17c6e98075540c784ab511164dc7b49c74df137b89255909440
 The scoped browser suite checks real model loading, parallel readings, an empty pad, six-digit answers, an incorrect written digit when the question expects two digits, and stale recognition across simultaneous touch inputs. Browser smoke exercises real scoring in desktop Chromium, Android phone emulation, iPhone and iPad WebKit emulation, and the same-origin iframe. Physical touchscreens and installed Capacitor packages remain unverified.
 
 Production preview used base d5d6aca with the local game patch. recognition.js SHA-256 697d32463756de88c4571378dfff02851f03466caa226ed8fe065560483d0688. The game scripts, stylesheet, markup, manifest and weights in dist matched their source hashes.
+
+## Follow-up — faint strokes and competitive touch
+
+The [Telkom University kids’ digit dataset](https://doi.org/10.34820/FK2/KQX7BX) supplies isolated raster handwriting. These files contain no live touch trajectories or per-image age labels. The published validation and test archives match the repository MD5 checksums (227e771c9e817f3b591efd3903409506 and f9d774b3eacb5e32a7b1c781dc551cb9). Digit pixels were cropped from the labeled PNGs, composited as transparency into the same answer canvas and evaluated with Chromium and TensorFlow.js CPU. No participant images were added to the repository.
+
+| Split | Original game | First CNN upgrade | With faint-stroke fix |
+| --- | ---: | ---: | ---: |
+| Development (400 images) | 172 | 209 | 356 |
+| Test (200 images) | 90 | 110 | 182 |
+
+All 90 answers accepted by the original game were read correctly with the fix on the test split. The strongest improvements were in faint 0s, 3s, and 5s. Only 11 of 20 sixes were correct. Nine test samples produced an unclear reading. The original and fixed median recognition times on this corpus were 84.4 ms and 7.1 ms, excluding the stroke-completion pause. This is a paired replay of existing handwriting images. Younger children writing directly on phones and tablets and physical-device gesture behavior were outside the follow-up test coverage.
+
+Both players retain one independent stroke per visible pad. Additional contacts on an occupied pad are ignored. Overlapping touches suppress browser gestures and accidental control activation while the original pointers and match timer keep running. Each controlled gesture stays in the Math Write game. Menus retain ordinary single-finger scrolling.

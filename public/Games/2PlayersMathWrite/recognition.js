@@ -63,7 +63,7 @@ const WriteMathRecognition = (() => {
     }
     if (mass < 8 * 255 || bottom - top < 4) return null;
     return { x: left, y: top, width: right - left + 1, height: bottom - top + 1,
-      centerX: sumX / mass - left, centerY: sumY / mass - top };
+      mass: mass / 255, centerX: sumX / mass - left, centerY: sumY / mass - top };
   }
 
   function normalize(box, size, angle) {
@@ -80,7 +80,25 @@ const WriteMathRecognition = (() => {
     digitContext.restore();
     const pixels = digitContext.getImageData(0, 0, SIDE, SIDE).data;
     const values = new Float32Array(SIDE * SIDE);
-    for (let i = 0; i < values.length; i++) values[i] = pixels[i * 4 + 3] / 255;
+    const thinness = 1 - Math.min(1, box.mass * scale * scale / size / 1.35);
+    for (let y = 0; y < SIDE; y++) {
+      for (let x = 0; x < SIDE; x++) {
+        const i = y * SIDE + x;
+        const alpha = pixels[i * 4 + 3];
+        if (thinness === 0) {
+          values[i] = alpha / 255;
+          continue;
+        }
+        // Restore hairline strokes attenuated by downsampling to the model grid.
+        const adjacent = Math.max(
+          x > 0 ? pixels[(i - 1) * 4 + 3] : 0,
+          x < SIDE - 1 ? pixels[(i + 1) * 4 + 3] : 0,
+          y > 0 ? pixels[(i - SIDE) * 4 + 3] : 0,
+          y < SIDE - 1 ? pixels[(i + SIDE) * 4 + 3] : 0,
+        );
+        values[i] = Math.min(1, (alpha + thinness * (3 * alpha + 1.8 * adjacent)) / 255);
+      }
+    }
     return values;
   }
 
