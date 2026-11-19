@@ -97,7 +97,6 @@
   --z-game: 2;
   --z-game-over: 3;
   --z-modal: 10;
-  --z-dev-panel: 1000;
 }
 
 /* ========================================================================
@@ -2899,56 +2898,6 @@ canvas.pulse-wrong,
   .hidden {
     display: none;
   }
-}
-
-/* ========================================================================
-   21. DEV PANEL (Development Only)
-   ======================================================================== */
-#dev-panel {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: var(--space-sm);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  z-index: var(--z-dev-panel);
-  max-width: 200px;
-  display: none; /* Hidden by default */
-}
-
-#dev-panel.visible {
-  display: block;
-}
-
-#dev-panel strong {
-  display: block;
-  margin-bottom: var(--space-xs);
-}
-
-#dev-panel button {
-  display: block;
-  width: 100%;
-  margin: 2px 0;
-  padding: 6px 8px;
-  font-size: 11px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  min-height: 32px;
-}
-
-#dev-panel button:hover {
-  background: var(--color-primary-dark);
-}
-
-#dev-panel small {
-  display: block;
-  margin-top: var(--space-xs);
-  opacity: 0.7;
 }
 
 /* ========================================================================

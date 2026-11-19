@@ -274,8 +274,7 @@
           <div class="canvas-panel active" id="sp-panel-answer">
             <canvas id="handwriting-canvas" width="480" height="220"></canvas>
             <div id="canvas-status">Draw your answer above</div>
-            <!-- Spacer to match Clear button height in work panel for smooth switching -->
-            <button class="work-clear-btn spacer" aria-hidden="true" style="visibility: hidden; pointer-events: none;">Clear Work</button>
+            <button id="clear-canvas" class="work-clear-btn">Clear Answer</button>
           </div>
           <div class="canvas-panel" id="sp-panel-work">
             <canvas id="work-canvas" width="480" height="220"></canvas>
@@ -417,25 +416,7 @@
   <audio id="menu-music" src="Music/MainMenu.mp3" preload="auto" loop></audio>
   <audio id="bg-music" preload="auto"></audio>
   
-  <!-- Development Testing Panel (remove in production) -->
-  <div id="dev-panel">
-    <strong>Dev Testing</strong><br>
-    <button onclick="testHandwriting()">Test Recognition</button><br>
-    <button onclick="testDigitPatterns()">Pattern Analysis</button><br>
-    <button onclick="showRecognitionDebug()">Visual Debug</button><br>
-    <small>Open console for results</small>
-  </div>
-  
-  <script>
-    // Show dev panel if in development mode
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      const devPanel = document.getElementById('dev-panel');
-      if (devPanel) devPanel.classList.add('visible');
-    }
-  </script>
-
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-  <!-- Tesseract.js disabled - using CNN + Pattern recognition -->
   <!-- Visual libraries -->
   <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
   <!-- Three.js temporarily disabled to force neon fallback -->
@@ -443,6 +424,7 @@
 
   <!-- Viewport management (load first for responsive setup) -->
   <script src="viewport.js"></script>
+  <script src="recognition.js"></script>
   <script src="handwriting.js"></script>
   <script src="visuals.js"></script>
   <script src="canvas-input.js"></script>

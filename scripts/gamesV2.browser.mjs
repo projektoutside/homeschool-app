@@ -196,6 +196,50 @@ try {
     });
   }
 
+  await record('write-math-recognition-model', async () => {
+    const page = await desktop.newPage();
+    try {
+      await page.goto(`${base}/Games/2PlayersMathWrite/index.html`);
+      await page.evaluate(() => window.hm_warmupRecognition());
+      assert.equal(await page.locator('#dev-panel').count(), 0);
+      const readings = await page.evaluate(async () => {
+        function pad(digits) {
+          const surface = document.createElement('canvas');
+          surface.width = 420;
+          surface.height = 140;
+          const ink = surface.getContext('2d');
+          ink.lineCap = ink.lineJoin = 'round';
+          ink.lineWidth = 7;
+          for (const [index, digit] of [...digits].entries()) {
+            const x = 35 + index * 58;
+            ink.beginPath();
+            if (digit === '0') {
+              ink.ellipse(x, 66 + index % 3, 21, 37, -0.16, 0, 2 * Math.PI);
+            } else if (digit === '1') {
+              ink.moveTo(x - 9, 43);
+              ink.lineTo(x + 2, 29);
+              ink.lineTo(x - 2, 104);
+            } else {
+              ink.moveTo(x - 21, 33);
+              ink.lineTo(x + 20, 37);
+              ink.lineTo(x - 13, 103);
+            }
+            ink.stroke();
+          }
+          return surface;
+        }
+        return Promise.all([
+          WriteMathRecognition.recognize(pad('11'), 2),
+          WriteMathRecognition.recognize(pad('7'), 2),
+          WriteMathRecognition.recognize(pad('101010'), 6),
+          WriteMathRecognition.recognize(pad(''), 2),
+        ]);
+      });
+      assert.deepEqual(readings, ['11', '7', '101010', '']);
+      return { readings, realModel: true };
+    } finally { await page.close(); }
+  });
+
   await record('write-math-simultaneous-touch', async () => {
     const context = await desktop.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true });
     const page = await context.newPage();
@@ -215,15 +259,14 @@ try {
       });
       await page.goto(`${base}/Games/2PlayersMathWrite/index.html`);
       await page.locator('#vs-mode-btn').click();
-      // Avoid external digit-model loading in a test concerned specifically with input.
-      await page.evaluate(() => { window.hm_warmup = async () => {}; });
+      // Keep the countdown warmup independent of this input test.
+      await page.evaluate(() => { window.hm_warmupRecognition = async () => {}; });
       await page.evaluate(() => startVsGame());
       await page.waitForFunction(() => document.querySelector('#p1-canvas').width > 100);
       // Recognition is explicitly synthetic; hold it pending to exercise stale-result protection.
       await page.evaluate(() => {
         window.__pendingRecognition = [];
-        window.hm_recognizeMultiDigitFromCanvas = () => new Promise((resolve) => window.__pendingRecognition.push(resolve));
-        window.hm_recognizeDigitMLFromCanvas = async () => null;
+        WriteMathRecognition.recognize = () => new Promise((resolve) => window.__pendingRecognition.push(resolve));
       });
       const a = await page.locator('#p1-canvas').boundingBox();
       const b = await page.locator('#p2-canvas').boundingBox();

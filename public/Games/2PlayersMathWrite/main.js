@@ -1571,8 +1571,8 @@ function startTimer() {
   }, 1000);
 }
 
-function checkAnswer() {
-  let userInput = window.getHandwritingInput();
+async function checkAnswer() {
+  const userInput = await window.getHandwritingInput();
   if (!userInput) {
     showFeedbackPopup(feedback, 'Please write your answer!', '#fff', { visibleMs: 560, fadeOutMs: 420 });
     return;
@@ -1623,8 +1623,8 @@ async function handleSubmit() {
   pendingPrediction = true;
   showPredictModal();
   let digit = '';
-  if (window.recognizeHandwriting) {
-    digit = await window.recognizeHandwriting();
+  if (window.getHandwritingInput) {
+    digit = await window.getHandwritingInput();
   }
   pendingDigit = digit;
   showPredictResult(digit);
@@ -2401,44 +2401,16 @@ function setupPlayerCanvas(player, id) {
 
     const expectedProblem = (player===p1? vsState.p1.problem: vsState.p2.problem);
     const expectedStr = String(expectedProblem.answer);
-    const expectedLen = expectedStr.length;
     let recognitionDeadline = null;
-
     try {
-      // Build a cropped, tight canvas around drawing to improve accuracy
-      const bounds = (window.hm_getDrawingBounds? window.hm_getDrawingBounds(canvas) : null);
-      let src = canvas;
-      if (bounds && bounds.width>4 && bounds.height>4){
-        const sub = document.createElement('canvas'); sub.width=bounds.width; sub.height=bounds.height;
-        sub.getContext('2d').drawImage(canvas, bounds.x, bounds.y, bounds.width, bounds.height, 0,0, bounds.width, bounds.height);
-        src = sub;
-      }
-
-      // Run multi recognizers
-      const outcomes = await Promise.race([
-        Promise.allSettled([
-          window.hm_recognizeMultiDigitFromCanvas ? window.hm_recognizeMultiDigitFromCanvas(src, expectedLen) : '',
-          window.hm_recognizeDigitMLFromCanvas ? window.hm_recognizeDigitMLFromCanvas(src) : null,
-        ]),
+      const best = await Promise.race([
+        WriteMathRecognition.recognize(canvas, expectedStr.length),
         new Promise((_, reject) => {
           recognitionDeadline = setTimeout(() => reject(new Error('Handwriting recognition timed out')), 8_000);
         }),
       ]);
-      const multi = outcomes[0].status === 'fulfilled' ? outcomes[0].value : '';
-      const mlSingle = outcomes[1].status === 'fulfilled' ? outcomes[1].value : null;
-      if (outcomes.every((result) => result.status === 'rejected')) throw new Error('Handwriting recognition is unavailable');
       if (!vsState.running || revision !== capturedRevision || input.active
         || expectedProblem !== (player === p1 ? vsState.p1.problem : vsState.p2.problem)) return;
-      const mlDigit = mlSingle? mlSingle.digit : null;
-
-      const raw = [];
-      if (multi) raw.push(String(multi));
-      if (mlDigit!=null) raw.push(String(mlDigit));
-
-      const uniq = Array.from(new Set(raw));
-      // Simple scoring: prefer exact match and expected length
-      let best = '';
-      if (uniq.includes(expectedStr)) best = expectedStr; else best = uniq.find(c=>c.length===expectedLen) || uniq[0] || '';
 
       const correct = best === expectedStr;
       if (correct) {
