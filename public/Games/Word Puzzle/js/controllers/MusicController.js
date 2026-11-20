@@ -9,6 +9,10 @@ class MusicController {
         this.mainMenuAudio = null;
         this.gameplayAudio = null;
         this.nextAudio = null;
+        this.easyGameplayAudio = null;
+        this.easyMusicGain = null;
+        this.easyAudioContext = null;
+        this.clueDucking = false;
 
         // Music configuration
         this.mainMenuMusicPath = 'Music/MainMenu.mp3';
@@ -110,15 +114,110 @@ class MusicController {
             this.mainMenuAudio.volume = this.currentMode === 'mainMenu' ? effectiveMusicVolume : 0;
         }
 
-        if (this.gameplayAudio) {
+        if (this.easyGameplayAudio && this.gameplayAudio === this.easyGameplayAudio) {
+            this.updateEasyMusicMix();
+        } else if (this.gameplayAudio) {
             this.gameplayAudio.volume = this.currentMode === 'gameplay' ? effectiveMusicVolume : 0;
         }
+        window.dispatchEvent(new Event('wordPuzzleSoundChanged'));
 
         console.log('MusicController: Sound settings applied', {
             effectiveMusicVolume,
             effectiveSfxVolume,
             isMuted: this.isMuted
         });
+    }
+
+    resumeEasyAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext && !this.easyAudioContext) {
+            try {
+                this.easyAudioContext = new AudioContext();
+            } catch (_error) {
+                // Media elements still work on devices without Web Audio.
+            }
+        }
+        if (this.easyAudioContext?.state !== 'running') {
+            this.easyAudioContext?.resume().catch(() => {});
+        }
+    }
+
+    connectEasyAudio(audio) {
+        const context = this.easyAudioContext;
+        if (!context) return null;
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        context.createMediaElementSource(audio).connect(gain);
+        gain.connect(context.destination);
+        return gain;
+    }
+
+    prepareEasyGameplayMusic() {
+        this.resumeEasyAudio();
+        if (this.mainMenuAudio) {
+            this.mainMenuAudio.pause();
+            this.mainMenuAudio = null;
+        }
+        if (!this.easyGameplayAudio) {
+            const audio = new Audio();
+            this.easyGameplayAudio = audio;
+            this.easyMusicGain = this.connectEasyAudio(audio);
+            audio.preload = 'auto';
+            audio.addEventListener('ended', () => {
+                if (this.gameplayAudio === audio) this.playEasyGameplayTrack();
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (this.gameplayAudio !== audio) return;
+                if (document.hidden) audio.pause();
+                else audio.play().catch(() => {});
+            });
+        }
+
+        if (this.gameplayAudio === this.easyGameplayAudio) {
+            if (this.gameplayAudio.paused) this.gameplayAudio.play().catch(() => {});
+            return;
+        }
+        this.gameplayAudio = this.easyGameplayAudio;
+        this.currentMode = 'gameplay';
+        this.isPlaying = true;
+        this.playEasyGameplayTrack();
+    }
+
+    playEasyGameplayTrack() {
+        const trackPath = this.getNextGameplayTrack();
+        if (!trackPath) return;
+        this.easyGameplayAudio.src = trackPath;
+        this.updateEasyMusicMix();
+        if (!document.hidden) this.easyGameplayAudio.play().catch(() => {});
+    }
+
+    setClueDucking(active) {
+        this.clueDucking = active;
+        this.updateEasyMusicMix();
+    }
+
+    updateEasyMusicMix() {
+        if (!this.easyGameplayAudio) return;
+        const volume = this.isMuted ? 0 : this.musicVolume * (this.clueDucking ? 0.12 : 0.6);
+        if (this.easyMusicGain) {
+            const gain = this.easyMusicGain.gain;
+            const time = this.easyAudioContext.currentTime;
+            gain.cancelScheduledValues(time);
+            gain.setTargetAtTime(volume, time, this.isMuted ? 0.01 : this.clueDucking ? 0.045 : 0.16);
+        } else {
+            this.easyGameplayAudio.volume = volume;
+            // Some browsers ignore programmatic volume on media elements.
+            this.easyGameplayAudio.muted = this.isMuted || volume === 0
+                || (this.clueDucking && Math.abs(this.easyGameplayAudio.volume - volume) > 0.01);
+        }
+    }
+
+    stopEasyGameplayMusic() {
+        if (!this.easyGameplayAudio || this.gameplayAudio !== this.easyGameplayAudio) return;
+        this.easyGameplayAudio.pause();
+        this.gameplayAudio = null;
+        this.currentMode = null;
+        this.isPlaying = false;
     }
 
     /**
@@ -244,6 +343,7 @@ class MusicController {
      * Start playing main menu music
      */
     startMainMenuMusic() {
+        this.stopEasyGameplayMusic();
         // Allow retry if autoplay was previously blocked
         if (this.currentMode === 'mainMenu' && this.mainMenuAudio && !this.mainMenuAudio.paused) return;
 
@@ -264,15 +364,17 @@ class MusicController {
         }
 
         // Create and play main menu music
-        this.mainMenuAudio = this.createAudioElement(this.mainMenuMusicPath, true);
-        this.mainMenuAudio.volume = 0;
+        const audio = this.createAudioElement(this.mainMenuMusicPath, true);
+        this.mainMenuAudio = audio;
 
         const effectiveVolume = this.isMuted ? 0 : this.musicVolume;
 
-        this.mainMenuAudio.play().then(() => {
-            this.fadeAudio(this.mainMenuAudio, effectiveVolume, this.fadeDuration);
+        audio.play().then(() => {
+            if (this.mainMenuAudio !== audio) return;
+            this.fadeAudio(audio, effectiveVolume, this.fadeDuration);
             console.log('MusicController: Main menu music playing');
-        }).catch(error => {
+        }).catch(() => {
+            if (this.mainMenuAudio !== audio) return;
             // Silently handle autoplay restriction - this is expected on first load
             // Music will start on user interaction via the event listeners in main.js
             this.isPlaying = false;
@@ -335,13 +437,19 @@ class MusicController {
 
             const effectiveVolume = this.isMuted ? 0 : this.musicVolume;
 
-            this.gameplayAudio.play().then(() => {
-                this.fadeAudio(this.gameplayAudio, effectiveVolume, this.fadeDuration);
+            const audio = this.gameplayAudio;
+            audio.play().then(() => {
+                if (this.gameplayAudio !== audio || this.currentMode !== 'gameplay') return;
+                this.fadeAudio(audio, effectiveVolume, this.fadeDuration);
                 console.log('MusicController: Gameplay track playing');
             }).catch(error => {
                 console.warn('MusicController: Failed to play gameplay track:', error.message);
-                // Try next track if this one fails
-                setTimeout(() => this.playNextGameplayTrack(), 100);
+                if (error.name === 'NotAllowedError') return;
+                setTimeout(() => {
+                    if (this.gameplayAudio === audio && this.currentMode === 'gameplay') {
+                        this.playNextGameplayTrack();
+                    }
+                }, 100);
             });
         }
     }
@@ -381,6 +489,7 @@ class MusicController {
      * Stop all music
      */
     stopAllMusic() {
+        this.stopEasyGameplayMusic();
         console.log('MusicController: Stopping all music');
 
         if (this.mainMenuAudio) {
@@ -450,6 +559,7 @@ class MusicController {
      */
     setSfxVolume(volume) {
         this.sfxVolume = Math.max(0, Math.min(1, volume));
+        window.dispatchEvent(new Event('wordPuzzleSoundChanged'));
     }
 
     /**

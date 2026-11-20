@@ -10,6 +10,7 @@ class WordGameController {
 
         this.gameState = gameState;
         this.callbacks = callbacks;
+        this.clueNarrator = callbacks.clueNarrator;
         this.currentEquation = null;
         this.currentRoundScorePlan = null;
         this.score = 0;
@@ -47,12 +48,10 @@ class WordGameController {
         this.dragStartPoint = null;
         this.selectedBlock = null;
         this.suppressClickUntil = 0;
-        this.instructionResizeObserver = null;
         this.moveHistory = [];
         this.gameEnded = false;
 
         this.setupGameEventListeners();
-        this.setupInstructionPanelObserver();
 
 
         // Initialize limits
@@ -333,6 +332,7 @@ class WordGameController {
 
     cleanup() {
         this.stopTimer();
+        this.clueNarrator?.endRound(true);
         this.gameEnded = true;
         this.clearSelectedBlock();
         this.clearRoundPresentation();
@@ -350,22 +350,7 @@ class WordGameController {
         clearBtn?.removeEventListener('click', this.boundClear);
         hintBtn?.removeEventListener('click', this.boundHint);
         skipBtn?.removeEventListener('click', this.boundSkip);
-        if (this.instructionResizeObserver) {
-            this.instructionResizeObserver.disconnect();
-            this.instructionResizeObserver = null;
-        }
-
         this.clearAllSlots();
-    }
-
-    setupInstructionPanelObserver() {
-        const panel = document.querySelector('.control-display-panel');
-        if (!panel || typeof ResizeObserver === 'undefined') return;
-
-        this.instructionResizeObserver = new ResizeObserver(() => {
-            this.fitInstructionPanel();
-        });
-        this.instructionResizeObserver.observe(panel);
     }
 
     updateScoreDisplay() {
@@ -406,6 +391,7 @@ class WordGameController {
 
         this.generateEquation();
         this.createAnswerBlocks();
+        this.clueNarrator?.startRound(this.currentEquation.word);
         setTimeout(() => this.optimizeEquationLayout(), 100);
 
         if (this.timeRemaining > 0 && !this.gameTimer) {
@@ -444,6 +430,7 @@ class WordGameController {
 
     endGame() {
         this.stopTimer();
+        this.clueNarrator?.endRound();
         this.gameEnded = true;
         // Use the dedicated onGameEnd callback to let GameController handle the persistent UI
         if (this.callbacks.onGameEnd) {
@@ -645,37 +632,6 @@ class WordGameController {
 
         panel.appendChild(topLine);
         panel.appendChild(clueLine);
-
-        this.fitInstructionPanel();
-    }
-
-    fitInstructionPanel() {
-        const panel = document.querySelector('.control-display-panel');
-        if (!panel) return;
-
-        panel.style.setProperty('--instruction-scale', '1');
-
-        const lines = Array.from(panel.querySelectorAll('.instruction-line'));
-        if (lines.length === 0) return;
-
-        let scale = 1;
-        let guard = 0;
-        const minScale = 0.56;
-        const needsShrink = () => {
-            if (panel.scrollHeight > panel.clientHeight + 1) return true;
-            return lines.some((line) => line.scrollWidth > line.clientWidth + 1);
-        };
-
-        while (guard < 20 && needsShrink()) {
-            scale -= 0.03;
-            if (scale < minScale) {
-                scale = minScale;
-                panel.style.setProperty('--instruction-scale', String(scale));
-                break;
-            }
-            panel.style.setProperty('--instruction-scale', scale.toFixed(2));
-            guard += 1;
-        }
     }
 
     createOperationBlocks() {
@@ -1172,6 +1128,7 @@ class WordGameController {
     }
 
     scheduleNextQuestion(delayMs = 0) {
+        this.clueNarrator?.endRound();
         if (this.nextQuestionTimeout) {
             clearTimeout(this.nextQuestionTimeout);
             this.nextQuestionTimeout = null;

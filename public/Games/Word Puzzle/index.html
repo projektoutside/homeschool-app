@@ -152,7 +152,7 @@
                 </div>
                 <div class="settings-item">
                     <label for="sfxVolume" class="settings-label">
-                        🎮 Sound Effects Volume
+                        🎮 Effects and Easy Voice Volume
                     </label>
                     <div class="settings-input-group">
                         <input type="range" id="sfxVolume" class="settings-slider" min="0" max="100" value="80">
@@ -277,9 +277,14 @@
 
         <!-- Game Controls -->
         <div class="game-controls">
-            <div class="instruction-text control-display-panel">
-                <div class="instruction-line instruction-meta">Letters: A B C | Category: General</div>
-                <div class="instruction-line instruction-clue">Clue: Unscramble the word using the clue.</div>
+            <div class="control-display-panel">
+                <div class="instruction-text"></div>
+                <div class="clue-audio-controls" id="clueAudioControls" hidden>
+                    <button type="button" class="clue-audio-button" id="toggleClueVoice" aria-pressed="true">
+                        Voice <span aria-hidden="true">On</span>
+                    </button>
+                    <button type="button" class="clue-audio-button" id="hearClue">Hear Clue</button>
+                </div>
             </div>
 
             <button class="control-button undo-button" id="undoMove">↶ Undo</button>
@@ -381,7 +386,7 @@
                 </div>
 
                 <div class="settings-item">
-                    <label for="gameplaySfxVolume" class="settings-label">🎮 Sound Effects</label>
+                    <label for="gameplaySfxVolume" class="settings-label">🎮 Effects and Easy Voice</label>
                     <div class="settings-input-group">
                         <input type="range" id="gameplaySfxVolume" class="settings-slider" min="0" max="100" value="80">
                         <div class="settings-value-display"><span id="gameplaySfxVolumeValue">80</span>%</div>
@@ -410,11 +415,15 @@
     <!-- Load scripts sequentially to avoid CORS issues with modules on file:// protocol -->
     <script src="js/utils/DeviceDetector.js"></script>
     <script src="js/utils/PerformanceMonitor.js"></script>
+    <script src="js/utils/EasyWordClues.js"></script>
+    <script src="js/utils/MediumWordClues.js"></script>
+    <script src="js/utils/AdvancedWordClues.js"></script>
     <script src="js/utils/WordLibraryIndex.js"></script>
     <script src="js/utils/WordGenerator.js"></script>
     <script src="js/effects/ThreeJsBackground.js"></script>
     <script src="js/effects/AnimationController.js"></script>
     <script src="js/controllers/WordGameController.js"></script>
+    <script src="js/controllers/ClueNarrator.js"></script>
     <script src="js/controllers/GameController.js"></script>
     <script src="js/controllers/MusicController.js"></script>
     <script src="js/main.js"></script>

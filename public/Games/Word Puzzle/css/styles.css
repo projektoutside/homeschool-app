@@ -42,9 +42,8 @@ body {
   gap: var(--spacing-xs);
   --ui-rhythm-gap: 0.62rem;
   --divider-top-offset: 0.34rem;
-  --controls-clearance: 84px;
-  min-height: 100vh;
-  overflow-y: hidden;
+  min-height: 100%;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -356,11 +355,13 @@ body {
 .equation-display[data-type='word_unscramble'] {
   gap: 0.36rem;
   max-width: min(96vw, 920px);
+  flex-wrap: wrap;
 }
 
 .equation-display[data-type='word_unscramble'] .equation-slot {
-  width: clamp(42px, 7vw, 68px);
-  height: clamp(42px, 7vw, 68px);
+  width: clamp(44px, 7vw, 68px);
+  height: clamp(44px, 7vw, 68px);
+  flex: 0 0 auto;
 }
 
 .equation-slot {
@@ -473,7 +474,6 @@ body {
   gap: var(--spacing-sm);
   flex: 0 0 auto;
   padding: 1rem var(--spacing-sm) var(--spacing-sm);
-  padding-bottom: var(--controls-clearance);
   width: 100%;
   max-width: 100%;
   position: relative;
@@ -791,10 +791,8 @@ body {
   padding: 0.22rem 0.32rem;
   flex-wrap: nowrap;
   width: min(98vw, 900px);
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  flex: 0 0 auto;
+  margin: auto auto 0;
   z-index: 100;
   background: rgba(50, 68, 142, 0.54);
   border-radius: var(--radius-lg);
@@ -815,15 +813,14 @@ body {
 }
 
 .control-display-panel {
-  --instruction-scale: 1;
   flex: 1 1 auto;
-  min-height: clamp(28px, 7.4vw, 38px);
-  max-height: clamp(34px, 8.6vw, 44px);
+  min-width: 0;
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   align-content: center;
-  row-gap: 0.06rem;
-  padding: 0.12rem 0.56rem;
+  gap: 0.4rem 0.65rem;
+  padding: 0.35rem 0.56rem;
   margin-right: 0.16rem;
   border-radius: 12px;
   border: 1px solid rgba(197, 226, 255, 0.18);
@@ -831,8 +828,6 @@ body {
   text-align: left;
   font-weight: 700;
   color: rgba(240, 248, 255, 0.96);
-  overflow: hidden;
-  overflow-x: hidden;
   text-shadow: 0 0 10px rgba(184, 222, 255, 0.35);
   transition:
     min-height 0.24s ease,
@@ -844,20 +839,66 @@ body {
     box-shadow 0.24s ease;
 }
 
+.control-display-panel .instruction-text {
+  min-width: 0;
+  text-align: inherit;
+}
+
 .instruction-line {
   min-width: 0;
-  line-height: 1.05;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
 }
 
 .instruction-meta {
-  font-size: calc(clamp(0.66rem, 1.08vw, 0.82rem) * var(--instruction-scale));
+  font-size: 0.78rem;
 }
 
 .instruction-clue {
-  font-size: calc(clamp(0.62rem, 1.02vw, 0.78rem) * var(--instruction-scale));
+  font-size: 0.94rem;
+}
+
+.clue-audio-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.34rem;
+}
+
+.clue-audio-controls[hidden] {
+  display: none;
+}
+
+.clue-audio-button {
+  min-height: 44px;
+  min-width: 76px;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid #efd57f;
+  border-radius: 10px;
+  background: #173c2a;
+  color: #fff1b4;
+  font: 800 0.78rem/1.2 'Nunito', sans-serif;
+  cursor: pointer;
+}
+
+.clue-audio-button[aria-pressed='true'] {
+  background: #f9e493;
+  color: #3c310b;
+}
+
+.clue-audio-button:focus-visible {
+  outline: 2px solid #fff7d4;
+  outline-offset: 2px;
+}
+
+.clue-audio-button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.clue-audio-button[hidden] {
+  visibility: hidden;
+  display: block;
 }
 
 .instruction-tag {
@@ -1476,8 +1517,22 @@ body {
     gap: 1.35rem;
   }
 
+}
+
+@media screen and (orientation: landscape) and (max-height: 460px) {
+  .gameplay-page {
+    --ui-rhythm-gap: 0.25rem;
+    --divider-top-offset: 0;
+  }
+
   .answer-blocks-container {
-    padding-bottom: var(--controls-clearance);
+    padding-block: 0.4rem;
+  }
+
+  .equation-display[data-type='word_unscramble'] .equation-slot,
+  .answer-block {
+    width: clamp(44px, 13dvh, 58px);
+    height: clamp(44px, 13dvh, 58px);
   }
 }
 
@@ -2160,7 +2215,7 @@ body.word-puzzle-gold-rush #currentProblemPoints {
   .gameplay-page:not([style*='display: none']) {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto minmax(min-content, 1fr) auto;
     grid-template-areas:
       "header header header header"
       "guide guide guide guide"
@@ -2251,7 +2306,6 @@ body.word-puzzle-gold-rush #currentProblemPoints {
 
   .control-display-panel {
     grid-area: panel;
-    --instruction-scale: 1.1;
     min-height: 0;
     max-height: none;
     width: min(94vw, 560px);
@@ -2262,10 +2316,10 @@ body.word-puzzle-gold-rush #currentProblemPoints {
     margin: 0 0 calc(env(safe-area-inset-bottom, 0px) + 0.3rem);
     border-width: 2px;
     border-radius: 20px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     justify-content: center;
-    gap: 0.72rem;
+    gap: 0.52rem;
     text-align: center;
     background: linear-gradient(145deg, rgba(76, 135, 92, 0.72), rgba(28, 86, 54, 0.78));
     box-shadow:
@@ -2281,12 +2335,12 @@ body.word-puzzle-gold-rush #currentProblemPoints {
   }
 
   .instruction-meta {
-    font-size: calc(clamp(0.82rem, 3vw, 0.96rem) * var(--instruction-scale));
+    font-size: clamp(0.82rem, 3vw, 0.96rem);
     line-height: 1.35;
   }
 
   .instruction-clue {
-    font-size: calc(clamp(0.92rem, 3.6vw, 1.08rem) * var(--instruction-scale));
+    font-size: clamp(0.92rem, 3.6vw, 1.08rem);
     line-height: 1.4;
   }
 

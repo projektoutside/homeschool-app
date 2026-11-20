@@ -60,16 +60,16 @@ class GameController {
         });
 
         document.getElementById('startGame')?.addEventListener('click', () => {
-            // Fade out main menu music when Start Game is clicked
-            if (window.musicController) {
-                window.musicController.fadeOutMainMenuMusic();
-            }
+            if (!this.selectedDifficulty) return;
+            if (this.gameState.level === 1) this.prepareEasyAudio(true);
+            else window.musicController?.fadeOutMainMenuMusic();
             this.startCountdown();
         });
 
         // Game Over buttons
         document.getElementById('playAgainBtn')?.addEventListener('click', () => {
             this.hideFeedback();
+            this.prepareEasyAudio(false);
             this.startGame();
         });
 
@@ -105,7 +105,20 @@ class GameController {
         });
     }
 
+    prepareEasyAudio(withGuide) {
+        if (this.gameState.level !== 1) return;
+        const music = window.musicController;
+        music?.prepareEasyGameplayMusic();
+        this.clueNarrator ??= new ClueNarrator(music);
+        this.clueNarrator.startSession(withGuide);
+    }
+
     showMainMenu() {
+        if (this.countdownTimer) {
+            clearTimeout(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+        this.clueNarrator?.endRound(true);
         if (window.wordGameController) {
             window.wordGameController.cleanup();
             window.wordGameController = null;
@@ -1150,6 +1163,7 @@ class GameController {
         }
 
         window.wordGameController = new WordGameController(this.gameState, {
+            clueNarrator: this.gameState.level === 1 ? this.clueNarrator : null,
             onGameEnd: (finalScore) => this.handleGameEnd(finalScore),
             showFeedback: (title, msg, icon, options) => this.showFeedback(title, msg, icon, options)
         });
