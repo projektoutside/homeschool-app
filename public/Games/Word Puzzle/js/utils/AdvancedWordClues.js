@@ -1,26 +1,358 @@
 const HARD_WORD_CLUES = {
+    Animals: {
+        BEAVER: 'This builder has a flat paddle-shaped tail and teeth that can cut down trees.',
+        CAMEL: 'A long ride across hot sand is easier on this animal with humps that store fat.',
+        KOALA: 'This Australian climber spends much of its day resting and eats eucalyptus leaves.',
+        LLAMA: 'This woolly South American animal can carry packs up mountain trails.',
+        MONKEY: 'This primate often climbs trees, and many kinds use a long tail for balance.',
+        OTTER: 'This playful swimmer may crack open a shell with a rock while floating on its back.',
+        PANDA: 'This black-and-white bear munches bamboo.',
+        RABBIT: 'This long-eared hopper can twitch its nose and dig a burrow.',
+        ZEBRA: 'This wild relative of the horse wears its own pattern of black and white stripes.',
+        ANIMAL: 'A snail, an eagle, and a human all belong to this group of living things.',
+        BADGER: 'This strong digger has short legs and often wears a striped face.',
+        BISON: 'This broad-shouldered grazer has a shaggy head and once roamed the Great Plains in huge herds.',
+        DONKEY: 'This horse relative has long ears and makes a braying sound.',
+        GECKO: 'This little lizard can often walk straight up a wall on its sticky toes.',
+        FERRET: 'This slender pet with a long body can squeeze through narrow tunnels.',
+        HYENA: 'Some members of this animal group make a call that sounds like laughter.',
+        LEMUR: 'This primate lives naturally in Madagascar. One kind has a ringed tail.',
+        TIGER: 'This big cat wears dark stripes over an orange coat and is a strong swimmer.',
+        WOMBAT: 'This sturdy Australian burrower is known for leaving cube-shaped droppings.'
+    },
+    'Ocean Life': {
+        CORAL: 'Tiny animals build these colorful, often branching structures that can form reefs.',
+        SALMON: 'This fish can leap upstream to reach the place where it hatched.',
+        SHRIMP: 'This small swimmer has long feelers and a curved tail that helps it dart backward.',
+        SQUID: 'This sea animal can zip backward and release ink to escape.',
+        TROUT: 'This fish often has spots and thrives in cool, clear streams.',
+        WALRUS: 'This whiskered Arctic swimmer has a pair of long tusks.',
+        SHARK: 'Many of these fish have rows of replaceable teeth and a fin that can show above water.',
+        URCHIN: 'This round sea creature looks like a pincushion covered in spines.',
+        MINNOW: 'This small freshwater fish may dart around in a school near the shore.'
+    },
+    Birds: {
+        CRANE: 'This tall, long-legged bird is known for spectacular courtship dances.',
+        EAGLE: 'This powerful bird of prey spots food from high in the air. One kind has a white head.',
+        FALCON: 'One kind of this bird of prey can dive faster than a race car.',
+        HERON: 'This long-legged bird waits quietly in shallow water before striking at a fish.',
+        STORK: 'This tall bird builds big nests on rooftops. In stories it delivers babies.',
+        TOUCAN: 'This tropical bird has an enormous colorful bill that is surprisingly light.',
+        FINCH: 'This small songbird often has a short cone-shaped bill for cracking seeds.',
+        ROBIN: 'This familiar bird with a rusty chest pulls worms from lawns.',
+        MACAW: 'This long-tailed tropical parrot often has bright feathers and a loud squawk.',
+        PUFFIN: 'This seabird has a colorful bill and can carry several small fish in it at once.'
+    },
+    Food: {
+        CEREAL: 'Pour this crunchy breakfast food from a box into a bowl, then add milk.',
+        CHEESE: 'This food is made from milk. It can stretch in strings on a hot slice of pizza.',
+        COOKIE: 'This small baked treat might have chocolate chips or an oatmeal center.',
+        MUFFIN: 'This little baked breakfast cake rises from a paper cup and may hide blueberries.',
+        OMELET: 'Cook beaten eggs into a flat layer and fold it around fillings.',
+        PICKLE: 'This crunchy cucumber gets its tang from sitting in a salty or sour liquid.',
+        YOGURT: 'Helpful bacteria turn milk into this thick, tangy food.',
+        BREAD: 'Knead the dough, bake a loaf, and cut a slice for your sandwich.',
+        JUICE: 'Squeeze an orange and catch what runs out in a glass.',
+        TOAST: 'Bread turns crisp and golden to make this breakfast favorite.',
+        BAGEL: 'This chewy ring of bread is often boiled before it is baked.',
+        WAFFLE: 'An iron presses a grid of little syrup pockets into this breakfast food.',
+        QUICHE: 'A savory pie filled with baked eggs and cream.',
+        SUSHI: 'This Japanese dish uses seasoned rice and may include seafood, vegetables, or seaweed.'
+    },
+    'Fruits and Vegetables': {
+        APPLE: 'This crisp fruit might be red or green and hides seeds in a star-shaped core.',
+        BANANA: 'Peel away my long yellow jacket to reach a soft, sweet snack.',
+        CARROT: 'This crunchy root is usually orange. A snowman may wear one for a nose.',
+        CELERY: 'Spread peanut butter along the groove of this crisp green stalk.',
+        CHERRY: 'This small fruit has a hard pit and often comes with a long stem on top.',
+        RAISIN: 'Dry a grape to make this sweet, wrinkled snack.',
+        ORANGE: 'This juicy citrus fruit shares its name with its usual color.',
+        PEACH: 'This fuzzy-skinned fruit has a big pit and sweet, juicy flesh.',
+        PEPPER: 'Some of these fruits are sweet and shaped like bells. Others make your mouth feel hot.',
+        BERRY: 'A small juicy fruit like a blueberry, in everyday speech.',
+        GRAPE: 'One small fruit from a bunch that can be pressed for juice or dried into a raisin.',
+        LEMON: 'This yellow fruit is so sour that one bite might make your face pucker.',
+        MELON: 'This large fruit grows on a vine and usually has a thick rind and watery flesh.',
+        MANGO: 'This tropical fruit has orange flesh around a large, flat seed.',
+        PAPAYA: 'Slice open this tropical fruit to find orange flesh and a hollow full of black seeds.',
+        ONION: 'Peel away the papery skin of this bulb. Chopping it may make your eyes water.',
+        OLIVE: 'This small fruit can be green or black. Press it to make cooking oil.'
+    },
+    Nature: {
+        FOREST: 'Trees grow close together across this large area of land.',
+        ISLAND: 'This piece of land has water all the way around it.',
+        MEADOW: 'An open patch of land where grasses and wildflowers can grow.',
+        RIVER: 'This flowing waterway can wind across land and empty into an ocean.',
+        STREAM: 'A narrow flow of water that may feed a larger river.',
+        VALLEY: 'Low land that lies between hills or mountains.',
+        CLOUD: 'A floating collection of water droplets or tiny ice crystals in the sky.',
+        FLOWER: 'This part of many plants contains the structures that help make seeds. It may attract bees.',
+        LIGHT: 'This form of energy lets your eyes see colors and shapes.',
+        STONE: 'A hard piece of rock you could stack into a wall or skip across a pond.',
+        WATER: 'This liquid fills oceans, falls as rain, and freezes into ice.',
+        BEACH: 'This sandy or pebbly stretch lies along the shore, where waves lap at the land.',
+        CLIFF: 'A steep wall of rock with a sharp drop below.',
+        DESERT: 'This place gets very little rain. It can be hot or cold.',
+        GEYSER: 'This natural hot spring shoots water and steam up into the air.',
+        LAGOON: 'This shallow body of water is often cut off from the ocean by a reef or sandbar.',
+        OASIS: 'A place in a desert where water can support plants and animals.',
+        CANYON: 'A deep valley with steep sides, often carved by a river over a long time.'
+    },
+    Weather: {
+        BREEZE: 'This gentle current of air can rustle a leaf without blowing a branch down.',
+        FROST: 'Tiny ice crystals coat the grass or a window when the surface is cold enough.',
+        STORM: 'Thunder, heavy rain, snow, or strong winds can make this kind of rough weather.',
+        SUNNY: 'This describes a day when direct sunlight reaches you and few clouds get in the way.'
+    },
     Space: {
+        COMET: 'This icy visitor grows a glowing tail as it nears the sun.',
+        GALAXY: 'This huge family of stars, gas, and dust is held together by gravity.',
+        METEOR: 'This quick streak glows when a bit of space rock enters our air.',
+        ORBIT: 'The curved path that Earth follows as it travels around the sun.',
+        PLANET: 'This large, nearly round object circles a star. Earth is one.',
+        ROCKET: 'This vehicle pushes gas one way to launch itself the other way.',
+        NEBULA: 'A vast cloud of gas and dust in space. Some are places where stars form.',
         CRATER: 'An impact can excavate this bowl-shaped hollow on the Moon.',
         QUASAR: 'A distant galaxy may have this brilliant core powered by matter falling toward a supermassive black hole.',
-        ASTEROID: 'A rocky object that circles the sun, smaller than a planet and often found between Mars and Jupiter.',
         ZENITH: 'An observer looking straight up is facing this point in the sky.',
         PULSAR: 'A spinning neutron star appears to flash when its beam sweeps past Earth.',
-        SOLSTICE: 'This occurs when the sun reaches its farthest north or south position in the sky, giving the longest or shortest day.',
-        SATELLITE: 'An object, natural or human-made, that stays in orbit around a larger body.'
+        EPOCH: 'In astronomy, a fixed reference date from which changing positions are measured.'
     },
     Science: {
+        CARBON: 'This element is in charcoal, diamonds, and every living thing.',
+        ENERGY: 'This is the ability to do work, such as moving a toy or warming a room.',
+        MAGNET: 'This object can pull iron toward itself without touching it.',
+        MATTER: 'Anything that has mass and takes up space belongs to this category.',
+        OXYGEN: 'Your body takes this gas from the air every time you breathe.',
+        FOSSIL: 'A trace of ancient life, such as a shell or footprint preserved in rock.',
+        LIQUID: 'It flows and takes the shape of its container while keeping the same volume.',
         ENZYME: 'A molecule made by living things that helps a particular chemical reaction go faster.',
         NEURON: 'This specialized cell carries messages using electrical impulses and chemical signals.',
         MASS: 'This property measures the amount of matter and stays the same when you travel to the Moon.',
         METHOD: 'An orderly series of steps for carrying out a task or investigation.',
         SAMPLE: 'A small part of a larger group or material, chosen to study the whole.',
         FUSION: 'This process powers stars by joining light atomic nuclei into heavier ones.',
-        CONTROL: 'The comparison condition in an experiment that leaves out the change being tested.',
-        ISOTOPE: 'Atoms of one element with the same proton count but a different number of neutrons.',
         PROTON: 'A particle with positive electric charge in the nucleus of an atom.',
         TISSUE: 'A group of cells working together to do a job, such as protecting a leaf or moving an arm.',
-        HABITAT: 'The natural place where a particular organism finds what it needs to survive.',
         SOLUTE: 'The substance that gets dissolved, such as salt mixed into water.'
+    },
+    'Human Body': {
+        ANKLE: 'This joint lets you point your foot or pull your toes up toward your shin.',
+        BRAIN: 'This organ inside your skull helps you think, remember, and control movement.',
+        ELBOW: 'This joint sticks out when you bend your arm.',
+        FINGER: 'One of the long parts of a hand used to point, type, or play piano.',
+        KIDNEY: 'This bean-shaped organ filters your blood and helps make urine.',
+        LUNGS: 'These organs fill with air and pass oxygen into your blood.',
+        MUSCLE: 'Pulling fibers in this tissue let you move, smile, or lift a bag.',
+        THROAT: 'Food and air both travel through this passage behind your mouth.',
+        TONGUE: 'This flexible part of your mouth helps you taste and form speech sounds.',
+        WRIST: 'This joint between the forearm and hand lets you bend your palm up or down.',
+        HEART: 'Clench your fist to picture the size of the organ pumping blood around your body.',
+        SPINE: 'Stacked bones form this flexible column that protects the spinal cord.'
+    },
+    School: {
+        ERASER: 'Rub it over graphite to take away a pencil mark.',
+        LESSON: 'A period of teaching that helps you learn a particular skill or idea.',
+        MARKER: 'A felt-tipped tool that lays down a bold line of ink.',
+        PENCIL: 'This writing tool leaves a graphite mark you can usually rub away.',
+        RECESS: 'A break in the school day for play and a chance to stretch your legs.',
+        REPORT: 'A spoken or written account that shares what you found out about a topic.',
+        RULER: 'A straight tool with numbered marks for measuring length.',
+        CHALK: 'This soft stick leaves a dusty line on a sidewalk or blackboard.',
+        CLASS: 'A group of students learning together, or the time set aside for a subject.',
+        PAPER: 'A thin, flat sheet you can fold, write on, or cut into shapes.',
+        SCHOOL: 'This is where students go to learn with teachers.',
+        STUDY: 'Spend time practicing or reading so you can learn something well.',
+        FOLDER: 'Slide loose worksheets into the pockets of this folded holder.'
+    },
+    'Language Arts': {
+        POETRY: 'This kind of writing uses patterns of sound, lines, and images to make language stand out.',
+        PREFIX: 'Add this part to the beginning of a base word to change its meaning.',
+        STANZA: 'A group of lines in a poem, often separated from the next group by a blank line.',
+        VOWEL: 'A, E, I, O, and U are the usual letters in this group.',
+        AUTHOR: 'The person who wrote the book on your shelf.',
+        READER: 'The person turning the pages and making sense of the story.',
+        STORY: 'A telling of events that may have characters, a problem, and an ending.',
+        RIDDLE: 'A tricky question whose clues lead to a surprising answer.',
+        RHYME: 'What moon and spoon do when their ending sounds match.',
+        CAUSE: 'The reason an event happens, rather than the effect it produces.',
+        CLAUSE: 'A group of words with a subject and a verb that may or may not stand alone.',
+        GENRE: 'A category of writing, music, or art whose works share recognizable conventions.',
+        IRONY: 'A contrast between what is expected and what actually happens, or what is said and meant.',
+        MOTIF: 'An image, object, or idea that returns through a work and gains meaning each time.',
+        PROSE: 'Ordinary writing arranged in sentences and paragraphs rather than lines of verse.',
+        STYLE: 'The recognizable way an author uses words, sentences, and details.',
+        THESIS: 'The main claim that an essay sets out to explain or defend.',
+        TONE: 'The attitude a writer conveys, such as amused, impatient, or hopeful.',
+        VOICE: 'The distinctive personality or sound that comes through in a writer or narrator.',
+        SIMILE: 'A comparison that often links unlike things with the words like or as.',
+        PARODY: 'An imitation that exaggerates features of its original for humor or criticism.',
+        BALLAD: 'A poem or song that tells a story, often through short verses.'
+    },
+    Math: {
+        ANGLE: 'The amount of turn between two rays that meet at one point.',
+        GRAPH: 'A picture of data that can help you spot patterns or make comparisons.',
+        COUNT: 'Say the numbers in order to find how many objects there are.',
+        MINUS: 'This math sign tells you to subtract.',
+        NUMBER: 'This idea can tell how many, how much, or where something comes in order.',
+        SHAPE: 'A circle, a square, and a triangle each show a different one.',
+        DIGIT: 'Each single symbol from zero through nine can be used to write numbers.',
+        TOTAL: 'Add every amount to find this final sum.',
+        AXIS: 'A reference line used to measure positions or show rotation.',
+        PROOF: 'A chain of reasoning that establishes why a mathematical statement must be true.',
+        FACTOR: 'A number you multiply by another to make a product.',
+        MATRIX: 'A rectangular arrangement of entries in rows and columns.',
+        RADIUS: 'The distance from the center of a circle to any point on its edge.',
+        VECTOR: 'An arrow can display this quantity, which has both size and direction.',
+        VOLUME: 'The amount of three-dimensional space an object occupies.',
+        MEDIAN: 'Order a list of numbers and find its middle, averaging the two middle entries if needed.',
+        LIMIT: 'A quantity a function can approach as its input moves toward a chosen point.',
+        RADIAN: 'An angle at the center of a circle that cuts off an arc one radius long.',
+        NORMAL: 'In geometry, a line perpendicular to a surface or curve.'
+    },
+    Geography: {
+        BORDER: 'A line that marks where one place ends and the next begins.',
+        DELTA: 'Land built from sediment near a river mouth, often where the water splits into branches.',
+        GLOBE: 'Spin this round model to see the continents and oceans of Earth.',
+        HARBOR: 'A sheltered place on the water where boats can tie up safely.',
+        REGION: 'An area grouped because its places share a feature, such as climate or language.',
+        TUNDRA: 'This treeless landscape has cold temperatures and a short growing season.',
+        ATLAS: 'A book of maps that lets you explore places by turning pages.'
+    },
+    History: {
+        COLONY: 'A settlement or territory controlled by a country far away.',
+        EMPIRE: 'Multiple territories or peoples ruled by one central power.',
+        MUSEUM: 'Visit this place to see carefully kept art, fossils, or other objects on display.',
+        RELIC: 'An object left from an earlier time that often has historical or religious meaning.',
+        CASTLE: 'This fortified home for a ruler may have towers, thick walls, and a moat.',
+        PERIOD: 'A span of time that historians group by a shared set of events or features.',
+        REFORM: 'A change made to improve a law, institution, or practice.'
+    },
+    Technology: {
+        LAPTOP: 'This computer folds shut and fits easily into a backpack.',
+        SCREEN: 'This flat surface can show images, words, or video from a device.',
+        SIGNAL: 'This sound, light, or pulse carries a message from one place to another.',
+        TABLET: 'This flat portable computer is usually controlled by touching its display.',
+        MODEM: 'This device converts signals so your home network can connect to an internet provider.',
+        PIXEL: 'One tiny point of color in a digital image. Thousands can make a whole picture.',
+        UPLOAD: 'Send a file from your device to an online service or another computer.',
+        DRIVER: 'Software that lets a computer communicate with a piece of hardware such as a printer.',
+        PACKET: 'A small unit of data sent over a network with information about where it should go.',
+        SYSTEM: 'A set of connected parts that work together to perform a larger job.',
+        BACKUP: 'Make this extra copy so you can recover a file if the original is damaged or lost.'
+    },
+    Engineering: {
+        BRIDGE: 'This structure carries people, cars, or trains over a gap.',
+        ENGINE: 'This machine turns fuel or another energy source into useful motion.',
+        HAMMER: 'Swing the heavy head of this tool to drive a nail.',
+        MOTOR: 'This machine changes energy, often electricity, into movement.',
+        PULLEY: 'A wheel with a rope over it can help you lift a load.',
+        SWITCH: 'Flip this control to open or close an electrical circuit.',
+        WRENCH: 'Grip a nut with this tool to tighten or loosen it.',
+        LEVER: 'A stiff bar that turns around a support point to move a load.',
+        SENSOR: 'A device that notices a physical change, such as rising temperature, and turns it into a signal.',
+        DESIGN: 'Plan how something will look and work before building it.',
+        DEVICE: 'A tool or piece of equipment built to perform a particular function.',
+        GASKET: 'A flexible seal squeezed between two parts to keep liquid or gas from leaking.'
+    },
+    'Arts and Music': {
+        BALLET: 'This dance style uses formal steps, graceful jumps, and sometimes dancing on toe tips.',
+        CANVAS: 'A sturdy fabric that can be stretched over a frame for a painter to work on.',
+        CHORUS: 'The part of a song that often returns with the same words after each verse.',
+        GUITAR: 'Strum its strings with one hand while the other presses on the frets.',
+        MELODY: 'The series of notes you can hum to recognize a song.',
+        PIANO: 'Press a key on this instrument and a little hammer can strike a string.',
+        RHYTHM: 'This pattern of long, short, strong, and weak sounds moves a piece of music along.',
+        VIOLIN: 'Hold this four-string instrument under your chin and draw a bow across it.',
+        DANCE: 'Move your body in steps, often in time with music.',
+        MUSIC: 'People arrange sounds and silences to make this art.',
+        PAINT: 'Brush this liquid color onto a wall, a picture, or a piece of wood.',
+        BANJO: 'This string instrument rings brightly over a round, drumlike body.',
+        FLUTE: 'Blow across the opening of this instrument while moving your fingers to change notes.',
+        MURAL: 'A picture made directly on a large wall or ceiling.'
+    },
+    Sports: {
+        HELMET: 'This hard head covering helps protect a rider or athlete from a fall.',
+        HIKING: 'Taking a long walk outdoors, often on a trail.',
+        HOCKEY: 'In one version of this sport, skaters use curved sticks to shoot a puck into a net.',
+        SOCCER: 'Teams try to kick a ball into a goal. A goalie can catch it inside the penalty area.',
+        TROPHY: 'This award might be a shiny cup or statue you hold up after a win.',
+        SWING: 'Move smoothly back and forth, like a playground seat hanging from chains.',
+        TENNIS: 'Players hit a fuzzy ball over a net with rackets, often across a marked court.'
+    },
+    'Home Objects': {
+        CARPET: 'This soft floor covering is often fitted all the way to the walls.',
+        PILLOW: 'This soft cushion supports your head while you sleep.',
+        WINDOW: 'This opening often has glass so you can see outside and let sunlight in.',
+        MIRROR: 'Look at its smooth surface to see your own face looking back.',
+        BASKET: 'This holder may be woven from strips and used to carry laundry or food.',
+        CHAIR: 'Sit in this piece of furniture, which usually has a back for support.',
+        CLOCK: 'Look at its hands or its numbers to find out what time it is.',
+        HOUSE: 'People live in this building, often with rooms for sleeping and cooking.',
+        PLATE: 'Serve a meal on this flat dish with a raised edge.',
+        SPOON: 'This rounded utensil scoops soup or stirs sugar into a drink.',
+        TABLE: 'A flat, raised surface with legs that can hold plates while you eat.',
+        SHELF: 'This flat ledge holds books or dishes above the floor.'
+    },
+    'Plants and Garden': {
+        CEDAR: 'This evergreen has fragrant wood often used in chests and closets.',
+        CLOVER: 'Look near the ground for this plant whose leaves usually come in threes.',
+        DAISY: 'This flower often has a yellow center surrounded by white rays.',
+        GARDEN: 'This is a space where people grow flowers, herbs, or vegetables.',
+        MAPLE: 'The sap of this tree can be boiled down for sweet syrup.',
+        PETAL: 'One of the colorful parts that often circle the center of a flower.',
+        TULIP: 'Grow this cup-shaped spring flower by planting a bulb in the fall.',
+        WILLOW: 'One well-known kind of this tree has long branches that hang toward the ground.',
+        BRANCH: 'This woody part grows out from a tree trunk and can hold leaves or fruit.',
+        PLANT: 'A living thing such as a fern, a moss, or a sunflower.',
+        ACORN: 'The little nut of an oak tree, often wearing a rough cap.'
+    },
+    Transportation: {
+        FERRY: 'This vessel makes regular crossings, carrying passengers or cars across water.',
+        SUBWAY: 'This city train often runs in a tunnel beneath busy streets.',
+        WAGON: 'This wheeled cart might have a handle for pulling children or supplies.',
+        PLANE: 'This flying vehicle uses fixed wings to stay in the air.',
+        TRAIN: 'Linked cars roll along rails, sometimes pulled by a locomotive.',
+        TRUCK: 'This vehicle uses a strong frame and open or enclosed cargo space to carry loads.',
+        CANOE: 'This long narrow boat is open at the top and usually moved with single-bladed paddles.'
+    },
+    'Community Helpers': {
+        BAKER: 'This person mixes dough and uses an oven to make loaves and rolls.',
+        COACH: 'This person helps a team practice, improve skills, and get ready for games.',
+        DOCTOR: 'This person checks symptoms and helps people understand and treat illness.',
+        FARMER: 'This person grows crops or raises animals to produce food.',
+        GUIDE: 'This person leads visitors and helps them find their way in a new place.',
+        JUDGE: 'This person leads a courtroom and makes sure legal rules are followed.',
+        NURSE: 'This health worker monitors patients, gives care, and helps them recover.',
+        PILOT: 'This person controls an aircraft in the air and during takeoff or landing.',
+        TAILOR: 'This person makes clothes or changes their fit with a needle and thread.',
+        WRITER: 'This person puts ideas into words for books, articles, or other works.'
+    },
+    'Farm Life': {
+        WHEAT: 'This crop grows grain that can be ground into flour for bread.',
+        FIELD: 'A broad open area that can hold rows of crops, grass, or a sports pitch.',
+        HORSE: 'This large hoofed animal can be ridden or trained to pull a cart.'
+    },
+    Colors: {
+        GREEN: 'This color covers healthy grass and most leaves in summer.',
+        WHITE: 'Fresh snow and many blank sheets of paper look this color.',
+        PURPLE: 'Mix red and blue paint for this color common in violets and some grapes.',
+        YELLOW: 'Think of a ripe banana or the bright center of a daisy.'
+    },
+    Health: {
+        BRUSH: 'This tool with bristles can clean your teeth or untangle hair.',
+        CLEAN: 'After you remove the dirt, this word describes the result.',
+        DENTAL: 'This word describes things related to teeth, such as a checkup at the dentist.',
+        HEALTH: 'This is the overall condition of your body and mind.',
+        SLEEP: 'This regular period happens when awareness fades and your body cycles through stages of rest.',
+        SMILE: 'This happy-looking expression turns the corners of your mouth upward.'
+    },
+    'Character Traits': {
+        BRAVE: 'A person who acts even when they are scared shows this quality.',
+        CARING: 'Someone who notices another person needs help and offers it shows this quality.',
+        CLEVER: 'This describes someone who comes up with smart, unexpected solutions.',
+        HONEST: 'A person who tells the truth even after making a mistake shows this quality.',
+        LOYAL: 'A friend who stands by you through a hard time shows this quality.'
     },
     Government: {
         BALLOT: 'Voters mark their choices on this slip of paper or its electronic equivalent.',
@@ -31,26 +363,8 @@ const HARD_WORD_CLUES = {
         VETO: 'A formal power to block a decision or reject a proposed law.',
         SENATE: 'The U.S. chamber where every state sends two elected members.',
         QUORUM: 'The smallest number of members who must be present before a group can conduct business.',
-        APPEAL: 'A formal request for a higher court or authority to review a decision.'
-    },
-    Technology: {
-        UPLOAD: 'Send a file from your device to an online service or another computer.',
-        DRIVER: 'Software that lets a computer communicate with a piece of hardware such as a printer.',
-        PACKET: 'A small unit of data sent over a network with information about where it should go.',
-        SYSTEM: 'A set of connected parts that work together to perform a larger job.',
-        FIREWALL: 'A gatekeeper that lets network traffic through or blocks it according to rules.',
-        BACKUP: 'Make this extra copy so you can recover a file if the original is damaged or lost.',
-        PROTOCOL: 'An agreed set of rules that lets different machines exchange information.'
-    },
-    Engineering: {
-        SENSOR: 'A device that notices a physical change, such as rising temperature, and turns it into a signal.',
-        DESIGN: 'Plan how something will look and work before building it.',
-        DEVICE: 'A tool or piece of equipment built to perform a particular function.',
-        GASKET: 'A flexible seal squeezed between two parts to keep liquid or gas from leaking.',
-        CIRCUIT: 'A path through which electric current can flow when the loop is closed.',
-        TURBINE: 'Steam, water, or wind spins the blades of this machine to do useful work.',
-        TENSION: 'The pulling force carried by a stretched rope, cable, or string.',
-        CHASSIS: 'The supporting frame that holds the main parts of a vehicle or machine.'
+        APPEAL: 'A formal request for a higher court or authority to review a decision.',
+        CAUCUS: 'A meeting of a political group to agree on plans or select candidates.'
     },
     'Materials and Chemistry': {
         ALLOY: 'A material made by combining a metal with one or more other elements. Bronze is an example.',
@@ -60,19 +374,16 @@ const HARD_WORD_CLUES = {
         IODINE: 'Your thyroid uses this element, which is added to some table salt.',
         NICKEL: 'A silvery metal used in some stainless steels and in the U.S. five-cent coin.',
         BORON: 'This element, symbol B, is used to help make heat-resistant glass.',
-        SILICA: 'This compound of silicon and oxygen makes up quartz and much ordinary sand.',
-        POLYMER: 'A material whose large molecules are built from chains of repeating units.'
+        SILICA: 'This compound of silicon and oxygen makes up quartz and much ordinary sand.'
     },
     'Physics and Motion': {
         MOTION: 'A change in position over time, measured from a chosen reference point.',
         TORQUE: 'A wrench increases this turning effect around a pivot.',
         FORCE: 'A push or pull that can change how an object moves.',
         STRAIN: 'Stretch a rubber band. The change in length divided by its starting length measures this.',
-        INERTIA: 'The tendency of an object to keep its speed and direction unless something exerts a net push or pull.',
-        IMPULSE: 'A push or pull multiplied by how long it acts, equal to the change in momentum.',
-        FRICTION: 'This force resists sliding when two surfaces press against one another.',
-        DENSITY: 'Divide mass by volume to find how much material is packed into a given space.',
-        REFRACT: 'A light ray does this when its path bends as it moves between materials.'
+        JOULE: 'A unit of energy equal to one newton acting through one meter.',
+        FLUX: 'This quantity measures how much of something passes through a surface per unit time.',
+        WATT: 'A unit of power equal to one unit of energy called a joule per second.'
     },
     'Coding and Logic': {
         BINARY: 'A number system that uses only zero and one.',
@@ -88,10 +399,8 @@ const HARD_WORD_CLUES = {
         MEMORY: 'Working storage a computer uses to hold instructions and information it needs.',
         OUTPUT: 'A result produced by a process, such as sound from a speaker or an answer from a program.',
         SCRIPT: 'A program often used to automate a task by running a series of instructions.',
-        BOOLEAN: 'A value with only two possibilities, true or false.',
         ARRAY: 'A collection of items that can usually be accessed by their positions.',
         LOOP: 'A part of a program that repeats instructions while a condition holds or for a set number of turns.',
-        RECURSE: 'Solve a problem by calling the same procedure on smaller versions of it.',
         CACHE: 'Keep frequently needed information nearby so fetching it again takes less time.'
     },
     'Business and Money': {
@@ -102,11 +411,8 @@ const HARD_WORD_CLUES = {
         MARKET: 'A setting where buyers and sellers exchange goods, services, or other things of value.',
         PRICE: 'The amount of money asked in exchange for a good or service.',
         VALUE: 'What something is worth in money, usefulness, or importance.',
-        SURPLUS: 'This is the amount left over when income exceeds expenses or supply exceeds demand.',
         TARIFF: 'A tax charged on goods when they cross a national border, usually on imports.',
-        EXPORT: 'Send a good or service abroad for sale.',
-        REVENUE: 'The money a business earns before it subtracts its expenses.',
-        DEFICIT: 'When expenses exceed income, this is the amount by which the budget falls short.'
+        EXPORT: 'Send a good or service abroad for sale.'
     },
     'Music Performance': {
         TEMPO: 'The speed of the beat, often measured in beats per minute.',
@@ -115,47 +421,8 @@ const HARD_WORD_CLUES = {
         PITCH: 'This quality makes one note sound higher or lower than another.',
         SCALE: 'An ordered series of notes that rises or falls across a range of pitches.',
         TIMBRE: 'This sound quality lets you tell a flute from a violin even when both play the same note.',
-        HARMONY: 'The effect made by combining different pitches at the same time.',
         CODA: 'A concluding passage that brings a piece of music to a close.',
         ACCENT: 'An extra emphasis placed on a particular note or beat.'
-    },
-    Math: {
-        AXIS: 'A reference line used to measure positions or show rotation.',
-        PROOF: 'A chain of reasoning that establishes why a mathematical statement must be true.',
-        FACTOR: 'A number you multiply by another to make a product.',
-        MATRIX: 'A rectangular arrangement of entries in rows and columns.',
-        RADIUS: 'The distance from the center of a circle to any point on its edge.',
-        VECTOR: 'An arrow can display this quantity, which has both size and direction.',
-        VOLUME: 'The amount of three-dimensional space an object occupies.',
-        QUOTIENT: 'The result you get when you divide one number by another.',
-        INTEGER: 'A whole number, including zero and negative whole numbers.',
-        MEDIAN: 'Order a list of numbers and find its middle, averaging the two middle entries if needed.',
-        TANGENT: 'A line that touches a circle at one point and is perpendicular to the radius there.',
-        EXPONENT: 'The small raised number that tells how many times to use a base as a multiplier.',
-        VARIABLE: 'A letter or symbol that can stand for a changing or unknown value.'
-    },
-    'Language Arts': {
-        CAUSE: 'The reason an event happens, rather than the effect it produces.',
-        CLAUSE: 'A group of words with a subject and a verb that may or may not stand alone.',
-        GENRE: 'A category of writing, music, or art whose works share recognizable conventions.',
-        IRONY: 'A contrast between what is expected and what actually happens, or what is said and meant.',
-        MOTIF: 'An image, object, or idea that returns through a work and gains meaning each time.',
-        PROSE: 'Ordinary writing arranged in sentences and paragraphs rather than lines of verse.',
-        STYLE: 'The recognizable way an author uses words, sentences, and details.',
-        THESIS: 'The main claim that an essay sets out to explain or defend.',
-        TONE: 'The attitude a writer conveys, such as amused, impatient, or hopeful.',
-        VOICE: 'The distinctive personality or sound that comes through in a writer or narrator.',
-        SIMILE: 'A comparison that often links unlike things with the words like or as.',
-        DICTION: 'A writer can sound formal or casual through this choice of words.',
-        PARODY: 'An imitation that exaggerates features of its original for humor or criticism.',
-        BALLAD: 'A poem or song that tells a story, often through short verses.'
-    },
-    History: {
-        PERIOD: 'A span of time that historians group by a shared set of events or features.',
-        REFORM: 'A change made to improve a law, institution, or practice.',
-        ARCHIVE: 'A collection or place that keeps original records for long-term use.',
-        CHARTER: 'A formal document that sets out the rights or powers of a town or organization.',
-        DYNASTY: 'A chain of rulers from the same family.'
     },
     Architecture: {
         DRAFT: 'An early version of a plan or drawing that can still be changed.',
@@ -170,60 +437,113 @@ const HARD_WORD_CLUES = {
 };
 
 const EXTREME_WORD_CLUES = {
-    Government: {
-        JUSTICE: 'Courts seek this ideal when laws are applied fairly and wrongs are addressed.',
-        LIBERTY: 'This political ideal gives people room to act, speak, and think freely.',
-        POLICY: 'An official course of action used to guide decisions over time.',
-        ETHIC: 'A principle used to judge right conduct, such as a commitment to honesty.',
-        MORAL: 'This describes a judgment about what conduct is right or wrong.',
-        DEBATE: 'A structured exchange of opposing arguments about a question.',
-        EQUITY: 'Fairness that takes different needs and barriers into account when distributing resources.',
-        SUFFRAGE: 'A movement for this political right seeks to let more people cast votes in elections.',
-        FEDERALISM: 'A system that divides governing authority between a national government and regional governments.',
-        JURISDICTION: 'The legal boundary of a court or authority, covering what it may rule on and where.',
-        PRECEDENT: 'A past court decision that guides judges faced with similar cases.',
-        SOVEREIGNTY: 'The ultimate authority of a state to govern itself.',
-        IMPEACHMENT: 'A formal accusation of wrongdoing against a public official, which can lead to a separate trial.',
-        BICAMERAL: 'This describes a legislature divided into two chambers.',
-        REFERENDUM: 'A question of law or public action sent directly to voters for a decision.',
-        COALITION: 'Groups join forces in this temporary alliance to reach a shared goal.',
-        RATIFICATION: 'An authorized body gives a treaty or amendment its final formal approval through this act.',
-        OMBUDSMAN: 'An independent official who investigates complaints about how an institution treated people.'
+    Animals: {
+        HAMSTER: 'This small pet stuffs food into its cheeks and may run in a wheel at night.'
     },
-    'Physics and Motion': {
-        KINETIC: 'This describes the energy an object has because it is moving.',
-        MOMENTUM: 'Multiply mass by velocity to calculate this quantity.',
-        IMPACT: 'This brief collision transfers momentum when two objects strike one another.',
-        PHASE: 'This tells where an oscillation is in its cycle, such as a quarter turn past its start.',
-        ACCELERATION: 'The change in velocity per unit time, including a turn at constant speed.',
-        OSCILLATION: 'A repeated movement or change back and forth around a central point.',
-        RESONANCE: 'Swing pushes timed at its natural rate can build up large motion through this effect.',
-        DIFFRACTION: 'Waves spread into the region behind an edge or after passing through a narrow opening.',
-        POLARIZATION: 'This describes the direction of a transverse wave’s oscillations.',
-        EQUILIBRIUM: 'Opposing influences balance in this state, so the system shows no net change.',
-        SUPERPOSITION: 'Where several waves overlap, their individual displacements add according to this principle.',
-        ENTROPY: 'In thermodynamics, this quantity is related to how many microscopic arrangements fit a system’s overall state.'
+    'Ocean Life': {
+        NARWHAL: 'This Arctic whale can grow a long spiral tusk in front of its head.'
+    },
+    Food: {
+        PRETZEL: 'This baked snack often twists into a knot with salt on top.'
+    },
+    Nature: {
+        GLACIER: 'This huge mass of ice moves slowly downhill like a frozen river.'
+    },
+    Weather: {
+        DRIZZLE: 'This light rain falls in drops so tiny they almost float.',
+        THUNDER: 'This boom is the sound made when lightning heats the air very quickly.'
+    },
+    Space: {
+        ECLIPSE: 'This happens when one space object casts its shadow onto another.',
+        ASTEROID: 'A rocky object that circles the sun, smaller than a planet and often found between Mars and Jupiter.',
+        SOLSTICE: 'This occurs when the sun reaches its farthest north or south position in the sky, giving the longest or shortest day.',
+        SATELLITE: 'An object, natural or human-made, that stays in orbit around a larger body.',
+        REDSHIFT: 'Light moves toward longer wavelengths as a remote galaxy recedes.',
+        LAGRANGE: 'This surname identifies positions where a small object can keep a fixed location relative to two larger orbiting bodies.',
+        APOGEE: 'The farthest point from Earth in an Earth-centered orbit.'
+    },
+    'Home Objects': {
+        CURTAIN: 'Slide this hanging fabric across a window to block the light.'
+    },
+    'Community Helpers': {
+        PLUMBER: 'This person fixes leaks and installs the pipes that carry water.'
+    },
+    'Farm Life': {
+        TRACTOR: 'This farm vehicle can pull a plow and usually has big rear tires.'
+    },
+    'Character Traits': {
+        PATIENT: 'This describes someone who can wait their turn without getting upset.'
     },
     Science: {
+        CONTROL: 'The comparison condition in an experiment that leaves out the change being tested.',
+        ISOTOPE: 'Atoms of one element with the same proton count but a different number of neutrons.',
+        HABITAT: 'The natural place where a particular organism finds what it needs to survive.',
         THEORY: 'A broad explanation supported by many observations that can be used to make predictions.',
         SCIENCE: 'The organized study of the natural world through observation, testing, and revision.',
         RESEARCH: 'A careful investigation to answer a question or create new knowledge.',
         DYNAMIC: 'This describes a process or system whose state changes over time.',
         PROCESS: 'A sequence of actions or changes that leads to a result.',
         HYPOTHESIS: 'A proposed explanation written so evidence could test it.',
-        REPLICATION: 'Independent investigators repeat a study to see if they can obtain a similar result.',
-        CALIBRATION: 'A measuring instrument is compared with a known standard so its readings can be interpreted accurately.',
         CATALYSIS: 'A reaction speeds up when helped by a substance that is regenerated by the end.',
-        STOICHIOMETRY: 'Use a balanced chemical equation to work out the quantities of reactants and products.',
         EQUINOX: 'Twice a year the sun crosses the celestial equator, and day and night are nearly the same length.',
         DIFFUSION: 'Particles tend to spread from a more concentrated region into a less concentrated one.',
         METABOLISM: 'The collection of chemical reactions by which an organism sustains life.',
-        HOMEOSTASIS: 'Sweating in the heat helps the body maintain this steady internal condition.',
-        BIODIVERSITY: 'This measures the variety of life, from genes and species to entire ecosystems.',
         SUCCESSION: 'After a fire, communities of organisms change in stages as a landscape recovers.',
-        WATERSHED: 'Every drop falling on this area of land drains toward a shared river, lake, or other outlet.'
+        WATERSHED: 'Every drop falling on this area of land drains toward a shared river, lake, or other outlet.',
+        OSMOSIS: 'Solvent moves through a selectively permeable membrane toward the side with more dissolved material.',
+        ALLOSTERY: 'A molecule binds away from an enzyme’s active site and changes how that site behaves.',
+        ALBEDO: 'The fraction of incoming light reflected by a surface.',
+        ECTOTHERM: 'An animal whose body heat mainly comes from its surroundings.',
+        CLADOGRAM: 'A branching diagram showing proposed evolutionary relationships among organisms.'
+    },
+    Technology: {
+        FIREWALL: 'A gatekeeper that lets network traffic through or blocks it according to rules.',
+        PROTOCOL: 'An agreed set of rules that lets different machines exchange information.'
+    },
+    Engineering: {
+        CIRCUIT: 'A path through which electric current can flow when the loop is closed.',
+        TURBINE: 'Steam, water, or wind spins the blades of this machine to do useful work.',
+        TENSION: 'The pulling force carried by a stretched rope, cable, or string.',
+        CHASSIS: 'The supporting frame that holds the main parts of a vehicle or machine.'
+    },
+    'Materials and Chemistry': {
+        POLYMER: 'A material whose large molecules are built from chains of repeating units.',
+        CHIRALITY: 'This property makes an object impossible to superimpose on its mirror image, as with left and right hands.',
+        ALKALINITY: 'This property measures how much acid a solution can neutralize.',
+        TITRATION: 'Add a solution of known concentration until a reaction reaches its endpoint to measure an unknown concentration.'
+    },
+    'Physics and Motion': {
+        INERTIA: 'The tendency of an object to keep its speed and direction unless something exerts a net push or pull.',
+        IMPULSE: 'A push or pull multiplied by how long it acts, equal to the change in momentum.',
+        FRICTION: 'This force resists sliding when two surfaces press against one another.',
+        DENSITY: 'Divide mass by volume to find how much material is packed into a given space.',
+        REFRACT: 'A light ray does this when its path bends as it moves between materials.',
+        KINETIC: 'This describes the energy an object has because it is moving.',
+        MOMENTUM: 'Multiply mass by velocity to calculate this quantity.',
+        IMPACT: 'This brief collision transfers momentum when two objects strike one another.',
+        PHASE: 'This tells where an oscillation is in its cycle, such as a quarter turn past its start.',
+        RESONANCE: 'Swing pushes timed at its natural rate can build up large motion through this effect.',
+        ENTROPY: 'In thermodynamics, this quantity is related to how many microscopic arrangements fit a system’s overall state.',
+        TOROID: 'A ring-shaped surface or solid like the shape of a doughnut.',
+        VISCOSITY: 'This property measures how strongly a fluid resists flowing.',
+        REFLECTION: 'This occurs when a wave meets a boundary and some of it returns to the original material.'
+    },
+    'Coding and Logic': {
+        BOOLEAN: 'A value with only two possibilities, true or false.',
+        RECURSE: 'Solve a problem by calling the same procedure on smaller versions of it.',
+        ALGORITHM: 'A sequence of well-defined steps for solving a problem or performing a computation.',
+        COMPILER: 'A program that translates source into another form, often machine code.',
+        INVARIANT: 'A condition that remains true throughout a procedure, such as after every turn of a loop.',
+        HEURISTIC: 'A practical shortcut likely to find a useful answer without guaranteeing the best one.',
+        BISECTION: 'Repeatedly split an interval in half to narrow down where a solution lies.',
+        MUTEX: 'This lock lets at most one thread enter a protected section at a time.',
+        DEADLOCK: 'Two or more tasks wait for one another indefinitely, so none can continue.',
+        CLOSURE: 'A function paired with bindings from the surrounding scope where it was created.'
     },
     'Business and Money': {
+        SURPLUS: 'This is the amount left over when income exceeds expenses or supply exceeds demand.',
+        REVENUE: 'The money a business earns before it subtracts its expenses.',
+        DEFICIT: 'When expenses exceed income, this is the amount by which the budget falls short.',
         TREND: 'A general direction in which a series of measurements moves over time.',
         STRATEGY: 'A high-level plan for reaching a goal and deciding where to spend limited resources.',
         OUTCOME: 'The result or consequence observed after a decision or experiment.',
@@ -232,13 +552,36 @@ const EXTREME_WORD_CLUES = {
         LIQUIDITY: 'This describes how easily an asset can be turned into cash without losing much value.',
         SOLVENCY: 'A person or firm has this financial condition when able to meet its long-term obligations.',
         DEFLATION: 'A sustained decrease in the overall level of prices.',
-        DEPRECIATION: 'An accounting method for spreading the cost of a tangible asset over its useful life.',
-        FUNGIBILITY: 'One dollar bill can replace another dollar bill because they share this property.',
         MONOPSONY: 'A market in which a single buyer has substantial power over many sellers.',
         OLIGOPOLY: 'A market dominated by a small number of sellers whose actions affect one another.',
-        ARBITRAGE: 'Buy in one market and sell in another to capture a price difference.'
+        ARBITRAGE: 'Buy in one market and sell in another to capture a price difference.',
+        DIVIDEND: 'A company may distribute this payment to holders of its shares.',
+        AMORTIZE: 'Spread a loan repayment or the cost of an intangible asset over several periods.'
+    },
+    'Music Performance': {
+        HARMONY: 'The effect made by combining different pitches at the same time.'
+    },
+    Math: {
+        QUOTIENT: 'The result you get when you divide one number by another.',
+        INTEGER: 'A whole number, including zero and negative whole numbers.',
+        TANGENT: 'A line that touches a circle at one point and is perpendicular to the radius there.',
+        EXPONENT: 'The small raised number that tells how many times to use a base as a multiplier.',
+        VARIABLE: 'A letter or symbol that can stand for a changing or unknown value.',
+        ASYMPTOTE: 'A line that a curve approaches arbitrarily closely along part of its path.',
+        DERIVATIVE: 'This function gives the instantaneous rate of change of another function.',
+        INTEGRAL: 'This operation can add infinitely thin slices to find a signed area under a curve.',
+        EIGENVALUE: 'The number by which a linear transformation scales a vector pointing in a special invariant direction.',
+        TOPOLOGY: 'This branch asks which properties survive continuous stretching or bending without tearing.',
+        COVARIANCE: 'This statistic is positive when above-average values of one variable tend to pair with above-average values of another.',
+        SKEWNESS: 'This statistic measures how asymmetric a distribution is around its center.',
+        PARABOLA: 'Each point on this curve is equally far from a fixed point and a fixed line.',
+        LAPLACIAN: 'This operator sums second partial derivatives along spatial axes in Cartesian coordinates.',
+        ELLIPSE: 'Each point on this curve has the same sum of distances to two fixed points.',
+        SURJECTION: 'A function with this property reaches every element of its codomain.',
+        BIJECTION: 'This pairing reaches every target exactly once.'
     },
     'Language Arts': {
+        DICTION: 'A writer can sound formal or casual through this choice of words.',
         VALID: 'A deductive argument has this quality if true premises would guarantee a true conclusion.',
         ASPECT: 'One particular feature or side of a subject with many parts.',
         CONCEPT: 'A general mental idea that can group different examples, such as fairness or time.',
@@ -253,60 +596,58 @@ const EXTREME_WORD_CLUES = {
         METONYMY: 'Say “the crown” to refer to a monarch, replacing a name with something closely associated with it.',
         SYNECDOCHE: '“All hands on deck” uses a part of each sailor as a stand-in for the whole person.',
         ENJAMBMENT: 'A poetic sentence runs straight past the end of one line into the next.',
-        POLYSYNDETON: 'A list repeats conjunctions between items to slow or emphasize the rhythm.',
         ANTITHESIS: 'Place opposite ideas side by side in similarly structured phrases.',
         ALLEGORY: 'A story whose characters and events also express a broader meaning, often moral or political.',
-        CONNOTATION: 'The feeling or association a word carries beyond its direct definition.',
         ALLUSION: 'A brief reference that expects readers to recognize another story, person, or event.',
         LITOTES: 'Saying “no small feat” uses a denial to make a deliberately understated claim.',
         PARADOX: 'A statement or situation that appears self-contradictory but may reveal a truth.',
-        SOLILOQUY: 'A character speaks private thoughts aloud onstage, commonly while alone.'
+        SOLILOQUY: 'A character speaks private thoughts aloud onstage, commonly while alone.',
+        ASYNDETON: 'A writer omits the conjunctions from a list to quicken the pace.',
+        CHIASMUS: 'Two parts of a sentence mirror each other by reversing the order of their structures.',
+        HYPERBOLE: 'Deliberate exaggeration for emphasis or comic effect.',
+        ELISION: 'Omitting a sound or syllable, as when a poet writes a word in a shorter form.'
     },
-    Math: {
-        ASYMPTOTE: 'A line that a curve approaches arbitrarily closely along part of its path.',
-        DERIVATIVE: 'This function gives the instantaneous rate of change of another function.',
-        INTEGRAL: 'This operation can add infinitely thin slices to find a signed area under a curve.',
-        EIGENVALUE: 'The number by which a linear transformation scales a vector pointing in a special invariant direction.',
-        DETERMINANT: 'This number from a square matrix gives its signed area or volume scaling factor.',
-        TOPOLOGY: 'This branch asks which properties survive continuous stretching or bending without tearing.',
-        ISOMORPHISM: 'A reversible pairing between structures that preserves the relationships or operations that define them.',
-        PERMUTATION: 'An arrangement of items in which the order matters.',
-        COMBINATORICS: 'The branch that counts and studies arrangements, selections, and other discrete structures.',
-        PROBABILITY: 'A number from zero to one measuring how likely an event is to occur.',
-        COVARIANCE: 'This statistic is positive when above-average values of one variable tend to pair with above-average values of another.',
-        SKEWNESS: 'This statistic measures how asymmetric a distribution is around its center.',
-        PARABOLA: 'Each point on this curve is equally far from a fixed point and a fixed line.',
-        TESSELLATION: 'Tiles cover a plane in this pattern without overlapping or leaving gaps.'
+    History: {
+        ARCHIVE: 'A collection or place that keeps original records for long-term use.',
+        CHARTER: 'A formal document that sets out the rights or powers of a town or organization.',
+        DYNASTY: 'A chain of rulers from the same family.',
+        INQUISITOR: 'An official historically charged with investigating allegations of heresy.',
+        VASSAL: 'A person who held land from a lord in return for services such as military support.'
     },
-    'Coding and Logic': {
-        ALGORITHM: 'A sequence of well-defined steps for solving a problem or performing a computation.',
-        COMPILER: 'A program that translates source into another form, often machine code.',
-        ABSTRACTION: 'Expose the essential behavior of a tool while hiding how it works inside.',
-        ENCAPSULATION: 'Keep related data and behavior together while controlling how the rest of a program can access them.',
-        IMMUTABILITY: 'A value with this property cannot be changed once it has been created.',
-        IDEMPOTENCE: 'Applying an operation repeatedly has the same effect as applying it once.',
-        CONCURRENCY: 'More than one task can make progress during overlapping periods, even on just one processor.',
-        PARALLELISM: 'Multiple tasks actually run at the same instant on different processing resources.',
-        INVARIANT: 'A condition that remains true throughout a procedure, such as after every turn of a loop.',
-        HEURISTIC: 'A practical shortcut likely to find a useful answer without guaranteeing the best one.',
-        BISECTION: 'Repeatedly split an interval in half to narrow down where a solution lies.'
+    Government: {
+        JUSTICE: 'Courts seek this ideal when laws are applied fairly and wrongs are addressed.',
+        LIBERTY: 'This political ideal gives people room to act, speak, and think freely.',
+        POLICY: 'An official course of action used to guide decisions over time.',
+        ETHIC: 'A principle used to judge right conduct, such as a commitment to honesty.',
+        MORAL: 'This describes a judgment about what conduct is right or wrong.',
+        DEBATE: 'A structured exchange of opposing arguments about a question.',
+        EQUITY: 'Fairness that takes different needs and barriers into account when distributing resources.',
+        SUFFRAGE: 'A movement for this political right seeks to let more people cast votes in elections.',
+        FEDERALISM: 'A system that divides governing authority between a national government and regional governments.',
+        PRECEDENT: 'A past court decision that guides judges faced with similar cases.',
+        BICAMERAL: 'This describes a legislature divided into two chambers.',
+        REFERENDUM: 'A question of law or public action sent directly to voters for a decision.',
+        COALITION: 'Groups join forces in this temporary alliance to reach a shared goal.',
+        OMBUDSMAN: 'An independent official who investigates complaints about how an institution treated people.',
+        STATUTE: 'A law enacted by a legislature and written into its official records.',
+        SECESSION: 'A state or group formally withdraws from the political union it belonged to.',
+        SUNSET: 'A clause with this name ends a law or authority on a specified date unless renewed.'
     },
     Geography: {
-        ARCHIPELAGO: 'A chain or cluster of islands, such as the thousands that make up Indonesia.',
-        CARTOGRAPHY: 'The craft and study of making maps.',
         OROGRAPHIC: 'This describes rain caused when mountains force moist air upward to cool.',
         SUBDUCTION: 'A tectonic plate dips beneath another and sinks toward the mantle at this boundary.',
         ISOSTASY: 'Earth’s crust can behave like floating blocks, balancing its weight against support from below.',
         MEANDER: 'A broad sweeping bend that develops as a river shifts across its floodplain.',
-        PERMAFROST: 'Ground that stays at or below freezing for at least two consecutive years.'
+        PERMAFROST: 'Ground that stays at or below freezing for at least two consecutive years.',
+        CONFLUENCE: 'The point where two rivers or streams join.',
+        BATHYMETRY: 'The measurement and mapping of depths beneath a body of water.'
     },
     'Arts and Music': {
-        SYNCOPATION: 'Give weight to the offbeats where listeners might expect a weaker sound or silence.',
-        COUNTERPOINT: 'Combine independent melodies so they sound together as a musical whole.',
         MODULATION: 'A passage changes from one musical key to another.',
         CHROMATIC: 'A scale with this name moves entirely by semitones and uses all twelve pitch classes.',
         OSTINATO: 'A short rhythm or tune that repeats while other parts of the music change.',
         POLYPHONY: 'A musical texture made from several independent melodic lines.',
-        CHIAROSCURO: 'A painter uses strong contrasts of light and dark to give forms volume.'
+        DYNAMICS: 'Markings like forte and piano tell a musician about this property of sound.',
+        ARPEGGIO: 'The notes of a chord sound one after another instead of at the same moment.'
     }
 };

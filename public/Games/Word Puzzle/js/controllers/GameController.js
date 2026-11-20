@@ -61,6 +61,7 @@ class GameController {
 
         document.getElementById('startGame')?.addEventListener('click', () => {
             if (!this.selectedDifficulty) return;
+            window.musicController?.prepareAnswerSounds();
             if (this.gameState.level === 1) this.prepareEasyAudio(true);
             else window.musicController?.fadeOutMainMenuMusic();
             this.startCountdown();
@@ -69,6 +70,7 @@ class GameController {
         // Game Over buttons
         document.getElementById('playAgainBtn')?.addEventListener('click', () => {
             this.hideFeedback();
+            window.musicController?.prepareAnswerSounds();
             this.prepareEasyAudio(false);
             this.startGame();
         });
@@ -816,59 +818,21 @@ class GameController {
                 overlay.style.display = 'none';
             }
 
-            const incorrectWord = incorrectAnswerFx.word || incorrectAnswerFx.title || 'ANSWER';
-            const incorrectRevealText = typeof incorrectAnswerFx.revealText === 'string'
-                ? incorrectAnswerFx.revealText.trim()
-                : '';
-            const showRevealLine = incorrectRevealText.length > 0;
-
-            incorrectAnswerTextEl.textContent = incorrectWord;
-            incorrectAnswerWordEl.textContent = incorrectRevealText;
-            incorrectAnswerWordEl.style.display = showRevealLine ? 'block' : 'none';
+            incorrectAnswerWordEl.textContent = incorrectAnswerFx.word;
             incorrectAnswerFxEl.style.display = 'flex';
 
-            if (typeof anime !== 'undefined') {
-                anime.remove([incorrectAnswerFxEl, incorrectAnswerTextEl, incorrectAnswerWordEl]);
+            if (typeof anime !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                anime.remove(incorrectAnswerFxEl);
 
                 anime({
                     targets: incorrectAnswerFxEl,
-                    opacity: [0, 1],
-                    duration: 160,
-                    easing: 'easeOutQuad'
-                });
-
-                anime({
-                    targets: incorrectAnswerTextEl,
-                    opacity: [0, 1],
-                    scale: [0.72, 1.12, 1],
-                    translateY: [12, 0],
-                    duration: 360,
-                    easing: 'easeOutBack'
-                });
-
-                if (showRevealLine) {
-                    anime({
-                        targets: incorrectAnswerWordEl,
-                        opacity: [0, 1],
-                        scale: [0.84, 1.06, 1],
-                        translateY: [14, 0],
-                        delay: 160,
-                        duration: 360,
-                        easing: 'easeOutBack'
-                    });
-                }
-
-                anime({
-                    targets: incorrectAnswerFxEl,
-                    opacity: [1, 0],
-                    delay: incorrectAnswerFx.durationMs || 1120,
-                    duration: 260,
-                    easing: 'easeInQuad'
+                    opacity: [
+                        { value: [0, 1], duration: 150, easing: 'easeOutQuad' },
+                        { value: 0, delay: incorrectAnswerFx.durationMs - 150, duration: 260, easing: 'easeInQuad' }
+                    ]
                 });
             } else {
                 incorrectAnswerFxEl.style.opacity = '1';
-                incorrectAnswerTextEl.style.opacity = '1';
-                incorrectAnswerWordEl.style.opacity = showRevealLine ? '1' : '';
             }
 
             this.incorrectAnswerFxTimeout = setTimeout(() => {
@@ -877,7 +841,7 @@ class GameController {
                 incorrectAnswerTextEl.style.opacity = '';
                 incorrectAnswerWordEl.style.opacity = '';
                 this.incorrectAnswerFxTimeout = null;
-            }, (incorrectAnswerFx.durationMs || 1120) + 280);
+            }, incorrectAnswerFx.durationMs + 280);
 
             return;
         }

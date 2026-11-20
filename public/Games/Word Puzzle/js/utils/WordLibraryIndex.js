@@ -68,6 +68,12 @@ const WORD_LIBRARY_TRACKS = [
 ];
 
 const WORD_LIBRARY_DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'];
+const WORD_LIBRARY_LENGTH_LIMITS = {
+    easy: [3, 3],
+    medium: [3, 4],
+    hard: [4, 6],
+    extreme: [5, 10]
+};
 const WORD_LIBRARY_DIFFICULTY_GRADE_BANDS = {
     easy: 'Pre-K to 1st grade',
     medium: '2nd to 6th grade',
@@ -159,18 +165,21 @@ function calculateWordLibraryComplexityScore(word) {
 
 const WORD_LIBRARY_INDEX = WORD_LIBRARY_DIFFICULTY_ORDER.flatMap((difficulty) =>
     Object.entries(WORD_LIBRARY_BANKS[difficulty]).flatMap(([category, clues]) => {
+        const [min, max] = WORD_LIBRARY_LENGTH_LIMITS[difficulty];
         const tracks = WORD_LIBRARY_TRACKS.filter((track) => track.categories.includes(category)).map((track) => track.id);
-        return Object.entries(clues).map(([word, clue]) => ({
-            id: word,
-            word,
-            category,
-            tracks,
-            difficulty,
-            complexityScore: calculateWordLibraryComplexityScore(word),
-            gradeBandLabel: WORD_LIBRARY_DIFFICULTY_GRADE_BANDS[difficulty],
-            clue,
-            length: word.length
-        }));
+        return Object.entries(clues)
+            .filter(([word]) => word.length >= min && word.length <= max)
+            .map(([word, clue]) => ({
+                id: word,
+                word,
+                category,
+                tracks,
+                difficulty,
+                complexityScore: calculateWordLibraryComplexityScore(word),
+                gradeBandLabel: WORD_LIBRARY_DIFFICULTY_GRADE_BANDS[difficulty],
+                clue,
+                length: word.length
+            }));
     })
 );
 

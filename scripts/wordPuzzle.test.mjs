@@ -24,22 +24,30 @@ test('all four word banks have unique, answer-safe clues and Easy has an exact a
     assert.equal(new Set(entries.map(({ word }) => word)).size, entries.length);
     assert.equal(new Set(entries.map(({ clue }) => clue)).size, entries.length);
     const counts = Object.groupBy(entries, ({ difficulty }) => difficulty);
-    for (const [difficulty, minimum] of Object.entries({ easy: 180, medium: 275, hard: 135, extreme: 110 })) {
-        assert.ok(counts[difficulty].length >= minimum, difficulty);
+    const expected = { easy: [3, 3, 135], medium: [3, 4, 140], hard: [4, 6, 350], extreme: [5, 10, 150] };
+    for (const [difficulty, [min, max, minimumWords]] of Object.entries(expected)) {
+        const bank = counts[difficulty];
+        assert.ok(bank.length >= minimumWords, difficulty);
+        assert.equal(Math.min(...bank.map(({ length }) => length)), min, difficulty);
+        assert.equal(Math.max(...bank.map(({ length }) => length)), max, difficulty);
     }
     for (const { word, clue, tracks } of entries) {
-        assert.match(word, /^[A-Z]{3,14}$/);
+        assert.match(word, /^[A-Z]{3,10}$/);
         assert.ok(tracks.length);
         assert.ok(clue.length > 20 && clue.length <= 125, word);
         assert.doesNotMatch(clue, new RegExp(`\\b${word}(?:s|es|ed|ing)?\\b`, 'i'), word);
     }
     const audioFolder = new URL('Voice/Easy/', game);
     const expectedTracks = ['guide.mp3', ...counts.easy.map(({ word }) => {
-        assert.match(word, /^[A-Z]{3,4}$/);
+        assert.match(word, /^[A-Z]{3}$/);
         return `${word.toLowerCase()}.mp3`;
     })].sort();
     assert.deepEqual(readdirSync(audioFolder).sort(), expectedTracks);
     for (const name of expectedTracks) assert.ok(statSync(new URL(name, audioFolder)).size > 1000, name);
+    const correct = readFileSync(new URL('Sounds/correct.mp3', game));
+    const incorrect = readFileSync(new URL('Sounds/incorrect.mp3', game));
+    assert.ok(correct.length > 1000 && incorrect.length > 1000);
+    assert.notDeepEqual(correct, incorrect);
 });
 
 test('each bank plays every word before repeating and keeps long gaps across reloads', () => {

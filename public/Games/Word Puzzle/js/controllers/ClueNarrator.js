@@ -3,7 +3,7 @@ class ClueNarrator {
         this.music = music;
         this.audio = new Audio();
         this.audio.preload = 'auto';
-        this.gain = music?.connectEasyAudio(this.audio);
+        this.gain = music?.connectAudio(this.audio);
         this.controls = document.getElementById('clueAudioControls');
         this.button = document.getElementById('hearClue');
         this.toggle = document.getElementById('toggleClueVoice');
@@ -11,6 +11,7 @@ class ClueNarrator {
         this.requestId = 0;
         this.word = null;
         this.clip = null;
+        this.autoReading = false;
 
         this.toggle.addEventListener('click', () => {
             this.enabled = !this.enabled;
@@ -21,7 +22,7 @@ class ClueNarrator {
             }
             if (!this.enabled) this.stop();
             else if (this.word) {
-                this.music?.resumeEasyAudio();
+                this.music?.resumeAudio();
                 this.play(this.word);
             }
             this.updateButton();
@@ -29,7 +30,7 @@ class ClueNarrator {
         this.button.addEventListener('click', () => {
             if (this.clip === this.word) this.stop();
             else if (this.word) {
-                this.music?.resumeEasyAudio();
+                this.music?.resumeAudio();
                 this.play(this.word);
             }
         });
@@ -49,7 +50,7 @@ class ClueNarrator {
         } catch (_error) {
             this.enabled ??= true;
         }
-        if (withGuide) this.play('guide');
+        if (withGuide) this.play('guide', true);
     }
 
     startRound(word) {
@@ -57,13 +58,14 @@ class ClueNarrator {
         this.controls.hidden = false;
         this.updateVolume();
         // Let the one-time instructions finish before automatically reading the first clue.
-        if (this.clip !== 'guide') this.play(word);
+        if (this.clip !== 'guide') this.play(word, true);
     }
 
-    play(clip) {
+    play(clip, autoReading = false) {
         if (!this.enabled || !this.getVolume() || document.hidden) return;
         const requestId = ++this.requestId;
         this.clip = clip;
+        this.autoReading = autoReading;
         this.updateVolume();
         this.music?.setClueDucking(true);
         this.audio.src = `Voice/Easy/${clip.toLowerCase()}.mp3`;
@@ -72,7 +74,12 @@ class ClueNarrator {
             if (requestId === this.requestId) this.finish();
         }, 8000);
         this.audio.play().then(() => {
-            if (requestId === this.requestId) clearTimeout(this.loadTimeout);
+            if (requestId !== this.requestId) return;
+            clearTimeout(this.loadTimeout);
+            const duration = Number.isFinite(this.audio.duration) ? this.audio.duration : 12;
+            this.loadTimeout = setTimeout(() => {
+                if (requestId === this.requestId) this.finish();
+            }, (duration + 2) * 1000);
         }).catch(() => {
             if (requestId === this.requestId) this.finish();
         });
@@ -81,7 +88,7 @@ class ClueNarrator {
     finish() {
         const pendingWord = this.clip === 'guide' ? this.word : null;
         this.stop();
-        if (pendingWord) this.play(pendingWord);
+        if (pendingWord) this.play(pendingWord, true);
     }
 
     stop() {
@@ -89,6 +96,7 @@ class ClueNarrator {
         this.requestId += 1;
         clearTimeout(this.loadTimeout);
         this.clip = null;
+        this.autoReading = false;
         this.audio.pause();
         this.music?.setClueDucking(false);
         this.updateButton();

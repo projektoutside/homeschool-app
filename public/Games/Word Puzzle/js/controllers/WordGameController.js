@@ -304,7 +304,9 @@ class WordGameController {
         const skipBtn = document.getElementById('skipQuestion');
 
         this.boundUndo = () => this.undoLastMove();
-        this.boundClear = () => this.clearAllSlots();
+        this.boundClear = () => {
+            if (!this.roundInputLocked()) this.clearAllSlots();
+        };
         this.boundHint = () => this.showHint();
         this.boundSkip = () => this.skipQuestion();
 
@@ -333,6 +335,7 @@ class WordGameController {
     cleanup() {
         this.stopTimer();
         this.clueNarrator?.endRound(true);
+        window.musicController?.stopAnswerFeedback();
         this.gameEnded = true;
         this.clearSelectedBlock();
         this.clearRoundPresentation();
@@ -407,6 +410,9 @@ class WordGameController {
         if (this.gameTimer) clearInterval(this.gameTimer);
 
         this.gameTimer = setInterval(() => {
+            if (this.clueNarrator?.autoReading || this.nextQuestionTimeout !== null) {
+                return;
+            }
             this.timeRemaining--;
 
             const timeDisplay = document.getElementById('timeRemaining');
@@ -675,7 +681,7 @@ class WordGameController {
 
     handleBlockClick(e, block, force = false) {
         if (!force && Date.now() < this.suppressClickUntil) return;
-        if (this.gameEnded || this.draggedElement) return;
+        if (this.roundInputLocked() || this.draggedElement) return;
 
         // Only allow selecting available blocks from answer/operation pools
         if (block.classList.contains('placed')) return;
@@ -714,7 +720,7 @@ class WordGameController {
     }
 
     handleSlotClick(slot) {
-        if (!this.selectedBlock || this.gameEnded) return;
+        if (!this.selectedBlock || this.roundInputLocked()) return;
         if (slot.classList.contains('filled')) return;
         if (!this.selectedBlock.classList.contains('answer-block')) return;
 
@@ -733,6 +739,7 @@ class WordGameController {
     }
 
     startDrag(e, block) {
+        if (this.roundInputLocked()) return;
         e.preventDefault();
         this.dragMoved = false;
         this.pendingDragBlock = block;
@@ -1067,6 +1074,7 @@ class WordGameController {
     }
 
     validateEquation() {
+        if (this.roundInputLocked()) return;
         const slots = document.querySelectorAll('#equationDisplay .equation-slot');
         const values = Array.from(slots).map(s => {
             const child = s.querySelector('.answer-block, .operation-triangle');
@@ -1095,6 +1103,8 @@ class WordGameController {
     }
 
     handleCorrect() {
+        this.clueNarrator?.endRound();
+        window.musicController?.playAnswerFeedback('correct');
         const pointsEarned = this.calculatePlacedNumberColorPoints();
         const oldScore = this.score;
         const newScore = oldScore + pointsEarned;
@@ -1124,11 +1134,10 @@ class WordGameController {
             }
         });
 
-        this.scheduleNextQuestion(800);
+        this.scheduleNextQuestion(this.gameState.level === 1 ? 1500 : 800);
     }
 
     scheduleNextQuestion(delayMs = 0) {
-        this.clueNarrator?.endRound();
         if (this.nextQuestionTimeout) {
             clearTimeout(this.nextQuestionTimeout);
             this.nextQuestionTimeout = null;
@@ -1144,14 +1153,21 @@ class WordGameController {
     }
 
     handleIncorrect() {
+        this.clueNarrator?.endRound();
+        window.musicController?.playAnswerFeedback('incorrect');
         const correctWord = (this.currentEquation?.word || '').toUpperCase();
-        this.showFeedback(false, 'Incorrect! New puzzle incoming...', '❌', {
+        const durationMs = this.gameState.level === 1 ? 2600 : 1850;
+        this.showFeedback(false, 'The word was', '❌', {
             incorrectAnswerFx: {
-                word: correctWord || 'ANSWER',
-                durationMs: 1120
+                word: correctWord,
+                durationMs
             }
         });
-        this.scheduleNextQuestion(1420);
+        this.scheduleNextQuestion(durationMs + 300);
+    }
+
+    roundInputLocked() {
+        return this.gameEnded || this.nextQuestionTimeout !== null;
     }
 
     showFeedback(success, msg, icon, options = null) {
@@ -1177,7 +1193,7 @@ class WordGameController {
     }
 
     undoLastMove() {
-        if (this.moveHistory.length === 0) return;
+        if (this.roundInputLocked() || this.moveHistory.length === 0) return;
         const move = this.moveHistory.pop();
         if (move.block && move.block.parentElement === move.toSlot) {
             this.returnBlock(move.block);
@@ -1204,6 +1220,7 @@ class WordGameController {
     }
 
     showHint() {
+        if (this.roundInputLocked()) return;
         console.log('Hint button clicked');
 
         if (this.hintsUsed >= this.maxHints) {
@@ -1268,6 +1285,7 @@ class WordGameController {
     }
 
     skipQuestion() {
+        if (this.roundInputLocked()) return;
         if (this.skipsUsed >= this.maxSkips) {
             this.showFeedback(false, "No skips left!", "🔒");
             return;

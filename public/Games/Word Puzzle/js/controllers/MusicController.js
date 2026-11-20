@@ -11,7 +11,7 @@ class MusicController {
         this.nextAudio = null;
         this.easyGameplayAudio = null;
         this.easyMusicGain = null;
-        this.easyAudioContext = null;
+        this.audioContext = null;
         this.clueDucking = false;
 
         // Music configuration
@@ -119,6 +119,7 @@ class MusicController {
         } else if (this.gameplayAudio) {
             this.gameplayAudio.volume = this.currentMode === 'gameplay' ? effectiveMusicVolume : 0;
         }
+        this.updateAnswerFeedbackVolume();
         window.dispatchEvent(new Event('wordPuzzleSoundChanged'));
 
         console.log('MusicController: Sound settings applied', {
@@ -128,22 +129,22 @@ class MusicController {
         });
     }
 
-    resumeEasyAudio() {
+    resumeAudio() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext && !this.easyAudioContext) {
+        if (AudioContext && !this.audioContext) {
             try {
-                this.easyAudioContext = new AudioContext();
+                this.audioContext = new AudioContext();
             } catch (_error) {
                 // Media elements still work on devices without Web Audio.
             }
         }
-        if (this.easyAudioContext?.state !== 'running') {
-            this.easyAudioContext?.resume().catch(() => {});
+        if (this.audioContext?.state !== 'running') {
+            this.audioContext?.resume().catch(() => {});
         }
     }
 
-    connectEasyAudio(audio) {
-        const context = this.easyAudioContext;
+    connectAudio(audio) {
+        const context = this.audioContext;
         if (!context) return null;
         const gain = context.createGain();
         gain.gain.value = 0;
@@ -152,8 +153,84 @@ class MusicController {
         return gain;
     }
 
+    prepareAnswerSounds() {
+        this.resumeAudio();
+        if (this.answerSounds) return;
+
+        const context = this.audioContext;
+        this.answerSounds = {};
+        if (context) {
+            this.answerSoundGain = context.createGain();
+            this.answerSoundGain.connect(context.destination);
+            this.updateAnswerFeedbackVolume();
+        }
+
+        for (const name of ['correct', 'incorrect']) {
+            const sound = { path: `Sounds/${name}.mp3` };
+            this.answerSounds[name] = sound;
+            if (context) {
+                fetch(sound.path).then((response) => {
+                    if (!response.ok) throw new Error('Answer sound could not be loaded');
+                    return response.arrayBuffer();
+                }).then((data) => context.decodeAudioData(data)).then((buffer) => {
+                    sound.buffer = buffer;
+                }).catch(() => {
+                    sound.element ??= new Audio(sound.path);
+                });
+            } else {
+                sound.element = new Audio(sound.path);
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.stopAnswerFeedback();
+        });
+        window.addEventListener('pagehide', () => this.stopAnswerFeedback());
+    }
+
+    playAnswerFeedback(name) {
+        this.stopAnswerFeedback();
+        const sound = this.answerSounds?.[name];
+        if (!sound || !this.getSfxVolume() || document.hidden) return;
+
+        const context = this.audioContext;
+        if (sound.buffer && context.state === 'running') {
+            const source = context.createBufferSource();
+            source.buffer = sound.buffer;
+            source.connect(this.answerSoundGain);
+            this.answerSoundSource = source;
+            source.addEventListener('ended', () => {
+                if (this.answerSoundSource === source) this.answerSoundSource = null;
+                source.disconnect();
+            }, { once: true });
+            source.start();
+            return;
+        }
+
+        // Use the preloaded element once. A fresh play avoids seeking a finished
+        // element back to the start on browsers without Web Audio.
+        const audio = sound.element ?? new Audio(sound.path);
+        sound.element = null;
+        this.answerSoundElement = audio;
+        this.playSoundEffect(audio);
+    }
+
+    stopAnswerFeedback() {
+        this.answerSoundSource?.stop();
+        this.answerSoundSource = null;
+        this.answerSoundElement?.pause();
+        this.answerSoundElement = null;
+    }
+
+    updateAnswerFeedbackVolume() {
+        const volume = this.getSfxVolume();
+        if (this.answerSoundGain) this.answerSoundGain.gain.value = volume;
+        if (this.answerSoundElement) this.answerSoundElement.volume = volume;
+        if (!volume) this.stopAnswerFeedback();
+    }
+
     prepareEasyGameplayMusic() {
-        this.resumeEasyAudio();
+        this.resumeAudio();
         if (this.mainMenuAudio) {
             this.mainMenuAudio.pause();
             this.mainMenuAudio = null;
@@ -161,7 +238,7 @@ class MusicController {
         if (!this.easyGameplayAudio) {
             const audio = new Audio();
             this.easyGameplayAudio = audio;
-            this.easyMusicGain = this.connectEasyAudio(audio);
+            this.easyMusicGain = this.connectAudio(audio);
             audio.preload = 'auto';
             audio.addEventListener('ended', () => {
                 if (this.gameplayAudio === audio) this.playEasyGameplayTrack();
@@ -201,7 +278,7 @@ class MusicController {
         const volume = this.isMuted ? 0 : this.musicVolume * (this.clueDucking ? 0.12 : 0.6);
         if (this.easyMusicGain) {
             const gain = this.easyMusicGain.gain;
-            const time = this.easyAudioContext.currentTime;
+            const time = this.audioContext.currentTime;
             gain.cancelScheduledValues(time);
             gain.setTargetAtTime(volume, time, this.isMuted ? 0.01 : this.clueDucking ? 0.045 : 0.16);
         } else {
@@ -559,6 +636,7 @@ class MusicController {
      */
     setSfxVolume(volume) {
         this.sfxVolume = Math.max(0, Math.min(1, volume));
+        this.updateAnswerFeedbackVolume();
         window.dispatchEvent(new Event('wordPuzzleSoundChanged'));
     }
 
