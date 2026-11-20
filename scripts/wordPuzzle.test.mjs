@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
 const game = new URL('../public/Games/Word Puzzle/', import.meta.url);
-const source = ['EasyWordClues', 'MediumWordClues', 'AdvancedWordClues', 'WordLibraryIndex', 'WordGenerator']
+const source = ['EasyWordClues', 'MediumWordClues', 'AdvancedWordClues', 'PhonicsWords', 'WordLibraryIndex', 'WordGenerator']
     .map((name) => readFileSync(new URL(`js/utils/${name}.js`, game), 'utf8'))
     .join('\n');
 
@@ -13,14 +13,15 @@ function createLibrary(storage = new Map()) {
         getItem: (key) => storage.get(key) ?? null,
         setItem: (key, value) => storage.set(key, value)
     };
-    return runInNewContext(`${source}\n;({ WordGenerator, WORD_LIBRARY_INDEX, WORD_LIBRARY_LEGACY_WORDS })`, {
+    return runInNewContext(`${source}\n;({ WordGenerator, WORD_LIBRARY_INDEX, WORD_LIBRARY_LEGACY_WORDS, PHONICS_SOUND_BY_LETTER })`, {
         localStorage,
         window: { getWordPuzzleStorageKey: (key) => `${key}:test-player` }
     });
 }
 
 test('all four word banks have unique, answer-safe clues and Easy has an exact audio match', () => {
-    const { WORD_LIBRARY_INDEX: entries } = createLibrary();
+    const { WORD_LIBRARY_INDEX } = createLibrary();
+    const entries = WORD_LIBRARY_INDEX.filter(({ difficulty }) => difficulty !== 'phonics');
     assert.equal(new Set(entries.map(({ word }) => word)).size, entries.length);
     assert.equal(new Set(entries.map(({ clue }) => clue)).size, entries.length);
     const counts = Object.groupBy(entries, ({ difficulty }) => difficulty);
@@ -80,4 +81,53 @@ test('migrates scoped legacy history without replaying previously seen words', (
     assert.deepEqual([...generator.recentWordIds], ['EEL']);
     assert.notEqual(generator.generate(1).word, 'EEL');
     assert.equal(JSON.parse(storage.get('wordPuzzleRecentWordsV4:test-player'))[0], 'EEL');
+});
+
+test('Phonics has a recording for every word and grapheme in its beginner bank', () => {
+    const { WORD_LIBRARY_INDEX, PHONICS_SOUND_BY_LETTER } = createLibrary();
+    const entries = WORD_LIBRARY_INDEX.filter(({ difficulty }) => difficulty === 'phonics');
+    assert.ok(entries.length >= 170);
+    assert.equal(new Set(WORD_LIBRARY_INDEX.map(({ id }) => id)).size, WORD_LIBRARY_INDEX.length);
+    const sounds = new Set();
+    for (const { word, id, clue } of entries) {
+        assert.equal(id, `phonics:${word}`);
+        assert.equal(clue, undefined);
+        assert.match(word, /^(?:[AEIOU][A-Z]|[B-DF-HJ-NP-TV-Z][AEIOU][B-DF-HJ-NP-TV-Z])$/);
+        for (const letter of word) {
+            assert.ok(PHONICS_SOUND_BY_LETTER[letter], `${word}: ${letter}`);
+            sounds.add(PHONICS_SOUND_BY_LETTER[letter]);
+        }
+    }
+
+    const expected = {
+        guides: ['welcome', 'sounds', 'try-again'],
+        sounds: [...sounds],
+        words: Array.from(entries, ({ word }) => word.toLowerCase())
+    };
+    for (const [kind, ids] of Object.entries(expected)) {
+        const folder = new URL(`Voice/Phonics/${kind}/`, game);
+        const files = ids.map((id) => `${id}.mp3`).sort();
+        assert.deepEqual(readdirSync(folder).sort(), files);
+        for (const file of files) assert.ok(statSync(new URL(file, folder)).size > 500, file);
+    }
+});
+
+test('Phonics draws warmups before longer words and keeps its own repeat history', () => {
+    const storage = new Map([['wordPuzzleRecentWordsV4:test-player', '["CAT","phonics:IT"]']]);
+    const { WordGenerator } = createLibrary(storage);
+    let generator = new WordGenerator();
+    const seen = new Set(['IT']);
+    for (let round = 0; round < generator.wordBanks.phonics.length - 1; round += 1) {
+        if (round % 17 === 0) generator = new WordGenerator();
+        const word = generator.generate(5, round < 2 ? 2 : 3);
+        assert.equal(word.difficulty, 'phonics');
+        if (round < 2) assert.equal(word.letters.length, 2);
+        if (round === 2) assert.equal(word.letters.length, 3);
+        assert.notEqual(word.scrambledLetters.join(''), word.word);
+        assert.equal([...word.scrambledLetters].sort().join(''), [...word.word].sort().join(''));
+        assert.ok(!seen.has(word.word), word.word);
+        seen.add(word.word);
+    }
+    assert.ok(seen.has('CAT'));
+    assert.equal(storage.has('wordPuzzleRecentTracksV3:test-player'), false);
 });

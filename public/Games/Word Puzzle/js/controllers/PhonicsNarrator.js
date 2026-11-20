@@ -1,0 +1,160 @@
+class PhonicsNarrator {
+    constructor(music) {
+        this.music = music;
+        this.audio = new Audio();
+        this.audio.preload = 'auto';
+        this.gain = music?.connectAudio(this.audio);
+        this.instructions = document.getElementById('phonicsInstructions');
+        this.controls = document.getElementById('phonicsAudioControls');
+        this.prompt = document.getElementById('phonicsPrompt');
+        this.writtenWord = document.getElementById('phonicsWrittenWord');
+        this.wordButton = document.getElementById('hearPhonicsWord');
+        this.soundsButton = document.getElementById('hearPhonicsSounds');
+        this.word = null;
+        this.sequence = null;
+
+        this.wordButton.addEventListener('click', () => this.replay('word'));
+        this.soundsButton.addEventListener('click', () => this.replay('sounds'));
+        window.addEventListener('wordPuzzleSoundChanged', () => this.updateVolume());
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.stop();
+        });
+        window.addEventListener('pagehide', () => this.stop());
+    }
+
+    startSession() {
+        this.stop();
+        this.welcomePending = true;
+    }
+
+    startRound(word, { retry = false } = {}) {
+        this.word = word;
+        this.failed = false;
+        this.controls.hidden = false;
+        this.instructions.hidden = false;
+        const guide = retry ? 'try-again' : this.welcomePending ? 'welcome' : null;
+        this.welcomePending = false;
+        this.read('round', guide);
+    }
+
+    replay(part) {
+        if (!this.word) return;
+        this.music?.resumeAudio();
+        this.failed = false;
+        this.read(part);
+    }
+
+    async read(part, guide = null) {
+        this.stop();
+        this.updateVolume();
+        const word = this.word;
+        if (!word || !this.getVolume() || document.hidden) return;
+
+        const sequence = new AbortController();
+        this.sequence = sequence;
+        const { signal } = sequence;
+        const wordClip = `words/${word.toLowerCase()}`;
+        const steps = [];
+        if (guide) steps.push({ clip: `guides/${guide}`, gap: 350 });
+        if (part !== 'sounds') steps.push({ clip: wordClip, cue: 'Listen to the word.', gap: 650 });
+        if (part === 'round') steps.push({ clip: 'guides/sounds', cue: 'Listen to each sound.', gap: 300 });
+        if (part !== 'word') {
+            [...word].forEach((letter, index) => {
+                steps.push({ clip: `sounds/${PHONICS_SOUND_BY_LETTER[letter]}`, slot: index, gap: 500 });
+            });
+            steps.push({ clip: wordClip, cue: 'Put the sounds together.' });
+        }
+
+        this.music?.setClueDucking(true);
+        for (const step of steps) {
+            if (signal.aborted) break;
+            if (step.cue) this.prompt.textContent = step.cue;
+            else if (step.slot !== undefined) this.prompt.textContent = 'Listen to each sound.';
+            this.highlightSlot(step.slot);
+            const played = await this.playClip(step.clip, signal);
+            if (signal.aborted) break;
+            if (!played) {
+                this.failed = true;
+                break;
+            }
+            if (step.gap) await this.waitBetweenSounds(step.gap, signal);
+        }
+
+        if (this.sequence === sequence) {
+            this.stop();
+            this.updateVolume();
+        }
+    }
+
+    playClip(clip, signal) {
+        return new Promise((resolve) => {
+            const finish = (played) => {
+                clearTimeout(timeout);
+                this.audio.removeEventListener('ended', ended);
+                this.audio.removeEventListener('error', failed);
+                signal.removeEventListener('abort', failed);
+                resolve(played);
+            };
+            const ended = () => finish(true);
+            const failed = () => finish(false);
+            const timeout = setTimeout(failed, 12000);
+            this.audio.addEventListener('ended', ended);
+            this.audio.addEventListener('error', failed);
+            signal.addEventListener('abort', failed, { once: true });
+            this.audio.src = `Voice/Phonics/${clip}.mp3`;
+            this.audio.play().catch(failed);
+        });
+    }
+
+    waitBetweenSounds(milliseconds, signal) {
+        return new Promise((resolve) => {
+            const finish = () => {
+                clearTimeout(timeout);
+                signal.removeEventListener('abort', finish);
+                resolve();
+            };
+            const timeout = setTimeout(finish, milliseconds);
+            signal.addEventListener('abort', finish, { once: true });
+        });
+    }
+
+    highlightSlot(index) {
+        document.querySelectorAll('#equationDisplay .equation-slot').forEach((slot, position) => {
+            slot.classList.toggle('phonics-sound-slot', position === index);
+        });
+    }
+
+    stop() {
+        const sequence = this.sequence;
+        if (!sequence) return;
+        this.sequence = null;
+        sequence.abort();
+        this.audio.pause();
+        this.music?.setClueDucking(false);
+        this.highlightSlot(-1);
+        this.prompt.textContent = 'Tap the letters in order.';
+    }
+
+    endRound(hideControls = false) {
+        this.stop();
+        this.word = null;
+        this.controls.hidden = hideControls;
+        this.instructions.hidden = hideControls;
+        this.updateVolume();
+    }
+
+    getVolume() {
+        return this.music?.getSfxVolume() ?? 0.8;
+    }
+
+    updateVolume() {
+        const volume = this.getVolume();
+        if (this.gain) this.gain.gain.value = volume;
+        else this.audio.volume = volume;
+        if (!volume) this.stop();
+        this.wordButton.disabled = !this.word || !volume;
+        this.soundsButton.disabled = !this.word || !volume;
+        this.writtenWord.hidden = !this.word || (volume > 0 && !this.failed);
+        this.writtenWord.textContent = this.writtenWord.hidden ? '' : this.word;
+    }
+}

@@ -67,7 +67,7 @@ const WORD_LIBRARY_TRACKS = [
     }
 ];
 
-const WORD_LIBRARY_DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme'];
+const WORD_LIBRARY_DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'extreme', 'phonics'];
 const WORD_LIBRARY_LENGTH_LIMITS = {
     easy: [3, 3],
     medium: [3, 4],
@@ -163,8 +163,8 @@ function calculateWordLibraryComplexityScore(word) {
         + advancedPatterns * 1.4 + consonantClusters * 0.5;
 }
 
-const WORD_LIBRARY_INDEX = WORD_LIBRARY_DIFFICULTY_ORDER.flatMap((difficulty) =>
-    Object.entries(WORD_LIBRARY_BANKS[difficulty]).flatMap(([category, clues]) => {
+const WORD_LIBRARY_INDEX = [
+    ...Object.entries(WORD_LIBRARY_BANKS).flatMap(([difficulty, bank]) => Object.entries(bank).flatMap(([category, clues]) => {
         const [min, max] = WORD_LIBRARY_LENGTH_LIMITS[difficulty];
         const tracks = WORD_LIBRARY_TRACKS.filter((track) => track.categories.includes(category)).map((track) => track.id);
         return Object.entries(clues)
@@ -180,8 +180,17 @@ const WORD_LIBRARY_INDEX = WORD_LIBRARY_DIFFICULTY_ORDER.flatMap((difficulty) =>
                 clue,
                 length: word.length
             }));
-    })
-);
+    })),
+    ...PHONICS_WORDS.map(({ word, category }) => ({
+        id: `phonics:${word}`,
+        word,
+        category,
+        tracks: [],
+        difficulty: 'phonics',
+        complexityScore: calculateWordLibraryComplexityScore(word),
+        length: word.length
+    }))
+];
 
 if (typeof window !== 'undefined') {
     window.wordPuzzleLibraryStats = WORD_LIBRARY_INDEX.reduce((stats, entry) => {

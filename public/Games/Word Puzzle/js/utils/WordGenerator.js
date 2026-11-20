@@ -66,8 +66,12 @@ class WordGenerator {
         return oldest.slice(0, Math.max(1, Math.floor(entries.length / 5))).map((id) => entriesById.get(id));
     }
 
-    selectWordEntry(difficulty) {
+    selectWordEntry(difficulty, preferredLength = null) {
         const candidates = this.getCandidates(difficulty);
+        if (difficulty === 'phonics') {
+            const preferred = candidates.filter(({ length }) => length === preferredLength);
+            return { entry: this.pickOne(preferred.length ? preferred : candidates) };
+        }
         const eligibleTracks = WORD_LIBRARY_TRACKS.filter((track) =>
             candidates.some((entry) => entry.tracks.includes(track.id))
         );
@@ -93,17 +97,19 @@ class WordGenerator {
         return items[Math.floor(Math.random() * items.length)];
     }
 
-    generate(level) {
+    generate(level, preferredLength = null) {
         const difficulty = WORD_LIBRARY_DIFFICULTY_ORDER[level - 1] || 'easy';
-        const { entry, track } = this.selectWordEntry(difficulty);
+        const { entry, track } = this.selectWordEntry(difficulty, preferredLength);
         const letters = entry.word.split('');
         const scrambledLetters = this.shuffleUntilDifferent(letters);
 
         this.recentWordIds = this.recentWordIds.filter((id) => id !== entry.id);
         this.recentWordIds.push(entry.id);
-        this.recentCategories = [...this.recentCategories, entry.category].slice(-12);
         this.writeStorage(this.wordHistoryStorageKey, this.recentWordIds);
-        this.writeStorage(this.categoryHistoryStorageKey, this.recentCategories);
+        if (difficulty !== 'phonics') {
+            this.recentCategories = [...this.recentCategories, entry.category].slice(-12);
+            this.writeStorage(this.categoryHistoryStorageKey, this.recentCategories);
+        }
         if (track) {
             this.trackState.remainingRounds -= 1;
             this.writeStorage(this.trackStateStorageKey, this.trackState);

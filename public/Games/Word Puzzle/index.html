@@ -42,6 +42,12 @@
                 <div class="button-glow"></div>
             </button>
 
+            <button class="game-button phonics-button" id="startPhonics">
+                <span class="button-text">Phonics</span>
+                <span class="phonics-menu-description">Hear the word. Tap its letters.</span>
+                <div class="button-glow"></div>
+            </button>
+
             <button class="game-button settings-button" id="settings">
                 <span class="button-text">Settings</span>
                 <div class="button-glow"></div>
@@ -152,7 +158,7 @@
                 </div>
                 <div class="settings-item">
                     <label for="sfxVolume" class="settings-label">
-                        🎮 Effects and Easy Voice Volume
+                        🎮 Effects and Voice Volume
                     </label>
                     <div class="settings-input-group">
                         <input type="range" id="sfxVolume" class="settings-slider" min="0" max="100" value="80">
@@ -285,6 +291,14 @@
                     </button>
                     <button type="button" class="clue-audio-button" id="hearClue">Hear Clue</button>
                 </div>
+                <div class="phonics-instructions" id="phonicsInstructions" hidden>
+                    <p id="phonicsPrompt">Tap the letters in order.</p>
+                    <strong id="phonicsWrittenWord" hidden></strong>
+                </div>
+                <div class="clue-audio-controls" id="phonicsAudioControls" hidden>
+                    <button type="button" class="clue-audio-button" id="hearPhonicsWord">Hear Word</button>
+                    <button type="button" class="clue-audio-button" id="hearPhonicsSounds">Hear Sounds</button>
+                </div>
             </div>
 
             <button class="control-button undo-button" id="undoMove">↶ Undo</button>
@@ -386,7 +400,7 @@
                 </div>
 
                 <div class="settings-item">
-                    <label for="gameplaySfxVolume" class="settings-label">🎮 Effects and Easy Voice</label>
+                    <label for="gameplaySfxVolume" class="settings-label">🎮 Effects and Voice</label>
                     <div class="settings-input-group">
                         <input type="range" id="gameplaySfxVolume" class="settings-slider" min="0" max="100" value="80">
                         <div class="settings-value-display"><span id="gameplaySfxVolumeValue">80</span>%</div>
@@ -418,12 +432,14 @@
     <script src="js/utils/EasyWordClues.js"></script>
     <script src="js/utils/MediumWordClues.js"></script>
     <script src="js/utils/AdvancedWordClues.js"></script>
+    <script src="js/utils/PhonicsWords.js"></script>
     <script src="js/utils/WordLibraryIndex.js"></script>
     <script src="js/utils/WordGenerator.js"></script>
     <script src="js/effects/ThreeJsBackground.js"></script>
     <script src="js/effects/AnimationController.js"></script>
     <script src="js/controllers/WordGameController.js"></script>
     <script src="js/controllers/ClueNarrator.js"></script>
+    <script src="js/controllers/PhonicsNarrator.js"></script>
     <script src="js/controllers/GameController.js"></script>
     <script src="js/controllers/MusicController.js"></script>
     <script src="js/main.js"></script>

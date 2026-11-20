@@ -229,7 +229,7 @@ class MusicController {
         if (!volume) this.stopAnswerFeedback();
     }
 
-    prepareEasyGameplayMusic() {
+    prepareNarratedGameplayMusic() {
         this.resumeAudio();
         if (this.mainMenuAudio) {
             this.mainMenuAudio.pause();

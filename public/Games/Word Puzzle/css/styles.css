@@ -2356,3 +2356,135 @@ body.word-puzzle-gold-rush #currentProblemPoints {
     min-height: 8px;
   }
 }
+
+/* Phonics keeps the listening controls and letter tiles together. */
+.phonics-button {
+  display: grid;
+  gap: 0.18rem;
+  border-color: #e9cf82;
+  background: linear-gradient(145deg, #38633f, #204936);
+}
+
+.phonics-menu-description {
+  color: #f8edcb;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gameplay-page[data-mode='phonics'] :is(
+  .timer-display, .header-problem-points, .points-guide-panel, .instruction-text, .hint-control-wrapper, #skipStars
+) {
+  display: none;
+}
+
+.gameplay-page[data-mode='phonics'] .equation-display[data-type='word_unscramble'] .equation-slot,
+.gameplay-page[data-mode='phonics'] .answer-block:not(.placed) {
+  width: clamp(56px, 14vw, 76px);
+  height: clamp(56px, 14vw, 76px);
+}
+
+.gameplay-page[data-mode='phonics'] .answer-block {
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+.equation-slot.phonics-sound-slot {
+  border: 3px solid #ffe18a;
+  background: rgba(255, 225, 138, 0.24);
+  box-shadow: 0 0 0 3px rgba(255, 225, 138, 0.22);
+}
+
+.gameplay-page[data-mode='phonics'] .control-display-panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  height: auto;
+}
+
+.phonics-instructions {
+  color: var(--word-theme-text);
+  font-size: clamp(0.95rem, 2.7vw, 1.16rem);
+  font-weight: 800;
+  text-align: center;
+}
+
+#phonicsWrittenWord {
+  display: block;
+  color: #ffe18a;
+  font-size: 1.5em;
+  letter-spacing: 0.12em;
+}
+
+#phonicsWrittenWord[hidden] {
+  display: none;
+}
+
+#phonicsAudioControls {
+  justify-content: center;
+}
+
+.gameplay-page[data-mode='phonics'] :is(.clue-audio-button, .control-button) {
+  min-height: 44px;
+  font-size: 0.84rem;
+}
+
+.gameplay-page[data-mode='phonics'] :is(.answer-block, .control-button):focus-visible,
+.phonics-button:focus-visible {
+  outline: 3px solid #ffe18a;
+  outline-offset: 3px;
+}
+
+@media (orientation: portrait) {
+  .gameplay-page[data-mode='phonics']:not([style*='display: none']) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto auto minmax(min-content, 1fr) auto;
+    grid-template-areas:
+      "header header header"
+      "equation equation equation"
+      "letters letters letters"
+      "panel panel panel"
+      "undo clear skip";
+  }
+
+  .gameplay-page[data-mode='phonics'] .game-header {
+    grid-template-areas: "info" "actions";
+  }
+
+  .gameplay-page[data-mode='phonics'] .game-info {
+    justify-content: center;
+  }
+
+  .gameplay-page[data-mode='phonics'] .control-display-panel {
+    grid-template-columns: minmax(0, 1fr);
+    align-self: start;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 460px) {
+  .main-container {
+    flex-direction: row;
+    gap: 1.2rem;
+  }
+
+  .main-container .title-container {
+    margin-bottom: 0;
+  }
+
+  .main-container .main-title {
+    font-size: clamp(2.4rem, 8vw, 4.2rem);
+  }
+
+  .main-container .buttons-container {
+    flex: 0 1 280px;
+    gap: 0.5rem;
+  }
+
+  .main-container .game-button {
+    padding-block: 0.44rem;
+  }
+
+  .gameplay-page[data-mode='phonics'] .equation-display[data-type='word_unscramble'] .equation-slot,
+  .gameplay-page[data-mode='phonics'] .answer-block:not(.placed) {
+    width: clamp(48px, 16vh, 60px);
+    height: clamp(48px, 16vh, 60px);
+  }
+}

@@ -45,6 +45,13 @@ class GameController {
             this.showDifficultyPage();
         });
 
+        document.getElementById('startPhonics')?.addEventListener('click', () => {
+            this.selectedDifficulty = 'phonics';
+            this.gameState.level = PHONICS_LEVEL;
+            this.gameState.timeLimit = 0;
+            this.startGame();
+        });
+
         document.getElementById('settings')?.addEventListener('click', () => {
             this.showSettings();
         });
@@ -110,7 +117,7 @@ class GameController {
     prepareEasyAudio(withGuide) {
         if (this.gameState.level !== 1) return;
         const music = window.musicController;
-        music?.prepareEasyGameplayMusic();
+        music?.prepareNarratedGameplayMusic();
         this.clueNarrator ??= new ClueNarrator(music);
         this.clueNarrator.startSession(withGuide);
     }
@@ -448,6 +455,7 @@ class GameController {
     }
 
     openGameplayMainMenuConfirm() {
+        if (this.selectedDifficulty === 'phonics') this.phonicsNarrator?.stop();
         const overlay = document.getElementById('gameplayMainMenuOverlay');
         if (overlay) overlay.style.display = 'flex';
     }
@@ -458,6 +466,7 @@ class GameController {
     }
 
     openGameplaySoundSettings() {
+        if (this.selectedDifficulty === 'phonics') this.phonicsNarrator?.stop();
         this.loadSettings();
         this.setupGameplaySoundListeners();
         const overlay = document.getElementById('gameplaySoundOverlay');
@@ -1113,7 +1122,14 @@ class GameController {
             window.wordGameController.cleanup();
         }
 
-        if (!this.gameState.timeLimit || this.gameState.timeLimit <= 0) {
+        const isPhonics = this.gameState.level === PHONICS_LEVEL;
+        if (isPhonics) {
+            const music = window.musicController;
+            music?.prepareAnswerSounds();
+            music?.prepareNarratedGameplayMusic();
+            this.phonicsNarrator ??= new PhonicsNarrator(music);
+            this.phonicsNarrator.startSession();
+        } else if (!this.gameState.timeLimit || this.gameState.timeLimit <= 0) {
             this.setGameParameters(this.selectedDifficulty);
         }
 
@@ -1128,6 +1144,7 @@ class GameController {
 
         window.wordGameController = new WordGameController(this.gameState, {
             clueNarrator: this.gameState.level === 1 ? this.clueNarrator : null,
+            phonicsNarrator: isPhonics ? this.phonicsNarrator : null,
             onGameEnd: (finalScore) => this.handleGameEnd(finalScore),
             showFeedback: (title, msg, icon, options) => this.showFeedback(title, msg, icon, options)
         });
@@ -1157,6 +1174,7 @@ class GameController {
         this.hideAllPages();
         const gameplayPage = document.getElementById('gameplayPage');
         if (gameplayPage) {
+            gameplayPage.dataset.mode = this.selectedDifficulty;
             gameplayPage.style.display = 'flex';
         }
 

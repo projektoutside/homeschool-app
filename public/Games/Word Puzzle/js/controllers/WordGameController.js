@@ -11,6 +11,10 @@ class WordGameController {
         this.gameState = gameState;
         this.callbacks = callbacks;
         this.clueNarrator = callbacks.clueNarrator;
+        this.phonicsNarrator = callbacks.phonicsNarrator;
+        this.isPhonics = gameState.level === PHONICS_LEVEL;
+        this.phonicsRounds = 0;
+        this.gameMode = this.isPhonics ? 'phonics' : null;
         this.currentEquation = null;
         this.currentRoundScorePlan = null;
         this.score = 0;
@@ -30,6 +34,7 @@ class WordGameController {
             return lookup;
         }, {});
         this.difficultyPointProfiles = {
+            phonics: { minCap: 6, maxCap: 12 },
             easy: { minCap: 18, maxCap: 24 },
             medium: { minCap: 24, maxCap: 32 },
             hard: { minCap: 34, maxCap: 44 },
@@ -40,7 +45,7 @@ class WordGameController {
         // Initialize word puzzle generator
         this.wordGenerator = new WordGenerator();
 
-        this.initTimeLimit();
+        if (!this.isPhonics) this.initTimeLimit();
 
         this.gameTimer = null;
         this.draggedElement = null;
@@ -154,7 +159,7 @@ class WordGameController {
         const maximumCap = Math.max(minimumCap, Math.max(profile.maxCap, minimumPossiblePoints));
         const randomizedUpperCap = Math.max(minimumCap, Math.min(maximumCap, weightedUpperCap));
         const maxPoints = this.randomInt(minimumCap, randomizedUpperCap);
-        const isGoldBonus = Math.random() < this.goldBonusChance;
+        const isGoldBonus = !this.isPhonics && Math.random() < this.goldBonusChance;
 
         return {
             difficulty,
@@ -335,6 +340,7 @@ class WordGameController {
     cleanup() {
         this.stopTimer();
         this.clueNarrator?.endRound(true);
+        this.phonicsNarrator?.endRound(true);
         window.musicController?.stopAnswerFeedback();
         this.gameEnded = true;
         this.clearSelectedBlock();
@@ -386,7 +392,7 @@ class WordGameController {
         this.updateUndoButtonState();
 
         const timeDisplay = document.getElementById('timeRemaining');
-        if (timeDisplay && !this.gameTimer) {
+        if (!this.isPhonics && timeDisplay && !this.gameTimer) {
             this.initTimeLimit();
             timeDisplay.textContent = this.timeRemaining;
             this.updateTimerVisualState(timeDisplay);
@@ -395,9 +401,10 @@ class WordGameController {
         this.generateEquation();
         this.createAnswerBlocks();
         this.clueNarrator?.startRound(this.currentEquation.word);
+        this.phonicsNarrator?.startRound(this.currentEquation.word);
         setTimeout(() => this.optimizeEquationLayout(), 100);
 
-        if (this.timeRemaining > 0 && !this.gameTimer) {
+        if (!this.isPhonics && this.timeRemaining > 0 && !this.gameTimer) {
             setTimeout(() => {
                 if (!this.gameEnded && !this.gameTimer) {
                     this.startTimer();
@@ -448,7 +455,8 @@ class WordGameController {
     }
 
     generateEquation() {
-        this.currentEquation = this.wordGenerator.generate(this.gameState.level);
+        const preferredLength = this.isPhonics ? (this.phonicsRounds++ < 2 ? 2 : 3) : null;
+        this.currentEquation = this.wordGenerator.generate(this.gameState.level, preferredLength);
     }
 
     pickNumberColorTier(excludedTierNames = null) {
@@ -553,11 +561,7 @@ class WordGameController {
 
         const eq = this.currentEquation;
         const answers = this.buildSafeAnswerBlockOrder(eq);
-        this.renderInstructionPanel({
-            letters: answers,
-            category: eq.category,
-            clue: eq.clue
-        });
+        if (!this.isPhonics) this.renderInstructionPanel({ letters: answers, category: eq.category, clue: eq.clue });
 
         this.currentRoundScorePlan = this.createRoundScorePlan(eq, answers.length);
         const roundColorTiers = this.generateRoundColorTierAssignments(answers.length, this.currentRoundScorePlan.maxPoints);
@@ -567,17 +571,19 @@ class WordGameController {
         this.applyRoundPresentation();
 
         answers.forEach((val, idx) => {
-            const block = document.createElement('div');
+            const block = document.createElement(this.isPhonics ? 'button' : 'div');
             block.className = 'answer-block';
             block.textContent = val;
             block.dataset.value = val;
             block.dataset.id = `block-${idx}`;
+            if (this.isPhonics) block.type = 'button';
             this.applyNumberColorTier(
                 block,
                 roundColorTiers[idx] || null,
                 roundColorTiers[idx] ? roundColorTiers[idx].points : null
             );
-            this.addDragListeners(block);
+            if (this.isPhonics) block.addEventListener('click', (event) => this.placePhonicsLetter(block, event));
+            else this.addDragListeners(block);
             container.appendChild(block);
         });
 
@@ -671,6 +677,16 @@ class WordGameController {
 
     optimizeEquationLayout() {
         // Optimized layout adjustment logic here if needed
+    }
+
+    placePhonicsLetter(block, event) {
+        if (this.roundInputLocked()) return;
+        const slot = document.querySelector('#equationDisplay .equation-slot:not(.filled)');
+        if (!slot) return;
+        this.placeBlockInSlot(block, slot);
+        if (event.detail === 0 && !this.roundInputLocked()) {
+            document.querySelector('#answerBlocks .answer-block')?.focus();
+        }
     }
 
     addDragListeners(block) {
@@ -908,6 +924,7 @@ class WordGameController {
         slot.appendChild(block);
         slot.classList.add('filled');
         block.classList.add('placed');
+        if (this.isPhonics) block.disabled = true;
 
         this.checkEquationComplete();
         this.updateUndoButtonState();
@@ -915,6 +932,7 @@ class WordGameController {
     }
 
     returnBlock(block) {
+        if (this.isPhonics) block.disabled = false;
         // 1. Reset visual styles that might cause large size or offset
         block.style.position = '';
         block.style.left = '';
@@ -1104,6 +1122,7 @@ class WordGameController {
 
     handleCorrect() {
         this.clueNarrator?.endRound();
+        this.phonicsNarrator?.endRound();
         window.musicController?.playAnswerFeedback('correct');
         const pointsEarned = this.calculatePlacedNumberColorPoints();
         const oldScore = this.score;
@@ -1134,10 +1153,10 @@ class WordGameController {
             }
         });
 
-        this.scheduleNextQuestion(this.gameState.level === 1 ? 1500 : 800);
+        this.scheduleNextQuestion(this.isPhonics || this.gameState.level === 1 ? 1500 : 800);
     }
 
-    scheduleNextQuestion(delayMs = 0) {
+    scheduleNextQuestion(delayMs = 0, advance = () => this.nextQuestion()) {
         if (this.nextQuestionTimeout) {
             clearTimeout(this.nextQuestionTimeout);
             this.nextQuestionTimeout = null;
@@ -1148,22 +1167,30 @@ class WordGameController {
             if (this.gameEnded) return;
             // Fallback sync for score display in case feedback animation is interrupted
             this.updateScoreDisplay();
-            this.nextQuestion();
+            advance();
         }, delayMs);
     }
 
     handleIncorrect() {
         this.clueNarrator?.endRound();
+        this.phonicsNarrator?.endRound();
         window.musicController?.playAnswerFeedback('incorrect');
         const correctWord = (this.currentEquation?.word || '').toUpperCase();
-        const durationMs = this.gameState.level === 1 ? 2600 : 1850;
+        const durationMs = this.isPhonics || this.gameState.level === 1 ? 2600 : 1850;
         this.showFeedback(false, 'The word was', '❌', {
             incorrectAnswerFx: {
                 word: correctWord,
                 durationMs
             }
         });
-        this.scheduleNextQuestion(durationMs + 300);
+        if (this.isPhonics) {
+            this.scheduleNextQuestion(durationMs + 300, () => {
+                this.clearAllSlots();
+                this.phonicsNarrator.startRound(correctWord, { retry: true });
+            });
+        } else {
+            this.scheduleNextQuestion(durationMs + 300);
+        }
     }
 
     roundInputLocked() {
@@ -1286,6 +1313,10 @@ class WordGameController {
 
     skipQuestion() {
         if (this.roundInputLocked()) return;
+        if (this.isPhonics) {
+            this.nextQuestion();
+            return;
+        }
         if (this.skipsUsed >= this.maxSkips) {
             this.showFeedback(false, "No skips left!", "🔒");
             return;
@@ -1303,6 +1334,12 @@ class WordGameController {
     }
 
     updateLimitVisuals() {
+        const skipButton = document.getElementById('skipQuestion');
+        if (skipButton) {
+            skipButton.textContent = this.isPhonics ? 'New Word' : 'Skip';
+            skipButton.disabled = this.isPhonics ? false : this.skipsUsed >= this.maxSkips;
+        }
+        if (this.isPhonics) return;
         // Update Hint Stars - Start with all filled, then mark 'used' from right to left (or left to right depending on preference, but usually consume from end)
         // Original request: "only one start will be removed... matches corresponding number"
         // Let's render Total stars. And mark the last N as 'used' or empty.
