@@ -310,7 +310,9 @@ class WordGameController {
 
         this.boundUndo = () => this.undoLastMove();
         this.boundClear = () => {
-            if (!this.roundInputLocked()) this.clearAllSlots();
+            if (this.roundInputLocked()) return;
+            this.clearAllSlots();
+            this.phonicsNarrator?.restartSound();
         };
         this.boundHint = () => this.showHint();
         this.boundSkip = () => this.skipQuestion();
@@ -684,6 +686,7 @@ class WordGameController {
         const slot = document.querySelector('#equationDisplay .equation-slot:not(.filled)');
         if (!slot) return;
         this.placeBlockInSlot(block, slot);
+        this.phonicsNarrator?.letterPlaced();
         if (event.detail === 0 && !this.roundInputLocked()) {
             document.querySelector('#answerBlocks .answer-block')?.focus();
         }
@@ -1225,6 +1228,7 @@ class WordGameController {
         if (move.block && move.block.parentElement === move.toSlot) {
             this.returnBlock(move.block);
             move.toSlot.classList.remove('filled');
+            this.phonicsNarrator?.restartSound();
         }
         this.updateUndoButtonState();
         this.refreshSlotGlow();

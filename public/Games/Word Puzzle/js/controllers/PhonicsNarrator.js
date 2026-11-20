@@ -12,6 +12,7 @@ class PhonicsNarrator {
         this.soundsButton = document.getElementById('hearPhonicsSounds');
         this.word = null;
         this.sequence = null;
+        this.resumeAfterTap = null;
 
         this.wordButton.addEventListener('click', () => this.replay('word'));
         this.soundsButton.addEventListener('click', () => this.replay('sounds'));
@@ -44,6 +45,15 @@ class PhonicsNarrator {
         this.read(part);
     }
 
+    letterPlaced() {
+        this.resumeAfterTap?.();
+        if (!this.sequence && this.word && !this.failed) this.read('sounds');
+    }
+
+    restartSound() {
+        if (this.word && !this.failed) this.read('sounds');
+    }
+
     async read(part, guide = null) {
         this.stop();
         this.updateVolume();
@@ -55,35 +65,61 @@ class PhonicsNarrator {
         const { signal } = sequence;
         const wordClip = `words/${word.toLowerCase()}`;
         const steps = [];
-        if (guide) steps.push({ clip: `guides/${guide}`, gap: 350 });
-        if (part !== 'sounds') steps.push({ clip: wordClip, cue: 'Listen to the word.', gap: 650 });
-        if (part === 'round') steps.push({ clip: 'guides/sounds', cue: 'Listen to each sound.', gap: 300 });
-        if (part !== 'word') {
-            [...word].forEach((letter, index) => {
-                steps.push({ clip: `sounds/${PHONICS_SOUND_BY_LETTER[letter]}`, slot: index, gap: 500 });
-            });
-            steps.push({ clip: wordClip, cue: 'Put the sounds together.' });
-        }
+        if (guide) steps.push({ clip: `guides/${guide}`, gap: 400 });
+        if (part !== 'sounds') steps.push({ clip: wordClip, cue: 'Listen to the word.', gap: 950 });
+        if (part === 'round') steps.push({ clip: 'guides/sounds', cue: 'Listen to each sound.', gap: 500 });
 
         this.music?.setClueDucking(true);
         for (const step of steps) {
             if (signal.aborted) break;
             if (step.cue) this.prompt.textContent = step.cue;
-            else if (step.slot !== undefined) this.prompt.textContent = 'Listen to each sound.';
-            this.highlightSlot(step.slot);
-            const played = await this.playClip(step.clip, signal);
-            if (signal.aborted) break;
-            if (!played) {
-                this.failed = true;
+            if (!await this.playClip(step.clip, signal)) {
+                if (!signal.aborted) this.failed = true;
                 break;
             }
-            if (step.gap) await this.waitBetweenSounds(step.gap, signal);
+            await this.waitBetweenSounds(step.gap, signal);
+        }
+
+        if (!this.failed && !signal.aborted) {
+            await this.guideLetterPlacement(word, signal);
         }
 
         if (this.sequence === sequence) {
             this.stop();
             this.updateVolume();
         }
+    }
+
+    async guideLetterPlacement(word, signal) {
+        while (!signal.aborted) {
+            const slot = document.querySelector('#equationDisplay .equation-slot:not(.filled)');
+            if (!slot) return;
+            const index = Number(slot.dataset.position);
+            const sound = PHONICS_SOUND_BY_LETTER[word[index]];
+            this.highlightSlot(index);
+            this.prompt.textContent = 'Listen to this sound.';
+            if (!await this.playClip(`sounds/${sound}`, signal)) {
+                if (!signal.aborted) this.failed = true;
+                return;
+            }
+            if (signal.aborted) return;
+            this.prompt.textContent = 'Tap a letter for this sound.';
+            await this.waitBetweenSounds(1000, signal);
+            await this.waitForPlacement(slot, signal);
+        }
+    }
+
+    waitForPlacement(slot, signal) {
+        if (signal.aborted || slot.classList.contains('filled')) return;
+        return new Promise((resolve) => {
+            const finish = () => {
+                this.resumeAfterTap = null;
+                signal.removeEventListener('abort', finish);
+                resolve();
+            };
+            this.resumeAfterTap = finish;
+            signal.addEventListener('abort', finish, { once: true });
+        });
     }
 
     playClip(clip, signal) {
@@ -107,6 +143,7 @@ class PhonicsNarrator {
     }
 
     waitBetweenSounds(milliseconds, signal) {
+        if (signal.aborted) return;
         return new Promise((resolve) => {
             const finish = () => {
                 clearTimeout(timeout);

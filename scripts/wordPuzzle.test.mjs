@@ -131,3 +131,71 @@ test('Phonics draws warmups before longer words and keeps its own repeat history
     assert.ok(seen.has('CAT'));
     assert.equal(storage.has('wordPuzzleRecentTracksV3:test-player'), false);
 });
+
+test('Phonics holds each sound for the child and never advances while a tap is pending', async () => {
+    const narratorSource = readFileSync(new URL('js/controllers/PhonicsNarrator.js', game), 'utf8');
+    const words = readFileSync(new URL('js/utils/PhonicsWords.js', game), 'utf8');
+    const played = [];
+    const timers = new Map();
+    let timerId = 0;
+    const elements = new Map();
+    const slots = Array.from({ length: 3 }, (_, index) => ({
+        dataset: { position: String(index) },
+        filled: false,
+        highlighted: false,
+        classList: {
+            contains() { return slots[index].filled; },
+            toggle(_name, enabled) { slots[index].highlighted = enabled; }
+        }
+    }));
+    class Audio extends EventTarget {
+        play() { played.push(this.src); return Promise.resolve(); }
+        pause() {}
+    }
+    const document = new EventTarget();
+    document.getElementById = (id) => {
+        if (!elements.has(id)) elements.set(id, new EventTarget());
+        return elements.get(id);
+    };
+    document.querySelector = () => slots.find(({ filled }) => !filled);
+    document.querySelectorAll = () => slots;
+    const { PhonicsNarrator } = runInNewContext(words + '\n' + narratorSource + '\n;({ PhonicsNarrator })', {
+        AbortController, Audio, document, window: new EventTarget(),
+        setTimeout(callback, delay) {
+            timers.set(++timerId, { callback, delay });
+            return timerId;
+        },
+        clearTimeout(id) { timers.delete(id); }
+    });
+    const narration = new PhonicsNarrator();
+    narration.word = 'CAT';
+    const settle = () => new Promise(resolve => setImmediate(resolve));
+    const finishSound = async () => {
+        narration.audio.dispatchEvent(new Event('ended'));
+        await settle();
+        const pause = [...timers.values()].find(({ delay }) => delay === 1000);
+        assert.ok(pause, 'Each sound gives at least a second to listen and find the letter');
+        pause.callback();
+        await settle();
+    };
+    const round = narration.read('sounds');
+    assert.deepEqual(played, ['Voice/Phonics/sounds/k.mp3']);
+    await finishSound();
+    assert.equal(slots[0].highlighted, true);
+    assert.equal(played.length, 1);
+    slots[0].filled = true;
+    narration.letterPlaced();
+    await settle();
+    assert.equal(played.at(-1), 'Voice/Phonics/sounds/a.mp3');
+    slots[1].filled = true;
+    narration.letterPlaced();
+    await settle();
+    assert.equal(played.length, 2);
+    await finishSound();
+    assert.equal(played.at(-1), 'Voice/Phonics/sounds/t.mp3');
+    await finishSound();
+    narration.endRound(true);
+    await round;
+    assert.equal(narration.resumeAfterTap, null);
+    assert.equal(slots.some(({ highlighted }) => highlighted), false);
+});
