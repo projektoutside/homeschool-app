@@ -199,3 +199,42 @@ test('Phonics holds each sound for the child and never advances while a tap is p
     assert.equal(narration.resumeAfterTap, null);
     assert.equal(slots.some(({ highlighted }) => highlighted), false);
 });
+
+test('wrong feedback always shows the current word after an overlay reset', () => {
+    const controller = readFileSync(new URL('js/controllers/GameController.js', game), 'utf8');
+    const heading = readFileSync(new URL('index.html', game), 'utf8').match(/id="incorrectAnswerText">([^<]+)/)[1];
+    const timers = new Map();
+    let timerId = 0;
+    const elements = new Map([
+        ['incorrectAnswerFx', { style: { display: 'none' } }],
+        ['incorrectAnswerWord', { style: {}, textContent: '' }],
+        ['incorrectAnswerText', { style: {}, textContent: heading }]
+    ]);
+    const { GameController } = runInNewContext(controller + '\n;({ GameController })', {
+        document: { getElementById: id => elements.get(id) },
+        setTimeout(callback) {
+            timers.set(++timerId, callback);
+            return timerId;
+        },
+        clearTimeout(id) { timers.delete(id); }
+    });
+    const feedback = Object.create(GameController.prototype);
+    const card = elements.get('incorrectAnswerFx');
+    const answer = elements.get('incorrectAnswerWord');
+    const label = elements.get('incorrectAnswerText');
+    const miss = word => feedback.showFeedback('Incorrect', 'The word was', '❌', {
+        incorrectAnswerFx: { word, durationMs: 1850 }
+    });
+    for (const word of ['IN', 'CAT', 'APPLE', 'HONEYCOMB']) {
+        feedback.hideFeedback();
+        assert.equal(answer.textContent, '');
+        miss(word);
+        assert.equal(card.style.display, 'flex');
+        assert.equal(label.textContent, 'The word was');
+        assert.equal(answer.textContent, word);
+        assert.notEqual(answer.style.display, 'none');
+        timers.get(feedback.incorrectAnswerFxTimeout)();
+        assert.equal(card.style.display, 'none');
+        assert.equal(answer.textContent, '');
+    }
+});

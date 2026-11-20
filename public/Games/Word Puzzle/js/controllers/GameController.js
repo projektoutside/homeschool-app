@@ -150,30 +150,7 @@ class GameController {
             startButton.style.display = 'none';
         }
 
-        const feedbackOverlay = document.getElementById('feedbackOverlay');
-        if (feedbackOverlay) {
-            feedbackOverlay.style.display = 'none';
-        }
-
-        const correctAnswerFx = document.getElementById('correctAnswerFx');
-        if (correctAnswerFx) {
-            correctAnswerFx.style.display = 'none';
-        }
-
-        const incorrectAnswerFx = document.getElementById('incorrectAnswerFx');
-        if (incorrectAnswerFx) {
-            incorrectAnswerFx.style.display = 'none';
-        }
-
-        if (this.correctAnswerFxTimeout) {
-            clearTimeout(this.correctAnswerFxTimeout);
-            this.correctAnswerFxTimeout = null;
-        }
-
-        if (this.incorrectAnswerFxTimeout) {
-            clearTimeout(this.incorrectAnswerFxTimeout);
-            this.incorrectAnswerFxTimeout = null;
-        }
+        this.hideFeedback();
 
         // Start main menu music when returning to main menu
         if (window.musicController) {
@@ -711,11 +688,11 @@ class GameController {
         const correctAnswerTextEl = document.getElementById('correctAnswerText');
         const correctAnswerPointsEl = document.getElementById('correctAnswerPoints');
         const incorrectAnswerFxEl = document.getElementById('incorrectAnswerFx');
-        const incorrectAnswerTextEl = document.getElementById('incorrectAnswerText');
         const incorrectAnswerWordEl = document.getElementById('incorrectAnswerWord');
 
         const scoreGain = options && options.scoreGain ? options.scoreGain : null;
-        const incorrectAnswerFx = options && options.incorrectAnswerFx ? options.incorrectAnswerFx : null;
+        const incorrectAnswerFx = options?.incorrectAnswerFx;
+        this.clearIncorrectAnswer();
 
         if (scoreGain && correctAnswerFxEl && correctAnswerTextEl && correctAnswerPointsEl) {
             const oldScore = Number(scoreGain.oldScore || 0);
@@ -807,7 +784,7 @@ class GameController {
             return;
         }
 
-        if (incorrectAnswerFx && incorrectAnswerFxEl && incorrectAnswerTextEl && incorrectAnswerWordEl) {
+        if (incorrectAnswerFx?.word && incorrectAnswerFxEl && incorrectAnswerWordEl) {
             if (this.feedbackHideTimeout) {
                 clearTimeout(this.feedbackHideTimeout);
                 this.feedbackHideTimeout = null;
@@ -818,10 +795,7 @@ class GameController {
                 this.correctAnswerFxTimeout = null;
             }
 
-            if (this.incorrectAnswerFxTimeout) {
-                clearTimeout(this.incorrectAnswerFxTimeout);
-                this.incorrectAnswerFxTimeout = null;
-            }
+            if (correctAnswerFxEl) correctAnswerFxEl.style.display = 'none';
 
             if (overlay && actionsEl && actionsEl.style.display === 'none') {
                 overlay.style.display = 'none';
@@ -844,13 +818,10 @@ class GameController {
                 incorrectAnswerFxEl.style.opacity = '1';
             }
 
-            this.incorrectAnswerFxTimeout = setTimeout(() => {
-                incorrectAnswerFxEl.style.display = 'none';
-                incorrectAnswerFxEl.style.opacity = '';
-                incorrectAnswerTextEl.style.opacity = '';
-                incorrectAnswerWordEl.style.opacity = '';
-                this.incorrectAnswerFxTimeout = null;
-            }, incorrectAnswerFx.durationMs + 280);
+            this.incorrectAnswerFxTimeout = setTimeout(
+                () => this.clearIncorrectAnswer(),
+                incorrectAnswerFx.durationMs + 280
+            );
 
             return;
         }
@@ -947,28 +918,19 @@ class GameController {
             this.correctAnswerFxTimeout = null;
         }
 
-        if (this.incorrectAnswerFxTimeout) {
-            clearTimeout(this.incorrectAnswerFxTimeout);
-            this.incorrectAnswerFxTimeout = null;
-        }
+        this.clearIncorrectAnswer();
 
         const overlay = document.getElementById('feedbackOverlay');
         const scoreSequenceEl = document.getElementById('feedbackScoreSequence');
         const correctAnswerFxEl = document.getElementById('correctAnswerFx');
         const correctAnswerTextEl = document.getElementById('correctAnswerText');
         const correctAnswerPointsEl = document.getElementById('correctAnswerPoints');
-        const incorrectAnswerFxEl = document.getElementById('incorrectAnswerFx');
-        const incorrectAnswerTextEl = document.getElementById('incorrectAnswerText');
-        const incorrectAnswerWordEl = document.getElementById('incorrectAnswerWord');
 
         if (typeof anime !== 'undefined') {
             anime.remove([
                 correctAnswerFxEl,
                 correctAnswerTextEl,
-                correctAnswerPointsEl,
-                incorrectAnswerFxEl,
-                incorrectAnswerTextEl,
-                incorrectAnswerWordEl
+                correctAnswerPointsEl
             ]);
         }
 
@@ -982,22 +944,19 @@ class GameController {
             correctAnswerFxEl.style.display = 'none';
             correctAnswerFxEl.style.opacity = '';
         }
+    }
 
-        if (incorrectAnswerFxEl) {
-            incorrectAnswerFxEl.style.display = 'none';
-            incorrectAnswerFxEl.style.opacity = '';
+    clearIncorrectAnswer() {
+        clearTimeout(this.incorrectAnswerFxTimeout);
+        this.incorrectAnswerFxTimeout = null;
+        const card = document.getElementById('incorrectAnswerFx');
+        if (card) {
+            if (typeof anime !== 'undefined') anime.remove(card);
+            card.style.display = 'none';
+            card.style.opacity = '';
         }
-
-        if (incorrectAnswerTextEl) {
-            incorrectAnswerTextEl.textContent = 'APPLE';
-            incorrectAnswerTextEl.style.opacity = '';
-        }
-
-        if (incorrectAnswerWordEl) {
-            incorrectAnswerWordEl.textContent = '';
-            incorrectAnswerWordEl.style.display = 'none';
-            incorrectAnswerWordEl.style.opacity = '';
-        }
+        const word = document.getElementById('incorrectAnswerWord');
+        if (word) word.textContent = '';
     }
 
     selectDifficulty(difficulty, buttonElement) {
