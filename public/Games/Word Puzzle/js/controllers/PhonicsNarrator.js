@@ -13,6 +13,8 @@ class PhonicsNarrator {
         this.word = null;
         this.sequence = null;
         this.resumeAfterTap = null;
+        this.playingSound = null;
+        this.replayRequest = null;
 
         this.wordButton.addEventListener('click', () => this.replay('word'));
         this.soundsButton.addEventListener('click', () => this.replay('sounds'));
@@ -38,11 +40,24 @@ class PhonicsNarrator {
         this.read('round', guide);
     }
 
-    replay(part) {
+    async replay(part) {
         if (!this.word) return;
         this.music?.resumeAudio();
+        const request = {};
+        this.replayRequest = request;
+        if (this.playingSound) await this.playingSound;
+        if (this.replayRequest !== request) return;
         this.failed = false;
         this.read(part);
+    }
+
+    waitForCurrentSound() {
+        this.replayRequest = null;
+        if (this.playingSound) {
+            this.wordButton.disabled = true;
+            this.soundsButton.disabled = true;
+        }
+        return this.playingSound;
     }
 
     letterPlaced() {
@@ -51,7 +66,7 @@ class PhonicsNarrator {
     }
 
     restartSound() {
-        if (this.word && !this.failed) this.read('sounds');
+        if (this.word && !this.failed) this.replay('sounds');
     }
 
     async read(part, guide = null) {
@@ -122,8 +137,8 @@ class PhonicsNarrator {
         });
     }
 
-    playClip(clip, signal) {
-        return new Promise((resolve) => {
+    async playClip(clip, signal) {
+        const playback = new Promise((resolve) => {
             const finish = (played) => {
                 clearTimeout(timeout);
                 this.audio.removeEventListener('ended', ended);
@@ -140,6 +155,11 @@ class PhonicsNarrator {
             this.audio.src = `Voice/Phonics/${clip}.mp3`;
             this.audio.play().catch(failed);
         });
+        if (clip.startsWith('sounds/') || clip.startsWith('words/')) this.playingSound = playback;
+
+        const played = await playback;
+        if (this.playingSound === playback) this.playingSound = null;
+        return played;
     }
 
     waitBetweenSounds(milliseconds, signal) {
@@ -162,6 +182,7 @@ class PhonicsNarrator {
     }
 
     stop() {
+        this.replayRequest = null;
         const sequence = this.sequence;
         if (!sequence) return;
         this.sequence = null;

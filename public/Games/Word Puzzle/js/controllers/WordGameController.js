@@ -20,6 +20,7 @@ class WordGameController {
         this.score = 0;
         this.currentProblemPoints = 0;
         this.nextQuestionTimeout = null;
+        this.waitingForPhonicsAudio = false;
         this.goldBonusChance = 0.15;
         this.goldRoundBodyClass = 'word-puzzle-gold-rush';
         this.numberColorTiers = [
@@ -1109,8 +1110,24 @@ class WordGameController {
             console.error("Validation error", e);
         }
 
-        if (correct) this.handleCorrect();
-        else this.handleIncorrect();
+        this.afterPhonicsSound(() => {
+            if (correct) this.handleCorrect();
+            else this.handleIncorrect();
+        });
+    }
+
+    afterPhonicsSound(action) {
+        const sound = this.phonicsNarrator?.waitForCurrentSound();
+        if (!sound) {
+            action();
+            return;
+        }
+
+        this.waitingForPhonicsAudio = true;
+        sound.then(() => {
+            this.waitingForPhonicsAudio = false;
+            if (!this.gameEnded) action();
+        });
     }
 
     validateWordUnscramble(values) {
@@ -1197,7 +1214,7 @@ class WordGameController {
     }
 
     roundInputLocked() {
-        return this.gameEnded || this.nextQuestionTimeout !== null;
+        return this.gameEnded || this.waitingForPhonicsAudio || this.nextQuestionTimeout !== null;
     }
 
     showFeedback(success, msg, icon, options = null) {
@@ -1318,7 +1335,7 @@ class WordGameController {
     skipQuestion() {
         if (this.roundInputLocked()) return;
         if (this.isPhonics) {
-            this.nextQuestion();
+            this.afterPhonicsSound(() => this.nextQuestion());
             return;
         }
         if (this.skipsUsed >= this.maxSkips) {

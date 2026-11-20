@@ -180,7 +180,15 @@ test('Phonics holds each sound for the child and never advances while a tap is p
     };
     const round = narration.read('sounds');
     assert.deepEqual(played, ['Voice/Phonics/sounds/k.mp3']);
+    const currentSound = narration.waitForCurrentSound();
+    assert.ok(currentSound);
+    assert.equal(elements.get('hearPhonicsSounds').disabled, true);
+    let soundFinished = false;
+    currentSound.then(() => { soundFinished = true; });
+    await settle();
+    assert.equal(soundFinished, false);
     await finishSound();
+    assert.equal(soundFinished, true);
     assert.equal(slots[0].highlighted, true);
     assert.equal(played.length, 1);
     slots[0].filled = true;
